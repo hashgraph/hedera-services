@@ -16,8 +16,6 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.CONSENSUS_TIMESTAMP;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.EPOCH_HASH;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.HASH;
@@ -43,7 +41,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
@@ -99,17 +97,17 @@ class SavedStateMetadataTests {
     @Test
     @DisplayName("Random Data Test")
     void randomDataTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final long round = random.nextLong();
-        final Hash hash = randomHash(random);
+        final Hash hash = random.randomHash();
         final long numberOfConsensusEvents = random.nextLong();
-        final Instant timestamp = RandomUtils.randomInstant(random);
-        final Hash runningEventHash = randomHash(random);
-        final Hash legacyRunningEventHash = randomHash(random);
+        final Instant timestamp = random.randomInstant();
+        final Hash runningEventHash = random.randomHash();
+        final Hash legacyRunningEventHash = random.randomHash();
         final long minimumGenerationNonAncient = random.nextLong();
         final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
-        final Instant wallClockTime = RandomUtils.randomInstant(random);
+        final Instant wallClockTime = random.randomInstant();
         final NodeId nodeId = generateRandomNodeId(random);
         final List<NodeId> signingNodes = new ArrayList<>();
         for (int i = 0; i < random.nextInt(1, 10); i++) {
@@ -117,7 +115,7 @@ class SavedStateMetadataTests {
         }
         final long signingWeightSum = random.nextLong();
         final long totalWeight = random.nextLong();
-        final Hash epochHash = random.nextBoolean() ? randomHash(random) : null;
+        final Hash epochHash = random.nextBoolean() ? random.randomHash() : null;
         final String epochHashString = epochHash == null ? "null" : epochHash.toMnemonic();
 
         final SavedStateMetadata metadata = new SavedStateMetadata(
@@ -165,22 +163,22 @@ class SavedStateMetadataTests {
     @Test
     @DisplayName("Random Data Empty ListTest")
     void randomDataEmptyListTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final long round = random.nextLong();
-        final Hash hash = randomHash(random);
+        final Hash hash = random.randomHash();
         final long numberOfConsensusEvents = random.nextLong();
-        final Instant timestamp = RandomUtils.randomInstant(random);
-        final Hash runningEventHash = randomHash(random);
-        final Hash legacyRunningEventHash = randomHash(random);
+        final Instant timestamp = random.randomInstant();
+        final Hash runningEventHash = random.randomHash();
+        final Hash legacyRunningEventHash = random.randomHash();
         final long minimumGenerationNonAncient = random.nextLong();
         final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
-        final Instant wallClockTime = RandomUtils.randomInstant(random);
+        final Instant wallClockTime = random.randomInstant();
         final NodeId nodeId = generateRandomNodeId(random);
         final List<NodeId> signingNodes = new ArrayList<>();
         final long signingWeightSum = random.nextLong();
         final long totalWeight = random.nextLong();
-        final Hash epochHash = random.nextBoolean() ? randomHash(random) : null;
+        final Hash epochHash = random.nextBoolean() ? random.randomHash() : null;
         final String epochHashString = epochHash == null ? "null" : epochHash.toMnemonic();
 
         final SavedStateMetadata metadata = new SavedStateMetadata(
@@ -226,14 +224,14 @@ class SavedStateMetadataTests {
     @Test
     @DisplayName("Signing Nodes Sorted Test")
     void signingNodesSortedTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final SignedState signedState = mock(SignedState.class);
         final SigSet sigSet = mock(SigSet.class);
         final State state = mock(State.class);
-        when(state.getHash()).thenReturn(randomHash(random));
+        when(state.getHash()).thenReturn(random.randomHash());
         final PlatformState platformState = mock(PlatformState.class);
-        when(platformState.getLegacyRunningEventHash()).thenReturn(randomHash(random));
+        when(platformState.getLegacyRunningEventHash()).thenReturn(random.randomHash());
         when(platformState.getSnapshot()).thenReturn(mock(ConsensusSnapshot.class));
         final AddressBook addressBook = mock(AddressBook.class);
 
@@ -252,19 +250,19 @@ class SavedStateMetadataTests {
     @Test
     @DisplayName("Handle Newlines Elegantly Test")
     void handleNewlinesElegantlyTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final long round = random.nextLong();
-        final Hash hash = randomHash(random);
+        final Hash hash = random.randomHash();
         final String hashMnemonic = hash.toMnemonic();
         final long numberOfConsensusEvents = random.nextLong();
-        final Instant timestamp = RandomUtils.randomInstant(random);
-        final Hash runningEventHash = randomHash(random);
+        final Instant timestamp = random.randomInstant();
+        final Hash runningEventHash = random.randomHash();
         final String runningEventHashMnemonic = runningEventHash.toMnemonic();
-        final Hash legacyRunningEventHash = randomHash(random);
+        final Hash legacyRunningEventHash = random.randomHash();
         final String legacyRunningEventHashMnemonic = legacyRunningEventHash.toMnemonic();
         final long minimumGenerationNonAncient = random.nextLong();
-        final Instant wallClockTime = RandomUtils.randomInstant(random);
+        final Instant wallClockTime = random.randomInstant();
         final NodeId nodeId = generateRandomNodeId(random);
         final List<NodeId> signingNodes = new ArrayList<>();
         for (int i = 0; i < random.nextInt(1, 10); i++) {
@@ -272,7 +270,7 @@ class SavedStateMetadataTests {
         }
         final long signingWeightSum = random.nextLong();
         final long totalWeight = random.nextLong();
-        final Hash epochHash = random.nextBoolean() ? randomHash(random) : null;
+        final Hash epochHash = random.nextBoolean() ? random.randomHash() : null;
         final String epochHashString = epochHash == null ? "null" : epochHash.toMnemonic();
 
         final SavedStateMetadata metadata = new SavedStateMetadata(
@@ -341,18 +339,18 @@ class SavedStateMetadataTests {
      * @param invalidFields the fields expected to be invalid in the mal-formatted file
      */
     private void testMalformedFile(
-            final Random random, final FileUpdater fileUpdater, final Set<SavedStateMetadataField> invalidFields)
+            final Randotron random, final FileUpdater fileUpdater, final Set<SavedStateMetadataField> invalidFields)
             throws IOException {
 
         final long round = random.nextLong();
-        final Hash hash = randomHash(random);
+        final Hash hash = random.randomHash();
         final long numberOfConsensusEvents = random.nextLong();
-        final Instant timestamp = RandomUtils.randomInstant(random);
-        final Hash runningEventHash = randomHash(random);
-        final Hash legacyRunningEventHash = randomHash(random);
+        final Instant timestamp = random.randomInstant();
+        final Hash runningEventHash = random.randomHash();
+        final Hash legacyRunningEventHash = random.randomHash();
         final long minimumGenerationNonAncient = random.nextLong();
         final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
-        final Instant wallClockTime = RandomUtils.randomInstant(random);
+        final Instant wallClockTime = random.randomInstant();
         final NodeId nodeId = generateRandomNodeId(random);
         final List<NodeId> signingNodes = new ArrayList<>();
         for (int i = 0; i < random.nextInt(1, 10); i++) {
@@ -360,7 +358,7 @@ class SavedStateMetadataTests {
         }
         final long signingWeightSum = random.nextLong();
         final long totalWeight = random.nextLong();
-        final Hash epochHash = randomHash(random);
+        final Hash epochHash = random.randomHash();
 
         final SavedStateMetadata metadata = new SavedStateMetadata(
                 round,
@@ -460,7 +458,7 @@ class SavedStateMetadataTests {
     @Test
     @DisplayName("Empty File Test")
     void emptyFileTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final Set<SavedStateMetadataField> allFields =
                 Arrays.stream(SavedStateMetadataField.values()).collect(Collectors.toSet());
@@ -471,7 +469,7 @@ class SavedStateMetadataTests {
     @Test
     @DisplayName("Non-Existent File Test")
     void nonExistentFileFileTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final Set<SavedStateMetadataField> allFields =
                 Arrays.stream(SavedStateMetadataField.values()).collect(Collectors.toSet());
@@ -482,7 +480,7 @@ class SavedStateMetadataTests {
     @Test
     @DisplayName("Invalid Field Test")
     void invalidFieldTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         testMalformedFile(
                 random,
                 (s, m) -> s.replace(SavedStateMetadataField.ROUND.toString(), "NOT_A_REAL_FIELD"),
@@ -492,7 +490,7 @@ class SavedStateMetadataTests {
     @Test
     @DisplayName("Invalid Long Test")
     void invalidLongTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         testMalformedFile(
                 random,
                 (s, m) -> s.replace(m.nodeId().toString(), "NOT_A_REAL_LONG"),
@@ -502,7 +500,7 @@ class SavedStateMetadataTests {
     @Test
     @DisplayName("Invalid Instant Test")
     void invalidInstantTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         testMalformedFile(
                 random,
                 (s, m) -> s.replace(m.wallClockTime().toString(), "NOT_A_REAL_TIME"),
@@ -512,7 +510,7 @@ class SavedStateMetadataTests {
     @Test
     @DisplayName("Invalid Long List Test")
     void invalidLongListTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         testMalformedFile(
                 random,
                 (s, m) -> {
@@ -554,7 +552,7 @@ class SavedStateMetadataTests {
     @Test
     @DisplayName("Line Missing Colon Test")
     void lineMissingColonTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         testMalformedFile(
                 random,
                 (s, m) -> s.replace(
@@ -566,7 +564,7 @@ class SavedStateMetadataTests {
     @Test
     @DisplayName("Invalid Hash Test")
     void invalidHashTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         testMalformedFile(
                 random,
                 (s, m) -> s.replace(m.runningEventHash().toString(), "NOT_A_REAL_HASH"),
@@ -576,7 +574,7 @@ class SavedStateMetadataTests {
     @Test
     @DisplayName("Extra Whitespace Test")
     void extraWhitespaceTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         testMalformedFile(
                 random,
                 (s, m) -> {
@@ -602,7 +600,7 @@ class SavedStateMetadataTests {
     @Test
     @DisplayName("Missing Data Test")
     void missingDataTestTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         testMalformedFile(random, (s, m) -> s.replace(ROUND.name(), "notARealKey"), Set.of(ROUND));
         testMalformedFile(random, (s, m) -> s.replace("\n" + HASH.name() + ":", "\nnotARealKey:"), Set.of(HASH));
         testMalformedFile(

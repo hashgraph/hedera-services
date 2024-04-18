@@ -19,6 +19,7 @@ package com.swirlds.common.test.fixtures.benchmark;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import java.time.Duration;
 import java.time.Instant;
@@ -28,7 +29,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class Benchmark<S extends MerkleNode, M extends BenchmarkMetadata> {
 
-    private static final Random random = new Random();
+    private static final Randotron random = Randotron.create();
     private static final String copyStatisticsName = "copyState";
     private static final String hashStatisticsName = "hashState";
     private static final String deleteStatisticsName = "deleteState";

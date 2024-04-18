@@ -18,8 +18,6 @@ package com.swirlds.platform.recovery;
 
 import static com.swirlds.base.units.UnitConstants.SECONDS_TO_NANOSECONDS;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
@@ -31,6 +29,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -63,7 +62,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.mockito.Mockito;
 
@@ -82,7 +80,7 @@ public final class RecoveryTestUtils {
      * @return an event
      */
     public static EventImpl generateRandomEvent(
-            final Random random, final long round, final boolean lastInRound, final Instant now) {
+            final Randotron random, final long round, final boolean lastInRound, final Instant now) {
 
         final ConsensusTransactionImpl[] transactions = new ConsensusTransactionImpl[random.nextInt(10)];
         for (int transactionIndex = 0; transactionIndex < transactions.length; transactionIndex++) {
@@ -95,9 +93,9 @@ public final class RecoveryTestUtils {
         final NodeId otherId = new NodeId(random.nextLong(Long.MAX_VALUE));
 
         final EventDescriptor selfDescriptor = new EventDescriptor(
-                randomHash(random), selfId, random.nextLong(), EventConstants.BIRTH_ROUND_UNDEFINED);
+                random.randomHash(), selfId, random.nextLong(), EventConstants.BIRTH_ROUND_UNDEFINED);
         final EventDescriptor otherDescriptor = new EventDescriptor(
-                randomHash(random), otherId, random.nextLong(), EventConstants.BIRTH_ROUND_UNDEFINED);
+                random.randomHash(), otherId, random.nextLong(), EventConstants.BIRTH_ROUND_UNDEFINED);
 
         final BaseEventHashedData baseEventHashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
@@ -109,7 +107,7 @@ public final class RecoveryTestUtils {
                 transactions);
 
         final BaseEventUnhashedData baseEventUnhashedData =
-                new BaseEventUnhashedData(randomSignature(random).getSignatureBytes());
+                new BaseEventUnhashedData(random.randomSignature().getSignatureBytes());
 
         final ConsensusData consensusData = new ConsensusData();
         consensusData.setConsensusTimestamp(now);
@@ -134,7 +132,7 @@ public final class RecoveryTestUtils {
      * @return a list of events
      */
     public static List<EventImpl> generateRandomEvents(
-            final Random random,
+            final Randotron random,
             final long firstRound,
             final Duration timeToSimulate,
             final int roundsPerSecond,
@@ -181,7 +179,7 @@ public final class RecoveryTestUtils {
      * @param events         a list of events to be written
      */
     public static void writeRandomEventStream(
-            final Random random, final Path destination, final int secondsPerFile, final List<EventImpl> events)
+            final Randotron random, final Path destination, final int secondsPerFile, final List<EventImpl> events)
             throws NoSuchAlgorithmException, IOException {
 
         final Configuration configuration = new TestConfigBuilder()
@@ -195,7 +193,7 @@ public final class RecoveryTestUtils {
                 .build();
 
         final DefaultConsensusEventStream eventStreamManager = new DefaultConsensusEventStream(
-                platformContext, new NodeId(0L), x -> randomSignature(random), "test", x -> false);
+                platformContext, new NodeId(0L), x -> random.randomSignature(), "test", x -> false);
 
         // The event stream writer has flaky asynchronous behavior,
         // so we need to be extra careful when waiting for it to finish.

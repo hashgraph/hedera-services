@@ -22,14 +22,13 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.io.IOException;
-import java.util.Random;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -62,7 +61,7 @@ public class SerializationTests {
     }
 
     static Stream<Arguments> selfSerializableProvider() {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         return Stream.of(arguments(new TestingEventBuilder(random).build().getHashedData()));
     }
 }

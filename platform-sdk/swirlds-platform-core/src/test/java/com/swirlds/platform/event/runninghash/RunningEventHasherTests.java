@@ -16,9 +16,6 @@
 
 package com.swirlds.platform.event.runninghash;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.Mockito.mock;
@@ -27,6 +24,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.RunningEventHashOverride;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
@@ -40,7 +38,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -70,8 +67,8 @@ class RunningEventHasherTests {
 
     @Test
     void sequenceOfRegularRoundsTest() throws InterruptedException {
-        final Random random = getRandomPrintSeed();
-        final FakeTime time = new FakeTime(randomInstant(random), Duration.ZERO);
+        final Randotron random = Randotron.create();
+        final FakeTime time = new FakeTime(random.randomInstant(), Duration.ZERO);
         final int eventCount = random.nextInt(1, 10);
 
         final List<ConsensusRound> rounds = new ArrayList<>();
@@ -91,7 +88,7 @@ class RunningEventHasherTests {
             rounds.add(round);
         }
 
-        final Hash initialHash = randomHash(random);
+        final Hash initialHash = random.randomHash();
 
         final RunningEventHasher hasherA = new DefaultRunningEventHasher();
         final RunningEventHasher hasherB = new DefaultRunningEventHasher();
@@ -115,8 +112,8 @@ class RunningEventHasherTests {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void differentInitialHashTest(final boolean emptyRound) throws InterruptedException {
-        final Random random = getRandomPrintSeed();
-        final FakeTime time = new FakeTime(randomInstant(random), Duration.ZERO);
+        final Randotron random = Randotron.create();
+        final FakeTime time = new FakeTime(random.randomInstant(), Duration.ZERO);
         final int eventCount = emptyRound ? 0 : random.nextInt(1, 10);
 
         final long roundNumber = random.nextLong(1, 100);
@@ -132,8 +129,8 @@ class RunningEventHasherTests {
         }
         final ConsensusRound round = buildRound(roundNumber, events);
 
-        final Hash initialHashA = randomHash(random);
-        final Hash initialHashB = randomHash(random);
+        final Hash initialHashA = random.randomHash();
+        final Hash initialHashB = random.randomHash();
 
         final RunningEventHasher hasherA = new DefaultRunningEventHasher();
         final RunningEventHasher hasherB = new DefaultRunningEventHasher();
@@ -155,8 +152,8 @@ class RunningEventHasherTests {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void differentRoundNumberTest(final boolean emptyRound) throws InterruptedException {
-        final Random random = getRandomPrintSeed();
-        final FakeTime time = new FakeTime(randomInstant(random), Duration.ZERO);
+        final Randotron random = Randotron.create();
+        final FakeTime time = new FakeTime(random.randomInstant(), Duration.ZERO);
         final int eventCount = emptyRound ? 0 : random.nextInt(1, 10);
 
         final long roundNumberA = random.nextLong(2, 100);
@@ -175,7 +172,7 @@ class RunningEventHasherTests {
         final ConsensusRound roundA = buildRound(roundNumberA, events);
         final ConsensusRound roundB = buildRound(roundNumberB, events);
 
-        final Hash initialHash = randomHash(random);
+        final Hash initialHash = random.randomHash();
 
         final RunningEventHasher hasherA = new DefaultRunningEventHasher();
         final RunningEventHasher hasherB = new DefaultRunningEventHasher();
@@ -194,8 +191,8 @@ class RunningEventHasherTests {
 
     @Test
     void differentEventOrderTest() throws InterruptedException {
-        final Random random = getRandomPrintSeed();
-        final FakeTime time = new FakeTime(randomInstant(random), Duration.ZERO);
+        final Randotron random = Randotron.create();
+        final FakeTime time = new FakeTime(random.randomInstant(), Duration.ZERO);
         final int eventCount = random.nextInt(2, 10);
 
         final long roundNumber = random.nextLong(1, 100);
@@ -217,7 +214,7 @@ class RunningEventHasherTests {
         final ConsensusRound roundA = buildRound(roundNumber, events);
         final ConsensusRound roundB = buildRound(roundNumber, eventsB);
 
-        final Hash initialHash = randomHash(random);
+        final Hash initialHash = random.randomHash();
 
         final RunningEventHasher hasherA = new DefaultRunningEventHasher();
         final RunningEventHasher hasherB = new DefaultRunningEventHasher();
@@ -236,8 +233,8 @@ class RunningEventHasherTests {
 
     @Test
     void differentEventSeconds() throws InterruptedException {
-        final Random random = getRandomPrintSeed();
-        final FakeTime time = new FakeTime(randomInstant(random), Duration.ZERO);
+        final Randotron random = Randotron.create();
+        final FakeTime time = new FakeTime(random.randomInstant(), Duration.ZERO);
         final int eventCount = random.nextInt(1, 10);
 
         final long roundNumber = random.nextLong(1, 100);
@@ -264,7 +261,7 @@ class RunningEventHasherTests {
         final ConsensusRound roundA = buildRound(roundNumber, events);
         final ConsensusRound roundB = buildRound(roundNumber, eventsB);
 
-        final Hash initialHash = randomHash(random);
+        final Hash initialHash = random.randomHash();
 
         final RunningEventHasher hasherA = new DefaultRunningEventHasher();
         final RunningEventHasher hasherB = new DefaultRunningEventHasher();
@@ -283,8 +280,8 @@ class RunningEventHasherTests {
 
     @Test
     void differentEventNanoseconds() throws InterruptedException {
-        final Random random = getRandomPrintSeed();
-        final FakeTime time = new FakeTime(randomInstant(random), Duration.ZERO);
+        final Randotron random = Randotron.create();
+        final FakeTime time = new FakeTime(random.randomInstant(), Duration.ZERO);
         final int eventCount = random.nextInt(1, 10);
 
         final long roundNumber = random.nextLong(1, 100);
@@ -311,7 +308,7 @@ class RunningEventHasherTests {
         final ConsensusRound roundA = buildRound(roundNumber, events);
         final ConsensusRound roundB = buildRound(roundNumber, eventsB);
 
-        final Hash initialHash = randomHash(random);
+        final Hash initialHash = random.randomHash();
 
         final RunningEventHasher hasherA = new DefaultRunningEventHasher();
         final RunningEventHasher hasherB = new DefaultRunningEventHasher();
@@ -330,8 +327,8 @@ class RunningEventHasherTests {
 
     @Test
     void differentEventHashTest() throws InterruptedException {
-        final Random random = getRandomPrintSeed();
-        final FakeTime time = new FakeTime(randomInstant(random), Duration.ZERO);
+        final Randotron random = Randotron.create();
+        final FakeTime time = new FakeTime(random.randomInstant(), Duration.ZERO);
         final int eventCount = random.nextInt(1, 10);
 
         final long roundNumber = random.nextLong(1, 100);
@@ -356,7 +353,7 @@ class RunningEventHasherTests {
         final ConsensusRound roundA = buildRound(roundNumber, events);
         final ConsensusRound roundB = buildRound(roundNumber, eventsB);
 
-        final Hash initialHash = randomHash(random);
+        final Hash initialHash = random.randomHash();
 
         final RunningEventHasher hasherA = new DefaultRunningEventHasher();
         final RunningEventHasher hasherB = new DefaultRunningEventHasher();
@@ -375,8 +372,8 @@ class RunningEventHasherTests {
 
     @Test
     void missingEventTest() throws InterruptedException {
-        final Random random = getRandomPrintSeed();
-        final FakeTime time = new FakeTime(randomInstant(random), Duration.ZERO);
+        final Randotron random = Randotron.create();
+        final FakeTime time = new FakeTime(random.randomInstant(), Duration.ZERO);
         final int eventCount = random.nextInt(1, 10);
 
         final long roundNumber = random.nextLong(1, 100);
@@ -397,7 +394,7 @@ class RunningEventHasherTests {
         final ConsensusRound roundA = buildRound(roundNumber, events);
         final ConsensusRound roundB = buildRound(roundNumber, eventsB);
 
-        final Hash initialHash = randomHash(random);
+        final Hash initialHash = random.randomHash();
 
         final RunningEventHasher hasherA = new DefaultRunningEventHasher();
         final RunningEventHasher hasherB = new DefaultRunningEventHasher();
@@ -416,8 +413,8 @@ class RunningEventHasherTests {
 
     @Test
     void extraEventTest() throws InterruptedException {
-        final Random random = getRandomPrintSeed();
-        final FakeTime time = new FakeTime(randomInstant(random), Duration.ZERO);
+        final Randotron random = Randotron.create();
+        final FakeTime time = new FakeTime(random.randomInstant(), Duration.ZERO);
         final int eventCount = random.nextInt(1, 10);
 
         final long roundNumber = random.nextLong(1, 100);
@@ -441,7 +438,7 @@ class RunningEventHasherTests {
         final ConsensusRound roundA = buildRound(roundNumber, events);
         final ConsensusRound roundB = buildRound(roundNumber, eventsB);
 
-        final Hash initialHash = randomHash(random);
+        final Hash initialHash = random.randomHash();
 
         final RunningEventHasher hasherA = new DefaultRunningEventHasher();
         final RunningEventHasher hasherB = new DefaultRunningEventHasher();

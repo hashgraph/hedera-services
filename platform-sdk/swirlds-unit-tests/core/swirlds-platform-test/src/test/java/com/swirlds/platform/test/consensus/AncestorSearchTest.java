@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.consensus.AncestorSearch;
 import com.swirlds.platform.consensus.EventVisitedMark;
 import com.swirlds.platform.internal.EventImpl;
@@ -42,7 +42,7 @@ class AncestorSearchTest {
 
     final EventVisitedMark mark = new EventVisitedMark();
     final AncestorSearch search = new AncestorSearch(mark);
-    final List<EventImpl> events = SimpleGraphs.graph9e3n(RandomUtils.getRandomPrintSeed());
+    final List<EventImpl> events = SimpleGraphs.graph9e3n(Randotron.create());
     final EventImpl root = events.get(8);
 
     @RepeatedTest(3)

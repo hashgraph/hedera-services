@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state.manager;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.state.manager.SignatureVerificationTestUtils.buildFakeSignature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -85,7 +84,7 @@ class AddIncompleteStateTest extends AbstractStateSignatureCollectorTest {
                 .build();
 
         // Simulate a restart (i.e. loading a state from disk)
-        final Hash signedHash = randomHash(random);
+        final Hash signedHash = random.randomHash();
         final Map<NodeId, Signature> signatures = new HashMap<>();
         for (final Address address : addressBook) {
             signatures.put(address.getNodeId(), buildFakeSignature(address.getSigPublicKey(), signedHash));
@@ -99,7 +98,7 @@ class AddIncompleteStateTest extends AbstractStateSignatureCollectorTest {
                 .build();
 
         // This is intentionally a different hash than the signed hash!
-        final Hash stateHash = randomHash();
+        final Hash stateHash = random.randomHash();
         stateFromDisk.getState().setHash(stateHash);
 
         // The manager should store this state but not assigned it to the last complete signed state

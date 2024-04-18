@@ -16,7 +16,6 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
 import static com.swirlds.merkledb.files.DataFileCompactor.compactionPlan;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
 
+import com.swirlds.common.test.fixtures.Randotron;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -74,7 +74,10 @@ class DataFileCompactorTest {
 
     @Test
     void testEmptyCompactionPlan() {
-        assertEquals(0, compactionPlan(emptyList(), nextInt(), nextInt()).size());
+        final Randotron random = Randotron.create();
+        assertEquals(
+                0,
+                compactionPlan(emptyList(), random.nextInt(), random.nextInt()).size());
     }
 
     @Test

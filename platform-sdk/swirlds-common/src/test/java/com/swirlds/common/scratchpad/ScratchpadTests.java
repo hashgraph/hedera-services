@@ -19,8 +19,6 @@ package com.swirlds.common.scratchpad;
 import static com.swirlds.common.scratchpad.TestScratchpadType.BAR;
 import static com.swirlds.common.scratchpad.TestScratchpadType.BAZ;
 import static com.swirlds.common.scratchpad.TestScratchpadType.FOO;
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -35,6 +33,7 @@ import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -42,7 +41,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Random;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -89,7 +87,7 @@ class ScratchpadTests {
     @Test
     @DisplayName("Basic Behavior Test")
     void basicBehaviorTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final Scratchpad<TestScratchpadType> scratchpad =
                 Scratchpad.create(platformContext, selfId, TestScratchpadType.class, "test");
@@ -108,7 +106,7 @@ class ScratchpadTests {
 
         // Write a value for the first time
 
-        final Hash hash1 = randomHash(random);
+        final Hash hash1 = random.randomHash();
 
         assertNull(scratchpad.set(FOO, hash1));
         assertEquals(1, scratchpadDirectory.toFile().listFiles().length);
@@ -132,7 +130,7 @@ class ScratchpadTests {
 
         // Overwrite an existing value
 
-        final Hash hash2 = randomHash(random);
+        final Hash hash2 = random.randomHash();
         assertEquals(hash1, scratchpad.set(FOO, hash2));
         assertEquals(1, scratchpadDirectory.toFile().listFiles().length);
         assertEquals(hash2, scratchpad.get(FOO));
@@ -163,7 +161,7 @@ class ScratchpadTests {
 
         // Write after a clear
 
-        final Hash hash3 = randomHash(random);
+        final Hash hash3 = random.randomHash();
         assertNull(scratchpad.set(FOO, hash3));
         assertEquals(1, scratchpadDirectory.toFile().listFiles().length);
         assertEquals(hash3, scratchpad.get(FOO));
@@ -202,7 +200,7 @@ class ScratchpadTests {
     @Test
     @DisplayName("Multiple Files Test")
     void multipleFilesTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final Scratchpad<TestScratchpadType> scratchpad =
                 Scratchpad.create(platformContext, selfId, TestScratchpadType.class, "test");
@@ -217,7 +215,7 @@ class ScratchpadTests {
         // Values are null by default
         assertNull(scratchpad.get(FOO));
 
-        final Hash hash1 = randomHash(random);
+        final Hash hash1 = random.randomHash();
         scratchpad.set(FOO, hash1);
         assertEquals(hash1, scratchpad.get(FOO));
 
@@ -230,7 +228,7 @@ class ScratchpadTests {
         final Path copyPath = testDirectory.resolve(scratchpadFile.getFileName());
         Files.copy(scratchpadFile, copyPath);
 
-        final Hash hash2 = randomHash(random);
+        final Hash hash2 = random.randomHash();
         scratchpad.set(FOO, hash2);
 
         // After a write, there should always be exactly one scratchpad file
@@ -251,7 +249,7 @@ class ScratchpadTests {
     @Test
     @DisplayName("Atomic Operation Test")
     void atomicOperationTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final Scratchpad<TestScratchpadType> scratchpad =
                 Scratchpad.create(platformContext, selfId, TestScratchpadType.class, "test");
@@ -270,7 +268,7 @@ class ScratchpadTests {
 
         // Write a value for the first time
 
-        final Hash hash1 = randomHash(random);
+        final Hash hash1 = random.randomHash();
         final SerializableLong long1 = new SerializableLong(random.nextLong());
         final NodeId nodeId1 = new NodeId(random.nextInt(0, 1000));
 
@@ -288,7 +286,7 @@ class ScratchpadTests {
 
         // Overwrite an existing value
 
-        final Hash hash2 = randomHash(random);
+        final Hash hash2 = random.randomHash();
         final SerializableLong long2 = new SerializableLong(random.nextLong());
         final NodeId nodeId2 = new NodeId(random.nextInt(1001, 2000));
 
@@ -321,7 +319,7 @@ class ScratchpadTests {
 
         // Write after a clear
 
-        final Hash hash3 = randomHash(random);
+        final Hash hash3 = random.randomHash();
         final SerializableLong long3 = new SerializableLong(random.nextLong());
         final NodeId nodeId3 = new NodeId(random.nextInt(2001, 3000));
 
@@ -357,7 +355,7 @@ class ScratchpadTests {
 
     @Test
     void optionalAtomicOperationTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final Scratchpad<TestScratchpadType> scratchpad =
                 Scratchpad.create(platformContext, selfId, TestScratchpadType.class, "test");
@@ -376,7 +374,7 @@ class ScratchpadTests {
 
         // Write a value for the first time
 
-        final Hash hash1 = randomHash(random);
+        final Hash hash1 = random.randomHash();
         final SerializableLong long1 = new SerializableLong(random.nextLong());
         final NodeId nodeId1 = new NodeId(random.nextInt(0, 1000));
 
@@ -399,7 +397,7 @@ class ScratchpadTests {
 
         // Overwrite an existing value
 
-        final Hash hash2 = randomHash(random);
+        final Hash hash2 = random.randomHash();
         final SerializableLong long2 = new SerializableLong(random.nextLong());
         final NodeId nodeId2 = new NodeId(random.nextInt(1001, 2000));
 
@@ -442,7 +440,7 @@ class ScratchpadTests {
 
         // Write after a clear
 
-        final Hash hash3 = randomHash(random);
+        final Hash hash3 = random.randomHash();
         final SerializableLong long3 = new SerializableLong(random.nextLong());
         final NodeId nodeId3 = new NodeId(random.nextInt(2001, 3000));
 

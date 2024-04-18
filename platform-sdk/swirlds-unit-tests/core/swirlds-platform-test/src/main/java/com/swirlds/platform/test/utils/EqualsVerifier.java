@@ -38,11 +38,10 @@ public final class EqualsVerifier {
 
     private static final Random random = new Random();
 
-    public static <R> List<R> generateObjects(final Function<Random, R> supplier, final long[] seeds) {
+    public static <R> List<R> generateObjects(final Function<Long, R> supplier, final long[] seeds) {
         final ArrayList<R> objects = new ArrayList<>();
         for (final long seed : seeds) {
-            random.setSeed(seed);
-            objects.add(supplier.apply(random));
+            objects.add(supplier.apply(seed));
         }
         return objects;
     }
@@ -116,12 +115,12 @@ public final class EqualsVerifier {
      * Verifies if equals()/hashCode() implemented by type R fulfill the contracts
      *
      * @param supplier
-     * 		predefined supplier of random instances of type R
+     * 		predefined supplier of a random seed
      * @param <R>
      * 		arbitrary type
      * @return true if all checks pass
      */
-    public static <R> boolean verify(final Function<Random, R> supplier) {
+    public static <R> boolean verify(final Function<Long, R> supplier) {
         final List<R> list = generateObjects(supplier, new long[] {1, 1, 2}); // NOSONAR
         return verifyEqualsHashCode(list.get(0), list.get(1), list.get(2)); // NOSONAR
     }

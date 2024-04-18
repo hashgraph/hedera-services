@@ -16,27 +16,27 @@
 
 package com.swirlds.platform.test.sync;
 
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.fixtures.event.EventImplTestUtils;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Random;
 
 /**
  * A simple, deterministic factory for Event instances
  */
 public class EventFactory {
-    public static ShadowEvent makeShadow(@NonNull final Random random) {
+    public static ShadowEvent makeShadow(@NonNull final Randotron random) {
         return makeShadow(random, null);
     }
 
-    public static ShadowEvent makeShadow(@NonNull final Random random, final ShadowEvent selfParent) {
+    public static ShadowEvent makeShadow(@NonNull final Randotron random, final ShadowEvent selfParent) {
         return makeShadow(random, selfParent, null);
     }
 
     public static ShadowEvent makeShadow(
-            @NonNull final Random random, final ShadowEvent selfParent, final ShadowEvent otherParent) {
+            @NonNull final Randotron random, final ShadowEvent selfParent, final ShadowEvent otherParent) {
 
         final EventImpl eventImpl = EventImplTestUtils.createEventImpl(
                 new TestingEventBuilder(random),

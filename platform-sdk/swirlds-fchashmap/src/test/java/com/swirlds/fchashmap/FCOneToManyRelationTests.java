@@ -16,13 +16,13 @@
 
 package com.swirlds.fchashmap;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.utility.Pair;
+import com.swirlds.common.test.fixtures.Randotron;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -235,7 +235,7 @@ class FCOneToManyRelationTests {
     @DisplayName("Randomized Test")
     void randomizedTest() {
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final List<Pair<Map<Integer, Set<Integer>>, FCOneToManyRelation<Integer, Integer>>> copies = createNewPair();
 
@@ -326,7 +326,7 @@ class FCOneToManyRelationTests {
     @Test
     @DisplayName("Garbage Collection Test")
     void garbageCollectionTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int numberOfCopies = 10_000;
         final int modificationsPerCopy = 1_000;
@@ -356,7 +356,7 @@ class FCOneToManyRelationTests {
     @Test
     @DisplayName("Remove Everything Test")
     void removeEverythingTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final List<Pair<Map<Integer, Set<Integer>>, FCOneToManyRelation<Integer, Integer>>> copies = createNewPair();
 

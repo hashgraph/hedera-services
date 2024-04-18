@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.test.event.tipset;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -36,6 +34,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.consensus.EventWindow;
@@ -99,7 +98,7 @@ class TipsetEventCreatorTests {
      */
     @NonNull
     private EventCreator buildEventCreator(
-            @NonNull final Random random,
+            @NonNull final Randotron random,
             @NonNull final Time time,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId nodeId,
@@ -109,7 +108,7 @@ class TipsetEventCreatorTests {
                 TestPlatformContextBuilder.create().withTime(time).build();
 
         final Signer signer = mock(Signer.class);
-        when(signer.sign(any())).thenAnswer(invocation -> randomSignature(random));
+        when(signer.sign(any())).thenAnswer(invocation -> random.randomSignature());
 
         final SoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
 
@@ -122,7 +121,7 @@ class TipsetEventCreatorTests {
      */
     @NonNull
     private Map<NodeId, SimulatedNode> buildSimulatedNodes(
-            @NonNull final Random random,
+            @NonNull final Randotron random,
             @NonNull final Time time,
             @NonNull final AddressBook addressBook,
             @NonNull final TransactionSupplier transactionSupplier,
@@ -292,7 +291,7 @@ class TipsetEventCreatorTests {
     @CsvSource({"false, false", "false, true", "true, false", "true, true"})
     @DisplayName("Round Robin Test")
     void roundRobinTest(final boolean advancingClock, final boolean useBirthRoundForAncient) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int networkSize = 10;
 
@@ -346,7 +345,7 @@ class TipsetEventCreatorTests {
     @CsvSource({"false, false", "false, true", "true, false", "true, true"})
     @DisplayName("Random Order Test")
     void randomOrderTest(final boolean advancingClock, final boolean useBirthRoundForAncient) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int networkSize = 10;
 
@@ -414,7 +413,7 @@ class TipsetEventCreatorTests {
     @ValueSource(booleans = {false, true})
     @DisplayName("Clear Test")
     void clearTest(final boolean advancingClock) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int networkSize = 10;
 
@@ -489,7 +488,7 @@ class TipsetEventCreatorTests {
     @CsvSource({"false, false", "false, true", "true, false", "true, true"})
     @DisplayName("Create Many Events In A Row Test")
     void createManyEventsInARowTest(final boolean advancingClock, final boolean useBirthRoundForAncient) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int networkSize = 10;
 
@@ -557,7 +556,7 @@ class TipsetEventCreatorTests {
     @CsvSource({"false, false", "false, true", "true, false", "true, true"})
     @DisplayName("Zero Weight Node Test")
     void zeroWeightNodeTest(final boolean advancingClock, final boolean useBirthRoundForAncient) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int networkSize = 10;
 
@@ -654,7 +653,7 @@ class TipsetEventCreatorTests {
     @CsvSource({"false, false", "false, true", "true, false", "true, true"})
     @DisplayName("Zero Weight Slow Node Test")
     void zeroWeightSlowNodeTest(final boolean advancingClock, final boolean useBirthRoundForAncient) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int networkSize = 10;
 
@@ -762,7 +761,7 @@ class TipsetEventCreatorTests {
     @CsvSource({"false, false", "false, true", "true, false", "true, true"})
     @DisplayName("Size One Network Test")
     void sizeOneNetworkTest(final boolean advancingClock, final boolean useBirthRoundForAncient) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int networkSize = 1;
 
@@ -809,7 +808,7 @@ class TipsetEventCreatorTests {
 
     @NonNull
     private GossipEvent createTestEvent(
-            @NonNull final Random random,
+            @NonNull final Randotron random,
             @NonNull final NodeId creator,
             long selfParentGeneration,
             @Nullable final NodeId otherParentId,
@@ -841,7 +840,7 @@ class TipsetEventCreatorTests {
     @Test
     @DisplayName("Frozen Event Creation Bug")
     void frozenEventCreationBug() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int networkSize = 4;
 
@@ -918,7 +917,7 @@ class TipsetEventCreatorTests {
     @Test
     @DisplayName("Not Registering Events From NodeIds Not In AddressBook")
     void notRegisteringEventsFromNodesNotInAddressBook() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int networkSize = 4;
 
@@ -987,7 +986,7 @@ class TipsetEventCreatorTests {
     @ValueSource(booleans = {false, true})
     @DisplayName("No Stale Events At Creation Time Test")
     void noStaleEventsAtCreationTimeTest(final boolean useBirthRoundForAncient) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int networkSize = 4;
 
@@ -1024,7 +1023,7 @@ class TipsetEventCreatorTests {
     @CsvSource({"true, true", "true, false", "false, true", "false, false"})
     @DisplayName("Check setting of birthRound on new events.")
     void checkSettingEventBirthRound(final boolean advancingClock, final boolean useBirthRoundForAncient) {
-        final Random random = getRandomPrintSeed(0);
+        final Randotron random = Randotron.create(0);
 
         final int networkSize = 10;
 

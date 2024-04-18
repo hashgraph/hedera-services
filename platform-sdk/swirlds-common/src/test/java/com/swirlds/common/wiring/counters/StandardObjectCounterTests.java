@@ -17,15 +17,14 @@
 package com.swirlds.common.wiring.counters;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import java.time.Duration;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 
@@ -33,7 +32,7 @@ class StandardObjectCounterTests {
 
     @Test
     void basicOperationTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final ObjectCounter counter = new StandardObjectCounter(Duration.ofMillis(1));
 

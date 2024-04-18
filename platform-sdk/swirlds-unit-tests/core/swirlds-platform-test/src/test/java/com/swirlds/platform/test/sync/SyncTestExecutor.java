@@ -20,7 +20,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
@@ -40,6 +40,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -72,16 +73,17 @@ public class SyncTestExecutor {
     private Predicate<IndexedEvent> callerAddToGraphTest;
     private Predicate<IndexedEvent> listenerAddToGraphTest;
     private final AncientMode ancientMode;
+    private final Random random;
 
     /**
      * A randomly generated address book from the number of nodes in the parameters of the test.
      */
     private AddressBook addressBook;
 
-    public SyncTestExecutor(final SyncTestParams params) {
+    public SyncTestExecutor(final SyncTestParams params, @NonNull final Randotron random) {
         this.params = params;
         this.ancientMode = params.getAncientMode();
-        this.addressBook = new RandomAddressBookGenerator()
+        this.addressBook = new RandomAddressBookGenerator(random)
                 .setSize(params.getNumNetworkNodes())
                 .build();
 
@@ -125,6 +127,7 @@ public class SyncTestExecutor {
         callerAddToGraphTest = (indexedEvent -> true);
         listenerAddToGraphTest = (indexedEvent -> true);
         connectionFactory = ConnectionFactory::createLocalConnections;
+        this.random = Objects.requireNonNull(random);
     }
 
     /**
@@ -160,14 +163,6 @@ public class SyncTestExecutor {
      * are ready to begin graph generation.
      */
     private void initialize() throws IOException {
-        final Random random;
-        if (params.getCustomSeed() == null) {
-            random = RandomUtils.getRandomPrintSeed();
-        } else {
-            System.out.println("Using custom seed: " + params.getCustomSeed());
-            random = new Random(params.getCustomSeed());
-        }
-
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(new TestConfigBuilder()
                         .withValue(

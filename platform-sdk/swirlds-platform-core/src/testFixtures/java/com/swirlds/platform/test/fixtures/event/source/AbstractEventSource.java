@@ -21,6 +21,7 @@ import static com.swirlds.platform.test.fixtures.event.EventUtils.integerPowerDi
 import static com.swirlds.platform.test.fixtures.event.EventUtils.staticDynamicValue;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.TransactionGenerator;
 import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
@@ -213,7 +214,7 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
      */
     @Override
     public IndexedEvent generateEvent(
-            @NonNull final Random random,
+            @NonNull final Randotron random,
             final long eventIndex,
             @Nullable final EventSource<?> otherParent,
             @NonNull final Instant timestamp,

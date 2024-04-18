@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.test.event.tipset;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.event.creation.tipset.Tipset;
 import com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight;
 import com.swirlds.platform.system.address.Address;
@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -46,7 +45,7 @@ class TipsetTests {
     @Test
     @DisplayName("Advancement Test")
     void advancementTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int nodeCount = 100;
 
@@ -73,7 +72,7 @@ class TipsetTests {
     @Test
     @DisplayName("Merge Test")
     void mergeTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int nodeCount = 100;
 
@@ -103,7 +102,7 @@ class TipsetTests {
     @Test
     @DisplayName("getAdvancementCount() Test")
     void getAdvancementCountTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int nodeCount = 100;
 
@@ -160,7 +159,7 @@ class TipsetTests {
     @Test
     @DisplayName("Weighted getAdvancementCount() Test")
     void weightedGetAdvancementCountTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final int nodeCount = 100;
 
         final AddressBook addressBook =

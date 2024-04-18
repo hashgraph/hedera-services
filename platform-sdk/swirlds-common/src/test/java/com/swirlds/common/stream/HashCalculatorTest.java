@@ -28,7 +28,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.stream.internal.LinkedObjectStream;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.stream.ObjectForTestStream;
 import org.junit.jupiter.api.Test;
 
@@ -38,9 +38,11 @@ class HashCalculatorTest {
 
     @Test
     void nextStreamTest() throws InterruptedException {
+        final Randotron random = Randotron.create();
+
         LinkedObjectStream<ObjectForTestStream> queueThread = mock(QueueThreadObjectStream.class);
         HashCalculatorForStream<ObjectForTestStream> hashCalculator = new HashCalculatorForStream<>(queueThread);
-        Hash hash = RandomUtils.randomHash();
+        Hash hash = random.randomHash();
         hashCalculator.setRunningHash(hash);
         verify(queueThread).setRunningHash(hash);
 

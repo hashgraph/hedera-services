@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import com.swirlds.common.utility.Mnemonics;
@@ -155,7 +155,9 @@ public class HashTests {
     @Test
     @DisplayName("Mnemonic Test")
     void mnemonicTest() {
-        final Hash hash = RandomUtils.randomHash();
+        final Randotron random = Randotron.create();
+
+        final Hash hash = random.randomHash();
         final String mnemonic = hash.toMnemonic();
         assertEquals(mnemonic, hash.toMnemonic());
         final String[] words = mnemonic.split("-");

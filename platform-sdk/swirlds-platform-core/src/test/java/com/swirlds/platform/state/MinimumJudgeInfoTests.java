@@ -16,19 +16,18 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.state.MinimumJudgeInfo.MAX_MINIMUM_JUDGE_INFO_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.test.fixtures.Randotron;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import org.junit.jupiter.api.Test;
 
 class MinimumJudgeInfoTests {
@@ -51,7 +50,7 @@ class MinimumJudgeInfoTests {
 
     @Test
     void serializationTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final int size = random.nextInt(1, MAX_MINIMUM_JUDGE_INFO_SIZE);
 
         final List<MinimumJudgeInfo> original = new ArrayList<>(size);
@@ -73,7 +72,7 @@ class MinimumJudgeInfoTests {
 
     @Test
     void serializationOverflowTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final int size = MAX_MINIMUM_JUDGE_INFO_SIZE + random.nextInt(1, MAX_MINIMUM_JUDGE_INFO_SIZE);
 
         final List<MinimumJudgeInfo> original = new ArrayList<>(size);

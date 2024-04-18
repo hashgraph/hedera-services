@@ -17,6 +17,7 @@
 package com.swirlds.platform.test.consensus;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
@@ -41,16 +42,19 @@ public final class GenerateConsensus {
      * 		the number of nodes in the hypothetical network
      * @param numEvents
      * 		the number of pre-consensus events to generate
-     * @param seed
-     * 		the seed to use
+     * @param random
+     * 		a source of randomness
      * @return consensus rounds
      */
     public static Deque<ConsensusRound> generateConsensusRounds(
-            @NonNull PlatformContext platformContext, final int numNodes, final int numEvents, final long seed) {
+            @NonNull PlatformContext platformContext,
+            final int numNodes,
+            final int numEvents,
+            @NonNull final Randotron random) {
         Objects.requireNonNull(platformContext);
         final List<EventSource<?>> eventSources = new ArrayList<>();
         IntStream.range(0, numNodes).forEach(i -> eventSources.add(new StandardEventSource(false)));
-        final StandardGraphGenerator generator = new StandardGraphGenerator(platformContext, seed, eventSources);
+        final StandardGraphGenerator generator = new StandardGraphGenerator(platformContext, random, eventSources);
         final TestIntake intake = new TestIntake(platformContext, generator.getAddressBook());
 
         // generate events and feed them to consensus

@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.test;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,6 +28,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -37,7 +36,6 @@ import com.swirlds.platform.state.PlatformState;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -63,8 +61,9 @@ class PlatformStateTests {
     @DisplayName("Test Copy")
     void testCopy() {
 
-        final PlatformState platformState =
-                SignedStateUtils.randomSignedState(0).getState().getPlatformState();
+        final PlatformState platformState = SignedStateUtils.randomSignedState(Randotron.create())
+                .getState()
+                .getPlatformState();
         final PlatformState copy = platformState.copy();
 
         MerkleCryptoFactory.getInstance().digestTreeSync(platformState);
@@ -86,8 +85,10 @@ class PlatformStateTests {
     void platformStateSerializationTest() throws IOException, ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
+        final Randotron random = Randotron.create();
+
         final InputOutputStream io = new InputOutputStream();
-        final PlatformState state = randomPlatformState();
+        final PlatformState state = randomPlatformState(random);
         io.getOutput().writeMerkleTree(testDirectory, state);
 
         io.startReading();
@@ -103,9 +104,9 @@ class PlatformStateTests {
     @Test
     @DisplayName("Update Epoch Hash Test")
     void updateEpochHashTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final PlatformState platformData = randomPlatformState(random);
-        final Hash hash = randomHash(random);
+        final Hash hash = random.randomHash();
 
         platformData.setEpochHash(null);
         platformData.setNextEpochHash(null);
@@ -125,7 +126,7 @@ class PlatformStateTests {
         assertEquals(hash, platformData.getEpochHash(), "epoch hash should be updated");
         assertNull(platformData.getNextEpochHash(), "next epoch hash should be set to null");
 
-        platformData.setEpochHash(randomHash(random));
+        platformData.setEpochHash(random.randomHash());
         platformData.setNextEpochHash(hash);
         assertDoesNotThrow(platformData::updateEpochHash);
         assertEquals(hash, platformData.getEpochHash(), "epoch hash should be updated");

@@ -39,6 +39,7 @@ import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -80,8 +81,9 @@ class SignedStateFileReadWriteTest {
     @Test
     @DisplayName("writeHashInfoFile() Test")
     void writeHashInfoFileTest() throws IOException {
+        final Randotron random = Randotron.create();
 
-        final State state = new RandomSignedStateGenerator().build().getState();
+        final State state = new RandomSignedStateGenerator(random).build().getState();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
         writeHashInfoFile(platformContext, testDirectory, state);
@@ -107,7 +109,9 @@ class SignedStateFileReadWriteTest {
     @Test
     @DisplayName("Write Then Read State File Test")
     void writeThenReadStateFileTest() throws IOException {
-        final SignedState signedState = new RandomSignedStateGenerator().build();
+        final Randotron random = Randotron.create();
+
+        final SignedState signedState = new RandomSignedStateGenerator(random).build();
         final Path stateFile = testDirectory.resolve(SIGNED_STATE_FILE_NAME);
 
         assertFalse(exists(stateFile), "signed state file should not yet exist");
@@ -132,7 +136,9 @@ class SignedStateFileReadWriteTest {
     @Test
     @DisplayName("writeSavedStateToDisk() Test")
     void writeSavedStateToDiskTest() throws IOException {
-        final SignedState signedState = new RandomSignedStateGenerator().build();
+        final Randotron random = Randotron.create();
+
+        final SignedState signedState = new RandomSignedStateGenerator(random).build();
         final Path directory = testDirectory.resolve("state");
 
         final Path stateFile = directory.resolve(SIGNED_STATE_FILE_NAME);

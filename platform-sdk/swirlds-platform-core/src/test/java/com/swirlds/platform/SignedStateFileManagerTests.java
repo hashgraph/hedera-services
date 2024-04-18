@@ -17,7 +17,6 @@
 package com.swirlds.platform;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
 import static com.swirlds.platform.state.signed.StateToDiskReason.FATAL_ERROR;
@@ -44,6 +43,7 @@ import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
@@ -77,7 +77,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -181,7 +180,8 @@ class SignedStateFileManagerTests {
     @ValueSource(booleans = {true, false})
     @DisplayName("Standard Operation Test")
     void standardOperationTest(final boolean successExpected) throws IOException {
-        final SignedState signedState = new RandomSignedStateGenerator().build();
+        final Randotron random = Randotron.create();
+        final SignedState signedState = new RandomSignedStateGenerator(random).build();
 
         if (!successExpected) {
             // To make the save fail, create a file with the name of the directory the state will try to be saved to
@@ -207,7 +207,8 @@ class SignedStateFileManagerTests {
     @Test
     @DisplayName("Save Fatal Signed State")
     void saveFatalSignedState() throws InterruptedException, IOException {
-        final SignedState signedState = new RandomSignedStateGenerator().build();
+        final Randotron random = Randotron.create();
+        final SignedState signedState = new RandomSignedStateGenerator(random).build();
         ((DummySwirldState) signedState.getSwirldState()).enableBlockingSerialization();
 
         final SignedStateFileManager manager = new SignedStateFileManager(
@@ -234,7 +235,8 @@ class SignedStateFileManagerTests {
     @Test
     @DisplayName("Save ISS Signed State")
     void saveISSignedState() throws IOException {
-        final SignedState signedState = new RandomSignedStateGenerator().build();
+        final Randotron random = Randotron.create();
+        final SignedState signedState = new RandomSignedStateGenerator(random).build();
 
         final SignedStateFileManager manager = new SignedStateFileManager(
                 context, buildMockMetrics(), new FakeTime(), MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
@@ -254,7 +256,7 @@ class SignedStateFileManagerTests {
     @DisplayName("Sequence Of States Test")
     void sequenceOfStatesTest(final boolean startAtGenesis) throws IOException {
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         // Save state every 100 (simulated) seconds
         final int stateSavePeriod = 100;
@@ -378,7 +380,7 @@ class SignedStateFileManagerTests {
     @Test
     @DisplayName("State Deletion Test")
     void stateDeletionTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final int statesOnDisk = 3;
 
         final TestConfigBuilder configBuilder = new TestConfigBuilder()

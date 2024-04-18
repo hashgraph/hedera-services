@@ -16,7 +16,6 @@
 
 package com.swirlds.common.threading;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -25,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -49,7 +49,7 @@ class CountUpLatchTests {
     @Test
     @DisplayName("Track Count Test")
     void trackCountTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int start = random.nextInt();
         final CountUpLatch latch = new CountUpLatch(start);
@@ -70,7 +70,7 @@ class CountUpLatchTests {
     @Test
     @DisplayName("Set Test")
     void setTest() {
-        final Random random = getRandomPrintSeed(0);
+        final Randotron random = Randotron.create(0);
 
         long count = Long.MIN_VALUE;
         final CountUpLatch latch = new CountUpLatch(count);
@@ -105,7 +105,7 @@ class CountUpLatchTests {
     @MethodSource("buildArguments")
     @DisplayName("Increment On Creating Thread Test")
     void incrementOnCreatingThreadTest(final MinMaxCount minMaxCount) throws InterruptedException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final long minCount = minMaxCount.minCount();
         final long maxCount = minMaxCount.maxCount();
@@ -159,7 +159,7 @@ class CountUpLatchTests {
     @MethodSource("buildArguments")
     @DisplayName("Increment On Creating Thread With Timeout Test")
     void incrementOnCreatingThreadWithTimeoutTest(final MinMaxCount minMaxCount) throws InterruptedException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final long minCount = minMaxCount.minCount();
         final long maxCount = minMaxCount.maxCount();
@@ -212,7 +212,7 @@ class CountUpLatchTests {
     @MethodSource("buildArguments")
     @DisplayName("Increment On Another Thread Test")
     void incrementOnAnotherThreadTest(final MinMaxCount minMaxCount) throws InterruptedException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final long minCount = minMaxCount.minCount();
         final long maxCount = minMaxCount.maxCount();

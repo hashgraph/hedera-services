@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.reconnect;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -26,7 +25,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
@@ -35,6 +34,7 @@ import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.state.signed.SignedStateValidationData;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -105,19 +105,16 @@ class DefaultSignedStateValidatorTests {
      *
      * @return stream of arguments to test randomized scenarios
      */
-    private static Stream<Arguments> randomizedNodeParams() {
+    private static Stream<Arguments> randomizedNodeParams(@NonNull final Random random) {
         final List<Arguments> arguments = new ArrayList<>();
 
         for (int i = 0; i < 100; i++) {
-            final Long seed = new Random().nextLong();
-            final RandomGenerator r = RandomUtils.initRandom(seed);
-            final List<Node> nodes = initRandomizedNodes(r);
-            final List<Node> signingNodes = getRandomizedSigningNodes(r, nodes);
+            final List<Node> nodes = initRandomizedNodes(random);
+            final List<Node> signingNodes = getRandomizedSigningNodes(random, nodes);
             final long validSigningWeight = getValidSignatureWeight(signingNodes);
             final long totalWeight = getTotalWeight(nodes);
-            final String desc = String.format(
-                    "\nseed: %sL:, valid signing weight: %s, total weight: %s\n",
-                    seed, validSigningWeight, totalWeight);
+            final String desc =
+                    String.format("\nvalid signing weight: %s, total weight: %s\n", validSigningWeight, totalWeight);
             arguments.add(Arguments.of(desc, nodes, signingNodes));
         }
 
@@ -234,8 +231,10 @@ class DefaultSignedStateValidatorTests {
     @MethodSource({"staticNodeParams", "randomizedNodeParams"})
     @DisplayName("Signed State Validation")
     void testSignedStateValidationRandom(final String desc, final List<Node> nodes, final List<Node> signingNodes) {
+        final Randotron random = Randotron.create();
+
         final Map<NodeId, Long> nodeWeights = nodes.stream().collect(Collectors.toMap(Node::id, Node::weight));
-        addressBook = new RandomAddressBookGenerator()
+        addressBook = new RandomAddressBookGenerator(random)
                 .setNodeIds(nodeWeights.keySet())
                 .setCustomWeightGenerator(nodeWeights::get)
                 .build();
@@ -245,7 +244,7 @@ class DefaultSignedStateValidatorTests {
 
         validator = new DefaultSignedStateValidator(platformContext);
 
-        final SignedState signedState = stateSignedByNodes(signingNodes);
+        final SignedState signedState = stateSignedByNodes(random, signingNodes);
         final SignedStateValidationData originalData =
                 new SignedStateValidationData(signedState.getState().getPlatformState(), addressBook);
 
@@ -301,9 +300,9 @@ class DefaultSignedStateValidatorTests {
      * @param signingNodes the node ids signing the state
      * @return the signed state
      */
-    private SignedState stateSignedByNodes(final List<Node> signingNodes) {
+    private SignedState stateSignedByNodes(@NonNull final Randotron random, final List<Node> signingNodes) {
 
-        final Hash stateHash = randomHash();
+        final Hash stateHash = random.randomHash();
 
         final SignatureVerifier signatureVerifier = (data, signature, key) -> {
             // a signature with a 0 byte is always invalid
@@ -316,7 +315,7 @@ class DefaultSignedStateValidatorTests {
             return hash.equals(stateHash);
         };
 
-        return new RandomSignedStateGenerator()
+        return new RandomSignedStateGenerator(random)
                 .setRound(ROUND)
                 .setAddressBook(addressBook)
                 .setStateHash(stateHash)

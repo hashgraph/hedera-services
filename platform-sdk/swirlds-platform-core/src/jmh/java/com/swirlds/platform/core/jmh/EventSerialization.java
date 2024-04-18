@@ -20,13 +20,13 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -56,7 +56,7 @@ public class EventSerialization {
 
     @Setup
     public void setup() throws IOException, ConstructableRegistryException {
-        final Random random = new Random(seed);
+        final Randotron random = Randotron.create(seed);
 
         event = new TestingEventBuilder(random).setSystemTransactionCount(1).build();
         StaticSoftwareVersion.setSoftwareVersion(event.getHashedData().getSoftwareVersion());

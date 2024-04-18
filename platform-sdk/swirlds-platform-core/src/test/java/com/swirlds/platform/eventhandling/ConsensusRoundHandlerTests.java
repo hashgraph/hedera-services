@@ -17,9 +17,6 @@
 package com.swirlds.platform.eventhandling;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -38,6 +35,7 @@ import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
@@ -58,7 +56,6 @@ import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -68,12 +65,12 @@ import org.junit.jupiter.api.Test;
  * Unit tests for {@link ConsensusRoundHandler}.
  */
 class ConsensusRoundHandlerTests {
-    private Random random;
+    private Randotron random;
     private Time time;
 
     @BeforeEach
     void setUp() {
-        random = getRandomPrintSeed();
+        random = Randotron.create();
         time = new FakeTime();
     }
 
@@ -252,7 +249,7 @@ class ConsensusRoundHandlerTests {
         final List<EventImpl> events = List.of(buildEvent(), buildEvent(), buildEvent());
 
         final ConsensusSnapshot consensusSnapshot = mock(ConsensusSnapshot.class);
-        when(consensusSnapshot.consensusTimestamp()).thenReturn(randomInstant(random));
+        when(consensusSnapshot.consensusTimestamp()).thenReturn(random.randomInstant());
 
         final ConsensusRound consensusRound = new ConsensusRound(
                 mock(AddressBook.class),
@@ -275,7 +272,7 @@ class ConsensusRoundHandlerTests {
         MILLISECONDS.sleep(200);
         assertFalse(completed.get());
 
-        final Hash runningHash = randomHash(random);
+        final Hash runningHash = random.randomHash();
         consensusRound.setRunningEventHash(runningHash);
 
         assertEventuallyTrue(completed::get, Duration.ofSeconds(1), "handling should have completed");

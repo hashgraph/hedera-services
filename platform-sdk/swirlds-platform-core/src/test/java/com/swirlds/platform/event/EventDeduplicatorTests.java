@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.event;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.serializeGossipEvent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -27,6 +25,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusConstants;
@@ -43,7 +42,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,7 +53,7 @@ import org.junit.jupiter.params.provider.ValueSource;
  * Tests the {@link EventDeduplicator} class
  */
 class EventDeduplicatorTests {
-    private Random random;
+    private Randotron random;
 
     /**
      * Number of possible nodes in the universe
@@ -69,7 +67,7 @@ class EventDeduplicatorTests {
 
     @BeforeEach
     void setup() {
-        random = getRandomPrintSeed();
+        random = Randotron.create();
     }
 
     /**
@@ -200,7 +198,7 @@ class EventDeduplicatorTests {
                 // randomize the signature
                 // this modifies the event in place (since we don't have a copy constructor), but that doesn't matter
                 ByteBuffer.wrap(duplicateEvent.getUnhashedData().getSignature())
-                        .put(randomSignatureBytes(random).toByteArray());
+                        .put(random.randomSignatureBytes().toByteArray());
 
                 if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
                     if (duplicateEvent.getDescriptor().getBirthRound() < minimumRoundNonAncient) {

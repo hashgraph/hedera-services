@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.GraphGenerations;
@@ -30,7 +30,6 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import org.junit.jupiter.api.Test;
 
 class ConsensusRoundTests {
@@ -60,13 +59,13 @@ class ConsensusRoundTests {
 
     @Test
     void testNumApplicationTransactions() {
-        final Random r = RandomUtils.initRandom(null);
+        final Randotron random = Randotron.create();
 
         int numActualTransactions = 0;
         final List<EventImpl> events = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
             final EventImpl event = mock(EventImpl.class);
-            final int numTransactions = r.nextInt(200);
+            final int numTransactions = random.nextInt(200);
             numActualTransactions += numTransactions;
             when(event.getNumAppTransactions()).thenReturn(numTransactions);
             events.add(event);

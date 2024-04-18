@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.event.tipset;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static com.swirlds.platform.system.status.PlatformStatus.CHECKING;
 import static com.swirlds.platform.system.status.PlatformStatus.FREEZING;
@@ -30,6 +29,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -43,7 +43,6 @@ import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.system.status.PlatformStatus;
 import java.time.Duration;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -210,7 +209,7 @@ class EventCreationRulesTests {
     @Test
     @DisplayName("Rate Limit Test")
     void rateLimitTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int maxRate = 100;
         final Duration period = Duration.ofSeconds(1).dividedBy(maxRate);

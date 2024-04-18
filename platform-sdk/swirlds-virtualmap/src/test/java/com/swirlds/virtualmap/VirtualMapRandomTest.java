@@ -19,7 +19,7 @@ package com.swirlds.virtualmap;
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createMap;
 
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
 import java.util.List;
@@ -46,7 +46,7 @@ class VirtualMapRandomTest {
             },
             v -> v.remove(randomKey()) // Attempt to delete (including non-existent keys)
             );
-    private static final Random RANDOM = RandomUtils.getRandomPrintSeed();
+    private static final Random RANDOM = Randotron.create();
 
     private static TestKey randomKey() {
         return new TestKey(RANDOM.nextInt(KEY_SPACE_SIZE));

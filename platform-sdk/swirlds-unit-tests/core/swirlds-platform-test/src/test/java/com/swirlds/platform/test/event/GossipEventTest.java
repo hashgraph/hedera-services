@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.event.GossipEvent;
@@ -31,7 +31,6 @@ import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import com.swirlds.platform.test.utils.EqualsVerifier;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Random;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -53,7 +52,7 @@ class GossipEventTest {
     @Test
     @DisplayName("Serialize and deserialize event")
     void serializeDeserialize() throws IOException, ConstructableRegistryException {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final GossipEvent gossipEvent = new TestingEventBuilder(random).build();
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
@@ -63,6 +62,6 @@ class GossipEventTest {
 
     @Test
     void validateEqualsHashCode() {
-        assertTrue(EqualsVerifier.verify(random -> new TestingEventBuilder(random).build()));
+        assertTrue(EqualsVerifier.verify(seed -> new TestingEventBuilder(Randotron.create(seed)).build()));
     }
 }

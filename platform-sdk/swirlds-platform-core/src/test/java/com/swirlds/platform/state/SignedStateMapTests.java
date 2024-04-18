@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateMap;
@@ -39,13 +40,14 @@ class SignedStateMapTests {
     @Test
     @DisplayName("get() Test")
     void getTest() {
+        final Randotron random = Randotron.create();
 
         final SignedStateMap map = new SignedStateMap();
         assertEquals(0, map.getSize(), "unexpected size");
         assertEquals(NO_STATE_ROUND, map.getLatestRound());
         assertNull(map.getLatestAndReserve("test").getNullable());
 
-        final SignedState signedState = spy(SignedStateReferenceTests.buildSignedState());
+        final SignedState signedState = spy(SignedStateReferenceTests.buildSignedState(random));
         final long round = 1234;
         doReturn(round).when(signedState).getRound();
 
@@ -81,12 +83,14 @@ class SignedStateMapTests {
     @Test
     @DisplayName("remove() Test")
     void removeTest() {
+        final Randotron random = Randotron.create();
+
         final SignedStateMap map = new SignedStateMap();
         assertEquals(0, map.getSize(), "unexpected size");
         assertEquals(NO_STATE_ROUND, map.getLatestRound());
         assertNull(map.getLatestAndReserve("test").getNullable());
 
-        final SignedState signedState = spy(SignedStateReferenceTests.buildSignedState());
+        final SignedState signedState = spy(SignedStateReferenceTests.buildSignedState(random));
         final long round = 1234;
         doReturn(round).when(signedState).getRound();
 
@@ -112,14 +116,16 @@ class SignedStateMapTests {
     @Test
     @DisplayName("replace() Test")
     void replaceTest() {
+        final Randotron random = Randotron.create();
+
         final SignedStateMap map = new SignedStateMap();
         assertEquals(0, map.getSize(), "unexpected size");
 
-        final SignedState signedState1 = spy(SignedStateReferenceTests.buildSignedState());
+        final SignedState signedState1 = spy(SignedStateReferenceTests.buildSignedState(random));
         final long round = 1234;
         doReturn(round).when(signedState1).getRound();
 
-        final SignedState signedState2 = spy(SignedStateReferenceTests.buildSignedState());
+        final SignedState signedState2 = spy(SignedStateReferenceTests.buildSignedState(random));
         doReturn(round).when(signedState2).getRound();
 
         map.put(signedState1, "test");
@@ -156,18 +162,20 @@ class SignedStateMapTests {
     @Test
     @DisplayName("clear() Test")
     void clearTest() {
+        final Randotron random = Randotron.create();
+
         final SignedStateMap map = new SignedStateMap();
         assertEquals(0, map.getSize(), "unexpected size");
 
-        final SignedState signedState1 = spy(SignedStateReferenceTests.buildSignedState());
+        final SignedState signedState1 = spy(SignedStateReferenceTests.buildSignedState(random));
         final long round1 = 1234;
         doReturn(round1).when(signedState1).getRound();
 
-        final SignedState signedState2 = spy(SignedStateReferenceTests.buildSignedState());
+        final SignedState signedState2 = spy(SignedStateReferenceTests.buildSignedState(random));
         final long round2 = 1235;
         doReturn(round2).when(signedState2).getRound();
 
-        final SignedState signedState3 = spy(SignedStateReferenceTests.buildSignedState());
+        final SignedState signedState3 = spy(SignedStateReferenceTests.buildSignedState(random));
         final long round3 = 1236;
         doReturn(round3).when(signedState3).getRound();
 
@@ -212,18 +220,20 @@ class SignedStateMapTests {
     @Test
     @DisplayName("Iteration Test")
     void iterationTest() {
+        final Randotron random = Randotron.create();
+
         final SignedStateMap map = new SignedStateMap();
         assertEquals(0, map.getSize(), "unexpected size");
 
-        final SignedState signedState1 = spy(SignedStateReferenceTests.buildSignedState());
+        final SignedState signedState1 = spy(SignedStateReferenceTests.buildSignedState(random));
         final long round1 = 1234;
         doReturn(round1).when(signedState1).getRound();
 
-        final SignedState signedState2 = spy(SignedStateReferenceTests.buildSignedState());
+        final SignedState signedState2 = spy(SignedStateReferenceTests.buildSignedState(random));
         final long round2 = 1235;
         doReturn(round2).when(signedState2).getRound();
 
-        final SignedState signedState3 = spy(SignedStateReferenceTests.buildSignedState());
+        final SignedState signedState3 = spy(SignedStateReferenceTests.buildSignedState(random));
         final long round3 = 1236;
         doReturn(round3).when(signedState2).getRound();
 

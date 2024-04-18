@@ -16,11 +16,11 @@
 
 package com.swirlds.common.utility;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.swirlds.common.test.fixtures.Randotron;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -85,7 +85,7 @@ class RandomAccessDequeTests {
     @ValueSource(ints = {0, 1, 2, 3, 10, 100, 1_000, 10_000})
     @DisplayName("Lots Of Additions Test")
     void lotsOfAdditionsTest(int initialCapacity) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int iterations = 10_000;
 
@@ -138,7 +138,7 @@ class RandomAccessDequeTests {
     @ValueSource(ints = {0, 1, 2, 3, 10, 100, 1_000, 10_000})
     @DisplayName("Lots Of Removals Test")
     void lotsOfRemovalsTest(int initialCapacity) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int iterations = 10_000;
 
@@ -191,7 +191,7 @@ class RandomAccessDequeTests {
     @ValueSource(ints = {0, 1, 2, 3, 10, 100, 1_000, 10_000})
     @DisplayName("Balanced Operations Test")
     void balancedOperationsTest(int initialCapacity) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int iterations = 10_000;
 
@@ -246,7 +246,7 @@ class RandomAccessDequeTests {
     @ValueSource(ints = {0, 1, 2, 3, 10, 100, 1_000, 10_000})
     @DisplayName("Caterpillar Test")
     void caterpillarTest(int initialCapacity) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int iterations = 10_000;
         final int initialInsertions = random.nextInt(100, 500);
@@ -302,7 +302,7 @@ class RandomAccessDequeTests {
     @ValueSource(ints = {0, 1, 2, 3, 10, 100, 1_000, 10_000})
     @DisplayName("Reverse Caterpillar Test")
     void reverseCaterpillarTest(int initialCapacity) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int iterations = 10_000;
         final int initialInsertions = random.nextInt(100, 500);
@@ -358,7 +358,7 @@ class RandomAccessDequeTests {
     @ValueSource(ints = {0, 1, 2, 3, 10, 100, 1_000, 10_000})
     @DisplayName("Balanced Caterpillar Test")
     void balancedCaterpillarTest(int initialCapacity) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int iterations = 10_000;
         final int initialInsertions = random.nextInt(100, 500);

@@ -16,18 +16,17 @@
 
 package com.swirlds.fchashmap;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.fcqueue.FCInt;
 import com.swirlds.fchashmap.internal.Mutation;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -90,7 +89,7 @@ class FCHashMapGarbageCollectorTest {
         final int operationsPerValidation = 100_000;
 
         final FCHashMapSeries<Integer, FCInt> copies = new FCHashMapSeries<>();
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         for (int iteration = 0; iteration < iterations; iteration++) {
             final FCHashMap<Integer, FCInt> map = copies.getLatest();

@@ -24,6 +24,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.roster.Roster;
 import com.swirlds.platform.roster.RosterEntry;
 import com.swirlds.platform.system.address.Address;
@@ -41,8 +42,10 @@ public class AddressBookRosterTests {
     @Test
     @DisplayName("Serialize and deserialize AddressBook derived Roster")
     void serializeDeserializeTest() throws IOException, ConstructableRegistryException {
+        final Randotron random = Randotron.create();
+
         final AddressBook addressBook =
-                new RandomAddressBookGenerator().setSize(100).build();
+                new RandomAddressBookGenerator(random).setSize(100).build();
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         final AddressBookRoster roster = new AddressBookRoster(addressBook);
 
@@ -62,8 +65,10 @@ public class AddressBookRosterTests {
     @Test
     @DisplayName("Roster derived from AddressBook")
     void addressBookRosterTest() {
+        final Randotron random = Randotron.create();
+
         final AddressBook addressBook =
-                new RandomAddressBookGenerator().setSize(100).build();
+                new RandomAddressBookGenerator(random).setSize(100).build();
         final Roster roster = new AddressBookRoster(addressBook);
         final Iterator<RosterEntry> entries = roster.iterator();
         for (int i = 0; i < addressBook.getSize(); i++) {
@@ -82,8 +87,10 @@ public class AddressBookRosterTests {
     @Test
     @DisplayName("Serialize and deserialize AddressBook derived Roster")
     void serializeDeserializeEntryTest() throws IOException, ConstructableRegistryException {
+        final Randotron random = Randotron.create();
+
         final AddressBook addressBook =
-                new RandomAddressBookGenerator().setSize(100).build();
+                new RandomAddressBookGenerator(random).setSize(100).build();
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         final Roster roster = new AddressBookRoster(addressBook);
 

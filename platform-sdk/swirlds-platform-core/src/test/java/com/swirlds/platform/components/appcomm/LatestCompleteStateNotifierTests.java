@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.swirlds.common.notification.NotificationEngine;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
@@ -45,8 +46,10 @@ public class LatestCompleteStateNotifierTests {
     @Test
     @DisplayName("NewLatestCompleteStateEventNotification")
     void testNewLatestCompleteStateEventNotification() throws InterruptedException {
+        final Randotron random = Randotron.create();
+
         final NotificationEngine notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
-        final SignedState signedState = new RandomSignedStateGenerator().build();
+        final SignedState signedState = new RandomSignedStateGenerator(random).build();
 
         final CountDownLatch senderLatch = new CountDownLatch(1);
         final CountDownLatch listenerLatch = new CountDownLatch(1);

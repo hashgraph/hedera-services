@@ -17,6 +17,7 @@
 package com.swirlds.platform.test.fixtures.event.generator;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.system.events.EventConstants;
@@ -25,7 +26,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
+import java.util.Objects;
 
 /**
  * A base graph generator class that provides most functionality of a graph generator except for determining how to
@@ -39,14 +40,9 @@ public abstract class AbstractGraphGenerator<T extends AbstractGraphGenerator<T>
     private long numEventsGenerated;
 
     /**
-     * The initial seed of this generator.
-     */
-    private final long initialSeed;
-
-    /**
      * The source of all randomness for this class.
      */
-    private Random random;
+    private Randotron random;
 
     /** A map that holds the maximum event generation for each creator */
     private final Map<NodeId, Long> maxGenerationPerCreator;
@@ -54,9 +50,8 @@ public abstract class AbstractGraphGenerator<T extends AbstractGraphGenerator<T>
     /** The highest birth round of created events for each creator */
     private final Map<NodeId, Long> maxBirthRoundPerCreator;
 
-    protected AbstractGraphGenerator(final long initialSeed) {
-        this.initialSeed = initialSeed;
-        random = new Random(initialSeed);
+    protected AbstractGraphGenerator(@NonNull final Randotron random) {
+        this.random = Objects.requireNonNull(random);
         maxGenerationPerCreator = new HashMap<>();
         maxBirthRoundPerCreator = new HashMap<>();
     }
@@ -74,7 +69,7 @@ public abstract class AbstractGraphGenerator<T extends AbstractGraphGenerator<T>
     @Override
     public final void reset() {
         numEventsGenerated = 0;
-        random = new Random(initialSeed);
+        random = Randotron.create(random.getSeed());
         maxGenerationPerCreator.clear();
         maxBirthRoundPerCreator.clear();
         resetInternalData();
@@ -120,15 +115,8 @@ public abstract class AbstractGraphGenerator<T extends AbstractGraphGenerator<T>
     /**
      * Get the Random object to be used by this class.
      */
-    protected final Random getRandom() {
+    protected final Randotron getRandom() {
         return random;
-    }
-
-    /**
-     * The seed used at the start of this generator.
-     */
-    public final long getInitialSeed() {
-        return initialSeed;
     }
 
     /**

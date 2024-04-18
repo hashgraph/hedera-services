@@ -16,9 +16,6 @@
 
 package com.swirlds.platform.proof;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils.buildLessSimpleTree;
 import static com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils.buildLessSimpleTreeExtended;
 import static com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils.buildSizeOneTree;
@@ -46,6 +43,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.interfaces.MerkleType;
 import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -136,7 +134,7 @@ class StateProofTests {
     @Test
     @DisplayName("Basic Behavior Test")
     void basicBehaviorTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Cryptography cryptography = CryptographyHolder.get();
 
         final FakeSignatureBuilder signatureBuilder = new FakeSignatureBuilder(random);
@@ -173,7 +171,7 @@ class StateProofTests {
     @Test
     @DisplayName("Leaf Tree Test")
     void leafTreeTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Cryptography cryptography = CryptographyHolder.get();
 
         final FakeSignatureBuilder signatureBuilder = new FakeSignatureBuilder(random);
@@ -205,7 +203,7 @@ class StateProofTests {
     }
 
     private void testWithNPayloads(
-            @NonNull final Random random,
+            @NonNull final Randotron random,
             @NonNull final MerkleNode root,
             @NonNull final Cryptography cryptography,
             @NonNull final List<MerkleLeaf> payloads,
@@ -267,7 +265,7 @@ class StateProofTests {
     @ValueSource(ints = {0, 1, 2})
     @DisplayName("Multi Payload Test")
     void multiPayloadTest(final int thresholdOrdinal) throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Cryptography cryptography = CryptographyHolder.get();
 
         final Threshold threshold = Threshold.values()[thresholdOrdinal];
@@ -285,7 +283,7 @@ class StateProofTests {
     }
 
     private void testWithNInvalidPayloads(
-            @NonNull final Random random,
+            @NonNull final Randotron random,
             @NonNull final MerkleNode root,
             @NonNull final Cryptography cryptography,
             @NonNull final List<MerkleLeaf> payloads)
@@ -304,7 +302,7 @@ class StateProofTests {
             invalidPayloadCount = random.nextInt(1, payloads.size());
         }
         for (int invalidPayloadIndex = 0; invalidPayloadIndex < invalidPayloadCount; invalidPayloadIndex++) {
-            payloads.get(invalidPayloadIndex).setHash(randomHash(random));
+            payloads.get(invalidPayloadIndex).setHash(random.randomHash());
         }
 
         // Now, rehash the tree using the incorrect leaf hashes.
@@ -346,7 +344,7 @@ class StateProofTests {
     @Test
     @DisplayName("Invalid Payload Test")
     void invalidPayloadTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Cryptography cryptography = CryptographyHolder.get();
 
         final MerkleNode root = buildLessSimpleTreeExtended();
@@ -363,7 +361,7 @@ class StateProofTests {
     @Test
     @DisplayName("Deterministic Serialization Test")
     void deterministicSerializationTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Cryptography cryptography = CryptographyHolder.get();
 
         final MerkleNode root = buildLessSimpleTreeExtended();
@@ -379,7 +377,7 @@ class StateProofTests {
         final Map<NodeId, Signature> signatures = new HashMap<>();
         for (int i = 0; i < signatureCount; i++) {
             final NodeId nodeId = new NodeId(random.nextLong(1, 1000));
-            final Signature signature = randomSignature(random);
+            final Signature signature = random.randomSignature();
             signatures.put(nodeId, signature);
         }
 
@@ -411,7 +409,7 @@ class StateProofTests {
     @Test
     @DisplayName("Round Trip Serialization Test")
     void roundTripSerializationTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Cryptography cryptography = CryptographyHolder.get();
 
         final MerkleNode root = buildLessSimpleTreeExtended();
@@ -427,7 +425,7 @@ class StateProofTests {
         final Map<NodeId, Signature> signatures = new HashMap<>();
         for (int i = 0; i < signatureCount; i++) {
             final NodeId nodeId = new NodeId(random.nextLong(1, 1000));
-            final Signature signature = randomSignature(random);
+            final Signature signature = random.randomSignature();
             signatures.put(nodeId, signature);
         }
 
@@ -450,7 +448,7 @@ class StateProofTests {
     @Test
     @DisplayName("Zero Weight Signature Test")
     void zeroWeightSignatureTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Cryptography cryptography = CryptographyHolder.get();
 
         final FakeSignatureBuilder signatureBuilder = new FakeSignatureBuilder(random);
@@ -511,7 +509,7 @@ class StateProofTests {
     @Test
     @DisplayName("Signature Not In Address Book Test")
     void signatureNotInAddressBookTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Cryptography cryptography = CryptographyHolder.get();
 
         final FakeSignatureBuilder signatureBuilder = new FakeSignatureBuilder(random);
@@ -547,7 +545,7 @@ class StateProofTests {
         // Adding a signature for a node not in the address book should not change the result.
         final NodeId nodeId = new NodeId(10000000);
         assertFalse(addressBook.contains(nodeId));
-        final Signature signature = randomSignature(random);
+        final Signature signature = random.randomSignature();
         signatures.put(nodeId, signature);
 
         final StateProof stateProofB = new StateProof(cryptography, root, signatures, List.of(nodeD));
@@ -578,7 +576,7 @@ class StateProofTests {
     @Test
     @DisplayName("Duplicate Signatures Test")
     void duplicateSignaturesTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Cryptography cryptography = CryptographyHolder.get();
 
         final FakeSignatureBuilder signatureBuilder = new FakeSignatureBuilder(random);
@@ -643,7 +641,7 @@ class StateProofTests {
     @Test
     @DisplayName("Real Signatures Wrong IDs Test")
     void realSignaturesWrongIdsTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Cryptography cryptography = CryptographyHolder.get();
 
         final FakeSignatureBuilder signatureBuilder = new FakeSignatureBuilder(random);
@@ -700,7 +698,7 @@ class StateProofTests {
     @Test
     @DisplayName("Threshold Test")
     void thresholdTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Cryptography cryptography = CryptographyHolder.get();
 
         final FakeSignatureBuilder signatureBuilder = new FakeSignatureBuilder(random);

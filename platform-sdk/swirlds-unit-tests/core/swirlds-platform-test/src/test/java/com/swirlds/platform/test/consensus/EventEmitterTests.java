@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.platform.test.event.emitter.CollectingEventEmitter;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
@@ -241,7 +242,7 @@ public class EventEmitterTests {
                 birthRoundAsAncientThreshold ? BIRTH_ROUND_PLATFORM_CONTEXT : DEFAULT_PLATFORM_CONTEXT;
         final StandardGraphGenerator generator = new StandardGraphGenerator(
                 platformContext,
-                0,
+                Randotron.create(),
                 new StandardEventSource(),
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -260,7 +261,7 @@ public class EventEmitterTests {
                 birthRoundAsAncientThreshold ? BIRTH_ROUND_PLATFORM_CONTEXT : DEFAULT_PLATFORM_CONTEXT;
         final StandardGraphGenerator generator = new StandardGraphGenerator(
                 platformContext,
-                0,
+                Randotron.create(),
                 new StandardEventSource(),
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -290,7 +291,7 @@ public class EventEmitterTests {
                 birthRoundAsAncientThreshold ? BIRTH_ROUND_PLATFORM_CONTEXT : DEFAULT_PLATFORM_CONTEXT;
         final StandardGraphGenerator generator = new StandardGraphGenerator(
                 platformContext,
-                0,
+                Randotron.create(),
                 new StandardEventSource(),
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -326,7 +327,7 @@ public class EventEmitterTests {
                 birthRoundAsAncientThreshold ? BIRTH_ROUND_PLATFORM_CONTEXT : DEFAULT_PLATFORM_CONTEXT;
         final StandardGraphGenerator generator = new StandardGraphGenerator(
                 platformContext,
-                0,
+                Randotron.create(),
                 new StandardEventSource(),
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -367,7 +368,7 @@ public class EventEmitterTests {
                 birthRoundAsAncientThreshold ? BIRTH_ROUND_PLATFORM_CONTEXT : DEFAULT_PLATFORM_CONTEXT;
         final StandardGraphGenerator generator = new StandardGraphGenerator(
                 platformContext,
-                0,
+                Randotron.create(),
                 new StandardEventSource(),
                 new StandardEventSource(),
                 new StandardEventSource(),

@@ -25,9 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateReference;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -39,8 +41,8 @@ class SignedStateReferenceTests {
     /**
      * Build a signed state.
      */
-    public static SignedState buildSignedState() {
-        return new RandomSignedStateGenerator().build();
+    public static SignedState buildSignedState(@NonNull final Randotron random) {
+        return new RandomSignedStateGenerator(random).build();
     }
 
     @ParameterizedTest
@@ -80,8 +82,8 @@ class SignedStateReferenceTests {
     @ValueSource(booleans = {true, false})
     @DisplayName("Initial Value Constructor Test")
     void initialValueTest(final boolean defaultValue) {
-
-        final SignedState state = spy(buildSignedState());
+        final Randotron random = Randotron.create();
+        final SignedState state = spy(buildSignedState(random));
         doReturn(1234L).when(state).getRound();
 
         final SignedStateReference reference;
@@ -111,9 +113,10 @@ class SignedStateReferenceTests {
     @Test
     @DisplayName("Replacement Test")
     void replacementTest() {
-        final SignedState state1 = buildSignedState();
-        final SignedState state2 = buildSignedState();
-        final SignedState state3 = buildSignedState();
+        final Randotron random = Randotron.create();
+        final SignedState state1 = buildSignedState(random);
+        final SignedState state2 = buildSignedState(random);
+        final SignedState state3 = buildSignedState(random);
 
         final SignedStateReference reference = new SignedStateReference(state1, "test");
         assertEquals(1, state1.getReservationCount(), "incorrect reference count");

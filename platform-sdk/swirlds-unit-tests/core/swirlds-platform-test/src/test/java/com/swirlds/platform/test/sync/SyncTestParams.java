@@ -30,23 +30,7 @@ public class SyncTestParams {
     private final int numCommonEvents;
     private final int numCallerEvents;
     private final int numListenerEvents;
-    private final Long customSeed;
     private final AncientMode ancientMode;
-
-    public SyncTestParams(
-            int numNetworkNodes,
-            int numCommonEvents,
-            int numCallerEvents,
-            int numListenerEvents,
-            Long customSeed,
-            @NonNull final AncientMode ancientMode) {
-        this.numNetworkNodes = numNetworkNodes;
-        this.numCommonEvents = numCommonEvents;
-        this.numCallerEvents = numCallerEvents;
-        this.numListenerEvents = numListenerEvents;
-        this.customSeed = customSeed;
-        this.ancientMode = Objects.requireNonNull(ancientMode);
-    }
 
     public SyncTestParams(
             final int numNetworkNodes,
@@ -54,7 +38,12 @@ public class SyncTestParams {
             final int numCallerEvents,
             final int numListenerEvents,
             @NonNull final AncientMode ancientMode) {
-        this(numNetworkNodes, numCommonEvents, numCallerEvents, numListenerEvents, null, ancientMode);
+
+        this.numNetworkNodes = numNetworkNodes;
+        this.numCommonEvents = numCommonEvents;
+        this.numCallerEvents = numCallerEvents;
+        this.numListenerEvents = numListenerEvents;
+        this.ancientMode = Objects.requireNonNull(ancientMode);
     }
 
     /**
@@ -88,13 +77,6 @@ public class SyncTestParams {
     }
 
     /**
-     * @return the custom seed set for this test, returns null if none is set
-     */
-    public Long getCustomSeed() {
-        return customSeed;
-    }
-
-    /**
      * @return the ancient mode set for this test
      */
     public AncientMode getAncientMode() {
@@ -108,7 +90,6 @@ public class SyncTestParams {
                 .append("numCommonEvents", numCommonEvents)
                 .append("numCallerEvents", numCallerEvents)
                 .append("numListenerEvents", numListenerEvents)
-                .append("customSeed", customSeed)
                 .append("ancientMode", ancientMode)
                 .toString();
     }

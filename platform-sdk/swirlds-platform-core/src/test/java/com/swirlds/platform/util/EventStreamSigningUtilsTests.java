@@ -17,7 +17,6 @@
 package com.swirlds.platform.util;
 
 import static com.swirlds.common.stream.internal.LinkedObjectStreamValidateUtils.validateFileAndSignature;
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.generateRandomEvents;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.writeRandomEventStream;
 import static com.swirlds.platform.util.EventStreamSigningUtils.initializeSystem;
@@ -28,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.stream.EventStreamType;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.RecoveryTestUtils;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -41,7 +41,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -116,7 +115,7 @@ class EventStreamSigningUtilsTests {
     private void createStreamFiles() {
         initializeSystem();
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final List<EventImpl> events = generateRandomEvents(random, 100L, Duration.ofSeconds(10), 1, 5);
 

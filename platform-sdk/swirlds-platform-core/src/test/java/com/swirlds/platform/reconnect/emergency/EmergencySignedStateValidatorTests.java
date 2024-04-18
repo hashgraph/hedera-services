@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
@@ -34,7 +34,6 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -49,10 +48,12 @@ public class EmergencySignedStateValidatorTests {
             new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
     private AddressBook addressBook;
     private EmergencySignedStateValidator validator;
+    private Randotron random;
 
     @BeforeEach
     void setup() {
-        addressBook = new RandomAddressBookGenerator()
+        random = Randotron.create();
+        addressBook = new RandomAddressBookGenerator(random)
                 .setSize(NUM_NODES)
                 .setAverageWeight(WEIGHT_PER_NODE)
                 .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
@@ -65,16 +66,13 @@ public class EmergencySignedStateValidatorTests {
     @DisplayName("Invalid State - Too Old")
     @Test
     void stateTooOld() {
-        final Random random = RandomUtils.getRandomPrintSeed();
-        final SignedState oldState = new RandomSignedStateGenerator()
+        final SignedState oldState = new RandomSignedStateGenerator(random)
                 .setAddressBook(addressBook)
                 .setRound(EMERGENCY_ROUND - 1)
                 .build();
 
         validator = new EmergencySignedStateValidator(
-                STATE_CONFIG,
-                new EmergencyRecoveryFile(
-                        EMERGENCY_ROUND, RandomUtils.randomHash(random), RandomUtils.randomInstant(random)));
+                STATE_CONFIG, new EmergencyRecoveryFile(EMERGENCY_ROUND, random.randomHash(), random.randomInstant()));
 
         assertThrows(
                 SignedStateInvalidException.class,
@@ -89,17 +87,14 @@ public class EmergencySignedStateValidatorTests {
     @DisplayName("Invalid State - Hash Does Not Match")
     @Test
     void stateMatchesRoundButNotHash() {
-        final Random random = RandomUtils.getRandomPrintSeed();
-        final SignedState stateWithWrongHash = new RandomSignedStateGenerator()
+        final SignedState stateWithWrongHash = new RandomSignedStateGenerator(random)
                 .setAddressBook(addressBook)
                 .setRound(EMERGENCY_ROUND)
                 .build();
-        stateWithWrongHash.getState().setHash(RandomUtils.randomHash(random));
+        stateWithWrongHash.getState().setHash(random.randomHash());
 
         validator = new EmergencySignedStateValidator(
-                STATE_CONFIG,
-                new EmergencyRecoveryFile(
-                        EMERGENCY_ROUND, RandomUtils.randomHash(), RandomUtils.randomInstant(random)));
+                STATE_CONFIG, new EmergencyRecoveryFile(EMERGENCY_ROUND, random.randomHash(), random.randomInstant()));
 
         assertThrows(
                 SignedStateInvalidException.class,
@@ -114,16 +109,15 @@ public class EmergencySignedStateValidatorTests {
     @DisplayName("Valid State - Matches Emergency State")
     @Test
     void stateMatchesRoundAndHash() {
-        final Random random = RandomUtils.getRandomPrintSeed();
-        final Hash hash = RandomUtils.randomHash(random);
-        final SignedState matchingState = new RandomSignedStateGenerator()
+        final Hash hash = random.randomHash();
+        final SignedState matchingState = new RandomSignedStateGenerator(random)
                 .setAddressBook(addressBook)
                 .setRound(EMERGENCY_ROUND)
                 .build();
         matchingState.getState().setHash(hash);
 
         validator = new EmergencySignedStateValidator(
-                STATE_CONFIG, new EmergencyRecoveryFile(EMERGENCY_ROUND, hash, RandomUtils.randomInstant(random)));
+                STATE_CONFIG, new EmergencyRecoveryFile(EMERGENCY_ROUND, hash, random.randomInstant()));
 
         assertDoesNotThrow(
                 () -> validator.validate(matchingState, addressBook, null),
@@ -141,12 +135,11 @@ public class EmergencySignedStateValidatorTests {
     @DisplayName("Valid Later State")
     @Test
     void validLaterState() {
-        final Random random = RandomUtils.getRandomPrintSeed();
         final List<NodeId> majorityWeightNodes = IntStream.range(0, NUM_NODES - 1)
                 .mapToObj(index -> addressBook.getNodeId(index))
                 .toList();
 
-        final SignedState laterState = new RandomSignedStateGenerator()
+        final SignedState laterState = new RandomSignedStateGenerator(random)
                 .setAddressBook(addressBook)
                 .setRound(EMERGENCY_ROUND + 1)
                 .setSignatures(Map.of())
@@ -159,12 +152,11 @@ public class EmergencySignedStateValidatorTests {
                             laterState.getState().getHash()));
         }
 
-        final Hash emergencyHash = RandomUtils.randomHash(random);
+        final Hash emergencyHash = random.randomHash();
         laterState.getState().getPlatformState().setEpochHash(emergencyHash);
 
         validator = new EmergencySignedStateValidator(
-                STATE_CONFIG,
-                new EmergencyRecoveryFile(EMERGENCY_ROUND, emergencyHash, RandomUtils.randomInstant(random)));
+                STATE_CONFIG, new EmergencyRecoveryFile(EMERGENCY_ROUND, emergencyHash, random.randomInstant()));
 
         assertDoesNotThrow(
                 () -> validator.validate(laterState, addressBook, null),
@@ -178,23 +170,21 @@ public class EmergencySignedStateValidatorTests {
     @DisplayName("Invalid Later State - Wrong Epoch Hash")
     @Test
     void invalidLaterStateWrongEpochHash() {
-        final Random random = RandomUtils.getRandomPrintSeed();
         final List<NodeId> majorityWeightNodes =
                 IntStream.range(0, NUM_NODES - 1).mapToObj(NodeId::new).toList();
 
-        final SignedState laterState = new RandomSignedStateGenerator()
+        final SignedState laterState = new RandomSignedStateGenerator(random)
                 .setAddressBook(addressBook)
                 .setRound(EMERGENCY_ROUND + 1)
                 .setSigningNodeIds(majorityWeightNodes)
                 .build();
 
-        final Hash emergencyHash = RandomUtils.randomHash(random);
-        final Hash badEpochHash = RandomUtils.randomHash(random);
+        final Hash emergencyHash = random.randomHash();
+        final Hash badEpochHash = random.randomHash();
         laterState.getState().getPlatformState().setNextEpochHash(badEpochHash);
 
         validator = new EmergencySignedStateValidator(
-                STATE_CONFIG,
-                new EmergencyRecoveryFile(EMERGENCY_ROUND, emergencyHash, RandomUtils.randomInstant(random)));
+                STATE_CONFIG, new EmergencyRecoveryFile(EMERGENCY_ROUND, emergencyHash, random.randomInstant()));
 
         assertThrows(
                 SignedStateInvalidException.class,
@@ -209,23 +199,20 @@ public class EmergencySignedStateValidatorTests {
     @DisplayName("Invalid Later State - Insufficient Signatures")
     @Test
     void invalidLaterStateNotSignedByMajority() {
-        final Random random = RandomUtils.getRandomPrintSeed();
-
         final List<NodeId> lessThanMajorityWeightNodes =
                 IntStream.range(0, NUM_NODES / 2).mapToObj(NodeId::new).toList();
 
-        final SignedState laterState = new RandomSignedStateGenerator()
+        final SignedState laterState = new RandomSignedStateGenerator(random)
                 .setAddressBook(addressBook)
                 .setRound(EMERGENCY_ROUND + 1)
                 .setSigningNodeIds(lessThanMajorityWeightNodes)
                 .build();
 
-        final Hash emergencyHash = RandomUtils.randomHash(random);
+        final Hash emergencyHash = random.randomHash();
         laterState.getState().getPlatformState().setEpochHash(emergencyHash);
 
         validator = new EmergencySignedStateValidator(
-                STATE_CONFIG,
-                new EmergencyRecoveryFile(EMERGENCY_ROUND, emergencyHash, RandomUtils.randomInstant(random)));
+                STATE_CONFIG, new EmergencyRecoveryFile(EMERGENCY_ROUND, emergencyHash, random.randomInstant()));
 
         assertThrows(
                 SignedStateInvalidException.class,

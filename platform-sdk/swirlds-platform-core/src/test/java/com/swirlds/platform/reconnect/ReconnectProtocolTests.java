@@ -36,6 +36,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.utility.ValueReference;
 import com.swirlds.config.api.Configuration;
@@ -187,6 +188,8 @@ class ReconnectProtocolTests {
     @ParameterizedTest
     @MethodSource("acceptParams")
     void testShouldAccept(final AcceptParams params) {
+        final Randotron random = Randotron.create();
+
         final ReconnectThrottle teacherThrottle = mock(ReconnectThrottle.class);
         when(teacherThrottle.initiateReconnect(any())).thenReturn(!params.teacherIsThrottled);
 
@@ -195,7 +198,7 @@ class ReconnectProtocolTests {
 
         final SignedState signedState;
         if (params.teacherHasValidState) {
-            signedState = spy(new RandomSignedStateGenerator().build());
+            signedState = spy(new RandomSignedStateGenerator(random).build());
             when(signedState.isComplete()).thenReturn(true);
         } else {
             signedState = null;
@@ -278,6 +281,8 @@ class ReconnectProtocolTests {
     @DisplayName("Tests if teacher throttle gets released")
     @Test
     void testTeacherThrottleReleased() {
+        final Randotron random = Randotron.create();
+
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
         final Configuration config = new TestConfigBuilder()
                 // we don't want the time based throttle to interfere
@@ -305,7 +310,7 @@ class ReconnectProtocolTests {
                 activeStatusGetter,
                 configuration,
                 Time.getCurrent());
-        final SignedState signedState = spy(new RandomSignedStateGenerator().build());
+        final SignedState signedState = spy(new RandomSignedStateGenerator(random).build());
         when(signedState.isComplete()).thenReturn(true);
         final State state = mock(State.class);
         when(signedState.getState()).thenReturn(state);
@@ -380,6 +385,8 @@ class ReconnectProtocolTests {
     @Test
     @DisplayName("Aborted Teacher")
     void abortedTeacher() {
+        final Randotron random = Randotron.create();
+
         final ReconnectThrottle reconnectThrottle = mock(ReconnectThrottle.class);
         when(reconnectThrottle.initiateReconnect(any())).thenReturn(true);
         final ValueReference<Boolean> throttleReleased = new ValueReference<>(false);
@@ -394,7 +401,7 @@ class ReconnectProtocolTests {
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
         when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
 
-        final SignedState signedState = spy(new RandomSignedStateGenerator().build());
+        final SignedState signedState = spy(new RandomSignedStateGenerator(random).build());
         when(signedState.isComplete()).thenReturn(true);
 
         final ReservedSignedState reservedSignedState = signedState.reserve("test");
@@ -459,10 +466,12 @@ class ReconnectProtocolTests {
     @Test
     @DisplayName("Teacher doesn't have a status of ACTIVE")
     void teacherNotActive() {
+        final Randotron random = Randotron.create();
+
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
         when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
 
-        final SignedState signedState = spy(new RandomSignedStateGenerator().build());
+        final SignedState signedState = spy(new RandomSignedStateGenerator(random).build());
         when(signedState.isComplete()).thenReturn(true);
 
         final ReservedSignedState reservedSignedState = signedState.reserve("test");
@@ -492,7 +501,9 @@ class ReconnectProtocolTests {
     @Test
     @DisplayName("Teacher holds the learner permit while teaching")
     void teacherHoldsLearnerPermit() {
-        final SignedState signedState = spy(new RandomSignedStateGenerator().build());
+        final Randotron random = Randotron.create();
+
+        final SignedState signedState = spy(new RandomSignedStateGenerator(random).build());
         when(signedState.isComplete()).thenReturn(true);
         signedState.reserve("test");
 
@@ -536,7 +547,9 @@ class ReconnectProtocolTests {
     @Test
     @DisplayName("Teacher holds the learner permit while teaching")
     void teacherCantAcquireLearnerPermit() {
-        final SignedState signedState = spy(new RandomSignedStateGenerator().build());
+        final Randotron random = Randotron.create();
+
+        final SignedState signedState = spy(new RandomSignedStateGenerator(random).build());
         when(signedState.isComplete()).thenReturn(true);
         signedState.reserve("test");
 

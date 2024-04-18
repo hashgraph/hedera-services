@@ -30,7 +30,7 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.consensus.EventWindow;
@@ -53,7 +53,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -95,7 +94,7 @@ class ShadowgraphTest {
         genToShadows = new HashMap<>();
     }
 
-    private void initShadowgraph(final Random random, final int numEvents, final int numNodes) {
+    private void initShadowgraph(final Randotron random, final int numEvents, final int numNodes) {
         addressBook = new RandomAddressBookGenerator(random).setSize(numNodes).build();
 
         final PlatformContext platformContext =
@@ -134,7 +133,7 @@ class ShadowgraphTest {
     @ParameterizedTest
     @MethodSource("graphSizes")
     void testFindAncestorsForMultipleEvents(final int numEvents, final int numNodes) {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         initShadowgraph(random, numEvents, numNodes);
 
@@ -156,7 +155,7 @@ class ShadowgraphTest {
 
     @RepeatedTest(10)
     void testFindAncestorsExcludesExpiredEvents() {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         initShadowgraph(random, 100, 4);
 
         final long expireBelowGen = random.nextInt(10) + 1;
@@ -207,7 +206,7 @@ class ShadowgraphTest {
     @ParameterizedTest
     @MethodSource("graphSizes")
     void testSingleReservation(final int numEvents, final int numNodes) {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         initShadowgraph(random, numEvents, numNodes);
 
         final ReservedEventWindow r1 = shadowgraph.reserve();
@@ -240,7 +239,7 @@ class ShadowgraphTest {
     @ParameterizedTest
     @MethodSource("graphSizes")
     void testMultipleReservationsNoExpiry(final int numEvents, final int numNodes) {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         initShadowgraph(random, numEvents, numNodes);
 
         final ReservedEventWindow r1 = shadowgraph.reserve();
@@ -284,7 +283,7 @@ class ShadowgraphTest {
     @ParameterizedTest
     @MethodSource("graphSizes")
     void testMultipleReservationsWithExpiry(final int numEvents, final int numNodes) {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         initShadowgraph(random, numEvents, numNodes);
 
         final long expireBelowGen = FIRST_GENERATION + 1;
@@ -348,7 +347,7 @@ class ShadowgraphTest {
     @ParameterizedTest
     @MethodSource("graphSizes")
     void testExpireNoReservations(final int numEvents, final int numNodes) {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         initShadowgraph(random, numEvents, numNodes);
 
         final long expireBelowGen = random.nextInt((int) maxGen) + 2;
@@ -388,7 +387,7 @@ class ShadowgraphTest {
     @ParameterizedTest
     @MethodSource("graphSizes")
     void testExpireWithReservation(final int numEvents, final int numNodes) {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         initShadowgraph(random, numEvents, numNodes);
         SyncTestUtils.printEvents("generated events", generatedEvents);
 
@@ -437,7 +436,7 @@ class ShadowgraphTest {
 
     @Test
     void testShadow() {
-        initShadowgraph(RandomUtils.getRandomPrintSeed(), 0, 4);
+        initShadowgraph(Randotron.create(), 0, 4);
         assertNull(shadowgraph.shadow(null), "Passing null should return null.");
         final IndexedEvent event = emitter.emitEvent();
         assertDoesNotThrow(() -> shadowgraph.addEvent(event), "Adding an tip event should succeed.");
@@ -449,7 +448,7 @@ class ShadowgraphTest {
 
     @Test
     void testShadowsNullListThrowsNPE() {
-        initShadowgraph(RandomUtils.getRandomPrintSeed(), 0, 4);
+        initShadowgraph(Randotron.create(), 0, 4);
         assertThrows(
                 NullPointerException.class,
                 () -> shadowgraph.shadows(null),
@@ -458,7 +457,7 @@ class ShadowgraphTest {
 
     @Test
     void testShadows() {
-        initShadowgraph(RandomUtils.getRandomPrintSeed(), 0, 4);
+        initShadowgraph(Randotron.create(), 0, 4);
         final List<IndexedEvent> events = emitter.emitEvents(10);
         events.forEach(e -> assertDoesNotThrow(() -> shadowgraph.addEvent(e), "Adding new tip events should succeed."));
 
@@ -478,7 +477,7 @@ class ShadowgraphTest {
 
     @Test
     void testShadowsWithUnknownEvents() {
-        initShadowgraph(RandomUtils.getRandomPrintSeed(), 0, 4);
+        initShadowgraph(Randotron.create(), 0, 4);
         final List<IndexedEvent> events = emitter.emitEvents(10);
         events.forEach(e -> assertDoesNotThrow(() -> shadowgraph.addEvent(e), "Adding new tip events should succeed."));
 
@@ -513,7 +512,7 @@ class ShadowgraphTest {
 
     @Test
     void testAddNullEvent() {
-        initShadowgraph(RandomUtils.getRandomPrintSeed(), 0, 4);
+        initShadowgraph(Randotron.create(), 0, 4);
         assertThrows(
                 NullPointerException.class,
                 () -> shadowgraph.addEvent(null),
@@ -522,7 +521,7 @@ class ShadowgraphTest {
 
     @RepeatedTest(10)
     void testAddDuplicateEvent() {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         initShadowgraph(random, 10, 4);
         final IndexedEvent randomDuplicateEvent = generatedEvents.get(random.nextInt(generatedEvents.size()));
         assertThrows(
@@ -536,7 +535,7 @@ class ShadowgraphTest {
      */
     @Test
     void testAddEventWithExpiredGeneration() {
-        initShadowgraph(RandomUtils.getRandomPrintSeed(), 100, 4);
+        initShadowgraph(Randotron.create(), 100, 4);
 
         shadowgraph.updateEventWindow(new EventWindow(
                 0 /* ignored by shadowgraph */,
@@ -553,7 +552,7 @@ class ShadowgraphTest {
 
     @Test
     void testAddEventWithUnknownOtherParent() {
-        initShadowgraph(RandomUtils.getRandomPrintSeed(), 100, 4);
+        initShadowgraph(Randotron.create(), 100, 4);
 
         final IndexedEvent newEvent = emitter.emitEvent();
         newEvent.setOtherParent(emitter.emitEvent());
@@ -564,7 +563,7 @@ class ShadowgraphTest {
 
     @Test
     void testAddEventWithUnknownSelfParent() {
-        initShadowgraph(RandomUtils.getRandomPrintSeed(), 100, 4);
+        initShadowgraph(Randotron.create(), 100, 4);
 
         final IndexedEvent newEvent = emitter.emitEvent();
         newEvent.setSelfParent(emitter.emitEvent());
@@ -574,7 +573,7 @@ class ShadowgraphTest {
 
     @Test
     void testAddEventWithExpiredParents() {
-        initShadowgraph(RandomUtils.getRandomPrintSeed(), 100, 4);
+        initShadowgraph(Randotron.create(), 100, 4);
 
         final IndexedEvent newEvent = emitter.emitEvent();
         final EventWindow eventWindow = new EventWindow(
@@ -589,7 +588,7 @@ class ShadowgraphTest {
 
     @Test
     void testAddEventUpdatesTips() {
-        initShadowgraph(RandomUtils.getRandomPrintSeed(), 100, 4);
+        initShadowgraph(Randotron.create(), 100, 4);
 
         final int tipsSize = shadowgraph.getTips().size();
         final int additionalEvents = 100;
@@ -614,14 +613,14 @@ class ShadowgraphTest {
 
     @Test
     void testHashgraphEventWithNullHash() {
-        initShadowgraph(RandomUtils.getRandomPrintSeed(), 100, 4);
+        initShadowgraph(Randotron.create(), 100, 4);
 
         assertNull(shadowgraph.hashgraphEvent(null), "Passing a null hash should result in a null return value.");
     }
 
     @RepeatedTest(10)
     void testHashgraphEventWithExistingHash() {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         initShadowgraph(random, 100, 4);
 
         final IndexedEvent randomExistingEvent = generatedEvents.get(random.nextInt(generatedEvents.size()));
@@ -633,7 +632,7 @@ class ShadowgraphTest {
 
     @Test
     void testClear() {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         initShadowgraph(random, 100, 4);
 
         ReservedEventWindow r0 = shadowgraph.reserve();
@@ -660,7 +659,7 @@ class ShadowgraphTest {
     @Test
     @DisplayName("Test that clear() disconnect all shadow events in the shadow graph")
     void testClearDisconnects() {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         initShadowgraph(random, 100, 4);
 
         final List<ShadowEvent> tips = shadowgraph.getTips();
@@ -684,7 +683,7 @@ class ShadowgraphTest {
 
     @RepeatedTest(10)
     void testTipsExpired() {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         initShadowgraph(random, 100, 4);
 
         long oldestTipGen = Long.MAX_VALUE;
@@ -720,7 +719,7 @@ class ShadowgraphTest {
         final int numNodes = 21;
         final int numRuns = 10;
 
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final AddressBook addressBook =
                 new RandomAddressBookGenerator(random).setSize(numNodes).build();
         final PlatformContext platformContext =

@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.recovery;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.generateRandomEvents;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.getLastEventStreamFile;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.getMiddleEventStreamFile;
@@ -32,6 +31,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.EventStreamLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamMultiFileIterator;
@@ -52,7 +52,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Random;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -80,7 +79,7 @@ class EventStreamMultiFileIteratorTest {
     @Test
     @DisplayName("Read All Events Test")
     void readAllEventsTest() throws IOException, NoSuchAlgorithmException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
@@ -116,7 +115,7 @@ class EventStreamMultiFileIteratorTest {
     @Test
     @DisplayName("Read Events Starting At Round Test")
     void readEventsStartingAtRoundTest() throws NoSuchAlgorithmException, IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
@@ -158,7 +157,7 @@ class EventStreamMultiFileIteratorTest {
     @DisplayName("Read Events Starting At Non-Existent Round Test")
     void readEventsStartingAtNonExistentRoundTest() throws NoSuchAlgorithmException, IOException {
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
@@ -189,7 +188,7 @@ class EventStreamMultiFileIteratorTest {
     @DisplayName("Read Events Starting At Non-Existent Round Test")
     void missingEventStreamFileTest() throws IOException, NoSuchAlgorithmException {
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
@@ -233,7 +232,7 @@ class EventStreamMultiFileIteratorTest {
     @Test
     @DisplayName("Truncate Last File Test")
     void truncatedLastFileTest() throws NoSuchAlgorithmException, IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
@@ -285,7 +284,7 @@ class EventStreamMultiFileIteratorTest {
     @Test
     @DisplayName("Truncate Middle File Test")
     void truncatedMiddleFileTest() throws NoSuchAlgorithmException, IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
@@ -331,7 +330,7 @@ class EventStreamMultiFileIteratorTest {
     void extensiveBoundTest() throws IOException, NoSuchAlgorithmException, ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;

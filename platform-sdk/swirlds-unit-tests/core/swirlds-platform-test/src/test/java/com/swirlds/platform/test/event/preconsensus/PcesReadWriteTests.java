@@ -32,7 +32,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesFile;
@@ -53,7 +53,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Random;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -104,13 +103,13 @@ class PcesReadWriteTests {
     @MethodSource("buildArguments")
     @DisplayName("Write Then Read Test")
     void writeThenReadTest(@NonNull final AncientMode ancientMode) throws IOException {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int numEvents = 100;
 
         final StandardGraphGenerator generator = new StandardGraphGenerator(
                 ancientMode == GENERATION_THRESHOLD ? DEFAULT_PLATFORM_CONTEXT : BIRTH_ROUND_PLATFORM_CONTEXT,
-                random.nextLong(),
+                random,
                 new StandardEventSource(),
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -129,13 +128,7 @@ class PcesReadWriteTests {
         upperBound += random.nextInt(0, 10);
 
         final PcesFile file = PcesFile.of(
-                ancientMode,
-                RandomUtils.randomInstant(random),
-                random.nextInt(0, 100),
-                0,
-                upperBound,
-                0,
-                testDirectory);
+                ancientMode, random.randomInstant(), random.nextInt(0, 100), 0, upperBound, 0, testDirectory);
 
         final PcesMutableFile mutableFile = file.getMutableFile();
         for (final GossipEvent event : events) {
@@ -157,13 +150,13 @@ class PcesReadWriteTests {
     @MethodSource("buildArguments")
     @DisplayName("Read Files After Minimum Test")
     void readFilesAfterMinimumTest(@NonNull final AncientMode ancientMode) throws IOException {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int numEvents = 100;
 
         final StandardGraphGenerator generator = new StandardGraphGenerator(
                 ancientMode == GENERATION_THRESHOLD ? DEFAULT_PLATFORM_CONTEXT : BIRTH_ROUND_PLATFORM_CONTEXT,
-                random.nextLong(),
+                random,
                 new StandardEventSource(),
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -184,13 +177,7 @@ class PcesReadWriteTests {
         upperBound += random.nextInt(0, 10);
 
         final PcesFile file = PcesFile.of(
-                ancientMode,
-                RandomUtils.randomInstant(random),
-                random.nextInt(0, 100),
-                0,
-                upperBound,
-                upperBound,
-                testDirectory);
+                ancientMode, random.randomInstant(), random.nextInt(0, 100), 0, upperBound, upperBound, testDirectory);
 
         final PcesMutableFile mutableFile = file.getMutableFile();
         for (final GossipEvent event : events) {
@@ -222,11 +209,11 @@ class PcesReadWriteTests {
     @MethodSource("buildArguments")
     @DisplayName("Read Empty File Test")
     void readEmptyFileTest(@NonNull final AncientMode ancientMode) throws IOException {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final PcesFile file = PcesFile.of(
                 ancientMode,
-                RandomUtils.randomInstant(random),
+                random.randomInstant(),
                 random.nextInt(0, 100),
                 random.nextLong(0, 1000),
                 random.nextLong(1000, 2000),
@@ -245,13 +232,13 @@ class PcesReadWriteTests {
     @DisplayName("Truncated Event Test")
     void truncatedEventTest(@NonNull final AncientMode ancientMode) throws IOException {
         for (final boolean truncateOnBoundary : List.of(true, false)) {
-            final Random random = RandomUtils.getRandomPrintSeed();
+            final Randotron random = Randotron.create();
 
             final int numEvents = 100;
 
             final StandardGraphGenerator generator = new StandardGraphGenerator(
                     ancientMode == GENERATION_THRESHOLD ? DEFAULT_PLATFORM_CONTEXT : BIRTH_ROUND_PLATFORM_CONTEXT,
-                    random.nextLong(),
+                    random,
                     new StandardEventSource(),
                     new StandardEventSource(),
                     new StandardEventSource(),
@@ -271,7 +258,7 @@ class PcesReadWriteTests {
 
             final PcesFile file = PcesFile.of(
                     ancientMode,
-                    RandomUtils.randomInstant(random),
+                    random.randomInstant(),
                     random.nextInt(0, 100),
                     0,
                     upperBound,
@@ -314,13 +301,13 @@ class PcesReadWriteTests {
     @MethodSource("buildArguments")
     @DisplayName("Corrupted Events Test")
     void corruptedEventsTest(@NonNull final AncientMode ancientMode) throws IOException {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int numEvents = 100;
 
         final StandardGraphGenerator generator = new StandardGraphGenerator(
                 ancientMode == GENERATION_THRESHOLD ? DEFAULT_PLATFORM_CONTEXT : BIRTH_ROUND_PLATFORM_CONTEXT,
-                random.nextLong(),
+                random,
                 new StandardEventSource(),
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -339,13 +326,7 @@ class PcesReadWriteTests {
         upperBound += random.nextInt(0, 10);
 
         final PcesFile file = PcesFile.of(
-                ancientMode,
-                RandomUtils.randomInstant(random),
-                random.nextInt(0, 100),
-                0,
-                upperBound,
-                0,
-                testDirectory);
+                ancientMode, random.randomInstant(), random.nextInt(0, 100), 0, upperBound, 0, testDirectory);
 
         final Map<Integer /* event index */, Integer /* last byte position */> byteBoundaries = new HashMap<>();
 
@@ -378,13 +359,13 @@ class PcesReadWriteTests {
     @MethodSource("buildArguments")
     @DisplayName("Write Invalid Event Test")
     void writeInvalidEventTest(@NonNull final AncientMode ancientMode) throws IOException {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int numEvents = 100;
 
         final StandardGraphGenerator generator = new StandardGraphGenerator(
                 ancientMode == GENERATION_THRESHOLD ? DEFAULT_PLATFORM_CONTEXT : BIRTH_ROUND_PLATFORM_CONTEXT,
-                random.nextLong(),
+                random,
                 new StandardEventSource(),
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -408,7 +389,7 @@ class PcesReadWriteTests {
 
         final PcesFile file = PcesFile.of(
                 ancientMode,
-                RandomUtils.randomInstant(random),
+                random.randomInstant(),
                 random.nextInt(0, 100),
                 restrictedLowerBound,
                 restrictedUpperBound,
@@ -441,13 +422,13 @@ class PcesReadWriteTests {
     @MethodSource("buildArguments")
     @DisplayName("Span Compression Test")
     void spanCompressionTest(@NonNull final AncientMode ancientMode) throws IOException {
-        final Random random = RandomUtils.getRandomPrintSeed(0);
+        final Randotron random = Randotron.create();
 
         final int numEvents = 100;
 
         final StandardGraphGenerator generator = new StandardGraphGenerator(
                 ancientMode == GENERATION_THRESHOLD ? DEFAULT_PLATFORM_CONTEXT : BIRTH_ROUND_PLATFORM_CONTEXT,
-                random.nextLong(),
+                random,
                 new StandardEventSource(),
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -468,13 +449,7 @@ class PcesReadWriteTests {
         upperBound += random.nextInt(1, 10);
 
         final PcesFile file = PcesFile.of(
-                ancientMode,
-                RandomUtils.randomInstant(random),
-                random.nextInt(0, 100),
-                lowerBound,
-                upperBound,
-                0,
-                testDirectory);
+                ancientMode, random.randomInstant(), random.nextInt(0, 100), lowerBound, upperBound, 0, testDirectory);
 
         final PcesMutableFile mutableFile = file.getMutableFile();
         for (final GossipEvent event : events) {
@@ -507,13 +482,13 @@ class PcesReadWriteTests {
     @MethodSource("buildArguments")
     @DisplayName("Partial Span Compression Test")
     void partialSpanCompressionTest(@NonNull final AncientMode ancientMode) throws IOException {
-        final Random random = RandomUtils.getRandomPrintSeed(0);
+        final Randotron random = Randotron.create();
 
         final int numEvents = 100;
 
         final StandardGraphGenerator generator = new StandardGraphGenerator(
                 ancientMode == GENERATION_THRESHOLD ? DEFAULT_PLATFORM_CONTEXT : BIRTH_ROUND_PLATFORM_CONTEXT,
-                random.nextLong(),
+                random,
                 new StandardEventSource(),
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -536,7 +511,7 @@ class PcesReadWriteTests {
 
         final PcesFile file = PcesFile.of(
                 ancientMode,
-                RandomUtils.randomInstant(random),
+                random.randomInstant(),
                 random.nextInt(0, 100),
                 lowerBound,
                 maximumFileBoundary,

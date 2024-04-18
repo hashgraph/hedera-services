@@ -17,6 +17,7 @@
 package com.swirlds.platform.test.fixtures.event.generator;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
@@ -70,12 +71,11 @@ public interface GraphGenerator<T extends GraphGenerator<T>> {
     T cleanCopy();
 
     /**
-     * Get a clean copy but with a different seed.
+     * Get a clean copy but with a different random instance
      *
-     * @param seed
-     * 		The new seed to use.
+     * @param random a source of randomness
      */
-    T cleanCopy(long seed);
+    T cleanCopy(@NonNull final Randotron random);
 
     /**
      * Reset this generator to its original state. Does not undo settings changes, just the events that have been

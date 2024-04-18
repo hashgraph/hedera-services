@@ -21,7 +21,7 @@ import static com.swirlds.platform.system.events.EventConstants.BIRTH_ROUND_UNDE
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -36,7 +36,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Objects;
-import java.util.Random;
 
 /**
  * A builder for creating event instances for testing purposes.
@@ -49,7 +48,7 @@ public class TestingEventBuilder {
     private static final int DEFAULT_SYSTEM_TRANSACTION_COUNT = 0;
     private static final int DEFAULT_TRANSACTION_SIZE = 4;
 
-    private final Random random;
+    private final Randotron random;
 
     /**
      * Creator ID to use.
@@ -155,7 +154,7 @@ public class TestingEventBuilder {
      *
      * @param random a source of randomness
      */
-    public TestingEventBuilder(@NonNull final Random random) {
+    public TestingEventBuilder(@NonNull final Randotron random) {
         this.random = Objects.requireNonNull(random);
     }
 
@@ -395,8 +394,8 @@ public class TestingEventBuilder {
         for (int i = appTransactionCount; i < appTransactionCount + systemTransactionCount; ++i) {
             generatedTransactions[i] = new StateSignatureTransaction(
                     random.nextLong(0, Long.MAX_VALUE),
-                    RandomUtils.randomSignatureBytes(random),
-                    RandomUtils.randomHashBytes(random),
+                    random.randomSignatureBytes(),
+                    random.randomHashBytes(),
                     Bytes.EMPTY);
         }
 
@@ -497,7 +496,7 @@ public class TestingEventBuilder {
                 birthRound,
                 timeCreated,
                 transactions);
-        hashedData.setHash(RandomUtils.randomHash(random));
+        hashedData.setHash(random.randomHash());
 
         final byte[] signature = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(signature);

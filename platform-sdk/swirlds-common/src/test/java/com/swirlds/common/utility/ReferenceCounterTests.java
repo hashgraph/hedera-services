@@ -16,14 +16,13 @@
 
 package com.swirlds.common.utility;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.exceptions.ReferenceCountException;
-import java.util.Random;
+import com.swirlds.common.test.fixtures.Randotron;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -74,7 +73,7 @@ class ReferenceCounterTests {
     @DisplayName("Explicit Reservation Test")
     void explicitReservationTest() {
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         ValueReference<Boolean> destroyed = new ValueReference<>(false);
         final Runnable onDestroy = () -> {

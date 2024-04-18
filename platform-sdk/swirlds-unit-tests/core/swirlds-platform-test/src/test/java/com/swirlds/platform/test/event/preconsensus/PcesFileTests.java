@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.test.event.preconsensus;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static com.swirlds.common.test.fixtures.io.FileManipulation.writeRandomBytes;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
@@ -41,7 +39,7 @@ import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.event.AncientMode;
@@ -58,7 +56,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -131,7 +128,7 @@ class PcesFileTests {
     @MethodSource("buildArguments")
     @DisplayName("File Name Test")
     void fileNameTest(@NonNull final AncientMode ancientMode) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         int count = 100;
         while (count-- > 0) {
@@ -139,7 +136,7 @@ class PcesFileTests {
             final long lowerBound = random.nextLong(1000);
             final long upperBound = random.nextLong(lowerBound, lowerBound + 1000);
             final long origin = random.nextLong(1000);
-            final Instant timestamp = RandomUtils.randomInstant(random);
+            final Instant timestamp = random.randomInstant();
 
             final String lowerBoundPrefix =
                     ancientMode == GENERATION_THRESHOLD ? MINIMUM_GENERATION_PREFIX : MINIMUM_BIRTH_ROUND_PREFIX;
@@ -164,7 +161,7 @@ class PcesFileTests {
     @MethodSource("buildArguments")
     @DisplayName("File Path Test")
     void filePathTest(@NonNull final AncientMode ancientMode) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         int count = 100;
         while (count-- > 0) {
@@ -173,7 +170,7 @@ class PcesFileTests {
             final long lowerBound = random.nextLong(1000);
             final long upperBound = random.nextLong(lowerBound, lowerBound + 1000);
             final long origin = random.nextLong(1000);
-            final Instant timestamp = RandomUtils.randomInstant(random);
+            final Instant timestamp = random.randomInstant();
 
             final ZonedDateTime zonedDateTime = timestamp.atZone(ZoneId.systemDefault());
             final int year = zonedDateTime.getYear();
@@ -202,7 +199,7 @@ class PcesFileTests {
     @MethodSource("buildArguments")
     @DisplayName("Parsing Test")
     void parsingTest(@NonNull final AncientMode ancientMode) throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         int count = 100;
         while (count-- > 0) {
@@ -210,7 +207,7 @@ class PcesFileTests {
             final long lowerBound = random.nextLong(1000);
             final long upperBound = random.nextLong(lowerBound, lowerBound + 1000);
             final long origin = random.nextLong(1000);
-            final Instant timestamp = RandomUtils.randomInstant(random);
+            final Instant timestamp = random.randomInstant();
 
             final Path directory = Path.of("foo/bar/baz");
 
@@ -257,7 +254,7 @@ class PcesFileTests {
     @MethodSource("buildArguments")
     @DisplayName("Deletion Test")
     void deletionTest(@NonNull final AncientMode ancientMode) throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Instant now = Instant.now();
 
         // When we start out, the test directory should be empty.
@@ -317,7 +314,7 @@ class PcesFileTests {
     @MethodSource("buildArguments")
     @DisplayName("Recycle Test")
     void recycleTest(@NonNull final AncientMode ancientMode) throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Instant now = Instant.now();
 
         final Path streamDirectory = testDirectory.resolve("data");
@@ -397,7 +394,7 @@ class PcesFileTests {
     @MethodSource("buildArguments")
     @DisplayName("compareTo() Test")
     void compareToTest(@NonNull final AncientMode ancientMode) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final Path directory = Path.of("foo/bar/baz");
 
@@ -413,7 +410,7 @@ class PcesFileTests {
 
             final PcesFile a = PcesFile.of(
                     ancientMode,
-                    randomInstant(random),
+                    random.randomInstant(),
                     sequenceA,
                     lowerBoundA,
                     upperBoundA,
@@ -421,7 +418,7 @@ class PcesFileTests {
                     directory);
             final PcesFile b = PcesFile.of(
                     ancientMode,
-                    randomInstant(random),
+                    random.randomInstant(),
                     sequenceB,
                     lowerBoundB,
                     upperBoundB,
@@ -436,7 +433,7 @@ class PcesFileTests {
     @MethodSource("buildArguments")
     @DisplayName("canContain() Test")
     void canContainTest(@NonNull final AncientMode ancientMode) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final Path directory = Path.of("foo/bar/baz");
 
@@ -444,7 +441,7 @@ class PcesFileTests {
             final long sequenceNumber = random.nextLong(1000);
             final long lowerBound = random.nextLong(1000);
             final long upperBound = random.nextLong(lowerBound + 1, lowerBound + 1000);
-            final Instant timestamp = RandomUtils.randomInstant(random);
+            final Instant timestamp = random.randomInstant();
 
             final PcesFile file =
                     PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, 0, directory);
@@ -470,7 +467,7 @@ class PcesFileTests {
     @MethodSource("buildArguments")
     @DisplayName("Span Compression Test")
     void spanCompressionTest(@NonNull final AncientMode ancientMode) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final Path directory = Path.of("foo/bar/baz");
 
@@ -478,7 +475,7 @@ class PcesFileTests {
         final long lowerBound = random.nextLong(1000);
         final long upperBound = random.nextLong(lowerBound + 5, lowerBound + 1000);
         final long origin = random.nextLong(1000);
-        final Instant timestamp = randomInstant(random);
+        final Instant timestamp = random.randomInstant();
 
         final PcesFile file =
                 PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, origin, directory);

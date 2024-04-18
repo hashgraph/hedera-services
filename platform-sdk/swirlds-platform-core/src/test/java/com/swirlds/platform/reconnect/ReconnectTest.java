@@ -29,7 +29,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.merkle.util.PairedStreams;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
@@ -51,7 +51,6 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -107,7 +106,7 @@ final class ReconnectTest {
         final int numNodes = 4;
         final List<NodeId> nodeIds =
                 IntStream.range(0, numNodes).mapToObj(NodeId::new).toList();
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(numNodes)
@@ -117,7 +116,7 @@ final class ReconnectTest {
                 .build();
 
         try (final PairedStreams pairedStreams = new PairedStreams()) {
-            final SignedState signedState = new RandomSignedStateGenerator()
+            final SignedState signedState = new RandomSignedStateGenerator(random)
                     .setAddressBook(addressBook)
                     .setSigningNodeIds(nodeIds)
                     .build();

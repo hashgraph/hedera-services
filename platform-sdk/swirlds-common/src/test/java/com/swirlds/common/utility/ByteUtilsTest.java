@@ -19,7 +19,6 @@ package com.swirlds.common.utility;
 import static com.swirlds.base.units.UnitConstants.BYTES_PER_INT;
 import static com.swirlds.base.units.UnitConstants.BYTES_PER_LONG;
 import static com.swirlds.base.units.UnitConstants.BYTES_PER_SHORT;
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.utility.ByteUtils.byteArrayToInt;
 import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
 import static com.swirlds.common.utility.ByteUtils.byteArrayToShort;
@@ -30,7 +29,7 @@ import static com.swirlds.common.utility.ByteUtils.shortToByteArray;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-import java.util.Random;
+import com.swirlds.common.test.fixtures.Randotron;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -40,7 +39,7 @@ class ByteUtilsTest {
     @Test
     @DisplayName("Short Array Test")
     void shortArrayTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final int count = 10_000;
         final int bufferSize = 1_000;
 
@@ -61,7 +60,7 @@ class ByteUtilsTest {
     @Test
     @DisplayName("Int Array Test")
     void intArrayTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final int count = 10_000;
         final int bufferSize = 1_000;
 
@@ -82,7 +81,7 @@ class ByteUtilsTest {
     @Test
     @DisplayName("Long Array Test")
     void longArrayTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final int count = 10_000;
         final int bufferSize = 1_000;
 
@@ -103,7 +102,7 @@ class ByteUtilsTest {
     @Test
     @DisplayName("Partial Long Test")
     void partialLongTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final long value = random.nextLong();
         final byte[] bytes = longToByteArray(value);
@@ -118,7 +117,7 @@ class ByteUtilsTest {
     @Test
     @DisplayName("Partial Int Test")
     void partialIntTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int value = random.nextInt();
         final byte[] bytes = intToByteArray(value);
@@ -133,7 +132,7 @@ class ByteUtilsTest {
     @Test
     @DisplayName("Partial Short Test")
     void partialShortTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final short value = (short) random.nextInt();
         final byte[] bytes = shortToByteArray(value);
@@ -148,7 +147,7 @@ class ByteUtilsTest {
     @Test
     @DisplayName("Reverse Array Test")
     void reverseArrayTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         for (int arrayLength = 0; arrayLength < 100; arrayLength++) {
             final byte[] array = new byte[arrayLength];
             random.nextBytes(array);

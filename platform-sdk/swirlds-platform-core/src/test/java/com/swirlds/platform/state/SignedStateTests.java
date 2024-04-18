@@ -28,6 +28,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.exceptions.ReferenceCountException;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -47,7 +48,7 @@ class SignedStateTests {
     /**
      * Generate a signed state.
      */
-    private SignedState generateSignedState(final Random random, final State state) {
+    private SignedState generateSignedState(final Randotron random, final State state) {
         return new RandomSignedStateGenerator(random).setState(state).build();
     }
 
@@ -92,7 +93,7 @@ class SignedStateTests {
     @Test
     @DisplayName("Reservation Test")
     void reservationTest() throws InterruptedException {
-        final Random random = new Random();
+        final Randotron random = (Randotron) new Random();
 
         final AtomicBoolean reserved = new AtomicBoolean(false);
         final AtomicBoolean released = new AtomicBoolean(false);
@@ -150,7 +151,7 @@ class SignedStateTests {
     @Test
     @DisplayName("No Garbage Collector Test")
     void noGarbageCollectorTest() {
-        final Random random = new Random();
+        final Randotron random = Randotron.create();
 
         final AtomicBoolean reserved = new AtomicBoolean(false);
         final AtomicBoolean archived = new AtomicBoolean(false);

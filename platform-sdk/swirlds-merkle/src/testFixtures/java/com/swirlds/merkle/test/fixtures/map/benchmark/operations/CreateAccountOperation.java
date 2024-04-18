@@ -16,14 +16,13 @@
 
 package com.swirlds.merkle.test.fixtures.map.benchmark.operations;
 
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.benchmark.AbstractBenchmarkOperation;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.test.fixtures.map.benchmark.AccountFactory;
 import com.swirlds.merkle.test.fixtures.map.benchmark.BenchmarkAccount;
 import com.swirlds.merkle.test.fixtures.map.benchmark.BenchmarkKey;
 import com.swirlds.merkle.test.fixtures.map.benchmark.MerkleMapBenchmarkMetadata;
-import java.util.Random;
 
 /**
  * Simulate the creation of an account.
@@ -76,12 +75,12 @@ public class CreateAccountOperation<A extends BenchmarkAccount, M extends Merkle
      * {@inheritDoc}
      */
     @Override
-    public void prepare(final M metadata, final Random random) {
+    public void prepare(final M metadata, final Randotron random) {
         fromKey = metadata.getRandomKey(random);
         newFromBalance = random.nextLong();
 
         newAccountKey = metadata.getNewKey();
-        newAccount = accountFactory.buildAccount(random.nextLong(), RandomUtils.randomByteArray(random, dataSize));
+        newAccount = accountFactory.buildAccount(random.nextLong(), random.randomByteArray(dataSize));
 
         nodeFeeKey = metadata.getRandomNodeFeeKey(random);
         newNodeBalance = random.nextLong();

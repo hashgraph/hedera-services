@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -30,6 +28,7 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.state.signed.SigSet;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -37,7 +36,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -51,13 +49,13 @@ class SigSetTests {
         return nodes;
     }
 
-    private static Map<NodeId, Signature> generateSignatureMap(final Random random) {
+    private static Map<NodeId, Signature> generateSignatureMap(final Randotron random) {
         final Map<NodeId, Signature> signatures = new HashMap<>();
 
         for (int i = 0; i < 1_000; i++) {
             // There will be a few duplicates, but that doesn't really matter
             final NodeId nodeId = new NodeId(random.nextLong(0, 10_000));
-            final Signature signature = randomSignature(random);
+            final Signature signature = random.randomSignature();
             signatures.put(nodeId, signature);
         }
 
@@ -67,7 +65,7 @@ class SigSetTests {
     @Test
     @DisplayName("Basic Operation Test")
     void basicOperationTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final Map<NodeId, Signature> signatures = generateSignatureMap(random);
 
@@ -105,7 +103,7 @@ class SigSetTests {
     void serializationTest() throws IOException, ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("");
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final SigSet sigSet = new SigSet();
 
         generateSignatureMap(random).forEach(sigSet::addSignature);

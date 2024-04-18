@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.recovery;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.generateRandomEvents;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.getLastEventStreamFile;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.getMiddleEventStreamFile;
@@ -33,6 +32,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.EventStreamPathIterator;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
@@ -48,7 +48,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Random;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
@@ -78,7 +77,7 @@ class EventStreamRoundIteratorTest {
     void readAllEventsTest() throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
@@ -123,7 +122,7 @@ class EventStreamRoundIteratorTest {
 
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
@@ -177,7 +176,7 @@ class EventStreamRoundIteratorTest {
     void missingEventFileTest() throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
@@ -241,7 +240,7 @@ class EventStreamRoundIteratorTest {
     void earlyRoundsNotPresentTest() throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
@@ -264,7 +263,7 @@ class EventStreamRoundIteratorTest {
     void readAllEventsTruncatedFileTest() throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
@@ -326,7 +325,7 @@ class EventStreamRoundIteratorTest {
 
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;

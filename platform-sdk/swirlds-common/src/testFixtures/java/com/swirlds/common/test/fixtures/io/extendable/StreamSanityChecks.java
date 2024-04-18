@@ -16,10 +16,10 @@
 
 package com.swirlds.common.test.fixtures.io.extendable;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.swirlds.common.test.fixtures.Randotron;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -164,7 +164,7 @@ public final class StreamSanityChecks {
     public static void inputStreamSanityCheck(final Function<InputStream, InputStream> streamBuilder)
             throws IOException {
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int dataSize = 1024;
         final int iterations = 1024;
@@ -209,7 +209,7 @@ public final class StreamSanityChecks {
     public static void outputStreamSanityCheck(final Function<OutputStream, OutputStream> streamBuilder)
             throws IOException {
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int dataSize = 1024;
         final int iterations = 1024;

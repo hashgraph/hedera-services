@@ -22,7 +22,7 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -31,7 +31,6 @@ import com.swirlds.platform.config.TransactionConfig_;
 import com.swirlds.platform.metrics.TransactionMetrics;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
-import java.util.Random;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,7 +45,7 @@ class SwirldTransactionSubmitterTest {
 
     private TransactionConfig transactionConfig;
 
-    private Random random;
+    private Randotron random;
 
     private PlatformStatus platformStatus;
 
@@ -63,7 +62,7 @@ class SwirldTransactionSubmitterTest {
 
     @BeforeEach
     void setup() {
-        random = RandomUtils.getRandom();
+        random = Randotron.create();
         platformStatus = PlatformStatus.ACTIVE;
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(TransactionConfig_.TRANSACTION_MAX_BYTES, 6144)

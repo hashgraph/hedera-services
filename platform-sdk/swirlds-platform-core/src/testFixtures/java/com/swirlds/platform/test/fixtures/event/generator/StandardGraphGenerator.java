@@ -23,6 +23,7 @@ import static com.swirlds.platform.test.fixtures.event.RandomEventUtils.DEFAULT_
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.event.linking.ConsensusLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
@@ -107,26 +108,28 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
      * Note: once an event source has been passed to this constructor it should not be modified by the outer context.
      *
      * @param platformContext the platform context
-     * @param seed            The random seed used to generate events.
+     * @param random          a source of randomness
      * @param eventSources    One or more event sources.
      */
     public StandardGraphGenerator(
-            @NonNull final PlatformContext platformContext, final long seed, final EventSource<?>... eventSources) {
-        this(platformContext, seed, new ArrayList<>(Arrays.asList(eventSources)));
+            @NonNull final PlatformContext platformContext,
+            @NonNull final Randotron random,
+            final EventSource<?>... eventSources) {
+        this(platformContext, random, new ArrayList<>(Arrays.asList(eventSources)));
     }
 
     /**
      * Construct a new StandardEventGenerator.
      *
      * @param platformContext the platform context
-     * @param seed            The random seed used to generate events.
+     * @param random          a source of randomness
      * @param eventSources    One or more event sources.
      */
     public StandardGraphGenerator(
             @NonNull PlatformContext platformContext,
-            final long seed,
+            @NonNull final Randotron random,
             @NonNull final List<EventSource<?>> eventSources) {
-        super(seed);
+        super(random);
         this.platformContext = Objects.requireNonNull(platformContext);
         Objects.requireNonNull(eventSources);
 
@@ -143,16 +146,16 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     /**
      * Construct a new StandardEventGenerator.
      *
-     * @param seed         The random seed used to generate events.
+     * @param random       a source of randomness
      * @param eventSources One or more event sources.
      * @param addressBook  The address book to use with the event sources.
      */
     public StandardGraphGenerator(
             @NonNull final PlatformContext platformContext,
-            final long seed,
+            @NonNull final Randotron random,
             @NonNull final List<EventSource<?>> eventSources,
             @NonNull final AddressBook addressBook) {
-        super(seed);
+        super(random);
         this.platformContext = Objects.requireNonNull(platformContext);
         Objects.requireNonNull(eventSources);
         Objects.requireNonNull(addressBook);
@@ -171,14 +174,14 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
      * Copy constructor.
      */
     private StandardGraphGenerator(final StandardGraphGenerator that) {
-        this(that, that.getInitialSeed());
+        this(that, that.getRandom());
     }
 
     /**
-     * Copy constructor, but with a different seed.
+     * Copy constructor, but with a different source of randomness.
      */
-    private StandardGraphGenerator(final StandardGraphGenerator that, final long seed) {
-        super(seed);
+    private StandardGraphGenerator(final StandardGraphGenerator that, @NonNull final Randotron random) {
+        super(random);
 
         this.affinityMatrix = that.affinityMatrix.cleanCopy();
         this.sources = new ArrayList<>(that.sources.size());
@@ -403,8 +406,8 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
      * {@inheritDoc}
      */
     @Override
-    public StandardGraphGenerator cleanCopy(final long newSeed) {
-        return new StandardGraphGenerator(this, newSeed);
+    public StandardGraphGenerator cleanCopy(@NonNull final Randotron newRandom) {
+        return new StandardGraphGenerator(this, newRandom);
     }
 
     /**

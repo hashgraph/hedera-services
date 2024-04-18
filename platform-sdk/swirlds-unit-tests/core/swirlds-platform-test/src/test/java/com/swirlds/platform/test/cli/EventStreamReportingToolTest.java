@@ -20,7 +20,7 @@ import static com.swirlds.platform.test.consensus.ConsensusTestArgs.DEFAULT_PLAT
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.event.report.EventStreamReport;
 import com.swirlds.platform.event.report.EventStreamScanner;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -39,7 +39,6 @@ import java.time.Instant;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
@@ -68,7 +67,7 @@ class EventStreamReportingToolTest {
      */
     @Test
     void createReportTest() throws IOException, ConstructableRegistryException {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final int numNodes = 10;
         final int numEvents = 100_000;
         final Duration eventStreamWindowSize = Duration.ofSeconds(1);
@@ -77,8 +76,8 @@ class EventStreamReportingToolTest {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         // generate consensus events
-        final Deque<ConsensusRound> rounds = GenerateConsensus.generateConsensusRounds(
-                DEFAULT_PLATFORM_CONTEXT, numNodes, numEvents, random.nextLong());
+        final Deque<ConsensusRound> rounds =
+                GenerateConsensus.generateConsensusRounds(DEFAULT_PLATFORM_CONTEXT, numNodes, numEvents, random);
         if (rounds.isEmpty()) {
             Assertions.fail("events are excepted to reach consensus");
         }
@@ -113,7 +112,7 @@ class EventStreamReportingToolTest {
      */
     @Test
     void createTimeBoundReportTest() throws IOException, ConstructableRegistryException {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final int numNodes = 10;
         final int numEvents = 100_000;
         final Duration eventStreamWindowSize = Duration.ofSeconds(1);
@@ -122,8 +121,8 @@ class EventStreamReportingToolTest {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         // generate consensus events
-        final Deque<ConsensusRound> rounds = GenerateConsensus.generateConsensusRounds(
-                DEFAULT_PLATFORM_CONTEXT, numNodes, numEvents, random.nextLong());
+        final Deque<ConsensusRound> rounds =
+                GenerateConsensus.generateConsensusRounds(DEFAULT_PLATFORM_CONTEXT, numNodes, numEvents, random);
         if (rounds.isEmpty()) {
             Assertions.fail("events are excepted to reach consensus");
         }

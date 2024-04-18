@@ -19,13 +19,13 @@ package com.swirlds.platform.test.graph;
 import static com.swirlds.platform.test.fixtures.event.EventImplTestUtils.createEventImpl;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.time.Instant;
 import java.util.List;
-import java.util.Random;
 
 public class SimpleGraphs {
     /**
@@ -39,7 +39,7 @@ public class SimpleGraphs {
      * 0  1
      * </pre>
      */
-    public static List<GossipEvent> graph5e2n(final Random random) {
+    public static List<GossipEvent> graph5e2n(final Randotron random) {
         final GossipEvent e0 =
                 new TestingEventBuilder(random).setCreatorId(new NodeId(1)).build();
         final GossipEvent e1 =
@@ -82,7 +82,7 @@ public class SimpleGraphs {
      *
      * </pre>
      */
-    public static List<EventImpl> graph9e3n(final Random random) {
+    public static List<EventImpl> graph9e3n(final Randotron random) {
         // generation 0
         final EventImpl e0 = createEventImpl(
                 new TestingEventBuilder(random)

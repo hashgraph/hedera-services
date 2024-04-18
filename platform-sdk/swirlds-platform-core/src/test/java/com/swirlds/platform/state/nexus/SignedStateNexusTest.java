@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusConstants;
@@ -59,9 +60,11 @@ class SignedStateNexusTest {
     @ParameterizedTest
     @MethodSource("allInstances")
     void basicUsage(@NonNull final SignedStateNexus nexus) {
+        final Randotron random = Randotron.create();
+
         final int round = 123;
         final ReservedSignedState original =
-                new RandomSignedStateGenerator().setRound(round).build().reserve("test");
+                new RandomSignedStateGenerator(random).setRound(round).build().reserve("test");
 
         assertNull(nexus.getState("reason"), "Should be null when initialized");
         assertEquals(ConsensusConstants.ROUND_UNDEFINED, nexus.getRound(), "Should be undefined when initialized");
@@ -74,7 +77,7 @@ class SignedStateNexusTest {
         assertEquals(round, nexus.getRound(), "Should be set to the round of the state");
 
         assertFalse(original.isClosed(), "Should not be closed since its still held by the nexus");
-        nexus.setState(realState());
+        nexus.setState(realState(random));
         assertTrue(original.isClosed(), "Should be closed once its replaced");
 
         nexus.clear();
@@ -85,7 +88,9 @@ class SignedStateNexusTest {
     @ParameterizedTest
     @MethodSource("allInstances")
     void closedStateTest(@NonNull final SignedStateNexus nexus) {
-        final ReservedSignedState reservedSignedState = realState();
+        final Randotron random = Randotron.create();
+
+        final ReservedSignedState reservedSignedState = realState(random);
         nexus.setState(reservedSignedState);
         reservedSignedState.close();
         assertNull(
@@ -99,7 +104,9 @@ class SignedStateNexusTest {
     @ParameterizedTest
     @MethodSource("raceConditionInstances")
     void raceConditionTest(@NonNull final SignedStateNexus nexus) throws InterruptedException {
-        final ReservedSignedState state1 = mockState();
+        final Randotron random = Randotron.create();
+
+        final ReservedSignedState state1 = mockState(random);
         final CountDownLatch unblockThread = new CountDownLatch(1);
         final CountDownLatch threadWaiting = new CountDownLatch(1);
         Mockito.when(state1.tryGetAndReserve(Mockito.any())).then(i -> {
@@ -107,8 +114,8 @@ class SignedStateNexusTest {
             unblockThread.await();
             return null;
         });
-        final ReservedSignedState state2 = mockState();
-        final ReservedSignedState state2child = mockState();
+        final ReservedSignedState state2 = mockState(random);
+        final ReservedSignedState state2child = mockState(random);
         Mockito.when(state2.tryGetAndReserve(Mockito.any())).thenReturn(state2child);
 
         final CountDownLatch threadDone = new CountDownLatch(1);
@@ -137,14 +144,14 @@ class SignedStateNexusTest {
         assertSame(state2child, threadGetResult.get(), "The nexus should have returned the child of state2");
     }
 
-    private static ReservedSignedState mockState() {
+    private static ReservedSignedState mockState(@NonNull final Randotron random) {
         final ReservedSignedState state = Mockito.mock(ReservedSignedState.class);
-        final SignedState ss = new RandomSignedStateGenerator().build();
+        final SignedState ss = new RandomSignedStateGenerator(random).build();
         Mockito.when(state.get()).thenReturn(ss);
         return state;
     }
 
-    private static ReservedSignedState realState() {
-        return new RandomSignedStateGenerator().build().reserve("test");
+    private static ReservedSignedState realState(@NonNull final Randotron random) {
+        return new RandomSignedStateGenerator(random).build().reserve("test");
     }
 }

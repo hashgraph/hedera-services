@@ -17,6 +17,7 @@
 package com.swirlds.platform.test.event.emitter;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.source.EventSourceFactory;
 import com.swirlds.platform.test.event.source.ForkingEventSource;
@@ -108,12 +109,12 @@ public class EventEmitterFactory {
         if (addressBook == null) {
             return new StandardGraphGenerator(
                     platformContext,
-                    commonSeed, // standard seed must be the same across all generators
+                    Randotron.create(commonSeed), // standard seed must be the same across all generators
                     eventSources);
         } else {
             return new StandardGraphGenerator(
                     platformContext,
-                    commonSeed, // standard seed must be the same across all generators
+                    Randotron.create(commonSeed), // standard seed must be the same across all generators
                     eventSources,
                     addressBook);
         }
@@ -123,7 +124,7 @@ public class EventEmitterFactory {
         return new ShuffledEventEmitter(
                 new StandardGraphGenerator(
                         platformContext,
-                        commonSeed, // standard seed must be the same across all generators
+                        Randotron.create(commonSeed), // standard seed must be the same across all generators
                         eventSources),
                 random.nextLong() // shuffle seed changes every time
                 );

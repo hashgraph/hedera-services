@@ -16,9 +16,6 @@
 
 package com.swirlds.platform.recovery;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomPositiveLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -34,7 +31,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.internal.EventImpl;
@@ -48,7 +45,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -207,14 +203,14 @@ class EventRecoveryWorkflowTests {
     @Test
     @DisplayName("getHashEventConsTest")
     void getHashEventConsTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final int eventCount = 100;
 
-        final Hash initialHash1 = randomHash(random);
+        final Hash initialHash1 = random.randomHash();
 
         final List<ConsensusEvent> events1 = new ArrayList<>();
         for (int eventIndex = 0; eventIndex < eventCount; eventIndex++) {
-            final EventImpl event = buildEventWithRunningHash(randomHash(random));
+            final EventImpl event = buildEventWithRunningHash(random.randomHash());
             events1.add(event);
         }
         final Hash hash1 = EventRecoveryWorkflow.getHashEventsCons(initialHash1, buildMockRound(events1));
@@ -226,7 +222,7 @@ class EventRecoveryWorkflowTests {
                 "hash should be deterministic");
 
         // Different starting hash
-        final Hash initialHash2 = randomHash(random);
+        final Hash initialHash2 = random.randomHash();
         assertNotEquals(
                 hash1,
                 EventRecoveryWorkflow.getHashEventsCons(initialHash2, buildMockRound(copyRunningHashEvents(events1))),
@@ -234,7 +230,7 @@ class EventRecoveryWorkflowTests {
 
         // add another event
         final List<ConsensusEvent> events2 = copyRunningHashEvents(events1);
-        final EventImpl newEvent = buildEventWithRunningHash(randomHash(random));
+        final EventImpl newEvent = buildEventWithRunningHash(random.randomHash());
         events2.add(newEvent);
         assertNotEquals(
                 hash1,
@@ -251,7 +247,7 @@ class EventRecoveryWorkflowTests {
 
         // replace an event
         final List<ConsensusEvent> events4 = copyRunningHashEvents(events1);
-        final EventImpl replacementEvent = buildEventWithRunningHash(randomHash(random));
+        final EventImpl replacementEvent = buildEventWithRunningHash(random.randomHash());
         events4.set(0, replacementEvent);
         assertNotEquals(
                 hash1,
@@ -261,15 +257,15 @@ class EventRecoveryWorkflowTests {
 
     @Test
     void testUpdateEmergencyRecoveryFile() throws IOException {
-        final Random random = RandomUtils.getRandomPrintSeed();
-        final Hash hash = randomHash(random);
-        final long round = randomPositiveLong(random);
-        final Instant stateTimestamp = Instant.ofEpochMilli(randomPositiveLong(random));
+        final Randotron random = Randotron.create();
+        final Hash hash = random.randomHash();
+        final long round = random.randomPositiveLong();
+        final Instant stateTimestamp = Instant.ofEpochMilli(random.randomPositiveLong());
 
         final EmergencyRecoveryFile recoveryFile = new EmergencyRecoveryFile(round, hash, stateTimestamp);
         recoveryFile.write(tmpDir);
 
-        final Instant bootstrapTime = Instant.ofEpochMilli(randomPositiveLong(random));
+        final Instant bootstrapTime = Instant.ofEpochMilli(random.randomPositiveLong());
 
         EventRecoveryWorkflow.updateEmergencyRecoveryFile(stateConfig, tmpDir, bootstrapTime);
 

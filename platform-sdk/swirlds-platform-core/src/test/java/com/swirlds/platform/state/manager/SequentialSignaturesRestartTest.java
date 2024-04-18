@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state.manager;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.state.manager.SignatureVerificationTestUtils.buildFakeSignature;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -90,7 +89,7 @@ public class SequentialSignaturesRestartTest extends AbstractStateSignatureColle
                 .build();
 
         // Simulate a restart (i.e. loading a state from disk)
-        final Hash stateHash = randomHash(random);
+        final Hash stateHash = random.randomHash();
         final Map<NodeId, Signature> signatures = new HashMap<>();
         for (final Address address : addressBook) {
             signatures.put(address.getNodeId(), buildFakeSignature(address.getSigPublicKey(), stateHash));

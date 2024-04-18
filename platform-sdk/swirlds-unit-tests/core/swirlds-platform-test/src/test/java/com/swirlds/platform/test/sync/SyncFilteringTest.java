@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.sync;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -24,6 +23,7 @@ import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
@@ -41,7 +41,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -60,7 +59,7 @@ class SyncFilteringTest {
      */
     private static List<EventImpl> generateEvents(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Random random,
+            @NonNull final Randotron random,
             @NonNull final AddressBook addressBook,
             @NonNull final FakeTime time,
             final Duration timeStep,
@@ -73,7 +72,7 @@ class SyncFilteringTest {
             sources.add(new StandardEventSource(false));
         }
         final StandardGraphGenerator generator =
-                new StandardGraphGenerator(platformContext, random.nextLong(), sources, addressBook);
+                new StandardGraphGenerator(platformContext, random, sources, addressBook);
 
         for (int i = 0; i < count; i++) {
             final EventImpl event = generator.generateEvent();
@@ -122,7 +121,7 @@ class SyncFilteringTest {
 
     @Test
     void filterLikelyDuplicatesTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final AddressBook addressBook =
                 new RandomAddressBookGenerator(random).setSize(32).build();

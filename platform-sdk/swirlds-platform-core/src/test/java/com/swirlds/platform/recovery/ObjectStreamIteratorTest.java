@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.recovery;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.generateRandomEvents;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.getFirstEventStreamFile;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.truncateFile;
@@ -35,6 +34,7 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.ObjectStreamIterator;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -47,7 +47,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Random;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -79,7 +78,7 @@ class ObjectStreamIteratorTest {
 
         // FUTURE WORK: once streaming code is simplified, rewrite this test to use simple object types
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
 
         final List<EventImpl> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
@@ -148,7 +147,7 @@ class ObjectStreamIteratorTest {
 
         // FUTURE WORK: once streaming code is simplified, rewrite this test to use simple object types
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
 
         final List<EventImpl> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
@@ -206,7 +205,7 @@ class ObjectStreamIteratorTest {
 
         // FUTURE WORK: once streaming code is simplified, rewrite this test to use simple object types
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
 
         final List<EventImpl> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);

@@ -18,19 +18,18 @@ package com.swirlds.common.wiring.schedulers;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder.UNLIMITED_CAPACITY;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.TestWiringModelBuilder;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
-import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -50,7 +49,7 @@ class ConcurrentTaskSchedulerTests {
     void allOperationsHandledTest() {
         final WiringModel model = TestWiringModelBuilder.create();
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final AtomicLong count = new AtomicLong();
         final Consumer<Integer> handler = x -> {
@@ -91,7 +90,7 @@ class ConcurrentTaskSchedulerTests {
     void parallelOperationTest() {
         final WiringModel model = TestWiringModelBuilder.create();
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         // Each operation has a value that needs to be added the counter.
         // Most operations will have a null latch & started variables.

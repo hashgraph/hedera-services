@@ -22,7 +22,6 @@ import static com.swirlds.common.merkle.route.MerkleRouteFactory.getEmptyRoute;
 import static com.swirlds.common.merkle.route.MerkleRouteFactory.setRouteEncodingStrategy;
 import static com.swirlds.common.merkle.route.MerkleRouteUtils.merkleRouteToPathFormat;
 import static com.swirlds.common.merkle.route.MerkleRouteUtils.pathFormatToMerkleRoute;
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -37,6 +36,7 @@ import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
 import com.swirlds.common.merkle.route.ReverseMerkleRouteIterator;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleNode;
@@ -514,7 +514,7 @@ class MerkleRouteTests {
     @DisplayName("getParent() Test")
     void getParentTest(final MerkleRouteFactory.MerkleRouteEncoding encoding) {
         setRouteEncodingStrategy(encoding);
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         MerkleRoute parent = getEmptyRoute();
         for (int i = 0; i < 100; i++) {
@@ -537,7 +537,7 @@ class MerkleRouteTests {
     @DisplayName("Path Format Test")
     void pathFormatTest(final MerkleRouteFactory.MerkleRouteEncoding encoding) {
         setRouteEncodingStrategy(encoding);
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         for (int length = 0; length < 20; length++) {
             final List<Integer> steps = new LinkedList<>();

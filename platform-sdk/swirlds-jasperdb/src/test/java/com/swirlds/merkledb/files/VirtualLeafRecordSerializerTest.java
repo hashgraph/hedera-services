@@ -16,8 +16,6 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
-import static com.swirlds.common.test.fixtures.RandomUtils.nextLong;
 import static com.swirlds.merkledb.serialize.BaseSerializer.VARIABLE_DATA_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -25,6 +23,7 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
@@ -94,8 +93,10 @@ class VirtualLeafRecordSerializerTest {
     @ParameterizedTest
     @EnumSource(TestType.class)
     void testSerializeDeserialize(final TestType testType) throws IOException {
+        final Randotron random = Randotron.create();
+
         final VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> record =
-                testType.dataType().createVirtualLeafRecord(nextLong(), nextInt(), nextInt());
+                testType.dataType().createVirtualLeafRecord(random.nextLong(), random.nextInt(), random.nextInt());
 
         final var serializer = createSerializer(testType);
         final BufferedData buffer = BufferedData.allocate(2048);
@@ -111,7 +112,9 @@ class VirtualLeafRecordSerializerTest {
     @ParameterizedTest
     @EnumSource(TestType.class)
     public void testGetSerializedSizeForVersionForFixedSize_noHash(final TestType testType) {
-        long version = ((long) nextInt(1, 100) << 16) | ((long) nextInt(1, 100) << 32);
+        final Randotron random = Randotron.create();
+
+        long version = ((long) random.nextInt(1, 100) << 16) | ((long) random.nextInt(1, 100) << 32);
         VirtualLeafRecordSerializer<VirtualLongKey, ExampleByteArrayVirtualValue> serializer =
                 createSerializer(testType);
         if (testType.fixedSize) {
@@ -128,7 +131,9 @@ class VirtualLeafRecordSerializerTest {
     @ParameterizedTest
     @EnumSource(TestType.class)
     public void testGetSerializedSizeForVersionForFixedSize_withHash(final TestType testType) {
-        long version = ((long) nextInt(1, 100) << 16) | ((long) nextInt(1, 100) << 32) | 0x1;
+        final Randotron random = Randotron.create();
+
+        long version = ((long) random.nextInt(1, 100) << 16) | ((long) random.nextInt(1, 100) << 32) | 0x1;
         VirtualLeafRecordSerializer<VirtualLongKey, ExampleByteArrayVirtualValue> serializer =
                 createSerializer(testType);
         if (testType.fixedSize) {

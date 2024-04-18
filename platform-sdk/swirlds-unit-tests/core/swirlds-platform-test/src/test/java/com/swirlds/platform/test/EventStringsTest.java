@@ -19,7 +19,7 @@ package com.swirlds.platform.test;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.GossipEvent;
@@ -28,7 +28,6 @@ import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.test.fixtures.event.EventImplTestUtils;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.time.Instant;
-import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -39,7 +38,7 @@ class EventStringsTest {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Test event strings")
     void testCopy() {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         printAssert(EventStrings.toShortString(null), "null", "should indicate that the object is null");
         printAssert(EventStrings.toShortString((GossipEvent) null), "null", "should indicate that the object is null");

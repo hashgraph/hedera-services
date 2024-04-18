@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
@@ -29,14 +29,13 @@ import com.swirlds.platform.wiring.components.StateAndRound;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
 import org.junit.jupiter.api.Test;
 
 class StateGarbageCollectorTests {
 
     @Test
     void standardBehaviorTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();

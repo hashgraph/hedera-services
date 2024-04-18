@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.platform.system.address.AddressBook;
@@ -446,7 +447,7 @@ public class GraphGeneratorTests {
     public void validateCopyWithNewSeed(final GraphGenerator<?> generator) {
         System.out.println("Validate Copy With New Seed");
         final GraphGenerator<?> generator1 = generator.cleanCopy();
-        final GraphGenerator<?> generator2 = generator.cleanCopy(1234);
+        final GraphGenerator<?> generator2 = generator.cleanCopy(Randotron.create(1234));
 
         assertNotEquals(generator1.generateEvents(1000), generator2.generateEvents(1000));
     }
@@ -523,7 +524,7 @@ public class GraphGeneratorTests {
                 birthRoundAsAncientThreshold ? BIRTH_ROUND_PLATFORM_CONTEXT : DEFAULT_PLATFORM_CONTEXT;
         final StandardGraphGenerator generator = new StandardGraphGenerator(
                 platformContext,
-                0,
+                Randotron.create(0),
                 new StandardEventSource(),
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -544,7 +545,7 @@ public class GraphGeneratorTests {
                 birthRoundAsAncientThreshold ? BIRTH_ROUND_PLATFORM_CONTEXT : DEFAULT_PLATFORM_CONTEXT;
         final StandardGraphGenerator generator = new StandardGraphGenerator(
                 platformContext,
-                0,
+                Randotron.create(0),
                 new StandardEventSource(),
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -655,7 +656,7 @@ public class GraphGeneratorTests {
                 birthRoundAsAncientThreshold ? BIRTH_ROUND_PLATFORM_CONTEXT : DEFAULT_PLATFORM_CONTEXT;
         StandardGraphGenerator generator = new StandardGraphGenerator(
                 platformContext,
-                0,
+                Randotron.create(0),
                 new StandardEventSource(),
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -669,7 +670,7 @@ public class GraphGeneratorTests {
         // Completely disable old other parents
         generator = new StandardGraphGenerator(
                 platformContext,
-                0,
+                Randotron.create(0),
                 new StandardEventSource().setRequestedOtherParentAgeDistribution(staticDynamicValue(0)),
                 new StandardEventSource().setRequestedOtherParentAgeDistribution(staticDynamicValue(0)),
                 new StandardEventSource().setRequestedOtherParentAgeDistribution(staticDynamicValue(0)),
@@ -684,7 +685,7 @@ public class GraphGeneratorTests {
         // One node is much more likely to create events with old other parents
         generator = new StandardGraphGenerator(
                 platformContext,
-                0,
+                Randotron.create(0),
                 new StandardEventSource(),
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -713,7 +714,7 @@ public class GraphGeneratorTests {
         // One node likes to consistently provide old other parents, all others always provide most recent parent
         generator = new StandardGraphGenerator(
                 platformContext,
-                0,
+                Randotron.create(0),
                 new StandardEventSource().setRequestedOtherParentAgeDistribution(staticDynamicValue(0)),
                 new StandardEventSource().setRequestedOtherParentAgeDistribution(staticDynamicValue(0)),
                 new StandardEventSource().setRequestedOtherParentAgeDistribution(staticDynamicValue(0)),
@@ -758,7 +759,7 @@ public class GraphGeneratorTests {
                 birthRoundAsAncientThreshold ? BIRTH_ROUND_PLATFORM_CONTEXT : DEFAULT_PLATFORM_CONTEXT;
         final StandardGraphGenerator generator = new StandardGraphGenerator(
                 platformContext,
-                0,
+                Randotron.create(0),
                 new StandardEventSource(),
                 new StandardEventSource(),
                 new StandardEventSource(),

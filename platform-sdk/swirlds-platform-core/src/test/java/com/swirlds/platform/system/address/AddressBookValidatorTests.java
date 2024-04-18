@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,14 +39,16 @@ class AddressBookValidatorTests {
     @Test
     @DisplayName("hasNonZeroWeight Test")
     void hasNonZeroWeightTest() {
+        final Randotron random = Randotron.create();
+
         final AddressBook emptyAddressBook =
-                new RandomAddressBookGenerator().setSize(0).build();
-        final AddressBook zeroWeightAddressBook = new RandomAddressBookGenerator()
+                new RandomAddressBookGenerator(random).setSize(0).build();
+        final AddressBook zeroWeightAddressBook = new RandomAddressBookGenerator(random)
                 .setSize(10)
                 .setCustomWeightGenerator(n -> 0L)
                 .build();
         final AddressBook validAddressBook =
-                new RandomAddressBookGenerator().setSize(10).build();
+                new RandomAddressBookGenerator(random).setSize(10).build();
 
         assertFalse(hasNonZeroWeight(emptyAddressBook), "should fail validation");
         assertFalse(isGenesisAddressBookValid(emptyAddressBook), "should fail validation");
@@ -59,10 +62,12 @@ class AddressBookValidatorTests {
     @Test
     @DisplayName("isNonEmpty Test")
     void isNonEmptyTest() {
+        final Randotron random = Randotron.create();
+
         final AddressBook emptyAddressBook =
-                new RandomAddressBookGenerator().setSize(0).build();
+                new RandomAddressBookGenerator(random).setSize(0).build();
         final AddressBook validAddressBook =
-                new RandomAddressBookGenerator().setSize(10).build();
+                new RandomAddressBookGenerator(random).setSize(10).build();
 
         assertFalse(isNonEmpty(emptyAddressBook), "should fail validation");
         assertFalse(isGenesisAddressBookValid(emptyAddressBook), "should fail validation");
@@ -74,7 +79,8 @@ class AddressBookValidatorTests {
     @Test
     @DisplayName("validNextId Test")
     void validNextIdTest() {
-        final RandomAddressBookGenerator generator = new RandomAddressBookGenerator().setSize(10);
+        final Randotron random = Randotron.create();
+        final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(random).setSize(10);
 
         final AddressBook addressBook1 = generator.build();
         final AddressBook addressBook2 = generator.addToAddressBook(addressBook1.copy());
@@ -96,7 +102,8 @@ class AddressBookValidatorTests {
     @Test
     @DisplayName("noAddressReinsertion Test")
     void noAddressReinsertionTest() {
-        final RandomAddressBookGenerator generator = new RandomAddressBookGenerator().setSize(10);
+        final Randotron random = Randotron.create();
+        final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(random).setSize(10);
 
         final AddressBook addressBook1 = generator.build();
         final AddressBook addressBook2 = generator.build();
@@ -114,7 +121,8 @@ class AddressBookValidatorTests {
     @Test
     @DisplayName("validation of nwew nextNodeId and address book")
     void validateNextNodeIdAndAddressBook() {
-        final RandomAddressBookGenerator generator = new RandomAddressBookGenerator().setSize(10);
+        final Randotron random = Randotron.create();
+        final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(random).setSize(10);
 
         final AddressBook oldAddressBook = generator.build();
         final NodeId oldNextNodeId = oldAddressBook.getNextNodeId();

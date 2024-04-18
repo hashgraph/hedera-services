@@ -16,8 +16,6 @@
 
 package com.swirlds.common.wiring.model;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder.UNLIMITED_CAPACITY;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.CONCURRENT;
@@ -35,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
@@ -366,7 +365,7 @@ class DeterministicModelTests {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void verifyStandardNondeterminism(final boolean enableHeartbeat) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final long meshSeed = random.nextLong();
         final long dataSeed = random.nextLong();
 
@@ -404,11 +403,11 @@ class DeterministicModelTests {
 
     @Test
     void verifyDeterministicModel() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final long meshSeed = random.nextLong();
         final long dataSeed = random.nextLong();
 
-        final FakeTime time = new FakeTime(randomInstant(random), Duration.ZERO);
+        final FakeTime time = new FakeTime(random.randomInstant(), Duration.ZERO);
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().withTime(time).build();
 

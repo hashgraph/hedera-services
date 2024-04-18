@@ -16,7 +16,6 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createRoot;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -32,6 +31,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -55,6 +55,7 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -436,7 +437,8 @@ class VirtualRootNodeTest extends VirtualTestBase {
     @Test
     @DisplayName("Calculate hashes for persisted leaf nodes")
     void testFullRehash() throws InterruptedException {
-        final VirtualRootNode<TestKey, TestValue> root = prepareRootForFullRehash();
+        final Randotron random = Randotron.create();
+        final VirtualRootNode<TestKey, TestValue> root = prepareRootForFullRehash(random);
 
         root.fullLeafRehashIfNecessary();
 
@@ -449,7 +451,8 @@ class VirtualRootNodeTest extends VirtualTestBase {
     @Test
     @DisplayName("Root node should be hashed after full leaves rehash")
     void testHashedAfterFullRehash() {
-        final VirtualRootNode<TestKey, TestValue> root = prepareRootForFullRehash();
+        final Randotron random = Randotron.create();
+        final VirtualRootNode<TestKey, TestValue> root = prepareRootForFullRehash(random);
         root.fullLeafRehashIfNecessary();
 
         assertTrue(root.isHashed());
@@ -458,7 +461,8 @@ class VirtualRootNodeTest extends VirtualTestBase {
     @Test
     @DisplayName("Fail to do full rehash because of save failure")
     void testFullRehash_failOnSave() throws InterruptedException {
-        final VirtualRootNode<TestKey, TestValue> root = prepareRootForFullRehash();
+        final Randotron random = Randotron.create();
+        final VirtualRootNode<TestKey, TestValue> root = prepareRootForFullRehash(random);
         ((InMemoryDataSource) root.getDataSource()).setFailureOnSave(true);
 
         assertThrows(MerkleSynchronizationException.class, () -> root.fullLeafRehashIfNecessary());
@@ -467,7 +471,8 @@ class VirtualRootNodeTest extends VirtualTestBase {
     @Test
     @DisplayName("Fail to do full rehash because of load failure")
     void testFullRehash_failOnLeafLookup() throws InterruptedException {
-        final VirtualRootNode<TestKey, TestValue> root = prepareRootForFullRehash();
+        final Randotron random = Randotron.create();
+        final VirtualRootNode<TestKey, TestValue> root = prepareRootForFullRehash(random);
         ((InMemoryDataSource) root.getDataSource()).setFailureOnLeafRecordLookup(true);
 
         assertThrows(MerkleSynchronizationException.class, () -> root.fullLeafRehashIfNecessary());
@@ -476,19 +481,20 @@ class VirtualRootNodeTest extends VirtualTestBase {
     @Test
     @DisplayName("Fail to do full rehash because of hash lookup failure")
     void testFullRehash_failOnHashLookup() throws InterruptedException {
-        final VirtualRootNode<TestKey, TestValue> root = prepareRootForFullRehash();
+        final Randotron random = Randotron.create();
+        final VirtualRootNode<TestKey, TestValue> root = prepareRootForFullRehash(random);
         ((InMemoryDataSource) root.getDataSource()).setFailureOnHashLookup(true);
 
         assertThrows(UncheckedIOException.class, () -> root.fullLeafRehashIfNecessary());
     }
 
-    private static VirtualRootNode<TestKey, TestValue> prepareRootForFullRehash() {
+    private static VirtualRootNode<TestKey, TestValue> prepareRootForFullRehash(final Random random) {
         final VirtualRootNode<TestKey, TestValue> root = createRoot();
         root.enableFlush();
 
         // add 100 elements
         IntStream.range(1, 101).forEach(index -> {
-            root.put(new TestKey(index), new TestValue(nextInt()));
+            root.put(new TestKey(index), new TestValue(random.nextInt()));
         });
 
         // make sure that the elements have no hashes

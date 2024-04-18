@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.test.event.preconsensus;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
@@ -36,6 +34,7 @@ import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.config.api.Configuration;
@@ -59,7 +58,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -111,7 +109,7 @@ class PcesBirthRoundMigrationTests {
     }
 
     /**
-     * Describes the PCES stream that was writtne by {@link #generateLegacyPcesFiles(Random, DiscontinuityType)}
+     * Describes the PCES stream that was writtne by {@link #generateLegacyPcesFiles(Randotron, DiscontinuityType)}
      *
      * @param files                  a list of files that were written
      * @param events                 a list of all events in the stream, if there is a discontinuty then only include
@@ -128,19 +126,19 @@ class PcesBirthRoundMigrationTests {
      */
     @NonNull
     private PcesFilesWritten generateLegacyPcesFiles(
-            @NonNull final Random random, final DiscontinuityType discontinuityType) throws IOException {
+            @NonNull final Randotron random, final DiscontinuityType discontinuityType) throws IOException {
 
         final int eventCount = 1000;
         final int fileCount = 10;
         final int eventsPerFile = eventCount / fileCount;
-        final Instant startingTime = randomInstant(random);
+        final Instant startingTime = random.randomInstant();
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
         final StandardGraphGenerator generator = new StandardGraphGenerator(
                 platformContext,
-                random.nextLong(),
+                random,
                 new StandardEventSource(),
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -228,7 +226,7 @@ class PcesBirthRoundMigrationTests {
     @ParameterizedTest
     @ValueSource(ints = {0, 1, 2})
     void standardMigrationTest(final int discontinuity) throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final DiscontinuityType discontinuityType = DiscontinuityType.values()[discontinuity];
 
         final Configuration configuration = new TestConfigBuilder()
@@ -350,7 +348,7 @@ class PcesBirthRoundMigrationTests {
 
     @Test
     void botchedMigrationRecoveryTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(RecycleBinConfig_.RECYCLE_BIN_PATH, recycleBinPath)

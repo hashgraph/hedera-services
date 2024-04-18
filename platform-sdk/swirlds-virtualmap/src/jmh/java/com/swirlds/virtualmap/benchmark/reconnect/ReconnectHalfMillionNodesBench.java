@@ -17,12 +17,12 @@
 package com.swirlds.virtualmap.benchmark.reconnect;
 
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
 import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
@@ -48,7 +48,8 @@ public class ReconnectHalfMillionNodesBench extends VirtualMapReconnectBenchBase
         }
 
         // Create a state to be reused in every run
-        StateBuilder.buildState(new Random(9823452658L), 500_000, 0.15, 0.15, testTeacherMap::put, testLearnerMap::put);
+        StateBuilder.buildState(
+                Randotron.create(9823452658L), 500_000, 0.15, 0.15, testTeacherMap::put, testLearnerMap::put);
     }
 
     @Setup(Level.Invocation)

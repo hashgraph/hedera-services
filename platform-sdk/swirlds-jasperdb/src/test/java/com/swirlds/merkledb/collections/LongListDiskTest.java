@@ -16,13 +16,13 @@
 
 package com.swirlds.merkledb.collections;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
 import static com.swirlds.merkledb.collections.LongList.IMPERMISSIBLE_VALUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.ResourceLoader;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -121,6 +121,8 @@ class LongListDiskTest {
 
     @Test
     void updateMinToTheLowerEnd() throws IOException {
+        final Randotron random = Randotron.create();
+
         longListDisk = populateList(new LongListDisk(NUM_LONGS_PER_CHUNK, SAMPLE_SIZE, 0));
         checkData(longListDisk);
         int newMinValidIndex = HALF_SAMPLE_SIZE;
@@ -138,8 +140,8 @@ class LongListDiskTest {
             // if we try to put a value below min valid index, the operation should fail with AssertionError
             int belowMinValidIndex1 = newMinValidIndex - 1;
             int belowMinValidIndex2 = newMinValidIndex - 2;
-            int belowMinIndexValue1 = nextInt();
-            int belowMinIndexValue2 = nextInt();
+            int belowMinIndexValue1 = random.nextInt();
+            int belowMinIndexValue2 = random.nextInt();
             assertThrows(AssertionError.class, () -> halfEmptyList.put(belowMinValidIndex1, belowMinIndexValue1));
             // doesn't throw an AssertionError, but returns false
             assertFalse(halfEmptyList.putIfEqual(belowMinValidIndex2, IMPERMISSIBLE_VALUE, belowMinIndexValue2));

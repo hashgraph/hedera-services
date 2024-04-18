@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.benchmark.Benchmark;
 import com.swirlds.common.test.fixtures.benchmark.BenchmarkConfiguration;
 import com.swirlds.common.test.fixtures.benchmark.BenchmarkOperation;
@@ -38,7 +39,6 @@ import com.swirlds.merkle.test.fixtures.map.benchmark.operations.TransferOperati
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
-import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -48,9 +48,6 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 @DisplayName("MerkleMap Benchmark")
 @Tag(TIMING_SENSITIVE)
 class MerkleMapBenchmark {
-
-    private static final Random random = new Random();
-
     private static final int DATA_SIZE = 100;
 
     @BeforeAll
@@ -65,6 +62,7 @@ class MerkleMapBenchmark {
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Standard MerkleMap Benchmark")
     void standardMerkleMapBenchmark() throws InterruptedException {
+        final Randotron random = Randotron.create();
 
         final int initialStateSize = 2_000_000;
         System.out.println("Generating initial state with " + initialStateSize + " accounts");

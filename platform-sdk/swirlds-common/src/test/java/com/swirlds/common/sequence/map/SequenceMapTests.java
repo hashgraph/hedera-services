@@ -17,7 +17,6 @@
 package com.swirlds.common.sequence.map;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.completeBeforeTimeout;
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.StoppableThread;
@@ -455,7 +455,7 @@ public class SequenceMapTests {
     @MethodSource("testConfiguration")
     @DisplayName("Shifting Window Test")
     void shiftingWindowTest(final MapBuilder mapBuilder) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int size = 100;
         final int capacity = 5;
@@ -1189,7 +1189,7 @@ public class SequenceMapTests {
     @MethodSource("testConfiguration")
     @DisplayName("Expand Start From Sequence 0 Test")
     void expandStartFromSequence0Test(final MapBuilder mapBuilder) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         // The number of things inserted into the map
         final int size = 10_000;
@@ -1227,7 +1227,7 @@ public class SequenceMapTests {
     @MethodSource("testConfiguration")
     @DisplayName("Expand Start From Negative Sequence Test")
     void expandStartFromNegativeSequenceTest(final MapBuilder mapBuilder) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         // The number of things inserted into the map
         final int size = 10_000;
@@ -1267,7 +1267,7 @@ public class SequenceMapTests {
     @MethodSource("testConfiguration")
     @DisplayName("Expand Start From Positive Sequence Test")
     void expandStartFromPositiveSequenceTest(final MapBuilder mapBuilder) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         // The number of things inserted into the map
         final int size = 10_000;
@@ -1307,7 +1307,7 @@ public class SequenceMapTests {
     @MethodSource("testConfiguration")
     @DisplayName("Expand And Shift Test")
     void expandAndShiftTest(final MapBuilder mapBuilder) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int phaseOneCount = 1_000;
         final int phaseTwoCount = 10_000;
@@ -1360,7 +1360,7 @@ public class SequenceMapTests {
     @MethodSource("testConfiguration")
     @DisplayName("Sudden Expansion Test")
     void suddenExpansionTest(final MapBuilder mapBuilder) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         // The number of things inserted into the map
         final int size = 10_000;

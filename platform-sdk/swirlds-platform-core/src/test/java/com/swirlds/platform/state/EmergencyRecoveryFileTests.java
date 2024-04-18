@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.ResourceLoader;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
@@ -68,7 +68,7 @@ public class EmergencyRecoveryFileTests {
 
     @Test
     void testReadWrite() throws IOException {
-        final Random r = RandomUtils.getRandomPrintSeed();
+        final Random r = Randotron.create();
         final EmergencyRecoveryFile toWrite = createRecoveryFile(r);
         toWrite.write(tmpDir);
 
@@ -82,7 +82,7 @@ public class EmergencyRecoveryFileTests {
 
     @Test
     void testReadWriteWithBootstrap() throws IOException {
-        final Random r = RandomUtils.getRandomPrintSeed();
+        final Random r = Randotron.create();
         final EmergencyRecoveryFile toWrite = createRecoveryFileWithBootstrap(r);
         toWrite.write(tmpDir);
 
@@ -101,7 +101,7 @@ public class EmergencyRecoveryFileTests {
 
     @Test
     void testAdditionalValuesDontThrow() {
-        final Random r = RandomUtils.getRandomPrintSeed();
+        final Random r = Randotron.create();
         writeFile(
                 Pair.of("some field", "some value"),
                 Pair.of(FIELD_NAME_ROUND, randomLongString(r)),
@@ -123,7 +123,7 @@ public class EmergencyRecoveryFileTests {
 
     @Test
     void testReadFileWithFieldMissing() {
-        final Random r = RandomUtils.getRandomPrintSeed();
+        final Random r = Randotron.create();
         writeFileWithBootstrap(Pair.of(FIELD_NAME_ROUND, randomLongString(r)));
         assertThrows(
                 IOException.class,
@@ -162,7 +162,7 @@ public class EmergencyRecoveryFileTests {
 
     @Test
     void testHashValueMissing() {
-        final Random r = RandomUtils.getRandomPrintSeed();
+        final Random r = Randotron.create();
         writeFile(
                 // the hash label is present, but the value is missing
                 Pair.of("extra", "extra"),
@@ -177,7 +177,7 @@ public class EmergencyRecoveryFileTests {
 
     @Test
     void testRoundValueMissing() {
-        final Random r = RandomUtils.getRandomPrintSeed();
+        final Random r = Randotron.create();
         writeFile(
                 // the round label is present, but the value is missing
                 Pair.of(FIELD_NAME_ROUND, ""),
@@ -191,7 +191,7 @@ public class EmergencyRecoveryFileTests {
 
     @Test
     void testTimestampValueMissing() {
-        final Random r = RandomUtils.getRandomPrintSeed();
+        final Random r = Randotron.create();
         writeFile(
                 // the timestamp label is present, but the value is missing
                 Pair.of(FIELD_NAME_ROUND, randomLongString(r)),
@@ -210,7 +210,7 @@ public class EmergencyRecoveryFileTests {
 
     @Test
     void testReadWriteLocations() throws IOException {
-        final Random r = RandomUtils.getRandomPrintSeed();
+        final Random r = Randotron.create();
         final EmergencyRecoveryFile file = new EmergencyRecoveryFile(new Recovery(
                 new State(r.nextLong(), randomHash(r), Instant.now()),
                 null,
@@ -225,7 +225,7 @@ public class EmergencyRecoveryFileTests {
     void testBadUrl() throws IOException {
         final URL badUrl = Mockito.mock(URL.class, Mockito.withSettings().mockMaker(MockMakers.INLINE));
         Mockito.when(badUrl.toString()).thenReturn("not a url");
-        final Random r = RandomUtils.getRandomPrintSeed();
+        final Random r = Randotron.create();
         final EmergencyRecoveryFile file = new EmergencyRecoveryFile(new Recovery(
                 new State(r.nextLong(), randomHash(r), Instant.now()),
                 null,
@@ -240,7 +240,7 @@ public class EmergencyRecoveryFileTests {
 
     @Test
     void testReadWriteStream() throws IOException {
-        final Random r = RandomUtils.getRandomPrintSeed();
+        final Random r = Randotron.create();
         final EmergencyRecoveryFile file = new EmergencyRecoveryFile(new Recovery(
                 new State(r.nextLong(), randomHash(r), Instant.now()),
                 null,

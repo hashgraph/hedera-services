@@ -17,13 +17,13 @@
 package com.swirlds.common.io.extendable.extensions;
 
 import static com.swirlds.common.io.extendable.ExtendableOutputStream.extendOutputStream;
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.ExtendableOutputStream;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.extendable.StreamSanityChecks;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -33,7 +33,6 @@ import java.io.OutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -71,7 +70,7 @@ class HashingStreamExtensionTests {
     void inputStreamTest() throws IOException, NoSuchAlgorithmException, NoSuchProviderException {
         final int size = 1024 * 1024;
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final byte[] bytes = new byte[size];
         random.nextBytes(bytes);
 
@@ -120,7 +119,7 @@ class HashingStreamExtensionTests {
     void outputStreamTest() throws IOException, NoSuchAlgorithmException, NoSuchProviderException {
         final int size = 1024 * 1024;
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final byte[] bytes = new byte[size];
         random.nextBytes(bytes);

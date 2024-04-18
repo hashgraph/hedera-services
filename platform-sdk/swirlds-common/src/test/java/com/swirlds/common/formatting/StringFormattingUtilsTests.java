@@ -22,13 +22,11 @@ import static com.swirlds.common.formatting.StringFormattingUtils.formattedList;
 import static com.swirlds.common.formatting.StringFormattingUtils.parseSanitizedTimestamp;
 import static com.swirlds.common.formatting.StringFormattingUtils.repeatedChar;
 import static com.swirlds.common.formatting.StringFormattingUtils.sanitizeTimestamp;
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import java.time.Instant;
 import java.util.List;
-import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -258,8 +256,8 @@ class StringFormattingUtilsTests {
     @Test
     @DisplayName("Sanitized Timestamp Test")
     void sanitizedTimestampTest() {
-        final Random random = getRandomPrintSeed();
-        final Instant original = RandomUtils.randomInstant(random);
+        final Randotron random = Randotron.create();
+        final Instant original = random.randomInstant();
         final String serialized = sanitizeTimestamp(original);
         final Instant deserialized = parseSanitizedTimestamp(serialized);
         assertEquals(original, deserialized);

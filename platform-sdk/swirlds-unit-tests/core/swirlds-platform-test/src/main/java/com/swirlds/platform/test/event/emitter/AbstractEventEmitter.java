@@ -16,7 +16,9 @@
 
 package com.swirlds.platform.test.event.emitter;
 
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Base class for all event emitters. Contains a {@link GraphGenerator} from which events are emitted according to
@@ -84,7 +86,7 @@ public abstract class AbstractEventEmitter<T extends AbstractEventEmitter<T>> im
      * {@inheritDoc}
      */
     @Override
-    public void setGraphGeneratorSeed(final long seed) {
-        graphGenerator = graphGenerator.cleanCopy(seed);
+    public void setGraphGeneratorSeed(@NonNull final Randotron random) {
+        graphGenerator = graphGenerator.cleanCopy(random);
     }
 }

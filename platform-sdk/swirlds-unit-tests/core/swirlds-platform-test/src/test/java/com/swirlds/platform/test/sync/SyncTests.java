@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.threading.ReplaceSyncPhaseParallelExecutor;
 import com.swirlds.common.test.fixtures.threading.SyncPhaseParallelExecutor;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
@@ -201,7 +202,7 @@ public class SyncTests {
         return Stream.of(
                 // This seed makes the caller send the whole graph, should not be the case once we change the tip
                 // definition
-                Arguments.of(new SyncTestParams(4, 100, 20, 1, 4956163591276672768L, GENERATION_THRESHOLD)),
+                Arguments.of(new SyncTestParams(4, 100, 20, 1, GENERATION_THRESHOLD)),
                 Arguments.of(new SyncTestParams(4, 100, 20, 1, GENERATION_THRESHOLD)),
                 Arguments.of(new SyncTestParams(4, 100, 1, 20, GENERATION_THRESHOLD)),
                 Arguments.of(new SyncTestParams(4, 100, 20, 20, GENERATION_THRESHOLD)),
@@ -210,7 +211,7 @@ public class SyncTests {
                 Arguments.of(new SyncTestParams(10, 100, 50, 100, GENERATION_THRESHOLD)),
                 // This seed makes the caller send the whole graph, should not be the case once we change the tip
                 // definition
-                Arguments.of(new SyncTestParams(4, 100, 20, 1, 4956163591276672768L, BIRTH_ROUND_THRESHOLD)),
+                Arguments.of(new SyncTestParams(4, 100, 20, 1, BIRTH_ROUND_THRESHOLD)),
                 Arguments.of(new SyncTestParams(4, 100, 20, 1, BIRTH_ROUND_THRESHOLD)),
                 Arguments.of(new SyncTestParams(4, 100, 1, 20, BIRTH_ROUND_THRESHOLD)),
                 Arguments.of(new SyncTestParams(4, 100, 20, 20, BIRTH_ROUND_THRESHOLD)),
@@ -224,8 +225,8 @@ public class SyncTests {
                 // This seed used to make the caller send the whole graph back when the definition of a tip was an
                 // event with no children (self or other). Now that the definition of a tip is an event with no
                 // self-child, this seed passes.
-                Arguments.of(new SyncTestParams(4, 100, 20, 1, 4956163591276672768L, GENERATION_THRESHOLD)),
-                Arguments.of(new SyncTestParams(4, 100, 20, 1, 4956163591276672768L, BIRTH_ROUND_THRESHOLD)));
+                Arguments.of(new SyncTestParams(4, 100, 20, 1, GENERATION_THRESHOLD)),
+                Arguments.of(new SyncTestParams(4, 100, 20, 1, BIRTH_ROUND_THRESHOLD)));
     }
 
     private static Stream<Arguments> largeGraphParams() {
@@ -256,34 +257,34 @@ public class SyncTests {
 
     private static Stream<Arguments> tipsChangeBreakingSeed() {
         return Stream.of(
-                Arguments.of(new SyncTestParams(10, 0, 20, 0, 6238590233436833292L, GENERATION_THRESHOLD)),
-                Arguments.of(new SyncTestParams(4, 10, 8, 1, 8824331216639179768L, GENERATION_THRESHOLD)),
-                Arguments.of(new SyncTestParams(10, 0, 0, 20, -909134053413382981L, GENERATION_THRESHOLD)),
-                Arguments.of(new SyncTestParams(10, 0, 0, 20, 5236225801504915258L, GENERATION_THRESHOLD)),
-                Arguments.of(new SyncTestParams(4, 10, 1, 1, -3204404663467002969L, GENERATION_THRESHOLD)),
-                Arguments.of(new SyncTestParams(10, 0, 0, 20, -4776092416980912346L, GENERATION_THRESHOLD)),
-                Arguments.of(new SyncTestParams(10, 0, 20, 0, 6238590233436833292L, BIRTH_ROUND_THRESHOLD)),
-                Arguments.of(new SyncTestParams(4, 10, 8, 1, 8824331216639179768L, BIRTH_ROUND_THRESHOLD)),
-                Arguments.of(new SyncTestParams(10, 0, 0, 20, -909134053413382981L, BIRTH_ROUND_THRESHOLD)),
-                Arguments.of(new SyncTestParams(10, 0, 0, 20, 5236225801504915258L, BIRTH_ROUND_THRESHOLD)),
-                Arguments.of(new SyncTestParams(4, 10, 1, 1, -3204404663467002969L, BIRTH_ROUND_THRESHOLD)),
-                Arguments.of(new SyncTestParams(10, 0, 0, 20, -4776092416980912346L, BIRTH_ROUND_THRESHOLD)));
+                Arguments.of(new SyncTestParams(10, 0, 20, 0, GENERATION_THRESHOLD)),
+                Arguments.of(new SyncTestParams(4, 10, 8, 1, GENERATION_THRESHOLD)),
+                Arguments.of(new SyncTestParams(10, 0, 0, 20, GENERATION_THRESHOLD)),
+                Arguments.of(new SyncTestParams(10, 0, 0, 20, GENERATION_THRESHOLD)),
+                Arguments.of(new SyncTestParams(4, 10, 1, 1, GENERATION_THRESHOLD)),
+                Arguments.of(new SyncTestParams(10, 0, 0, 20, GENERATION_THRESHOLD)),
+                Arguments.of(new SyncTestParams(10, 0, 20, 0, BIRTH_ROUND_THRESHOLD)),
+                Arguments.of(new SyncTestParams(4, 10, 8, 1, BIRTH_ROUND_THRESHOLD)),
+                Arguments.of(new SyncTestParams(10, 0, 0, 20, BIRTH_ROUND_THRESHOLD)),
+                Arguments.of(new SyncTestParams(10, 0, 0, 20, BIRTH_ROUND_THRESHOLD)),
+                Arguments.of(new SyncTestParams(4, 10, 1, 1, BIRTH_ROUND_THRESHOLD)),
+                Arguments.of(new SyncTestParams(10, 0, 0, 20, BIRTH_ROUND_THRESHOLD)));
     }
 
     private static Stream<Arguments> simpleGraphBreakingSeed() {
         return Stream.of(
-                Arguments.of(new SyncTestParams(4, 100, 20, 20, -5979073137457357235L, GENERATION_THRESHOLD)),
-                Arguments.of(new SyncTestParams(10, 100, 50, 50, 1861589538493329478L, GENERATION_THRESHOLD)),
-                Arguments.of(new SyncTestParams(4, 100, 20, 20, -5979073137457357235L, BIRTH_ROUND_THRESHOLD)),
-                Arguments.of(new SyncTestParams(10, 100, 50, 50, 1861589538493329478L, BIRTH_ROUND_THRESHOLD)));
+                Arguments.of(new SyncTestParams(4, 100, 20, 20, GENERATION_THRESHOLD)),
+                Arguments.of(new SyncTestParams(10, 100, 50, 50, GENERATION_THRESHOLD)),
+                Arguments.of(new SyncTestParams(4, 100, 20, 20, BIRTH_ROUND_THRESHOLD)),
+                Arguments.of(new SyncTestParams(10, 100, 50, 50, BIRTH_ROUND_THRESHOLD)));
     }
 
     private static Stream<Arguments> tipExpiresBreakingSeed() {
         return Stream.of(
-                Arguments.of(new SyncTestParams(10, 100, 0, 50, 1152284535185134815L, GENERATION_THRESHOLD)),
-                Arguments.of(new SyncTestParams(10, 100, 0, 50, -8664085824668001150L, GENERATION_THRESHOLD)),
-                Arguments.of(new SyncTestParams(10, 1000, 0, 50, 1152284535185134815L, BIRTH_ROUND_THRESHOLD)),
-                Arguments.of(new SyncTestParams(10, 1000, 0, 50, -8664085824668001150L, BIRTH_ROUND_THRESHOLD)));
+                Arguments.of(new SyncTestParams(10, 100, 0, 50, GENERATION_THRESHOLD)),
+                Arguments.of(new SyncTestParams(10, 100, 0, 50, GENERATION_THRESHOLD)),
+                Arguments.of(new SyncTestParams(10, 1000, 0, 50, BIRTH_ROUND_THRESHOLD)),
+                Arguments.of(new SyncTestParams(10, 1000, 0, 50, BIRTH_ROUND_THRESHOLD)));
     }
 
     private static Stream<Arguments> requiredEventsExpire() {
@@ -325,7 +326,9 @@ public class SyncTests {
         "edgeCaseGraphParams"
     })
     void simpleGraph(final SyncTestParams params) throws Exception {
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
+        final Randotron random = Randotron.create();
+
+        final SyncTestExecutor executor = new SyncTestExecutor(params, random);
 
         executor.setGraphCustomization((caller, listener) -> {
             caller.setSaveGeneratedEvents(true);
@@ -345,7 +348,9 @@ public class SyncTests {
     @ParameterizedTest
     @MethodSource({"simpleFourNodeGraphParams"})
     void skipInit(final SyncTestParams params) throws Exception {
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
+        final Randotron random = Randotron.create();
+
+        final SyncTestExecutor executor = new SyncTestExecutor(params, random);
 
         executor.setGraphCustomization((caller, listener) -> {
             caller.setSaveGeneratedEvents(true);
@@ -365,7 +370,9 @@ public class SyncTests {
     @ParameterizedTest
     @MethodSource({"fourNodeGraphParams", "tenNodeGraphParams"})
     void forkingGraph(final SyncTestParams params) throws Exception {
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
+        final Randotron random = Randotron.create();
+
+        final SyncTestExecutor executor = new SyncTestExecutor(params, random);
 
         executor.setCallerSupplier((factory) -> new SyncNode(
                 params.getNumNetworkNodes(), 0, factory.newForkingShuffledGenerator(), params.getAncientMode()));
@@ -390,7 +397,9 @@ public class SyncTests {
     @ParameterizedTest
     @MethodSource({"splitForkParams", "splitForkParamsBreakingSeed"})
     void splitForkGraph(final SyncTestParams params) throws Exception {
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
+        final Randotron random = Randotron.create();
+
+        final SyncTestExecutor executor = new SyncTestExecutor(params, random);
 
         final int creatorToFork = 0;
         final int callerOtherParent = 1;
@@ -435,7 +444,9 @@ public class SyncTests {
     @ParameterizedTest
     @MethodSource({"partitionedGraphParams"})
     void partitionedGraph(final SyncTestParams params) throws Exception {
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
+        final Randotron random = Randotron.create();
+
+        final SyncTestExecutor executor = new SyncTestExecutor(params, random);
 
         final int numPartitionedNodes = (int) Math.ceil(((double) params.getNumNetworkNodes()) / 3.0);
 
@@ -479,7 +490,8 @@ public class SyncTests {
     @ParameterizedTest
     @MethodSource("tenNodeGraphParams")
     void testNoBooleansReceived(final SyncTestParams params) {
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
+        final Randotron random = Randotron.create();
+        final SyncTestExecutor executor = new SyncTestExecutor(params, random);
 
         final ParallelExecutor callerExecutor =
                 new ReplaceSyncPhaseParallelExecutor(getStaticThreadManager(), 2, 1, () -> null);
@@ -511,7 +523,8 @@ public class SyncTests {
     void testCallerExceptionDuringSyncPhase(final SyncTestParams params, final int phaseToThrowIn, final int taskNum)
             throws Exception {
 
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
+        final Randotron random = Randotron.create();
+        final SyncTestExecutor executor = new SyncTestExecutor(params, random);
 
         final ParallelExecutor callerExecutor =
                 new ReplaceSyncPhaseParallelExecutor(getStaticThreadManager(), phaseToThrowIn, taskNum, () -> {
@@ -534,7 +547,8 @@ public class SyncTests {
     void testListenerExceptionDuringSyncPhase(final SyncTestParams params, final int phaseToThrowIn, final int taskNum)
             throws Exception {
 
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
+        final Randotron random = Randotron.create();
+        final SyncTestExecutor executor = new SyncTestExecutor(params, random);
 
         final ParallelExecutor listenerExecutor =
                 new ReplaceSyncPhaseParallelExecutor(getStaticThreadManager(), phaseToThrowIn, taskNum, () -> {
@@ -576,7 +590,8 @@ public class SyncTests {
     @ParameterizedTest
     @MethodSource({"fourNodeGraphParams", "tenNodeGraphParams", "noCommonEventsParams"})
     void testUnknownCreator(final SyncTestParams params) throws Exception {
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
+        final Randotron random = Randotron.create();
+        final SyncTestExecutor executor = new SyncTestExecutor(params, random);
 
         // The node id that is unknown to the caller after the common events are generated
         final int unknownCallerCreator = 0;
@@ -594,7 +609,7 @@ public class SyncTests {
             for (final SyncNode node : List.of(caller, listener)) {
 
                 final GraphGenerator<?> generator = node.getEmitter().getGraphGenerator();
-                generator.setOtherParentAffinity(((random, eventIndex, previousValue) -> {
+                generator.setOtherParentAffinity(((ignoredRandom, eventIndex, previousValue) -> {
                     if (eventIndex < params.getNumCommonEvents()) {
                         // Use the normal matrix for common events
                         return normalOtherMatrix;
@@ -678,7 +693,8 @@ public class SyncTests {
 
         final boolean callerFallenBehind = callerMaximumIndicator < listenerExpiredThreshold;
 
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
+        final Randotron random = Randotron.create();
+        final SyncTestExecutor executor = new SyncTestExecutor(params, random);
 
         executor.setCallerSupplier((factory) ->
                 new SyncNode(params.getNumNetworkNodes(), 0, factory.newStandardEmitter(), params.getAncientMode()));
@@ -722,7 +738,8 @@ public class SyncTests {
     @MethodSource("bothAncientModes")
     void testBarelyNotFallenBehind(@NonNull final AncientMode ancientMode) throws Exception {
         final SyncTestParams params = new SyncTestParams(4, 2000, 2000, 0, ancientMode);
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
+        final Randotron random = Randotron.create();
+        final SyncTestExecutor executor = new SyncTestExecutor(params, random);
 
         executor.setEventWindowDefinitions((caller, listener) -> {
             long listenerMaxIndicator =
@@ -772,7 +789,8 @@ public class SyncTests {
     @MethodSource("bothAncientModes")
     void testSendExpiredEvents(@NonNull final AncientMode ancientMode) throws Exception {
         final SyncTestParams params = new SyncTestParams(4, 20, 10, 0, ancientMode);
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
+        final Randotron random = Randotron.create();
+        final SyncTestExecutor executor = new SyncTestExecutor(params, random);
         final AtomicLong indicatorToExpire = new AtomicLong(ancientMode.getGenesisIndicator() - 1);
 
         // before phase 3, expire all events so that expired events are sent
@@ -813,7 +831,8 @@ public class SyncTests {
     @ParameterizedTest
     @MethodSource({"tenNodeGraphParams", "tenNodeBigGraphParams", "tipExpiresBreakingSeed"})
     void tipExpiresAfterPhase1(final SyncTestParams params) throws Exception {
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
+        final Randotron random = Randotron.create();
+        final SyncTestExecutor executor = new SyncTestExecutor(params, random);
         final AtomicLong maximumIndicator = new AtomicLong(
                 params.getAncientMode() == BIRTH_ROUND_THRESHOLD
                         ? ConsensusConstants.ROUND_NEGATIVE_INFINITY
@@ -897,7 +916,8 @@ public class SyncTests {
         "edgeCaseGraphParams"
     })
     void tipsChangeAfterPhase1(final SyncTestParams params) throws Exception {
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
+        final Randotron random = Randotron.create();
+        final SyncTestExecutor executor = new SyncTestExecutor(params, random);
         final int numToAddInPhase = 10;
 
         executor.setGraphCustomization((caller, listener) -> {
@@ -935,7 +955,8 @@ public class SyncTests {
         "edgeCaseGraphParams"
     })
     void tipsChangeAfterPhase2(final SyncTestParams params) throws Exception {
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
+        final Randotron random = Randotron.create();
+        final SyncTestExecutor executor = new SyncTestExecutor(params, random);
         final int numToAddInPhase = 10;
 
         executor.setGraphCustomization((caller, listener) -> {
@@ -972,7 +993,8 @@ public class SyncTests {
     @ParameterizedTest
     @MethodSource("requiredEventsExpire")
     void requiredEventsExpire(final int expireAfterPhase, final SyncTestParams params) throws Exception {
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
+        final Randotron random = Randotron.create();
+        final SyncTestExecutor executor = new SyncTestExecutor(params, random);
         final AtomicLong indicatorToExpire = new AtomicLong(0);
 
         final NodeId creatorId = executor.getAddressBook().getNodeId(0);
@@ -1044,7 +1066,8 @@ public class SyncTests {
     private void runOldParentGraphTest(final SyncTestParams params, final Consumer<EventEmitterFactory> factoryConfig)
             throws Exception {
 
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
+        final Randotron random = Randotron.create();
+        final SyncTestExecutor executor = new SyncTestExecutor(params, random);
 
         executor.setFactoryConfig(factoryConfig);
 
@@ -1072,7 +1095,8 @@ public class SyncTests {
     @ParameterizedTest
     @MethodSource("fourNodeGraphParams")
     void testConnectionClosedBehavior(final SyncTestParams params) {
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
+        final Randotron random = Randotron.create();
+        final SyncTestExecutor executor = new SyncTestExecutor(params, random);
 
         // after phase 2, close the connection
         final SyncPhaseParallelExecutor parallelExecutor = new SyncPhaseParallelExecutor(
@@ -1112,7 +1136,8 @@ public class SyncTests {
     @MethodSource("bothAncientModes")
     void noEventsStartIndicator(@NonNull final AncientMode ancientMode) throws Exception {
         final SyncTestParams params = new SyncTestParams(4, 0, 100, 0, ancientMode);
-        final SyncTestExecutor executor = new SyncTestExecutor(params);
+        final Randotron random = Randotron.create();
+        final SyncTestExecutor executor = new SyncTestExecutor(params, random);
         executor.setGraphCustomization((caller, listener) -> {
             caller.setSaveGeneratedEvents(true);
             listener.setSaveGeneratedEvents(true);

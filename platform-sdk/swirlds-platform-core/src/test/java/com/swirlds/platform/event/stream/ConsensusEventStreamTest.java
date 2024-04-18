@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.event.stream;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -25,7 +24,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.stream.RunningEventHashOverride;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.model.WiringModel;
@@ -33,7 +32,6 @@ import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.internal.EventImpl;
 import java.util.List;
-import java.util.Random;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -83,8 +81,8 @@ class ConsensusEventStreamTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void setStartWriteAtCompleteWindowTest(final boolean startWriteAtCompleteWindow) {
-        final Random random = RandomUtils.getRandomPrintSeed();
-        final Hash runningHash = randomHash(random);
+        final Randotron random = Randotron.create();
+        final Hash runningHash = random.randomHash();
 
         final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
@@ -99,7 +97,7 @@ class ConsensusEventStreamTest {
         wiring.bind(CONSENSUS_EVENT_STREAM);
 
         wiring.getInputWire(ConsensusEventStream::legacyHashOverride)
-                .inject(new RunningEventHashOverride(runningHash, randomHash(random), startWriteAtCompleteWindow));
+                .inject(new RunningEventHashOverride(runningHash, random.randomHash(), startWriteAtCompleteWindow));
         verify(multiStreamMock).setRunningHash(runningHash);
     }
 

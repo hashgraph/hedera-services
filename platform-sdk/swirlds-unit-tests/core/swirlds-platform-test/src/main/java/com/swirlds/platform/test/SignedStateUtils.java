@@ -18,22 +18,17 @@ package com.swirlds.platform.test;
 
 import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
 
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.test.fixtures.state.DummySwirldState;
-import java.util.Random;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class SignedStateUtils {
-
-    public static SignedState randomSignedState(long seed) {
-        return randomSignedState(new Random(seed));
-    }
-
-    public static SignedState randomSignedState(Random random) {
+    public static SignedState randomSignedState(@NonNull final Randotron random) {
         SwirldState state = new DummySwirldState();
         State root = new State();
         root.setSwirldState(state);
@@ -46,7 +41,7 @@ public class SignedStateUtils {
                 "test",
                 shouldSaveToDisk,
                 false);
-        signedState.getState().setHash(RandomUtils.randomHash(random));
+        signedState.getState().setHash(random.randomHash());
         return signedState;
     }
 }

@@ -22,6 +22,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -31,7 +32,6 @@ import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import java.io.IOException;
-import java.util.Random;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -75,7 +75,7 @@ public class DetailedConsensusEventTest {
     }
 
     private DetailedConsensusEvent generateConsensusEvent() {
-        Random random = new Random(68651684861L);
+        Randotron random = Randotron.create(68651684861L);
         BaseEventHashedData hashedData = DetGenerateUtils.generateBaseEventHashedData(random);
         BaseEventUnhashedData unhashedData = DetGenerateUtils.generateBaseEventUnhashedData(random);
         ConsensusData consensusData = DetGenerateUtils.generateConsensusEventData(random);

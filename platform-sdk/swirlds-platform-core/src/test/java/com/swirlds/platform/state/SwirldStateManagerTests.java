@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
@@ -31,6 +32,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import com.swirlds.platform.test.fixtures.state.DummySwirldState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,11 +41,14 @@ class SwirldStateManagerTests {
 
     private SwirldStateManager swirldStateManager;
     private State initialState;
+    private Randotron random;
 
     @BeforeEach
     void setup() {
+        random = Randotron.create();
+
         final SwirldsPlatform platform = mock(SwirldsPlatform.class);
-        final AddressBook addressBook = new RandomAddressBookGenerator().build();
+        final AddressBook addressBook = new RandomAddressBookGenerator(random).build();
         when(platform.getAddressBook()).thenReturn(addressBook);
         initialState = newState();
         final PlatformContext platformContext =
@@ -75,7 +80,7 @@ class SwirldStateManagerTests {
     @Test
     @DisplayName("Load From Signed State - state reference counts")
     void loadFromSignedStateRefCount() {
-        final SignedState ss1 = newSignedState();
+        final SignedState ss1 = newSignedState(random);
         swirldStateManager.loadFromSignedState(ss1);
 
         assertEquals(
@@ -88,7 +93,7 @@ class SwirldStateManagerTests {
                 swirldStateManager.getConsensusState().getReservationCount(),
                 "The current consensus state should have a single reference count.");
 
-        final SignedState ss2 = newSignedState();
+        final SignedState ss2 = newSignedState(random);
         swirldStateManager.loadFromSignedState(ss2);
 
         assertEquals(
@@ -121,8 +126,8 @@ class SwirldStateManagerTests {
         return state;
     }
 
-    private static SignedState newSignedState() {
-        final SignedState ss = new RandomSignedStateGenerator().build();
+    private static SignedState newSignedState(@NonNull final Randotron random) {
+        final SignedState ss = new RandomSignedStateGenerator(random).build();
         assertEquals(
                 1,
                 ss.getSwirldState().getReservationCount(),

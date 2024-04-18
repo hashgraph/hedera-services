@@ -31,7 +31,7 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -93,10 +93,12 @@ public class EmergencyReconnectProtocolTests {
     @ParameterizedTest
     @MethodSource("initiateParams")
     void shouldInitiateTest(final InitiateParams initiateParams) {
+        final Randotron random = Randotron.create();
+
         final EmergencyRecoveryManager emergencyRecoveryManager = mock(EmergencyRecoveryManager.class);
         if (initiateParams.emergencyStateRequired) {
             when(emergencyRecoveryManager.isEmergencyStateRequired()).thenReturn(true);
-            final EmergencyRecoveryFile file = new EmergencyRecoveryFile(1L, RandomUtils.randomHash(), Instant.now());
+            final EmergencyRecoveryFile file = new EmergencyRecoveryFile(1L, random.randomHash(), Instant.now());
             when(emergencyRecoveryManager.getEmergencyRecoveryFile()).thenReturn(file);
         } else {
             when(emergencyRecoveryManager.isEmergencyStateRequired()).thenReturn(false);

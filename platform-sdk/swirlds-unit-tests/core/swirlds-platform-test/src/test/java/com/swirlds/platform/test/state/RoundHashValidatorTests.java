@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.test.state;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.iss.internal.RoundHashValidator;
@@ -80,7 +79,7 @@ class RoundHashValidatorTests {
      * @return a list of node IDs in the order they should be added to the hash validator
      */
     static HashGenerationData generateNodeHashes(
-            final Random random,
+            final Randotron random,
             final AddressBook addressBook,
             final HashValidityStatus desiredValidityStatus,
             final long round) {
@@ -97,7 +96,7 @@ class RoundHashValidatorTests {
      * Generate node hashes without there being a catastrophic ISS.
      */
     static HashGenerationData generateRegularNodeHashes(
-            final Random random, final AddressBook addressBook, final long round) {
+            final Randotron random, final AddressBook addressBook, final long round) {
 
         // Greater than 1/2 must have the same hash. But all other nodes are free to take whatever other hash
         // they want. Choose that fraction randomly.
@@ -111,12 +110,12 @@ class RoundHashValidatorTests {
         final long totalWeight = addressBook.getTotalWeight();
 
         // This is the hash we want to be chosen for the consensus hash.
-        final Hash consensusHash = randomHash(random);
+        final Hash consensusHash = random.randomHash();
         final List<NodeId> correctHashNodes = new LinkedList<>();
         long correctHashWeight = 0;
 
         // A large group of nodes may decide to use this hash. But it won't become the consensus hash.
-        final Hash otherHash = randomHash(random);
+        final Hash otherHash = random.randomHash();
         long otherHashWeight = 0;
         final List<NodeId> otherHashNodes = new LinkedList<>();
 
@@ -178,7 +177,7 @@ class RoundHashValidatorTests {
                 // The random hashes will never reach a majority, so they can go in whenever
                 if (!randomHashNodes.isEmpty()) {
                     final NodeId nodeId = randomHashNodes.remove(0);
-                    nodes.add(new NodeHashInfo(nodeId, randomHash(random), round));
+                    nodes.add(new NodeHashInfo(nodeId, random.randomHash(), round));
                 }
             }
         }
@@ -190,7 +189,7 @@ class RoundHashValidatorTests {
      * Generate node hashes that result in a catastrophic ISS.
      */
     static HashGenerationData generateCatastrophicNodeHashes(
-            final Random random, final AddressBook addressBook, final long round) {
+            final Randotron random, final AddressBook addressBook, final long round) {
 
         // There should exist no group of nodes with the same hash that >1/2
 
@@ -203,7 +202,7 @@ class RoundHashValidatorTests {
         Collections.shuffle(randomNodeOrder, random);
 
         // A large group of nodes may decide to use this hash. But it won't become the consensus hash.
-        final Hash otherHash = randomHash(random);
+        final Hash otherHash = random.randomHash();
         long otherHashWeight = 0;
 
         for (final NodeId nodeId : randomNodeOrder) {
@@ -214,7 +213,7 @@ class RoundHashValidatorTests {
                 nodes.add(new NodeHashInfo(nodeId, otherHash, round));
                 otherHashWeight += weight;
             } else {
-                nodes.add(new NodeHashInfo(nodeId, randomHash(random), round));
+                nodes.add(new NodeHashInfo(nodeId, random.randomHash(), round));
             }
         }
 
@@ -258,7 +257,7 @@ class RoundHashValidatorTests {
     @MethodSource("args")
     @DisplayName("Self Signature Last Test")
     void selfSignatureLastTest(final HashValidityStatus expectedStatus) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))
@@ -304,7 +303,7 @@ class RoundHashValidatorTests {
     @MethodSource("args")
     @DisplayName("Self Signature First Test")
     void selfSignatureFirstTest(final HashValidityStatus expectedStatus) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))
@@ -348,7 +347,7 @@ class RoundHashValidatorTests {
     @MethodSource("args")
     @DisplayName("Self Signature In Middle Test")
     void selfSignatureInMiddleTest(final HashValidityStatus expectedStatus) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))
@@ -398,7 +397,7 @@ class RoundHashValidatorTests {
     @Test
     @DisplayName("Timeout Self Hash Test")
     void timeoutSelfHashTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))
@@ -431,7 +430,7 @@ class RoundHashValidatorTests {
     @Test
     @DisplayName("Timeout Self Hash And Signatures Test")
     void timeoutSelfHashAndSignaturesTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))
@@ -472,7 +471,7 @@ class RoundHashValidatorTests {
     @Test
     @DisplayName("Timeout Self Hash And Signatures Test")
     void timeoutSignaturesTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))
@@ -517,7 +516,7 @@ class RoundHashValidatorTests {
     @Test
     @DisplayName("Timeout With Super Majority Test")
     void timeoutWithSuperMajorityTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))

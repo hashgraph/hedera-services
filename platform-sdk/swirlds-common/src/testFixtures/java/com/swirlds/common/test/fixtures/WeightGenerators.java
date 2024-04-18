@@ -16,13 +16,9 @@
 
 package com.swirlds.common.test.fixtures;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.initRandom;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
-import java.util.random.RandomGenerator;
 
 public final class WeightGenerators {
 
@@ -125,7 +121,7 @@ public final class WeightGenerators {
      * @return a list of weight values
      */
     public static List<Long> randomNodeWeights(final Long weightSeed, final int numberOfNodes, final long totalWeight) {
-        final Random r = initRandom(weightSeed);
+        final Randotron r = Randotron.create(weightSeed);
         final List<Long> weights = new ArrayList<>(numberOfNodes);
         final long halfTotalWeight = totalWeight / 2;
         final long firstNodeWeight = r.nextLong(halfTotalWeight);
@@ -150,7 +146,7 @@ public final class WeightGenerators {
      * @return a list of weight values
      */
     public static List<Long> randomNodeWeights(final Long weightSeed, final int numberOfNodes) {
-        final RandomGenerator r = initRandom(weightSeed);
+        final Randotron r = Randotron.create(weightSeed);
         final List<Long> nodeWeights = new ArrayList<>(numberOfNodes);
         for (int i = 0; i < numberOfNodes; i++) {
             nodeWeights.add(r.nextLong(MINIMUM_NON_ZERO_WEIGHT, EASY_TO_READ_WEIGHT));
@@ -165,7 +161,7 @@ public final class WeightGenerators {
      * @return test arguments
      */
     public static List<Long> oneThirdNodesZeroWeight(final Long weightSeed, final int numberOfNodes) {
-        final RandomGenerator r = initRandom(weightSeed);
+        final Randotron r = Randotron.create(weightSeed);
         final List<Long> nodeWeights = new ArrayList<>(numberOfNodes);
 
         for (int nodeId = 0; nodeId < numberOfNodes; nodeId++) {

@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.roster;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomString;
 import static java.util.Collections.shuffle;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -28,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -35,7 +34,6 @@ import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -46,7 +44,7 @@ class RosterDiffGeneratorTests {
      */
     @Test
     void noChangesTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
@@ -77,7 +75,7 @@ class RosterDiffGeneratorTests {
 
     @Test
     void randomChangesTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
@@ -135,7 +133,7 @@ class RosterDiffGeneratorTests {
                 modifiedNodes.add(nodeToModify);
                 final Address address = newRoster.getAddress(nodeToModify);
 
-                Address newAddress = address.copySetMemo(randomString(random, 32));
+                Address newAddress = address.copySetMemo(random.randomString(32));
                 if (modifyConsensusWeight) {
                     newAddress = newAddress.copySetWeight(newAddress.getWeight() + 1);
                 }

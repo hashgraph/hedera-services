@@ -16,15 +16,12 @@
 
 package com.swirlds.common.test.fixtures;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHashBytes;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
-
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.random.RandomGenerator;
@@ -38,11 +35,6 @@ public class TransactionUtils {
     private static final double DEFAULT_SYS_RATIO = 0.1;
     private static final double DEFAULT_TRANS_COUNT_STD_DEV = 10;
     private static final double DEFAULT_TRANS_COUNT_AVG = 50;
-    private static final Random random = new Random();
-
-    public static SwirldTransaction[] randomSwirldTransactions(final long seed, final int number) {
-        return randomSwirldTransactions(new Random(seed), number);
-    }
 
     public static SwirldTransaction[] randomSwirldTransactions(final RandomGenerator random, final int number) {
         final SwirldTransaction[] transactions = new SwirldTransaction[number];
@@ -61,7 +53,7 @@ public class TransactionUtils {
         return transactions;
     }
 
-    public static ConsensusTransactionImpl[] incrementingMixedTransactions(final RandomGenerator random) {
+    public static ConsensusTransactionImpl[] incrementingMixedTransactions(final Randotron random) {
         return incrementingMixedTransactions(
                 random, DEFAULT_TRANS_COUNT_AVG, DEFAULT_TRANS_COUNT_STD_DEV, DEFAULT_SYS_RATIO);
     }
@@ -81,7 +73,7 @@ public class TransactionUtils {
      * @return a transaction array
      */
     public static ConsensusTransactionImpl[] incrementingMixedTransactions(
-            final RandomGenerator random,
+            final Randotron random,
             final double transactionCountAverage,
             final double transactionCountStandardDeviation,
             final double systemTransactionRatio) {
@@ -92,7 +84,7 @@ public class TransactionUtils {
         final ConsensusTransactionImpl[] transactions = new ConsensusTransactionImpl[transactionCount];
         for (int index = 0; index < transactionCount; index++) {
             if (random.nextDouble() < systemTransactionRatio) {
-                transactions[index] = incrementingSystemTransaction();
+                transactions[index] = incrementingSystemTransaction(random);
             } else {
                 transactions[index] = incrementingSwirldTransaction();
             }
@@ -150,18 +142,17 @@ public class TransactionUtils {
         return new SwirldTransaction(buffer.array());
     }
 
-    public static StateSignatureTransaction incrementingSystemTransaction() {
-        return new StateSignatureTransaction(0, randomSignatureBytes(random), randomHashBytes(random), Bytes.EMPTY);
+    public static StateSignatureTransaction incrementingSystemTransaction(@NonNull final Randotron random) {
+        return new StateSignatureTransaction(0, random.randomSignatureBytes(), random.randomHashBytes(), Bytes.EMPTY);
     }
 
-    public static StateSignatureTransaction randomStateSignatureTransaction(final RandomGenerator random) {
-        final Random rand = new Random(random.nextLong());
-        final Bytes signature = randomSignatureBytes(rand);
-        final Bytes hash = randomHashBytes(rand);
+    public static StateSignatureTransaction randomStateSignatureTransaction(final Randotron random) {
+        final Bytes signature = random.randomSignatureBytes();
+        final Bytes hash = random.randomHashBytes();
         return new StateSignatureTransaction(random.nextLong(), signature, hash, Bytes.EMPTY);
     }
 
-    public static ConsensusTransactionImpl[] randomMixedTransactions(final RandomGenerator random, final int number) {
+    public static ConsensusTransactionImpl[] randomMixedTransactions(final Randotron random, final int number) {
         final ConsensusTransactionImpl[] transactions = new ConsensusTransactionImpl[number];
         for (int i = 0; i < transactions.length; i++) {
             transactions[i] =

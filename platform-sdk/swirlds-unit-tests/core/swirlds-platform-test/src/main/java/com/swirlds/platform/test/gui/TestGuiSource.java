@@ -19,6 +19,7 @@ package com.swirlds.platform.test.gui;
 import static com.swirlds.platform.consensus.SyntheticSnapshot.GENESIS_SNAPSHOT;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.gui.GuiEventStorage;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
@@ -52,13 +53,15 @@ public class TestGuiSource {
      * Construct a {@link TestGuiSource} with the given platform context, seed, and number of nodes.
      *
      * @param platformContext the platform context
-     * @param seed            the seed
+     * @param random          a source of randomness
      * @param addressBook     the address book for this node
      */
     public TestGuiSource(
-            @NonNull final PlatformContext platformContext, final long seed, @NonNull final AddressBook addressBook) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final Randotron random,
+            @NonNull final AddressBook addressBook) {
 
-        graphGenerator = new StandardGraphGenerator(platformContext, seed, generateSources(addressBook.getSize()));
+        graphGenerator = new StandardGraphGenerator(platformContext, random, generateSources(addressBook.getSize()));
         graphGenerator.reset();
 
         intake = new TestIntake(platformContext, graphGenerator.getAddressBook());

@@ -64,7 +64,7 @@ import com.swirlds.common.stream.internal.InvalidStreamFileException;
 import com.swirlds.common.stream.internal.LinkedObjectStreamValidateUtils;
 import com.swirlds.common.stream.internal.SingleStreamIterator;
 import com.swirlds.common.stream.internal.StreamValidationResult;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.stream.ObjectForTestStream;
 import com.swirlds.common.test.fixtures.stream.StreamObjectWorker;
@@ -137,7 +137,9 @@ class StreamUtilitiesTest {
     @Test
     void parseStreamTest() throws Exception {
         InputOutputStream io = new InputOutputStream();
-        Hash initialHash = RandomUtils.randomHash();
+
+        final Randotron random = Randotron.create();
+        Hash initialHash = random.randomHash();
 
         StreamObjectWorker streamObjectWorker =
                 new StreamObjectWorker(50, 50, initialHash, Instant.now(), io.getOutput());
@@ -525,6 +527,8 @@ class StreamUtilitiesTest {
 
     @Test
     void validateIteratorEndHashNotMatchTest() {
+        final Randotron random = Randotron.create();
+
         Iterator<SelfSerializable> endHashNotMatchIterator = new Iterator<>() {
             private static final int FIRST_ID = 0;
             private static final int LAST_ID = 5;
@@ -539,7 +543,7 @@ class StreamUtilitiesTest {
             public SelfSerializable next() {
                 SelfSerializable next;
                 if (id == FIRST_ID || id == LAST_ID) {
-                    next = RandomUtils.randomHash();
+                    next = random.randomHash();
                 } else {
                     next = getRandomObjectForTestStream(PAY_LOAD_SIZE_4);
                 }

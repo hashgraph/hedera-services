@@ -16,7 +16,6 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -31,6 +30,7 @@ import com.swirlds.common.io.streams.AugmentedDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.SerializableLong;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.io.SelfSerializableExample;
@@ -48,7 +48,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -67,7 +66,6 @@ public class SerializableStreamTests {
     private static final int MAX_LENGTH = 1000;
     private static final int LENGTH_IN_BYTES = 4;
     private static final int CHECKSUM_IN_BYTES = 4;
-    private static final Random random = new Random();
 
     @BeforeAll
     static void setUp() throws ConstructableRegistryException {
@@ -589,6 +587,7 @@ public class SerializableStreamTests {
     @ParameterizedTest
     @ValueSource(ints = {0, 1, 10, 1024})
     void getLongArraySerializedLengthTest(int num) {
+        final Randotron random = Randotron.create();
         assertEquals(
                 LENGTH_IN_BYTES + num * Long.BYTES,
                 AugmentedDataOutputStream.getArraySerializedLength(new long[num]),
@@ -664,7 +663,8 @@ public class SerializableStreamTests {
     @Tag(TestComponentTags.IO)
     @DisplayName("serializedLengthArrayWithNullElement")
     void serializedLengthArrayWithNullElement() throws IOException {
-        Transaction[] transactions = TransactionUtils.randomSwirldTransactions(1234321, 2);
+        final Randotron random = Randotron.create();
+        Transaction[] transactions = TransactionUtils.randomSwirldTransactions(random, 2);
         transactions[1] = null;
 
         final int length = SerializableDataOutputStream.getSerializedLength(transactions, true, false);
@@ -696,7 +696,8 @@ public class SerializableStreamTests {
     @ParameterizedTest
     @ValueSource(ints = {0, 1, 2, 10, 64, 100})
     void serializedSingleInstance(int tranAmount) throws IOException {
-        final Transaction[] randomTransactions = TransactionUtils.randomSwirldTransactions(1234321, tranAmount);
+        final Transaction[] randomTransactions =
+                TransactionUtils.randomSwirldTransactions(Randotron.create(), tranAmount);
 
         for (Transaction tran : randomTransactions) {
             try (final ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
@@ -726,7 +727,8 @@ public class SerializableStreamTests {
     @ParameterizedTest
     @ValueSource(ints = {0, 1, 2, 10, 64, 100})
     void serializedLengthArraySameClass(int tranAmount) throws IOException {
-        Transaction[] transactions = TransactionUtils.randomSwirldTransactions(1234321, tranAmount);
+        final Randotron random = Randotron.create();
+        Transaction[] transactions = TransactionUtils.randomSwirldTransactions(random, tranAmount);
 
         try (final ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
             try (final SerializableDataOutputStream dos = new SerializableDataOutputStream(bos)) {
@@ -750,7 +752,8 @@ public class SerializableStreamTests {
     @ParameterizedTest
     @ValueSource(ints = {0, 1, 2, 10, 64, 100})
     void serializedLengthArrayDiffClass(int tranAmount) throws IOException {
-        Transaction[] randomTransactions = TransactionUtils.randomMixedTransactions(new Random(), tranAmount);
+        final Randotron random = Randotron.create();
+        Transaction[] randomTransactions = TransactionUtils.randomMixedTransactions(random, tranAmount);
 
         try (final ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
             try (final SerializableDataOutputStream dos = new SerializableDataOutputStream(bos)) {
@@ -770,7 +773,7 @@ public class SerializableStreamTests {
      */
     @Test
     void testRestrictedReadSerializable() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final SerializableLong data = new SerializableLong(random.nextLong());
 
@@ -803,7 +806,7 @@ public class SerializableStreamTests {
      */
     @Test
     void testRestrictedReadSerializableIterableWithSize() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final List<SerializableLong> data = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
@@ -840,7 +843,7 @@ public class SerializableStreamTests {
 
     @Test
     void testRestrictedReadSerializableList() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final List<SerializableLong> data = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
@@ -871,7 +874,7 @@ public class SerializableStreamTests {
 
     @Test
     void testRestrictedReadSerializableArray() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final SerializableLong[] data = new SerializableLong[10];
         for (int i = 0; i < 10; i++) {

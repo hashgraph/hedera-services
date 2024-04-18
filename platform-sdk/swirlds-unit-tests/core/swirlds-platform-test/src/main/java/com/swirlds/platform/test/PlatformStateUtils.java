@@ -16,9 +16,7 @@
 
 package com.swirlds.platform.test;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
-
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.MinimumJudgeInfo;
 import com.swirlds.platform.state.PlatformState;
@@ -27,7 +25,6 @@ import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator.WeightDistributionStrategy;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
 
 public final class PlatformStateUtils {
 
@@ -36,26 +33,19 @@ public final class PlatformStateUtils {
     /**
      * Generate a randomized PlatformState object. Values contained internally may be nonsensical.
      */
-    public static PlatformState randomPlatformState() {
-        return randomPlatformState(new Random());
-    }
-
-    /**
-     * Generate a randomized PlatformState object. Values contained internally may be nonsensical.
-     */
-    public static PlatformState randomPlatformState(final Random random) {
+    public static PlatformState randomPlatformState(final Randotron random) {
         final PlatformState platformState = new PlatformState();
 
-        final AddressBook addressBook = new RandomAddressBookGenerator()
+        final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(4)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
 
         platformState.setAddressBook(addressBook);
-        platformState.setLegacyRunningEventHash(randomHash(random));
-        platformState.setRunningEventHash(randomHash(random));
+        platformState.setLegacyRunningEventHash(random.randomHash());
+        platformState.setRunningEventHash(random.randomHash());
         platformState.setRound(random.nextLong());
-        platformState.setConsensusTimestamp(randomInstant(random));
+        platformState.setConsensusTimestamp(random.randomInstant());
 
         final List<MinimumJudgeInfo> minimumJudgeInfo = new LinkedList<>();
         for (int index = 0; index < 10; index++) {
@@ -63,10 +53,10 @@ public final class PlatformStateUtils {
         }
         platformState.setSnapshot(new ConsensusSnapshot(
                 random.nextLong(),
-                List.of(randomHash(random), randomHash(random), randomHash(random)),
+                List.of(random.randomHash(), random.randomHash(), random.randomHash()),
                 minimumJudgeInfo,
                 random.nextLong(),
-                randomInstant(random)));
+                random.randomInstant()));
 
         return platformState;
     }

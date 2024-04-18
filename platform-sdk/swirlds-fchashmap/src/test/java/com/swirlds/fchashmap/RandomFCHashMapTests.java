@@ -16,10 +16,8 @@
 
 package com.swirlds.fchashmap;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.fcqueue.FCInt;
-import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -30,7 +28,7 @@ class RandomFCHashMapTests {
     @DisplayName("Random Operations")
     void randomOperations() {
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int iterations = 100_000;
         final int maxCopiesInMemory = 10;

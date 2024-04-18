@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.crypto;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.internal.CryptoUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -34,7 +34,6 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
-import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -51,7 +50,7 @@ class SerializableX509CertificateTests {
         final String ecKeyType = "EC";
         final int ecKeySize = 384;
 
-        final Random nonSecureRandom = getRandomPrintSeed();
+        final Randotron nonSecureRandom = Randotron.create();
         final SecureRandom secureRandom = CryptoUtils.getDetRandom();
         secureRandom.setSeed(nonSecureRandom.nextLong());
 

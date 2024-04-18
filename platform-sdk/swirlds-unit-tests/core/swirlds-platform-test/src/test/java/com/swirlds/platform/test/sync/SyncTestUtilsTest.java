@@ -20,12 +20,11 @@ import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
@@ -44,7 +43,7 @@ class SyncTestUtilsTest {
         //     	 \ | \
         //   0     e1 e2
 
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final ShadowEvent e1 = EventFactory.makeShadow(random);
         final ShadowEvent e2 = EventFactory.makeShadow(random);

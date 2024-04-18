@@ -19,7 +19,6 @@ package com.swirlds.common.wiring.schedulers;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.test.fixtures.AssertionUtils.completeBeforeTimeout;
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
@@ -32,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.TestWiringModelBuilder;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
@@ -133,7 +132,7 @@ class SequentialTaskSchedulerTests {
         final WiringModel model = TestWiringModelBuilder.create();
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final AtomicInteger wireValue = new AtomicInteger();
         final Consumer<Integer> handler = x -> {
@@ -246,7 +245,7 @@ class SequentialTaskSchedulerTests {
         final WiringModel model = TestWiringModelBuilder.create();
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final AtomicInteger wireValue = new AtomicInteger();
         final AtomicInteger operationCount = new AtomicInteger();
@@ -692,7 +691,7 @@ class SequentialTaskSchedulerTests {
         final WiringModel model = TestWiringModelBuilder.create();
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final AtomicInteger countA = new AtomicInteger();
         final AtomicInteger negativeCountA = new AtomicInteger();
@@ -2382,7 +2381,7 @@ class SequentialTaskSchedulerTests {
     void squelching(final String typeString) {
         final WiringModel model = TestWiringModelBuilder.create();
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Random random = Randotron.create();
 
         final AtomicInteger handleCount = new AtomicInteger();
 

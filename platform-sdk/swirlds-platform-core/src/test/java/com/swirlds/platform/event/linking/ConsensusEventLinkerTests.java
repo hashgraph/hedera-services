@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.event.linking;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -25,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -39,7 +39,6 @@ import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -53,7 +52,7 @@ class ConsensusEventLinkerTests {
     @ValueSource(booleans = {true, false})
     void eventsAreUnlinkedTest(final boolean birthRoundAncientMode) {
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final AncientMode ancientMode =
                 birthRoundAncientMode ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
@@ -66,7 +65,7 @@ class ConsensusEventLinkerTests {
 
         final StandardGraphGenerator generator = new StandardGraphGenerator(
                 platformContext,
-                random.nextLong(),
+                random,
                 new StandardEventSource(),
                 new StandardEventSource(),
                 new StandardEventSource(),

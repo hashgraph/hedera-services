@@ -17,8 +17,6 @@
 package com.swirlds.platform.system.transaction.internal;
 
 import static com.swirlds.common.io.streams.SerializableDataOutputStream.getInstanceSerializedLength;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHashBytes;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
 import static com.swirlds.common.test.fixtures.io.SerializationUtils.serializeDeserialize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -27,18 +25,16 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.SerializableWithKnownLength;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class TransactionSerializationTest {
-    Random random = new Random();
-
     @BeforeAll
     static void setUp() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
@@ -48,14 +44,16 @@ class TransactionSerializationTest {
     @ParameterizedTest
     @ValueSource(ints = {0, 1, 2, 10, 64})
     void SignatureSerializeDeserializeTest(final int sigSize) throws IOException {
+        final Randotron random = Randotron.create();
+
         byte[] nbyte = null;
         if (sigSize > 0) {
             nbyte = new byte[sigSize];
             random.nextBytes(nbyte);
         }
-        final Bytes signature = randomSignatureBytes(random);
-        final Bytes stateHash = randomHashBytes(random);
-        final Bytes epochHash = random.nextBoolean() ? randomHashBytes(random) : Bytes.EMPTY;
+        final Bytes signature = random.randomSignatureBytes();
+        final Bytes stateHash = random.randomHashBytes();
+        final Bytes epochHash = random.nextBoolean() ? random.randomHashBytes() : Bytes.EMPTY;
         final StateSignatureTransaction systemTransactionSignature =
                 new StateSignatureTransaction(random.nextLong(), signature, stateHash, epochHash);
         final StateSignatureTransaction deserialized = serializeDeserialize(systemTransactionSignature);
@@ -79,6 +77,8 @@ class TransactionSerializationTest {
     @ParameterizedTest
     @ValueSource(ints = {1, 2, 10, 64})
     void ApplicationWithoutSignatures(final int contentSize) throws IOException {
+        final Randotron random = Randotron.create();
+
         byte[] nbyte = null;
         if (contentSize > 0) {
             nbyte = new byte[contentSize];

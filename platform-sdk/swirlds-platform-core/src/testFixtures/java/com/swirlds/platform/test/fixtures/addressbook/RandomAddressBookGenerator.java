@@ -16,12 +16,10 @@
 
 package com.swirlds.platform.test.fixtures.addressbook;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.NameUtils;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.crypto.SerializableX509Certificate;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -35,7 +33,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -47,7 +44,7 @@ public class RandomAddressBookGenerator {
     /**
      * All randomness comes from this.
      */
-    private final Random random;
+    private final Randotron random;
 
     private final Set<NodeId> nodeIds = new HashSet<>();
 
@@ -121,28 +118,12 @@ public class RandomAddressBookGenerator {
     private NodeId nextNodeId = NodeId.FIRST_NODE_ID;
 
     /**
-     * Create a new address book generator.
-     */
-    public RandomAddressBookGenerator() {
-        this(new Random());
-    }
-
-    /**
      * Create a new address book generator with a source of randomness.
      *
      * @param random a source of randomness
      */
-    public RandomAddressBookGenerator(final Random random) {
-        this.random = random;
-    }
-
-    /**
-     * Create a new address book generator with a seed.
-     *
-     * @param seed the seed for the random number generator
-     */
-    public RandomAddressBookGenerator(final long seed) {
-        this(new Random(seed));
+    public RandomAddressBookGenerator(@NonNull final Randotron random) {
+        this.random = Objects.requireNonNull(random);
     }
 
     /**
@@ -154,7 +135,7 @@ public class RandomAddressBookGenerator {
      */
     @NonNull
     public static Address addressWithRandomData(
-            @NonNull final Random random, @NonNull final NodeId id, final long weight) {
+            @NonNull final Randotron random, @NonNull final NodeId id, final long weight) {
         Objects.requireNonNull(random, "Random must not be null");
         Objects.requireNonNull(id, "NodeId must not be null");
 
@@ -162,28 +143,26 @@ public class RandomAddressBookGenerator {
         final SerializableX509Certificate agreeCert = PreGeneratedX509Certs.getAgreeCert(id.id());
 
         final String nickname = NameUtils.getName(id.id());
-        final String selfName = RandomUtils.randomString(random, 10);
+        final String selfName = random.randomString(10);
 
         final int maxPort = 65535;
         final int minPort = 2000;
         final String addressInternalHostname;
         try {
-            addressInternalHostname =
-                    InetAddress.getByName(RandomUtils.randomIp(random)).getHostAddress();
+            addressInternalHostname = InetAddress.getByName(random.randomIp()).getHostAddress();
         } catch (final UnknownHostException e) {
             throw new RuntimeException(e);
         }
         final int portInternalIpv4 = minPort + random.nextInt(maxPort - minPort);
         final String addressExternalHostname;
         try {
-            addressExternalHostname =
-                    InetAddress.getByName(RandomUtils.randomIp(random)).getHostAddress();
+            addressExternalHostname = InetAddress.getByName(random.randomIp()).getHostAddress();
         } catch (final UnknownHostException e) {
             throw new RuntimeException(e);
         }
         final int portExternalIpv4 = minPort + random.nextInt(maxPort - minPort);
 
-        final String memo = RandomUtils.randomString(random, 10);
+        final String memo = random.randomString(10);
 
         return new Address(
                 id,
@@ -262,7 +241,7 @@ public class RandomAddressBookGenerator {
         }
 
         if (hashStrategy == HashStrategy.FAKE_HASH) {
-            addressBook.setHash(randomHash(random));
+            addressBook.setHash(random.randomHash());
         } else if (hashStrategy == HashStrategy.REAL_HASH) {
             CryptographyHolder.get().digestSync(addressBook);
         }

@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.event.validation;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -30,6 +28,7 @@ import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusConstants;
@@ -50,7 +49,6 @@ import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.test.fixtures.crypto.PreGeneratedX509Certs;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -59,7 +57,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class EventSignatureValidatorTests {
-    private Random random;
+    private Randotron random;
     private PlatformContext platformContext;
     private FakeTime time;
     private AtomicLong exitedIntakePipelineCount;
@@ -127,7 +125,7 @@ class EventSignatureValidatorTests {
 
     @BeforeEach
     void setup() {
-        random = getRandomPrintSeed();
+        random = Randotron.create();
         time = new FakeTime();
         platformContext = TestPlatformContextBuilder.create().withTime(time).build();
 
@@ -170,7 +168,7 @@ class EventSignatureValidatorTests {
     @DisplayName("Events with higher version than the app should always fail validation")
     void irreconcilableVersions() {
         final GossipEvent event =
-                generateMockEvent(new BasicSoftwareVersion(3), randomHash(random), currentNodeAddress.getNodeId());
+                generateMockEvent(new BasicSoftwareVersion(3), random.randomHash(), currentNodeAddress.getNodeId());
 
         assertNull(validatorWithTrueVerifier.validateSignature(event));
         assertEquals(1, exitedIntakePipelineCount.get());
@@ -183,7 +181,7 @@ class EventSignatureValidatorTests {
                 platformContext, trueVerifier, defaultVersion, null, currentAddressBook, intakeEventCounter);
 
         final GossipEvent event =
-                generateMockEvent(new BasicSoftwareVersion(1), randomHash(random), previousNodeAddress.getNodeId());
+                generateMockEvent(new BasicSoftwareVersion(1), random.randomHash(), previousNodeAddress.getNodeId());
 
         assertNull(signatureValidator.validateSignature(event));
         assertEquals(1, exitedIntakePipelineCount.get());
@@ -194,7 +192,7 @@ class EventSignatureValidatorTests {
     void applicableAddressBookMissingNode() {
         // this creator isn't in the current address book, so verification will fail
         final GossipEvent event =
-                generateMockEvent(defaultVersion, randomHash(random), previousNodeAddress.getNodeId());
+                generateMockEvent(defaultVersion, random.randomHash(), previousNodeAddress.getNodeId());
 
         assertNull(validatorWithTrueVerifier.validateSignature(event));
         assertEquals(1, exitedIntakePipelineCount.get());
@@ -208,7 +206,7 @@ class EventSignatureValidatorTests {
 
         currentAddressBook.add(nodeAddress);
 
-        final GossipEvent event = generateMockEvent(defaultVersion, randomHash(random), nodeId);
+        final GossipEvent event = generateMockEvent(defaultVersion, random.randomHash(), nodeId);
 
         assertNull(validatorWithTrueVerifier.validateSignature(event));
         assertEquals(1, exitedIntakePipelineCount.get());
@@ -219,14 +217,14 @@ class EventSignatureValidatorTests {
     void validSignature() {
         // both the event and the app have the same version, so the currentAddressBook will be selected
         final GossipEvent event1 =
-                generateMockEvent(defaultVersion, randomHash(random), currentNodeAddress.getNodeId());
+                generateMockEvent(defaultVersion, random.randomHash(), currentNodeAddress.getNodeId());
 
         assertNotEquals(null, validatorWithTrueVerifier.validateSignature(event1));
         assertEquals(0, exitedIntakePipelineCount.get());
 
         // event2 is from a previous version, so the previous address book will be selected
         final GossipEvent event2 =
-                generateMockEvent(new BasicSoftwareVersion(1), randomHash(random), previousNodeAddress.getNodeId());
+                generateMockEvent(new BasicSoftwareVersion(1), random.randomHash(), previousNodeAddress.getNodeId());
 
         assertNotEquals(null, validatorWithTrueVerifier.validateSignature(event2));
         assertEquals(0, exitedIntakePipelineCount.get());
@@ -235,7 +233,8 @@ class EventSignatureValidatorTests {
     @Test
     @DisplayName("Event fails validation if the signature does not verify")
     void verificationFails() {
-        final GossipEvent event = generateMockEvent(defaultVersion, randomHash(random), currentNodeAddress.getNodeId());
+        final GossipEvent event =
+                generateMockEvent(defaultVersion, random.randomHash(), currentNodeAddress.getNodeId());
 
         assertNotEquals(null, validatorWithTrueVerifier.validateSignature(event));
         assertEquals(0, exitedIntakePipelineCount.get());
@@ -263,7 +262,8 @@ class EventSignatureValidatorTests {
                 currentAddressBook,
                 intakeEventCounter);
 
-        final GossipEvent event = generateMockEvent(defaultVersion, randomHash(random), currentNodeAddress.getNodeId());
+        final GossipEvent event =
+                generateMockEvent(defaultVersion, random.randomHash(), currentNodeAddress.getNodeId());
         final BaseEventHashedData hData = event.getHashedData();
         when(hData.getBirthRound()).thenReturn(EventConstants.MINIMUM_ROUND_CREATED);
         when(hData.getGeneration()).thenReturn(EventConstants.FIRST_GENERATION);

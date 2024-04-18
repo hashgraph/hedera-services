@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.uptime;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.system.UptimeData.NO_ROUND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -30,6 +29,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
@@ -118,7 +118,7 @@ class UptimeTests {
     @Test
     @DisplayName("Round Scan Test")
     void roundScanTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
@@ -256,7 +256,7 @@ class UptimeTests {
     @Test
     @DisplayName("Round Scan Changing Address Book Test")
     void roundScanChangingAddressBookTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
@@ -406,7 +406,7 @@ class UptimeTests {
     @Test
     @DisplayName("Fast Copy Test")
     void fastCopyTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final int size = 100;
 
         final List<Instant> eventTimes1 = new ArrayList<>();
@@ -530,7 +530,7 @@ class UptimeTests {
     @Test
     @DisplayName("Serialization Test")
     void serializationTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final int size = 100;
 
         final List<Instant> eventTimes = new ArrayList<>();
@@ -607,7 +607,7 @@ class UptimeTests {
     @Test
     @DisplayName("Degraded Test")
     void degradedTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();

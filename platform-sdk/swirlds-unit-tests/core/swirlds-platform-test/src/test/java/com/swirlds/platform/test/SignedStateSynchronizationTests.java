@@ -19,6 +19,7 @@ package com.swirlds.platform.test;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import com.swirlds.config.api.Configuration;
@@ -45,7 +46,7 @@ public class SignedStateSynchronizationTests {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Signed State Synchronization")
     public void SignedStateSynchronization() throws Exception {
-        SignedState state = SignedStateUtils.randomSignedState(1234);
+        SignedState state = SignedStateUtils.randomSignedState(Randotron.create());
         state.getState().setHash(null); // FUTURE WORK root has a hash but other parts do not...
         MerkleTestUtils.hashAndTestSynchronization(null, state.getState(), reconnectConfig);
     }

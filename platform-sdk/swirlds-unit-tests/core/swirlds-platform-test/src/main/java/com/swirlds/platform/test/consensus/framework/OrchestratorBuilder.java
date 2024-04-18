@@ -19,8 +19,7 @@ package com.swirlds.platform.test.consensus.framework;
 import static com.swirlds.common.test.fixtures.WeightGenerators.BALANCED;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.common.test.fixtures.ResettableRandom;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.WeightGenerator;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
@@ -106,7 +105,7 @@ public class OrchestratorBuilder {
     }
 
     public @NonNull ConsensusTestOrchestrator build() {
-        final ResettableRandom random = RandomUtils.initRandom(seed, false);
+        final Randotron random = Randotron.create(seed);
         final long weightSeed = random.nextLong();
         final long graphSeed = random.nextLong();
         final long shuffler1Seed = random.nextLong();
@@ -118,7 +117,7 @@ public class OrchestratorBuilder {
             eventSourceConfigurator.accept(eventSource);
         }
         final StandardGraphGenerator graphGenerator =
-                new StandardGraphGenerator(platformContext, graphSeed, eventSources);
+                new StandardGraphGenerator(platformContext, Randotron.create(graphSeed), eventSources);
 
         // Make the graph generators create a fresh set of events.
         // Use the same seed so that they create identical graphs.

@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.event.linking;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -29,6 +28,7 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.EventWindow;
@@ -40,7 +40,6 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -54,7 +53,7 @@ import org.junit.jupiter.params.provider.ValueSource;
  */
 class InOrderLinkerTests {
     private AtomicLong exitedIntakePipelineCount;
-    private Random random;
+    private Randotron random;
 
     private InOrderLinker inOrderLinker;
 
@@ -73,7 +72,7 @@ class InOrderLinkerTests {
      */
     @BeforeEach
     void setup() {
-        random = getRandomPrintSeed();
+        random = Randotron.create();
 
         exitedIntakePipelineCount = new AtomicLong(0);
 

@@ -21,10 +21,9 @@ import static com.swirlds.common.test.fixtures.AssertionUtils.completeBeforeTime
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import java.time.Duration;
-import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -61,7 +60,7 @@ class OSHealthCheckUtilsTests {
 
     @Test
     void testCompletesInTime() throws InterruptedException {
-        final Random r = RandomUtils.getRandom();
+        final Randotron r = Randotron.create();
         final int randomInt = r.nextInt();
         final Supplier<Integer> supplier = () -> randomInt;
 

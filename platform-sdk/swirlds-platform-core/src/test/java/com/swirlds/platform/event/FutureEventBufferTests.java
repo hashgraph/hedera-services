@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.event;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -26,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -35,7 +34,6 @@ import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Random;
 import org.junit.jupiter.api.Test;
 
 class FutureEventBufferTests {
@@ -50,7 +48,7 @@ class FutureEventBufferTests {
      */
     @Test
     void futureEventsBufferedTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, true)
@@ -77,7 +75,7 @@ class FutureEventBufferTests {
             final GossipEvent event = new TestingEventBuilder(random)
                     .setBirthRound(random.nextLong(1, maxFutureRound))
                     .setCreatorId(new NodeId(random.nextInt(100)))
-                    .setTimeCreated(randomInstant(random))
+                    .setTimeCreated(random.randomInstant())
                     .build();
             events.add(event);
         }
@@ -135,7 +133,7 @@ class FutureEventBufferTests {
      */
     @Test
     void eventsGoAncientWhileBufferedTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, true)
@@ -162,7 +160,7 @@ class FutureEventBufferTests {
             final GossipEvent event = new TestingEventBuilder(random)
                     .setBirthRound(random.nextLong(1, maxFutureRound))
                     .setCreatorId(new NodeId(random.nextInt(100)))
-                    .setTimeCreated(randomInstant(random))
+                    .setTimeCreated(random.randomInstant())
                     .build();
             events.add(event);
         }
@@ -197,7 +195,7 @@ class FutureEventBufferTests {
      */
     @Test
     void eventInBufferIsReleasedOnTimeTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, true)
@@ -221,7 +219,7 @@ class FutureEventBufferTests {
         final GossipEvent event = new TestingEventBuilder(random)
                 .setBirthRound(eventBirthRound)
                 .setCreatorId(new NodeId(random.nextInt(100)))
-                .setTimeCreated(randomInstant(random))
+                .setTimeCreated(random.randomInstant())
                 .build();
 
         // Event is from the future, we can't release it yet

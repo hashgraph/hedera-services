@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.components;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.event.EventUtils.calculateNewEventCreationTime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -24,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.system.events.BaseEventHashedData;
@@ -96,10 +96,12 @@ class EventUtilsTests {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("getEventHash() Test")
     void getEventHashTest() {
+        final Randotron random = Randotron.create();
+
         assertNull(EventUtils.getEventHash(null), "hash of null event should be null");
 
         final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
-        Mockito.when(hashedData.getHash()).thenReturn(randomHash());
+        Mockito.when(hashedData.getHash()).thenReturn(random.randomHash());
 
         assertSame(
                 hashedData.getHash().getValue(),

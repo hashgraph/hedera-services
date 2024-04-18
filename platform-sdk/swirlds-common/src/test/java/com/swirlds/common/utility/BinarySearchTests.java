@@ -16,11 +16,11 @@
 
 package com.swirlds.common.utility;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.swirlds.common.test.fixtures.Randotron;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
@@ -28,7 +28,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Random;
 import java.util.Set;
 import java.util.function.LongToIntFunction;
 import org.junit.jupiter.api.DisplayName;
@@ -40,7 +39,7 @@ class BinarySearchTests {
     /**
      * Generate a sorted list of unique integers.
      */
-    private List<Integer> generateUniqueValues(final Random random, final int size) {
+    private List<Integer> generateUniqueValues(final Randotron random, final int size) {
         final Set<Integer> valueSet = new HashSet<>();
 
         while (valueSet.size() < size) {
@@ -87,7 +86,7 @@ class BinarySearchTests {
     /**
      * Test binary search in many ways using a list of a given size.
      */
-    private void testSearch(final Random random, final int size) {
+    private void testSearch(final Randotron random, final int size) {
         final List<Integer> data = generateUniqueValues(random, size);
 
         // Search for each value in the data
@@ -161,7 +160,7 @@ class BinarySearchTests {
     @Test
     @DisplayName("Binary Search Test")
     void binarySearchTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         for (int size = 0; size < 100; size++) {
             testSearch(random, size);
         }
@@ -175,7 +174,7 @@ class BinarySearchTests {
     void negativeIndexTest() {
         final int size = 10;
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final List<Integer> data = generateUniqueValues(random, size);
 
         // Shift the index by a relative offset to the left. Causes some index values to be negative.

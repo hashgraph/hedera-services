@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.test.network;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticTopology;
@@ -81,7 +81,7 @@ class TopologyTest {
         }
     }
 
-    private static void testRandomGraphWithSets(
+    private static void RandotronGraphWithSets(
             final RandomGraph randomGraph, final int numNodes, final int numNeighbors) {
         for (int curr = 0; curr < numNodes; curr++) {
             final int[] neighbors = randomGraph.getNeighbors(curr);
@@ -106,24 +106,25 @@ class TopologyTest {
 
     @ParameterizedTest
     @MethodSource({"failing", "topologicalVariations", "fullyConnected"})
-    void testRandomGraphs(final int numNodes, final int numNeighbors, final long seed) throws Exception {
+    void RandotronGraphs(final int numNodes, final int numNeighbors, final long seed) throws Exception {
         System.out.println("numNodes = " + numNodes + ", numNeighbors = " + numNeighbors + ", seed = " + seed);
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final RandomGraph randomGraph = new RandomGraph(random, numNodes, numNeighbors, seed);
 
-        testRandomGraphWithSets(randomGraph, numNodes, numNeighbors);
-        testRandomGraphTestIterative(randomGraph, numNodes, numNeighbors, seed);
+        RandotronGraphWithSets(randomGraph, numNodes, numNeighbors);
+        RandotronGraphTestIterative(randomGraph, numNodes, numNeighbors, seed);
     }
 
     @ParameterizedTest
     @MethodSource("fullyConnected")
     void testFullyConnectedTopology(final int numNodes, final int numNeighbors, final long ignoredSeed) {
+        final Randotron random = Randotron.create();
+
         final AddressBook addressBook =
-                new RandomAddressBookGenerator().setSize(numNodes).build();
+                new RandomAddressBookGenerator(random).setSize(numNodes).build();
         for (int thisNode = 0; thisNode < numNodes; thisNode++) {
             final NodeId outOfBoundsId = addressBook.getNextNodeId();
             final NodeId thisNodeId = addressBook.getNodeId(thisNode);
-            final Random random = getRandomPrintSeed();
             final NetworkTopology topology = new StaticTopology(random, addressBook, thisNodeId, numNeighbors);
             final List<NodeId> neighbors = topology.getNeighbors();
             final List<NodeId> expected = IntStream.range(0, numNodes)
@@ -143,12 +144,12 @@ class TopologyTest {
 
             assertFalse(topology.shouldConnectToMe(outOfBoundsId), "values >=numNodes should return to false");
 
-            testRandomGraphWithSets(topology.getConnectionGraph(), numNodes, numNeighbors);
+            RandotronGraphWithSets(topology.getConnectionGraph(), numNodes, numNeighbors);
         }
     }
 
     /** test a single random matrix with the given number of nodes and neighbors, created using the given seed */
-    private void testRandomGraphTestIterative(
+    private void RandotronGraphTestIterative(
             final RandomGraph graph, final int numNodes, final int numNeighbors, final long seed) throws Exception {
         for (int x = 0; x < numNodes; x++) { // x is a row of the adjacency matrix, representing one node
             int count = 0;

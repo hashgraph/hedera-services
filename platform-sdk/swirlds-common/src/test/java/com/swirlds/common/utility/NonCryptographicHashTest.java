@@ -16,14 +16,12 @@
 
 package com.swirlds.common.utility;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash64;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import com.swirlds.common.test.fixtures.RandomUtils;
-import java.util.Random;
+import com.swirlds.common.test.fixtures.Randotron;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -37,7 +35,7 @@ class NonCryptographicHashTest {
     @DisplayName("Test hash32")
     @Test
     void testHash32() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         assertDoesNotThrow(() -> {
             hash32(random.nextInt());
@@ -196,7 +194,7 @@ class NonCryptographicHashTest {
                 final byte[] bytes = new byte[i];
                 hash32(bytes);
 
-                final String string = RandomUtils.randomString(random, i);
+                final String string = random.randomString(i);
                 hash32(string);
             }
         });
@@ -209,7 +207,7 @@ class NonCryptographicHashTest {
     @DisplayName("Test hash64")
     @Test
     void testHash64() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         assertDoesNotThrow(() -> {
             hash64(random.nextInt());
@@ -368,7 +366,7 @@ class NonCryptographicHashTest {
                 final byte[] bytes = new byte[i];
                 hash64(bytes);
 
-                final String string = RandomUtils.randomString(random, i);
+                final String string = random.randomString(i);
                 hash64(string);
             }
         });
@@ -377,7 +375,7 @@ class NonCryptographicHashTest {
     @DisplayName("Hashes Are Not Degenerate 32")
     @Test
     void hashesAreNonDegenerate32() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         assertNotEquals(0, hash32(0));
         assertNotEquals(0, hash32(0, 0));
@@ -474,7 +472,7 @@ class NonCryptographicHashTest {
             final byte[] bytes = new byte[i];
             assertNotEquals(0, hash32(bytes), "Hashes should be non-degenerate");
 
-            final String string = RandomUtils.randomString(random, i);
+            final String string = random.randomString(i);
             assertNotEquals(0, hash32(string), "Hashes should be non-degenerate");
         }
     }
@@ -482,7 +480,7 @@ class NonCryptographicHashTest {
     @DisplayName("Hashes Are Not Degenerate 64")
     @Test
     void hashesAreNonDegenerate64() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         assertNotEquals(0, hash64(0));
         assertNotEquals(0, hash64(0, 0));
@@ -579,7 +577,7 @@ class NonCryptographicHashTest {
             final byte[] bytes = new byte[i];
             assertNotEquals(0, hash64(bytes), "Hashes should be non-degenerate");
 
-            final String string = RandomUtils.randomString(random, i);
+            final String string = random.randomString(i);
             assertNotEquals(0, hash64(string), "Hashes should be non-degenerate");
         }
     }

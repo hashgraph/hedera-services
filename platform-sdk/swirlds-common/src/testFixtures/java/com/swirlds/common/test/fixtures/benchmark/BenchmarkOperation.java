@@ -17,7 +17,7 @@
 package com.swirlds.common.test.fixtures.benchmark;
 
 import com.swirlds.common.merkle.MerkleNode;
-import java.util.Random;
+import com.swirlds.common.test.fixtures.Randotron;
 
 /**
  * An operation type that is performed within a benchmark.
@@ -51,7 +51,7 @@ public interface BenchmarkOperation<S extends MerkleNode, M extends BenchmarkMet
      * transaction would already contain those keys, but in the benchmark there may be some overhead when looking
      * them up.
      */
-    void prepare(M metadata, Random random);
+    void prepare(M metadata, Randotron random);
 
     /**
      * If a problem is detected in the prepare phase (e.g. no keys of a type available) then it can make this method

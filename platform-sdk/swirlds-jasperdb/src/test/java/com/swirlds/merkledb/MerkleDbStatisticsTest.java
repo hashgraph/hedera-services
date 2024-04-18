@@ -16,7 +16,6 @@
 
 package com.swirlds.merkledb;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
 import static com.swirlds.merkledb.MerkleDbStatistics.STAT_CATEGORY;
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -30,11 +29,13 @@ import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
+import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,7 +66,9 @@ class MerkleDbStatisticsTest {
                 metricsConfig);
         statistics = new MerkleDbStatistics(configuration.getConfigData(MerkleDbConfig.class), LABEL);
         statistics.registerMetrics(metrics);
-        compactionLevel = randomCompactionLevel();
+
+        final Randotron random = Randotron.create();
+        compactionLevel = randomCompactionLevel(random);
     }
 
     @Test
@@ -398,7 +401,7 @@ class MerkleDbStatisticsTest {
         assertValueSet(metric);
     }
 
-    private static int randomCompactionLevel() {
-        return nextInt(1, 6);
+    private static int randomCompactionLevel(final Random random) {
+        return random.nextInt(1, 6);
     }
 }

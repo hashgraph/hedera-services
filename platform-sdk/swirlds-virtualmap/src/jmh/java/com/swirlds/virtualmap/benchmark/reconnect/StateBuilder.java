@@ -16,7 +16,7 @@
 
 package com.swirlds.virtualmap.benchmark.reconnect;
 
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
 import java.util.Random;
@@ -46,7 +46,7 @@ public class StateBuilder {
      * @param learnerPopulator a BiConsumer that persists the learner state (Map::put or similar)
      */
     public static void buildState(
-            final Random random,
+            final Randotron random,
             final long size,
             final double learnerMissingProbability,
             final double learnerDifferentProbability,
@@ -55,7 +55,7 @@ public class StateBuilder {
         LongStream.range(1, size).forEach(i -> {
             final TestKey key = new TestKey(i);
 
-            final TestValue teacherValue = new TestValue(RandomUtils.randomString(random, random.nextInt(1, 64)));
+            final TestValue teacherValue = new TestValue(random.randomString(random.nextInt(1, 64)));
             teacherPopulator.accept(key, teacherValue);
 
             if (isRandomOutcome(random, learnerMissingProbability)) {
@@ -64,7 +64,7 @@ public class StateBuilder {
 
             final TestValue learnerValue;
             if (isRandomOutcome(random, learnerDifferentProbability)) {
-                learnerValue = new TestValue(RandomUtils.randomString(random, random.nextInt(1, 64)));
+                learnerValue = new TestValue(random.randomString(random.nextInt(1, 64)));
             } else {
                 learnerValue = teacherValue;
             }

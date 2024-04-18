@@ -19,7 +19,7 @@ package com.swirlds.platform.test.fixtures.event;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
@@ -30,7 +30,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
-import java.util.Random;
 
 public class RandomEventUtils {
     public static final Instant DEFAULT_FIRST_EVENT_TIME_CREATED = Instant.ofEpochMilli(1588771316678L);
@@ -40,7 +39,7 @@ public class RandomEventUtils {
      * is provided by an argument.
      */
     public static IndexedEvent randomEventWithTimestamp(
-            final Random random,
+            final Randotron random,
             final NodeId creatorId,
             final Instant timestamp,
             final long birthRound,
@@ -65,7 +64,7 @@ public class RandomEventUtils {
      * method is the timestamp used as the creation timestamp for the event.
      */
     public static BaseEventHashedData randomEventHashedDataWithTimestamp(
-            @NonNull final Random random,
+            @NonNull final Randotron random,
             @NonNull final NodeId creatorId,
             @NonNull final Instant timestamp,
             final long birthRound,
@@ -99,7 +98,7 @@ public class RandomEventUtils {
                 transactions);
 
         if (fakeHash) {
-            hashedData.setHash(RandomUtils.randomHash(random));
+            hashedData.setHash(random.randomHash());
         } else {
             CryptographyHolder.get().digestSync(hashedData);
         }

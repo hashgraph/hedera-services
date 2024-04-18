@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.test.fixtures.crypto;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandom;
 import static com.swirlds.platform.crypto.CryptoStatic.generateKeysAndCerts;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.ResourceLoader;
 import com.swirlds.common.test.fixtures.io.ResourceNotFoundException;
 import com.swirlds.platform.crypto.SerializableX509Certificate;
@@ -40,7 +40,6 @@ import java.security.KeyStoreException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -72,7 +71,7 @@ public class PreGeneratedX509Certs {
      * @param numCerts the number of certificates to generate
      * @param random   the random number generator to use
      */
-    public static void generateCerts(final int numCerts, @NonNull final Random random)
+    public static void generateCerts(final int numCerts, @NonNull final Randotron random)
             throws URISyntaxException, KeyStoreException, ExecutionException, InterruptedException, IOException {
 
         // path to the files to create
@@ -120,16 +119,6 @@ public class PreGeneratedX509Certs {
                 agreeCertDos.writeSerializable(agreeCert, false);
             }
         }
-    }
-
-    /**
-     * Generates a set of X.509 certificates for testing purposes.
-     *
-     * @param numCerts the number of certificates to generate
-     */
-    public static void generateCerts(final int numCerts)
-            throws URISyntaxException, KeyStoreException, IOException, ExecutionException, InterruptedException {
-        generateCerts(numCerts, getRandom());
     }
 
     /**

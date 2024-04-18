@@ -16,8 +16,10 @@
 
 package com.swirlds.platform.test.event.emitter;
 
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -122,8 +124,8 @@ public interface EventEmitter<T extends EventEmitter<T>> {
      * Creates a clean copy of the underlying {@link GraphGenerator} with the supplied seed, forcing it to create a
      * different graph.
      *
-     * @param seed
-     * 		the new seed to use
+     * @param random
+     * 		a new source of randomness
      */
-    void setGraphGeneratorSeed(final long seed);
+    void setGraphGeneratorSeed(@NonNull final Randotron random);
 }

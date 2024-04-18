@@ -19,6 +19,7 @@ package com.swirlds.platform.test.fixtures.event.source;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.staticDynamicValue;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.TransactionGenerator;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
@@ -115,7 +116,7 @@ public interface EventSource<T extends EventSource<T>> {
      * @return The random event that was generated.
      */
     IndexedEvent generateEvent(
-            @NonNull final Random random,
+            @NonNull final Randotron random,
             final long eventIndex,
             @Nullable final EventSource<?> otherParent,
             @NonNull final Instant timestamp,

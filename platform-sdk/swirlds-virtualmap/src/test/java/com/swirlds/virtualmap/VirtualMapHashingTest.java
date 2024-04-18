@@ -16,7 +16,6 @@
 
 package com.swirlds.virtualmap;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createMap;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -29,6 +28,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
@@ -343,8 +343,10 @@ class VirtualMapHashingTest {
     void fullLeavesRehash(int nEntries) {
         final VirtualMap<TestKey, TestValue> map = createMap();
 
+        final Randotron random = Randotron.create();
+
         // add n elements
-        IntStream.range(1, nEntries).forEach(index -> map.put(new TestKey(index), new TestValue(nextInt())));
+        IntStream.range(1, nEntries).forEach(index -> map.put(new TestKey(index), new TestValue(random.nextInt())));
 
         VirtualRootNode<TestKey, TestValue> root = map.getRoot();
         root.enableFlush();

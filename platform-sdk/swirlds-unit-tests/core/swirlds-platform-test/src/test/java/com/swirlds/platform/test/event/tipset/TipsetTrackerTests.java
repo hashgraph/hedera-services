@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.test.event.tipset;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.event.creation.tipset.Tipset.merge;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -25,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
@@ -41,7 +40,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -65,7 +63,7 @@ class TipsetTrackerTests {
     @EnumSource(AncientMode.class)
     @DisplayName("Basic Behavior Test")
     void basicBehaviorTest(final AncientMode ancientMode) {
-        final Random random = getRandomPrintSeed(0);
+        final Randotron random = Randotron.create(0);
 
         final int nodeCount = random.nextInt(10, 20);
         final AddressBook addressBook =
@@ -92,7 +90,7 @@ class TipsetTrackerTests {
 
             final EventDescriptor selfParent = latestEvents.get(creator);
             final EventDescriptor fingerprint =
-                    new EventDescriptor(randomHash(random), creator, generation, birthRound);
+                    new EventDescriptor(random.randomHash(), creator, generation, birthRound);
             latestEvents.put(creator, fingerprint);
 
             // Select some nodes we'd like to be our parents.

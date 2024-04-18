@@ -16,18 +16,17 @@
 
 package com.swirlds.platform.test.state;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.platform.state.iss.internal.ConsensusHashStatus.CATASTROPHIC_ISS;
 import static com.swirlds.platform.state.iss.internal.ConsensusHashStatus.DECIDED;
 import static com.swirlds.platform.state.iss.internal.ConsensusHashStatus.UNDECIDED;
-import static com.swirlds.platform.test.utils.EqualsVerifier.randomHash;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.state.iss.internal.ConsensusHashFinder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -126,10 +125,10 @@ class ConsensusHashFinderTests {
     @DisplayName("Single Partition Test")
     void singlePartitionTest(final long totalWeight) {
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final long averageWeight = totalWeight / 100;
         final long standardDeviationWeight = totalWeight / 200;
-        final Hash hash = randomHash(random);
+        final Hash hash = random.randomHash();
 
         final ConsensusHashFinder hashFinder = new ConsensusHashFinder(0, totalWeight, Mockito.mock(IssMetrics.class));
         assertEquals(totalWeight, hashFinder.getTotalWeight(), "unexpected total weight");
@@ -151,7 +150,7 @@ class ConsensusHashFinderTests {
             assertEquals(currentAccumulatedWeight, hashFinder.getHashReportedWeight(), "duplicates should be no-ops");
 
             // adding the same node with a different hash should have no effect
-            hashFinder.addHash(nextNodeId, nextNodeWeight, randomHash(random));
+            hashFinder.addHash(nextNodeId, nextNodeWeight, random.randomHash());
             assertEquals(currentAccumulatedWeight, hashFinder.getHashReportedWeight(), "duplicates should be no-ops");
 
             nextNodeId = new NodeId(nextNodeId.id() + 1L);
@@ -176,10 +175,10 @@ class ConsensusHashFinderTests {
     @ValueSource(longs = {99, 100, 101, 999, 1000, 1001, 1024, 1025, Long.MAX_VALUE})
     @DisplayName("Single Barely Valid Partition Test")
     void singleBarelyValidPartitionTest(final long totalWeight) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final long averageWeight = totalWeight / 100;
         final long standardDeviationWeight = totalWeight / 200;
-        final Hash expectedConsensusHash = randomHash(random);
+        final Hash expectedConsensusHash = random.randomHash();
 
         final Set<NodeId> expectedDisagreeingNodes = new HashSet<>();
 
@@ -198,7 +197,7 @@ class ConsensusHashFinderTests {
         while (remainingWeight > 0) {
             final long partitionWeight = Math.min(remainingWeight, totalWeight / 10);
             remainingWeight -= partitionWeight;
-            partitions.add(new PartitionDescription(randomHash(random), partitionWeight));
+            partitions.add(new PartitionDescription(random.randomHash(), partitionWeight));
         }
 
         // Add the nodes in a random order
@@ -227,7 +226,7 @@ class ConsensusHashFinderTests {
     @ValueSource(longs = {99, 100, 101, 999, 1000, 1001, 1024, 1025, Long.MAX_VALUE})
     @DisplayName("Almost Complete Partition Test")
     void almostCompletePartitionTest(final long totalWeight) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final long averageWeight = totalWeight / 100;
         final long standardDeviationWeight = totalWeight / 200;
 
@@ -240,14 +239,14 @@ class ConsensusHashFinderTests {
         // A partition with almost enough weight to be complete
         final long weightInBigPartition = totalWeight / 2 - 1;
         remainingWeight -= weightInBigPartition;
-        final Hash bigPartitionHash = randomHash(random);
+        final Hash bigPartitionHash = random.randomHash();
         partitions.add(new PartitionDescription(bigPartitionHash, weightInBigPartition));
 
         // Create a bunch of smaller partitions that are incomplete
         while (remainingWeight > 0) {
             final long partitionWeight = Math.min(remainingWeight, totalWeight / 10);
             remainingWeight -= partitionWeight;
-            partitions.add(new PartitionDescription(randomHash(random), partitionWeight));
+            partitions.add(new PartitionDescription(random.randomHash(), partitionWeight));
         }
 
         // Add the nodes in a random order
@@ -267,7 +266,7 @@ class ConsensusHashFinderTests {
     @ValueSource(longs = {99, 100, 101, 999, 1000, 1001, 1024, 1025, Long.MAX_VALUE})
     @DisplayName("Lots Of Small Partitions Test")
     void lotsOfSmallPartitionsTest(final long totalWeight) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final long averageWeight = totalWeight / 100;
         final long standardDeviationWeight = totalWeight / 200;
 
@@ -281,7 +280,7 @@ class ConsensusHashFinderTests {
         while (remainingWeight > 0) {
             final long partitionWeight = Math.min(remainingWeight, totalWeight / 10);
             remainingWeight -= partitionWeight;
-            partitions.add(new PartitionDescription(randomHash(random), partitionWeight));
+            partitions.add(new PartitionDescription(random.randomHash(), partitionWeight));
         }
 
         // Add the nodes in a random order
@@ -301,7 +300,7 @@ class ConsensusHashFinderTests {
     @ValueSource(longs = {99, 100, 101, 999, 1000, 1001, 1024, 1025, Long.MAX_VALUE})
     @DisplayName("Early ISS Detection Test")
     void earlyIssDetectionTest(final long totalWeight) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final long averageWeight = totalWeight / 100;
         final long standardDeviationWeight = totalWeight / 200;
 
@@ -312,14 +311,14 @@ class ConsensusHashFinderTests {
         // A partition with almost enough weight to be complete
         final long weightInBigPartition = totalWeight / 2 - 1;
         remainingWeight -= weightInBigPartition;
-        final PartitionDescription bigPartition = new PartitionDescription(randomHash(random), weightInBigPartition);
+        final PartitionDescription bigPartition = new PartitionDescription(random.randomHash(), weightInBigPartition);
 
         // Create a bunch of partitions that are incomplete
         final List<PartitionDescription> smallPartitions = new LinkedList<>();
         while (remainingWeight > 0) {
             final long partitionWeight = Math.min(remainingWeight, totalWeight / 10);
             remainingWeight -= partitionWeight;
-            smallPartitions.add(new PartitionDescription(randomHash(random), partitionWeight));
+            smallPartitions.add(new PartitionDescription(random.randomHash(), partitionWeight));
         }
 
         NodeId nextNodeId = new NodeId(0);
@@ -349,10 +348,10 @@ class ConsensusHashFinderTests {
     @ValueSource(longs = {99, 100, 101, 999, 1000, 1001, 1024, 1025, Long.MAX_VALUE})
     @DisplayName("Complete Partition Is Last Test Test")
     void completePartitionIsLastTest(final long totalWeight) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final long averageWeight = totalWeight / 100;
         final long standardDeviationWeight = totalWeight / 200;
-        final Hash expectedConsensusHash = randomHash(random);
+        final Hash expectedConsensusHash = random.randomHash();
 
         final Set<NodeId> expectedDisagreeingNodes = new HashSet<>();
 
@@ -370,7 +369,7 @@ class ConsensusHashFinderTests {
         while (remainingWeight > 0) {
             final long partitionWeight = Math.min(remainingWeight, totalWeight / 10);
             remainingWeight -= partitionWeight;
-            smallPartitions.add(new PartitionDescription(randomHash(random), partitionWeight));
+            smallPartitions.add(new PartitionDescription(random.randomHash(), partitionWeight));
         }
 
         NodeId nextNodeId = new NodeId(0);

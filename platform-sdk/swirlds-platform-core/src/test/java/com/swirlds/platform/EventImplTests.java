@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -34,18 +34,17 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 public class EventImplTests {
-    private Random random;
+    private Randotron random;
 
     @BeforeEach
     void setUp() {
-        random = RandomUtils.getRandomPrintSeed();
+        random = Randotron.create();
     }
 
     @Test
@@ -116,7 +115,7 @@ public class EventImplTests {
 
         for (int i = 0; i < numTransactions; i++) {
             if (random.nextBoolean()) {
-                mixedTransactions[i] = TransactionUtils.incrementingSystemTransaction();
+                mixedTransactions[i] = TransactionUtils.incrementingSystemTransaction(random);
                 systemIndices.add(i);
             } else {
                 mixedTransactions[i] = TransactionUtils.incrementingSwirldTransaction();
@@ -129,11 +128,11 @@ public class EventImplTests {
     @DisplayName("consensusReached() propagates consensus data to all transactions")
     void testConsensusReached() {
         final ConsensusTransactionImpl[] mixedTransactions = new ConsensusTransactionImpl[5];
-        mixedTransactions[0] = TransactionUtils.incrementingSystemTransaction();
+        mixedTransactions[0] = TransactionUtils.incrementingSystemTransaction(random);
         mixedTransactions[1] = TransactionUtils.incrementingSwirldTransaction();
-        mixedTransactions[2] = TransactionUtils.incrementingSystemTransaction();
+        mixedTransactions[2] = TransactionUtils.incrementingSystemTransaction(random);
         mixedTransactions[3] = TransactionUtils.incrementingSwirldTransaction();
-        mixedTransactions[4] = TransactionUtils.incrementingSystemTransaction();
+        mixedTransactions[4] = TransactionUtils.incrementingSystemTransaction(random);
 
         final Instant eventConsTime = Instant.now();
         final EventImpl event =

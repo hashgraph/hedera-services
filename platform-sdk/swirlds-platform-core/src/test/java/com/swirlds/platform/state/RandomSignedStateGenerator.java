@@ -16,16 +16,12 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
-
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -47,7 +43,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -56,7 +51,7 @@ import java.util.stream.Stream;
  */
 public class RandomSignedStateGenerator {
 
-    final Random random;
+    final Randotron random;
 
     private State state;
     private Long round;
@@ -75,25 +70,10 @@ public class RandomSignedStateGenerator {
     private ConsensusSnapshot consensusSnapshot;
     private SignatureVerifier signatureVerifier;
     private boolean deleteOnBackgroundThread;
-
-    /**
-     * Create a new signed state generator with a random seed.
-     */
-    public RandomSignedStateGenerator() {
-        random = getRandomPrintSeed();
-    }
-
-    /**
-     * Create a new signed state generator with a specific seed.
-     */
-    public RandomSignedStateGenerator(final long seed) {
-        random = new Random(seed);
-    }
-
     /**
      * Create a new signed state generator with a random object.
      */
-    public RandomSignedStateGenerator(final Random random) {
+    public RandomSignedStateGenerator(final Randotron random) {
         this.random = random;
     }
 
@@ -135,21 +115,21 @@ public class RandomSignedStateGenerator {
 
         final Hash legacyRunningEventHashInstance;
         if (legacyRunningEventHash == null) {
-            legacyRunningEventHashInstance = randomHash(random);
+            legacyRunningEventHashInstance = random.randomHash();
         } else {
             legacyRunningEventHashInstance = legacyRunningEventHash;
         }
 
         final Hash runningEventHashInstance;
         if (runningEventHash == null) {
-            runningEventHashInstance = randomHash(random);
+            runningEventHashInstance = random.randomHash();
         } else {
             runningEventHashInstance = runningEventHash;
         }
 
         final Instant consensusTimestampInstance;
         if (consensusTimestamp == null) {
-            consensusTimestampInstance = RandomUtils.randomInstant(random);
+            consensusTimestampInstance = random.randomInstant();
         } else {
             consensusTimestampInstance = consensusTimestamp;
         }
@@ -179,7 +159,7 @@ public class RandomSignedStateGenerator {
         if (consensusSnapshot == null) {
             consensusSnapshotInstance = new ConsensusSnapshot(
                     roundInstance,
-                    Stream.generate(() -> randomHash(random)).limit(10).toList(),
+                    Stream.generate(() -> random.randomHash()).limit(10).toList(),
                     IntStream.range(0, roundsNonAncientInstance)
                             .mapToObj(i -> new MinimumJudgeInfo(roundInstance - i, 0L))
                             .toList(),
@@ -241,7 +221,7 @@ public class RandomSignedStateGenerator {
             signaturesInstance = new HashMap<>();
 
             for (final NodeId nodeID : signingNodeIdsInstance) {
-                signaturesInstance.put(nodeID, randomSignature(random));
+                signaturesInstance.put(nodeID, random.randomSignature());
             }
         } else {
             signaturesInstance = signatures;

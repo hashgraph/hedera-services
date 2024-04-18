@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateToDisk;
 import static com.swirlds.platform.state.signed.StartupStateUtils.doRecoveryCleanup;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,6 +39,7 @@ import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
@@ -61,7 +60,6 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
@@ -128,7 +126,7 @@ class StartupStateUtilsTests {
      */
     @NonNull
     private SignedState writeState(
-            @NonNull final Random random,
+            @NonNull final Randotron random,
             @NonNull final PlatformContext platformContext,
             final long round,
             @Nullable final Hash epoch,
@@ -178,7 +176,7 @@ class StartupStateUtilsTests {
     @Test
     @DisplayName("Normal Restart Test")
     void normalRestartTest() throws IOException, SignedStateLoadingException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final PlatformContext platformContext = buildContext(false);
 
         int stateCount = 5;
@@ -210,7 +208,7 @@ class StartupStateUtilsTests {
     @Test
     @DisplayName("Corrupted State No Recycling Test")
     void corruptedStateNoRecyclingTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final PlatformContext platformContext = buildContext(false);
 
         int stateCount = 5;
@@ -238,7 +236,7 @@ class StartupStateUtilsTests {
     @DisplayName("Corrupted State Recycling Permitted Test")
     void corruptedStateRecyclingPermittedTest(final int invalidStateCount)
             throws IOException, SignedStateLoadingException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final PlatformContext platformContext = buildContext(true);
 
         int stateCount = 5;
@@ -298,7 +296,7 @@ class StartupStateUtilsTests {
     @Test
     @DisplayName("Latest State Exact Epoch Hash Test")
     void latestStateHasExactEpochHashTest() throws IOException, SignedStateLoadingException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final PlatformContext platformContext = buildContext(false);
 
         int stateCount = 5;
@@ -351,7 +349,7 @@ class StartupStateUtilsTests {
     @Test
     @DisplayName("Previous State Has Epoch Hash Test")
     void previousStateHasExactEpochHashTest() throws IOException, SignedStateLoadingException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final PlatformContext platformContext = buildContext(false);
 
         int stateCount = 5;
@@ -410,7 +408,7 @@ class StartupStateUtilsTests {
     void noStateHasEpochHashPreviousRoundExistsTest(final int startingStateIndex)
             throws IOException, SignedStateLoadingException {
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final PlatformContext platformContext = buildContext(false);
 
         int stateCount = 5;
@@ -425,7 +423,7 @@ class StartupStateUtilsTests {
             }
         }
 
-        final Hash epoch = randomHash(random);
+        final Hash epoch = random.randomHash();
         final long epochRound = targetState.getRound() + 1;
 
         final AtomicBoolean emergencyStateLoaded = new AtomicBoolean(false);
@@ -472,7 +470,7 @@ class StartupStateUtilsTests {
     @Test
     @DisplayName("Recover From Genesis Test")
     void recoverFromGenesisTest() throws IOException, SignedStateLoadingException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final PlatformContext platformContext = buildContext(false);
 
         int stateCount = 5;
@@ -487,7 +485,7 @@ class StartupStateUtilsTests {
             }
         }
 
-        final Hash epoch = randomHash(random);
+        final Hash epoch = random.randomHash();
         final long epochRound = firstState.getRound() - 1;
 
         final AtomicBoolean emergencyStateLoaded = new AtomicBoolean(false);
@@ -523,12 +521,12 @@ class StartupStateUtilsTests {
     @Test
     @DisplayName("State After Epoch State Is Present Test")
     void stateAfterEpochStateIsPresentTest() throws IOException, SignedStateLoadingException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final PlatformContext platformContext = buildContext(false);
 
         int stateCount = 5;
 
-        final Hash epoch = randomHash(random);
+        final Hash epoch = random.randomHash();
 
         int latestRound = random.nextInt(1_000, 10_000);
         SignedState targetState = null;
@@ -584,7 +582,7 @@ class StartupStateUtilsTests {
     @Test
     @DisplayName("Recovery Corrupted State No Recycling Test")
     void recoveryCorruptedStateNoRecyclingTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final PlatformContext platformContext = buildContext(false);
 
         int stateCount = 5;
@@ -596,7 +594,7 @@ class StartupStateUtilsTests {
             writeState(random, platformContext, latestRound, null, corrupted);
         }
 
-        final Hash epoch = randomHash(random);
+        final Hash epoch = random.randomHash();
         final long epochRound = latestRound + 1;
 
         final AtomicBoolean emergencyStateLoaded = new AtomicBoolean(false);
@@ -632,7 +630,7 @@ class StartupStateUtilsTests {
     @DisplayName("Recovery Corrupted State Recycling Permitted Test")
     void recoveryCorruptedStateRecyclingPermittedTest(final int invalidStateCount)
             throws IOException, SignedStateLoadingException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final PlatformContext platformContext = buildContext(true);
 
         int stateCount = 5;
@@ -659,7 +657,7 @@ class StartupStateUtilsTests {
                 .when(recycleBin)
                 .recycle(any());
 
-        final Hash epoch = randomHash(random);
+        final Hash epoch = random.randomHash();
         final long epochRound = latestRound + 1;
 
         final AtomicBoolean emergencyStateLoaded = new AtomicBoolean(false);
@@ -732,7 +730,7 @@ class StartupStateUtilsTests {
                 .when(recycleBin)
                 .recycle(any());
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         int stateCount = 5;
         int latestRound = random.nextInt(1_000, 10_000);
@@ -771,9 +769,9 @@ class StartupStateUtilsTests {
     @Test
     @DisplayName("doRecoveryCleanup() Already Cleaned Up Test")
     void doRecoveryCleanupAlreadyCleanedUpTest() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
-        final Hash epoch = randomHash(random);
+        final Hash epoch = random.randomHash();
 
         final PlatformContext platformContext = buildContext(false);
 
@@ -830,7 +828,7 @@ class StartupStateUtilsTests {
     @ValueSource(ints = {1, 2, 3, 4, 5})
     @DisplayName("doRecoveryCleanup() Work Required Test")
     void doRecoveryCleanupWorkRequiredTest(final int statesToDelete) throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final PlatformContext platformContext = buildContext(false);
 
@@ -856,7 +854,7 @@ class StartupStateUtilsTests {
             }
         }
 
-        final Hash epoch = randomHash(random);
+        final Hash epoch = random.randomHash();
         final long epochRound;
         if (statesToDelete == stateCount) {
             // lower round than what all states have

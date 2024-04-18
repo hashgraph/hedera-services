@@ -18,6 +18,7 @@ package com.swirlds.platform.core.jmh;
 
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.WeightGenerators;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.Consensus;
@@ -73,7 +74,8 @@ public class ConsensusBenchmark {
                 EventSourceFactory.newStandardEventSources(WeightGenerators.balancedNodeWeights(numNodes));
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        final StandardGraphGenerator generator = new StandardGraphGenerator(platformContext, seed, eventSources);
+        final StandardGraphGenerator generator =
+                new StandardGraphGenerator(platformContext, Randotron.create(seed), eventSources);
         final StandardEventEmitter emitter = new StandardEventEmitter(generator);
         events = emitter.emitEvents(numEvents);
 

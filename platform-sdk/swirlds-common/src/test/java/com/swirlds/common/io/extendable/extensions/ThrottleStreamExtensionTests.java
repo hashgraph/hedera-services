@@ -18,12 +18,12 @@ package com.swirlds.common.io.extendable.extensions;
 
 import static com.swirlds.common.io.extendable.ExtendableInputStream.extendInputStream;
 import static com.swirlds.common.io.extendable.ExtendableOutputStream.extendOutputStream;
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.ExtendableOutputStream;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.extendable.StreamSanityChecks;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import java.io.ByteArrayInputStream;
@@ -33,7 +33,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -62,7 +61,7 @@ class ThrottleStreamExtensionTests {
     @DisplayName("Input Stream Test")
     @Tag(TestQualifierTags.TIME_CONSUMING)
     void inputStreamTest(final int timeIncrementMs) throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int bytesPerSecond = 1024 * 1024;
         final CountingStreamExtension counter = new CountingStreamExtension();
@@ -111,7 +110,7 @@ class ThrottleStreamExtensionTests {
     @DisplayName("Output Stream Test")
     @Tag(TestQualifierTags.TIME_CONSUMING)
     void outputStreamTest(final int timeIncrementMs) throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int bytesPerSecond = 1024 * 1024;
         final CountingStreamExtension counter = new CountingStreamExtension();

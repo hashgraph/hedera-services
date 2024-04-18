@@ -16,12 +16,12 @@
 
 package com.swirlds.common.wiring.schedulers;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.TestWiringModelBuilder;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.wiring.counters.StandardObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
@@ -30,7 +30,6 @@ import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.time.Duration;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,7 +43,7 @@ class DirectTaskSchedulerTests {
     void basicOperationTest(final boolean threadsafe) {
         final WiringModel model = TestWiringModelBuilder.create();
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final Thread mainThread = Thread.currentThread();
 
         final TaskSchedulerType type = threadsafe ? TaskSchedulerType.DIRECT_THREADSAFE : TaskSchedulerType.DIRECT;

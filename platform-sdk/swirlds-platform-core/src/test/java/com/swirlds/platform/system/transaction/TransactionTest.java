@@ -16,18 +16,16 @@
 
 package com.swirlds.platform.system.transaction;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHashBytes;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -57,7 +55,7 @@ public class TransactionTest {
      * 		./swirlds-platform-core/src/test/java/com/swirlds/platform/event/DetGenerateUtils.java .
      * 		Please keep the two versions in sync.
      */
-    public static List<Transaction> generateTransactions(final int number, final int maxSize, final Random random) {
+    public static List<Transaction> generateTransactions(final int number, final int maxSize, final Randotron random) {
         final List<Transaction> list = new ArrayList<>(number);
         for (int i = 0; i < number; i++) {
             final int size = Math.max(1, random.nextInt(maxSize));
@@ -65,9 +63,9 @@ public class TransactionTest {
             random.nextBytes(bytes);
             final boolean system = random.nextBoolean();
             if (system) {
-                final Bytes sigature = randomSignatureBytes(random);
+                final Bytes sigature = random.randomSignatureBytes();
                 list.add(new StateSignatureTransaction(
-                        random.nextLong(), sigature, randomHashBytes(random), Bytes.EMPTY));
+                        random.nextLong(), sigature, random.randomHashBytes(), Bytes.EMPTY));
             } else {
                 list.add(new SwirldTransaction(bytes));
             }
@@ -77,7 +75,7 @@ public class TransactionTest {
 
     @Test
     public void serializeDeserialize() throws IOException {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final List<Transaction> original = generateTransactions(MAX_TRANSACTIONS, MAX_TRANSACTION_BYTES, random);
         final InputOutputStream io = new InputOutputStream();
 
@@ -86,11 +84,5 @@ public class TransactionTest {
         final List<Transaction> copy = io.getInput().readSerializableList(MAX_TRANSACTIONS);
 
         assertEquals(original, copy);
-    }
-
-    private Random getRandomPrintSeed() {
-        final long seed = new Random().nextLong();
-        System.out.println("Seed: " + seed);
-        return new Random(seed);
     }
 }

@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.exceptions.ReferenceCountException;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -62,7 +63,8 @@ class ReservedSignedStateTests {
     @Test
     @DisplayName("Non-Null State Test")
     void NonNullStateTest() {
-        final SignedState signedState = new RandomSignedStateGenerator().build();
+        final Randotron random = Randotron.create();
+        final SignedState signedState = new RandomSignedStateGenerator(random).build();
         assertEquals(0, signedState.getReservationCount());
 
         try (final ReservedSignedState reservedSignedState =
@@ -107,8 +109,9 @@ class ReservedSignedStateTests {
     @Test
     @DisplayName("Non-Null Bad Lifecycle Test")
     void nonNullBadLifecycleTest() {
+        final Randotron random = Randotron.create();
         final ReservedSignedState reservedSignedState =
-                ReservedSignedState.createAndReserve(new RandomSignedStateGenerator().build(), "reason");
+                ReservedSignedState.createAndReserve(new RandomSignedStateGenerator(random).build(), "reason");
         reservedSignedState.close();
 
         assertThrows(ReferenceCountException.class, reservedSignedState::get);
@@ -122,7 +125,8 @@ class ReservedSignedStateTests {
     @Test
     @DisplayName("Try-reserve Paradigm Test")
     void tryReserveTest() {
-        final SignedState signedState = new RandomSignedStateGenerator().build();
+        final Randotron random = Randotron.create();
+        final SignedState signedState = new RandomSignedStateGenerator(random).build();
         assertEquals(0, signedState.getReservationCount());
 
         final ReservedSignedState reservedSignedState = ReservedSignedState.createAndReserve(signedState, "reason");

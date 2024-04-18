@@ -27,6 +27,7 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -49,7 +50,6 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -60,7 +60,7 @@ class OutboundConnectionCreatorTest {
     void createConnectionTest() throws IOException {
 
         final int numNodes = 10;
-        final Random r = new Random();
+        final Randotron r = Randotron.create();
         final AddressBook addressBook = new RandomAddressBookGenerator(r)
                 .setSize(numNodes)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
@@ -140,7 +140,7 @@ class OutboundConnectionCreatorTest {
     void mismatchedVersionIgnoredTest() throws IOException {
 
         final int numNodes = 10;
-        final Random r = new Random();
+        final Randotron r = Randotron.create();
         final AddressBook addressBook = new RandomAddressBookGenerator(r)
                 .setSize(numNodes)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)

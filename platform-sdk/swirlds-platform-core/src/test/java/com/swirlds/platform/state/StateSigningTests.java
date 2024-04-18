@@ -16,9 +16,6 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.platform.state.manager.SignatureVerificationTestUtils.buildFakeSignature;
@@ -34,6 +31,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.state.manager.SignatureVerificationTestUtils;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
@@ -49,7 +47,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -63,7 +60,7 @@ class StateSigningTests {
     @ValueSource(booleans = {true, false})
     @DisplayName("Add Valid Signatures Test")
     void addValidSignaturesTest(final boolean evenWeighting) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int nodeCount = random.nextInt(10, 20);
 
@@ -168,7 +165,7 @@ class StateSigningTests {
     @ValueSource(booleans = {true, false})
     @DisplayName("Add Invalid Signatures Test")
     void addInvalidSignaturesTest(final boolean evenWeighting) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int nodeCount = random.nextInt(10, 20);
 
@@ -200,7 +197,7 @@ class StateSigningTests {
         for (final Address address : nodes) {
             if (isInvalid(address.getNodeId())) {
                 // A random signature won't be valid with high probability
-                signatures.add(randomSignature(random));
+                signatures.add(random.randomSignature());
             } else {
                 signatures.add(buildFakeSignature(
                         address.getSigPublicKey(), signedState.getState().getHash()));
@@ -265,7 +262,7 @@ class StateSigningTests {
     @ValueSource(booleans = {true, false})
     @DisplayName("Signature Becomes Invalid Test")
     void signatureBecomesInvalidTest(final boolean evenWeighting) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int nodeCount = random.nextInt(10, 20);
 
@@ -346,7 +343,7 @@ class StateSigningTests {
     @ValueSource(booleans = {true, false})
     @DisplayName("All Signatures Become Invalid Test")
     void allSignaturesBecomeInvalidTest(final boolean evenWeighting) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int nodeCount = random.nextInt(10, 20);
 
@@ -384,7 +381,7 @@ class StateSigningTests {
 
         assertTrue(signedState.isComplete());
 
-        final Hash newHash = randomHash();
+        final Hash newHash = random.randomHash();
         signedState.getState().setHash(newHash);
         signedState.pruneInvalidSignatures();
 
@@ -397,7 +394,7 @@ class StateSigningTests {
     @ValueSource(booleans = {true, false})
     @DisplayName("Signatures Invalid With Different Address Book Test")
     void signaturesInvalidWithDifferentAddressBookTest(final boolean evenWeighting) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int nodeCount = random.nextInt(10, 20);
 
@@ -458,7 +455,7 @@ class StateSigningTests {
     @ValueSource(booleans = {true, false})
     @DisplayName("Signatures Invalid Due To Zero Weight")
     void signaturesInvalidDueToZeroWeightTest(final boolean evenWeighting) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int nodeCount = random.nextInt(10, 20);
 
@@ -522,7 +519,7 @@ class StateSigningTests {
     @ValueSource(booleans = {true, false})
     @DisplayName("Recovery State Is Complete Test")
     void recoveryStateIsCompleteTest(final boolean evenWeighting) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final int nodeCount = random.nextInt(10, 20);
 

@@ -16,13 +16,11 @@
 
 package com.swirlds.platform.event;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHashBytes;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
-
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
@@ -49,7 +47,7 @@ public abstract class DetGenerateUtils {
     private static final int DEFAULT_TRANSACTION_MAX_SIZE = 100;
     private static final int DEFAULT_SIGNATURE_SIZE = 384;
 
-    public static BaseEventHashedData generateBaseEventHashedData(final Random random) {
+    public static BaseEventHashedData generateBaseEventHashedData(final Randotron random) {
 
         final NodeId selfId = new NodeId(nextLong(random, 0));
         final EventDescriptor selfDescriptor = new EventDescriptor(
@@ -107,7 +105,7 @@ public abstract class DetGenerateUtils {
      * 		./swirlds-unit-tests/common/swirlds-common-test/src/test/java/com/swirlds/common/test/TransactionTest.java.
      * 		Please keep the two versions in sync.
      */
-    public static List<Transaction> generateTransactions(final int number, final int maxSize, final Random random) {
+    public static List<Transaction> generateTransactions(final int number, final int maxSize, final Randotron random) {
         final List<Transaction> list = new ArrayList<>(number);
         for (int i = 0; i < number; i++) {
             final int size = Math.max(1, random.nextInt(maxSize));
@@ -115,8 +113,8 @@ public abstract class DetGenerateUtils {
             random.nextBytes(bytes);
             final boolean system = random.nextBoolean();
             if (system) {
-                final Bytes signature = randomSignatureBytes(random);
-                final Bytes hash = randomHashBytes(random);
+                final Bytes signature = random.randomSignatureBytes();
+                final Bytes hash = random.randomHashBytes();
                 list.add(new StateSignatureTransaction(random.nextLong(), signature, hash, Bytes.EMPTY));
             } else {
                 list.add(new SwirldTransaction(bytes));

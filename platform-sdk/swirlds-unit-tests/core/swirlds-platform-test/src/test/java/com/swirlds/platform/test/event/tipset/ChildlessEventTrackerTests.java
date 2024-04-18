@@ -16,12 +16,11 @@
 
 package com.swirlds.platform.test.event.tipset;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.creation.tipset.ChildlessEventTracker;
@@ -32,7 +31,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -62,14 +60,14 @@ class ChildlessEventTrackerTests {
     @Test
     @DisplayName("Basic Behavior Test")
     void basicBehaviorTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final ChildlessEventTracker tracker = new ChildlessEventTracker();
 
         // Adding some event with no parents
         final List<EventDescriptor> batch1 = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
-            final EventDescriptor descriptor = newEventDescriptor(randomHash(random), new NodeId(i), 0);
+            final EventDescriptor descriptor = newEventDescriptor(random.randomHash(), new NodeId(i), 0);
             tracker.addEvent(descriptor, List.of());
             batch1.add(descriptor);
         }
@@ -83,11 +81,11 @@ class ChildlessEventTrackerTests {
         final List<EventDescriptor> batch2 = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             final NodeId nonExistentParentId = new NodeId(i + 100);
-            final EventDescriptor nonExistentParent = newEventDescriptor(randomHash(random), nonExistentParentId, 0);
+            final EventDescriptor nonExistentParent = newEventDescriptor(random.randomHash(), nonExistentParentId, 0);
             final int oddParentId = (i * 2 + 1) % 10;
             final EventDescriptor oddParent = batch1.get(oddParentId);
 
-            final EventDescriptor descriptor = newEventDescriptor(randomHash(), new NodeId(i), 1);
+            final EventDescriptor descriptor = newEventDescriptor(random.randomHash(), new NodeId(i), 1);
             tracker.addEvent(descriptor, List.of(nonExistentParent, oddParent));
             batch2.add(descriptor);
         }
@@ -112,13 +110,13 @@ class ChildlessEventTrackerTests {
     @Test
     @DisplayName("Branching Test")
     void branchingTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final ChildlessEventTracker tracker = new ChildlessEventTracker();
 
-        final EventDescriptor e0 = newEventDescriptor(randomHash(random), new NodeId(0), 0);
-        final EventDescriptor e1 = newEventDescriptor(randomHash(random), new NodeId(0), 1);
-        final EventDescriptor e2 = newEventDescriptor(randomHash(random), new NodeId(0), 2);
+        final EventDescriptor e0 = newEventDescriptor(random.randomHash(), new NodeId(0), 0);
+        final EventDescriptor e1 = newEventDescriptor(random.randomHash(), new NodeId(0), 1);
+        final EventDescriptor e2 = newEventDescriptor(random.randomHash(), new NodeId(0), 2);
 
         tracker.addEvent(e0, List.of());
         tracker.addEvent(e1, List.of(e0));
@@ -128,8 +126,8 @@ class ChildlessEventTrackerTests {
         assertEquals(1, batch1.size());
         assertEquals(e2, batch1.get(0));
 
-        final EventDescriptor e3 = newEventDescriptor(randomHash(random), new NodeId(0), 3);
-        final EventDescriptor e3Branch = newEventDescriptor(randomHash(random), new NodeId(0), 3);
+        final EventDescriptor e3 = newEventDescriptor(random.randomHash(), new NodeId(0), 3);
+        final EventDescriptor e3Branch = newEventDescriptor(random.randomHash(), new NodeId(0), 3);
 
         // Branch with the same generation, existing event should not be discarded.
         tracker.addEvent(e3, List.of(e2));
@@ -140,14 +138,14 @@ class ChildlessEventTrackerTests {
         assertEquals(e3, batch2.get(0));
 
         // Branch with a lower generation, existing event should not be discarded.
-        final EventDescriptor e2Branch = newEventDescriptor(randomHash(random), new NodeId(0), 2);
+        final EventDescriptor e2Branch = newEventDescriptor(random.randomHash(), new NodeId(0), 2);
         tracker.addEvent(e2Branch, List.of(e1));
 
         assertEquals(1, batch2.size());
         assertEquals(e3, batch2.get(0));
 
         // Branch with a higher generation, existing event should be discarded.
-        final EventDescriptor e99Branch = newEventDescriptor(randomHash(random), new NodeId(0), 99);
+        final EventDescriptor e99Branch = newEventDescriptor(random.randomHash(), new NodeId(0), 99);
         tracker.addEvent(e99Branch, List.of());
 
         final List<EventDescriptor> batch3 = tracker.getChildlessEvents();

@@ -16,14 +16,13 @@
 
 package com.swirlds.common.wiring.builders;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
-import java.util.Random;
 import org.junit.jupiter.api.Test;
 
 class TaskSchedulerConfigurationTests {
@@ -43,7 +42,7 @@ class TaskSchedulerConfigurationTests {
 
     @Test
     void randomValuesTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         for (int i = 0; i < 100; i++) {
             final StringBuilder configStringBuilder = new StringBuilder();

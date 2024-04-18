@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.reconnect;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -25,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleInternal;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
@@ -175,7 +175,7 @@ class RandomVirtualMapReconnectTests extends VirtualMapReconnectTestBase {
     @DisplayName("Random Operations Reconnect Test")
     @Tag(TestQualifierTags.TIME_CONSUMING)
     void randomOperationsReconnectTest(final RandomOperationsConfig config) throws Exception {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         // validation of input variables
         assertTrue(config.initialMapSize >= 0, "initialMapSize must be non-negative.");

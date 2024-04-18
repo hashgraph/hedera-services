@@ -16,7 +16,6 @@
 
 package com.swirlds.merkledb.collections;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.nextLong;
 import static com.swirlds.merkledb.collections.LongList.IMPERMISSIBLE_VALUE;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import java.lang.management.BufferPoolMXBean;
 import java.lang.management.ManagementFactory;
@@ -67,13 +67,15 @@ class LongListValidRangeTest {
     @MethodSource("defaultLongListProvider")
     @DisplayName("Min/max valid indexes exceeds the list size")
     void testUpdateValidRangeOnEmptyList(AbstractLongList<?> list) {
+        final Randotron random = Randotron.create();
+
         this.list = list;
         // it's allowed to update min valid index to the index that exceeds the list size
         assertDoesNotThrow(() -> list.updateValidRange(1, maxValidIndex()));
         // no chunks are created
         assertMemoryChunksNumber(0);
         // an attempt to put a value to the index that is lower than min valid index should fail
-        assertThrows(AssertionError.class, () -> list.put(0, nextLong()));
+        assertThrows(AssertionError.class, () -> list.put(0, random.nextLong()));
 
         // it's allowed to update max valid index to the index that exceeds the list size
         // it shall have no effect

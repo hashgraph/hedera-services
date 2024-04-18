@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -53,8 +54,10 @@ class StateTests {
 
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
+        final Randotron random = Randotron.create();
+
         state = new State();
-        state.setPlatformState(randomPlatformState());
+        state.setPlatformState(randomPlatformState(random));
         state.setSwirldState(new DummySwirldState());
 
         state.invalidateHash();

@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.state;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils.buildLessSimpleTree;
 import static com.swirlds.platform.state.signed.SignedStateComparison.mismatchedNodeIterator;
 import static com.swirlds.platform.state.signed.SignedStateComparison.printMismatchedNodes;
@@ -28,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.MerkleLong;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.platform.state.signed.MismatchedNodes;
@@ -212,6 +212,8 @@ class SignedStateComparisonTest {
     @Test
     @DisplayName("Deep Comparison Required")
     void deepComparisonRequired() {
+        final Randotron random = Randotron.create();
+
         final MerkleNode stateA = buildLessSimpleTree();
         MerkleCryptoFactory.getInstance().digestTreeSync(stateA);
 
@@ -219,7 +221,7 @@ class SignedStateComparisonTest {
         MerkleCryptoFactory.getInstance().digestTreeSync(stateB);
 
         // Change a leaf without rehashing the tree
-        ((DummyMerkleLeaf) stateB.getNodeAtRoute(1, 1)).enableDuplicateHashing().setHash(randomHash());
+        ((DummyMerkleLeaf) stateB.getNodeAtRoute(1, 1)).enableDuplicateHashing().setHash(random.randomHash());
 
         // Comparing with a shallow iterator should find no differences
         final Iterator<MismatchedNodes> shallowIterator = mismatchedNodeIterator(stateA, stateB, false);

@@ -17,11 +17,11 @@
 package com.swirlds.platform;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
-import java.util.Random;
 
 public class DummyHashgraph {
 
@@ -32,7 +32,7 @@ public class DummyHashgraph {
     public long lastRoundReceivedAllTransCons;
     public AddressBook addressBook;
 
-    DummyHashgraph(@NonNull final Random random, final int selfIndex) {
+    DummyHashgraph(@NonNull final Randotron random, final int selfIndex) {
         eventIntakeQueueSize = 0;
         isInCriticalQuorum = new HashMap<>();
         numUserTransEvents = 0;

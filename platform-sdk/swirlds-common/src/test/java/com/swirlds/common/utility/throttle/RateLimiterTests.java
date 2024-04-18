@@ -16,14 +16,13 @@
 
 package com.swirlds.common.utility.throttle;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
+import com.swirlds.common.test.fixtures.Randotron;
 import java.time.Duration;
-import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -35,7 +34,7 @@ class RateLimiterTests {
     @ValueSource(ints = {1, 2, 100})
     @DisplayName("Period Test")
     void periodTest(final int periodMs) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final FakeTime time = new FakeTime(Duration.ofNanos(1));
         final RateLimiter rateLimiter = new RateLimiter(time, Duration.ofMillis(periodMs));
@@ -86,7 +85,7 @@ class RateLimiterTests {
     @ValueSource(ints = {1, 2, 100})
     @DisplayName("Frequency Test")
     void frequencyTest(final int periodMs) {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final FakeTime time = new FakeTime(Duration.ofNanos(1));
         final RateLimiter rateLimiter = new RateLimiter(time, 1000.0 / periodMs);

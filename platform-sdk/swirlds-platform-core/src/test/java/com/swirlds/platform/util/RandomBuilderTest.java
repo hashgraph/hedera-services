@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.util;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
+import com.swirlds.common.test.fixtures.Randotron;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
 
@@ -37,7 +37,7 @@ class RandomBuilderTest {
 
     @Test
     void specifiedSeedShouldProduceTheSameResultsTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final long seed = random.nextLong();
         final RandomBuilder randomBuilderA = new RandomBuilder(seed);

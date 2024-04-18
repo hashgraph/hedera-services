@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.network.Network;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.system.address.Address;
@@ -42,8 +43,10 @@ class AddressBookNetworkUtilsTests {
     @Test
     @DisplayName("Determine If Local Node")
     void determineLocalNodeAddress() throws UnknownHostException, SocketException {
+        final Randotron random = Randotron.create();
+
         final AddressBook addressBook =
-                new RandomAddressBookGenerator().setSize(2).build();
+                new RandomAddressBookGenerator(random).setSize(2).build();
         final Address address = addressBook.getAddress(addressBook.getNodeId(0));
 
         final Address loopBackAddress = address.copySetHostnameInternal(
@@ -67,8 +70,10 @@ class AddressBookNetworkUtilsTests {
     @DisplayName("Error On Invalid Local Address")
     @DisabledOnOs({OS.WINDOWS, OS.MAC})
     void ErrorOnInvalidLocalAddress() throws UnknownHostException, SocketException {
+        final Randotron random = Randotron.create();
+
         final AddressBook addressBook =
-                new RandomAddressBookGenerator().setSize(2).build();
+                new RandomAddressBookGenerator(random).setSize(2).build();
         final Address address = addressBook.getAddress(addressBook.getNodeId(0));
 
         final Address badLocalAddress = address.copySetHostnameInternal("500.8.8");

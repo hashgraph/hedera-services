@@ -20,6 +20,7 @@ import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -78,7 +79,8 @@ class IntakeAndConsensusTests {
 
         // the generated events are first fed into consensus so that round created is calculated before we start
         // using them
-        final GeneratorWithConsensus generator = new GeneratorWithConsensus(platformContext, seed, numNodes);
+        final GeneratorWithConsensus generator =
+                new GeneratorWithConsensus(platformContext, Randotron.create(seed), numNodes);
         final TestIntake node1 = new TestIntake(platformContext, generator.getAddressBook());
         final TestIntake node2 = new TestIntake(platformContext, generator.getAddressBook());
 
@@ -188,12 +190,12 @@ class IntakeAndConsensusTests {
 
         @SuppressWarnings("unchecked")
         public GeneratorWithConsensus(
-                @NonNull final PlatformContext platformContext, final long seed, final int numNodes) {
+                @NonNull final PlatformContext platformContext, @NonNull final Randotron random, final int numNodes) {
             Objects.requireNonNull(platformContext);
             final List<StandardEventSource> eventSources =
                     Stream.generate(StandardEventSource::new).limit(numNodes).toList();
             generator =
-                    new StandardGraphGenerator(platformContext, seed, (List<EventSource<?>>) (List<?>) eventSources);
+                    new StandardGraphGenerator(platformContext, random, (List<EventSource<?>>) (List<?>) eventSources);
             intake = new TestIntake(platformContext, generator.getAddressBook());
         }
 
@@ -222,7 +224,7 @@ class IntakeAndConsensusTests {
         }
 
         @Override
-        public GeneratorWithConsensus cleanCopy(final long seed) {
+        public GeneratorWithConsensus cleanCopy(@NonNull final Randotron random) {
             throw new UnsupportedOperationException("not implements");
         }
 

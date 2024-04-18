@@ -33,7 +33,7 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.AssertionUtils;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.merkle.util.PairedStreams;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
@@ -68,7 +68,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -86,7 +85,7 @@ import org.junit.jupiter.api.Test;
  */
 class EmergencyReconnectTests {
     private static final Future<Boolean> trueFuture = mock(Future.class);
-    private final RandomSignedStateGenerator signedStateGenerator = new RandomSignedStateGenerator();
+    private RandomSignedStateGenerator signedStateGenerator;
     private final NodeId learnerId = new NodeId(0L);
     private final NodeId teacherId = new NodeId(1L);
     private final ReconnectThrottle reconnectThrottle = mock(ReconnectThrottle.class);
@@ -98,9 +97,14 @@ class EmergencyReconnectTests {
     private final PlatformContext platformContext =
             TestPlatformContextBuilder.create().withConfiguration(configuration).build();
 
+    private Randotron random;
+
     @BeforeEach
     public void setup() throws ExecutionException, InterruptedException, ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("");
+
+        random = Randotron.create();
+        signedStateGenerator = new RandomSignedStateGenerator(random);
 
         when(trueFuture.get()).thenReturn(true);
         when(reconnectThrottle.initiateReconnect(any())).thenReturn(true);
@@ -114,11 +118,10 @@ class EmergencyReconnectTests {
     @DisplayName("Verify learner-teacher interaction when teacher does not has a compatible state")
     @Test
     void teacherDoesNotHaveCompatibleState() throws InterruptedException {
-        final Random random = RandomUtils.getRandomPrintSeed();
-        final Hash stateHash = RandomUtils.randomHash(random);
+        final Hash stateHash = random.randomHash();
         final NotificationEngine notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
         final EmergencyRecoveryFile emergencyRecoveryFile =
-                new EmergencyRecoveryFile(1L, stateHash, RandomUtils.randomInstant(random));
+                new EmergencyRecoveryFile(1L, stateHash, random.randomInstant());
 
         final ReconnectController reconnectController = mock(ReconnectController.class);
         when(reconnectController.acquireLearnerPermit()).thenReturn(true);
@@ -138,7 +141,7 @@ class EmergencyReconnectTests {
     @DisplayName("Verify learner-teacher interaction when teacher has compatible state")
     @Test
     void teacherHasCompatibleState() throws InterruptedException {
-        final Random random = RandomUtils.initRandom(null);
+        final Randotron random = Randotron.create();
         final NotificationEngine notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
         final int numNodes = 4;
         final List<NodeId> nodeIds =
@@ -162,7 +165,7 @@ class EmergencyReconnectTests {
                 .setRound(emergencyRound - 10)
                 .setAddressBook(addressBook)
                 .build();
-        learnerState.getState().setHash(RandomUtils.randomHash(random));
+        learnerState.getState().setHash(random.randomHash());
 
         final AtomicReference<ReservedSignedState> receivedSignedState = new AtomicReference<>();
         final ReconnectController reconnectController = createReconnectController(
@@ -174,7 +177,7 @@ class EmergencyReconnectTests {
         TimeUnit.MILLISECONDS.sleep(100);
 
         final EmergencyRecoveryFile emergencyRecoveryFile =
-                new EmergencyRecoveryFile(emergencyRound, emergencyStateHash, RandomUtils.randomInstant(random));
+                new EmergencyRecoveryFile(emergencyRound, emergencyStateHash, random.randomInstant());
 
         learnerProtocol = createLearnerProtocol(notificationEngine, emergencyRecoveryFile, reconnectController);
         teacherProtocol = createTeacherProtocol(notificationEngine, reconnectController);
@@ -325,7 +328,7 @@ class EmergencyReconnectTests {
         when(emergencyState.get()).thenAnswer(i -> teacherState.reserve("test"));
     }
 
-    private AddressBook newAddressBook(final Random random, final int numNodes) {
+    private AddressBook newAddressBook(final Randotron random, final int numNodes) {
         return new RandomAddressBookGenerator(random)
                 .setSize(numNodes)
                 .setAverageWeight(100L)

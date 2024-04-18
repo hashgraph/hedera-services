@@ -17,7 +17,6 @@
 package com.swirlds.platform.state.manager;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyDoesNotThrow;
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.state.manager.SignatureVerificationTestUtils.buildFakeSignatureBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -25,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
@@ -37,7 +37,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -50,7 +49,7 @@ import org.junit.jupiter.api.AfterEach;
  */
 public class AbstractStateSignatureCollectorTest {
 
-    protected final Random random = getRandomPrintSeed();
+    protected final Randotron random = Randotron.create();
 
     protected AtomicInteger stateLacksSignaturesCount = new AtomicInteger();
     protected AtomicInteger stateHasEnoughSignaturesCount = new AtomicInteger();

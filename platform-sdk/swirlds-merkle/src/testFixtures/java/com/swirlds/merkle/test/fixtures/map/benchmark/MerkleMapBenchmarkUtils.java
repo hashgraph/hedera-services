@@ -16,9 +16,8 @@
 
 package com.swirlds.merkle.test.fixtures.map.benchmark;
 
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.merkle.map.MerkleMap;
-import java.util.Random;
 
 public final class MerkleMapBenchmarkUtils {
 
@@ -39,7 +38,7 @@ public final class MerkleMapBenchmarkUtils {
      * 		an object which can create accounts of the proper type
      */
     public static <A extends BenchmarkAccount> MerkleMap<BenchmarkKey, A> generateInitialState(
-            final Random random,
+            final Randotron random,
             final int dataSize,
             final MerkleMapBenchmarkMetadata benchmarkMetadata,
             final int size,
@@ -50,17 +49,17 @@ public final class MerkleMapBenchmarkUtils {
         // Create account for network fees
         map.put(
                 benchmarkMetadata.getNetworkFeeKey(),
-                accountFactory.buildAccount(random.nextLong(), RandomUtils.randomByteArray(random, dataSize)));
+                accountFactory.buildAccount(random.nextLong(), random.randomByteArray(dataSize)));
 
         // Create accounts for node fees
         for (final BenchmarkKey key : benchmarkMetadata.getNodeFeeKeys()) {
-            map.put(key, accountFactory.buildAccount(random.nextLong(), RandomUtils.randomByteArray(random, dataSize)));
+            map.put(key, accountFactory.buildAccount(random.nextLong(), random.randomByteArray(dataSize)));
         }
 
         // Create a bunch of user accounts
         for (int i = 0; i < size; i++) {
             final BenchmarkKey key = benchmarkMetadata.getNewKey();
-            map.put(key, accountFactory.buildAccount(random.nextLong(), RandomUtils.randomByteArray(random, dataSize)));
+            map.put(key, accountFactory.buildAccount(random.nextLong(), random.randomByteArray(dataSize)));
         }
 
         return map;

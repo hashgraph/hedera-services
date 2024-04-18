@@ -39,7 +39,7 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.common.test.fixtures.TransactionGenerator;
 import com.swirlds.common.test.fixtures.io.FileManipulation;
@@ -231,13 +231,13 @@ class PcesWriterTests {
      * Build an event generator.
      */
     static StandardGraphGenerator buildGraphGenerator(
-            @NonNull final PlatformContext platformContext, @NonNull final Random random) {
+            @NonNull final PlatformContext platformContext, @NonNull final Randotron random) {
         Objects.requireNonNull(platformContext);
         final TransactionGenerator transactionGenerator = buildTransactionGenerator();
 
         return new StandardGraphGenerator(
                 platformContext,
-                random.nextLong(),
+                random,
                 new StandardEventSource().setTransactionGenerator(transactionGenerator),
                 new StandardEventSource().setTransactionGenerator(transactionGenerator),
                 new StandardEventSource().setTransactionGenerator(transactionGenerator),
@@ -305,7 +305,7 @@ class PcesWriterTests {
     @DisplayName("Standard Operation Test")
     void standardOperationTest(@NonNull final AncientMode ancientMode) throws IOException {
 
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final PlatformContext platformContext = buildContext(ancientMode);
 
@@ -369,7 +369,7 @@ class PcesWriterTests {
     @DisplayName("Ancient Event Test")
     void ancientEventTest(@NonNull final AncientMode ancientMode) throws IOException {
 
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final PlatformContext platformContext = buildContext(ancientMode);
         final StandardGraphGenerator generator = buildGraphGenerator(platformContext, random);
@@ -458,7 +458,7 @@ class PcesWriterTests {
     @MethodSource("buildArguments")
     @DisplayName("Overflow Test")
     void overflowTest(@NonNull final AncientMode ancientMode) throws IOException {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final PlatformContext platformContext = buildContext(ancientMode);
 
@@ -501,7 +501,7 @@ class PcesWriterTests {
     @MethodSource("buildArguments")
     @DisplayName("beginStreamingEvents() Test")
     void beginStreamingEventsTest(@NonNull final AncientMode ancientMode) throws IOException {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final PlatformContext platformContext = buildContext(ancientMode);
 
@@ -547,7 +547,7 @@ class PcesWriterTests {
         for (final boolean truncateLastFile : List.of(true, false)) {
             beforeEach();
 
-            final Random random = RandomUtils.getRandomPrintSeed();
+            final Randotron random = Randotron.create();
 
             final PlatformContext platformContext = buildContext(ancientMode);
 
@@ -663,7 +663,7 @@ class PcesWriterTests {
     @MethodSource("buildArguments")
     @DisplayName("Advance Non Ancient Boundary Test")
     void advanceNonAncientBoundaryTest(@NonNull final AncientMode ancientMode) throws IOException {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final PlatformContext platformContext = buildContext(ancientMode);
         final FakeTime time = (FakeTime) platformContext.getTime();

@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.event.orphan;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusConstants;
@@ -69,7 +69,7 @@ class OrphanBufferTests {
      */
     private long maxGeneration;
 
-    private Random random;
+    private Randotron random;
 
     /**
      * The number of events to be created for testing
@@ -197,7 +197,7 @@ class OrphanBufferTests {
 
     @BeforeEach
     void setup() {
-        random = getRandomPrintSeed();
+        random = Randotron.create();
 
         final List<GossipEvent> parentCandidates = new ArrayList<>();
         final Map<NodeId, GossipEvent> tips = new HashMap<>();

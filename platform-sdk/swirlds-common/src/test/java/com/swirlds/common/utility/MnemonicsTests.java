@@ -16,7 +16,6 @@
 
 package com.swirlds.common.utility;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.utility.Mnemonics.generateMnemonic;
 import static com.swirlds.common.utility.Mnemonics.generateMnemonicWords;
 import static com.swirlds.common.utility.Mnemonics.getWord;
@@ -27,9 +26,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.swirlds.common.test.fixtures.Randotron;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -78,7 +77,7 @@ class MnemonicsTests {
     @Test
     @DisplayName("Modulo Test")
     void moduloTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         for (int i = 0; i < getWordList().size(); i++) {
             final String word = getWord(i);
@@ -106,7 +105,7 @@ class MnemonicsTests {
     @Test
     @DisplayName("Generate Mnemonic Words Test")
     void generateMnemonicWordsTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final byte[] entropy = new byte[100];
         random.nextBytes(entropy);
 
@@ -123,7 +122,7 @@ class MnemonicsTests {
     @Test
     @DisplayName("Generate Mnemonic Words Low Entropy Test")
     void generateMnemonicWordsLowEntropyTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final byte[] entropy = new byte[1];
         random.nextBytes(entropy);
 
@@ -140,7 +139,7 @@ class MnemonicsTests {
     @Test
     @DisplayName("Generate Mnemonic Words No Entropy Test")
     void generateMnemonicWordsNoEntropyTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final byte[] entropy = new byte[0];
 
         final int wordCount = random.nextInt(1, 10);
@@ -156,7 +155,7 @@ class MnemonicsTests {
     @Test
     @DisplayName("Generate Mnemonic Test")
     void generateMnemonicTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final byte[] entropy = new byte[100];
         random.nextBytes(entropy);
 
@@ -174,7 +173,7 @@ class MnemonicsTests {
     @Test
     @DisplayName("Generate Mnemonic Custom Separator Test")
     void generateMnemonicCustomSeparatorTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final byte[] entropy = new byte[100];
         random.nextBytes(entropy);
 

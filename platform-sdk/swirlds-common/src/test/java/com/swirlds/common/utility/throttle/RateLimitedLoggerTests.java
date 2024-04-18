@@ -16,7 +16,6 @@
 
 package com.swirlds.common.utility.throttle;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,10 +24,10 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.utility.CompareTo;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
@@ -42,7 +41,7 @@ class RateLimitedLoggerTests {
     @DisplayName("debug() Test")
     @Test
     void debugTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final FakeTime time = new FakeTime();
         final Duration period = Duration.ofSeconds(random.nextInt(1, 5));
@@ -93,7 +92,7 @@ class RateLimitedLoggerTests {
     @DisplayName("trace() Test")
     @Test
     void traceTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final FakeTime time = new FakeTime();
         final Duration period = Duration.ofSeconds(random.nextInt(1, 5));
@@ -144,7 +143,7 @@ class RateLimitedLoggerTests {
     @DisplayName("info() Test")
     @Test
     void infoTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final FakeTime time = new FakeTime();
         final Duration period = Duration.ofSeconds(random.nextInt(1, 5));
@@ -195,7 +194,7 @@ class RateLimitedLoggerTests {
     @DisplayName("warn() Test")
     @Test
     void warnTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final FakeTime time = new FakeTime();
         final Duration period = Duration.ofSeconds(random.nextInt(1, 5));
@@ -246,7 +245,7 @@ class RateLimitedLoggerTests {
     @DisplayName("error() Test")
     @Test
     void errorTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final FakeTime time = new FakeTime();
         final Duration period = Duration.ofSeconds(random.nextInt(1, 5));
@@ -297,7 +296,7 @@ class RateLimitedLoggerTests {
     @DisplayName("fatal() Test")
     @Test
     void fatalTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         final FakeTime time = new FakeTime();
         final Duration period = Duration.ofSeconds(random.nextInt(1, 5));

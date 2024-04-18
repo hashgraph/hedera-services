@@ -17,12 +17,11 @@
 package com.swirlds.common.units;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertApproximatelyEquals;
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Random;
+import com.swirlds.common.test.fixtures.Randotron;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -35,7 +34,7 @@ class UnitTests {
     @Test
     @DisplayName("Time Conversion Test")
     void timeConversionTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         // Test all conversion pairs.
         for (final TimeUnit a : TimeUnit.values()) {
@@ -79,7 +78,7 @@ class UnitTests {
     @DisplayName("Time Simplification Test")
     void timeSimplificationTest() {
 
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         // Value of 1 should never be simplified
         assertEquals(
@@ -195,7 +194,7 @@ class UnitTests {
     @Test
     @DisplayName("Frequency Conversion Test")
     void frequencyConversionTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         // Test all conversion pairs.
         for (final FrequencyUnit a : FrequencyUnit.values()) {
@@ -237,7 +236,7 @@ class UnitTests {
     @Test
     @DisplayName("Time Simplification Test")
     void frequencySimplificationTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         // Value of 1 should never be simplified
         assertEquals(new Unit.SimplifiedQuantity<>(1, FrequencyUnit.UNIT_HERTZ), FrequencyUnit.UNIT_HERTZ.simplify(1));
@@ -347,7 +346,7 @@ class UnitTests {
     @Test
     @DisplayName("Data Conversion Test")
     void dataConversionTest() {
-        final Random random = getRandomPrintSeed(0);
+        final Randotron random = Randotron.create(0);
 
         // Test all conversion pairs.
         for (final DataUnit a : DataUnit.values()) {
@@ -381,7 +380,7 @@ class UnitTests {
     @Test
     @DisplayName("Data Simplification Test")
     void dataSimplificationTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
 
         // Value of 1 should never be simplified
         assertEquals(new Unit.SimplifiedQuantity<>(1, DataUnit.UNIT_BITS), DataUnit.UNIT_BITS.simplify(1));

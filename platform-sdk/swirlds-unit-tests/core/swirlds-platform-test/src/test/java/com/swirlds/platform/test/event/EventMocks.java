@@ -19,27 +19,10 @@ package com.swirlds.platform.test.event;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 
 public class EventMocks {
-    /**
-     * Utility method that creates a mock event with the needed data.
-     */
-    public static EventImpl createMockEvent(final NodeId nodeId, final long generation, final EventImpl otherParent) {
-
-        final EventImpl event = mock(EventImpl.class);
-
-        when(event.getCreatorId()).thenReturn(nodeId);
-        when(event.getGeneration()).thenReturn(generation);
-        when(event.getOtherParent()).thenReturn(otherParent);
-        when(event.getBaseHash()).thenReturn(RandomUtils.randomHash());
-
-        return event;
-    }
-
     /**
      * Create a mock event
      *

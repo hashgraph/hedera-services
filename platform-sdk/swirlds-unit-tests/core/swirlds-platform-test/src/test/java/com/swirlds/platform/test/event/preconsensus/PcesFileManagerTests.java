@@ -17,7 +17,6 @@
 package com.swirlds.platform.test.event.preconsensus;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertIteratorEquality;
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.event.preconsensus.PcesFileManager.NO_LOWER_BOUND;
@@ -33,6 +32,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.config.api.Configuration;
@@ -84,7 +84,7 @@ class PcesFileManagerTests {
     void beforeEach() throws IOException {
         FileUtils.deleteDirectory(testDirectory);
         fileDirectory = testDirectory.resolve("data").resolve("0");
-        random = getRandomPrintSeed();
+        random = Randotron.create();
         files = new ArrayList<>();
     }
 

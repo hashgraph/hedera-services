@@ -16,12 +16,12 @@
 
 package com.swirlds.merkle.test.fixtures.map.benchmark.operations;
 
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.benchmark.AbstractBenchmarkOperation;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.test.fixtures.map.benchmark.BenchmarkAccount;
 import com.swirlds.merkle.test.fixtures.map.benchmark.BenchmarkKey;
 import com.swirlds.merkle.test.fixtures.map.benchmark.MerkleMapBenchmarkMetadata;
-import java.util.Random;
 
 /**
  * Simulate the transfer of a balance between two accounts.
@@ -66,7 +66,7 @@ public class TransferOperation<A extends BenchmarkAccount, M extends MerkleMapBe
      * {@inheritDoc}
      */
     @Override
-    public void prepare(final M metadata, final Random random) {
+    public void prepare(final M metadata, final Randotron random) {
         fromKey = metadata.getRandomKey(random);
         toKey = metadata.getRandomKey(random);
 

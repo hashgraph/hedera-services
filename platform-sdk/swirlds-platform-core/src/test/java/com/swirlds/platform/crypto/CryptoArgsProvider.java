@@ -17,10 +17,12 @@
 package com.swirlds.platform.crypto;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.ResourceLoader;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator.WeightDistributionStrategy;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -37,24 +39,24 @@ public class CryptoArgsProvider {
     /**
      * @return 2 sets of arguments, 1 generated and 1 loaded from files
      */
-    static Stream<Arguments> basicTestArgs() throws Exception {
+    static Stream<Arguments> basicTestArgs(@NonNull final Randotron random) throws Exception {
         Instant start = Instant.now();
-        final AddressBook loadedAB = createAddressBook();
+        final AddressBook loadedAB = createAddressBook(random);
         final Map<NodeId, KeysAndCerts> loadedC =
                 CryptoStatic.loadKeysAndCerts(loadedAB, ResourceLoader.getFile("preGeneratedKeysAndCerts/"), PASSWORD);
         System.out.println(
                 "Key loading took " + Duration.between(start, Instant.now()).toMillis());
 
         start = Instant.now();
-        final AddressBook genAB = createAddressBook();
+        final AddressBook genAB = createAddressBook(random);
         final Map<NodeId, KeysAndCerts> genC = CryptoStatic.generateKeysAndCerts(genAB);
         System.out.println(
                 "Key generating took " + Duration.between(start, Instant.now()).toMillis());
         return Stream.of(Arguments.of(loadedAB, loadedC), Arguments.of(genAB, genC));
     }
 
-    private static AddressBook createAddressBook() {
-        final AddressBook addresses = new RandomAddressBookGenerator()
+    private static AddressBook createAddressBook(@NonNull final Randotron random) {
+        final AddressBook addresses = new RandomAddressBookGenerator(random)
                 .setSize(NUMBER_OF_ADDRESSES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();

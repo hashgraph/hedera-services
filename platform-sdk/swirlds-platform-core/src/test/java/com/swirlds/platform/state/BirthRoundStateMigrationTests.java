@@ -17,14 +17,12 @@
 package com.swirlds.platform.state;
 
 import static com.swirlds.common.merkle.utility.MerkleUtils.rehashTree;
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.AncientMode;
@@ -34,24 +32,23 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import org.junit.jupiter.api.Test;
 
 class BirthRoundStateMigrationTests {
 
     @NonNull
     private SignedState generateSignedState(
-            @NonNull final Random random, @NonNull final PlatformContext platformContext) {
+            @NonNull final Randotron random, @NonNull final PlatformContext platformContext) {
 
         final long round = random.nextLong(1, 1_000_000);
 
         final List<Hash> judgeHashes = new ArrayList<>();
         final int judgeHashCount = random.nextInt(5, 10);
         for (int i = 0; i < judgeHashCount; i++) {
-            judgeHashes.add(randomHash(random));
+            judgeHashes.add(random.randomHash());
         }
 
-        final Instant consensusTimestamp = randomInstant(random);
+        final Instant consensusTimestamp = random.randomInstant();
 
         final long nextConsensusNumber = random.nextLong(0, Long.MAX_VALUE);
 
@@ -74,7 +71,7 @@ class BirthRoundStateMigrationTests {
 
     @Test
     void generationModeTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
@@ -100,7 +97,7 @@ class BirthRoundStateMigrationTests {
 
     @Test
     void alreadyMigratedTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
@@ -131,7 +128,7 @@ class BirthRoundStateMigrationTests {
 
     @Test
     void migrationTest() {
-        final Random random = getRandomPrintSeed();
+        final Randotron random = Randotron.create();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
