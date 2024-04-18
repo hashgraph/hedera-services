@@ -26,10 +26,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
+import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.MEMO;
 
 import com.google.common.io.Files;
 import com.hedera.services.bdd.junit.HapiTest;
@@ -73,6 +76,17 @@ public class ContractGetBytecodeSuite extends HapiSuite {
     @Override
     public boolean canRunConcurrent() {
         return true;
+    }
+
+    @HapiTest
+    public HapiSpec idVariantsTreatedAsExpected() {
+        final var contract = "Multipurpose";
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        uploadInitCode(contract),
+                        contractCreate(contract).entityMemo(MEMO).autoRenewSecs(6999999L))
+                .when()
+                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getContractBytecode(contract)));
     }
 
     @HapiTest

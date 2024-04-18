@@ -107,6 +107,17 @@ public class ModificationUtils {
         };
     }
 
+    /**
+     * Returns a copy of the given {@link GeneratedMessageV3} with the given
+     * occurrence number of the field identified by the given
+     * {@link Descriptors.FieldDescriptor} cleared.
+     *
+     * @param message the message whose field should be cleared
+     * @param descriptor the field descriptor
+     * @param targetIndex the occurrence number of the field to clear
+     * @return the message with the field cleared
+     * @param <T> the type of the message
+     */
     public static <T extends GeneratedMessageV3> T withClearedField(
             @NonNull final T message, @NonNull final Descriptors.FieldDescriptor descriptor, final int targetIndex) {
         final var currentIndex = new AtomicInteger(0);
