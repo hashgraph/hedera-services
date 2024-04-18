@@ -321,6 +321,7 @@ public class BaseExecutorObserverTest {
     }
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testBaseTaskSupportForCallable() {
         // given
         final BaseExecutorFactory baseExecutorFactory = BaseExecutorFactory.getInstance();

@@ -56,7 +56,6 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.virtualmap.VirtualValue;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -363,11 +362,6 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
         serializeTo(out::writeByte, out::writeInt, out::writeLong, out::writeBytes);
     }
 
-    @Deprecated
-    void serialize(final ByteBuffer buffer) {
-        serializeTo(buffer::put, buffer::putInt, buffer::putLong, buffer::put);
-    }
-
     private <E extends Exception> void deserializeFrom(
             final ThrowingSupplier<Byte, E> readByteFn,
             final ThrowingSupplier<Integer, E> readIntFn,
@@ -409,11 +403,6 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
 
     void deserialize(final ReadableSequentialData in) {
         deserializeFrom(in::readByte, in::readInt, in::readLong, in::readBytes);
-    }
-
-    @Deprecated
-    void deserialize(final ByteBuffer buffer, final int version) {
-        deserializeFrom(buffer::get, buffer::getInt, buffer::getLong, buffer::get);
     }
 
     @Override

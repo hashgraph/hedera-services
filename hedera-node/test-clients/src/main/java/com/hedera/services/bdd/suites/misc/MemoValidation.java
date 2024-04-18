@@ -116,14 +116,24 @@ public final class MemoValidation extends HapiSuite {
                         newKeyNamed(ADMIN_KEY),
                         tokenCreate(primary).blankMemo().adminKey(ADMIN_KEY))
                 .when(
-                        tokenUpdate(primary).memo(longMemo).hasPrecheck(MEMO_TOO_LONG),
-                        tokenUpdate(primary).entityMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+                        tokenUpdate(primary)
+                                .memo(longMemo)
+                                .hasPrecheck(MEMO_TOO_LONG)
+                                .signedByPayerAnd(ADMIN_KEY),
+                        tokenUpdate(primary)
+                                .entityMemo(ZERO_BYTE_MEMO)
+                                .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING)
+                                .signedByPayerAnd(ADMIN_KEY),
                         tokenUpdate(primary)
                                 .entityMemo(inValidMemoWithMultiByteChars)
+                                .signedByPayerAnd(ADMIN_KEY)
                                 .hasPrecheck(MEMO_TOO_LONG),
-                        tokenUpdate(primary).entityMemo(stringOf49Bytes + MULTI_BYTE_CHAR + stringOf49Bytes),
+                        tokenUpdate(primary)
+                                .entityMemo(stringOf49Bytes + MULTI_BYTE_CHAR + stringOf49Bytes)
+                                .signedByPayerAnd(ADMIN_KEY),
                         tokenUpdate(primary)
                                 .entityMemo(stringOf49Bytes + SINGLE_BYTE_CHAR + MULTI_BYTE_CHAR + stringOf49Bytes)
+                                .signedByPayerAnd(ADMIN_KEY)
                                 .hasPrecheck(MEMO_TOO_LONG))
                 .then(
                         tokenCreate(secondary).entityMemo(longMemo).hasPrecheck(MEMO_TOO_LONG),
