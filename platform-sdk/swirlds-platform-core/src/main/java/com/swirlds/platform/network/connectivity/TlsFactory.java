@@ -37,8 +37,6 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
@@ -59,7 +57,6 @@ public class TlsFactory implements SocketFactory {
     private final SecureRandom nonDetRandom;
     private final KeyManagerFactory keyManagerFactory;
     private final TrustManagerFactory trustManagerFactory;
-    private final Lock lock = new ReentrantLock();
 
     /**
      * Construct this object to create and receive TLS connections.
@@ -133,11 +130,10 @@ public class TlsFactory implements SocketFactory {
     }
 
     /**
-     * {@inheritDoc}
+     * reloads the trust store with peers' certificates
      */
     @Override
     public void reload(@NonNull final List<PeerInfo> peers) {
-        lock.lock();
         try {
             // we just reset the list for now, until the work to calculate diffs is done
             // then, we will have two lists of peers to add and to remove
@@ -148,8 +144,6 @@ public class TlsFactory implements SocketFactory {
             sslSocketFactory = sslContext.getSocketFactory();
         } catch (final KeyStoreException | KeyManagementException e) {
             throw new PlatformConstructionException("A problem occurred while initializing the SocketFactory", e);
-        } finally {
-            lock.unlock();
         }
     }
 }
