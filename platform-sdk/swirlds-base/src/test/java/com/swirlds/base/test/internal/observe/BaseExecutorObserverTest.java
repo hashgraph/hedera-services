@@ -25,6 +25,7 @@ import com.swirlds.base.internal.BaseExecutorFactory;
 import com.swirlds.base.internal.BaseTask;
 import com.swirlds.base.internal.observe.BaseExecutorObserver;
 import com.swirlds.base.internal.observe.BaseTaskDefinition;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -37,6 +38,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 public class BaseExecutorObserverTest {
@@ -152,6 +154,7 @@ public class BaseExecutorObserverTest {
     }
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testObserveSubmitStartAndDone() {
         // given
         final BaseExecutorFactory baseExecutorFactory = BaseExecutorFactory.getInstance();
@@ -180,6 +183,7 @@ public class BaseExecutorObserverTest {
     }
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testObserveForFailedTask() {
         // given
         final BaseExecutorFactory baseExecutorFactory = BaseExecutorFactory.getInstance();
@@ -208,6 +212,7 @@ public class BaseExecutorObserverTest {
     }
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testAllEventsSendAtCorrectState() {
         // given
         final BaseExecutorFactory baseExecutorFactory = BaseExecutorFactory.getInstance();
@@ -261,6 +266,7 @@ public class BaseExecutorObserverTest {
     }
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testBaseTaskDefinition() {
         // given
         final BaseExecutorFactory baseExecutorFactory = BaseExecutorFactory.getInstance();
@@ -292,6 +298,7 @@ public class BaseExecutorObserverTest {
     }
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testBaseTaskSupportForRunnable() {
         // given
         final BaseExecutorFactory baseExecutorFactory = BaseExecutorFactory.getInstance();

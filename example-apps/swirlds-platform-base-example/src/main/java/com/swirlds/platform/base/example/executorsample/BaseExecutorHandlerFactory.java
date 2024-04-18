@@ -18,19 +18,19 @@ package com.swirlds.platform.base.example.executorsample;
 
 import com.swirlds.base.internal.BaseExecutorFactory;
 import com.swirlds.common.metrics.extensions.BaseExecutorFactoryMetrics;
-import com.swirlds.platform.base.example.BaseContext;
+import com.swirlds.platform.base.example.ext.BaseContext;
 import com.swirlds.platform.base.example.server.HttpHandlerDefinition;
-import com.swirlds.platform.base.example.server.HttpHandlerFactory;
+import com.swirlds.platform.base.example.server.HttpHandlerRegistry;
 import com.swirlds.platform.base.example.server.PostTriggerHandler;
 import java.util.Set;
 import java.util.function.Consumer;
 
-public class BaseExecutorHandlerFactory implements HttpHandlerFactory {
+public class BaseExecutorHandlerFactory implements HttpHandlerRegistry {
 
     record TaskDefinition(int count, long durationInMs, boolean fail) {}
 
     @Override
-    public Set<HttpHandlerDefinition> initAndCreate(BaseContext context) {
+    public Set<HttpHandlerDefinition> handlers(BaseContext context) {
         BaseExecutorFactoryMetrics.getInstance().installForBaseExecutor(context.metrics());
         final BaseExecutorFactory baseExecutorFactory = BaseExecutorFactory.getInstance();
 
@@ -54,7 +54,7 @@ public class BaseExecutorHandlerFactory implements HttpHandlerFactory {
         };
 
         return Set.of(
-                new PostTriggerHandler<>("/executor/call", TaskDefinition.class, addTasksHandler),
-                new PostTriggerHandler<>("/executor/reset", Void.class, resetHandler));
+                new PostTriggerHandler<>("/executor/call", context, TaskDefinition.class, addTasksHandler),
+                new PostTriggerHandler<>("/executor/reset", context, Void.class, resetHandler));
     }
 }
