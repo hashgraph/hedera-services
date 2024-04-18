@@ -127,7 +127,8 @@ An update into the `feeSchedule` file would be needed to specify that.
     - Handle:
         - Any additional validation depending on config or state i.e. semantics checks
         - The business logic for claiming pending airdrops
-            - We need to create a token association between each `receiver_id` and  `token_reference`, future rents for token association slot should be paid by `receiver_id`
+            - We need to create a token association between each `receiver_id` and `token_reference`, future rents for token association slot should be paid by `receiver_id`
+              - Since we would have the signature of the receiver, even if it's an account with `receiver_sig_required=true`, the claim would implicitly work properly
             - Then we should transfer the claimed tokens to each `receiver_id`
                 - We can dispatch synthetic crypto transfer for this, but we must skip the assessment of custom fees
         - Token transfers and associations should be externalized using the `tokenTransferLists` and `automatic_token_associations` fields in the transaction record
@@ -151,7 +152,7 @@ All of the expected behaviour described below should be present only if the new 
     - the tokens being claimed should be transferred to the `receiver_id` account
     - the pending airdrop should be removed from state
 - Given a successful `TokenClaimAirdrop`  transaction having a hollow account as `receiver_id` should also complete the account without modifying its `maxAutoAssociations` value
-- Given successful  `TokenClaimAirdrop` when `TokenClaimAirdrop` for the same airdrop is performed then the `TokenClaimAirdrop` should fail
+- Given successful `TokenClaimAirdrop` when another `TokenClaimAirdrop` for the same airdrop is performed then the second `TokenClaimAirdrop` should fail
 - `TokenClaimAirdrop` transaction with no pending airdrops entries should fail
 - `TokenClaimAirdrop` transaction with more than 10 pending airdrops entries should fail
 - `TokenClaimAirdrop` transaction containing duplicate entries should fail
