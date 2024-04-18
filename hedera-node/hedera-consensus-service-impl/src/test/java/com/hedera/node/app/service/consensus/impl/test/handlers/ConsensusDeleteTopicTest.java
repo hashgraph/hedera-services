@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -44,6 +45,7 @@ import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -102,6 +104,14 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
         lenient().when(handleContext.feeAccumulator()).thenReturn(feeAccumulator);
         lenient().when(feeCalculator.calculate()).thenReturn(Fees.FREE);
         lenient().when(feeCalculator.legacyCalculate(any())).thenReturn(Fees.FREE);
+    }
+
+    @Test
+    @DisplayName("pureChecks fails if topic ID is missing")
+    void failsIfMissTopicId() {
+        givenValidTopic();
+        final var txn = newDeleteTxnMissTopicId();
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_TOPIC_ID);
     }
 
     @Test
@@ -166,18 +176,35 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
     }
 
     @Test
-    @DisplayName("Fails handle if topic doesn't exist")
-    void topicDoesntExist() {
+    @DisplayName("Fails preHandle if topic doesn't exist")
+    void topicDoesntExist() throws PreCheckException {
+        mockPayerLookup();
         final var txn = newDeleteTxn();
-        given(handleContext.body()).willReturn(txn);
 
-        writableTopicState = emptyWritableTopicState();
-        given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
-        writableStore = new WritableTopicStore(writableStates, CONFIGURATION, storeMetricsService);
-        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
+        readableTopicState = emptyReadableTopicState();
+        given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
+        final var readableStore = new ReadableTopicStoreImpl(readableStates);
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(INVALID_TOPIC_ID, msg.getStatus());
+        final var context = new FakePreHandleContext(accountStore, txn);
+        context.registerStore(ReadableTopicStore.class, readableStore);
+
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOPIC_ID);
+    }
+
+    @Test
+    @DisplayName("Fails preHandle if topic deleted")
+    void topicDeletedFail() throws PreCheckException {
+        mockPayerLookup();
+        final var txn = newDeleteTxn();
+
+        readableTopicState = emptyReadableTopicState();
+        given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
+        final var readableStore = new ReadableTopicStoreImpl(readableStates);
+
+        final var context = new FakePreHandleContext(accountStore, txn);
+        context.registerStore(ReadableTopicStore.class, readableStore);
+
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOPIC_ID);
     }
 
     @Test
@@ -214,19 +241,19 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
         final var txn = newDeleteTxn();
         given(handleContext.body()).willReturn(txn);
 
-        final var existingTopic = writableStore.get(
+        final var existingTopic = writableStore.getTopic(
                 TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build());
-        assertTrue(existingTopic.isPresent());
-        assertFalse(existingTopic.get().deleted());
+        assertNotNull(existingTopic);
+        assertFalse(existingTopic.deleted());
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
         subject.handle(handleContext);
 
-        final var changedTopic = writableStore.get(
+        final var changedTopic = writableStore.getTopic(
                 TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build());
 
-        assertTrue(changedTopic.isPresent());
-        assertTrue(changedTopic.get().deleted());
+        assertNotNull(changedTopic);
+        assertTrue(changedTopic.deleted());
     }
 
     private Key mockPayerLookup() {
@@ -241,6 +268,15 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
         final var txnId = TransactionID.newBuilder().accountID(payerId).build();
         final var deleteTopicBuilder =
                 ConsensusDeleteTopicTransactionBody.newBuilder().topicID(topicId);
+        return TransactionBody.newBuilder()
+                .transactionID(txnId)
+                .consensusDeleteTopic(deleteTopicBuilder.build())
+                .build();
+    }
+
+    private TransactionBody newDeleteTxnMissTopicId() {
+        final var txnId = TransactionID.newBuilder().accountID(payerId).build();
+        final var deleteTopicBuilder = ConsensusDeleteTopicTransactionBody.newBuilder();
         return TransactionBody.newBuilder()
                 .transactionID(txnId)
                 .consensusDeleteTopic(deleteTopicBuilder.build())
