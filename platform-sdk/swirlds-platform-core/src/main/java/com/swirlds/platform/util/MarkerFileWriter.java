@@ -107,16 +107,12 @@ public class MarkerFileWriter {
         markerFilesWritten.computeIfAbsent(filename, key -> {
             final Path markerFile = markerFileDirectory.resolve(filename);
             try {
-                // Prevent any other writer for the same string to check and write the file at the same time.
-                // The cost of acquiring the lock is no worse than the file system calls.
-                synchronized (filename) {
-                    if (Files.exists(markerFile)) {
-                        failedToWriteMarkerFileLogger.error(
-                                LogMarker.ERROR.getMarker(), "Marker file already exists: {}", markerFile);
-                        return true;
-                    }
-                    Files.createFile(markerFile);
+                if (Files.exists(markerFile)) {
+                    failedToWriteMarkerFileLogger.error(
+                            LogMarker.ERROR.getMarker(), "Marker file already exists: {}", markerFile);
+                    return true;
                 }
+                Files.createFile(markerFile);
             } catch (final IOException e) {
                 failedToWriteMarkerFileLogger.error(
                         LogMarker.EXCEPTION.getMarker(), "Failed to create marker file: {}", markerFile, e);

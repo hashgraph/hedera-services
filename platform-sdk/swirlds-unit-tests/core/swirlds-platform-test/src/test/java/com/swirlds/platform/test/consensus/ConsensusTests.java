@@ -26,7 +26,6 @@ import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.test.PlatformTest;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -45,9 +44,9 @@ class ConsensusTests extends PlatformTest {
      */
     private final int NUM_ITER = 1;
 
-    private AtomicBoolean ignoreNoSuperMajorityMarkerFile = new AtomicBoolean(false);
-    private AtomicBoolean ignoreNoJudgesMarkerFile = new AtomicBoolean(false);
-    private AtomicBoolean ignoreCoinRoundMarkerFile = new AtomicBoolean(false);
+    private boolean ignoreNoSuperMajorityMarkerFile = false;
+    private boolean ignoreNoJudgesMarkerFile = false;
+    private boolean ignoreCoinRoundMarkerFile = false;
 
     @BeforeAll
     public static void initConfig() {
@@ -56,13 +55,13 @@ class ConsensusTests extends PlatformTest {
 
     @AfterEach
     void checkForMarkerFiles() {
-        if (!ignoreNoSuperMajorityMarkerFile.getAndSet(false)) {
+        if (!ignoreNoSuperMajorityMarkerFile) {
             assertMarkerFile(ConsensusImpl.NO_SUPER_MAJORITY_MARKER_FILE, false);
         }
-        if (!ignoreNoJudgesMarkerFile.getAndSet(false)) {
+        if (!ignoreNoJudgesMarkerFile) {
             assertMarkerFile(ConsensusImpl.NO_JUDGES_MARKER_FILE, false);
         }
-        if (!ignoreCoinRoundMarkerFile.getAndSet(false)) {
+        if (!ignoreCoinRoundMarkerFile) {
             assertMarkerFile(ConsensusImpl.COIN_ROUND_MARKER_FILE, false);
         }
     }
@@ -142,9 +141,10 @@ class ConsensusTests extends PlatformTest {
                 .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
-        // Some forking tests make too many forkers.  When there is  > 1/3 nodes forking, no super majority can result.
-        // This is expected, so ignore the marker file generated for these tests.
-        ignoreNoSuperMajorityMarkerFile.set(true);
+        // Some forking tests make too many forkers.  When there is  > 1/3 nodes forking, both no super majority and
+        // possibly no judges can result. This is expected, so ignore the marker file generated for these tests.
+        ignoreNoSuperMajorityMarkerFile = true;
+        ignoreNoJudgesMarkerFile = true;
     }
 
     @ParameterizedTest
