@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.spi.records.RecordCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
 /**
@@ -54,7 +55,8 @@ public interface HederaRecordCache extends RecordCache {
      *                           the order of items in this list.
      */
     /*HANDLE THREAD ONLY*/
-    void add(long nodeId, @NonNull AccountID payerAccountId, @NonNull List<SingleTransactionRecord> transactionRecords);
+    void add(
+            long nodeId, @Nullable AccountID payerAccountId, @NonNull List<SingleTransactionRecord> transactionRecords);
 
     /**
      * Checks if the given transaction ID has been seen by this node. If it has not, the result is

@@ -170,7 +170,7 @@ public class RecordCacheImpl implements HederaRecordCache {
     @Override
     public void add(
             final long nodeId,
-            @NonNull final AccountID payerAccountId,
+            @Nullable final AccountID payerAccountId,
             @NonNull final List<SingleTransactionRecord> transactionRecords) {
         requireNonNull(payerAccountId);
         requireNonNull(transactionRecords);
@@ -223,7 +223,7 @@ public class RecordCacheImpl implements HederaRecordCache {
      */
     private void addToInMemoryCache(
             final long nodeId,
-            @NonNull final AccountID payerAccountId,
+            @Nullable final AccountID payerAccountId,
             @NonNull final TransactionRecord transactionRecord) {
         final var txId = transactionRecord.transactionIDOrThrow();
         // We need the hasParentConsensusTimestamp() check to detect triggered transactions that
@@ -251,8 +251,11 @@ public class RecordCacheImpl implements HederaRecordCache {
         listToAddTo.add(transactionRecord);
 
         // Add to the payer-to-transaction index
-        final var transactionIDs = payerToTransactionIndex.computeIfAbsent(payerAccountId, ignored -> new HashSet<>());
-        transactionIDs.add(txId);
+        if (payerAccountId != null) {
+            final var transactionIDs =
+                    payerToTransactionIndex.computeIfAbsent(payerAccountId, ignored -> new HashSet<>());
+            transactionIDs.add(txId);
+        }
     }
 
     /**

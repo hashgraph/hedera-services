@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.node.base.HederaFunctionality.NONE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
@@ -56,9 +57,11 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
+import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
@@ -77,6 +80,7 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
+import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
@@ -359,7 +363,7 @@ public class HandleWorkflow {
         }
 
         final long handleStart = System.nanoTime();
-        TransactionBody txBody;
+        TransactionBody txBody = null;
         AccountID payer = null;
         Fees fees = null;
         TransactionInfo transactionInfo = null;
@@ -579,6 +583,22 @@ public class HandleWorkflow {
                         feeAccumulator.chargeFees(payer, creator.accountId(), fees);
                     }
                 }
+
+                // After a contract operation was handled (i.e., not throttled), update the
+                // gas throttle by leaking any unused gas
+                if (isGasThrottled(transactionInfo.functionality())
+                        && recordBuilder.status() != CONSENSUS_GAS_EXHAUSTED
+                        && recordBuilder.hasContractResult()) {
+                    final var gasUsed = recordBuilder.getGasUsedForContractTxn();
+                    handleWorkflowMetrics.addGasUsed(gasUsed);
+                    final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
+                    if (contractsConfig.throttleThrottleByGas()) {
+                        final var gasLimitForContractTx =
+                                getGasLimitForContractTx(transactionInfo.txBody(), transactionInfo.functionality());
+                        final var excessAmount = gasLimitForContractTx - gasUsed;
+                        networkUtilizationManager.leakUnusedGasPreviouslyReserved(transactionInfo, excessAmount);
+                    }
+                }
             }
         } catch (final Exception e) {
             logger.error("Possibly CATASTROPHIC failure while handling a user transaction", e);
@@ -601,29 +621,21 @@ public class HandleWorkflow {
             handleWorkflowMetrics.switchConsensusSecond();
         }
 
-        // After a contract operation was handled (i.e., not throttled), update the
-        // gas throttle by leaking any unused gas
-        if (isGasThrottled(transactionInfo.functionality())
-                && recordBuilder.status() != CONSENSUS_GAS_EXHAUSTED
-                && recordBuilder.hasContractResult()) {
-            final var gasUsed = recordBuilder.getGasUsedForContractTxn();
-            handleWorkflowMetrics.addGasUsed(gasUsed);
-            final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
-            if (contractsConfig.throttleThrottleByGas()) {
-                final var gasLimitForContractTx =
-                        getGasLimitForContractTx(transactionInfo.txBody(), transactionInfo.functionality());
-                final var excessAmount = gasLimitForContractTx - gasUsed;
-                networkUtilizationManager.leakUnusedGasPreviouslyReserved(transactionInfo, excessAmount);
-            }
-        }
-
         throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
-        final var function = transactionInfo.functionality();
+        final HederaFunctionality function;
+        if (transactionInfo != null && txBody != null && payer != null) {
+            function = transactionInfo.functionality();
+        } else {
+            final var baseData = extractTransactionBaseData(platformTxn.getContents(), txBody, payer);
+            function = baseData.function();
+            txBody = baseData.txBody();
+            payer = baseData.payer();
+        }
         transactionFinalizer.finalizeParentRecord(
                 payer,
                 tokenServiceContext,
                 function,
-                extraRewardReceivers(transactionInfo, recordBuilder),
+                extraRewardReceivers(txBody, function, recordBuilder),
                 prePaidRewards);
 
         // Commit all state changes
@@ -636,7 +648,7 @@ public class HandleWorkflow {
         blockRecordManager.endUserTransaction(recordListResult.records().stream(), state);
 
         final int handleDuration = (int) (System.nanoTime() - handleStart);
-        handleWorkflowMetrics.updateTransactionDuration(transactionInfo.functionality(), handleDuration);
+        handleWorkflowMetrics.updateTransactionDuration(function, handleDuration);
     }
 
     /**
@@ -657,21 +669,16 @@ public class HandleWorkflow {
      *     token transfer).</li>
      * </ol>
      *
-     * @param transactionInfo the transaction info
+     * @param body the {@link TransactionBody} of the transaction
+     * @param function the {@link HederaFunctionality} of the transaction
      * @param recordBuilder the record builder
      * @return the set of extra account ids
      */
     static Set<AccountID> extraRewardReceivers(
-            @NonNull final TransactionInfo transactionInfo,
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
-        return extraRewardReceivers(transactionInfo.txBody(), transactionInfo.functionality(), recordBuilder);
-    }
-
-    static Set<AccountID> extraRewardReceivers(
-            @NonNull final TransactionBody body,
+            @Nullable final TransactionBody body,
             @NonNull final HederaFunctionality function,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
-        if (recordBuilder.status() != SUCCESS) {
+        if (recordBuilder.status() != SUCCESS || body == null) {
             return emptySet();
         }
         return switch (function) {
@@ -967,5 +974,47 @@ public class HandleWorkflow {
                 storeFactory.getStore(ReadableAccountStore.class),
                 platformTxn,
                 previousResult);
+    }
+
+    private record TransactionBaseData(
+            @NonNull HederaFunctionality function, @Nullable TransactionBody txBody, @Nullable AccountID payer) {}
+
+    private TransactionBaseData extractTransactionBaseData(
+            @Nullable final byte[] contents,
+            @Nullable final TransactionBody knownTxBody,
+            @Nullable final AccountID knownPayer) {
+        // This method is only called if something fatal happened. We do a best effort approach to extract the
+        // type of the transaction, the TransactionBody and the payer if not known.
+        if (contents == null || contents.length == 0) {
+            return new TransactionBaseData(NONE, knownTxBody, knownPayer);
+        }
+
+        TransactionBody txBody = knownTxBody;
+        AccountID payer = knownPayer;
+        HederaFunctionality function = NONE;
+        try {
+            final Transaction tx = Transaction.PROTOBUF.parseStrict(Bytes.wrap(contents));
+
+            if (txBody == null) {
+                final Bytes bodyBytes;
+                if (tx.signedTransactionBytes().length() > 0) {
+                    final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
+                            tx.signedTransactionBytes().toReadableSequentialData());
+                    bodyBytes = signedTransaction.bodyBytes();
+                } else {
+                    bodyBytes = tx.bodyBytes();
+                }
+                txBody = TransactionBody.PROTOBUF.parseStrict(bodyBytes.toReadableSequentialData());
+            }
+
+            if (payer == null) {
+                payer = txBody.transactionIDOrElse(TransactionID.DEFAULT).accountID();
+            }
+
+            function = HapiUtils.functionOf(txBody);
+        } catch (Exception ex) {
+            // ignore
+        }
+        return new TransactionBaseData(function, txBody, payer);
     }
 }
