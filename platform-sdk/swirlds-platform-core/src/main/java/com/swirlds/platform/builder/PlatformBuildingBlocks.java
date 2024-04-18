@@ -18,6 +18,7 @@ package com.swirlds.platform.builder;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -65,6 +66,7 @@ import java.util.function.Predicate;
  *                                        required due to the lack of a platform health monitor.
  * @param isInFreezePeriodReference       a reference to a predicate that determines if a timestamp is in the freeze
  *                                        period, this can be deleted as soon as the CES is retired.
+ * @param notificationEngine              for sending notifications to the application (legacy pattern)
  * @param firstPlatform                   if this is the first platform being built (there is static setup that needs to
  *                                        be done, long term plan is to stop using static variables)
  */
@@ -86,4 +88,5 @@ public record PlatformBuildingBlocks(
         @NonNull AtomicReference<PlatformStatus> currentPlatformStatus,
         @NonNull AtomicReference<LongSupplier> intakeQueueSizeSupplierSupplier,
         @NonNull AtomicReference<Predicate<Instant>> isInFreezePeriodReference,
+        @NonNull NotificationEngine notificationEngine,
         boolean firstPlatform) {}

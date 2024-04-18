@@ -22,37 +22,136 @@ import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.common.wiring.wires.output.StandardOutputWire;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Wiring for gossip.
- *
- * @param eventInput  the input wire for events received from peers during gossip
- * @param eventOutput the output wire for events received from peers during gossip
  */
-public record GossipWiring(@NonNull InputWire<GossipEvent> eventInput, @NonNull OutputWire<GossipEvent> eventOutput) {
+public class GossipWiring {
 
-    // TODO delete
+    private final WiringModel model;
+    private final TaskScheduler<Void> scheduler;
+    private final BindableInputWire<GossipEvent, Void> eventInput;
+    private final BindableInputWire<EventWindow, Void> eventWindowInput;
+    private final BindableInputWire<NoInput, Void> startInput;
+    private final BindableInputWire<NoInput, Void> stopInput;
+    private final BindableInputWire<NoInput, Void> clearInput;
+    private final BindableInputWire<NoInput, Void> resetFallenBehindInput;
+    private final StandardOutputWire<GossipEvent> eventOutput;
 
-    /**
-     * Create a new instance of {@link GossipWiring}.
-     *
-     * @param model the wiring model
-     * @return the new instance
-     */
-    @NonNull
-    public static GossipWiring create(@NonNull final WiringModel model) {
-        final TaskScheduler<GossipEvent> scheduler = model.schedulerBuilder("gossip")
-                .withType(TaskSchedulerType.DIRECT_THREADSAFE)
+    public GossipWiring(@NonNull final WiringModel model) {
+        this.model = model;
+
+        // TODO use configuration for this
+        scheduler = model.schedulerBuilder("gossip")
+                .withType(TaskSchedulerType.SEQUENTIAL)
+                .withFlushingEnabled(true)
+                .withUnhandledTaskCapacity(500)
                 .build()
                 .cast();
 
-        final BindableInputWire<GossipEvent, GossipEvent> inputWire = scheduler.buildInputWire("received events");
-        inputWire.bind(x -> x);
+        eventInput = scheduler.buildInputWire("received events");
+        eventWindowInput = scheduler.buildInputWire("event window");
+        startInput = scheduler.buildInputWire("start");
+        stopInput = scheduler.buildInputWire("stop");
+        clearInput = scheduler.buildInputWire("clear");
+        resetFallenBehindInput = scheduler.buildInputWire("reset fallen behind");
+        eventOutput = scheduler.buildSecondaryOutputWire();
+    }
 
-        final OutputWire<GossipEvent> outputWire = scheduler.getOutputWire();
+    /**
+     * Bind the wiring to a gossip implementation.
+     *
+     * @param gossip the gossip implementation
+     */
+    public void bind(@NonNull final Gossip gossip) {
+        gossip.bind(
+                model,
+                eventInput,
+                eventWindowInput,
+                startInput,
+                stopInput,
+                clearInput,
+                resetFallenBehindInput,
+                eventOutput);
+    }
 
-        return new GossipWiring(inputWire, outputWire);
+    /**
+     * Get the input wire for events to be gossiped to the network.
+     *
+     * @return the input wire for events
+     */
+    @NonNull
+    public InputWire<GossipEvent> getEventInput() {
+        return eventInput;
+    }
+
+    /**
+     * Get the input wire for the current event window.
+     *
+     * @return the input wire for the event window
+     */
+    @NonNull
+    public InputWire<EventWindow> getEventWindowInput() {
+        return eventWindowInput;
+    }
+
+    /**
+     * Get the input wire to start gossip.
+     *
+     * @return the input wire to start gossip
+     */
+    @NonNull
+    public InputWire<NoInput> getStartInput() {
+        return startInput;
+    }
+
+    /**
+     * Get the input wire to stop gossip.
+     *
+     * @return the input wire to stop gossip
+     */
+    @NonNull
+    public InputWire<NoInput> getStopInput() {
+        return stopInput;
+    }
+
+    /**
+     * Get the input wire to clear the gossip state.
+     */
+    @NonNull
+    public InputWire<NoInput> getClearInput() {
+        return clearInput;
+    }
+
+    /**
+     * Get the input wire to reset the fallen behind flag.
+     *
+     * @return the input wire to reset the fallen behind flag
+     */
+    @NonNull
+    public InputWire<NoInput> getResetFallenBehindInput() {
+        return resetFallenBehindInput;
+    }
+
+    /**
+     * Get the output wire for events received from peers during gossip.
+     *
+     * @return the output wire for events
+     */
+    @NonNull
+    public OutputWire<GossipEvent> getEventOutput() {
+        return eventOutput;
+    }
+
+    /**
+     * Flush the gossip scheduler.
+     */
+    public void flush() {
+        scheduler.flush();
     }
 }

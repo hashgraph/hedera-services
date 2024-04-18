@@ -20,6 +20,7 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getGlo
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 
+import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.components.consensus.DefaultConsensusEngine;
@@ -38,8 +39,6 @@ import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.deduplication.StandardEventDeduplicator;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
-import com.swirlds.platform.event.linking.GossipLinker;
-import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
@@ -54,7 +53,9 @@ import com.swirlds.platform.event.validation.DefaultEventSignatureValidator;
 import com.swirlds.platform.event.validation.DefaultInternalEventValidator;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
@@ -95,7 +96,6 @@ public class PlatformComponentBuilder {
     private OrphanBuffer orphanBuffer;
     private RunningEventHasher runningEventHasher;
     private EventCreationManager eventCreationManager;
-    private InOrderLinker inOrderLinker;
     private ConsensusEngine consensusEngine;
     private ConsensusEventStream consensusEventStream;
     private PcesSequencer pcesSequencer;
@@ -481,39 +481,6 @@ public class PlatformComponentBuilder {
     }
 
     /**
-     * Build the in-order linker if it has not yet been built. If one has been provided via
-     * {@link #withInOrderLinker(InOrderLinker)}, that in-order linker will be used. If this method is called more than
-     * once, only the first call will build the in-order linker. Otherwise, the default in-order linker will be created
-     * and returned.
-     *
-     * @return the in-order linker
-     */
-    @NonNull
-    public InOrderLinker buildInOrderLinker() {
-        if (inOrderLinker == null) {
-            inOrderLinker = new GossipLinker(blocks.platformContext(), blocks.intakeEventCounter());
-        }
-        return inOrderLinker;
-    }
-
-    /**
-     * Provide an in-order linker in place of the platform's default in-order linker.
-     *
-     * @param inOrderLinker the in-order linker to use
-     * @return this builder
-     */
-    @NonNull
-    public PlatformComponentBuilder withInOrderLinker(@NonNull final InOrderLinker inOrderLinker) {
-        throwIfAlreadyUsed();
-        if (this.inOrderLinker != null) {
-            throw new IllegalStateException("In-order linker has already been set");
-        }
-        this.inOrderLinker = Objects.requireNonNull(inOrderLinker);
-
-        return this;
-    }
-
-    /**
      * Provide a consensus engine in place of the platform's default consensus engine.
      *
      * @param consensusEngine the consensus engine to use
@@ -642,6 +609,27 @@ public class PlatformComponentBuilder {
     public Gossip buildGossip() {
         if (gossip == null) {
             // TODO
+
+            gossip = new SyncGossip(
+                    blocks.platformContext(),
+                    blocks.randomBuilder().buildNonCryptographicRandom(),
+                    AdHocThreadManager.getStaticThreadManager(),
+                    blocks.keysAndCerts(),
+                    blocks.notificationEngine(),
+                    blocks.initialState().get().getAddressBook(),
+                    blocks.selfId(),
+                    blocks.appVersion(),
+                    null,
+                    null /* TODO remove */,
+                    () -> blocks.intakeQueueSizeSupplierSupplier().get().getAsLong(),
+                    null /* TODO swirldStateManager */,
+                    null /* TODO latestCompleteStateNexus */,
+                    new SyncMetrics(blocks.platformContext().getMetrics()),
+                    null /* TODO platformStatusManager */,
+                    null /* TODO this::loadReconnectState */,
+                    null /* TODO this::clearAllPipelines */,
+                    blocks.intakeEventCounter(),
+                    null /* TODO remove */) {};
 
             throw new IllegalStateException("Gossip has not been set");
         }

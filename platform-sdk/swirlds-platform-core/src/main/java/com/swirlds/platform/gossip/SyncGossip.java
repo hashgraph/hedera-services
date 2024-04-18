@@ -18,8 +18,6 @@ package com.swirlds.platform.gossip;
 
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
-import com.swirlds.base.state.Lifecycle;
-import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.base.state.Startable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -33,7 +31,7 @@ import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
-import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.StateConfig;
@@ -41,11 +39,14 @@ import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.linking.GossipLinker;
+import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
@@ -103,15 +104,16 @@ import java.util.function.Supplier;
 /**
  * Boilerplate code for gossip.
  */
-public class SyncGossip implements ConnectionTracker, Lifecycle, Gossip {
-    private LifecyclePhase lifecyclePhase = LifecyclePhase.NOT_STARTED;
-
+public class SyncGossip implements ConnectionTracker, Gossip {
+    private boolean started = false;
     private final ReconnectController reconnectController;
 
     private final AtomicBoolean gossipHalted = new AtomicBoolean(false);
     private final SyncPermitProvider syncPermitProvider;
-    protected final SyncConfig syncConfig;
-    protected final ShadowgraphSynchronizer syncShadowgraphSynchronizer;
+    private final SyncConfig syncConfig;
+    private final InOrderLinker inOrderLinker;
+    private final Shadowgraph shadowGraph;
+    private final ShadowgraphSynchronizer syncShadowgraphSynchronizer;
 
     /**
      * Keeps track of the number of events in the intake pipeline from each peer
@@ -123,20 +125,22 @@ public class SyncGossip implements ConnectionTracker, Lifecycle, Gossip {
      */
     private final List<StoppableThread> syncProtocolThreads = new ArrayList<>();
 
-    protected final PlatformContext platformContext;
-    protected final AddressBook addressBook;
-    protected final NodeId selfId;
-    protected final NetworkTopology topology;
-    protected final NetworkMetrics networkMetrics;
-    protected final ReconnectHelper reconnectHelper;
-    protected final StaticConnectionManagers connectionManagers;
-    protected final FallenBehindManagerImpl fallenBehindManager;
-    protected final SyncManagerImpl syncManager;
-    protected final ReconnectThrottle reconnectThrottle;
-    protected final ReconnectMetrics reconnectMetrics;
-    protected final PlatformStatusManager platformStatusManager;
+    private final PlatformContext platformContext;
+    private final AddressBook addressBook;
+    private final NodeId selfId;
+    private final NetworkTopology topology;
+    private final NetworkMetrics networkMetrics;
+    private final ReconnectHelper reconnectHelper;
+    private final StaticConnectionManagers connectionManagers;
+    private final FallenBehindManagerImpl fallenBehindManager;
+    private final SyncManagerImpl syncManager;
+    private final ReconnectThrottle reconnectThrottle;
+    private final ReconnectMetrics reconnectMetrics;
+    private final PlatformStatusManager platformStatusManager;
 
-    protected final List<Startable> thingsToStart = new ArrayList<>();
+    private final List<Startable> thingsToStart = new ArrayList<>();
+
+    private Consumer<GossipEvent> receivedEventHandler;
 
     /**
      * Builds the gossip engine, depending on which flavor is requested in the configuration.
@@ -150,9 +154,7 @@ public class SyncGossip implements ConnectionTracker, Lifecycle, Gossip {
      * @param selfId                        this node's ID
      * @param appVersion                    the version of the app
      * @param epochHash                     the epoch hash of the initial state
-     * @param shadowGraph                   contains non-expired events
      * @param emergencyRecoveryManager      handles emergency recovery
-     * @param receivedEventHandler          handles events received from other nodes
      * @param intakeQueueSizeSupplier       a supplier for the size of the event intake queue
      * @param swirldStateManager            manages the mutable state
      * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
@@ -173,9 +175,7 @@ public class SyncGossip implements ConnectionTracker, Lifecycle, Gossip {
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
             @Nullable final Hash epochHash,
-            @NonNull final Shadowgraph shadowGraph,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
-            @NonNull final Consumer<GossipEvent> receivedEventHandler,
             @NonNull final LongSupplier intakeQueueSizeSupplier,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final SignedStateNexus latestCompleteState,
@@ -190,6 +190,9 @@ public class SyncGossip implements ConnectionTracker, Lifecycle, Gossip {
         this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = Objects.requireNonNull(selfId);
         this.platformStatusManager = Objects.requireNonNull(platformStatusManager);
+
+        inOrderLinker = new GossipLinker(platformContext, intakeEventCounter);
+        shadowGraph = new Shadowgraph(platformContext, addressBook, intakeEventCounter);
 
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
 
@@ -269,7 +272,7 @@ public class SyncGossip implements ConnectionTracker, Lifecycle, Gossip {
                 shadowGraph,
                 addressBook.getSize(),
                 syncMetrics,
-                receivedEventHandler,
+                event -> receivedEventHandler.accept(event),
                 syncManager,
                 intakeEventCounter,
                 shadowgraphExecutor);
@@ -400,15 +403,12 @@ public class SyncGossip implements ConnectionTracker, Lifecycle, Gossip {
      * Build the fallen behind manager.
      */
     @NonNull
-    protected FallenBehindManagerImpl buildFallenBehindManager() {
+    private FallenBehindManagerImpl buildFallenBehindManager() {
         return new FallenBehindManagerImpl(
                 addressBook,
                 selfId,
                 topology.getConnectionGraph(),
                 platformStatusManager,
-                // this fallen behind impl is different from that of
-                // SingleNodeSyncGossip which was a no-op. Same for the pause/resume impls
-                // which only logged (but they do more here)
                 () -> getReconnectController().start(),
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
     }
@@ -416,36 +416,28 @@ public class SyncGossip implements ConnectionTracker, Lifecycle, Gossip {
     /**
      * Get the reconnect controller. This method is needed to break a circular dependency.
      */
-    private ReconnectController getReconnectController() {
+    private ReconnectController getReconnectController() { // TODO is this still needed?
         return reconnectController;
     }
 
     /**
-     * {@inheritDoc}
+     * Start gossiping.
      */
-    @NonNull
-    @Override
-    public LifecyclePhase getLifecyclePhase() {
-        return lifecyclePhase;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void start() {
-        throwIfNotInPhase(LifecyclePhase.NOT_STARTED);
-        lifecyclePhase = LifecyclePhase.STARTED;
+    private void start() {
+        if (started) {
+            throw new IllegalStateException("Gossip already started");
+        }
+        started = true;
         thingsToStart.forEach(Startable::start);
     }
 
     /**
-     * {@inheritDoc}
+     * Stop gossiping.
      */
-    @Override
-    public void stop() {
-        throwIfNotInPhase(LifecyclePhase.STARTED);
-        lifecyclePhase = LifecyclePhase.STOPPED;
+    private void stop() {
+        if (!started) {
+            throw new IllegalStateException("Gossip not started");
+        }
         syncManager.haltRequestedObserver("stopping gossip");
         gossipHalted.set(true);
         // wait for all existing syncs to stop. no new ones will be started, since gossip has been halted, and
@@ -456,13 +448,14 @@ public class SyncGossip implements ConnectionTracker, Lifecycle, Gossip {
         }
     }
 
+    // TODO this needs to be a wire
+
     /**
      * This method is called when the node has finished a reconnect
      */
-    public void resetFallenBehind() {
+    private void resetFallenBehind() {
         syncManager.resetFallenBehind();
     }
-
 
     /**
      * {@inheritDoc}
@@ -485,8 +478,10 @@ public class SyncGossip implements ConnectionTracker, Lifecycle, Gossip {
     /**
      * Stop gossiping until {@link #resume()} is called. If called when already paused then this has no effect.
      */
-    protected void pause() {
-        throwIfNotInPhase(LifecyclePhase.STARTED);
+    private void pause() {
+        if (!started) {
+            throw new IllegalStateException("Gossip not started");
+        }
         gossipHalted.set(true);
         syncPermitProvider.waitForAllSyncsToFinish();
     }
@@ -494,10 +489,20 @@ public class SyncGossip implements ConnectionTracker, Lifecycle, Gossip {
     /**
      * Resume gossiping. If called when already running then this has no effect.
      */
-    protected void resume() {
-        throwIfNotInPhase(LifecyclePhase.STARTED);
+    private void resume() {
+        if (!started) {
+            throw new IllegalStateException("Gossip not started");
+        }
         intakeEventCounter.reset();
         gossipHalted.set(false);
+    }
+
+    /**
+     * Clear the internal state of the gossip engine.
+     */
+    private void clear() {
+        inOrderLinker.clear();
+        shadowGraph.clear();
     }
 
     /**
@@ -510,9 +515,27 @@ public class SyncGossip implements ConnectionTracker, Lifecycle, Gossip {
             @NonNull final BindableInputWire<EventWindow, Void> eventWindowInput,
             @NonNull final BindableInputWire<NoInput, Void> startInput,
             @NonNull final BindableInputWire<NoInput, Void> stopInput,
-            @NonNull final OutputWire<GossipEvent> eventOutput) {
+            @NonNull final BindableInputWire<NoInput, Void> clearInput,
+            @NonNull final BindableInputWire<NoInput, Void> resetFallenBehindInput,
+            @NonNull final StandardOutputWire<GossipEvent> eventOutput) {
 
-        // TODO!!!
+        startInput.bindConsumer(ignored -> start());
+        stopInput.bindConsumer(ignored -> stop());
+        clearInput.bindConsumer(ignored -> clear());
+        resetFallenBehindInput.bindConsumer(ignored -> resetFallenBehind());
 
+        eventInput.bindConsumer(event -> {
+            final EventImpl linkedEvent = inOrderLinker.linkEvent(event);
+            if (linkedEvent != null) {
+                shadowGraph.addEvent(linkedEvent);
+            }
+        });
+
+        eventWindowInput.bindConsumer(eventWindow -> {
+            inOrderLinker.setEventWindow(eventWindow);
+            shadowGraph.updateEventWindow(eventWindow);
+        });
+
+        receivedEventHandler = eventOutput::forward;
     }
 }

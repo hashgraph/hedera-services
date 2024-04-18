@@ -55,7 +55,6 @@ import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.hashing.EventHasher;
-import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
@@ -73,7 +72,6 @@ import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.publisher.PlatformPublisher;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
@@ -101,7 +99,6 @@ import com.swirlds.platform.wiring.components.PassThroughWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.PcesWriterWiring;
 import com.swirlds.platform.wiring.components.RunningEventHashOverrideWiring;
-import com.swirlds.platform.wiring.components.ShadowgraphWiring;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import com.swirlds.platform.wiring.components.StateHasherWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
@@ -134,7 +131,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring;
     private final ComponentWiring<EventSignatureValidator, GossipEvent> eventSignatureValidatorWiring;
     private final ComponentWiring<OrphanBuffer, List<GossipEvent>> orphanBufferWiring;
-    private final ComponentWiring<InOrderLinker, EventImpl> inOrderLinkerWiring;
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
     private final ComponentWiring<EventCreationManager, BaseEventHashedData> eventCreationManagerWiring;
     private final ComponentWiring<SelfEventSigner, GossipEvent> selfEventSignerWiring;
@@ -146,7 +142,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final EventDurabilityNexusWiring eventDurabilityNexusWiring;
     private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
-    private final ShadowgraphWiring shadowgraphWiring;
     private final GossipWiring gossipWiring;
     private final ComponentWiring<EventWindowManager, EventWindow> eventWindowManagerWiring;
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
@@ -237,7 +232,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventSignatureValidatorWiring =
                 new ComponentWiring<>(model, EventSignatureValidator.class, config.eventSignatureValidator());
         orphanBufferWiring = new ComponentWiring<>(model, OrphanBuffer.class, config.orphanBuffer());
-        inOrderLinkerWiring = new ComponentWiring<>(model, InOrderLinker.class, config.inOrderLinker());
         consensusEngineWiring = new ComponentWiring<>(model, ConsensusEngine.class, config.consensusEngine());
 
         eventCreationManagerWiring =
@@ -252,7 +246,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         signedStateFileManagerWiring =
                 SignedStateFileManagerWiring.create(model, schedulers.signedStateFileManagerScheduler());
         stateSignerWiring = StateSignerWiring.create(schedulers.stateSignerScheduler());
-        shadowgraphWiring = ShadowgraphWiring.create(schedulers.shadowgraphScheduler());
         consensusRoundHandlerWiring = ConsensusRoundHandlerWiring.create(schedulers.consensusRoundHandlerScheduler());
         consensusEventStreamWiring =
                 new ComponentWiring<>(model, ConsensusEventStream.class, config.consensusEventStream());
@@ -260,14 +253,15 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         signedStateHasherWiring = StateHasherWiring.create(schedulers.stateHasherScheduler());
 
+        gossipWiring = new GossipWiring(model);
+
         platformCoordinator = new PlatformCoordinator(
                 hashingObjectCounter,
                 internalEventValidatorWiring,
                 eventDeduplicatorWiring,
                 eventSignatureValidatorWiring,
                 orphanBufferWiring,
-                inOrderLinkerWiring,
-                shadowgraphWiring,
+                gossipWiring,
                 consensusEngineWiring,
                 eventCreationManagerWiring,
                 applicationTransactionPrehandlerWiring,
@@ -279,7 +273,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
         eventDurabilityNexusWiring = EventDurabilityNexusWiring.create(schedulers.eventDurabilityNexusScheduler());
 
-        gossipWiring = GossipWiring.create(model);
         eventWindowManagerWiring = new ComponentWiring<>(
                 model,
                 EventWindowManager.class,
@@ -367,11 +360,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventWindowOutputWire.solderTo(
                 eventSignatureValidatorWiring.getInputWire(EventSignatureValidator::setEventWindow), INJECT);
         eventWindowOutputWire.solderTo(orphanBufferWiring.getInputWire(OrphanBuffer::setEventWindow), INJECT);
-        eventWindowOutputWire.solderTo(inOrderLinkerWiring.getInputWire(InOrderLinker::setEventWindow), INJECT);
+        eventWindowOutputWire.solderTo(gossipWiring.getEventWindowInput(), INJECT);
         eventWindowOutputWire.solderTo(pcesWriterWiring.eventWindowInput(), INJECT);
         eventWindowOutputWire.solderTo(
                 eventCreationManagerWiring.getInputWire(EventCreationManager::setEventWindow), INJECT);
-        eventWindowOutputWire.solderTo(shadowgraphWiring.eventWindowInput(), INJECT);
         eventWindowOutputWire.solderTo(
                 latestCompleteStateNexusWiring.getInputWire(LatestCompleteStateNexus::updateEventWindow));
     }
@@ -405,7 +397,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             pipelineInputWire = eventHasherWiring.getInputWire(EventHasher::hashEvent);
         }
 
-        gossipWiring.eventOutput().solderTo(pipelineInputWire);
+        gossipWiring.getEventOutput().solderTo(pipelineInputWire);
         eventHasherWiring.getOutputWire().solderTo(postHashCollectorWiring.getInputWire());
         postHashCollectorWiring
                 .getOutputWire()
@@ -425,11 +417,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         pcesSequencerWiring.getOutputWire().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
 
-        inOrderLinkerWiring.getOutputWire().solderTo(shadowgraphWiring.eventInput());
-
         splitOrphanBufferOutput.solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::registerEvent));
-
-        splitOrphanBufferOutput.solderTo(inOrderLinkerWiring.getInputWire(InOrderLinker::linkEvent));
+        splitOrphanBufferOutput.solderTo(gossipWiring.getEventInput());
 
         final double eventCreationHeartbeatFrequency = platformContext
                 .getConfiguration()
@@ -559,7 +548,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventSignatureValidatorWiring.getInputWire(EventSignatureValidator::updateAddressBooks);
         eventWindowManagerWiring.getInputWire(EventWindowManager::updateEventWindow);
         orphanBufferWiring.getInputWire(OrphanBuffer::clear);
-        inOrderLinkerWiring.getInputWire(InOrderLinker::clear);
     }
 
     /**
@@ -651,14 +639,12 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventDeduplicatorWiring.bind(builder::buildEventDeduplicator);
         eventSignatureValidatorWiring.bind(builder::buildEventSignatureValidator);
         orphanBufferWiring.bind(builder::buildOrphanBuffer);
-        inOrderLinkerWiring.bind(builder::buildInOrderLinker);
         consensusEngineWiring.bind(builder::buildConsensusEngine);
         signedStateFileManagerWiring.bind(signedStateFileManager);
         stateSignerWiring.bind(stateSigner);
         pcesReplayerWiring.bind(pcesReplayer);
         pcesWriterWiring.bind(pcesWriter);
         eventDurabilityNexusWiring.bind(eventDurabilityNexus);
-        shadowgraphWiring.bind(shadowgraph);
         pcesSequencerWiring.bind(builder::buildPcesSequencer);
         eventCreationManagerWiring.bind(builder::buildEventCreationManager);
         selfEventSignerWiring.bind(builder::buildSelfEventSigner);
@@ -682,6 +668,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         notifierWiring.bind(notifier);
         platformPublisherWiring.bind(platformPublisher);
         stateGarbageCollectorWiring.bind(builder::buildStateGarbageCollector);
+        gossipWiring.bind(builder.buildGossip());
     }
 
     /**
@@ -691,7 +678,30 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     @NonNull
     public InputWire<GossipEvent> getGossipEventInput() {
-        return gossipWiring.eventInput();
+        // TODO this should fully pass through the gossip wire...?
+        //  I think we need to move the old style intake queue inside here
+        return eventHasherWiring.getInputWire(EventHasher::hashEvent);
+    }
+
+    /**
+     * Send a signal to the gossip component that we are no longer behind.
+     */
+    public void resetFallenBehind() {
+        gossipWiring.getResetFallenBehindInput().put(NoInput.getInstance());
+    }
+
+    /**
+     * Start gossiping.
+     */
+    public void startGossip() {
+        gossipWiring.getStartInput().put(NoInput.getInstance());
+    }
+
+    /**
+     * Stop gossiping (permanently).
+     */
+    public void stopGossip() {
+        gossipWiring.getStopInput().put(NoInput.getInstance());
     }
 
     /**
@@ -830,7 +840,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         // Since there is asynchronous access to the shadowgraph, it's important to ensure that
         // it has fully ingested the new event window before continuing.
-        shadowgraphWiring.flushRunnable().run();
+        // TODO evaluate why this is necessary
+        gossipWiring.flush();
     }
 
     /**

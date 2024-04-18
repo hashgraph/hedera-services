@@ -32,7 +32,6 @@ import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.hashing.EventHasher;
-import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
@@ -57,6 +56,7 @@ import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.util.HashLogger;
+import com.swirlds.platform.wiring.components.Gossip;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -85,10 +85,10 @@ class PlatformWiringTests {
                 .withOrphanBuffer(mock(OrphanBuffer.class))
                 .withRunningEventHasher(mock(RunningEventHasher.class))
                 .withEventCreationManager(mock(EventCreationManager.class))
-                .withInOrderLinker(mock(InOrderLinker.class))
                 .withConsensusEngine(mock(ConsensusEngine.class))
                 .withConsensusEventStream(mock(ConsensusEventStream.class))
-                .withPcesSequencer(mock(PcesSequencer.class));
+                .withPcesSequencer(mock(PcesSequencer.class))
+                .withGossip(mock(Gossip.class));
 
         wiring.bind(
                 componentBuilder,

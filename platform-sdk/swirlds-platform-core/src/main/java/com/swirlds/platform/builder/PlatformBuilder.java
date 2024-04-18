@@ -40,6 +40,7 @@ import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
+import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -494,6 +495,7 @@ public final class PlatformBuilder {
                 new AtomicReference<>(STARTING_UP),
                 new AtomicReference<>(null),
                 new AtomicReference<>(null),
+                NotificationEngine.buildEngine(getStaticThreadManager()),
                 firstPlatform);
 
         return new PlatformComponentBuilder(buildingBlocks);

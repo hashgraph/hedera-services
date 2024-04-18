@@ -88,14 +88,12 @@ import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
-import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateLoadedFromDiskNotification;
 import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
-import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.metrics.TransactionMetrics;
 import com.swirlds.platform.publisher.DefaultPlatformPublisher;
 import com.swirlds.platform.publisher.PlatformPublisher;
@@ -248,11 +246,6 @@ public class SwirldsPlatform implements Platform {
     private final PlatformStatusManager platformStatusManager;
 
     /**
-     * Responsible for transmitting and receiving events from the network.
-     */
-    private final SyncGossip gossip;
-
-    /**
      * The round of the most recent reconnect state received, or {@link UptimeData#NO_ROUND} if no reconnect state has
      * been received since startup.
      */
@@ -318,10 +311,8 @@ public class SwirldsPlatform implements Platform {
 
         thingsToStart = new ThingsToStart();
 
-        // FUTURE WORK: use a real thread manager here
         final ThreadManager threadManager = getStaticThreadManager();
-
-        notificationEngine = NotificationEngine.buildEngine(threadManager);
+        notificationEngine = blocks.notificationEngine();
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         final String actualMainClassName = stateConfig.getMainClassName(blocks.mainClassName());
@@ -363,7 +354,6 @@ public class SwirldsPlatform implements Platform {
 
         registerAddressBookMetrics(metrics, currentAddressBook, selfId);
 
-        final SyncMetrics syncMetrics = new SyncMetrics(metrics);
         RuntimeMetrics.setup(metrics);
 
         shadowGraph = new Shadowgraph(platformContext, currentAddressBook, blocks.intakeEventCounter());
@@ -544,7 +534,7 @@ public class SwirldsPlatform implements Platform {
         final SignedStateHasher signedStateHasher =
                 new DefaultSignedStateHasher(signedStateMetrics, SystemExitUtils::handleFatalError);
 
-        final AppNotifier appNotifier = new DefaultAppNotifier(notificationEngine);
+        final AppNotifier appNotifier = new DefaultAppNotifier(blocks.notificationEngine());
 
         final PlatformPublisher publisher =
                 new DefaultPlatformPublisher(preconsensusEventConsumer, snapshotOverrideConsumer);
@@ -614,29 +604,6 @@ public class SwirldsPlatform implements Platform {
                         Thread.currentThread().interrupt();
                     }
                 };
-
-        gossip = new SyncGossip(
-                platformContext,
-                blocks.randomBuilder().buildNonCryptographicRandom(),
-                threadManager,
-                keysAndCerts,
-                notificationEngine,
-                currentAddressBook,
-                selfId,
-                appVersion,
-                epochHash,
-                shadowGraph,
-                emergencyRecoveryManager,
-                eventFromGossipConsumer,
-                intakeQueueSizeSupplier,
-                swirldStateManager,
-                latestCompleteStateNexus,
-                syncMetrics,
-                platformStatusManager,
-                this::loadReconnectState,
-                this::clearAllPipelines,
-                blocks.intakeEventCounter(),
-                () -> emergencyState.getState("emergency reconnect")) {};
 
         latestImmutableStateNexus.setState(initialState.reserve("set latest immutable to initial state"));
 
@@ -890,7 +857,7 @@ public class SwirldsPlatform implements Platform {
             throw e;
         }
 
-        gossip.resetFallenBehind();
+        platformWiring.resetFallenBehind();
     }
 
     /**
@@ -900,7 +867,7 @@ public class SwirldsPlatform implements Platform {
      */
     private void haltRequested(final String reason) {
         logger.error(EXCEPTION.getMarker(), "System halt requested. Reason: {}", reason);
-        gossip.stop();
+        platformWiring.stopGossip();
     }
 
     /**
@@ -916,7 +883,7 @@ public class SwirldsPlatform implements Platform {
         metrics.start();
 
         replayPreconsensusEvents();
-        gossip.start();
+        platformWiring.startGossip();
     }
 
     /**

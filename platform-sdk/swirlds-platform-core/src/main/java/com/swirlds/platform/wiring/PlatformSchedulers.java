@@ -33,7 +33,6 @@ import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
-import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -62,7 +61,6 @@ import java.util.List;
  * @param eventDurabilityNexusScheduler             the scheduler for the event durability nexus
  * @param applicationTransactionPrehandlerScheduler the scheduler for the application transaction prehandler
  * @param stateSignatureCollectorScheduler          the scheduler for the state signature collector
- * @param shadowgraphScheduler                      the scheduler for the shadowgraph
  * @param consensusRoundHandlerScheduler            the scheduler for the consensus round handler
  * @param runningHashUpdateScheduler                the scheduler for the running hash updater
  * @param issDetectorScheduler                      the scheduler for the iss detector
@@ -81,7 +79,6 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<Void> eventDurabilityNexusScheduler,
         @NonNull TaskScheduler<Void> applicationTransactionPrehandlerScheduler,
         @NonNull TaskScheduler<List<ReservedSignedState>> stateSignatureCollectorScheduler,
-        @NonNull TaskScheduler<Void> shadowgraphScheduler,
         @NonNull TaskScheduler<StateAndRound> consensusRoundHandlerScheduler,
         @NonNull TaskScheduler<RunningEventHashOverride> runningHashUpdateScheduler,
         @NonNull TaskScheduler<List<IssNotification>> issDetectorScheduler,
@@ -170,14 +167,6 @@ public record PlatformSchedulers(
                         .withUnhandledTaskCapacity(config.stateSignatureCollectorUnhandledCapacity())
                         .withUnhandledTaskMetricEnabled(true)
                         .withHyperlink(platformCoreHyperlink(StateSignatureCollector.class))
-                        .withFlushingEnabled(true)
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("shadowgraph")
-                        .withType(config.shadowgraphSchedulerType())
-                        .withUnhandledTaskCapacity(config.shadowgraphUnhandledCapacity())
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(Shadowgraph.class))
                         .withFlushingEnabled(true)
                         .build()
                         .cast(),
