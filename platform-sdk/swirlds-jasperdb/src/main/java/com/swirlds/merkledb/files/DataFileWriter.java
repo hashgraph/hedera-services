@@ -174,15 +174,18 @@ public final class DataFileWriter<D> {
      */
     public synchronized long writeCopiedDataItem(final BufferedData dataItemData) throws IOException {
         // capture the current write position for beginning of data item
-        final long currentWritingMmapPos = writingPbjData.position();
+        long currentWritingMmapPos = writingPbjData.position();
         final long byteOffset = mmapPositionInFile + currentWritingMmapPos;
-        final int size = Math.toIntExact(dataItemData.remaining());
-        if (writingPbjData.remaining() < ProtoWriterTools.sizeOfDelimited(FIELD_DATAFILE_ITEMS, size)) {
+        final int dataItemSize = Math.toIntExact(dataItemData.remaining());
+        final int totalSize = ProtoWriterTools.sizeOfDelimited(FIELD_DATAFILE_ITEMS, dataItemSize);
+        if (writingPbjData.remaining() < totalSize) {
             moveWritingBuffer(byteOffset);
+            currentWritingMmapPos = 0;
         }
         try {
             ProtoWriterTools.writeDelimited(
-                    writingPbjData, FIELD_DATAFILE_ITEMS, size, o -> o.writeBytes(dataItemData));
+                    writingPbjData, FIELD_DATAFILE_ITEMS, dataItemSize, o -> o.writeBytes(dataItemData));
+            assert writingPbjData.position() == currentWritingMmapPos + totalSize;
         } catch (final BufferOverflowException e) {
             // Buffer overflow here means the mapped buffer is smaller than even a single data item
             throw new IOException(DataFileCommon.ERROR_DATAITEM_TOO_LARGE, e);
@@ -202,12 +205,14 @@ public final class DataFileWriter<D> {
     public synchronized long storeDataItem(final D dataItem) throws IOException {
         // find offset for the start of this new data item, we assume we always write data in a
         // whole number of blocks
-        final long currentWritingMmapPos = writingPbjData.position();
+        long currentWritingMmapPos = writingPbjData.position();
         final long byteOffset = mmapPositionInFile + currentWritingMmapPos;
         // write serialized data
         final int dataItemSize = dataItemSerializer.getSerializedSize(dataItem);
-        if (writingPbjData.remaining() < ProtoWriterTools.sizeOfDelimited(FIELD_DATAFILE_ITEMS, dataItemSize)) {
+        final int totalSize = ProtoWriterTools.sizeOfDelimited(FIELD_DATAFILE_ITEMS, dataItemSize);
+        if (writingPbjData.remaining() < totalSize) {
             moveWritingBuffer(byteOffset);
+            currentWritingMmapPos = 0;
         }
         try {
             ProtoWriterTools.writeDelimited(
@@ -215,6 +220,7 @@ public final class DataFileWriter<D> {
                     FIELD_DATAFILE_ITEMS,
                     dataItemSize,
                     out -> dataItemSerializer.serialize(dataItem, out));
+            assert writingPbjData.position() == currentWritingMmapPos + totalSize;
         } catch (final BufferOverflowException e) {
             // Buffer overflow here means the mapped buffer is smaller than even a single data item
             throw new IOException(DataFileCommon.ERROR_DATAITEM_TOO_LARGE, e);

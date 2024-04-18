@@ -501,6 +501,14 @@ public class HalfDiskHashMap<K extends VirtualKey>
                 bucket = bucketSerializer.getBucketPool().getBucket();
                 bucket.setBucketIndex(bucketIndex);
             }
+            if (bucketIndex != bucket.getBucketIndex()) {
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "Corrupted bucket index: expected={} observed={}",
+                        bucketIndex,
+                        bucket.getBucketIndex());
+                throw new IOException("Corrupted bucket index");
+            }
             // for each changed key in bucket, update bucket
             keyUpdates.forEachKeyValue(bucket::putValue);
             queue.offer(new ReadBucketResult<>(bucket, null));

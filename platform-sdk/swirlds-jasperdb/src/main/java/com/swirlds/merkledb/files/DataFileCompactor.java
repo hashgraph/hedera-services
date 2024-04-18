@@ -251,7 +251,7 @@ public class DataFileCompactor<D> {
                     final DataFileWriter<D> newFileWriter = currentWriter.get();
                     final BufferedData itemBytes = reader.readDataItemBytes(fileOffset);
                     assert itemBytes != null;
-                    long newLocation = newFileWriter.writeCopiedDataItem(itemBytes);
+                    final long newLocation = newFileWriter.writeCopiedDataItem(itemBytes);
                     // update the index
                     index.putIfEqual(path, dataLocation, newLocation);
                 } catch (final ClosedByInterruptException e) {

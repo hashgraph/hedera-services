@@ -20,7 +20,6 @@ import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEMS;
 
 import com.hedera.pbj.runtime.ProtoConstants;
-import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.collections.IndexedObject;
 import com.swirlds.merkledb.config.MerkleDbConfig;
@@ -74,6 +73,9 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  * @param <D> Data item type
  */
 public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFileReader<D>>, IndexedObject {
+
+    private static final int DATA_ITEM_TAG =
+            ((FIELD_DATAFILE_ITEMS.number() << TAG_FIELD_OFFSET) | ProtoConstants.WIRE_TYPE_DELIMITED.ordinal());
 
     private static final ThreadLocal<ByteBuffer> BUFFER_CACHE = new ThreadLocal<>();
     private static final ThreadLocal<BufferedData> BUFFEREDDATA_CACHE = new ThreadLocal<>();
@@ -454,18 +456,16 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
                 int bytesRead = MerkleDbFileUtils.completelyRead(fileChannel, readBB, byteOffsetInFile);
                 assert !isFileCompleted() || (bytesRead == Math.min(PRE_READ_BUF_SIZE, getSize() - byteOffsetInFile));
                 // Then read the tag and size from the read buffer, since it's wrapped over the byte buffer
-                readBuf.reset();
-                final int tag = readBuf.getVarInt(0, false); // tag
-                assert tag
-                        == ((FIELD_DATAFILE_ITEMS.number() << TAG_FIELD_OFFSET)
-                                | ProtoConstants.WIRE_TYPE_DELIMITED.ordinal());
-                final int sizeOfTag = ProtoWriterTools.sizeOfUnsignedVarInt32(tag);
-                final int size = readBuf.getVarInt(sizeOfTag, false);
-                final int sizeOfSize = ProtoWriterTools.sizeOfUnsignedVarInt32(size);
+                readBuf.flip();
+                final int tag = readBuf.readVarInt(false); // tag
+                if (tag != DATA_ITEM_TAG) {
+                    throw new IOException("Corrupted index or data file, path=" + path + " offset=" + byteOffsetInFile);
+                }
+                final int size = readBuf.readVarInt(false);
+                final long dataItemOffset = readBuf.position();
                 // Check if the whole data item is already read in the header
-                if (bytesRead >= sizeOfTag + sizeOfSize + size) {
-                    readBuf.position(sizeOfTag + sizeOfSize);
-                    readBuf.limit(sizeOfTag + sizeOfSize + size);
+                if (readBuf.remaining() >= size) {
+                    readBuf.limit(dataItemOffset + size);
                     return readBuf;
                 }
                 // Otherwise read it separately
@@ -478,11 +478,9 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
                     readBB.position(0);
                     readBB.limit(size);
                 }
-                bytesRead = MerkleDbFileUtils.completelyRead(
-                        fileChannel, readBB, byteOffsetInFile + sizeOfTag + sizeOfSize);
+                bytesRead = MerkleDbFileUtils.completelyRead(fileChannel, readBB, byteOffsetInFile + dataItemOffset);
                 assert bytesRead == size : "Failed to read all data item bytes";
-                readBuf.position(0);
-                readBuf.limit(bytesRead);
+                readBuf.flip();
                 return readBuf;
             } catch (final ClosedByInterruptException e) {
                 // If the thread and the channel are interrupted, propagate it to the callers
