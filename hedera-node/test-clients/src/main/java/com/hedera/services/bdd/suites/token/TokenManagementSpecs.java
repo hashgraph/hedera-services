@@ -36,13 +36,16 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccountWithAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -374,6 +377,69 @@ public class TokenManagementSpecs extends HapiSuite {
                                 .signedBy(GENESIS)
                                 .hasKnownStatus(INVALID_SIGNATURE))
                 .then(getTokenInfo(withoutKycKey).hasRegisteredId(withoutKycKey).logged());
+    }
+
+    @HapiTest
+    public HapiSpec updateIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("updateIdVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed("adminKey"),
+                        cryptoCreate("autoRenewAccount"),
+                        tokenCreate("t").adminKey("adminKey"))
+                .when()
+                .then(submitModified(
+                        withSuccessivelyVariedBodyIds(),
+                        () -> tokenUpdate("t").autoRenewPeriod(7776000L).autoRenewAccount("autoRenewAccount")));
+    }
+
+    @HapiTest
+    public HapiSpec wipeIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("updateIdVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed("wipeKey"),
+                        cryptoCreate("holder").maxAutomaticTokenAssociations(2),
+                        tokenCreate("t").initialSupply(1000).wipeKey("wipeKey"))
+                .when(cryptoTransfer(moving(100, "t").between(DEFAULT_PAYER, "holder")))
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> wipeTokenAccount("t", "holder", 1)));
+    }
+
+    @HapiTest
+    public HapiSpec grantRevokeIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("grantRevokeIdVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed("kycKey"),
+                        cryptoCreate("somebody"),
+                        cryptoCreate("feeCollector"),
+                        tokenCreate("t").kycKey("kycKey"),
+                        tokenAssociate("somebody", "t"))
+                .when()
+                .then(
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> grantTokenKyc("t", "somebody")),
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> revokeTokenKyc("t", "somebody")));
+    }
+
+    @HapiTest
+    public HapiSpec freezeUnfreezeIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("freezeUnfreezeIdVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed("freezeKey"),
+                        cryptoCreate("somebody"),
+                        tokenCreate("t").freezeKey("freezeKey"),
+                        tokenAssociate("somebody", "t"))
+                .when()
+                .then(
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> tokenFreeze("t", "somebody")),
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> tokenUnfreeze("t", "somebody")));
+    }
+
+    @HapiTest
+    public HapiSpec mintBurnIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("mintBurnIdVariantsTreatedAsExpected")
+                .given(newKeyNamed("supplyKey"), tokenCreate("t").supplyKey("supplyKey"))
+                .when()
+                .then(
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> mintToken("t", 123L)),
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> burnToken("t", 123L)));
     }
 
     @HapiTest
