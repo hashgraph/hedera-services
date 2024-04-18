@@ -23,7 +23,6 @@ import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
 /**
@@ -74,7 +73,7 @@ public final class DefaultPlatformContext implements PlatformContext {
             @NonNull final Metrics metrics,
             @NonNull final Cryptography cryptography,
             @NonNull final Time time,
-            @Nullable final FileSystemManager fileSystemManager) {
+            @NonNull final FileSystemManager fileSystemManager) {
 
         this.configuration = Objects.requireNonNull(configuration);
         this.metrics = Objects.requireNonNull(metrics);
@@ -122,7 +121,7 @@ public final class DefaultPlatformContext implements PlatformContext {
     /**
      * {@inheritDoc}
      */
-    @Nullable
+    @NonNull
     @Override
     public FileSystemManager getFileSystemManager() {
         return fileSystemManager;
