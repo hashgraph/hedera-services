@@ -103,7 +103,7 @@ public class FileSystemManagerImpl implements FileSystemManager {
 
         // FUTURE-WORK: --MIGRATION-- Remove this logic after the fs manager was deployed.
         // Moves files in the old location of the recycle bin to the new one
-        final Path oldRecyclePath = rootPath.resolve("swirlds-recycle-bin");
+        final Path oldRecyclePath = savedPath.resolve("swirlds-recycle-bin");
         if (!exists(recycleBinPath) && exists(oldRecyclePath)) {
             rethrowIO(() -> Files.move(oldRecyclePath, recycleBinPath, StandardCopyOption.ATOMIC_MOVE));
         }
