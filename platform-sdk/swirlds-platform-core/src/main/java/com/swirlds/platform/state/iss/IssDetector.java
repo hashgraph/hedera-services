@@ -329,7 +329,7 @@ public class IssDetector {
     private @Nullable IssNotification handlePostconsensusSignature(
             @NonNull final ScopedSystemTransaction<StateSignaturePayload> transaction) {
         final NodeId signerId = transaction.submitterId();
-        final StateSignaturePayload signatureTransaction = transaction.transaction();
+        final StateSignaturePayload signaturePayload = transaction.transaction();
         final SoftwareVersion eventVersion = transaction.softwareVersion();
 
         if (eventVersion == null) {
@@ -347,7 +347,7 @@ public class IssDetector {
             return null;
         }
 
-        if (!hashEquals(currentEpochHash, signatureTransaction.epochHash())) {
+        if (!hashEquals(currentEpochHash, signaturePayload.epochHash())) {
             // this is a signature from a different epoch, ignore it
             return null;
         }
@@ -357,14 +357,14 @@ public class IssDetector {
             return null;
         }
 
-        if (signatureTransaction.round() == ignoredRound) {
+        if (signaturePayload.round() == ignoredRound) {
             // This round is intentionally ignored.
             return null;
         }
 
         final long nodeWeight = addressBook.getAddress(signerId).getWeight();
 
-        final RoundHashValidator roundValidator = roundData.get(signatureTransaction.round());
+        final RoundHashValidator roundValidator = roundData.get(signaturePayload.round());
         if (roundValidator == null) {
             // We are being asked to validate a signature from the far future or far past, or a round that has already
             // been decided.
@@ -372,7 +372,7 @@ public class IssDetector {
         }
 
         final boolean decided = roundValidator.reportHashFromNetwork(
-                signerId, nodeWeight, new Hash(signatureTransaction.hash().toByteArray()));
+                signerId, nodeWeight, new Hash(signaturePayload.hash().toByteArray()));
         if (decided) {
             return checkValidity(roundValidator);
         }

@@ -583,7 +583,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         stateSignerWiring
                 .stateSignature()
-                .solderTo("transactionPool", "signature transactions", transactionPool::submitSystemTransaction);
+                .solderTo("transactionPool", "signature transactions", transactionPool::submitPayload);
 
         issDetectorWiring
                 .issNotificationOutput()

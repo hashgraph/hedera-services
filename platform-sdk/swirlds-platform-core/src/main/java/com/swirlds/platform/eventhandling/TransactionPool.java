@@ -208,10 +208,11 @@ public class TransactionPool implements TransactionSupplier, Clearable {
     }
 
     /**
+     * This method takes a StateSignaturePayload protobuf record as an argument and submits it to the pool.
      * Same as {@link #submitTransaction(ConsensusTransactionImpl, boolean)} but with priority set to true.
      * This method has no return since system transactions are never rejected.
      */
-    public synchronized void submitSystemTransaction(@NonNull final StateSignaturePayload transaction) {
+    public synchronized void submitPayload(@NonNull final StateSignaturePayload transaction) {
         submitTransaction(new StateSignatureTransaction(transaction), true);
     }
 

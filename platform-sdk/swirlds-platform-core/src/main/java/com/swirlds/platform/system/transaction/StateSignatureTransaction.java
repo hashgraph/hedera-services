@@ -74,7 +74,7 @@ public final class StateSignatureTransaction extends ConsensusTransactionImpl {
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        final StateSignaturePayload stateSignaturePayload = payload.as();
+        final StateSignaturePayload stateSignaturePayload = getStateSignaturePayload();
 
         out.writeInt((int) stateSignaturePayload.signature().length());
         stateSignaturePayload.signature().writeTo(out);
@@ -134,12 +134,12 @@ public final class StateSignatureTransaction extends ConsensusTransactionImpl {
      */
     @Override
     public int getSerializedLength() {
-        return Integer.BYTES
+        return Long.BYTES // round
+                + Integer.BYTES // signature array length
                 + (int) getStateSignaturePayload().signature().length()
-                + Integer.BYTES
+                + Integer.BYTES // hash array length
                 + (int) getStateSignaturePayload().hash().length()
-                + Integer.BYTES // epochHash, always null
-                + Long.BYTES;
+                + Integer.BYTES; // epochHash, always null, which is SerializableStreamConstants.NULL_VERSION
     }
 
     /**
@@ -179,11 +179,11 @@ public final class StateSignatureTransaction extends ConsensusTransactionImpl {
     }
 
     @Override
-    public OneOf<PayloadOneOfType> getPayload() {
+    public @NonNull OneOf<PayloadOneOfType> getPayload() {
         return payload;
     }
 
-    private StateSignaturePayload getStateSignaturePayload() {
+    private @NonNull StateSignaturePayload getStateSignaturePayload() {
         return payload.as();
     }
 }
