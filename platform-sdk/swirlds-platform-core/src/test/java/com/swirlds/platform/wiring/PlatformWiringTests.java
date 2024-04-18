@@ -89,6 +89,8 @@ class PlatformWiringTests {
                 .withInOrderLinker(mock(InOrderLinker.class))
                 .withConsensusEngine(mock(ConsensusEngine.class))
                 .withConsensusEventStream(mock(ConsensusEventStream.class))
+                .withPcesSequencer(mock(PcesSequencer.class))
+                .withConsensusEventStream(mock(ConsensusEventStream.class))
                 .withConsensusEngine(mock(ConsensusEngine.class))
                 .withSignedStateSentinel(mock(SignedStateSentinel.class));
 

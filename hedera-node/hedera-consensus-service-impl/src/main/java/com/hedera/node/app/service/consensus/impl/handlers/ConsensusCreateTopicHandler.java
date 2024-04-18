@@ -62,6 +62,11 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
     }
 
     @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        // nothing to do
+    }
+
+    @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().consensusCreateTopicOrThrow();
@@ -78,11 +83,6 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
             final var autoRenewAccountID = op.autoRenewAccount();
             context.requireKeyOrThrow(autoRenewAccountID, INVALID_AUTORENEW_ACCOUNT);
         }
-    }
-
-    @Override
-    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-        // nothing to do
     }
 
     /**

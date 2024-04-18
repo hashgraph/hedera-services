@@ -42,6 +42,8 @@ import com.swirlds.platform.event.linking.GossipLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
+import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.runninghash.DefaultRunningEventHasher;
 import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.DefaultSelfEventSigner;
@@ -98,6 +100,7 @@ public class PlatformComponentBuilder {
     private ConsensusEngine consensusEngine;
     private ConsensusEventStream consensusEventStream;
     private SignedStateSentinel signedStateSentinel;
+    private PcesSequencer pcesSequencer;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -579,6 +582,38 @@ public class PlatformComponentBuilder {
                             && blocks.isInFreezePeriodReference().get().test(event.getConsensusTimestamp()));
         }
         return consensusEventStream;
+    }
+
+    /**
+     * Provide a PCES sequencer in place of the platform's default PCES sequencer.
+     *
+     * @param pcesSequencer the PCES sequencer to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withPcesSequencer(@NonNull final PcesSequencer pcesSequencer) {
+        throwIfAlreadyUsed();
+        if (this.pcesSequencer != null) {
+            throw new IllegalStateException("PCES sequencer has already been set");
+        }
+        this.pcesSequencer = Objects.requireNonNull(pcesSequencer);
+        return this;
+    }
+
+    /**
+     * Build the PCES sequencer if it has not yet been built. If one has been provided via
+     * {@link #withPcesSequencer(PcesSequencer)}, that sequencer will be used. If this method is called more than once,
+     * only the first call will build the PCES sequencer. Otherwise, the default sequencer will be created and
+     * returned.
+     *
+     * @return the PCES sequencer
+     */
+    @NonNull
+    public PcesSequencer buildPcesSequencer() {
+        if (pcesSequencer == null) {
+            pcesSequencer = new DefaultPcesSequencer();
+        }
+        return pcesSequencer;
     }
 
     /**
