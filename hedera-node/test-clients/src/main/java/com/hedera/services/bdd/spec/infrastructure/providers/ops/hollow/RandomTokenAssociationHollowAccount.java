@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,52 +14,31 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.spec.infrastructure.providers.ops.token;
+package com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.listeners.TokenAccountRegistryRel;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenAssociation;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-public class RandomTokenAssociation implements OpProvider {
-    static final Logger log = LogManager.getLogger(RandomTokenAssociation.class);
+public class RandomTokenAssociationHollowAccount extends RandomTokenAssociation {
+    private final String[] signers;
 
-    public static final int MAX_TOKENS_PER_OP = 2;
-    public static final int DEFAULT_CEILING_NUM = 10_000;
-
-    protected int ceilingNum = DEFAULT_CEILING_NUM;
-
-    protected final RegistrySourcedNameProvider<TokenID> tokens;
-    protected final RegistrySourcedNameProvider<AccountID> accounts;
-    protected final RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels;
-    private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, TOKEN_WAS_DELETED, ACCOUNT_DELETED);
-
-    public RandomTokenAssociation(
+    public RandomTokenAssociationHollowAccount(
             RegistrySourcedNameProvider<TokenID> tokens,
             RegistrySourcedNameProvider<AccountID> accounts,
-            RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels) {
-        this.tokens = tokens;
-        this.accounts = accounts;
-        this.tokenRels = tokenRels;
-    }
-
-    public RandomTokenAssociation ceiling(int n) {
-        ceilingNum = n;
-        return this;
+            RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels,
+            String... signers) {
+        super(tokens, accounts, tokenRels);
+        this.signers = signers;
     }
 
     @Override
@@ -83,9 +62,11 @@ public class RandomTokenAssociation implements OpProvider {
             return Optional.empty();
         }
         String[] toUse = chosen.toArray(new String[0]);
+
         var op = tokenAssociate(account.get(), toUse)
                 .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                .hasKnownStatusFrom(permissibleOutcomes);
+                .hasKnownStatusFrom(INVALID_SIGNATURE)
+                .signedBy(signers);
 
         return Optional.of(op);
     }
