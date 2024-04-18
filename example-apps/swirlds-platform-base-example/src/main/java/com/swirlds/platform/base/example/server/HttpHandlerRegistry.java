@@ -14,9 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.base.example;
+package com.swirlds.platform.base.example.server;
 
-import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.base.example.ext.BaseContext;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 
-public record BaseContext(Metrics metrics, Configuration configuration) {}
+public interface HttpHandlerRegistry {
+
+    @NonNull
+    Set<HttpHandlerDefinition> handlers(@NonNull BaseContext context);
+}

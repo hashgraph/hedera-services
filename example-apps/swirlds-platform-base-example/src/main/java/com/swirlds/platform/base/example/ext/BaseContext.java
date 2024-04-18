@@ -14,13 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.base.example.server;
+package com.swirlds.platform.base.example.ext;
 
-import com.sun.net.httpserver.HttpHandler;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 
-public interface HttpHandlerDefinition extends HttpHandler {
-
-    @NonNull
-    String path();
-}
+public record BaseContext(Metrics metrics, Configuration configuration) {}

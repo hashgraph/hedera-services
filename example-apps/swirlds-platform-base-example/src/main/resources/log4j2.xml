@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration packages="pl.tkowalcz.tjahzi.log4j2">
+<configuration>
 <Loggers>
-  <Root level="TRACE">
+  <Root level="DEBUG">
     <AppenderRef ref="Console"/>
     <AppenderRef ref="RollingFile"/>
   </Root>
