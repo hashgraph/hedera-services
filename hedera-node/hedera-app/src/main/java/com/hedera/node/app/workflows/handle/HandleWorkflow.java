@@ -367,6 +367,7 @@ public class HandleWorkflow {
         AccountID payer = null;
         Fees fees = null;
         TransactionInfo transactionInfo = null;
+        HederaFunctionality functionality = NONE;
         Map<AccountID, Long> prePaidRewards = emptyMap();
         try {
             final var preHandleResult = getCurrentPreHandleResult(readableStoreFactory, creator, platformTxn);
@@ -383,6 +384,7 @@ public class HandleWorkflow {
             final var transaction = transactionInfo.transaction();
             txBody = transactionInfo.txBody();
             payer = transactionInfo.payerID();
+            functionality = transactionInfo.functionality();
 
             final Bytes transactionBytes;
             if (transaction.signedTransactionBytes().length() > 0) {
@@ -416,7 +418,7 @@ public class HandleWorkflow {
             // Setup context
             final var context = new HandleContextImpl(
                     txBody,
-                    transactionInfo.functionality(),
+                    functionality,
                     signatureMapSize,
                     payer,
                     preHandleResult.getPayerKey(),
@@ -459,7 +461,7 @@ public class HandleWorkflow {
                     stack,
                     platformEvent.getCreatorId().id());
 
-            final var hasWaivedFees = authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody);
+            final var hasWaivedFees = authorizer.hasWaivedFees(payer, functionality, txBody);
             if (validationResult.status() != SO_FAR_SO_GOOD) {
                 recordBuilder.status(validationResult.responseCodeEnum());
                 try {
@@ -496,7 +498,7 @@ public class HandleWorkflow {
                     // as a result of transaction being handled.
                     Set<Account> hollowAccounts = preHandleResult.getHollowAccounts();
                     SignatureVerification maybeEthTxVerification = null;
-                    if (transactionInfo.functionality() == ETHEREUM_TRANSACTION) {
+                    if (functionality == ETHEREUM_TRANSACTION) {
                         final var maybeEthTxSigs = CONTRACT_SERVICE
                                 .handlers()
                                 .ethereumTransactionHandler()
@@ -545,8 +547,7 @@ public class HandleWorkflow {
                     // only if not a contract operation, since these dispatches were already
                     // charged using gas. [FUTURE - stop setting transactionFee in recordBuilder
                     // at the point of dispatch, so we no longer need this special case here.]
-                    final var isContractOp =
-                            DISPATCHING_CONTRACT_TRANSACTIONS.contains(transactionInfo.functionality());
+                    final var isContractOp = DISPATCHING_CONTRACT_TRANSACTIONS.contains(functionality);
                     if (!isContractOp
                             && !recordListBuilder.precedingRecordBuilders().isEmpty()) {
                         // We intentionally charge fees even if the transaction failed (may need to update
@@ -586,7 +587,7 @@ public class HandleWorkflow {
 
                 // After a contract operation was handled (i.e., not throttled), update the
                 // gas throttle by leaking any unused gas
-                if (isGasThrottled(transactionInfo.functionality())
+                if (isGasThrottled(functionality)
                         && recordBuilder.status() != CONSENSUS_GAS_EXHAUSTED
                         && recordBuilder.hasContractResult()) {
                     final var gasUsed = recordBuilder.getGasUsedForContractTxn();
@@ -594,7 +595,7 @@ public class HandleWorkflow {
                     final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
                     if (contractsConfig.throttleThrottleByGas()) {
                         final var gasLimitForContractTx =
-                                getGasLimitForContractTx(transactionInfo.txBody(), transactionInfo.functionality());
+                                getGasLimitForContractTx(transactionInfo.txBody(), functionality);
                         final var excessAmount = gasLimitForContractTx - gasUsed;
                         networkUtilizationManager.leakUnusedGasPreviouslyReserved(transactionInfo, excessAmount);
                     }
@@ -602,6 +603,21 @@ public class HandleWorkflow {
             }
         } catch (final Exception e) {
             logger.error("Possibly CATASTROPHIC failure while handling a user transaction", e);
+            if (transactionInfo == null) {
+                final var baseData = extractTransactionBaseData(platformTxn.getContents());
+                if (baseData.transaction() == null) {
+                    // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement
+                    logger.error("Failed to parse transaction from creator: {}", creator);
+                    return;
+                }
+                functionality = baseData.functionality();
+                txBody = baseData.txBody();
+                payer = baseData.payer();
+                recordBuilder.transaction(baseData.transaction()).transactionBytes(baseData.transactionBytes());
+                if (txBody != null && txBody.hasTransactionID()) {
+                    recordBuilder.transactionID(txBody.transactionIDOrThrow());
+                }
+            }
             // We should always rollback stack including gas charges when there is an unexpected exception
             rollback(true, ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);
             if (payer != null && fees != null) {
@@ -622,20 +638,11 @@ public class HandleWorkflow {
         }
 
         throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
-        final HederaFunctionality function;
-        if (transactionInfo != null && txBody != null && payer != null) {
-            function = transactionInfo.functionality();
-        } else {
-            final var baseData = extractTransactionBaseData(platformTxn.getContents(), txBody, payer);
-            function = baseData.function();
-            txBody = baseData.txBody();
-            payer = baseData.payer();
-        }
         transactionFinalizer.finalizeParentRecord(
                 payer,
                 tokenServiceContext,
-                function,
-                extraRewardReceivers(txBody, function, recordBuilder),
+                functionality,
+                extraRewardReceivers(txBody, functionality, recordBuilder),
                 prePaidRewards);
 
         // Commit all state changes
@@ -643,12 +650,14 @@ public class HandleWorkflow {
 
         // store all records at once, build() records end of transaction to log
         final var recordListResult = recordListBuilder.build();
-        recordCache.add(creator.nodeId(), payer, recordListResult.records());
+        if (payer != null) { // temporary check to avoid NPE
+            recordCache.add(creator.nodeId(), payer, recordListResult.records());
+        }
 
         blockRecordManager.endUserTransaction(recordListResult.records().stream(), state);
 
         final int handleDuration = (int) (System.nanoTime() - handleStart);
-        handleWorkflowMetrics.updateTransactionDuration(function, handleDuration);
+        handleWorkflowMetrics.updateTransactionDuration(functionality, handleDuration);
     }
 
     /**
@@ -977,44 +986,44 @@ public class HandleWorkflow {
     }
 
     private record TransactionBaseData(
-            @NonNull HederaFunctionality function, @Nullable TransactionBody txBody, @Nullable AccountID payer) {}
+            @NonNull HederaFunctionality functionality,
+            @NonNull Bytes transactionBytes,
+            @Nullable Transaction transaction,
+            @Nullable TransactionBody txBody,
+            @Nullable AccountID payer) {}
 
-    private TransactionBaseData extractTransactionBaseData(
-            @Nullable final byte[] contents,
-            @Nullable final TransactionBody knownTxBody,
-            @Nullable final AccountID knownPayer) {
+    private TransactionBaseData extractTransactionBaseData(@Nullable final byte[] contents) {
         // This method is only called if something fatal happened. We do a best effort approach to extract the
         // type of the transaction, the TransactionBody and the payer if not known.
         if (contents == null || contents.length == 0) {
-            return new TransactionBaseData(NONE, knownTxBody, knownPayer);
+            return new TransactionBaseData(NONE, Bytes.EMPTY, null, null, null);
         }
 
-        TransactionBody txBody = knownTxBody;
-        AccountID payer = knownPayer;
         HederaFunctionality function = NONE;
+        Bytes transactionBytes = Bytes.wrap(contents);
+        Transaction transaction = null;
+        TransactionBody txBody = null;
+        AccountID payer = null;
         try {
-            final Transaction tx = Transaction.PROTOBUF.parseStrict(Bytes.wrap(contents));
+            transaction = Transaction.PROTOBUF.parseStrict(transactionBytes);
 
-            if (txBody == null) {
-                final Bytes bodyBytes;
-                if (tx.signedTransactionBytes().length() > 0) {
-                    final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
-                            tx.signedTransactionBytes().toReadableSequentialData());
-                    bodyBytes = signedTransaction.bodyBytes();
-                } else {
-                    bodyBytes = tx.bodyBytes();
-                }
-                txBody = TransactionBody.PROTOBUF.parseStrict(bodyBytes.toReadableSequentialData());
+            final Bytes bodyBytes;
+            if (transaction.signedTransactionBytes().length() > 0) {
+                final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
+                        transaction.signedTransactionBytes().toReadableSequentialData());
+                bodyBytes = signedTransaction.bodyBytes();
+                transactionBytes = bodyBytes;
+            } else {
+                bodyBytes = transaction.bodyBytes();
             }
+            txBody = TransactionBody.PROTOBUF.parseStrict(bodyBytes.toReadableSequentialData());
 
-            if (payer == null) {
-                payer = txBody.transactionIDOrElse(TransactionID.DEFAULT).accountID();
-            }
+            payer = txBody.transactionIDOrElse(TransactionID.DEFAULT).accountID();
 
             function = HapiUtils.functionOf(txBody);
         } catch (Exception ex) {
             // ignore
         }
-        return new TransactionBaseData(function, txBody, payer);
+        return new TransactionBaseData(function, transactionBytes, transaction, txBody, payer);
     }
 }
