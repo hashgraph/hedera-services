@@ -88,7 +88,6 @@ import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
-import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateLoadedFromDiskNotification;
@@ -165,12 +164,6 @@ public class SwirldsPlatform implements Platform {
      * The unique ID of this node.
      */
     private final NodeId selfId;
-
-    /**
-     * The shadow graph manager. This wraps a shadow graph, which is an Event graph that adds child pointers to the
-     * Hashgraph Event graph. Used for gossiping.
-     */
-    private final Shadowgraph shadowGraph;
 
     /**
      * the current nodes in the network and their information
@@ -355,8 +348,6 @@ public class SwirldsPlatform implements Platform {
 
         RuntimeMetrics.setup(metrics);
 
-        shadowGraph = new Shadowgraph(platformContext, currentAddressBook, blocks.intakeEventCounter());
-
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
         keysAndCerts = blocks.keysAndCerts();
@@ -530,7 +521,6 @@ public class SwirldsPlatform implements Platform {
                 pcesReplayer,
                 pcesWriter,
                 eventDurabilityNexus,
-                shadowGraph,
                 stateSignatureCollector,
                 transactionPrehandler,
                 eventWindowManager,
@@ -594,6 +584,7 @@ public class SwirldsPlatform implements Platform {
         if (startedFromGenesis) {
             initialAncientThreshold = 0;
             startingRound = 0;
+            platformWiring.updateEventWindow(EventWindow.getGenesisEventWindow(ancientMode));
         } else {
             initialAncientThreshold = initialState.getState().getPlatformState().getAncientThreshold();
             startingRound = initialState.getRound();
@@ -630,10 +621,7 @@ public class SwirldsPlatform implements Platform {
 
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
-                List.of(
-                        Pair.of(platformWiring, "platformWiring"),
-                        Pair.of(shadowGraph, "shadowGraph"),
-                        Pair.of(transactionPool, "transactionPool")));
+                List.of(Pair.of(platformWiring, "platformWiring"), Pair.of(transactionPool, "transactionPool")));
     }
 
     /**
@@ -740,15 +728,6 @@ public class SwirldsPlatform implements Platform {
 
         platformWiring.consensusSnapshotOverride(
                 Objects.requireNonNull(signedState.getState().getPlatformState().getSnapshot()));
-
-        // FUTURE WORK: this needs to be updated for birth round compatibility.
-        final EventWindow eventWindow = new EventWindow(
-                signedState.getRound(),
-                signedState.getState().getPlatformState().getAncientThreshold(),
-                signedState.getState().getPlatformState().getAncientThreshold(),
-                ancientMode);
-
-        shadowGraph.startWithEventWindow(eventWindow);
     }
 
     /**

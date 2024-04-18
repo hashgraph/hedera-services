@@ -44,7 +44,6 @@ import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
-import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.publisher.PlatformPublisher;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
@@ -97,7 +96,6 @@ class PlatformWiringTests {
                 mock(PcesReplayer.class),
                 mock(PcesWriter.class),
                 mock(EventDurabilityNexus.class),
-                mock(Shadowgraph.class),
                 mock(StateSignatureCollector.class),
                 mock(TransactionPrehandler.class),
                 mock(EventWindowManager.class),

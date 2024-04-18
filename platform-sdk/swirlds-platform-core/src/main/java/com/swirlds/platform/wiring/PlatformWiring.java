@@ -70,7 +70,6 @@ import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
-import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.publisher.PlatformPublisher;
 import com.swirlds.platform.state.iss.IssDetector;
@@ -418,7 +417,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesSequencerWiring.getOutputWire().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
 
         splitOrphanBufferOutput.solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::registerEvent));
-        splitOrphanBufferOutput.solderTo(gossipWiring.getEventInput());
+
+        // This must use injection to avoid cyclical back pressure. There is a risk of OOM if gossip can't ingest
+        // events fast enough, but we have no other choice until we implement the platform health monitor.
+        // TODO this should be showing up in the diagram as a dotted line but it isn't
+        splitOrphanBufferOutput.solderTo(gossipWiring.getEventInput(), INJECT);
 
         final double eventCreationHeartbeatFrequency = platformContext
                 .getConfiguration()
@@ -592,7 +595,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param pcesReplayer              the PCES replayer to bind
      * @param pcesWriter                the PCES writer to bind
      * @param eventDurabilityNexus      the event durability nexus to bind
-     * @param shadowgraph               the shadowgraph to bind
      * @param stateSignatureCollector   the signed state manager to bind
      * @param transactionPrehandler     the transaction prehandler to bind
      * @param eventWindowManager        the event window manager to bind
@@ -617,7 +619,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final PcesReplayer pcesReplayer,
             @NonNull final PcesWriter pcesWriter,
             @NonNull final EventDurabilityNexus eventDurabilityNexus,
-            @NonNull final Shadowgraph shadowgraph,
             @NonNull final StateSignatureCollector stateSignatureCollector,
             @NonNull final TransactionPrehandler transactionPrehandler,
             @NonNull final EventWindowManager eventWindowManager,
