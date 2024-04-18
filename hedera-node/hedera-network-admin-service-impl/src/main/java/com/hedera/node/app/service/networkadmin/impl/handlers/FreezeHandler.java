@@ -133,10 +133,12 @@ public class FreezeHandler implements TransactionHandler {
             }
         }
 
-        final Bytes fileHash = freezeTxn.fileHash();
-        // don't verify the hash, just make sure it is not null or empty and is the correct length
-        if (fileHash == null || Bytes.EMPTY.equals(fileHash) || fileHash.length() != UPDATE_FILE_HASH_LEN) {
-            throw new PreCheckException(ResponseCodeEnum.FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
+        if (Arrays.asList(FREEZE_UPGRADE, TELEMETRY_UPGRADE, PREPARE_UPGRADE).contains(freezeType)) {
+            final Bytes fileHash = freezeTxn.fileHash();
+            // don't verify the hash, just make sure it is not null or empty and is the correct length
+            if (fileHash == null || Bytes.EMPTY.equals(fileHash) || fileHash.length() != UPDATE_FILE_HASH_LEN) {
+                throw new PreCheckException(ResponseCodeEnum.FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
+            }
         }
     }
 
