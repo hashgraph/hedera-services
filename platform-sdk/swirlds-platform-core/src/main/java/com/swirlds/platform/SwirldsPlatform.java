@@ -117,7 +117,6 @@ import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateHasher;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
-import com.swirlds.platform.state.signed.StartupStateUtils;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.state.signed.StateToDiskReason;
@@ -364,22 +363,7 @@ public class SwirldsPlatform implements Platform {
 
         EventCounter.registerEventCounterMetrics(metrics);
 
-        final Hash epochHash;
-        if (emergencyRecoveryManager.getEmergencyRecoveryFile() != null) {
-            epochHash = emergencyRecoveryManager.getEmergencyRecoveryFile().hash();
-        } else {
-            epochHash = initialState.getState().getPlatformState().getEpochHash();
-        }
-
         final String swirldName = blocks.swirldName();
-        StartupStateUtils.doRecoveryCleanup(
-                platformContext,
-                recycleBin,
-                selfId,
-                swirldName,
-                actualMainClassName,
-                epochHash,
-                initialState.getRound());
 
         final PcesConfig preconsensusEventStreamConfig =
                 platformContext.getConfiguration().getConfigData(PcesConfig.class);
@@ -437,7 +421,7 @@ public class SwirldsPlatform implements Platform {
         final IssDetector issDetector = new IssDetector(
                 platformContext,
                 currentAddressBook,
-                epochHash,
+                null, // TODO
                 appVersion,
                 ignorePreconsensusSignatures,
                 roundToIgnore);
@@ -941,21 +925,15 @@ public class SwirldsPlatform implements Platform {
     private void replayPreconsensusEvents() {
         platformStatusManager.submitStatusAction(new StartedReplayingEventsAction());
 
-        final boolean emergencyRecoveryNeeded = emergencyRecoveryManager.isEmergencyStateRequired();
+        final IOIterator<GossipEvent> iterator =
+                initialPcesFiles.getEventIterator(initialAncientThreshold, startingRound);
 
-        // if we need to do an emergency recovery, replaying the PCES could cause issues if the
-        // minimum generation non-ancient is reversed to a smaller value, so we skip it
-        if (!emergencyRecoveryNeeded) {
-            final IOIterator<GossipEvent> iterator =
-                    initialPcesFiles.getEventIterator(initialAncientThreshold, startingRound);
+        logger.info(
+                STARTUP.getMarker(),
+                "replaying preconsensus event stream starting at generation {}",
+                initialAncientThreshold);
 
-            logger.info(
-                    STARTUP.getMarker(),
-                    "replaying preconsensus event stream starting at generation {}",
-                    initialAncientThreshold);
-
-            platformWiring.getPcesReplayerIteratorInput().inject(iterator);
-        }
+        platformWiring.getPcesReplayerIteratorInput().inject(iterator);
 
         // We have to wait for all the PCES transactions to reach the ISS detector before telling it that PCES replay is
         // done. The PCES replay will flush the intake pipeline, but we have to flush the hasher

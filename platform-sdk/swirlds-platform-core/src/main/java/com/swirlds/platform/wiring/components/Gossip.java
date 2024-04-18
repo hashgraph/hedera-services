@@ -24,9 +24,10 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * Implements gossip with network peers.
+ */
 public interface Gossip { // TODO
-
-    // TODO control flow wires?
 
     /**
      * Bind the input wires to the gossip implementation.
@@ -47,6 +48,6 @@ public interface Gossip { // TODO
             @NonNull BindableInputWire<NoInput, Void> startInput,
             @NonNull BindableInputWire<NoInput, Void> stopInput,
             @NonNull BindableInputWire<NoInput, Void> clearInput,
-            @NonNull BindableInputWire<NoInput, Void> resetFallenBehindInput,
+            @NonNull BindableInputWire<NoInput, Void> resetFallenBehindInput, // TODO reconnect start/complete
             @NonNull StandardOutputWire<GossipEvent> eventOutput);
 }

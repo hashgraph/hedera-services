@@ -20,9 +20,7 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
@@ -57,13 +55,11 @@ import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.ProtocolNegotiatorThread;
-import com.swirlds.platform.network.communication.handshake.HashCompareHandshake;
 import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
 import com.swirlds.platform.network.connectivity.ConnectionServer;
 import com.swirlds.platform.network.connectivity.InboundConnectionHandler;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.connectivity.SocketFactory;
-import com.swirlds.platform.network.protocol.EmergencyReconnectProtocolFactory;
 import com.swirlds.platform.network.protocol.HeartbeatProtocolFactory;
 import com.swirlds.platform.network.protocol.ProtocolFactory;
 import com.swirlds.platform.network.protocol.ProtocolRunnable;
@@ -78,10 +74,8 @@ import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectLearnerFactory;
 import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
-import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
-import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
@@ -90,7 +84,6 @@ import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -99,7 +92,6 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
-import java.util.function.Supplier;
 
 /**
  * Boilerplate code for gossip.
@@ -149,12 +141,9 @@ public class SyncGossip implements ConnectionTracker, Gossip {
      * @param random                        a source of randomness, does not need to be cryptographically secure
      * @param threadManager                 the thread manager
      * @param keysAndCerts                  private keys and public certificates
-     * @param notificationEngine            used to send notifications to the app
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
      * @param appVersion                    the version of the app
-     * @param epochHash                     the epoch hash of the initial state
-     * @param emergencyRecoveryManager      handles emergency recovery
      * @param intakeQueueSizeSupplier       a supplier for the size of the event intake queue
      * @param swirldStateManager            manages the mutable state
      * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
@@ -163,19 +152,15 @@ public class SyncGossip implements ConnectionTracker, Gossip {
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      * @param intakeEventCounter            keeps track of the number of events in the intake pipeline from each peer
-     * @param emergencyStateSupplier        returns the emergency state if available
      */
     protected SyncGossip(
             @NonNull final PlatformContext platformContext,
             @NonNull final Random random,
             @NonNull final ThreadManager threadManager,
             @NonNull final KeysAndCerts keysAndCerts,
-            @NonNull final NotificationEngine notificationEngine,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
-            @Nullable final Hash epochHash,
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final LongSupplier intakeQueueSizeSupplier,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final SignedStateNexus latestCompleteState,
@@ -183,8 +168,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             @NonNull final PlatformStatusManager platformStatusManager,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect,
-            @NonNull final IntakeEventCounter intakeEventCounter,
-            @NonNull final Supplier<ReservedSignedState> emergencyStateSupplier) {
+            @NonNull final IntakeEventCounter intakeEventCounter) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.addressBook = Objects.requireNonNull(addressBook);
@@ -292,26 +276,15 @@ public class SyncGossip implements ConnectionTracker, Gossip {
 
         syncPermitProvider = new SyncPermitProvider(permitCount, intakeEventCounter);
 
-        if (emergencyRecoveryManager.isEmergencyStateRequired()) {
-            // If we still need an emergency recovery state, we need it via emergency reconnect.
-            // Start the helper first so that it is ready to receive a connection to perform reconnect with when the
-            // protocol is initiated.
-            thingsToStart.addFirst(reconnectController::start);
-        }
-
         buildSyncProtocolThreads(
                 platformContext,
                 threadManager,
-                notificationEngine,
                 selfId,
                 appVersion,
-                epochHash,
-                emergencyRecoveryManager,
                 intakeQueueSizeSupplier,
                 latestCompleteState,
                 syncMetrics,
                 platformStatusManager,
-                emergencyStateSupplier,
                 hangingThreadDuration,
                 protocolConfig,
                 reconnectConfig,
@@ -323,16 +296,12 @@ public class SyncGossip implements ConnectionTracker, Gossip {
     private void buildSyncProtocolThreads(
             final PlatformContext platformContext,
             final ThreadManager threadManager,
-            final NotificationEngine notificationEngine,
             final NodeId selfId,
             final SoftwareVersion appVersion,
-            final Hash epochHash,
-            final EmergencyRecoveryManager emergencyRecoveryManager,
             final LongSupplier intakeQueueSizeSupplier,
             final SignedStateNexus latestCompleteState,
             final SyncMetrics syncMetrics,
             final PlatformStatusManager platformStatusManager,
-            final Supplier<ReservedSignedState> emergencyStateSupplier,
             final Duration hangingThreadDuration,
             final ProtocolConfig protocolConfig,
             final ReconnectConfig reconnectConfig,
@@ -359,25 +328,11 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 fallenBehindManager,
                 platformStatusManager,
                 platformContext.getConfiguration());
-        final ProtocolFactory emergencyReconnectProtocolFactory = new EmergencyReconnectProtocolFactory(
-                platformContext,
-                threadManager,
-                notificationEngine,
-                emergencyRecoveryManager,
-                reconnectThrottle,
-                emergencyStateSupplier,
-                reconnectConfig.asyncStreamTimeout(),
-                reconnectMetrics,
-                reconnectController,
-                platformStatusManager,
-                platformContext.getConfiguration());
         final ProtocolFactory heartbeatProtocolFactory = new HeartbeatProtocolFactory(
                 Duration.ofMillis(syncConfig.syncProtocolHeartbeatPeriod()), networkMetrics, platformContext.getTime());
-        final HashCompareHandshake hashCompareHandshake =
-                new HashCompareHandshake(epochHash, !protocolConfig.tolerateMismatchedEpochHash());
         final VersionCompareHandshake versionCompareHandshake =
-                new VersionCompareHandshake(appVersion, !protocolConfig.tolerateMismatchedEpochHash());
-        final List<ProtocolRunnable> handshakeProtocols = List.of(hashCompareHandshake, versionCompareHandshake);
+                new VersionCompareHandshake(appVersion, !protocolConfig.tolerateMismatchedVersion());
+        final List<ProtocolRunnable> handshakeProtocols = List.of(versionCompareHandshake);
         for (final NodeId otherId : topology.getNeighbors()) {
             syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
@@ -392,7 +347,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                             handshakeProtocols,
                             new NegotiationProtocols(List.of(
                                     heartbeatProtocolFactory.build(otherId),
-                                    emergencyReconnectProtocolFactory.build(otherId),
                                     reconnectProtocolFactory.build(otherId),
                                     syncProtocolFactory.build(otherId)))))
                     .build());

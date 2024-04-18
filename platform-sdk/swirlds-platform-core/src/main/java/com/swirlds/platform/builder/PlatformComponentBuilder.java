@@ -615,12 +615,9 @@ public class PlatformComponentBuilder {
                     blocks.randomBuilder().buildNonCryptographicRandom(),
                     AdHocThreadManager.getStaticThreadManager(),
                     blocks.keysAndCerts(),
-                    blocks.notificationEngine(),
                     blocks.initialState().get().getAddressBook(),
                     blocks.selfId(),
                     blocks.appVersion(),
-                    null,
-                    null /* TODO remove */,
                     () -> blocks.intakeQueueSizeSupplierSupplier().get().getAsLong(),
                     null /* TODO swirldStateManager */,
                     null /* TODO latestCompleteStateNexus */,
@@ -628,8 +625,7 @@ public class PlatformComponentBuilder {
                     null /* TODO platformStatusManager */,
                     null /* TODO this::loadReconnectState */,
                     null /* TODO this::clearAllPipelines */,
-                    blocks.intakeEventCounter(),
-                    null /* TODO remove */) {};
+                    blocks.intakeEventCounter()) {};
 
             throw new IllegalStateException("Gossip has not been set");
         }
