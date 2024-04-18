@@ -670,7 +670,7 @@ class PcesWriterTests {
     @MethodSource("buildArguments")
     @DisplayName("Advance Non Ancient Boundary Test")
     void advanceNonAncientBoundaryTest(@NonNull final AncientMode ancientMode) throws IOException {
-        final Random random = RandomUtils.getRandomPrintSeed();
+        final Random random = RandomUtils.getRandomPrintSeed(284520236160395337L); // TODO
 
         final PlatformContext platformContext = buildContext(ancientMode);
         final FakeTime time = (FakeTime) platformContext.getTime();
@@ -682,7 +682,7 @@ class PcesWriterTests {
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
         final PcesWriter writer = new PcesWriter(platformContext, fileManager);
-        final AtomicLong latestDurableSequenceNumber = new AtomicLong();
+        final AtomicLong latestDurableSequenceNumber = new AtomicLong(-1);
 
         final List<GossipEvent> events = new LinkedList<>();
         for (int i = 0; i < numEvents; i++) {

@@ -33,7 +33,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
@@ -41,7 +40,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -134,7 +132,6 @@ class ConsensusRoundHandlerTests {
         final PlatformState platformState = mock(PlatformState.class);
         final SwirldStateManager swirldStateManager = mockSwirldStateManager(platformState);
 
-        final CheckedConsumer<GossipEvent, InterruptedException> waitForEventDurability = mock(CheckedConsumer.class);
         final StatusActionSubmitter statusActionSubmitter = mock(StatusActionSubmitter.class);
 
         final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
@@ -156,7 +153,6 @@ class ConsensusRoundHandlerTests {
         events.forEach(ConsensusRoundHandlerTests::assertEventReachedConsensus);
 
         verify(statusActionSubmitter, never()).submitStatusAction(any(FreezePeriodEnteredAction.class));
-        verify(waitForEventDurability).accept(keystoneEvent.getBaseEvent());
         verify(swirldStateManager).handleConsensusRound(consensusRound);
         verify(swirldStateManager, never()).savedStateInFreezePeriod();
         verify(platformState)
@@ -173,7 +169,6 @@ class ConsensusRoundHandlerTests {
         final SwirldStateManager swirldStateManager = mockSwirldStateManager(platformState);
         when(swirldStateManager.isInFreezePeriod(any())).thenReturn(true);
 
-        final CheckedConsumer<GossipEvent, InterruptedException> waitForEventDurability = mock(CheckedConsumer.class);
         final StatusActionSubmitter statusActionSubmitter = mock(StatusActionSubmitter.class);
 
         final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
@@ -195,7 +190,6 @@ class ConsensusRoundHandlerTests {
         events.forEach(ConsensusRoundHandlerTests::assertEventReachedConsensus);
 
         verify(statusActionSubmitter).submitStatusAction(any(FreezePeriodEnteredAction.class));
-        verify(waitForEventDurability).accept(keystoneEvent.getBaseEvent());
         verify(swirldStateManager).handleConsensusRound(consensusRound);
         verify(swirldStateManager).savedStateInFreezePeriod();
         verify(platformState)
@@ -212,7 +206,6 @@ class ConsensusRoundHandlerTests {
         postFreezeEvents.forEach(ConsensusRoundHandlerTests::assertEventDidNotReachConsensus);
 
         verify(statusActionSubmitter).submitStatusAction(any(FreezePeriodEnteredAction.class));
-        verify(waitForEventDurability).accept(keystoneEvent.getBaseEvent());
         verify(swirldStateManager).handleConsensusRound(consensusRound);
         verify(swirldStateManager).savedStateInFreezePeriod();
         verify(platformState)
