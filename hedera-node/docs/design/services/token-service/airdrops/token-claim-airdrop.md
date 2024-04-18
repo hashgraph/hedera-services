@@ -129,6 +129,12 @@ An update into the `feeSchedule` file would be needed to specify that.
               - Since we would have the signature of the receiver, even if it's an account with `receiver_sig_required=true`, the claim would implicitly work properly
             - Then we should transfer the claimed tokens to each `receiver_id`
                 - We can dispatch synthetic crypto transfer for this, but we must skip the assessment of custom fees
+                  - In case of a fungible token claim
+                    - Create a synthetic `CryptoTransfer` with the corresponding `sender`, `receiver`, `token` and `amount` based on the `PendingAirdropId` and the corresponding `PendingAirdropValue`
+                    - Then delegate it to the `CryptoTransfer.handler()` to execute the transfer
+                  - In case of an NFT claim
+                    - Create a synthetic `CryptoTransfer` with the corresponding `sender`, `receiver`, `token` and `serial number` based on the based on the `PendingAirdropId`
+                    - Then delegate it to `CryptoTransfer.handler()` to execute the transfer
         - Token transfers and associations should be externalized using the `tokenTransferLists` and `automatic_token_associations` fields in the transaction record
     - Fees calculation
 
