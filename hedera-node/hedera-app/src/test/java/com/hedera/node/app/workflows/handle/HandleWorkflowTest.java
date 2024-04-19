@@ -40,6 +40,7 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -1146,6 +1147,43 @@ class HandleWorkflowTest extends AppTestBase {
             when(platformTxn.getMetadata()).thenReturn(null);
             when(preHandleWorkflow.preHandleTransaction(any(), any(), any(), eq(platformTxn), eq(null)))
                     .thenReturn(PreHandleResult.unknownFailure());
+
+            // when
+            workflow.handleRound(state, platformState, round);
+
+            // then
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
+            assertThat(accountsState.isModified()).isFalse();
+            assertThat(aliasesState.isModified()).isFalse();
+            // TODO: Check receipt
+        }
+
+        @Test
+        @DisplayName("Update receipt, charge payer, if running preHandle causes unexpected Exception")
+        void testPreHandleCausesUnexpectedException() {
+            final var transactionBytes = Transaction.PROTOBUF.toBytes(
+                    new TransactionScenarioBuilder().txInfo().transaction());
+            when(platformTxn.getContents()).thenReturn(transactionBytes.toByteArray());
+            when(platformTxn.getMetadata()).thenReturn(null);
+            when(preHandleWorkflow.preHandleTransaction(any(), any(), any(), eq(platformTxn), eq(null)))
+                    .thenThrow(NullPointerException.class);
+
+            // when
+            workflow.handleRound(state, platformState, round);
+
+            // then
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
+            assertThat(accountsState.isModified()).isFalse();
+            assertThat(aliasesState.isModified()).isFalse();
+            // TODO: Check receipt
+        }
+
+        @Test
+        @DisplayName("Update receipt, charge payer, if running preHandle causes unexpected Exception")
+        void testPreHandleCausesUnexpectedExceptionWithInvalidTransaction() {
+            when(platformTxn.getMetadata()).thenReturn(null);
+            when(preHandleWorkflow.preHandleTransaction(any(), any(), any(), eq(platformTxn), eq(null)))
+                    .thenThrow(NullPointerException.class);
 
             // when
             workflow.handleRound(state, platformState, round);
