@@ -34,7 +34,7 @@ public @interface ConfigDefault {
     /**
      * This value is used to define default value of the property.
      *
-     * @return the suffix of the name
+     * @return the default value
      */
     @NonNull
     String value() default ConfigProperty.UNDEFINED_DEFAULT_VALUE;
