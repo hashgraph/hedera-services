@@ -74,6 +74,7 @@ public interface ExecutorFactory {
      * @param exceptionHandler the exception handler
      * @return the new instance of {@link ExecutorFactory}
      */
+    @NonNull
     static ExecutorFactory create(
             @NonNull final String groupName,
             @Nullable final Runnable onStartup,
