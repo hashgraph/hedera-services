@@ -20,7 +20,6 @@ import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigDefault;
-import com.swirlds.config.api.ConfigProperty;
 import java.time.Duration;
 
 /**
@@ -99,9 +98,8 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration eventSignatureValidator,
         @ConfigDefault("SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration orphanBuffer,
-        @ConfigProperty(
-                        defaultValue =
-                                "SEQUENTIAL_THREAD CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
+        @ConfigDefault(
+                        "SEQUENTIAL_THREAD CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
                 TaskSchedulerConfiguration consensusEngine,
         @ConfigDefault("SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration inOrderLinker,
