@@ -71,9 +71,8 @@ class ConsistencyTestingToolRoundTests {
                 final Bytes bytes = Bytes.wrap(longToByteArray(content));
                 final OneOf<PayloadOneOfType> payload = new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, bytes);
                 Mockito.when(transaction.getPayload()).thenReturn(payload);
-                Mockito.when(transaction.getAppPayload()).thenReturn(bytes);
+                Mockito.when(transaction.getApplicationPayload()).thenReturn(bytes);
                 Mockito.when(transaction.isSystem()).thenReturn(false);
-                Mockito.when(transaction.isApp()).thenReturn(true);
                 mockTransactions.add(transaction);
             });
 

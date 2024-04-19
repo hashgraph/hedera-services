@@ -228,21 +228,20 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
      */
     private void handleTransaction(@NonNull final NodeId id, @NonNull final Transaction transaction) {
         Objects.requireNonNull(id, "id must not be null");
+        Objects.requireNonNull(id, "transaction must not be null");
         if (transaction.isSystem()) {
             return;
         }
-        final Bytes contents = transaction.getAppPayload();
-        if (contents.length() == 0) {
+        final Bytes contents = transaction.getApplicationPayload();
+        if (contents.length() < 3) {
             return;
         }
         if (contents.getByte(0) == TransType.slow.ordinal() || contents.getByte(0) == TransType.fast.ordinal()) {
             return;
-        } else if (contents.length() < 3) {
-            return; // ignore any bid/ask that doesn't have consensus yet
         }
         final int askBid = contents.getByte(0);
         final int tradeStock = contents.getByte(1);
-        int tradePrice = contents.getByte(3);
+        int tradePrice = contents.getByte(2);
 
         if (tradePrice < 1 || tradePrice > 127) {
             return; // all asks and bids must be in the range 1 to 127

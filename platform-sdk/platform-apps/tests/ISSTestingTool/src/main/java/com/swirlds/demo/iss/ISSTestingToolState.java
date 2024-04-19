@@ -223,7 +223,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
         if (transaction.isSystem()) {
             return;
         }
-        final int delta = ByteUtils.byteArrayToInt(transaction.getAppPayload().toByteArray(), 0);
+        final int delta = ByteUtils.byteArrayToInt(transaction.getApplicationPayload().toByteArray(), 0);
         runningSum += delta;
     }
 

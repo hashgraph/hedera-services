@@ -56,6 +56,16 @@ public sealed interface Transaction extends SerializableWithKnownLength permits 
     OneOf<EventPayload.PayloadOneOfType> getPayload();
 
     /**
+     * A convenience method for retrieving the application payload {@link Bytes} object. Before calling this method,
+     * ensure that the transaction is not a system transaction by calling {@link #isSystem()}.
+     *
+     * @return the application payload Bytes or null if the payload is a system payload
+     */
+    default @NonNull Bytes getApplicationPayload() {
+        return !isSystem() ? getPayload().as() : Bytes.EMPTY;
+    }
+
+    /**
      * Get the size of the transaction
      *
      * @return the size of the transaction in the unit of byte
@@ -70,14 +80,6 @@ public sealed interface Transaction extends SerializableWithKnownLength permits 
      */
     default boolean isSystem() {
         return getPayload().kind() != PayloadOneOfType.APPLICATION_PAYLOAD;
-    }
-
-    default boolean isApp() {
-        return getPayload().kind() == PayloadOneOfType.APPLICATION_PAYLOAD;
-    }
-
-    default Bytes getAppPayload() {
-        return isApp() ? getPayload().as() : Bytes.EMPTY;
     }
 
     /**

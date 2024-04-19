@@ -260,7 +260,7 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
      */
     private static MigrationTestingToolTransaction parseTransaction(final Transaction transaction) {
         final SerializableDataInputStream in = new SerializableDataInputStream(
-                transaction.getAppPayload().toReadableSequentialData().asInputStream());
+                transaction.getApplicationPayload().toReadableSequentialData().asInputStream());
 
         try {
             return in.readSerializable(false, MigrationTestingToolTransaction::new);
