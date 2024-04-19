@@ -101,7 +101,6 @@ public class GossipWiring {
      */
     private final BindableInputWire<ReservedSignedState, Void> stateForTeacherInput;
 
-
     public GossipWiring(@NonNull final WiringModel model) {
         this.model = model;
 

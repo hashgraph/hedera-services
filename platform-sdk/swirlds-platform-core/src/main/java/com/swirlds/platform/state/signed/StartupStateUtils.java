@@ -33,9 +33,7 @@ import com.swirlds.logging.legacy.payload.SavedStateLoadedPayload;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.internal.SignedStateLoadingException;
-import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.RecoveryScratchpad;
-import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
@@ -115,15 +113,14 @@ public final class StartupStateUtils {
      * Get the initial state to be used by this node. May return a state loaded from disk, or may return a genesis state
      * if no valid state is found on disk.
      *
-     * @param platformContext          the platform context
-     * @param recycleBin               the recycle bin
-     * @param softwareVersion          the software version of the app
-     * @param genesisStateBuilder      a supplier that can build a genesis state
-     * @param mainClassName            the name of the app's SwirldMain class
-     * @param swirldName               the name of this swirld
-     * @param selfId                   the node id of this node
-     * @param configAddressBook        the address book from config.txt
-     * @param emergencyRecoveryManager the emergency recovery manager
+     * @param platformContext     the platform context
+     * @param recycleBin          the recycle bin
+     * @param softwareVersion     the software version of the app
+     * @param genesisStateBuilder a supplier that can build a genesis state
+     * @param mainClassName       the name of the app's SwirldMain class
+     * @param swirldName          the name of this swirld
+     * @param selfId              the node id of this node
+     * @param configAddressBook   the address book from config.txt
      * @return the initial state to be used by this node
      * @throws SignedStateLoadingException if there was a problem parsing states on disk and we are not configured to
      *                                     delete malformed states
@@ -137,8 +134,7 @@ public final class StartupStateUtils {
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final NodeId selfId,
-            @NonNull final AddressBook configAddressBook,
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager)
+            @NonNull final AddressBook configAddressBook)
             throws SignedStateLoadingException {
 
         Objects.requireNonNull(platformContext);
@@ -146,16 +142,9 @@ public final class StartupStateUtils {
         Objects.requireNonNull(swirldName);
         Objects.requireNonNull(selfId);
         Objects.requireNonNull(configAddressBook);
-        Objects.requireNonNull(emergencyRecoveryManager);
 
         final ReservedSignedState loadedState = StartupStateUtils.loadStateFile(
-                platformContext,
-                recycleBin,
-                selfId,
-                mainClassName,
-                swirldName,
-                softwareVersion,
-                emergencyRecoveryManager);
+                platformContext, recycleBin, selfId, mainClassName, swirldName, softwareVersion);
 
         try (loadedState) {
             if (loadedState.isNotNull()) {
@@ -179,13 +168,12 @@ public final class StartupStateUtils {
     /**
      * Looks at the states on disk, chooses one to load, and then loads the chosen state.
      *
-     * @param platformContext          the platform context
-     * @param recycleBin               the recycle bin
-     * @param selfId                   the ID of this node
-     * @param mainClassName            the name of the main class
-     * @param swirldName               the name of the swirld
-     * @param currentSoftwareVersion   the current software version
-     * @param emergencyRecoveryManager the emergency recovery manager
+     * @param platformContext        the platform context
+     * @param recycleBin             the recycle bin
+     * @param selfId                 the ID of this node
+     * @param mainClassName          the name of the main class
+     * @param swirldName             the name of the swirld
+     * @param currentSoftwareVersion the current software version
      * @return a reserved signed state (wrapped state will be null if no state could be loaded)
      * @throws SignedStateLoadingException if there was a problem parsing states on disk and we are not configured to
      *                                     delete malformed states
@@ -197,8 +185,7 @@ public final class StartupStateUtils {
             @NonNull final NodeId selfId,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
-            @NonNull final SoftwareVersion currentSoftwareVersion,
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
+            @NonNull final SoftwareVersion currentSoftwareVersion) {
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
@@ -213,16 +200,8 @@ public final class StartupStateUtils {
             return createNullReservation();
         }
 
-        final boolean emergencyStateRequired = emergencyRecoveryManager.isEmergencyStateRequired();
-
-        final ReservedSignedState state;
-        if (emergencyStateRequired) {
-            state = loadEmergencyState(
-                    platformContext, recycleBin, currentSoftwareVersion, savedStateFiles, emergencyRecoveryManager);
-        } else {
-            state = loadLatestState(platformContext, recycleBin, currentSoftwareVersion, savedStateFiles);
-        }
-
+        final ReservedSignedState state =
+                loadLatestState(platformContext, recycleBin, currentSoftwareVersion, savedStateFiles);
         return state;
     }
 
@@ -268,190 +247,6 @@ public final class StartupStateUtils {
             sb.append("\n  - ").append(savedStateFile.stateFile());
         }
         logger.info(STARTUP.getMarker(), sb.toString());
-    }
-
-    /**
-     * Load the latest state that is compatible with the emergency recovery file.
-     *
-     * @param platformContext          the platform context
-     * @param recycleBin               the recycle bin
-     * @param currentSoftwareVersion   the current software version
-     * @param savedStateFiles          the saved states to try
-     * @param emergencyRecoveryManager the emergency recovery manager
-     * @return the loaded state
-     */
-    @NonNull
-    private static ReservedSignedState loadEmergencyState(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final RecycleBin recycleBin,
-            @NonNull final SoftwareVersion currentSoftwareVersion,
-            @NonNull final List<SavedStateInfo> savedStateFiles,
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager)
-            throws SignedStateLoadingException {
-
-        final EmergencyRecoveryFile recoveryFile = emergencyRecoveryManager.getEmergencyRecoveryFile();
-        logger.info(
-                STARTUP.getMarker(),
-                """
-                        Loading state in emergency recovery mode. The emergency recovery file specifies the following:
-                            Epoch hash:          {}
-                            Epoch hash mnemonic: {}
-                            Round:               {}""",
-                recoveryFile.hash(),
-                recoveryFile.hash().toMnemonic(),
-                recoveryFile.round());
-
-        ReservedSignedState state = null;
-        for (final SavedStateInfo savedStateFile : savedStateFiles) {
-            if (!isSuitableInitialRecoveryState(emergencyRecoveryManager, savedStateFile)) {
-                continue;
-            }
-
-            state = loadStateFile(platformContext, recycleBin, currentSoftwareVersion, savedStateFile);
-            if (state != null) {
-                break;
-            }
-        }
-
-        return processRecoveryState(emergencyRecoveryManager, state);
-    }
-
-    /**
-     * Check if a state is a suitable initial state for emergency recovery. A suitable state satisfies at least one of
-     * these conditions:
-     * <ul>
-     *     <li>The state's root hash matches the exact epoch hash</li>
-     *     <li>The state has a matching epoch hash</li>
-     *     <li>The state's round is less than the recovery round</li>
-     * </ul>
-     *
-     * @param emergencyRecoveryManager decides if a state is suitable for emergency recovery
-     * @param savedStateFile           the state to check
-     * @return true if the state is suitable to be an initial state for emergency recovery, false otherwise
-     */
-    private static boolean isSuitableInitialRecoveryState(
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
-            @NonNull final SavedStateInfo savedStateFile) {
-
-        if (savedStateFile.metadata().hash() == null) {
-            // This state was created with an old version of the metadata, do not consider it.
-            // Any state written with the current software version will have a non-null value for this field.
-            return false;
-        }
-
-        final Hash targetEpoch =
-                emergencyRecoveryManager.getEmergencyRecoveryFile().hash();
-        final long targetRound =
-                emergencyRecoveryManager.getEmergencyRecoveryFile().round();
-
-        final Hash stateHash = savedStateFile.metadata().hash();
-        final Hash stateEpoch = savedStateFile.metadata().epochHash();
-        final long stateRound = savedStateFile.metadata().round();
-
-        final boolean isStateSuitable = isInEpoch(targetEpoch, stateHash, stateEpoch) || stateRound < targetRound;
-
-        if (isStateSuitable) {
-            logger.info(
-                    STARTUP.getMarker(),
-                    """
-                            The following state meets the emergency recovery criteria:
-                                File path:     {}
-                                Hash:          {}
-                                Hash Mnemonic: {}
-                                Round:         {}""",
-                    savedStateFile.stateFile(),
-                    savedStateFile.metadata().hash(),
-                    savedStateFile.metadata().hashMnemonic(),
-                    savedStateFile.metadata().round());
-        } else {
-            logger.warn(
-                    STARTUP.getMarker(),
-                    """
-                            The following state does not meet the emergency recovery criteria:
-                                File path:     {}
-                                Hash:          {}
-                                Hash Mnemonic: {}
-                                Round:         {}""",
-                    savedStateFile.stateFile(),
-                    savedStateFile.metadata().hash(),
-                    savedStateFile.metadata().hashMnemonic(),
-                    savedStateFile.metadata().round());
-        }
-
-        return isStateSuitable;
-    }
-
-    /**
-     * Check if a provided state is in the hash epoch that is specified by the emergency recovery file.
-     *
-     * @param targetEpoch the hash epoch specified by the emergency recovery file
-     * @param stateHash   the hash of the state
-     * @param stateEpoch  the epoch hash of the state
-     * @return true if the state is in the hash epoch, false otherwise. Null states are not in the hash epoch.
-     */
-    private static boolean isInEpoch(
-            @Nullable final Hash targetEpoch, @Nullable final Hash stateHash, @Nullable final Hash stateEpoch) {
-
-        if (stateHash == null) {
-            // State is from an old version of the code that did not store state hash in metadata
-            return false;
-        }
-
-        return stateHash.equals(targetEpoch) || Objects.equals(stateEpoch, targetEpoch);
-    }
-
-    /**
-     * Once we have decided which state will be our initial state, do some additional logging and processing.
-     *
-     * @param emergencyRecoveryManager the emergency recovery manager
-     * @param state                    the state that will be our initial state (null if we are starting from genesis)
-     * @return the state that will be our initial state (converts null genesis state to a non-null wrapper)
-     */
-    @NonNull
-    private static ReservedSignedState processRecoveryState(
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
-            @Nullable final ReservedSignedState state) {
-
-        final Hash targetEpoch =
-                emergencyRecoveryManager.getEmergencyRecoveryFile().hash();
-        final Hash stateHash = state == null ? null : state.get().getState().getHash();
-        final Hash stateEpoch =
-                state == null ? null : state.get().getState().getPlatformState().getEpochHash();
-
-        final boolean inEpoch = isInEpoch(targetEpoch, stateHash, stateEpoch);
-
-        if (state == null) {
-            logger.warn(
-                    STARTUP.getMarker(),
-                    "No state on disk met the criteria for emergency recovery, starting from genesis. "
-                            + "This node will need to receive a state through an emergency reconnect.");
-            return createNullReservation();
-        } else if (inEpoch) {
-            logger.info(
-                    STARTUP.getMarker(),
-                    "Loaded state is in the correct hash epoch, "
-                            + "this node will not need to receive a state through an emergency reconnect.");
-
-            state.get().markAsRecoveryState();
-
-            // Ensure that the next round created has the proper epoch hash.
-            state.get()
-                    .getState()
-                    .getPlatformState()
-                    .setNextEpochHash(
-                            emergencyRecoveryManager.getEmergencyRecoveryFile().hash());
-
-            // Signal that an emergency reconnect is not needed.
-            emergencyRecoveryManager.emergencyStateLoaded();
-
-            return state;
-        } else {
-            logger.warn(
-                    STARTUP.getMarker(),
-                    "Loaded state is not in the correct hash epoch, "
-                            + "this node will need to receive a state through an emergency reconnect.");
-            return state;
-        }
     }
 
     /**

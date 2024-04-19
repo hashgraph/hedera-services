@@ -96,7 +96,6 @@ import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.metrics.TransactionMetrics;
 import com.swirlds.platform.publisher.DefaultPlatformPublisher;
 import com.swirlds.platform.publisher.PlatformPublisher;
-import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
@@ -104,7 +103,6 @@ import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.nexus.DefaultLatestCompleteStateNexus;
-import com.swirlds.platform.state.nexus.EmergencyStateNexus;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.LockFreeStateNexus;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
@@ -244,11 +242,6 @@ public class SwirldsPlatform implements Platform {
     private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);
 
     /**
-     * Manages emergency recovery
-     */
-    private final EmergencyRecoveryManager emergencyRecoveryManager;
-
-    /**
      * Controls which states are saved to disk
      */
     private final SavedStateController savedStateController;
@@ -298,7 +291,6 @@ public class SwirldsPlatform implements Platform {
             }
         }
 
-        emergencyRecoveryManager = blocks.emergencyRecoveryManager();
         final Time time = Time.getCurrent();
 
         thingsToStart = new ThingsToStart();
@@ -313,11 +305,6 @@ public class SwirldsPlatform implements Platform {
 
         currentAddressBook = initialState.getAddressBook();
 
-        final EmergencyStateNexus emergencyState = new EmergencyStateNexus();
-        if (emergencyRecoveryManager.isEmergencyState(initialState)) {
-            emergencyState.setState(initialState.reserve("emergency state nexus"));
-        }
-
         final Consumer<GossipEvent> preconsensusEventConsumer = blocks.preconsensusEventConsumer();
         final Consumer<ConsensusSnapshot> snapshotOverrideConsumer = blocks.snapshotOverrideConsumer();
         platformWiring = thingsToStart.add(new PlatformWiring(
@@ -329,7 +316,6 @@ public class SwirldsPlatform implements Platform {
                     .getNotifierWiring()
                     .getInputWire(AppNotifier::sendPlatformStatusChangeNotification)
                     .put(new PlatformStatusChangeNotification(s));
-            emergencyState.platformStatusChanged(s);
         };
         platformStatusManager = thingsToStart.add(
                 new PlatformStatusManager(platformContext, time, threadManager, statusChangeConsumer));
@@ -820,7 +806,7 @@ public class SwirldsPlatform implements Platform {
             throw e;
         }
 
-//        platformWiring.resetFallenBehind(); // TODO
+        //        platformWiring.resetFallenBehind(); // TODO
     }
 
     /**

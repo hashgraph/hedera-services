@@ -47,8 +47,6 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.config.BasicConfig;
-import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
@@ -60,7 +58,6 @@ import com.swirlds.platform.gossip.DefaultIntakeEventCounter;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
-import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -417,11 +414,6 @@ public final class PlatformBuilder {
         final RecycleBinImpl recycleBin = rethrowIO(() -> new RecycleBinImpl(
                 configuration, platformContext.getMetrics(), getStaticThreadManager(), Time.getCurrent(), selfId));
 
-        final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
-        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
-        final EmergencyRecoveryManager emergencyRecoveryManager =
-                new EmergencyRecoveryManager(stateConfig, basicConfig.getEmergencyRecoveryFileLoadDir());
-
         final ReservedSignedState initialState = getInitialState(
                 platformContext,
                 recycleBin,
@@ -430,8 +422,7 @@ public final class PlatformBuilder {
                 appName,
                 swirldName,
                 selfId,
-                configAddressBook,
-                emergencyRecoveryManager);
+                configAddressBook);
 
         final boolean softwareUpgrade = detectSoftwareUpgrade(softwareVersion, initialState.get());
 
@@ -486,7 +477,6 @@ public final class PlatformBuilder {
                 swirldName,
                 softwareVersion,
                 initialState,
-                emergencyRecoveryManager,
                 preconsensusEventConsumer,
                 snapshotOverrideConsumer,
                 intakeEventCounter,

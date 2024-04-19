@@ -25,7 +25,6 @@ import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.status.PlatformStatus;
@@ -51,7 +50,6 @@ import java.util.function.Predicate;
  * @param swirldName                      the name of the swirld being run
  * @param appVersion                      the current version of the running application
  * @param initialState                    the initial state of the platform
- * @param emergencyRecoveryManager        used in emergency recovery.
  * @param preconsensusEventConsumer       the consumer for preconsensus events, null if publishing this data has not
  *                                        been enabled
  * @param snapshotOverrideConsumer        the consumer for snapshot overrides, null if publishing this data has not been
@@ -79,7 +77,6 @@ public record PlatformBuildingBlocks(
         @NonNull String swirldName,
         @NonNull SoftwareVersion appVersion,
         @NonNull ReservedSignedState initialState,
-        @NonNull EmergencyRecoveryManager emergencyRecoveryManager,
         @Nullable Consumer<GossipEvent> preconsensusEventConsumer,
         @Nullable Consumer<ConsensusSnapshot> snapshotOverrideConsumer,
         @NonNull IntakeEventCounter intakeEventCounter,
