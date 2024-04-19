@@ -4891,7 +4891,8 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                         "ethereumLazyCreateExportsExpectedSidecars",
                         NONDETERMINISTIC_ETHEREUM_DATA,
                         NONDETERMINISTIC_NONCE,
-                        ALLOW_SKIPPED_ENTITY_IDS)
+                        ALLOW_SKIPPED_ENTITY_IDS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .preserving(CHAIN_ID_PROPERTY, LAZY_CREATE_PROPERTY, "contracts.evm.version")
                 .given(
                         overridingThree(
