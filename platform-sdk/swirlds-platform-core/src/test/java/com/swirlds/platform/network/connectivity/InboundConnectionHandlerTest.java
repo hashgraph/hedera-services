@@ -135,8 +135,8 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
         final InterruptableConsumer<Connection> connConsumer =
                 conn -> Assertions.fail("connection should never have been created");
 
-        final InboundConnectionHandler inbound = new InboundConnectionHandler(
-                platformContext, ct, identifier, node1, connConsumer, Time.getCurrent());
+        final InboundConnectionHandler inbound =
+                new InboundConnectionHandler(platformContext, ct, identifier, node1, connConsumer, Time.getCurrent());
         inbound.handle(socket);
         Assertions.assertTrue(socket.isClosed());
         serverThread.join();
