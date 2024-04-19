@@ -19,6 +19,7 @@ package com.swirlds.platform.wiring;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.config.api.ConfigData;
+import com.swirlds.config.api.ConfigDefault;
 import com.swirlds.config.api.ConfigProperty;
 import java.time.Duration;
 
@@ -87,55 +88,54 @@ import java.time.Duration;
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
-        @ConfigProperty(defaultValue = "1.0") double defaultPoolMultiplier,
-        @ConfigProperty(defaultValue = "0") int defaultPoolConstant,
-        @ConfigProperty(defaultValue = "500") int eventHasherUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+        @ConfigDefault("1.0") double defaultPoolMultiplier,
+        @ConfigDefault("0") int defaultPoolConstant,
+        @ConfigDefault("500") int eventHasherUnhandledCapacity,
+        @ConfigDefault("SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration internalEventValidator,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+        @ConfigDefault("SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventDeduplicator,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+        @ConfigDefault("SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventSignatureValidator,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+        @ConfigDefault("SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration orphanBuffer,
         @ConfigProperty(
                         defaultValue =
                                 "SEQUENTIAL_THREAD CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
                 TaskSchedulerConfiguration consensusEngine,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+        @ConfigDefault("SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration inOrderLinker,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC")
+        @ConfigDefault("SEQUENTIAL CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventCreationManager,
-        @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration selfEventSigner,
-        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType signedStateFileManagerSchedulerType,
-        @ConfigProperty(defaultValue = "20") int signedStateFileManagerUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateSignerSchedulerType,
-        @ConfigProperty(defaultValue = "-1") int stateSignerUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType pcesWriterSchedulerType,
-        @ConfigProperty(defaultValue = "500") int pcesWriterUnhandledCapacity,
-        @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration pcesSequencer,
-        @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerType eventDurabilityNexusSchedulerType,
-        @ConfigProperty(defaultValue = "-1") int eventDurabilityNexusUnhandledTaskCapacity,
-        @ConfigProperty(defaultValue = "CONCURRENT") TaskSchedulerType applicationTransactionPrehandlerSchedulerType,
-        @ConfigProperty(defaultValue = "500") int applicationTransactionPrehandlerUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType stateSignatureCollectorSchedulerType,
-        @ConfigProperty(defaultValue = "500") int stateSignatureCollectorUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType shadowgraphSchedulerType,
-        @ConfigProperty(defaultValue = "500") int shadowgraphUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType consensusRoundHandlerSchedulerType,
-        @ConfigProperty(defaultValue = "5") int consensusRoundHandlerUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(5) UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
+        @ConfigDefault("DIRECT") TaskSchedulerConfiguration selfEventSigner,
+        @ConfigDefault("SEQUENTIAL_THREAD") TaskSchedulerType signedStateFileManagerSchedulerType,
+        @ConfigDefault("20") int signedStateFileManagerUnhandledCapacity,
+        @ConfigDefault("SEQUENTIAL_THREAD") TaskSchedulerType stateSignerSchedulerType,
+        @ConfigDefault("-1") int stateSignerUnhandledCapacity,
+        @ConfigDefault("SEQUENTIAL_THREAD") TaskSchedulerType pcesWriterSchedulerType,
+        @ConfigDefault("500") int pcesWriterUnhandledCapacity,
+        @ConfigDefault("DIRECT") TaskSchedulerConfiguration pcesSequencer,
+        @ConfigDefault("DIRECT") TaskSchedulerType eventDurabilityNexusSchedulerType,
+        @ConfigDefault("-1") int eventDurabilityNexusUnhandledTaskCapacity,
+        @ConfigDefault("CONCURRENT") TaskSchedulerType applicationTransactionPrehandlerSchedulerType,
+        @ConfigDefault("500") int applicationTransactionPrehandlerUnhandledCapacity,
+        @ConfigDefault("SEQUENTIAL") TaskSchedulerType stateSignatureCollectorSchedulerType,
+        @ConfigDefault("500") int stateSignatureCollectorUnhandledCapacity,
+        @ConfigDefault("SEQUENTIAL") TaskSchedulerType shadowgraphSchedulerType,
+        @ConfigDefault("500") int shadowgraphUnhandledCapacity,
+        @ConfigDefault("SEQUENTIAL_THREAD") TaskSchedulerType consensusRoundHandlerSchedulerType,
+        @ConfigDefault("5") int consensusRoundHandlerUnhandledCapacity,
+        @ConfigDefault("SEQUENTIAL CAPACITY(5) UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
                 TaskSchedulerConfiguration runningEventHasher,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType issDetectorSchedulerType,
-        @ConfigProperty(defaultValue = "500") int issDetectorUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType hashLoggerSchedulerType,
-        @ConfigProperty(defaultValue = "100") int hashLoggerUnhandledTaskCapacity,
-        @ConfigProperty(defaultValue = "1000") int completeStateNotifierUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateHasherSchedulerType,
-        @ConfigProperty(defaultValue = "2") int stateHasherUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(60) UNHANDLED_TASK_METRIC")
+        @ConfigDefault("SEQUENTIAL") TaskSchedulerType issDetectorSchedulerType,
+        @ConfigDefault("500") int issDetectorUnhandledCapacity,
+        @ConfigDefault("SEQUENTIAL_THREAD") TaskSchedulerType hashLoggerSchedulerType,
+        @ConfigDefault("100") int hashLoggerUnhandledTaskCapacity,
+        @ConfigDefault("1000") int completeStateNotifierUnhandledCapacity,
+        @ConfigDefault("SEQUENTIAL_THREAD") TaskSchedulerType stateHasherSchedulerType,
+        @ConfigDefault("2") int stateHasherUnhandledCapacity,
+        @ConfigDefault("SEQUENTIAL CAPACITY(60) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration stateGarbageCollector,
-        @ConfigProperty(defaultValue = "200ms") Duration stateGarbageCollectorHeartbeatPeriod,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
-                TaskSchedulerConfiguration platformPublisher,
-        @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration consensusEventStream) {}
+        @ConfigDefault("200ms") Duration stateGarbageCollectorHeartbeatPeriod,
+        @ConfigDefault("SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC") TaskSchedulerConfiguration platformPublisher,
+        @ConfigDefault("DIRECT_THREADSAFE") TaskSchedulerConfiguration consensusEventStream) {}
