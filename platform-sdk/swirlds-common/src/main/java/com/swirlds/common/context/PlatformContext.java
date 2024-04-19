@@ -68,6 +68,11 @@ public interface PlatformContext {
     @NonNull
     Time getTime();
 
+    /**
+     * Returns the {@link ExecutorFactory} instance for the platform
+     *
+     * @return the {@link ExecutorFactory} instance
+     */
     ExecutorFactory getExecutorFactory();
 
     /**
