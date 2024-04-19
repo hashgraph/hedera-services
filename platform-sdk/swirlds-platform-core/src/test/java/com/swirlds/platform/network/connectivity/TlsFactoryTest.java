@@ -50,8 +50,6 @@ class TlsFactoryTest extends ConnectivityTestBase {
     private static Socket clientSocketB;
     private static ServerSocket serverSocket;
     private static Thread serverThread;
-    private static AddressBook updatedAddressBook;
-    private static NodeId nodeA;
     private final AtomicBoolean closeSeverConnection = new AtomicBoolean(false);
     List<PeerInfo> peersA;
     /**
@@ -89,11 +87,11 @@ class TlsFactoryTest extends ConnectivityTestBase {
         Assertions.assertFalse(serverSocket.isClosed());
 
         // create a new address book with keys and new set of nodes
-        final AddressBookAndCerts updatdAddressBookAndCerts = CryptoArgsProvider.loadAddressBookWithKeys(6);
-        updatedAddressBook = updatdAddressBookAndCerts.addressBook();
+        final AddressBookAndCerts updatedAddressBookAndCerts = CryptoArgsProvider.loadAddressBookWithKeys(6);
+        final AddressBook updatedAddressBook = updatedAddressBookAndCerts.addressBook();
         final Address address = addressBook.getAddress(nodeA).copySetNodeId(updatedAddressBook.getNextNodeId());
-        updatedAddressBook.add(address); // ensure original node is in new
-        final Map<NodeId, KeysAndCerts> updatedKeysAndCerts = updatdAddressBookAndCerts.nodeIdKeysAndCertsMap();
+        updatedAddressBook.add(address); // ensure node A is in new addressBook
+        final Map<NodeId, KeysAndCerts> updatedKeysAndCerts = updatedAddressBookAndCerts.nodeIdKeysAndCertsMap();
         assertTrue(updatedAddressBook.getSize() > 1, "Address book must contain at least 2 nodes");
 
         peersA = Utilities.createPeerInfoList(updatedAddressBook, nodeA); //Peers of A as in updated addressBook
