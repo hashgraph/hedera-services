@@ -1163,8 +1163,8 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             @NonNull final PlatformState platformState) {
         if (getConfig().isAppendSig()) {
             try {
-                final TestTransactionWrapper testTransactionWrapper =
-                        TestTransactionWrapper.parseFrom(trans.getApplicationPayload().toByteArray());
+                final TestTransactionWrapper testTransactionWrapper = TestTransactionWrapper.parseFrom(
+                        trans.getApplicationPayload().toByteArray());
                 final byte[] testTransactionRawBytes =
                         testTransactionWrapper.getTestTransactionRawBytes().toByteArray();
                 final byte[] publicKey =
