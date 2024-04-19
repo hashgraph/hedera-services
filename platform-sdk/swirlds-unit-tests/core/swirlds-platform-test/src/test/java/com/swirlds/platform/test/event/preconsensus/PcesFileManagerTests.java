@@ -27,13 +27,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
-import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -106,7 +105,11 @@ class PcesFileManagerTests {
 
         final Metrics metrics = new NoOpMetrics();
 
-        return new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get(), time);
+        return TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .withMetrics(metrics)
+                .withTime(time)
+                .build();
     }
 
     @ParameterizedTest

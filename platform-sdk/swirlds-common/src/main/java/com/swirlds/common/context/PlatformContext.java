@@ -17,7 +17,11 @@
 package com.swirlds.common.context;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.concurrent.ExecutorFactory;
+import com.swirlds.common.context.internal.DefaultPlatformContext;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -63,4 +67,39 @@ public interface PlatformContext {
      */
     @NonNull
     Time getTime();
+
+    ExecutorFactory getExecutorFactory();
+
+    /**
+     * Creates a new instance of the platform context. The instance uses a {@link NoOpMetrics} implementation for
+     * metrics. The instance uses the static {@link CryptographyHolder#get()} call to get the cryptography. The instance
+     * uses the static {@link Time#getCurrent()} call to get the time.
+     *
+     * @param configuration the configuration
+     * @return the platform context
+     * @deprecated since we need to remove the static {@link CryptographyHolder#get()} call in future.
+     */
+    @Deprecated(forRemoval = true)
+    @NonNull
+    static PlatformContext create(@NonNull final Configuration configuration) {
+        return DefaultPlatformContext.create(configuration);
+    }
+
+    /**
+     * Creates a new instance of the platform context.
+     * <p>
+     * The instance uses the static {@link Time#getCurrent()} call to get the time.
+     *
+     * @param configuration the configuration
+     * @param metrics       the metrics
+     * @param cryptography  the cryptography
+     * @return the platform context
+     */
+    @NonNull
+    static PlatformContext create(
+            @NonNull final Configuration configuration,
+            @NonNull final Metrics metrics,
+            @NonNull final Cryptography cryptography) {
+        return DefaultPlatformContext.create(configuration, metrics, cryptography);
+    }
 }
