@@ -66,21 +66,21 @@ public class ContractDeleteHandler implements TransactionHandler {
     }
 
     @Override
-    public void pureChecks(@NonNull TransactionBody txn) throws PreCheckException {
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final var op = txn.contractDeleteInstanceOrThrow();
-        mustExist(op.contractID(), INVALID_CONTRACT_ID);
+        validateFalsePreCheck(op.permanentRemoval(), PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION);
+
+        // The contract ID must be present on the transaction
+        final var contractID = op.contractID();
+        mustExist(contractID, INVALID_CONTRACT_ID);
     }
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().contractDeleteInstanceOrThrow();
-        validateFalsePreCheck(op.permanentRemoval(), PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION);
-        // The contract ID must be present on the transaction
-        final var contractID = op.contractID();
-        mustExist(contractID, INVALID_CONTRACT_ID);
         // A contract corresponding to that contract ID must exist in state (otherwise we have nothing to delete)
-        final var contract = context.createStore(ReadableAccountStore.class).getContractById(contractID);
+        final var contract = context.createStore(ReadableAccountStore.class).getContractById(op.contractIDOrThrow());
         mustExist(contract, INVALID_CONTRACT_ID);
         // If there is not an admin key, then the contract is immutable. Otherwise, the transaction must
         // be signed by the admin key.

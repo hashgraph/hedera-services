@@ -173,7 +173,9 @@ public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuil
                     case NO_OP -> new NoOpTaskScheduler<>(model, name, type, flushingEnabled, squelchingEnabled);
                 };
 
-        model.registerScheduler(scheduler, hyperlink);
+        if (type != NO_OP) {
+            model.registerScheduler(scheduler, hyperlink);
+        }
 
         return scheduler;
     }

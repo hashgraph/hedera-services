@@ -19,10 +19,11 @@ package com.swirlds.platform.base.example.server;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.spi.HttpServerProvider;
-import com.swirlds.platform.base.example.BaseContext;
+import com.swirlds.platform.base.example.ext.BaseContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,21 +39,24 @@ public class Server {
     /**
      * Creates and starts a Http server with a set of defined handlers
      */
-    public static void start(final @NonNull BaseContext context, Set<HttpHandlerFactory> factories) throws IOException {
+    public static void start(final @NonNull BaseContext context, final @NonNull HttpHandlerRegistry... registries)
+            throws IOException {
         final BaseExampleRestApiConfig config = context.configuration().getConfigData(BaseExampleRestApiConfig.class);
         // Create HTTP server instance
         final HttpServerProvider provider = HttpServerProvider.provider();
         final HttpServer server = provider.createHttpServer(new InetSocketAddress(config.host(), config.port()), 0);
 
-        factories.stream()
-                .map(f -> f.initAndCreate(context))
+        Arrays.stream(registries)
+                .map(f -> f.handlers(context))
                 .flatMap(Set::stream)
                 .forEach(h -> {
-                    HttpContext httpContext = server.createContext(h.path());
+                    final String url = config.basePath() + "/" + h.path();
+                    HttpContext httpContext = server.createContext(url);
                     httpContext.setHandler(h);
-                    logger.info("Registered handler: {}", h);
+                    logger.info("Registered handler {}: {}", h.getClass().getSimpleName(), url);
                 });
 
+        ServerMetrics.registerMetrics(context.metrics());
         // Start the server
         server.start();
 

@@ -152,7 +152,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         newKeyNamed(THRESHOLD_KEY)
                                 .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, PAUSE_UNPAUSE_CONTRACT))),
-                        tokenUpdate(VANILLA_TOKEN).pauseKey(THRESHOLD_KEY),
+                        tokenUpdate(VANILLA_TOKEN).pauseKey(THRESHOLD_KEY).signedByPayerAnd(MULTI_KEY),
                         cryptoUpdate(ACCOUNT).key(THRESHOLD_KEY),
                         contractCall(
                                         PAUSE_UNPAUSE_CONTRACT,
@@ -223,7 +223,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         newKeyNamed(THRESHOLD_KEY)
                                 .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, PAUSE_UNPAUSE_CONTRACT))),
-                        tokenUpdate(VANILLA_TOKEN).pauseKey(THRESHOLD_KEY),
+                        tokenUpdate(VANILLA_TOKEN).pauseKey(THRESHOLD_KEY).signedByPayerAnd(UNPAUSE_KEY),
                         cryptoUpdate(ACCOUNT).key(THRESHOLD_KEY),
                         contractCall(
                                         PAUSE_UNPAUSE_CONTRACT,
@@ -277,7 +277,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         newKeyNamed(THRESHOLD_KEY)
                                 .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, PAUSE_UNPAUSE_CONTRACT))),
-                        tokenUpdate(VANILLA_TOKEN).pauseKey(THRESHOLD_KEY),
+                        tokenUpdate(VANILLA_TOKEN).pauseKey(THRESHOLD_KEY).signedByPayerAnd(MULTI_KEY),
                         cryptoUpdate(ACCOUNT).key(THRESHOLD_KEY),
                         contractCall(
                                         PAUSE_UNPAUSE_CONTRACT,
@@ -350,7 +350,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         newKeyNamed(THRESHOLD_KEY)
                                 .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, PAUSE_UNPAUSE_CONTRACT))),
-                        tokenUpdate(VANILLA_TOKEN).pauseKey(THRESHOLD_KEY),
+                        tokenUpdate(VANILLA_TOKEN).pauseKey(THRESHOLD_KEY).signedByPayerAnd(UNPAUSE_KEY),
                         cryptoUpdate(ACCOUNT).key(THRESHOLD_KEY),
                         contractCall(
                                         PAUSE_UNPAUSE_CONTRACT,

@@ -25,6 +25,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome.ExternalizeAbortResult;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
@@ -68,6 +69,11 @@ public class ContractCreateHandler implements TransactionHandler {
         outcome.addCreateDetailsTo(context.recordBuilder(ContractCreateRecordBuilder.class), ExternalizeAbortResult.NO);
 
         throwIfUnsuccessful(outcome.status());
+    }
+
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        // nothing to do
     }
 
     @Override

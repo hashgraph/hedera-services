@@ -25,42 +25,69 @@ import com.swirlds.config.extensions.sources.PropertyFileConfigSource;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.base.example.BaseContext;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+/**
+ * Static factory that creates {@link BaseContext}
+ */
 public class BaseContextFactory {
+    private static final Logger logger = LogManager.getLogger(BaseContextFactory.class);
 
-    public static final String APPLICATION_PROPERTIES = "app.properties";
-    public static final Path EXTERNAL_PROPERTIES = Path.of("./config/app.properties");
+    private static final String APPLICATION_PROPERTIES = "app.properties";
+    private static final Path EXTERNAL_PROPERTIES = Path.of("./config/app.properties");
 
-    public static BaseContext create() throws IOException {
+    private BaseContextFactory() {}
+
+    /**
+     * @return an instance of {@link BaseContext} which holds
+     * {@link Configuration} and {@link Metrics} for the rest of the application to use.
+     */
+    public static BaseContext create() {
         final Configuration configuration = getConfiguration();
         final Metrics metrics = getMetrics(configuration);
         return new BaseContext(metrics, configuration);
     }
 
-    private static Configuration getConfiguration() throws IOException {
-        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
+    /**
+     * @return a {@link Configuration} instance reading from classpath first or file second
+     */
+    private static Configuration getConfiguration() {
+        try {
 
-        configurationBuilder
-                .withSource(SystemEnvironmentConfigSource.getInstance())
-                .withSource(SystemPropertiesConfigSource.getInstance())
-                .withSource(new ClasspathFileConfigSource(Path.of(APPLICATION_PROPERTIES)))
-                .autoDiscoverExtensions();
+            final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
+                    .withSource(SystemEnvironmentConfigSource.getInstance())
+                    .withSource(SystemPropertiesConfigSource.getInstance())
+                    .withSource(new ClasspathFileConfigSource(Path.of(APPLICATION_PROPERTIES)))
+                    .autoDiscoverExtensions();
 
-        if (EXTERNAL_PROPERTIES.toFile().exists()) {
-            configurationBuilder.withSources(new PropertyFileConfigSource(EXTERNAL_PROPERTIES));
+            if (EXTERNAL_PROPERTIES.toFile().exists()) {
+                configurationBuilder.withSources(new PropertyFileConfigSource(EXTERNAL_PROPERTIES));
+            }
+
+            return configurationBuilder.build();
+        } catch (IOException e) {
+            logger.error("Error reading configuration", e);
+            throw new RuntimeException("Error reading configuration", e);
         }
-
-        final Configuration configuration = configurationBuilder.build();
-        return configuration;
     }
 
-    private static Metrics getMetrics(Configuration configuration) {
+    /**
+     * Creates and initiates the {@link Metrics} framework.
+     *
+     * @param configuration the configuration that holds the property to configure an instance of {@link Metrics}
+     * @return the instance of {@link Metrics} to be used
+     */
+    @NonNull
+    private static Metrics getMetrics(@NonNull final Configuration configuration) {
         final DefaultMetricsProvider metricsProvider = new DefaultMetricsProvider(configuration);
-        final Metrics metrics = metricsProvider.createPlatformMetrics(NodeId.FIRST_NODE_ID);
+        final Metrics platformMetrics = metricsProvider.createPlatformMetrics(NodeId.FIRST_NODE_ID);
+        // Starting the provider here has the effect that we lose support for csv file
+        // We should start the provider AFTER all metrics are registered and our current patter doesn't allow for that
         metricsProvider.start();
-        return metrics;
+        return platformMetrics;
     }
 }

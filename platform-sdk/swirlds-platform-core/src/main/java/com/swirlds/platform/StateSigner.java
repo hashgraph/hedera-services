@@ -22,13 +22,13 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusGetter;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.proto.event.StateSignaturePayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
 /**
- * This class is responsible for signing states and producing {@link StateSignatureTransaction}s.
+ * This class is responsible for signing states and producing {@link StateSignaturePayload}s.
  */
 public class StateSigner {
     /** An object responsible for signing states with this node's key. */
@@ -48,14 +48,14 @@ public class StateSigner {
     }
 
     /**
-     * Sign the given state and produce a {@link StateSignatureTransaction} containing the signature. This method
+     * Sign the given state and produce a {@link StateSignaturePayload} containing the signature. This method
      * assumes that the given {@link ReservedSignedState} is reserved by the caller and will release the state when
      * done.
      *
      * @param reservedSignedState the state to sign
-     * @return a {@link StateSignatureTransaction} containing the signature, or null if the state should not be signed
+     * @return a {@link StateSignaturePayload} containing the signature, or null if the state should not be signed
      */
-    public @Nullable StateSignatureTransaction signState(@NonNull final ReservedSignedState reservedSignedState) {
+    public @Nullable StateSignaturePayload signState(@NonNull final ReservedSignedState reservedSignedState) {
         try (reservedSignedState) {
             if (platformStatusGetter.getCurrentStatus() == PlatformStatus.REPLAYING_EVENTS) {
                 // the only time we don't want to submit signatures is during PCES replay
@@ -67,8 +67,11 @@ public class StateSigner {
             final Bytes signature = signer.signImmutable(stateHash);
             Objects.requireNonNull(signature);
 
-            return new StateSignatureTransaction(
-                    reservedSignedState.get().getRound(), signature, stateHash.getBytes(), Bytes.EMPTY);
+            return StateSignaturePayload.newBuilder()
+                    .round(reservedSignedState.get().getRound())
+                    .signature(signature)
+                    .hash(stateHash.getBytes())
+                    .build();
         }
     }
 }
