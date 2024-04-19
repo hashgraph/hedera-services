@@ -77,10 +77,11 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
                 NetworkUtils.createSocketFactory(otherNode, addressBook, keysAndCerts2, TLS_NO_IP_TOS_CONFIG);
 
         final ServerSocket serverSocket = socketFactory1.createServerSocket(PORT);
-        createSocketThread(serverSocket).start();
+        final Thread serverThread = createSocketThread(serverSocket);
+        serverThread.start();
 
         final Socket socket = socketFactory2.createClientSocket(STRING_IP, PORT);
-        socket.getOutputStream().write(DATA);
+        socket.getOutputStream().write(TEST_DATA);
 
         final InterruptableConsumer<Connection> connConsumer = conn -> {
             Assertions.assertNotNull(conn);
@@ -122,10 +123,11 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
                 NetworkUtils.createSocketFactory(otherNode, addressBook, keysAndCerts2, TLS_NO_IP_TOS_CONFIG);
 
         final ServerSocket serverSocket = s1.createServerSocket(PORT);
-        createSocketThread(serverSocket).start();
+        final Thread serverThread = createSocketThread(serverSocket);
+        serverThread.start();
 
         final Socket socket = s2.createClientSocket(STRING_IP, PORT);
-        socket.getOutputStream().write(DATA);
+        socket.getOutputStream().write(TEST_DATA);
 
         final InterruptableConsumer<Connection> connConsumer =
                 conn -> Assertions.fail("connection should never have been created");
@@ -134,5 +136,6 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
                 platformContext, ct, identifier, thisNode, connConsumer, Time.getCurrent());
         inbound.handle(socket);
         Assertions.assertTrue(socket.isClosed());
+        serverThread.join();
     }
 }
