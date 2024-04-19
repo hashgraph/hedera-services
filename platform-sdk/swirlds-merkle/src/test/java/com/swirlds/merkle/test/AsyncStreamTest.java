@@ -185,6 +185,8 @@ class AsyncStreamTest {
         final byte[] bytes = byteOut.toByteArray();
         final SerializableDataInputStream in = new SerializableDataInputStream(new ByteArrayInputStream(bytes));
         for (int i = 0; i < count; i++) {
+            final int id = in.readInt();
+            assertEquals(viewId, id, "View ID mismatch");
             final SerializableLong value = new SerializableLong();
             value.deserialize(in, value.getVersion());
             assertEquals(i, value.getValue(), "deserialized value should match expected value");
@@ -197,6 +199,8 @@ class AsyncStreamTest {
     @DisplayName("Max Input Queue Size")
     void maxInputQueueSize() throws IOException, InterruptedException {
 
+        final int viewId = 14;
+
         final int bufferSize = 100;
         final int count = 1_000;
         final StandardWorkGroup workGroup = new StandardWorkGroup(getStaticThreadManager(), "test", null);
@@ -205,6 +209,7 @@ class AsyncStreamTest {
         final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
         final SerializableDataOutputStream out = new SerializableDataOutputStream(byteOut);
         for (int i = 0; i < count; i++) {
+            out.writeInt(viewId);
             // This is the way that each object is written by the AsyncOutputStream, mimic that format
             new SerializableLong(i).serialize(out);
         }
@@ -213,7 +218,6 @@ class AsyncStreamTest {
 
         final BlockingInputStream blockingIn = new BlockingInputStream(new ByteArrayInputStream(data));
 
-        final int viewId = 14;
         final AsyncInputStream in =
                 new AsyncInputStream(new SerializableDataInputStream(blockingIn), workGroup, reconnectConfig);
         in.registerView(viewId, SerializableLong::new);

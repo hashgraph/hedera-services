@@ -33,6 +33,7 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
@@ -125,34 +126,14 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
         teacherReceiveTask.exec();
     }
 
-    private boolean isLeaf(final long path) {
-        return (path >= reconnectState.getFirstLeafPath()) && (path <= reconnectState.getLastLeafPath());
+    public VirtualStateAccessor getReconnectState() {
+        return reconnectState;
     }
 
-    /**
-     * Writes the virtual node identified by a given path to the output stream.
-     *
-     * <p>For the root node (path 0), reconnect state information is written: the first leaf path (long)
-     * and the last leaf path (long). Other internal nodes are not written at all.
-     *
-     * <p>For dirty leaf nodes, the corresponding leaf records are written. Clean leaf nodes aren't
-     * written at all.
-     *
-     * @param out the output stream
-     * @param path the virtual path
-     * @param isClean indicates if the virtual node on the learner side matches what's on the teacher
-     * @throws IOException if an I/O error occurs
-     */
-    public void writeNode(final SerializableDataOutputStream out, final long path, final boolean isClean)
-            throws IOException {
-        checkValidNode(path, reconnectState);
-        if (path == 0) {
-            out.writeLong(reconnectState.getFirstLeafPath());
-            out.writeLong(reconnectState.getLastLeafPath());
-        }
-        if (!isClean && isLeaf(path) && (reconnectState.getFirstLeafPath() > 0)) {
-            out.writeSerializable(records.findLeafRecord(path, false), false);
-        }
+    public boolean isLeaf(final long path) {
+        return (path >= reconnectState.getFirstLeafPath())
+                && (path <= reconnectState.getLastLeafPath())
+                && (reconnectState.getFirstLeafPath() > 0);
     }
 
     /**
@@ -163,6 +144,10 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
      */
     public Hash loadHash(final long path) {
         return records.findHash(path);
+    }
+
+    public VirtualLeafRecord<K, V> loadLeaf(final long path) {
+        return records.findLeafRecord(path, false);
     }
 
     /**

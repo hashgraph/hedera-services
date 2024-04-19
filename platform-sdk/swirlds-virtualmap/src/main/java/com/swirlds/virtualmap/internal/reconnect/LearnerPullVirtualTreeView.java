@@ -190,7 +190,7 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
     /**
      * Reads a virtual node identified by a given path from the output stream. The node was previously
      * written by reconnect teacher. This method should match {@link
-     * TeacherPullVirtualTreeView#writeNode(SerializableDataOutputStream, long, boolean)}.
+     * PullVirtualTreeResponse#serialize(SerializableDataOutputStream)}.
      *
      * <p>For a root node, reconnect state information is read: the first and the last leaf paths. Nothing
      * is read for other internal nodes.

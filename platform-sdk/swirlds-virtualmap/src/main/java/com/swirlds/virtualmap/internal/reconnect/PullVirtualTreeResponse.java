@@ -16,10 +16,11 @@
 
 package com.swirlds.virtualmap.internal.reconnect;
 
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import java.io.IOException;
 
 /**
@@ -50,11 +51,11 @@ public class PullVirtualTreeResponse implements SelfSerializable {
     // Virtual node path
     private long path;
 
-    // Virtual node hash on the learner side. May be NULL_HASH, if the path is outside of path range
-    // in the old learner virtual tree
-    private Hash learnerHash;
+    private boolean isClean;
 
-    private Hash teacherHash;
+    // If the response is not clean (learner hash != teacher hash), then leafData contains
+    // the leaf data on the teacher side
+    private VirtualLeafRecord leafData;
 
     /**
      * Zero-arg constructor for constructable registry.
@@ -70,15 +71,13 @@ public class PullVirtualTreeResponse implements SelfSerializable {
     public PullVirtualTreeResponse(
             final TeacherPullVirtualTreeView teacherView,
             final long path,
-            final Hash learnerHash,
-            final Hash teacherHash) {
+            final boolean isClean,
+            final VirtualLeafRecord leafData) {
         this.teacherView = teacherView;
         this.learnerView = null;
         this.path = path;
-        this.learnerHash = learnerHash;
-        assert learnerHash != null;
-        this.teacherHash = teacherHash;
-        // teacherHash may be null (in case the tree is empty)
+        this.isClean = isClean;
+        this.leafData = leafData;
     }
 
     /**
@@ -99,9 +98,16 @@ public class PullVirtualTreeResponse implements SelfSerializable {
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         assert teacherView != null;
         out.writeLong(path);
-        final boolean isClean = (teacherHash == null) || teacherHash.equals(learnerHash);
         out.write(isClean ? 0 : 1);
-        teacherView.writeNode(out, path, isClean);
+        if (path == 0) {
+            final VirtualStateAccessor reconnectState = teacherView.getReconnectState();
+            out.writeLong(reconnectState.getFirstLeafPath());
+            out.writeLong(reconnectState.getLastLeafPath());
+        }
+        if (leafData != null) {
+            assert !isClean;
+            out.writeSerializable(leafData, false);
+        }
     }
 
     /**

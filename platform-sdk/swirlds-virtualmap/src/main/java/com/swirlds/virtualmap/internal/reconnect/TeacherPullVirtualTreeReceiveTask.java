@@ -28,6 +28,7 @@ import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.common.utility.throttle.RateLimiter;
+import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.Path;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Consumer;
@@ -131,14 +132,16 @@ public class TeacherPullVirtualTreeReceiveTask {
                 }
                 final long path = request.getPath();
                 final Hash learnerHash = request.getHash();
+                assert learnerHash != null;
                 final Hash teacherHash = view.loadHash(path);
                 // The only valid scenario, when teacherHash may be null, is the empty tree
                 if ((teacherHash == null) && (path != 0)) {
                     throw new MerkleSerializationException(
                             "Cannot load node hash (bad request from learner?), path = " + path);
                 }
-                final PullVirtualTreeResponse response =
-                        new PullVirtualTreeResponse(view, path, learnerHash, teacherHash);
+                final boolean isClean = (teacherHash == null) || teacherHash.equals(learnerHash);
+                final VirtualLeafRecord<?, ?> leafData = (!isClean && view.isLeaf(path)) ? view.loadLeaf(path) : null;
+                final PullVirtualTreeResponse response = new PullVirtualTreeResponse(view, path, isClean, leafData);
                 // All real work is done in the async output thread. This call just registers a response
                 // and returns immediately
                 out.sendAsync(viewId, response);
