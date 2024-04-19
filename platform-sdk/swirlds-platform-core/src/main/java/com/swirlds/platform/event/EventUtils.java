@@ -16,78 +16,17 @@
 
 package com.swirlds.platform.event;
 
-import com.swirlds.logging.legacy.LogMarker;
-import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.events.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.ListIterator;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-public abstract class EventUtils {
-    private static final Logger logger = LogManager.getLogger(EventUtils.class);
-
-    public static int generationComparator(final PlatformEvent e1, final PlatformEvent e2) {
-        return Long.compare(e1.getGeneration(), e2.getGeneration());
-    }
-
+/**
+ * Utility methods for events.
+ */
+public final class EventUtils {
     /**
-     * Prepares consensus events for shadow graph during a restart or reconnect by sorting the events by generation and
-     * checking for generation gaps.
-     *
-     * @param events events supplied by consensus
-     * @return a list of input events, sorted and checked
+     * Hidden constructor
      */
-    public static List<EventImpl> prepareForShadowGraph(final EventImpl[] events) {
-        if (events == null || events.length == 0) {
-            return Collections.emptyList();
-        }
-        // shadow graph expects them to be sorted
-        Arrays.sort(events, EventUtils::generationComparator);
-        final List<EventImpl> forShadowGraph = Arrays.asList(events);
-        try {
-            checkForGenerationGaps(forShadowGraph);
-        } catch (final IllegalArgumentException e) {
-            logger.error(
-                    LogMarker.EXCEPTION.getMarker(),
-                    "Issue found when checking event to provide to the Shadowgraph."
-                            + "This issue might not be fatal, so loading of the state will proceed.",
-                    e);
-        }
-
-        return forShadowGraph;
-    }
-
-    /**
-     * Checks if there is a generation difference of more than 1 between events, if there is, throws an exception
-     *
-     * @param events events to look for generation gaps in, sorted in ascending order by generation
-     * @throws IllegalArgumentException if any problem is found with the signed state events
-     */
-    public static void checkForGenerationGaps(final List<EventImpl> events) {
-        if (events == null || events.isEmpty()) {
-            throw new IllegalArgumentException("Signed state events list should not be null or empty");
-        }
-        final ListIterator<EventImpl> listIterator = events.listIterator(events.size());
-
-        // Iterate through the list from back to front, evaluating the youngest events first
-        EventImpl prev = listIterator.previous();
-
-        while (listIterator.hasPrevious()) {
-            final EventImpl event = listIterator.previous();
-            final long diff = prev.getGeneration() - event.getGeneration();
-            if (diff > 1 || diff < 0) {
-                // There is a gap in generations
-                throw new IllegalArgumentException(String.format("Found gap between %s and %s", event, prev));
-            }
-
-            prev = event;
-        }
-    }
+    private EventUtils() {}
 
     /**
      * Calculate the creation time for a new event.
