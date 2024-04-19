@@ -59,19 +59,9 @@ public class SignaturePool {
      */
     static final int SIG_KEY_LENGTH = SIGNATURE_LENGTH + PUBLIC_KEY_LENGTH;
     /**
-     * log all exceptions, and serious problems. These should never happen unless we are either receiving packets from
-     * an attacker, or there is a bug in the code. In most cases, this should include a full stack trace of the
-     * exception.
-     */
-    static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
-    /**
      * logs events related to the startup of the application
      */
     static final Marker LOGM_STARTUP = MarkerManager.getMarker("STARTUP");
-    /**
-     * logs events related to the startup of the application
-     */
-    static final Marker LOGM_ADV_CRYPTO_SYSTEM = MarkerManager.getMarker("ADV_CRYPTO_SYSTEM");
     /**
      * use this for all logging, as controlled by the optional data/log4j2.xml file
      */
@@ -84,7 +74,7 @@ public class SignaturePool {
     /**
      * the list of transactions
      */
-    private ArrayList<SwirldTransaction> transactions;
+    private ArrayList<byte[]> transactions;
 
     /**
      * the fixed size of each transaction, not including the signature and public key
@@ -172,10 +162,8 @@ public class SignaturePool {
             readPosition.set(1);
         }
 
-        final SwirldTransaction tx = transactions.get(nextIdx);
-
         return new TransactionSignature(
-                tx.getContents(),
+                transactions.get(nextIdx),
                 transactionSize + PUBLIC_KEY_LENGTH,
                 SIGNATURE_LENGTH,
                 transactionSize,
@@ -194,9 +182,9 @@ public class SignaturePool {
         }
 
         final int bufferSize = transactionSize + ((signed) ? SIG_KEY_LENGTH : 0);
-        final byte[] buffer = new byte[bufferSize];
 
         for (int i = 0; i < poolSize; i++) {
+            final byte[] buffer = new byte[bufferSize];
             random.nextBytes(buffer);
 
             if (signed) {
@@ -207,7 +195,7 @@ public class SignaturePool {
                 }
             }
 
-            transactions.add(new SwirldTransaction(buffer));
+            transactions.add(buffer);
         }
     }
 

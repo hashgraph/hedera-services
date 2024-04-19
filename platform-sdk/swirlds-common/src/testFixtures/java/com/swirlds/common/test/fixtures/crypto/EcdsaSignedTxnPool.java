@@ -44,9 +44,9 @@ public class EcdsaSignedTxnPool {
 
     private static class SignedTxn {
         private final int sigLen;
-        private final SwirldTransaction txn;
+        private final byte[] txn;
 
-        public SignedTxn(final int sigLen, final SwirldTransaction txn) {
+        public SignedTxn(final int sigLen, final byte[] txn) {
             this.sigLen = sigLen;
             this.txn = txn;
         }
@@ -104,10 +104,9 @@ public class EcdsaSignedTxnPool {
         }
 
         final SignedTxn signedTxn = signedTxns.get(nextIdx);
-        final SwirldTransaction tx = signedTxn.txn;
 
         return new TransactionSignature(
-                tx.getContents(),
+                signedTxn.txn,
                 ECDSA_KECCAK_256_SIZE + PUBLIC_KEY_LEN,
                 signedTxn.sigLen,
                 ECDSA_KECCAK_256_SIZE,
@@ -137,7 +136,7 @@ public class EcdsaSignedTxnPool {
                 System.arraycopy(activePubKey, 0, buffer, msg.length, activePubKey.length);
                 System.arraycopy(sig, 0, buffer, msg.length + activePubKey.length, sig.length);
 
-                final SignedTxn signedTxn = new SignedTxn(sig.length, new SwirldTransaction(buffer));
+                final SignedTxn signedTxn = new SignedTxn(sig.length, buffer);
                 signedTxns.add(signedTxn);
             }
         } catch (NoSuchAlgorithmException e) {
