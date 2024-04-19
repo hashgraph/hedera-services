@@ -64,18 +64,18 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
                 .limit(2)
                 .boxed()
                 .toList();
-        final NodeId thisNode = addressBook.getNodeId(nodeIndexes.get(0));
-        final NodeId otherNode = addressBook.getNodeId(nodeIndexes.get(1));
-        final KeysAndCerts thisKeysAndCerts = keysAndCerts.get(thisNode);
-        final KeysAndCerts OtherKeysAndCerts = keysAndCerts.get(otherNode);
-        final List<PeerInfo> thisPeers = Utilities.createPeerInfoList(addressBook, thisNode);
-        final List<PeerInfo> otherPeers = Utilities.createPeerInfoList(addressBook, otherNode);
-        final NetworkPeerIdentifier identifier = new NetworkPeerIdentifier(platformContext, thisPeers);
+        final NodeId node1 = addressBook.getNodeId(nodeIndexes.get(0));
+        final NodeId node2 = addressBook.getNodeId(nodeIndexes.get(1));
+        final KeysAndCerts thisKeysAndCerts = keysAndCerts.get(node1);
+        final KeysAndCerts OtherKeysAndCerts = keysAndCerts.get(node2);
+        final List<PeerInfo> node1Peers = Utilities.createPeerInfoList(addressBook, node1);
+        final List<PeerInfo> node2Peers = Utilities.createPeerInfoList(addressBook, node2);
+        final NetworkPeerIdentifier identifier = new NetworkPeerIdentifier(platformContext, node1Peers);
 
         final SocketFactory socketFactory1 =
-                NetworkUtils.createSocketFactory(thisNode, thisPeers, thisKeysAndCerts, TLS_NO_IP_TOS_CONFIG);
+                NetworkUtils.createSocketFactory(node1, node1Peers, thisKeysAndCerts, TLS_NO_IP_TOS_CONFIG);
         final SocketFactory socketFactory2 =
-                NetworkUtils.createSocketFactory(otherNode, otherPeers, OtherKeysAndCerts, TLS_NO_IP_TOS_CONFIG);
+                NetworkUtils.createSocketFactory(node2, node2Peers, OtherKeysAndCerts, TLS_NO_IP_TOS_CONFIG);
 
         final ServerSocket serverSocket = socketFactory1.createServerSocket(PORT);
         final Thread serverThread = createSocketThread(serverSocket);
@@ -88,11 +88,11 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
             Assertions.assertNotNull(conn);
             Assertions.assertTrue(conn.connected());
             Assertions.assertFalse(conn.isOutbound());
-            Assertions.assertEquals(conn.getSelfId(), thisNode);
+            Assertions.assertEquals(conn.getSelfId(), node1);
         };
 
         final InboundConnectionHandler inbound = new InboundConnectionHandler(
-                platformContext, ct, identifier, thisNode, connConsumer, Time.getCurrent());
+                platformContext, ct, identifier, node1, connConsumer, Time.getCurrent());
         inbound.handle(socket); // 2 can talk to 1 via tls ok
         socket.close();
     }

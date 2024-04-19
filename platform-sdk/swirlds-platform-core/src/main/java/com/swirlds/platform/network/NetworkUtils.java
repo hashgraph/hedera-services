@@ -128,7 +128,7 @@ public final class NetworkUtils {
     }
 
     /**
-     * Create a {@link SocketFactory} using the provided keys and certificates.
+     * Create a TLS-based {@link SocketFactory} using the provided keys and certificates.
      * NOTE: This method is a stepping stone to decoupling the networking from the platform.
      *
      * @param selfId        the ID of the node
