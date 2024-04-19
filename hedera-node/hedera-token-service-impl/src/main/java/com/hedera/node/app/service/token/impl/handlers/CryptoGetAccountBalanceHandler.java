@@ -103,8 +103,8 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
             throws PreCheckException {
         mustExist(op.contractID(), INVALID_CONTRACT_ID);
         ContractID contractId = (ContractID) op.balanceSource().value();
-        validateTruePreCheck(contractId.shardNum() >= 0, INVALID_CONTRACT_ID);
-        validateTruePreCheck(contractId.realmNum() >= 0, INVALID_CONTRACT_ID);
+        validateTruePreCheck(contractId.shardNum() == 0, INVALID_CONTRACT_ID);
+        validateTruePreCheck(contractId.realmNum() == 0, INVALID_CONTRACT_ID);
         validateTruePreCheck(contractId.contractNumOrThrow() >= 0, INVALID_CONTRACT_ID);
         final var contract = accountStore.getContractById(requireNonNull(op.contractID()));
         validateFalsePreCheck(contract == null || !contract.smartContract(), INVALID_CONTRACT_ID);
@@ -119,8 +119,8 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
         validateFalsePreCheck(account.deleted(), ACCOUNT_DELETED);
 
         AccountID accountId = (AccountID) op.balanceSource().value();
-        validateTruePreCheck(accountId.shardNum() >= 0, INVALID_ACCOUNT_ID);
-        validateTruePreCheck(accountId.realmNum() >= 0, INVALID_ACCOUNT_ID);
+        validateTruePreCheck(accountId.shardNum() == 0, INVALID_ACCOUNT_ID);
+        validateTruePreCheck(accountId.realmNum() == 0, INVALID_ACCOUNT_ID);
         validateTruePreCheck(accountId.accountNumOrThrow() >= 0, INVALID_ACCOUNT_ID);
         if (accountId.hasAlias()) {
             validateTruePreCheck(accountId.aliasOrThrow().length() >= 0, INVALID_ACCOUNT_ID);
