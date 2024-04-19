@@ -85,8 +85,8 @@ public class ConsensusServiceStateTranslator {
             @NonNull TopicID topicID, @NonNull ReadableTopicStore readableTopicStore) {
         requireNonNull(topicID);
         requireNonNull(readableTopicStore);
-        final var optionalFile = readableTopicStore.getTopicLeaf(topicID);
-        return pbjToState(optionalFile.orElseThrow(() -> new IllegalArgumentException("Topic not found")));
+        final var topic = readableTopicStore.getTopic(topicID);
+        return pbjToState(topic);
     }
 
     /**
