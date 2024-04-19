@@ -66,15 +66,16 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
                 .toList();
         final NodeId thisNode = addressBook.getNodeId(nodeIndexes.get(0));
         final NodeId otherNode = addressBook.getNodeId(nodeIndexes.get(1));
-        final KeysAndCerts keysAndCerts1 = keysAndCerts.get(thisNode);
-        final KeysAndCerts keysAndCerts2 = keysAndCerts.get(otherNode);
-        final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, otherNode);
-        final NetworkPeerIdentifier identifier = new NetworkPeerIdentifier(platformContext, peers);
+        final KeysAndCerts thisKeysAndCerts = keysAndCerts.get(thisNode);
+        final KeysAndCerts OtherKeysAndCerts = keysAndCerts.get(otherNode);
+        final List<PeerInfo> thisPeers = Utilities.createPeerInfoList(addressBook, thisNode);
+        final List<PeerInfo> otherPeers = Utilities.createPeerInfoList(addressBook, otherNode);
+        final NetworkPeerIdentifier identifier = new NetworkPeerIdentifier(platformContext, thisPeers);
 
         final SocketFactory socketFactory1 =
-                NetworkUtils.createSocketFactory(thisNode, peers, keysAndCerts1, TLS_NO_IP_TOS_CONFIG);
+                NetworkUtils.createSocketFactory(thisNode, thisPeers, thisKeysAndCerts, TLS_NO_IP_TOS_CONFIG);
         final SocketFactory socketFactory2 =
-                NetworkUtils.createSocketFactory(otherNode, peers, keysAndCerts2, TLS_NO_IP_TOS_CONFIG);
+                NetworkUtils.createSocketFactory(otherNode, otherPeers, OtherKeysAndCerts, TLS_NO_IP_TOS_CONFIG);
 
         final ServerSocket serverSocket = socketFactory1.createServerSocket(PORT);
         final Thread serverThread = createSocketThread(serverSocket);
@@ -115,11 +116,13 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
         final KeysAndCerts keysAndCerts1 = keysAndCerts.get(thisNode);
         final KeysAndCerts keysAndCerts2 = keysAndCerts.get(otherNode);
 
-        final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, thisNode);
-        final NetworkPeerIdentifier identifier = new NetworkPeerIdentifier(platformContext, peers);
+        final List<PeerInfo> thisPeers = Utilities.createPeerInfoList(addressBook, thisNode);
+        final List<PeerInfo> otherPeers = Utilities.createPeerInfoList(addressBook, otherNode);
+        final NetworkPeerIdentifier identifier = new NetworkPeerIdentifier(platformContext, thisPeers);
 
-        final SocketFactory s1 = NetworkUtils.createSocketFactory(thisNode, peers, keysAndCerts1, TLS_NO_IP_TOS_CONFIG);
-        final SocketFactory s2 = NetworkUtils.createSocketFactory(otherNode, peers, keysAndCerts2,
+        final SocketFactory s1 = NetworkUtils.createSocketFactory(thisNode, thisPeers, keysAndCerts1,
+                TLS_NO_IP_TOS_CONFIG);
+        final SocketFactory s2 = NetworkUtils.createSocketFactory(otherNode, otherPeers, keysAndCerts2,
                 TLS_NO_IP_TOS_CONFIG);
 
         final ServerSocket serverSocket = s1.createServerSocket(PORT);

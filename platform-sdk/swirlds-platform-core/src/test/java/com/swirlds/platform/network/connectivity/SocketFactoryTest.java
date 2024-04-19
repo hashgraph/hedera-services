@@ -24,10 +24,12 @@ import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.system.address.AddressBook;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -65,15 +67,15 @@ class SocketFactoryTest extends ConnectivityTestBase {
 
         final ServerSocket serverSocket = serverFactory.createServerSocket(PORT);
 
-        final Thread server = createSocketThread(serverSocket);
+        final Thread serverThread = createSocketThread(serverSocket);
+        serverThread.start();
         final AtomicReference<Throwable> threadException = new AtomicReference<>();
-        server.setUncaughtExceptionHandler((t, e) -> threadException.set(e));
-        server.start();
+        serverThread.setUncaughtExceptionHandler((t, e) -> threadException.set(e));
 
         final Socket clientSocket = clientFactory.createClientSocket(STRING_IP, PORT);
         clientSocket.getOutputStream().write(TEST_DATA);
 
-        server.join();
+        serverThread.join();
         clientSocket.close();
 
         if (threadException.get() != null) {
@@ -93,20 +95,28 @@ class SocketFactoryTest extends ConnectivityTestBase {
      */
     @ParameterizedTest
     @MethodSource({"com.swirlds.platform.crypto.CryptoArgsProvider#basicTestArgs"})
-    void tlsFactoryTest(final AddressBook addressBook, final Map<NodeId, KeysAndCerts> keysAndCerts) throws Throwable {
+    void tlsFactoryTest(@NonNull final AddressBook addressBook, @NonNull final Map<NodeId, KeysAndCerts> keysAndCerts)
+            throws Throwable {
         assertTrue(addressBook.getSize() > 1, "Address book must contain at least 2 nodes");
-        // choose 2 nodes to test
-        final NodeId node1 = addressBook.getNodeId(0);
-        final NodeId node2 = addressBook.getNodeId(1);
+        // choose 2 random nodes to test
+        final Random random = new Random();
+        final List<Integer> nodeIndexes = random.ints(0, addressBook.getSize())
+                .distinct()
+                .limit(2)
+                .boxed()
+                .toList();
+        final NodeId node1 = addressBook.getNodeId(nodeIndexes.get(0));
+        final NodeId node2 = addressBook.getNodeId(nodeIndexes.get(1));
         final KeysAndCerts keysAndCerts1 = keysAndCerts.get(node1);
         final KeysAndCerts keysAndCerts2 = keysAndCerts.get(node2);
-        final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, node1);
+        final List<PeerInfo> node1Peers = Utilities.createPeerInfoList(addressBook, node1);
+        final List<PeerInfo> node2Peers = Utilities.createPeerInfoList(addressBook, node2);
 
         testSocketsBoth(
-                NetworkUtils.createSocketFactory(node1, peers, keysAndCerts1, TLS_NO_IP_TOS_CONFIG),
-                NetworkUtils.createSocketFactory(node2, peers, keysAndCerts2, TLS_NO_IP_TOS_CONFIG));
+                NetworkUtils.createSocketFactory(node1, node1Peers, keysAndCerts1, TLS_NO_IP_TOS_CONFIG),
+                NetworkUtils.createSocketFactory(node2, node2Peers, keysAndCerts2, TLS_NO_IP_TOS_CONFIG));
         testSocketsBoth(
-                NetworkUtils.createSocketFactory(node1, peers, keysAndCerts1, TLS_IP_TOS_CONFIG),
-                NetworkUtils.createSocketFactory(node2, peers, keysAndCerts2, TLS_IP_TOS_CONFIG));
+                NetworkUtils.createSocketFactory(node1, node1Peers, keysAndCerts1, TLS_IP_TOS_CONFIG),
+                NetworkUtils.createSocketFactory(node2, node2Peers, keysAndCerts2, TLS_IP_TOS_CONFIG));
     }
 }
