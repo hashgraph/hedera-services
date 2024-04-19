@@ -76,7 +76,7 @@ public class StateSignatureCollectorWiring {
                         model,
                         "extractPreconsensusSignatureTransactions",
                         "preconsensus signatures",
-                        event -> SystemTransactionExtractionUtils.extractFromEvent(event.getHashedData(), StateSignaturePayload.class));
+                        event -> SystemTransactionExtractionUtils.extractFromEvent(event, StateSignaturePayload.class));
         preConsensusEventInput = preConsensusTransformer.getInputWire();
         preConsSigInput = taskScheduler.buildInputWire("preconsensus signature transactions");
         preConsensusTransformer.getOutputWire().solderTo(preConsSigInput);

@@ -38,7 +38,7 @@ public final class SyncLogging {
             return "null";
         }
         return shadows.stream()
-                .map(s -> s.getEvent().getHashedData().getDescriptor().toString())
+                .map(s -> s.getEvent().getBaseEvent().getDescriptor().toString())
                 .collect(Collectors.joining(","));
     }
 

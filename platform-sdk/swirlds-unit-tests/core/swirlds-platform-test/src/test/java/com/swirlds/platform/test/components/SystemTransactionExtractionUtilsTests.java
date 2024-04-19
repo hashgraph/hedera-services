@@ -43,11 +43,11 @@ class SystemTransactionExtractionUtilsTests {
         final Random r = RandomUtils.getRandomPrintSeed();
         final List<ScopedSystemTransaction<StateSignaturePayload>> transactions = new ArrayList<>();
         assertNull(SystemTransactionExtractionUtils.extractFromEvent(
-                new TestingEventBuilder(r).setSystemTransactionCount(0).build().getHashedData(), StateSignaturePayload.class));
+                new TestingEventBuilder(r).setSystemTransactionCount(0).build(), StateSignaturePayload.class));
         transactions.addAll(Objects.requireNonNull(SystemTransactionExtractionUtils.extractFromEvent(
-                new TestingEventBuilder(r).setSystemTransactionCount(1).build().getHashedData(), StateSignaturePayload.class)));
+                new TestingEventBuilder(r).setSystemTransactionCount(1).build(), StateSignaturePayload.class)));
         transactions.addAll(Objects.requireNonNull(SystemTransactionExtractionUtils.extractFromEvent(
-                new TestingEventBuilder(r).setSystemTransactionCount(2).build().getHashedData(), StateSignaturePayload.class)));
+                new TestingEventBuilder(r).setSystemTransactionCount(2).build(), StateSignaturePayload.class)));
 
         transactions.forEach(t -> assertTrue(StateSignaturePayload.class.isInstance(t.transaction())));
         assertEquals(3, transactions.size(), "incorrect number of transactions returned");

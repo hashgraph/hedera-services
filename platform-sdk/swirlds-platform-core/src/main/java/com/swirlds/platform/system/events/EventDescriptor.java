@@ -238,14 +238,7 @@ public class EventDescriptor implements SelfSerializable {
     public String toString() {
         // This intentionally does not use the ToStringBuilder
         // This is printed frequently, and must remain concise
-        return "(id: " + creator
-                + ", gen: "
-                + generation
-                + ", br: "
-                + birthRound
-                + ", hash: "
-                + hash.toMnemonic()
-                + ")";
+        return "(id: %d, gen: %d, br: %d, hash: %s)".formatted(creator.id(), generation, birthRound, hash.toMnemonic());
     }
 
     /**
