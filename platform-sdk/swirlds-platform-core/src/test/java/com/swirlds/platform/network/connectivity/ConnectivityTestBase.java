@@ -42,11 +42,9 @@ class ConnectivityTestBase {
     static {
         TLS_NO_IP_TOS_CONFIG = new TestConfigBuilder()
                 .withValue(SocketConfig_.IP_TOS, "-1")
-                .withValue(SocketConfig_.USE_T_L_S, true)
                 .getOrCreateConfig();
         TLS_IP_TOS_CONFIG = new TestConfigBuilder()
                 .withValue(SocketConfig_.IP_TOS, "100")
-                .withValue(SocketConfig_.USE_T_L_S, true)
                 .getOrCreateConfig();
 
         final Configuration configurationNoIpTos =

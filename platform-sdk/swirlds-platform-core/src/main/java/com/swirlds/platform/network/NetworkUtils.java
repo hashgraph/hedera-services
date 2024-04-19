@@ -26,10 +26,8 @@ import com.swirlds.platform.Utilities;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.gossip.shadowgraph.SyncTimeoutException;
 import com.swirlds.platform.network.connectivity.SocketFactory;
-import com.swirlds.platform.network.connectivity.TcpFactory;
 import com.swirlds.platform.network.connectivity.TlsFactory;
 import com.swirlds.platform.system.PlatformConstructionException;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.Closeable;
 import java.io.IOException;
@@ -37,6 +35,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.List;
 import java.util.Objects;
 import javax.net.ssl.SSLException;
 import org.apache.logging.log4j.LogManager;
@@ -129,38 +128,30 @@ public final class NetworkUtils {
     }
 
     /**
-     * Create a {@link SocketFactory} based on the configuration and the provided keys and certificates. NOTE: This
-     * method is a stepping stone to decoupling the networking from the platform.
+     * Create a {@link SocketFactory} using the provided keys and certificates.
+     * NOTE: This method is a stepping stone to decoupling the networking from the platform.
      *
      * @param selfId        the ID of the node
-     * @param addressBook   the address book of the network
+     * @param peers         the list of peers
      * @param keysAndCerts  the keys and certificates to use for the TLS connections
      * @param configuration the configuration of the network
      * @return the created {@link SocketFactory}
      */
     public static @NonNull SocketFactory createSocketFactory(
             @NonNull final NodeId selfId,
-            @NonNull final AddressBook addressBook,
+            @NonNull final List<PeerInfo> peers,
             @NonNull final KeysAndCerts keysAndCerts,
             @NonNull final Configuration configuration) {
         Objects.requireNonNull(selfId);
-        Objects.requireNonNull(addressBook);
         Objects.requireNonNull(keysAndCerts);
         Objects.requireNonNull(configuration);
 
         final CryptoConfig cryptoConfig = configuration.getConfigData(CryptoConfig.class);
         final SocketConfig socketConfig = configuration.getConfigData(SocketConfig.class);
 
-        if (!socketConfig.useTLS()) {
-            return new TcpFactory(socketConfig);
-        }
         try {
             return new TlsFactory(
-                    keysAndCerts.agrCert(),
-                    keysAndCerts.agrKeyPair().getPrivate(),
-                    Utilities.createPeerInfoList(addressBook, selfId),
-                    socketConfig,
-                    cryptoConfig);
+                    keysAndCerts.agrCert(), keysAndCerts.agrKeyPair().getPrivate(), peers, socketConfig, cryptoConfig);
         } catch (final NoSuchAlgorithmException
                 | UnrecoverableKeyException
                 | KeyStoreException
