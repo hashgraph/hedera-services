@@ -125,7 +125,7 @@ public class TeacherPullVirtualTreeReceiveTask {
             while (true) {
                 rateLimit();
                 final PullVirtualTreeRequest request = in.readAnticipatedMessage(viewId);
-                logger.debug(RECONNECT.getMarker(), "Teacher receive path: " + request.getPath());
+                logger.trace(RECONNECT.getMarker(), "Teacher receive path: " + request.getPath());
                 if (request.getPath() == Path.INVALID_PATH) {
                     logger.info(RECONNECT.getMarker(), "Teacher receiver is complete as requested by the learner");
                     break;
@@ -147,7 +147,7 @@ public class TeacherPullVirtualTreeReceiveTask {
                 out.sendAsync(viewId, response);
                 in.anticipateMessage();
             }
-            logger.debug(RECONNECT.getMarker(), "Teacher receive done");
+            logger.trace(RECONNECT.getMarker(), "Teacher receive done");
             success = true;
         } catch (final InterruptedException ex) {
             logger.warn(RECONNECT.getMarker(), "Teacher's receiving task is interrupted");
