@@ -46,6 +46,7 @@ import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -98,6 +99,9 @@ class FileSystemUndeleteTest extends FileTestBase {
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected Account payerAccount;
 
+    @Mock
+    private StoreMetricsService storeMetricsService;
+
     protected Configuration testConfig;
 
     @BeforeEach
@@ -107,8 +111,8 @@ class FileSystemUndeleteTest extends FileTestBase {
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        writableStore = new WritableFileStore(writableStates);
         testConfig = HederaTestConfigBuilder.createConfig();
+        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
         lenient().when(preHandleContext.configuration()).thenReturn(testConfig);
         lenient().when(handleContext.configuration()).thenReturn(testConfig);
         when(mockStoreFactory.getStore(ReadableFileStore.class)).thenReturn(mockStore);
@@ -135,7 +139,7 @@ class FileSystemUndeleteTest extends FileTestBase {
 
         writableFileState = emptyWritableFileState();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        writableStore = new WritableFileStore(writableStates);
+        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
@@ -164,7 +168,7 @@ class FileSystemUndeleteTest extends FileTestBase {
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        writableStore = new WritableFileStore(writableStates);
+        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));

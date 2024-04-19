@@ -18,7 +18,7 @@ package com.swirlds.platform.state.manager;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyDoesNotThrow;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildFakeSignature;
+import static com.swirlds.platform.state.manager.SignatureVerificationTestUtils.buildFakeSignatureBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
@@ -31,7 +31,7 @@ import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.proto.event.StateSignaturePayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Map;
@@ -99,11 +99,12 @@ public class AbstractStateSignatureCollectorTest {
         final AddressBook addressBook = signedState.getAddressBook();
         final Hash hash = signedState.getState().getHash();
 
-        // Although we normally want to avoid rebuilding the dispatcher over and over, the slight
-        // performance overhead is worth the convenience during unit tests
-
-        final StateSignatureTransaction transaction = new StateSignatureTransaction(
-                round, buildFakeSignature(addressBook.getAddress(nodeId).getSigPublicKey(), hash), hash);
+        final StateSignaturePayload transaction = StateSignaturePayload.newBuilder()
+                .round(round)
+                .signature(
+                        buildFakeSignatureBytes(addressBook.getAddress(nodeId).getSigPublicKey(), hash))
+                .hash(hash.getBytes())
+                .build();
 
         manager.handlePreconsensusSignatureTransaction(nodeId, transaction);
     }

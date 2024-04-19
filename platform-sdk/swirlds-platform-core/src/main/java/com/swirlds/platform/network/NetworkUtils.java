@@ -33,7 +33,6 @@ import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.Closeable;
 import java.io.IOException;
-import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
@@ -85,14 +84,14 @@ public final class NetworkUtils {
         } else {
             description = null;
         }
-        if (e instanceof InterruptedException ie) {
+        if (e instanceof final InterruptedException ie) {
             // we must make sure that the network thread can be interrupted
             throw ie;
         }
         // we use a different marker depending on what the root cause is
-        Marker marker = NetworkUtils.determineExceptionMarker(e);
+        final Marker marker = NetworkUtils.determineExceptionMarker(e);
         if (SOCKET_EXCEPTIONS.getMarker().equals(marker)) {
-            String formattedException = NetworkUtils.formatException(e);
+            final String formattedException = NetworkUtils.formatException(e);
             logger.warn(marker, "Connection broken: {} {}", description, formattedException);
         } else {
             logger.error(EXCEPTION.getMarker(), "Connection broken: {}", description, e);
@@ -130,13 +129,13 @@ public final class NetworkUtils {
     }
 
     /**
-     * Create a {@link SocketFactory} based on the configuration and the provided keys and certificates.
-     * NOTE: This method is a stepping stone to decoupling the networking from the platform.
+     * Create a {@link SocketFactory} based on the configuration and the provided keys and certificates. NOTE: This
+     * method is a stepping stone to decoupling the networking from the platform.
      *
-     * @param selfId         the ID of the node
-     * @param addressBook    the address book of the network
-     * @param keysAndCerts   the keys and certificates to use for the TLS connections
-     * @param configuration  the configuration of the network
+     * @param selfId        the ID of the node
+     * @param addressBook   the address book of the network
+     * @param keysAndCerts  the keys and certificates to use for the TLS connections
+     * @param configuration the configuration of the network
      * @return the created {@link SocketFactory}
      */
     public static @NonNull SocketFactory createSocketFactory(
@@ -165,7 +164,6 @@ public final class NetworkUtils {
         } catch (final NoSuchAlgorithmException
                 | UnrecoverableKeyException
                 | KeyStoreException
-                | KeyManagementException
                 | CertificateException
                 | IOException e) {
             throw new PlatformConstructionException("A problem occurred while creating the SocketFactory", e);

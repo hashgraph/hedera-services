@@ -16,6 +16,7 @@
 
 package com.swirlds.logging.api.internal.format;
 
+import static com.swirlds.logging.utils.StringUtils.toPaddedDigitsString;
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoField.DAY_OF_MONTH;
 import static java.time.temporal.ChronoField.HOUR_OF_DAY;
@@ -62,8 +63,8 @@ public class EpochCachedFormatter {
             .toFormatter()
             .withZone(UTC);
 
-    private final Map<Instant, String> exactCache = new ShrinkableSizeCache<>();
-    private final Map<Instant, String> dateCache = new ShrinkableSizeCache<>();
+    private final Map<Instant, String> exactCache = new ShrinkableSizeCache<>(1);
+    private final Map<Instant, String> dateCache = new ShrinkableSizeCache<>(10);
     private static final String[] TWO_SPACE_DIGITS_CACHE =
             IntStream.range(0, 60).mapToObj(i -> toPaddedDigitsString(i, 2)).toArray(String[]::new);
     private static final String[] THREE_SPACE_DIGITS_CACHE =
@@ -121,25 +122,6 @@ public class EpochCachedFormatter {
         }
 
         final StringBuilder buffer = new StringBuilder(format);
-        infoFromHours(instant, buffer);
-        final String stringDate = buffer.toString();
-        exactCache.put(instant, stringDate);
-        return stringDate;
-    }
-
-    /**
-     * Adds a string representation into {@code buffer} of the given {@link Instant} starting from the hour field.
-     * <p>
-     * e.g: Given an {@code instant} representing date: {@code "2020-08-26 12:34:56.789"}
-     * <ul>
-     * <li>{@code infoFromHours(instant)} --> will add to the buffer: {@code "12:34:56.789"} </li>
-     * </ul>
-     *
-     * @param instant The Instant to represent as a string.
-     * @param buffer The buffer to add the representation to
-     */
-    private static void infoFromHours(final @NonNull Instant instant, final StringBuilder buffer) {
-
         long totalSeconds = instant.getEpochSecond();
         final int hour = (int) ((totalSeconds / 3600) % 24);
         buffer.append(TWO_SPACE_DIGITS_CACHE[hour]);
@@ -152,37 +134,8 @@ public class EpochCachedFormatter {
         buffer.append(".");
         final int milliseconds = instant.getNano() / 1_000_000;
         buffer.append(THREE_SPACE_DIGITS_CACHE[milliseconds]);
-    }
-
-    /**
-     * Creates a String of digits of the number and pads to the left with 0. Examples:
-     * <ul>
-     * <li>{@code toPaddedDigitsString(1, 1)} --> 1</li>
-     * <li>{@code toPaddedDigitsString(1, 2)} --> 01</li>
-     * <li>{@code toPaddedDigitsString(12, 1)} --> 2</li>
-     * <li>{@code toPaddedDigitsString(12, 2)} --> 12</li>
-     * <li>{@code toPaddedDigitsString(12, 3)} --> 012</li>
-     * <li>{@code toPaddedDigitsString(123, 3)} --> 123</li>
-     * <li>{@code toPaddedDigitsString(758, 4)} --> 0758</li>
-     * </ul>
-     *
-     * @param number        The number to append in reverse order.
-     * @param desiredLength The maximum length of the number to append.
-     */
-    private static String toPaddedDigitsString(final int number, final int desiredLength) {
-        StringBuilder buffer = new StringBuilder();
-        int actualLength = 0;
-        int num = number;
-        while ((num > 0) && actualLength < desiredLength) {
-            int digit = num % 10;
-            buffer.append(digit);
-            num /= 10;
-            actualLength++;
-        }
-        while (desiredLength > actualLength) {
-            buffer.append(0);
-            actualLength++;
-        }
-        return buffer.reverse().toString();
+        final String stringDate = buffer.toString();
+        exactCache.put(instant, stringDate);
+        return stringDate;
     }
 }

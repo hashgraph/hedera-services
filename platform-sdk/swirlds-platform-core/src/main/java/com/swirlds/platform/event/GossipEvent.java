@@ -18,11 +18,11 @@ package com.swirlds.platform.event;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import com.swirlds.platform.system.events.BaseEvent;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
@@ -37,7 +37,7 @@ import java.util.concurrent.CountDownLatch;
 /**
  * A class used to hold information about an event transferred through gossip
  */
-public class GossipEvent implements BaseEvent, ChatterEvent {
+public class GossipEvent implements BaseEvent, SelfSerializable {
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
     private static final int MAX_SIG_LENGTH = 384;
 
@@ -55,7 +55,6 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     private int serializedVersion = ClassVersion.BIRTH_ROUND;
     private BaseEventHashedData hashedData;
     private BaseEventUnhashedData unhashedData;
-    private EventDescriptor descriptor;
     private Instant timeReceived;
 
     /**
@@ -92,8 +91,6 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     public GossipEvent(final BaseEventHashedData hashedData, final BaseEventUnhashedData unhashedData) {
         this.hashedData = hashedData;
         this.unhashedData = unhashedData;
-        // remove update of other parent event descriptor after 0.46.0 hits mainnet.
-        unhashedData.updateOtherParentEventDescriptor(hashedData);
         this.timeReceived = Instant.now();
         this.senderId = null;
     }
@@ -148,10 +145,8 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
         } else {
             hashedData = in.readSerializable(false, BaseEventHashedData::new);
             final byte[] signature = in.readByteArray(MAX_SIG_LENGTH);
-            unhashedData = new BaseEventUnhashedData(null, signature);
+            unhashedData = new BaseEventUnhashedData(signature);
         }
-        // remove update of other parent event descriptor after 0.46.0 hits mainnet.
-        unhashedData.updateOtherParentEventDescriptor(hashedData);
         timeReceived = Instant.now();
     }
 
@@ -172,42 +167,28 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     }
 
     /**
-     * {@inheritDoc}
-     */
-    @Override
-    public EventDescriptor getDescriptor() {
-        if (descriptor == null) {
-            throw new IllegalStateException("Can not get descriptor until event has been hashed");
-        }
-        return descriptor;
-    }
-
-    /**
-     * Build the descriptor of this event. This cannot be done when the event is first instantiated, it needs to be
-     * hashed before the descriptor can be built.
+     * Get the descriptor for the event.
      *
-     * @throws IllegalStateException if the descriptor has already been built
+     * @return the descriptor for the event
      */
-    public void buildDescriptor() {
-        if (descriptor != null) {
-            throw new IllegalStateException("Descriptor has already been built");
-        }
-
-        this.descriptor = hashedData.createEventDescriptor();
+    public EventDescriptor getDescriptor() {
+        return hashedData.getDescriptor();
     }
 
     /**
-     * {@inheritDoc}
+     * Get the generation of the event.
+     *
+     * @return the generation of the event
      */
-    @Override
     public long getGeneration() {
         return hashedData.getGeneration();
     }
 
     /**
-     * {@inheritDoc}
+     * Get the time this event was received via gossip
+     *
+     * @return the time this event was received
      */
-    @Override
     public @NonNull Instant getTimeReceived() {
         return timeReceived;
     }
@@ -316,7 +297,7 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     public long getAncientIndicator(@NonNull final AncientMode ancientMode) {
         return switch (ancientMode) {
-            case GENERATION_THRESHOLD -> getGeneration();
+            case GENERATION_THRESHOLD -> hashedData.getGeneration();
             case BIRTH_ROUND_THRESHOLD -> hashedData.getBirthRound();
         };
     }

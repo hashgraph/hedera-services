@@ -18,6 +18,7 @@ package com.swirlds.platform.state;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.config.BasicConfig;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -39,14 +40,17 @@ public final class GenesisStateBuilder {
      * @return a genesis platform state
      */
     private static PlatformState buildGenesisPlatformState(
-            final AddressBook addressBook, final SoftwareVersion appVersion) {
+            @NonNull final PlatformContext platformContext,
+            final AddressBook addressBook,
+            final SoftwareVersion appVersion) {
 
         final PlatformState platformState = new PlatformState();
         platformState.setAddressBook(addressBook.copy());
 
         platformState.setCreationSoftwareVersion(appVersion);
         platformState.setRound(0);
-        platformState.setRunningEventHash(null);
+        platformState.setLegacyRunningEventHash(null);
+        platformState.setRunningEventHash(platformContext.getCryptography().getNullHash());
         platformState.setEpochHash(null);
         platformState.setConsensusTimestamp(Instant.ofEpochSecond(0L));
 
@@ -70,7 +74,7 @@ public final class GenesisStateBuilder {
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         final State state = new State();
-        state.setPlatformState(buildGenesisPlatformState(addressBook, appVersion));
+        state.setPlatformState(buildGenesisPlatformState(platformContext, addressBook, appVersion));
         state.setSwirldState(swirldState);
 
         final long genesisFreezeTime = basicConfig.genesisFreezeTime();
@@ -78,7 +82,8 @@ public final class GenesisStateBuilder {
             state.getPlatformState().setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
         }
 
-        final SignedState signedState = new SignedState(platformContext, state, "genesis state", false);
+        final SignedState signedState =
+                new SignedState(platformContext, CryptoStatic::verifySignature, state, "genesis state", false, false);
         return signedState.reserve("initial reservation on genesis state");
     }
 }

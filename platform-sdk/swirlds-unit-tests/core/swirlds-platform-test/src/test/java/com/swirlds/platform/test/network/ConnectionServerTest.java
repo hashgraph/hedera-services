@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class ConnectionServerTest {
+
     @Test
     void createConnectionTest() throws IOException, InterruptedException {
         final Socket socket = mock(Socket.class);

@@ -696,6 +696,21 @@ final class InitialModServiceTokenSchemaTest {
                 .build();
     }
 
+    private MapWritableStates newStatesInstance(
+            final MapWritableKVState<AccountID, Account> accts,
+            final MapWritableKVState<Bytes, AccountID> aliases,
+            final WritableSingletonState<EntityNumber> entityIdState,
+            final MapWritableKVState<EntityNumber, StakingNodeInfo> stakingInfo) {
+        //noinspection ReturnOfNull
+        return MapWritableStates.builder()
+                .state(accts)
+                .state(aliases)
+                .state(stakingInfo)
+                .state(new WritableSingletonStateBase<>(STAKING_NETWORK_REWARDS_KEY, () -> null, c -> {}))
+                .state(entityIdState)
+                .build();
+    }
+
     private SortedSet<Account> allDefaultSysAccts() {
         return allSysAccts(DEFAULT_NUM_SYSTEM_ACCOUNTS);
     }

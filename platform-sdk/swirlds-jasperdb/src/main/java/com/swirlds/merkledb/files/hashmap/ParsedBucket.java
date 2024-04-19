@@ -29,7 +29,6 @@ import com.swirlds.virtualmap.VirtualKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -193,15 +192,6 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
         checkLargestBucket(entriesCount);
     }
 
-    void readFrom(final ByteBuffer buffer) throws IOException {
-        bucketIndex = buffer.getInt();
-        buffer.getInt(); // skip the size
-        final int entriesCount = buffer.getInt();
-        for (int i = 0; i < entriesCount; i++) {
-            entries.add(new BucketEntry(buffer));
-        }
-    }
-
     public void writeTo(final WritableSequentialData out) {
         // Bucket index is not optional, write the value even if default (zero)
         ProtoWriterTools.writeTag(out, FIELD_BUCKET_INDEX);
@@ -211,21 +201,6 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
             out.writeVarInt(entry.sizeInBytes(), false);
             entry.writeTo(out);
         }
-    }
-
-    void writeTo(final ByteBuffer buffer) throws IOException {
-        final int initialPos = buffer.position();
-        buffer.putInt(bucketIndex);
-        buffer.putInt(0); // size, will be updated later
-        buffer.putInt(entries.size());
-        for (final BucketEntry entry : entries) {
-            buffer.putInt(entry.getHashCode());
-            buffer.putLong(entry.getValue());
-            keySerializer.serialize(entry.getKey(), buffer);
-        }
-        final int finalPos = buffer.position();
-        final int serializedSize = finalPos - initialPos;
-        buffer.putInt(initialPos + Integer.BYTES, serializedSize);
     }
 
     // =================================================================================================================
@@ -323,17 +298,6 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
             this.key = key;
         }
 
-        /** Creates new bucket entry by reading its fields from the given binary buffer */
-        public BucketEntry(final ByteBuffer buffer) throws IOException {
-            hashCode = buffer.getInt();
-            value = buffer.getLong();
-            // This is going to be somewhat slow. A possible workaround is to re-introduce
-            // KeySerializer.deserializeKeySize() method and use it here to read raw key bytes
-            // as a byte buffer. In this case, either entry key is not null, or key bytes as
-            // BufferedData is not null, or key bytes as ByteBuffer is not null
-            key = keySerializer.deserialize(buffer, 0);
-        }
-
         public int getHashCode() {
             return hashCode;
         }
@@ -354,10 +318,8 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
             int size = 0;
             size += ProtoWriterTools.sizeOfTag(FIELD_BUCKETENTRY_HASHCODE, ProtoConstants.WIRE_TYPE_FIXED_32_BIT)
                     + Integer.BYTES;
-            if (value != 0) {
-                size += ProtoWriterTools.sizeOfTag(FIELD_BUCKETENTRY_VALUE, ProtoConstants.WIRE_TYPE_FIXED_64_BIT)
-                        + Long.BYTES;
-            }
+            size += ProtoWriterTools.sizeOfTag(FIELD_BUCKETENTRY_VALUE, ProtoConstants.WIRE_TYPE_FIXED_64_BIT)
+                    + Long.BYTES;
             size += ProtoWriterTools.sizeOfDelimited(FIELD_BUCKETENTRY_KEYBYTES, keySerializer.getSerializedSize(key));
             return size;
         }
@@ -365,10 +327,8 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
         public void writeTo(final WritableSequentialData out) {
             ProtoWriterTools.writeTag(out, FIELD_BUCKETENTRY_HASHCODE);
             out.writeInt(hashCode);
-            if (value != 0) {
-                ProtoWriterTools.writeTag(out, FIELD_BUCKETENTRY_VALUE);
-                out.writeLong(value);
-            }
+            ProtoWriterTools.writeTag(out, FIELD_BUCKETENTRY_VALUE);
+            out.writeLong(value);
             ProtoWriterTools.writeDelimited(
                     out,
                     FIELD_BUCKETENTRY_KEYBYTES,

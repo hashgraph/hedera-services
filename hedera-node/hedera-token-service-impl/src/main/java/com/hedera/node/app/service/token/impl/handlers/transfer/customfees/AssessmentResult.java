@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 
-import static java.util.Collections.emptyList;
-
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
@@ -54,7 +52,11 @@ public class AssessmentResult {
             final List<TokenTransferList> inputTokenTransfers, final List<AccountAmount> inputHbarTransfers) {
         mutableInputBalanceAdjustments = buildFungibleTokenTransferMap(inputTokenTransfers);
         immutableInputTokenAdjustments = Collections.unmodifiableMap(mutableInputBalanceAdjustments.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, entry -> Map.copyOf(entry.getValue()))));
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> new LinkedHashMap<>(entry.getValue()),
+                        (a, b) -> a,
+                        LinkedHashMap::new)));
 
         immutableInputHbarAdjustments = buildHbarTransferMap(inputHbarTransfers);
         mutableInputBalanceAdjustments.put(HBAR_TOKEN_ID, new LinkedHashMap<>(immutableInputHbarAdjustments));
@@ -110,7 +112,7 @@ public class AssessmentResult {
         final var fungibleTransfersMap = new LinkedHashMap<TokenID, Map<AccountID, Long>>();
         for (final var xfer : tokenTransfers) {
             final var tokenId = xfer.token();
-            final var fungibleTokenTransfers = xfer.transfersOrElse(emptyList());
+            final var fungibleTokenTransfers = xfer.transfers();
             if (fungibleTokenTransfers.isEmpty()) {
                 continue;
             }

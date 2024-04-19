@@ -380,8 +380,8 @@ public final class Utilities {
                 .map(address -> new PeerInfo(
                         address.getNodeId(),
                         address.getSelfName(),
-                        address.getHostnameExternal(),
-                        address.getSigCert()))
+                        Objects.requireNonNull(address.getHostnameExternal()),
+                        Objects.requireNonNull(address.getSigCert())))
                 .toList();
     }
 }

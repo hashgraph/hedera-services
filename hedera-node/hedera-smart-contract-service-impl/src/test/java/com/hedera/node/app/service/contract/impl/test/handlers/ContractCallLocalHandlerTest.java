@@ -25,24 +25,32 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.FeeData;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.contract.ContractCallLocalQuery;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.Query;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
 import com.hedera.node.app.service.contract.impl.exec.ContextQueryProcessor;
 import com.hedera.node.app.service.contract.impl.exec.QueryComponent;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallLocalHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
+import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -91,6 +99,9 @@ class ContractCallLocalHandlerTest {
 
     @Mock
     private ContractsConfig contractsConfig;
+
+    @Mock
+    private FeeCalculator feeCalculator;
 
     private final ContractCallLocalHandler subject = new ContractCallLocalHandler(() -> factory);
 
@@ -182,18 +193,18 @@ class ContractCallLocalHandlerTest {
     }
 
     @Test
-    void validateFailsIfContractDeletedTest() {
+    void validateSucceedsIfContractDeletedTest() {
         // given
         given(context.query()).willReturn(query);
         given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
         given(contractCallLocalQuery.contractID()).willReturn(contractID);
         given(context.createStore(ReadableAccountStore.class)).willReturn(store);
         given(store.getContractById(contractID)).willReturn(contract);
-        given(contract.deleted()).willReturn(true);
         givenAllowCallsToNonContractAccountOffConfig();
 
         // when:
-        assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(PreCheckException.class);
+        assertThatCode(() -> subject.validate(context)).doesNotThrowAnyException();
+        verify(contract, never()).deleted();
     }
 
     @Test
@@ -212,6 +223,27 @@ class ContractCallLocalHandlerTest {
 
         assertThat(response.contractCallLocal().header()).isEqualTo(responseHeader);
         assertThat(response.contractCallLocal().functionResult()).isEqualTo(expectedOutcome.result());
+    }
+
+    @Test
+    void computesFeesSuccessfully() {
+
+        final var id = ContractID.newBuilder().contractNum(10).build();
+        given(context.query()).willReturn(query);
+        given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
+        given(context.feeCalculator()).willReturn(feeCalculator);
+        givenAllowCallsToNonContractAccountOffConfig();
+
+        // Mock the behavior of legacyCalculate method
+        when(feeCalculator.legacyCalculate(any(Function.class))).thenAnswer(invocation -> {
+            // Extract the callback passed to the method
+            Function<SigValueObj, FeeData> passedCallback = invocation.getArgument(0);
+            return new Fees(10L, 0L, 0L);
+        });
+
+        var fees = subject.computeFees(context);
+
+        assertThat(fees).isEqualTo(new Fees(10L, 0L, 0L));
     }
 
     private void givenDefaultConfig() {

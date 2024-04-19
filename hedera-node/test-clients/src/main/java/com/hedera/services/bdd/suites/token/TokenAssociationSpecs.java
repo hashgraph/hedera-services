@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.NoTokenTransfers.emptyTokenTransfers;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -26,9 +27,11 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
@@ -37,18 +40,28 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.token.HapiTokenAssociate.DEFAULT_FEE;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
@@ -108,7 +121,8 @@ public class TokenAssociationSpecs extends HapiSuite {
                 contractInfoQueriesAsExpected(),
                 dissociateHasExpectedSemanticsForDeletedTokens(),
                 dissociateHasExpectedSemanticsForDissociatedContracts(),
-                canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury());
+                canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury(),
+                associateAndDissociateNeedsValidAccountAndToken());
     }
 
     @Override
@@ -117,11 +131,133 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
+    public HapiSpec canHandleInvalidAssociateTransactions() {
+        final String alice = "ALICE";
+        final String bob = "BOB";
+        final String unknownID = "0.0." + Long.MAX_VALUE;
+        return defaultHapiSpec("CanHandleInvalidAssociateTransactions")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(alice),
+                        cryptoCreate(bob),
+                        cryptoDelete(bob),
+                        tokenCreate(VANILLA_TOKEN),
+                        tokenCreate(KNOWABLE_TOKEN),
+                        tokenAssociate(alice, KNOWABLE_TOKEN),
+                        tokenCreate(TBD_TOKEN).adminKey(MULTI_KEY),
+                        tokenDelete(TBD_TOKEN))
+                .when()
+                .then(
+                        tokenAssociate(null, VANILLA_TOKEN)
+                                .fee(DEFAULT_FEE)
+                                .signedBy(DEFAULT_PAYER)
+                                .hasPrecheck(INVALID_ACCOUNT_ID),
+                        tokenAssociate(unknownID, VANILLA_TOKEN)
+                                .fee(DEFAULT_FEE)
+                                .signedBy(DEFAULT_PAYER)
+                                .hasPrecheck(INVALID_ACCOUNT_ID),
+                        tokenAssociate(bob, VANILLA_TOKEN).fee(DEFAULT_FEE).hasKnownStatus(ACCOUNT_DELETED),
+                        tokenAssociate(alice, List.of()).hasKnownStatus(SUCCESS),
+                        tokenAssociate(alice, VANILLA_TOKEN, VANILLA_TOKEN)
+                                .hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
+                        tokenAssociate(alice, unknownID).hasKnownStatus(INVALID_TOKEN_ID),
+                        tokenAssociate(alice, TBD_TOKEN).hasKnownStatus(TOKEN_WAS_DELETED),
+                        tokenAssociate(alice, KNOWABLE_TOKEN).hasKnownStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT));
+    }
+
+    @HapiTest
+    public HapiSpec canLimitMaxTokensPerAccountTransactions() {
+        final String alice = "ALICE";
+        final String treasury2 = "TREASURY_2";
+        return propertyPreservingHapiSpec("CanHandleInvalidAssociateTransactions")
+                .preserving("tokens.maxPerAccount", "entities.limitTokenAssociations")
+                .given(
+                        overridingTwo("tokens.maxPerAccount", "1", "entities.limitTokenAssociations", "true"),
+                        cryptoCreate(alice),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(treasury2),
+                        tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY),
+                        tokenCreate(KNOWABLE_TOKEN).treasury(treasury2),
+                        tokenAssociate(alice, KNOWABLE_TOKEN))
+                .when()
+                .then(tokenAssociate(alice, VANILLA_TOKEN).hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED));
+    }
+
+    @HapiTest
     public HapiSpec handlesUseOfDefaultTokenId() {
         return defaultHapiSpec("HandlesUseOfDefaultTokenId", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given()
                 .when()
-                .then(tokenAssociate(DEFAULT_PAYER, "0.0.0").hasKnownStatus(INVALID_TOKEN_ID));
+                .then(tokenAssociate(DEFAULT_PAYER, "0.0.0").hasPrecheck(INVALID_TOKEN_ID));
+    }
+
+    @HapiTest
+    public HapiSpec canDeleteNonFungibleTokenTreasuryAfterUpdate() {
+        return defaultHapiSpec("canDeleteNonFungibleTokenTreasuryAfterUpdate")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate("replacementTreasury"),
+                        tokenCreate(TBD_TOKEN)
+                                .adminKey(MULTI_KEY)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .treasury(TOKEN_TREASURY)
+                                .supplyKey(MULTI_KEY),
+                        mintToken(TBD_TOKEN, List.of(ByteString.copyFromUtf8("1"), ByteString.copyFromUtf8("2"))))
+                .when(
+                        cryptoDelete(TOKEN_TREASURY).hasKnownStatus(ACCOUNT_IS_TREASURY),
+                        tokenAssociate("replacementTreasury", TBD_TOKEN),
+                        tokenUpdate(TBD_TOKEN)
+                                .treasury("replacementTreasury")
+                                .signedByPayerAnd(MULTI_KEY, "replacementTreasury"))
+                .then(
+                        // Updating the treasury transfers the 2 NFTs to the new
+                        // treasury; hence the old treasury has numPositiveBalances=0
+                        cryptoDelete(TOKEN_TREASURY));
+    }
+
+    @HapiTest
+    public HapiSpec canDeleteNonFungibleTokenTreasuryBurnsAndTokenDeletion() {
+        final var firstTbdToken = "firstTbdToken";
+        final var secondTbdToken = "secondTbdToken";
+        final var treasuryWithoutAllPiecesBurned = "treasuryWithoutAllPiecesBurned";
+        final var treasuryWithAllPiecesBurned = "treasuryWithAllPiecesBurned";
+        return defaultHapiSpec("canDeleteNonFungibleTokenTreasuryBurnsAndTokenDeletion")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(treasuryWithAllPiecesBurned),
+                        cryptoCreate(treasuryWithoutAllPiecesBurned),
+                        tokenCreate(firstTbdToken)
+                                .adminKey(MULTI_KEY)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .treasury(treasuryWithAllPiecesBurned)
+                                .supplyKey(MULTI_KEY),
+                        tokenCreate(secondTbdToken)
+                                .adminKey(MULTI_KEY)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .treasury(treasuryWithoutAllPiecesBurned)
+                                .supplyKey(MULTI_KEY),
+                        mintToken(firstTbdToken, List.of(ByteString.copyFromUtf8("1"), ByteString.copyFromUtf8("2"))),
+                        mintToken(secondTbdToken, List.of(ByteString.copyFromUtf8("1"), ByteString.copyFromUtf8("2"))))
+                .when(
+                        // Delete both tokens, but only burn all serials for
+                        // one of them (so that the other has a treasury that
+                        // will need to explicitly dissociate from the deleted
+                        // token before it can be deleted)
+                        burnToken(firstTbdToken, List.of(1L, 2L)),
+                        tokenDelete(firstTbdToken),
+                        tokenDelete(secondTbdToken),
+                        cryptoDelete(treasuryWithAllPiecesBurned),
+                        // This treasury still has numPositiveBalances=1
+                        cryptoDelete(treasuryWithoutAllPiecesBurned)
+                                .hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES))
+                .then(
+                        // Now dissociate the second treasury so that it can be deleted
+                        tokenDissociate(treasuryWithoutAllPiecesBurned, secondTbdToken),
+                        cryptoDelete(treasuryWithoutAllPiecesBurned));
     }
 
     @HapiTest
@@ -432,6 +568,22 @@ public class TokenAssociationSpecs extends HapiSuite {
                         getAccountInfo("test").logged(),
                         tokenDissociate("test", FREEZABLE_TOKEN_OFF_BY_DEFAULT).logged(),
                         getAccountInfo("test").logged());
+    }
+
+    @HapiTest
+    private HapiSpec associateAndDissociateNeedsValidAccountAndToken() {
+        final var account = "account";
+        return defaultHapiSpec("dissociationNeedsAccount")
+                .given(
+                        newKeyNamed(SIMPLE),
+                        tokenCreate("a").decimals(1),
+                        cryptoCreate(account).key(SIMPLE).balance(0L))
+                .when(
+                        tokenAssociate("0.0.0", "a").signedBy(DEFAULT_PAYER).hasPrecheck(INVALID_ACCOUNT_ID),
+                        tokenDissociate("0.0.0", "a").signedBy(DEFAULT_PAYER).hasPrecheck(INVALID_ACCOUNT_ID))
+                .then(
+                        tokenAssociate(account, "0.0.0").hasPrecheck(INVALID_TOKEN_ID),
+                        tokenDissociate(account, "0.0.0").hasPrecheck(INVALID_TOKEN_ID));
     }
 
     public static HapiSpecOperation[] basicKeysAndTokens() {

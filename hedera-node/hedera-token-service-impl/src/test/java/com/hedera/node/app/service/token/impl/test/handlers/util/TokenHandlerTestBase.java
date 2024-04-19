@@ -25,6 +25,7 @@ import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.C_COMPLEX_KEY;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
@@ -48,8 +49,10 @@ import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -148,7 +151,8 @@ public class TokenHandlerTestBase {
         given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableTokenState);
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
         readableTokenStore = new ReadableTokenStoreImpl(readableStates);
-        writableTokenStore = new WritableTokenStore(writableStates);
+        final var configuration = HederaTestConfigBuilder.createConfig();
+        writableTokenStore = new WritableTokenStore(writableStates, configuration, mock(StoreMetricsService.class));
     }
 
     protected void refreshStoresWithCurrentTokenInWritable() {
@@ -157,7 +161,8 @@ public class TokenHandlerTestBase {
         given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableTokenState);
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
         readableTokenStore = new ReadableTokenStoreImpl(readableStates);
-        writableTokenStore = new WritableTokenStore(writableStates);
+        final var configuration = HederaTestConfigBuilder.createConfig();
+        writableTokenStore = new WritableTokenStore(writableStates, configuration, mock(StoreMetricsService.class));
     }
 
     @NonNull

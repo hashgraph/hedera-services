@@ -2358,11 +2358,11 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                         A_SCHEDULE,
                                         fileUpdate(standardUpdateFile).contents("fooo!"))
                                 .withEntityMemo(randomUppercase(100))
-                                .designatingPayer(FREEZE_ADMIN)
+                                .designatingPayer(SOFTWARE_UPDATE_ADMIN)
                                 .payingWith(PAYING_ACCOUNT)
                                 .via(SUCCESS_TXN))
                 .when(scheduleSign(A_SCHEDULE)
-                        .alsoSigningWith(FREEZE_ADMIN)
+                        .alsoSigningWith(SOFTWARE_UPDATE_ADMIN)
                         .payingWith(PAYING_ACCOUNT)
                         .via(SIGN_TX)
                         .hasKnownStatus(SUCCESS))

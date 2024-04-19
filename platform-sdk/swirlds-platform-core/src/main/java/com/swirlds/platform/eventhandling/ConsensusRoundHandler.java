@@ -30,12 +30,11 @@ import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.WAIT
 
 import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.ImmutableHash;
-import com.swirlds.common.crypto.RunningHash;
-import com.swirlds.common.stream.RunningEventHashUpdate;
+import com.swirlds.common.stream.RunningEventHashOverride;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.consensus.ConsensusConfig;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -45,10 +44,10 @@ import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateGarbageCollector;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
+import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -81,19 +80,12 @@ public class ConsensusRoundHandler {
     private boolean freezeRoundReceived = false;
 
     /**
-     * a RunningHash object which calculates running hash of all consensus events so far with their transactions handled
-     * <p>
-     * Future work: this will need to be changed to a proper null hash when this component is updated to handle empty
-     * rounds, since a hash of all 0s isn't valid when deserializing a state. In the current system, this hash is
-     * always overwritten before being put into the state, so it doesn't matter that it starts as all 0s.
+     * The legacy running event hash (used by the soon-to-be-retired consensus event stream) from the previous round. We
+     * need to save this here because of a quirk in the way the CES handles empty rounds. This legacy hash is always
+     * taken from the last consensus event when a round reaches consensus, which means that when a round has zero events
+     * we need to reuse the previous round's hash.
      */
-    private RunningHash consensusEventsRunningHash =
-            new RunningHash(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
-
-    /**
-     * Contains a background thread responsible for garbage collecting signed states
-     */
-    private final SignedStateGarbageCollector signedStateGarbageCollector;
+    private Hash previousRoundLegacyRunningEventHash;
 
     /**
      * Enables submitting platform status actions.
@@ -115,26 +107,28 @@ public class ConsensusRoundHandler {
     private final PlatformContext platformContext;
 
     /**
+     * If true then write the legacy running event hash each round.
+     */
+    private boolean writeLegacyRunningEventHash;
+
+    /**
      * Constructor
      *
-     * @param platformContext             contains various platform utilities
-     * @param swirldStateManager          the swirld state manager to send events to
-     * @param signedStateGarbageCollector the garbage collector for signed states
-     * @param waitForEventDurability      a method that blocks until an event becomes durable
-     * @param statusActionSubmitter       enables submitting of platform status actions
-     * @param softwareVersion             the current version of the software
+     * @param platformContext        contains various platform utilities
+     * @param swirldStateManager     the swirld state manager to send events to
+     * @param waitForEventDurability a method that blocks until an event becomes durable
+     * @param statusActionSubmitter  enables submitting of platform status actions
+     * @param softwareVersion        the current version of the software
      */
     public ConsensusRoundHandler(
             @NonNull final PlatformContext platformContext,
             @NonNull final SwirldStateManager swirldStateManager,
-            @NonNull final SignedStateGarbageCollector signedStateGarbageCollector,
             @NonNull final CheckedConsumer<GossipEvent, InterruptedException> waitForEventDurability,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final SoftwareVersion softwareVersion) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.swirldStateManager = Objects.requireNonNull(swirldStateManager);
-        this.signedStateGarbageCollector = Objects.requireNonNull(signedStateGarbageCollector);
         this.waitForEventDurability = Objects.requireNonNull(waitForEventDurability);
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
@@ -144,28 +138,34 @@ public class ConsensusRoundHandler {
                 .getConfigData(ConsensusConfig.class)
                 .roundsNonAncient();
         this.handlerMetrics = new RoundHandlingMetrics(platformContext);
+
+        previousRoundLegacyRunningEventHash = platformContext.getCryptography().getNullHash();
+
+        // If the CES is using a no-op scheduler then the legacy running event hash won't be computed.
+        writeLegacyRunningEventHash = platformContext
+                        .getConfiguration()
+                        .getConfigData(PlatformSchedulersConfig.class)
+                        .consensusEventStream()
+                        .type()
+                != TaskSchedulerType.NO_OP;
     }
 
     /**
-     * Update the consensus event running hash
-     * <p>
-     * Future work: in the current system, it isn't actually necessary to update this running hash when a new state
-     * is loaded. The running hash will be overwritten anyway by the first round that contains events, before the
-     * initial hash is ever set in the state. This method is being called anyway, though, since it will be a necessary
-     * workflow in the future to support handling of empty rounds by this component.
+     * This method is called after a restart or a reconnect. It provides the previous round's legacy running event hash,
+     * in case we need it.
      *
      * @param runningHashUpdate the update to the running hash
      */
-    public void updateRunningHash(@NonNull final RunningEventHashUpdate runningHashUpdate) {
-        consensusEventsRunningHash = new RunningHash(runningHashUpdate.runningEventHash());
+    public void updateLegacyRunningEventHash(@NonNull final RunningEventHashOverride runningHashUpdate) {
+        previousRoundLegacyRunningEventHash = runningHashUpdate.legacyRunningEventHash();
     }
 
     /**
      * Applies the transactions in the consensus round to the state
      *
      * @param consensusRound the consensus round to apply
-     * @return a new signed state, along with the consensus round that caused it to be created. null if no new state
-     * was created
+     * @return a new signed state, along with the consensus round that caused it to be created. null if no new state was
+     * created
      */
     @Nullable
     public StateAndRound handleConsensusRound(@NonNull final ConsensusRound consensusRound) {
@@ -216,7 +216,7 @@ public class ConsensusRoundHandler {
             swirldStateManager.handleConsensusRound(consensusRound);
 
             handlerMetrics.setPhase(UPDATING_PLATFORM_STATE_RUNNING_HASH);
-            updatePlatformStateRunningHash(consensusRound);
+            updateRunningEventHash(consensusRound);
 
             return createSignedState(consensusRound);
         } catch (final InterruptedException e) {
@@ -246,27 +246,34 @@ public class ConsensusRoundHandler {
     }
 
     /**
-     * Update the running hash of the consensus events in the platform state
-     * <p>
-     * This method is called after the consensus round has been applied to the state, to minimize the chance that
-     * we have to wait for the running hash to finish being calculated.
+     * Update the state with the running event hash.
      *
      * @param round the consensus round
      * @throws InterruptedException if this thread is interrupted
      */
-    private void updatePlatformStateRunningHash(@NonNull final ConsensusRound round) throws InterruptedException {
+    private void updateRunningEventHash(@NonNull final ConsensusRound round) throws InterruptedException {
         final PlatformState platformState =
                 swirldStateManager.getConsensusState().getPlatformState();
 
-        // Update the running hash object. If there are no events, the running hash does not change.
-        // Future work: this is a redundant check, since empty rounds are currently ignored entirely. The check is here
-        // anyway, for when that changes in the future.
-        if (!round.isEmpty()) {
-            consensusEventsRunningHash = round.getConsensusEvents().getLast().getRunningHash();
-        }
+        platformState.setRunningEventHash(round.getRunningEventHash());
 
-        final Hash runningHash = consensusEventsRunningHash.getFutureHash().getAndRethrow();
-        platformState.setRunningEventHash(runningHash);
+        if (writeLegacyRunningEventHash) {
+            // Update the running hash object. If there are no events, the running hash does not change.
+            // Future work: this is a redundant check, since empty rounds are currently ignored entirely. The check is
+            // here anyway, for when that changes in the future.
+            if (!round.isEmpty()) {
+                previousRoundLegacyRunningEventHash = round.getConsensusEvents()
+                        .getLast()
+                        .getRunningHash()
+                        .getFutureHash()
+                        .getAndRethrow();
+            }
+
+            platformState.setLegacyRunningEventHash(previousRoundLegacyRunningEventHash);
+        } else {
+            platformState.setLegacyRunningEventHash(
+                    platformContext.getCryptography().getNullHash());
+        }
     }
 
     /**
@@ -288,12 +295,14 @@ public class ConsensusRoundHandler {
 
         handlerMetrics.setPhase(CREATING_SIGNED_STATE);
         final SignedState signedState = new SignedState(
-                platformContext, immutableStateCons, "ConsensusRoundHandler.createSignedState()", freezeRoundReceived);
+                platformContext,
+                CryptoStatic::verifySignature,
+                immutableStateCons,
+                "ConsensusRoundHandler.createSignedState()",
+                freezeRoundReceived,
+                true);
 
         final ReservedSignedState reservedSignedState = signedState.reserve("round handler output");
-        // make sure to create the first reservation before setting the garbage collector
-        signedState.setGarbageCollector(signedStateGarbageCollector);
-
         return new StateAndRound(reservedSignedState, consensusRound);
     }
 }

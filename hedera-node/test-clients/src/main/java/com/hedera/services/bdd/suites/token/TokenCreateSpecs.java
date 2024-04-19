@@ -18,7 +18,10 @@ package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocation.*;
+import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocation.OP_BODY;
+import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocation.SIGNED_TRANSACTION;
+import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocation.TRANSACTION;
+import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocation.TRANSACTION_BODY;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairs;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
@@ -56,7 +59,37 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FUL
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TOKEN_NAMES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MAX_SUPPLY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -151,7 +184,26 @@ public class TokenCreateSpecs extends HapiSuite {
                 createsFungibleInfiniteByDefault(),
                 baseCreationsHaveExpectedPrices(),
                 /* HIP-23 */
-                validateNewTokenAssociations());
+                validateNewTokenAssociations(),
+                missingTreasurySignatureFails());
+    }
+
+    @HapiTest
+    public HapiSpec canHandleInvalidTokenCreateTransactions() {
+        final String alice = "ALICE";
+        return defaultHapiSpec("canHandleInvalidTokenCreateTransactions")
+                .given(cryptoCreate(alice))
+                .when()
+                .then(
+                        tokenCreate(null).hasKnownStatus(MISSING_TOKEN_NAME),
+                        tokenCreate(A_TOKEN)
+                                .treasury(alice)
+                                .signedBy(DEFAULT_PAYER)
+                                .hasKnownStatus(INVALID_SIGNATURE),
+                        tokenCreate(A_TOKEN)
+                                .treasury(alice)
+                                .signedBy(DEFAULT_PAYER, alice)
+                                .hasKnownStatus(SUCCESS));
     }
 
     /**
@@ -530,6 +582,95 @@ public class TokenCreateSpecs extends HapiSuite {
                                         .balance(0)
                                         .kyc(TokenKycStatus.KycNotApplicable)
                                         .freeze(TokenFreezeStatus.FreezeNotApplicable)));
+    }
+
+    @HapiTest
+    public HapiSpec missingTreasurySignatureFails() {
+        String memo = "JUMP";
+        String saltedName = salted(PRIMARY);
+        final var pauseKey = "pauseKey";
+        return defaultHapiSpec("missingTreasurySignatureFails", NONDETERMINISTIC_TOKEN_NAMES)
+                .given(
+                        cryptoCreate(TOKEN_TREASURY).balance(0L),
+                        cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
+                        newKeyNamed(ADMIN_KEY),
+                        newKeyNamed("freezeKey"),
+                        newKeyNamed("kycKey"),
+                        newKeyNamed(SUPPLY_KEY),
+                        newKeyNamed("wipeKey"),
+                        newKeyNamed("feeScheduleKey"),
+                        newKeyNamed(pauseKey))
+                .when(
+                        tokenCreate(PRIMARY)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .entityMemo(memo)
+                                .name(saltedName)
+                                .treasury(TOKEN_TREASURY)
+                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
+                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                                .maxSupply(1000)
+                                .initialSupply(500)
+                                .decimals(1)
+                                .adminKey(ADMIN_KEY)
+                                .freezeKey("freezeKey")
+                                .kycKey("kycKey")
+                                .supplyKey(SUPPLY_KEY)
+                                .wipeKey("wipeKey")
+                                .feeScheduleKey("feeScheduleKey")
+                                .pauseKey(pauseKey)
+                                .signedBy(DEFAULT_PAYER, ADMIN_KEY, AUTO_RENEW_ACCOUNT)
+                                .hasKnownStatus(INVALID_SIGNATURE),
+                        tokenCreate(PRIMARY)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .entityMemo(memo)
+                                .name(saltedName)
+                                .treasury(TOKEN_TREASURY)
+                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
+                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                                .maxSupply(1000)
+                                .initialSupply(500)
+                                .decimals(1)
+                                .adminKey(ADMIN_KEY)
+                                .freezeKey("freezeKey")
+                                .kycKey("kycKey")
+                                .supplyKey(SUPPLY_KEY)
+                                .wipeKey("wipeKey")
+                                .feeScheduleKey("feeScheduleKey")
+                                .pauseKey(pauseKey)
+                                .signedBy(DEFAULT_PAYER, ADMIN_KEY, AUTO_RENEW_ACCOUNT, TOKEN_TREASURY)
+                                .via(CREATE_TXN))
+                .then(
+                        withOpContext((spec, opLog) -> {
+                            var createTxn = getTxnRecord(CREATE_TXN);
+                            allRunFor(spec, createTxn);
+                            var timestamp = createTxn
+                                    .getResponseRecord()
+                                    .getConsensusTimestamp()
+                                    .getSeconds();
+                            spec.registry().saveExpiry(PRIMARY, timestamp + THREE_MONTHS_IN_SECONDS);
+                        }),
+                        getTokenInfo(PRIMARY)
+                                .logged()
+                                .hasRegisteredId(PRIMARY)
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasSupplyType(TokenSupplyType.FINITE)
+                                .hasEntityMemo(memo)
+                                .hasName(saltedName)
+                                .hasTreasury(TOKEN_TREASURY)
+                                .hasAutoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                                .hasValidExpiry()
+                                .hasDecimals(1)
+                                .hasAdminKey(PRIMARY)
+                                .hasFreezeKey(PRIMARY)
+                                .hasKycKey(PRIMARY)
+                                .hasSupplyKey(PRIMARY)
+                                .hasWipeKey(PRIMARY)
+                                .hasFeeScheduleKey(PRIMARY)
+                                .hasPauseKey(PRIMARY)
+                                .hasPauseStatus(TokenPauseStatus.Unpaused)
+                                .hasMaxSupply(1000)
+                                .hasTotalSupply(500)
+                                .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT));
     }
 
     @HapiTest

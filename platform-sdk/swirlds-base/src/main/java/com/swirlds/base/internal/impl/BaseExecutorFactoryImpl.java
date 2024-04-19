@@ -27,8 +27,14 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class BaseExecutorFactoryImpl implements BaseExecutorFactory {
 
+    /**
+     * The singleton instance of this factory.
+     */
     private static final BaseExecutorFactory instance = new BaseExecutorFactoryImpl();
 
+    /**
+     * Constructs a new factory.
+     */
     private BaseExecutorFactoryImpl() {}
 
     @NonNull

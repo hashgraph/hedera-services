@@ -1,3 +1,6 @@
+import com.swirlds.config.api.ConfigurationExtension;
+import com.swirlds.platform.config.PlatformConfigurationExtension;
+
 /**
  * The Swirlds public API module used by platform applications.
  */
@@ -5,21 +8,12 @@ module com.swirlds.platform.core {
 
     /* Public Package Exports. This list should remain alphabetized. */
     exports com.swirlds.platform;
-    exports com.swirlds.platform.gossip.chatter;
-    exports com.swirlds.platform.gossip.chatter.communication;
+    exports com.swirlds.platform.builder;
     exports com.swirlds.platform.network.communication.handshake;
-    exports com.swirlds.platform.gossip.chatter.config;
-    exports com.swirlds.platform.gossip.chatter.protocol;
-    exports com.swirlds.platform.gossip.chatter.protocol.input;
-    exports com.swirlds.platform.gossip.chatter.protocol.messages;
-    exports com.swirlds.platform.gossip.chatter.protocol.output;
-    exports com.swirlds.platform.gossip.chatter.protocol.peer;
-    exports com.swirlds.platform.gossip.chatter.protocol.heartbeat;
     exports com.swirlds.platform.cli;
     exports com.swirlds.platform.components;
     exports com.swirlds.platform.components.appcomm;
     exports com.swirlds.platform.components.common.output;
-    exports com.swirlds.platform.components.common.query;
     exports com.swirlds.platform.components.state.output;
     exports com.swirlds.platform.config;
     exports com.swirlds.platform.config.legacy;
@@ -80,14 +74,14 @@ module com.swirlds.platform.core {
             com.hedera.node.app.service.mono.test.fixtures;
     exports com.swirlds.platform.event.linking to
             com.swirlds.common,
-            com.swirlds.platform.test;
+            com.swirlds.platform.test,
+            com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.state.notifications to
             com.swirlds.platform.test;
     exports com.swirlds.platform.state.iss to
             com.swirlds.platform.test;
     exports com.swirlds.platform.state.iss.internal to
             com.swirlds.platform.test;
-    exports com.swirlds.platform.gossip.chatter.protocol.processing;
     exports com.swirlds.platform.reconnect.emergency to
             com.swirlds.platform.test;
     exports com.swirlds.platform.recovery.internal to
@@ -121,6 +115,8 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.wiring.components;
     exports com.swirlds.platform.event.hashing;
     exports com.swirlds.platform.event.orphan;
+    exports com.swirlds.platform.publisher;
+    exports com.swirlds.platform.components.consensus;
 
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.cli;
@@ -129,6 +125,8 @@ module com.swirlds.platform.core {
     requires transitive com.swirlds.metrics.api;
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;
+    requires transitive com.hedera.node.hapi;
+    requires transitive com.hedera.pbj.runtime;
     requires transitive info.picocli;
     requires transitive org.apache.logging.log4j;
     requires com.swirlds.config.extensions;
@@ -145,4 +143,8 @@ module com.swirlds.platform.core {
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;
+    requires static com.google.auto.service;
+
+    provides ConfigurationExtension with
+            PlatformConfigurationExtension;
 }

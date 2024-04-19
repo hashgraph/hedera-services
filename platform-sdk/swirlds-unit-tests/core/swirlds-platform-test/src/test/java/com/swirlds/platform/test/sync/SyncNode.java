@@ -28,11 +28,12 @@ import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphInsertionException;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
@@ -142,7 +143,7 @@ public class SyncNode {
                 .withConfiguration(configuration)
                 .build();
 
-        shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
+        shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class), new NoOpIntakeEventCounter());
         this.executor = executor;
     }
 
@@ -266,7 +267,7 @@ public class SyncNode {
 
     /**
      * <p>Calls the
-     * {@link Shadowgraph#updateEventWindow(com.swirlds.platform.consensus.NonAncientEventWindow)} method and saves the
+     * {@link Shadowgraph#updateEventWindow(EventWindow)} method and saves the
      * {@code expireBelow} value for use in validation. For the purposes of these tests, the {@code expireBelow} value
      * becomes the oldest non-expired ancient indicator in the shadow graph returned by
      * {@link SyncNode#getExpirationThreshold()} . In order words, these tests assume there are no reservations prior to
@@ -278,10 +279,10 @@ public class SyncNode {
     public void expireBelow(final long expirationThreshold) {
         this.expirationThreshold = expirationThreshold;
 
-        final long ancientThreshold = shadowGraph.getEventWindow().getAncientThreshold();
+        final long ancientThreshold = Math.max(shadowGraph.getEventWindow().getAncientThreshold(), expirationThreshold);
 
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
-                0 /* ignored by shadowgraph */, ancientThreshold, expirationThreshold, ancientMode);
+        final EventWindow eventWindow =
+                new EventWindow(0 /* ignored by shadowgraph */, ancientThreshold, expirationThreshold, ancientMode);
 
         updateEventWindow(eventWindow);
     }
@@ -303,9 +304,9 @@ public class SyncNode {
     }
 
     /**
-     * Sets the current {@link NonAncientEventWindow} for the {@link Shadowgraph}.
+     * Sets the current {@link EventWindow} for the {@link Shadowgraph}.
      */
-    public void updateEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
+    public void updateEventWindow(@NonNull final EventWindow eventWindow) {
         shadowGraph.updateEventWindow(eventWindow);
     }
 

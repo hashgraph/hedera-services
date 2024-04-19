@@ -578,7 +578,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     }
 
     public T blankMetadata() {
-        memo = Optional.of("");
+        metadata = Optional.of("");
         return self();
     }
 
@@ -641,6 +641,12 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     }
 
     public T payingWith(String name) {
+        payer = Optional.of(name);
+        return self();
+    }
+
+    public T payingWithAliased(String name) {
+        payingWithAlias = true;
         payer = Optional.of(name);
         return self();
     }

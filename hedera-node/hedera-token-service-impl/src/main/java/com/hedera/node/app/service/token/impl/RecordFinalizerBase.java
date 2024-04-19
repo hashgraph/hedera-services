@@ -19,7 +19,9 @@ package com.hedera.node.app.service.token.impl;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_AMOUNT_COMPARATOR;
+import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.NFT_TRANSFER_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.addExactOrThrowReason;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -39,6 +41,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Base class for both {@link com.hedera.node.app.service.token.records.ParentRecordFinalizer} and {@link
@@ -51,15 +54,18 @@ public class RecordFinalizerBase {
 
     /**
      * Gets all hbar changes for all modified accounts from the given {@link WritableAccountStore}.
+     *
      * @param writableAccountStore the {@link WritableAccountStore} to get the hbar changes from
+     * @param maxLegalBalance the max legal balance for any account
      * @return a {@link Map} of {@link AccountID} to {@link Long} representing the hbar changes for all modified
      */
     @NonNull
-    protected Map<AccountID, Long> hbarChangesFrom(@NonNull final WritableAccountStore writableAccountStore) {
+    protected Map<AccountID, Long> hbarChangesFrom(
+            @NonNull final WritableAccountStore writableAccountStore, final long maxLegalBalance) {
         final var hbarChanges = new HashMap<AccountID, Long>();
-        var netHbarBalance = 0;
+        var netHbarBalance = 0L;
         for (final AccountID modifiedAcctId : writableAccountStore.modifiedAccountsInState()) {
-            final var modifiedAcct = writableAccountStore.getAccountById(modifiedAcctId);
+            final var modifiedAcct = requireNonNull(writableAccountStore.getAccountById(modifiedAcctId));
             final var persistedAcct = writableAccountStore.getOriginalValue(modifiedAcctId);
             // It's possible the modified account was created in this transaction, in which case the non-existent
             // persisted account effectively has no balance (i.e. its prior balance is 0)
@@ -67,10 +73,11 @@ public class RecordFinalizerBase {
 
             // Never allow an account's net hbar balance to be negative
             validateTrue(modifiedAcct.tinybarBalance() >= 0, FAIL_INVALID);
+            validateTrue(modifiedAcct.tinybarBalance() <= maxLegalBalance, FAIL_INVALID);
 
             final var netHbarChange = modifiedAcct.tinybarBalance() - persistedBalance;
             if (netHbarChange != 0) {
-                netHbarBalance += netHbarChange;
+                netHbarBalance = addExactOrThrowReason(netHbarBalance, netHbarChange, FAIL_INVALID);
                 hbarChanges.put(modifiedAcctId, netHbarChange);
             }
         }
@@ -99,7 +106,7 @@ public class RecordFinalizerBase {
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull TokenType tokenType,
             final boolean filterZeroAmounts) {
-        final var tokenChanges = new HashMap<EntityIDPair, Long>();
+        final var tokenRelChanges = new HashMap<EntityIDPair, Long>();
         for (final EntityIDPair modifiedRel : writableTokenRelStore.modifiedTokens()) {
             final var relAcctId = modifiedRel.accountIdOrThrow();
             final var relTokenId = modifiedRel.tokenIdOrThrow();
@@ -122,12 +129,25 @@ public class RecordFinalizerBase {
 
             // If the token rel's balance has changed, add it to the list of changes
             final var netFungibleChange = modifiedTokenRelBalance - persistedBalance;
-            if (netFungibleChange != 0 || !filterZeroAmounts) {
-                tokenChanges.put(modifiedRel, netFungibleChange);
+            if (netFungibleChange != 0) {
+                tokenRelChanges.put(modifiedRel, netFungibleChange);
+            } else {
+                // It is possible that we have updated pointers in the token relation during crypto transfer
+                // but the balance has not changed.Since we don't filter zero amounts in crypto transfer, we need to
+                // check they
+                // are not just pointer changes to avoid adding them to record
+                // We don't check next pointer here, because the next pointer can change during associate or
+                // dissociate, and we filter zero amounts for those records
+                final var prevPointerChanged = !Objects.equals(
+                        persistedTokenRel != null ? persistedTokenRel.previousToken() : null,
+                        modifiedTokenRel != null ? modifiedTokenRel.previousToken() : null);
+                if (!filterZeroAmounts && !prevPointerChanged) {
+                    tokenRelChanges.put(modifiedRel, 0L);
+                }
             }
         }
 
-        return tokenChanges;
+        return tokenRelChanges;
     }
 
     /**
@@ -289,9 +309,9 @@ public class RecordFinalizerBase {
         for (final var nftsForTokenId : nftChanges.entrySet()) {
             if (!nftsForTokenId.getValue().isEmpty()) {
                 // This var is the collection of all NFT transfers _for a single token ID_
-                // NFT serial numbers will not be sorted, instead will be displayed in the order they were added in
-                // transaction
+                // NFT serial numbers will be sorted to match mono behavior
                 final var nftTransfersForTokenId = nftsForTokenId.getValue();
+                nftTransfersForTokenId.sort(NFT_TRANSFER_COMPARATOR);
                 nftTokenTransferLists.add(TokenTransferList.newBuilder()
                         .token(nftsForTokenId.getKey())
                         .nftTransfers(nftTransfersForTokenId)

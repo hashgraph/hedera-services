@@ -51,6 +51,7 @@ import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -189,7 +190,9 @@ final class BlockRecordManagerTest extends AppTestBase {
                 final var block = STARTING_BLOCK + i;
                 for (var record : blockData) {
                     blockRecordManager.startUserTransaction(
-                            fromTimestamp(record.transactionRecord().consensusTimestamp()), hederaState);
+                            fromTimestamp(record.transactionRecord().consensusTimestamp()),
+                            hederaState,
+                            mock(PlatformState.class));
                     // check start hash if first transaction
                     if (transactionCount == 0) {
                         // check starting hash, we need to be using the correct starting hash for the tests to work
@@ -283,7 +286,9 @@ final class BlockRecordManagerTest extends AppTestBase {
                     final var userTransactions = blockData.subList(j, j + batchSize);
                     for (var record : userTransactions) {
                         blockRecordManager.startUserTransaction(
-                                fromTimestamp(record.transactionRecord().consensusTimestamp()), hederaState);
+                                fromTimestamp(record.transactionRecord().consensusTimestamp()),
+                                hederaState,
+                                mock(PlatformState.class));
                         blockRecordManager.endUserTransaction(Stream.of(record), hederaState);
                         transactionCount++;
                         // collect hashes

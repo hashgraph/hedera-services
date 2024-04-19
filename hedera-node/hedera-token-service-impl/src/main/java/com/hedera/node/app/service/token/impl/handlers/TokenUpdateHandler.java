@@ -37,15 +37,17 @@ import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
-import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.isKeyRemoval;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
+import static com.hedera.node.app.spi.validation.AttributeValidator.isKeyRemoval;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
@@ -68,6 +70,8 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -102,11 +106,9 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         final var tokenId = op.tokenOrThrow();
 
         final var tokenStore = context.createStore(ReadableTokenStore.class);
-        final var tokenMetadata = tokenStore.getTokenMeta(tokenId);
-        if (tokenMetadata == null) throw new PreCheckException(INVALID_TOKEN_ID);
-        if (tokenMetadata.hasAdminKey()) {
-            context.requireKey(tokenMetadata.adminKey());
-        }
+        final var token = tokenStore.get(tokenId);
+        if (token == null) throw new PreCheckException(INVALID_TOKEN_ID);
+
         if (op.hasAutoRenewAccount()) {
             context.requireKeyOrThrow(op.autoRenewAccountOrThrow(), INVALID_AUTORENEW_ACCOUNT);
         }
@@ -115,6 +117,27 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         }
         if (op.hasAdminKey()) {
             context.requireKey(op.adminKeyOrThrow());
+        }
+        // To update metadata either admin key or metadata key should sign.
+        // For updating any other fields admin key should sign.
+        if (isMetadataOnlyUpdateOp(op) && (token.hasAdminKey() || token.hasMetadataKey())) {
+            final List<Key> keys = new ArrayList<>();
+            if (token.hasAdminKey()) {
+                keys.add(token.adminKey());
+            }
+            if (token.hasMetadataKey()) {
+                keys.add(token.metadataKey());
+            }
+            final Key threshKey = Key.newBuilder()
+                    .thresholdKey(ThresholdKey.newBuilder()
+                            .keys(KeyList.newBuilder().keys(keys).build())
+                            .threshold(1)
+                            .build())
+                    .build();
+            context.requireKey(threshKey);
+        } else if (!isExpiryOnlyUpdateOp(op) && token.hasAdminKey()) {
+            // For expiry only op admin key is not required
+            context.requireKey(token.adminKey());
         }
     }
 
@@ -166,7 +189,6 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             }
 
             if (!newTreasury.equals(existingTreasury)) {
-                // TODO : Not sure why we are checking existing treasury account here
                 final var existingTreasuryAccount = getIfUsable(
                         existingTreasury, accountStore, context.expiryValidator(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
@@ -176,7 +198,6 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                 transferTokensToNewTreasury(existingTreasury, newTreasury, token, tokenRelStore, accountStore);
             }
         }
-
         final var tokenBuilder = customizeToken(token, resolvedExpiry, op);
         tokenStore.put(tokenBuilder.build());
         recordBuilder.tokenType(token.tokenType());
@@ -260,17 +281,26 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         final var toRelBalance = toTreasuryRel.balance();
 
         final var fromNftsOwned = fromTreasury.numberOwnedNfts();
-        final var toNftsWOwned = toTreasury.numberOwnedNfts();
+        final var toNftsOwned = toTreasury.numberOwnedNfts();
 
         final var fromTreasuryCopy = fromTreasury.copyBuilder();
         final var toTreasuryCopy = toTreasury.copyBuilder();
         final var fromRelCopy = fromTreasuryRel.copyBuilder();
         final var toRelCopy = toTreasuryRel.copyBuilder();
 
-        accountStore.put(
-                fromTreasuryCopy.numberOwnedNfts(fromNftsOwned - fromRelBalance).build());
-        accountStore.put(
-                toTreasuryCopy.numberOwnedNfts(toNftsWOwned + fromRelBalance).build());
+        // Update the number of positive balances and number of owned NFTs for old and new treasuries
+        final var newFromPositiveBalancesCount =
+                fromRelBalance > 0 ? fromTreasury.numberPositiveBalances() - 1 : fromTreasury.numberPositiveBalances();
+        final var newToPositiveBalancesCount =
+                toRelBalance > 0 ? toTreasury.numberPositiveBalances() + 1 : toTreasury.numberPositiveBalances();
+        accountStore.put(fromTreasuryCopy
+                .numberPositiveBalances(newFromPositiveBalancesCount)
+                .numberOwnedNfts(fromNftsOwned - fromRelBalance)
+                .build());
+        accountStore.put(toTreasuryCopy
+                .numberPositiveBalances(newToPositiveBalancesCount)
+                .numberOwnedNfts(toNftsOwned + fromRelBalance)
+                .build());
         tokenRelStore.put(fromRelCopy.balance(0).build());
         tokenRelStore.put(toRelCopy.balance(toRelBalance + fromRelBalance).build());
     }
@@ -387,9 +417,13 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             validateTrue(originalToken.hasMetadataKey(), TOKEN_HAS_NO_METADATA_KEY);
             builder.metadataKey(op.metadataKey());
         }
-        if (!isExpiryOnlyUpdateOp(op)) {
+
+        if (isMetadataOnlyUpdateOp(op)) {
+            validateTrue(originalToken.hasAdminKey() || originalToken.hasMetadataKey(), TOKEN_IS_IMMUTABLE);
+        } else if (!isExpiryOnlyUpdateOp(op)) {
             validateTrue(originalToken.hasAdminKey(), TOKEN_IS_IMMUTABLE);
         }
+
         if (op.hasAdminKey()) {
             final var newAdminKey = op.adminKey();
             if (isKeyRemoval(newAdminKey)) {

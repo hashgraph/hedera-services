@@ -180,7 +180,14 @@ public interface StoresModule {
     @Singleton
     static IntConsumer provideCryptoCreateThrottleReclaimer(
             @NonNull @HapiThrottle final FunctionalityThrottling hapiThrottling) {
-        return n -> hapiThrottling.leakCapacityForNOfUnscaled(n, CryptoCreate);
+        return n -> {
+            try {
+                hapiThrottling.leakCapacityForNOfUnscaled(n, CryptoCreate);
+            } catch (Exception ignore) {
+                // Ignore if the frontend bucket has already leaked all the capacity
+                // used for throttling the transaction on the frontend
+            }
+        };
     }
 
     @Provides

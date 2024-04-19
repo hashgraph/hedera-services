@@ -17,8 +17,6 @@
 package com.swirlds.platform.system.events;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -30,8 +28,8 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
 
@@ -45,20 +43,20 @@ class BirthRoundMigrationShimTests {
             final long generation,
             final long birthRound) {
 
-        final GossipEvent event = new GossipEvent(
-                new BaseEventHashedData(
-                        softwareVersion,
-                        new NodeId(random.nextLong(1, 10)),
-                        new EventDescriptor(
-                                randomHash(random),
-                                new NodeId(random.nextInt(1, 10)),
-                                generation - 1 /* chose parent generation to yield desired self generation */,
-                                random.nextLong(birthRound - 2, birthRound + 1)) /* realistic range */,
-                        List.of() /* don't bother with other parents, unimportant for this test */,
-                        birthRound,
-                        randomInstant(random),
-                        null),
-                new BaseEventUnhashedData());
+        final NodeId creatorId = new NodeId(random.nextLong(1, 10));
+        final GossipEvent selfParent = new TestingEventBuilder(random)
+                .setCreatorId(creatorId)
+                .setBirthRound(random.nextLong(birthRound - 2, birthRound + 1)) /* realistic range */
+                .build();
+
+        final GossipEvent event = new TestingEventBuilder(random)
+                .setSoftwareVersion(softwareVersion)
+                .setCreatorId(creatorId)
+                .setBirthRound(birthRound)
+                .setSelfParent(selfParent)
+                /* chose parent generation to yield desired self generation */
+                .overrideSelfParentGeneration(generation - 1)
+                .build();
 
         platformContext.getCryptography().digestSync(event.getHashedData());
 
@@ -76,7 +74,7 @@ class BirthRoundMigrationShimTests {
         final long lastRoundBeforeBirthRoundMode = random.nextLong(100, 1_000);
         final long lowestJudgeGenerationBeforeBirthRoundMode = random.nextLong(100, 1_000);
 
-        final BirthRoundMigrationShim shim = new BirthRoundMigrationShim(
+        final BirthRoundMigrationShim shim = new DefaultBirthRoundMigrationShim(
                 platformContext,
                 firstVersionInBirthRoundMode,
                 lastRoundBeforeBirthRoundMode,
@@ -119,7 +117,7 @@ class BirthRoundMigrationShimTests {
         final long lastRoundBeforeBirthRoundMode = random.nextLong(100, 1_000);
         final long lowestJudgeGenerationBeforeBirthRoundMode = random.nextLong(100, 1_000);
 
-        final BirthRoundMigrationShim shim = new BirthRoundMigrationShim(
+        final BirthRoundMigrationShim shim = new DefaultBirthRoundMigrationShim(
                 platformContext,
                 firstVersionInBirthRoundMode,
                 lastRoundBeforeBirthRoundMode,
@@ -163,7 +161,7 @@ class BirthRoundMigrationShimTests {
         final long lastRoundBeforeBirthRoundMode = random.nextLong(100, 1_000);
         final long lowestJudgeGenerationBeforeBirthRoundMode = random.nextLong(100, 1_000);
 
-        final BirthRoundMigrationShim shim = new BirthRoundMigrationShim(
+        final BirthRoundMigrationShim shim = new DefaultBirthRoundMigrationShim(
                 platformContext,
                 firstVersionInBirthRoundMode,
                 lastRoundBeforeBirthRoundMode,

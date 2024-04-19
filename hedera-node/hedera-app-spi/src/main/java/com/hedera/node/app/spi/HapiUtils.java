@@ -32,7 +32,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.Set;
@@ -98,13 +97,14 @@ public class HapiUtils {
     public static final Comparator<Timestamp> TIMESTAMP_COMPARATOR =
             Comparator.comparingLong(Timestamp::seconds).thenComparingInt(Timestamp::nanos);
 
-    /** A {@link Comparator} for {@link SemanticVersion}s. */
+    /** A {@link Comparator} for {@link SemanticVersion}s that ignores
+     * any semver part that cannot be parsed as an integer. */
     public static final Comparator<SemanticVersion> SEMANTIC_VERSION_COMPARATOR = Comparator.comparingInt(
                     SemanticVersion::major)
             .thenComparingInt(SemanticVersion::minor)
             .thenComparingInt(SemanticVersion::patch)
-            .thenComparing(SemanticVersion::pre)
-            .thenComparing(SemanticVersion::build);
+            .thenComparingInt(semVer -> parsedIntOrZero(semVer.pre()))
+            .thenComparingInt(semVer -> parsedIntOrZero(semVer.build()));
 
     private HapiUtils() {}
 
@@ -153,14 +153,10 @@ public class HapiUtils {
     public static int countOfCryptographicKeys(@NonNull final Key key) {
         return switch (key.key().kind()) {
             case ECDSA_384, ED25519, RSA_3072, ECDSA_SECP256K1 -> 1;
-            case KEY_LIST -> key.keyListOrThrow().keysOrElse(Collections.emptyList()).stream()
+            case KEY_LIST -> key.keyListOrThrow().keys().stream()
                     .mapToInt(HapiUtils::countOfCryptographicKeys)
                     .sum();
-            case THRESHOLD_KEY -> key
-                    .thresholdKeyOrThrow()
-                    .keysOrElse(KeyList.DEFAULT)
-                    .keysOrElse(Collections.emptyList())
-                    .stream()
+            case THRESHOLD_KEY -> key.thresholdKeyOrThrow().keysOrElse(KeyList.DEFAULT).keys().stream()
                     .mapToInt(HapiUtils::countOfCryptographicKeys)
                     .sum();
             case CONTRACT_ID, DELEGATABLE_CONTRACT_ID, UNSET -> 0;
@@ -340,5 +336,17 @@ public class HapiUtils {
             builder.append("-");
         }
         return builder.toString();
+    }
+
+    private static int parsedIntOrZero(@Nullable final String s) {
+        if (s == null) {
+            return 0;
+        } else {
+            try {
+                return Integer.parseInt(s);
+            } catch (NumberFormatException ignore) {
+                return 0;
+            }
+        }
     }
 }

@@ -18,16 +18,19 @@ package com.swirlds.platform.wiring;
 
 import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.counters.ObjectCounter;
-import com.swirlds.platform.components.ConsensusEngine;
-import com.swirlds.platform.event.FutureEventBuffer;
+import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
+import com.swirlds.platform.event.linking.InOrderLinker;
+import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
+import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
-import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
-import com.swirlds.platform.wiring.components.PostHashCollectorWiring;
 import com.swirlds.platform.wiring.components.ShadowgraphWiring;
 import com.swirlds.platform.wiring.components.StateHasherWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
@@ -41,7 +44,7 @@ import java.util.Objects;
 public class PlatformCoordinator {
     /**
      * The object counter which spans the {@link com.swirlds.platform.event.hashing.EventHasher EventHasher} and the
-     * {@link PostHashCollectorWiring}
+     * postHashCollector
      * <p>
      * Used to flush the pair of components together.
      */
@@ -49,14 +52,13 @@ public class PlatformCoordinator {
 
     private final ComponentWiring<InternalEventValidator, GossipEvent> internalEventValidatorWiring;
     private final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring;
-    private final EventSignatureValidatorWiring eventSignatureValidatorWiring;
-    private final OrphanBufferWiring orphanBufferWiring;
-    private final InOrderLinkerWiring inOrderLinkerWiring;
+    private final ComponentWiring<EventSignatureValidator, GossipEvent> eventSignatureValidatorWiring;
+    private final ComponentWiring<OrphanBuffer, List<GossipEvent>> orphanBufferWiring;
+    private final ComponentWiring<InOrderLinker, EventImpl> inOrderLinkerWiring;
     private final ShadowgraphWiring shadowgraphWiring;
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
-    private final ComponentWiring<FutureEventBuffer, List<GossipEvent>> futureEventBufferWiring;
-    private final EventCreationManagerWiring eventCreationManagerWiring;
-    private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
+    private final ComponentWiring<EventCreationManager, BaseEventHashedData> eventCreationManagerWiring;
+    private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
     private final StateHasherWiring stateHasherWiring;
@@ -72,7 +74,6 @@ public class PlatformCoordinator {
      * @param inOrderLinkerWiring                    the in order linker wiring
      * @param shadowgraphWiring                      the shadowgraph wiring
      * @param consensusEngineWiring                  the consensus engine wiring
-     * @param futureEventBufferWiring                the future event buffer wiring
      * @param eventCreationManagerWiring             the event creation manager wiring
      * @param applicationTransactionPrehandlerWiring the application transaction prehandler wiring
      * @param stateSignatureCollectorWiring          the system transaction prehandler wiring
@@ -83,14 +84,13 @@ public class PlatformCoordinator {
             @NonNull final ObjectCounter hashingObjectCounter,
             @NonNull final ComponentWiring<InternalEventValidator, GossipEvent> internalEventValidatorWiring,
             @NonNull final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring,
-            @NonNull final EventSignatureValidatorWiring eventSignatureValidatorWiring,
-            @NonNull final OrphanBufferWiring orphanBufferWiring,
-            @NonNull final InOrderLinkerWiring inOrderLinkerWiring,
+            @NonNull final ComponentWiring<EventSignatureValidator, GossipEvent> eventSignatureValidatorWiring,
+            @NonNull final ComponentWiring<OrphanBuffer, List<GossipEvent>> orphanBufferWiring,
+            @NonNull final ComponentWiring<InOrderLinker, EventImpl> inOrderLinkerWiring,
             @NonNull final ShadowgraphWiring shadowgraphWiring,
             @NonNull final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring,
-            @NonNull final ComponentWiring<FutureEventBuffer, List<GossipEvent>> futureEventBufferWiring,
-            @NonNull final EventCreationManagerWiring eventCreationManagerWiring,
-            @NonNull final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring,
+            @NonNull final ComponentWiring<EventCreationManager, BaseEventHashedData> eventCreationManagerWiring,
+            @NonNull final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring,
             @NonNull final StateSignatureCollectorWiring stateSignatureCollectorWiring,
             @NonNull final ConsensusRoundHandlerWiring consensusRoundHandlerWiring,
             @NonNull final StateHasherWiring stateHasherWiring) {
@@ -103,7 +103,6 @@ public class PlatformCoordinator {
         this.inOrderLinkerWiring = Objects.requireNonNull(inOrderLinkerWiring);
         this.shadowgraphWiring = Objects.requireNonNull(shadowgraphWiring);
         this.consensusEngineWiring = Objects.requireNonNull(consensusEngineWiring);
-        this.futureEventBufferWiring = Objects.requireNonNull(futureEventBufferWiring);
         this.eventCreationManagerWiring = Objects.requireNonNull(eventCreationManagerWiring);
         this.applicationTransactionPrehandlerWiring = Objects.requireNonNull(applicationTransactionPrehandlerWiring);
         this.stateSignatureCollectorWiring = Objects.requireNonNull(stateSignatureCollectorWiring);
@@ -129,13 +128,12 @@ public class PlatformCoordinator {
 
         internalEventValidatorWiring.flush();
         eventDeduplicatorWiring.flush();
-        eventSignatureValidatorWiring.flushRunnable().run();
-        orphanBufferWiring.flushRunnable().run();
-        inOrderLinkerWiring.flushRunnable().run();
+        eventSignatureValidatorWiring.flush();
+        orphanBufferWiring.flush();
+        inOrderLinkerWiring.flush();
         shadowgraphWiring.flushRunnable().run();
         consensusEngineWiring.flush();
-        applicationTransactionPrehandlerWiring.flushRunnable().run();
-        futureEventBufferWiring.flush();
+        applicationTransactionPrehandlerWiring.flush();
         eventCreationManagerWiring.flush();
     }
 
@@ -178,11 +176,10 @@ public class PlatformCoordinator {
 
         // Phase 4: clear
         // Data is no longer moving through the system. Clear all the internal data structures in the wiring objects.
-        eventDeduplicatorWiring.getInputWire(EventDeduplicator::clear).inject(new ClearTrigger());
-        orphanBufferWiring.clearInput().inject(new ClearTrigger());
-        inOrderLinkerWiring.clearInput().inject(new ClearTrigger());
-        stateSignatureCollectorWiring.getClearInput().inject(new ClearTrigger());
-        futureEventBufferWiring.getInputWire(FutureEventBuffer::clear).inject(new ClearTrigger());
-        eventCreationManagerWiring.clearInput().inject(new ClearTrigger());
+        eventDeduplicatorWiring.getInputWire(EventDeduplicator::clear).inject(NoInput.getInstance());
+        orphanBufferWiring.getInputWire(OrphanBuffer::clear).inject(NoInput.getInstance());
+        inOrderLinkerWiring.getInputWire(InOrderLinker::clear).inject(NoInput.getInstance());
+        stateSignatureCollectorWiring.getClearInput().inject(NoInput.getInstance());
+        eventCreationManagerWiring.getInputWire(EventCreationManager::clear).inject(NoInput.getInstance());
     }
 }

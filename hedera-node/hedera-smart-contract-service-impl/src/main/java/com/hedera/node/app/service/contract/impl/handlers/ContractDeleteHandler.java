@@ -36,6 +36,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.contract.ContractDeleteTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
 import com.hedera.node.app.service.mono.fees.calculation.contract.txns.ContractDeleteResourceUsage;
@@ -65,15 +66,21 @@ public class ContractDeleteHandler implements TransactionHandler {
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
-        requireNonNull(context);
-        final var op = context.body().contractDeleteInstanceOrThrow();
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        final var op = txn.contractDeleteInstanceOrThrow();
         validateFalsePreCheck(op.permanentRemoval(), PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION);
+
         // The contract ID must be present on the transaction
         final var contractID = op.contractID();
         mustExist(contractID, INVALID_CONTRACT_ID);
+    }
+
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+        requireNonNull(context);
+        final var op = context.body().contractDeleteInstanceOrThrow();
         // A contract corresponding to that contract ID must exist in state (otherwise we have nothing to delete)
-        final var contract = context.createStore(ReadableAccountStore.class).getContractById(contractID);
+        final var contract = context.createStore(ReadableAccountStore.class).getContractById(op.contractIDOrThrow());
         mustExist(contract, INVALID_CONTRACT_ID);
         // If there is not an admin key, then the contract is immutable. Otherwise, the transaction must
         // be signed by the admin key.

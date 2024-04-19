@@ -127,13 +127,13 @@ class AssociationsDecoderTest {
             @NonNull final TransactionBody body, @NonNull final AccountID target, @NonNull final TokenID tokenId) {
         final var associate = body.tokenAssociateOrThrow();
         assertEquals(target, associate.account());
-        org.assertj.core.api.Assertions.assertThat(associate.tokensOrThrow()).contains(tokenId);
+        org.assertj.core.api.Assertions.assertThat(associate.tokens()).contains(tokenId);
     }
 
     private void assertDissociationPresent(
             @NonNull final TransactionBody body, @NonNull final AccountID target, @NonNull final TokenID tokenId) {
         final var dissociate = body.tokenDissociateOrThrow();
         assertEquals(target, dissociate.account());
-        org.assertj.core.api.Assertions.assertThat(dissociate.tokensOrThrow()).contains(tokenId);
+        org.assertj.core.api.Assertions.assertThat(dissociate.tokens()).contains(tokenId);
     }
 }

@@ -20,10 +20,14 @@ plugins {
 }
 
 testModuleInfo {
+    requires("com.hedera.pbj.runtime")
+    requires("com.hedera.node.hapi")
     requires("com.swirlds.merkle")
     requires("com.swirlds.base.test.fixtures")
     requires("awaitility")
     requires("org.junit.jupiter.params")
     requires("org.mockito.junit.jupiter")
+    requires("com.swirlds.metrics.api")
+    requires("org.mockito")
     requiresStatic("com.github.spotbugs.annotations")
 }

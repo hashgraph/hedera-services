@@ -33,7 +33,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.creation.tipset.ChildlessEventTracker;
 import com.swirlds.platform.event.creation.tipset.Tipset;
@@ -547,10 +547,10 @@ class TipsetWeightCalculatorTests {
 
         // FUTURE WORK: Change the test to use birthRound instead of generation for ancient.
         // Mark generation 1 as ancient.
-        final NonAncientEventWindow nonAncientEventWindow =
-                new NonAncientEventWindow(1, 2, 0 /* ignored in this context */, AncientMode.GENERATION_THRESHOLD);
-        builder.setNonAncientEventWindow(nonAncientEventWindow);
-        childlessEventTracker.pruneOldEvents(nonAncientEventWindow);
+        final EventWindow eventWindow =
+                new EventWindow(1, 2, 0 /* ignored in this context */, AncientMode.GENERATION_THRESHOLD);
+        builder.setEventWindow(eventWindow);
+        childlessEventTracker.pruneOldEvents(eventWindow);
 
         // We shouldn't be able to find tipsets for ancient events.
         assertNull(builder.getTipset(eventA1));

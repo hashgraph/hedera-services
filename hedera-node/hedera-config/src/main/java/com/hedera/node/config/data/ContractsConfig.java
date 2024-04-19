@@ -33,7 +33,8 @@ public record ContractsConfig(
         // @ConfigProperty(defaultValue = "") KnownBlockValues knownBlockHash,
         @ConfigProperty(value = "keys.legacyActivations", defaultValue = "1058134by[1062784]")
                 String keysLegacyActivations,
-        @ConfigProperty(value = "localCall.estRetBytes", defaultValue = "32") @NetworkProperty int localCallEstRetBytes,
+        @ConfigProperty(value = "localCall.estRetBytes", defaultValue = "4096") @NetworkProperty
+                int localCallEstRetBytes,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean allowCreate2,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean allowAutoAssociations,
         // @ConfigProperty(defaultValue =
@@ -82,4 +83,4 @@ public record ContractsConfig(
                 boolean chargeGasOnPreEvmException,
         @ConfigProperty(value = "evm.nonExtantContractsFail", defaultValue = "0") @NetworkProperty
                 Set<Long> evmNonExtantContractsFail,
-        @ConfigProperty(value = "evm.version", defaultValue = "v0.46") @NetworkProperty String evmVersion) {}
+        @ConfigProperty(value = "evm.version", defaultValue = "v0.50") @NetworkProperty String evmVersion) {}

@@ -42,13 +42,10 @@ import com.swirlds.merkledb.collections.ImmutableIndexedObjectList;
 import com.swirlds.merkledb.collections.ImmutableIndexedObjectListUsingArray;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.merkledb.serialize.DataItemSerializer;
+import com.swirlds.merkledb.serialize.BaseSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -104,8 +101,6 @@ public class DataFileCollection<D> implements Snapshotable {
      * name is provided, and metadata file with the name above isn't found, metadata file with name
      * legacyStoreName + suffix is tried.
      */
-    private static final String METADATA_FILENAME_SUFFIX_OLD = "_metadata.dfc";
-
     private static final String METADATA_FILENAME_SUFFIX = "_metadata.pbj";
 
     /** The number of times to retry index based reads */
@@ -133,7 +128,7 @@ public class DataFileCollection<D> implements Snapshotable {
      */
     private final String legacyStoreName;
     /** Serializer responsible for serializing/deserializing data items into and out of files */
-    private final DataItemSerializer<D> dataItemSerializer;
+    private final BaseSerializer<D> dataItemSerializer;
     /** True if this DataFileCollection was loaded from an existing set of files */
     private final boolean loadedFromExistingFiles;
     /** The index to use for the next file we create */
@@ -196,7 +191,7 @@ public class DataFileCollection<D> implements Snapshotable {
             final MerkleDbConfig config,
             final Path storeDir,
             final String storeName,
-            final DataItemSerializer<D> dataItemSerializer,
+            final BaseSerializer<D> dataItemSerializer,
             final LoadedDataCallback<D> loadedDataCallback)
             throws IOException {
         this(
@@ -232,7 +227,7 @@ public class DataFileCollection<D> implements Snapshotable {
             final Path storeDir,
             final String storeName,
             final String legacyStoreName,
-            final DataItemSerializer<D> dataItemSerializer,
+            final BaseSerializer<D> dataItemSerializer,
             final LoadedDataCallback<D> loadedDataCallback)
             throws IOException {
         this(
@@ -271,7 +266,7 @@ public class DataFileCollection<D> implements Snapshotable {
             final Path storeDir,
             final String storeName,
             final String legacyStoreName,
-            final DataItemSerializer<D> dataItemSerializer,
+            final BaseSerializer<D> dataItemSerializer,
             final LoadedDataCallback<D> loadedDataCallback,
             final Function<List<DataFileReader<D>>, ImmutableIndexedObjectList<DataFileReader<D>>>
                     indexedObjectListConstructor)
@@ -373,21 +368,14 @@ public class DataFileCollection<D> implements Snapshotable {
      * @throws IOException If there was a problem opening a new data file
      */
     public void startWriting() throws IOException {
-        startWriting(dbConfig.usePbj());
-    }
-
-    // Future work: remove this method, once JDB is no longer supported
-    // See https://github.com/hashgraph/hedera-services/issues/8344 for details
-    @Deprecated
-    void startWriting(boolean usePbj) throws IOException {
         final DataFileWriter<D> activeDataFileWriter = currentDataFileWriter.get();
         if (activeDataFileWriter != null) {
             throw new IOException("Tried to start writing when we were already writing.");
         }
-        final DataFileWriter<D> writer = newDataFile(Instant.now(), INITIAL_COMPACTION_LEVEL, usePbj);
+        final DataFileWriter<D> writer = newDataFile(Instant.now(), INITIAL_COMPACTION_LEVEL);
         currentDataFileWriter.set(writer);
         final DataFileMetadata metadata = writer.getMetadata();
-        final DataFileReader<D> reader = addNewDataFileReader(writer.getPath(), metadata, usePbj);
+        final DataFileReader<D> reader = addNewDataFileReader(writer.getPath(), metadata);
         currentDataFileReader.set(reader);
     }
 
@@ -491,8 +479,7 @@ public class DataFileCollection<D> implements Snapshotable {
      * @throws ClosedChannelException In the very rare case merging closed the file between us
      *     checking if file is open and reading
      */
-    // https://github.com/hashgraph/hedera-services/issues/8344: change return type to BufferedData
-    protected Object readDataItemBytes(final long dataLocation) throws IOException {
+    protected BufferedData readDataItemBytes(final long dataLocation) throws IOException {
         final DataFileReader<D> file = readerForDataLocation(dataLocation);
         return (file != null) ? file.readDataItemBytes(dataLocation) : null;
     }
@@ -513,20 +500,11 @@ public class DataFileCollection<D> implements Snapshotable {
         if (file == null) {
             return null;
         }
-        // https://github.com/hashgraph/hedera-services/issues/8344: change to BufferedData
-        final Object dataItemBytes = file.readDataItemBytes(dataLocation);
+        final BufferedData dataItemBytes = file.readDataItemBytes(dataLocation);
         if (dataItemBytes == null) {
             return null;
         }
-        if (dataItemBytes instanceof ByteBuffer bbBytes) {
-            // JDB
-            return dataItemSerializer.deserialize(bbBytes, file.getMetadata().getSerializationVersion());
-        } else if (dataItemBytes instanceof BufferedData bdBytes) {
-            // PBJ
-            return dataItemSerializer.deserialize(bdBytes);
-        } else {
-            throw new RuntimeException("Unknown data item bytes format");
-        }
+        return dataItemSerializer.deserialize(dataItemBytes);
     }
 
     private <T> T retryReadUsingIndex(
@@ -612,8 +590,7 @@ public class DataFileCollection<D> implements Snapshotable {
      *
      * @throws IOException If there was a problem reading the data item.
      */
-    // https://github.com/hashgraph/hedera-services/issues/8344: change return type to BufferedData
-    public Object readDataItemBytesUsingIndex(final LongList index, final long keyIntoIndex) throws IOException {
+    public BufferedData readDataItemBytesUsingIndex(final LongList index, final long keyIntoIndex) throws IOException {
         return retryReadUsingIndex(index, keyIntoIndex, this::readDataItemBytes);
     }
 
@@ -696,11 +673,9 @@ public class DataFileCollection<D> implements Snapshotable {
      * @param metadata The metadata for the file at filePath, to save reading from file
      * @return The newly added DataFileReader.
      */
-    DataFileReader<D> addNewDataFileReader(final Path filePath, final DataFileMetadata metadata, final boolean usePbj)
-            throws IOException {
-        final DataFileReader<D> newDataFileReader = usePbj
-                ? new DataFileReaderPbj<>(dbConfig, filePath, dataItemSerializer, metadata)
-                : new DataFileReaderJdb<>(dbConfig, filePath, dataItemSerializer, (DataFileMetadataJdb) metadata);
+    DataFileReader<D> addNewDataFileReader(final Path filePath, final DataFileMetadata metadata) throws IOException {
+        final DataFileReader<D> newDataFileReader =
+                new DataFileReader<>(dbConfig, filePath, dataItemSerializer, metadata);
         dataFiles.getAndUpdate(currentFileList -> {
             try {
                 return (currentFileList == null)
@@ -740,17 +715,13 @@ public class DataFileCollection<D> implements Snapshotable {
      *     case of merge.
      * @return the newly created data file
      */
-    DataFileWriter<D> newDataFile(final Instant creationTime, int compactionLevel, final boolean usePbj)
-            throws IOException {
+    DataFileWriter<D> newDataFile(final Instant creationTime, int compactionLevel) throws IOException {
         final int newFileIndex = nextFileIndex.getAndIncrement();
         if (logger.isTraceEnabled()) {
             setOfNewFileIndexes.add(newFileIndex);
         }
-        return usePbj
-                ? new DataFileWriterPbj<>(
-                        storeName, storeDir, newFileIndex, dataItemSerializer, creationTime, compactionLevel)
-                : new DataFileWriterJdb<>(
-                        storeName, storeDir, newFileIndex, dataItemSerializer, creationTime, compactionLevel);
+        return new DataFileWriter<>(
+                storeName, storeDir, newFileIndex, dataItemSerializer, creationTime, compactionLevel);
     }
 
     /**
@@ -765,28 +736,18 @@ public class DataFileCollection<D> implements Snapshotable {
         // write metadata, this will be incredibly fast, and we need to capture min and max key
         // while in save lock
         final KeyRange keyRange = validKeyRange;
-        if (dbConfig.usePbj()) {
-            final Path metadataFile = directory.resolve(storeName + METADATA_FILENAME_SUFFIX);
-            try (final OutputStream fileOut = Files.newOutputStream(metadataFile)) {
-                final WritableSequentialData out = new WritableStreamingData(fileOut);
-                if (keyRange.getMinValidKey() != 0) {
-                    ProtoWriterTools.writeTag(out, FIELD_FILECOLLECTION_MINVALIDKEY);
-                    out.writeVarLong(keyRange.getMinValidKey(), false);
-                }
-                if (keyRange.getMaxValidKey() != 0) {
-                    ProtoWriterTools.writeTag(out, FIELD_FILECOLLECTION_MAXVALIDKEY);
-                    out.writeVarLong(keyRange.getMaxValidKey(), false);
-                }
-                fileOut.flush();
+        final Path metadataFile = directory.resolve(storeName + METADATA_FILENAME_SUFFIX);
+        try (final OutputStream fileOut = Files.newOutputStream(metadataFile)) {
+            final WritableSequentialData out = new WritableStreamingData(fileOut);
+            if (keyRange.getMinValidKey() != 0) {
+                ProtoWriterTools.writeTag(out, FIELD_FILECOLLECTION_MINVALIDKEY);
+                out.writeVarLong(keyRange.getMinValidKey(), false);
             }
-        } else {
-            final Path metadataFile = directory.resolve(storeName + METADATA_FILENAME_SUFFIX_OLD);
-            try (final DataOutputStream metaOut = new DataOutputStream(Files.newOutputStream(metadataFile))) {
-                metaOut.writeInt(METADATA_FILE_FORMAT_VERSION);
-                metaOut.writeLong(keyRange.getMinValidKey());
-                metaOut.writeLong(keyRange.getMaxValidKey());
-                metaOut.flush();
+            if (keyRange.getMaxValidKey() != 0) {
+                ProtoWriterTools.writeTag(out, FIELD_FILECOLLECTION_MAXVALIDKEY);
+                out.writeVarLong(keyRange.getMaxValidKey(), false);
             }
+            fileOut.flush();
         }
     }
 
@@ -805,9 +766,8 @@ public class DataFileCollection<D> implements Snapshotable {
             final DataFileReader<D>[] dataFileReaders = new DataFileReader[fullWrittenFilePaths.length];
             try {
                 for (int i = 0; i < fullWrittenFilePaths.length; i++) {
-                    dataFileReaders[i] = fullWrittenFilePaths[i].toString().endsWith(FILE_EXTENSION)
-                            ? new DataFileReaderPbj<>(dbConfig, fullWrittenFilePaths[i], dataItemSerializer)
-                            : new DataFileReaderJdb<>(dbConfig, fullWrittenFilePaths[i], dataItemSerializer);
+                    assert fullWrittenFilePaths[i].toString().endsWith(FILE_EXTENSION);
+                    dataFileReaders[i] = new DataFileReader<>(dbConfig, fullWrittenFilePaths[i], dataItemSerializer);
                 }
                 // sort the readers into data file index order
                 Arrays.sort(dataFileReaders);
@@ -834,7 +794,6 @@ public class DataFileCollection<D> implements Snapshotable {
     }
 
     private boolean loadMetadata() throws IOException {
-        boolean loadPbj = true;
         boolean loadedLegacyMetadata = false;
         Path metadataFile = storeDir.resolve(storeName + METADATA_FILENAME_SUFFIX);
         if (!Files.exists(metadataFile)) {
@@ -842,45 +801,23 @@ public class DataFileCollection<D> implements Snapshotable {
             loadedLegacyMetadata = true;
         }
         if (!Files.exists(metadataFile)) {
-            loadPbj = false;
-            metadataFile = storeDir.resolve(storeName + METADATA_FILENAME_SUFFIX_OLD);
-        }
-        if (!Files.exists(metadataFile)) {
-            metadataFile = storeDir.resolve(legacyStoreName + METADATA_FILENAME_SUFFIX_OLD);
-            loadedLegacyMetadata = true;
-        }
-        if (!Files.exists(metadataFile)) {
             return false;
         }
-        if (loadPbj) {
-            try (final ReadableStreamingData in = new ReadableStreamingData(metadataFile)) {
-                long minValidKey = 0;
-                long maxValidKey = 0;
-                while (in.hasRemaining()) {
-                    final int tag = in.readVarInt(false);
-                    final int fieldNum = tag >> TAG_FIELD_OFFSET;
-                    if (fieldNum == FIELD_FILECOLLECTION_MINVALIDKEY.number()) {
-                        minValidKey = in.readVarLong(false);
-                    } else if (fieldNum == FIELD_FILECOLLECTION_MAXVALIDKEY.number()) {
-                        maxValidKey = in.readVarLong(false);
-                    } else {
-                        throw new IllegalArgumentException("Unknown file collection metadata field: " + fieldNum);
-                    }
+        try (final ReadableStreamingData in = new ReadableStreamingData(metadataFile)) {
+            long minValidKey = 0;
+            long maxValidKey = 0;
+            while (in.hasRemaining()) {
+                final int tag = in.readVarInt(false);
+                final int fieldNum = tag >> TAG_FIELD_OFFSET;
+                if (fieldNum == FIELD_FILECOLLECTION_MINVALIDKEY.number()) {
+                    minValidKey = in.readVarLong(false);
+                } else if (fieldNum == FIELD_FILECOLLECTION_MAXVALIDKEY.number()) {
+                    maxValidKey = in.readVarLong(false);
+                } else {
+                    throw new IllegalArgumentException("Unknown file collection metadata field: " + fieldNum);
                 }
-                validKeyRange = new KeyRange(minValidKey, maxValidKey);
             }
-        } else {
-            try (final DataInputStream metaIn = new DataInputStream(Files.newInputStream(metadataFile))) {
-                final int fileVersion = metaIn.readInt();
-                if (fileVersion != METADATA_FILE_FORMAT_VERSION) {
-                    throw new IOException("Tried to read a file with incompatible file format version ["
-                            + fileVersion
-                            + "], expected ["
-                            + METADATA_FILE_FORMAT_VERSION
-                            + "].");
-                }
-                validKeyRange = new KeyRange(metaIn.readLong(), metaIn.readLong());
-            }
+            validKeyRange = new KeyRange(minValidKey, maxValidKey);
         }
         if (loadedLegacyMetadata) {
             Files.delete(metadataFile);

@@ -54,6 +54,7 @@ import com.hedera.node.app.service.contract.impl.state.InitialModServiceContract
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
@@ -114,6 +115,9 @@ public abstract class AbstractXTest {
 
     @Mock
     protected Metrics metrics;
+
+    @Mock
+    protected StoreMetricsService storeMetricsService;
 
     @Test
     void scenarioPasses() {
@@ -268,7 +272,7 @@ public abstract class AbstractXTest {
     }
 
     protected RunningHashes initialRunningHashes() {
-        return RunningHashes.DEFAULT;
+        return new RunningHashes(Bytes.fromHex("00"), Bytes.fromHex("00"), Bytes.fromHex("00"), Bytes.fromHex("00"));
     }
 
     protected Bytes resourceAsBytes(@NonNull final String loc) {
