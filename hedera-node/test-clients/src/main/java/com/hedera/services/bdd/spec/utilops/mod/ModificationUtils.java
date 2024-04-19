@@ -24,6 +24,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -145,7 +146,7 @@ public class ModificationUtils {
             modifications.addAll(targetFields.stream()
                     .map(field -> {
                         final var encounterIndex = occurrenceCounts
-                                .computeIfAbsent(field.getFullName(), k -> new AtomicInteger(0))
+                                .computeIfAbsent(field.descriptor().getFullName(), k -> new AtomicInteger(0))
                                 .getAndIncrement();
                         return strategy.modificationForTarget(field, encounterIndex);
                     })
@@ -187,30 +188,35 @@ public class ModificationUtils {
         return (T) builder.build();
     }
 
-    private static List<Descriptors.FieldDescriptor> getTargetFields(
+    private static List<TargetField> getTargetFields(
             @NonNull final Message.Builder builder,
             @NonNull final BiPredicate<Descriptors.FieldDescriptor, Object> filter) {
-        final List<Descriptors.FieldDescriptor> descriptors = new ArrayList<>();
-        accumulateFields(builder, descriptors, filter);
-        System.out.println("Descriptors: " + descriptors);
-        return descriptors;
+        final List<TargetField> targetFields = new ArrayList<>();
+        accumulateFields(false, builder, targetFields, filter);
+        System.out.println("Target fields: " + targetFields);
+        return targetFields;
     }
 
     private static void accumulateFields(
+            final boolean isInScheduledTransaction,
             @NonNull final Message.Builder builder,
-            @NonNull final List<Descriptors.FieldDescriptor> descriptors,
+            @NonNull final List<TargetField> descriptors,
             @NonNull final BiPredicate<Descriptors.FieldDescriptor, Object> filter) {
         builder.getAllFields().forEach((field, value) -> {
             if (filter.test(field, value)) {
-                descriptors.add(field);
+                descriptors.add(new TargetField(field, isInScheduledTransaction));
             } else if (value instanceof Message message) {
-                accumulateFields(message.toBuilder(), descriptors, filter);
+                accumulateFields(
+                        message instanceof SchedulableTransactionBody || isInScheduledTransaction,
+                        message.toBuilder(),
+                        descriptors,
+                        filter);
             } else if (value instanceof List<?> list) {
                 list.forEach(subValue -> {
                     if (filter.test(field, subValue)) {
-                        descriptors.add(field);
+                        descriptors.add(new TargetField(field, isInScheduledTransaction));
                     } else if (subValue instanceof Message subMessage) {
-                        accumulateFields(subMessage.toBuilder(), descriptors, filter);
+                        accumulateFields(isInScheduledTransaction, subMessage.toBuilder(), descriptors, filter);
                     }
                 });
             }

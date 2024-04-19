@@ -24,7 +24,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 /** Represents a key for a unique token (NFT). */
 public class UniqueTokenKey implements VirtualKey {
@@ -156,11 +155,6 @@ public class UniqueTokenKey implements VirtualKey {
         serializeTo(outputStream::write);
     }
 
-    @Deprecated
-    void serialize(final ByteBuffer byteBuffer) {
-        serializeTo(byteBuffer::put);
-    }
-
     /* package */ interface ByteSupplier<E extends Exception> {
         byte get() throws E;
     }
@@ -186,11 +180,6 @@ public class UniqueTokenKey implements VirtualKey {
     @Override
     public void deserialize(final SerializableDataInputStream inputStream, final int dataVersion) throws IOException {
         deserializeFrom(inputStream::readByte);
-    }
-
-    @Deprecated
-    void deserialize(final ByteBuffer byteBuffer) {
-        deserializeFrom(byteBuffer::get);
     }
 
     @Override

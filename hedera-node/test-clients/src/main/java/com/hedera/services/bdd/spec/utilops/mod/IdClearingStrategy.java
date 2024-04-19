@@ -20,6 +20,7 @@ import com.google.protobuf.Descriptors;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,6 +36,7 @@ public abstract class IdClearingStrategy<T> implements ModificationStrategy<T> {
     public boolean hasTarget(@NonNull Descriptors.FieldDescriptor fieldDescriptor, @NonNull Object value) {
         return value instanceof AccountID
                 || value instanceof ContractID
+                || value instanceof ScheduleID
                 || value instanceof FileID
                 || value instanceof TokenID
                 || value instanceof TopicID;

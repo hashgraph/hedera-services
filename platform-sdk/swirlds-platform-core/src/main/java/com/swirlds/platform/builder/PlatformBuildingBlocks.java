@@ -31,9 +31,11 @@ import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.util.RandomBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
+import java.util.function.Predicate;
 
 /**
  * This record contains core utilities and basic objects needed to build a platform. It should not contain any platform
@@ -61,6 +63,8 @@ import java.util.function.LongSupplier;
  *                                        status manager is operated within the wiring framework
  * @param intakeQueueSizeSupplierSupplier supplies a method which supplies the size of the intake queue. This hack is
  *                                        required due to the lack of a platform health monitor.
+ * @param isInFreezePeriodReference       a reference to a predicate that determines if a timestamp is in the freeze
+ *                                        period, this can be deleted as soon as the CES is retired.
  * @param firstPlatform                   if this is the first platform being built (there is static setup that needs to
  *                                        be done, long term plan is to stop using static variables)
  */
@@ -81,4 +85,5 @@ public record PlatformBuildingBlocks(
         @NonNull TransactionPool transactionPool,
         @NonNull AtomicReference<PlatformStatus> currentPlatformStatus,
         @NonNull AtomicReference<LongSupplier> intakeQueueSizeSupplierSupplier,
+        @NonNull AtomicReference<Predicate<Instant>> isInFreezePeriodReference,
         boolean firstPlatform) {}

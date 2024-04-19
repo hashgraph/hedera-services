@@ -74,6 +74,7 @@ public class SubmitMessageSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
+                pureCheckFails(),
                 topicIdIsValidated(),
                 messageIsValidated(),
                 messageSubmissionSimple(),
@@ -92,6 +93,17 @@ public class SubmitMessageSuite extends HapiSuite {
                 .when()
                 .then(submitModified(withSuccessivelyVariedBodyIds(), () -> submitMessageTo("testTopic")
                         .message("HI")));
+    }
+
+    @HapiTest
+    final HapiSpec pureCheckFails() {
+        return defaultHapiSpec("testTopic")
+                .given(cryptoCreate("nonTopicId"))
+                .when()
+                .then(
+                        submitMessageTo(spec -> asTopicId(spec.registry().getAccountID("nonTopicId")))
+                                .hasPrecheck(INVALID_TOPIC_ID),
+                        submitMessageTo((String) null).hasPrecheck(INVALID_TOPIC_ID));
     }
 
     @HapiTest
@@ -118,11 +130,11 @@ public class SubmitMessageSuite extends HapiSuite {
                         submitMessageTo("testTopic")
                                 .clearMessage()
                                 .hasRetryPrecheckFrom(BUSY)
-                                .hasKnownStatus(INVALID_TOPIC_MESSAGE),
+                                .hasPrecheck(INVALID_TOPIC_MESSAGE),
                         submitMessageTo("testTopic")
                                 .message("")
                                 .hasRetryPrecheckFrom(BUSY)
-                                .hasKnownStatus(INVALID_TOPIC_MESSAGE));
+                                .hasPrecheck(INVALID_TOPIC_MESSAGE));
     }
 
     @HapiTest

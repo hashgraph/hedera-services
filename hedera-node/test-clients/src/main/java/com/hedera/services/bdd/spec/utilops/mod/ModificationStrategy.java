@@ -38,10 +38,10 @@ public interface ModificationStrategy<T> {
     /**
      * Returns a modification for the given field.
      *
-     * @param descriptor the field descriptor
+     * @param targetField the field descriptor
      * @param encounterIndex the index of the encounter
      * @return the modification
      */
     @NonNull
-    T modificationForTarget(@NonNull Descriptors.FieldDescriptor descriptor, int encounterIndex);
+    T modificationForTarget(@NonNull TargetField targetField, int encounterIndex);
 }

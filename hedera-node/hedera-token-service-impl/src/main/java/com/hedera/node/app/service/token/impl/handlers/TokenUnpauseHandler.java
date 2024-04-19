@@ -25,6 +25,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
@@ -51,8 +52,6 @@ public class TokenUnpauseHandler implements TransactionHandler {
 
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-
-        preCheck(context);
 
         final var op = context.body().tokenUnpause();
         final var tokenStore = context.createStore(ReadableTokenStore.class);
@@ -84,19 +83,13 @@ public class TokenUnpauseHandler implements TransactionHandler {
         final var copyBuilder = token.copyBuilder();
         copyBuilder.paused(false);
         tokenStore.put(copyBuilder.build());
-        final var record = context.recordBuilder(TokenBaseRecordBuilder.class);
-        record.tokenType(token.tokenType());
+        final var recordBuilder = context.recordBuilder(TokenBaseRecordBuilder.class);
+        recordBuilder.tokenType(token.tokenType());
     }
 
-    /**
-     * Validate semantics for the given transaction body.
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *                passed to {@link #handle}
-     * @throws NullPointerException if one of the arguments is {@code null}
-     * @throws PreCheckException if the transaction body is invalid
-     */
-    private void preCheck(@NonNull final PreHandleContext context) throws PreCheckException {
-        final var op = context.body().tokenUnpause();
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        final var op = txn.tokenUnpauseOrThrow();
         if (!op.hasToken()) {
             throw new PreCheckException(INVALID_TOKEN_ID);
         }

@@ -20,7 +20,6 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public class ScheduleEqualityVirtualValueSerializer implements ValueSerializer<ScheduleEqualityVirtualValue> {
@@ -78,12 +77,6 @@ public class ScheduleEqualityVirtualValueSerializer implements ValueSerializer<S
         value.serialize(out);
     }
 
-    @Override
-    @Deprecated
-    public void serialize(final ScheduleEqualityVirtualValue value, final ByteBuffer buffer) {
-        value.serialize(buffer);
-    }
-
     // Value deserialization
 
     @Override
@@ -91,14 +84,6 @@ public class ScheduleEqualityVirtualValueSerializer implements ValueSerializer<S
         Objects.requireNonNull(in);
         final var value = new ScheduleEqualityVirtualValue();
         value.deserialize(in);
-        return value;
-    }
-
-    @Override
-    @Deprecated
-    public ScheduleEqualityVirtualValue deserialize(ByteBuffer buffer, long dataVersion) {
-        final var value = new ScheduleEqualityVirtualValue();
-        value.deserialize(buffer, (int) dataVersion);
         return value;
     }
 }

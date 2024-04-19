@@ -25,7 +25,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
 import static java.util.Objects.requireNonNull;
 
-import com.google.protobuf.Descriptors;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 
@@ -48,13 +47,12 @@ public class QueryIdClearingStrategy extends IdClearingStrategy<QueryModificatio
 
     @NonNull
     @Override
-    public QueryModification modificationForTarget(
-            @NonNull final Descriptors.FieldDescriptor descriptor, final int encounterIndex) {
-        final var expectedAnswer = CLEARED_ID_ANSWERS.get(descriptor.getFullName());
-        requireNonNull(expectedAnswer, "No expected answer for field " + descriptor.getFullName());
+    public QueryModification modificationForTarget(@NonNull final TargetField targetField, final int encounterIndex) {
+        final var expectedAnswer = CLEARED_ID_ANSWERS.get(targetField.name());
+        requireNonNull(expectedAnswer, "No expected answer for field " + targetField.name());
         return new QueryModification(
-                "Clearing field " + descriptor.getFullName() + " (#" + encounterIndex + ")",
-                QueryMutation.withTransform(q -> withClearedField(q, descriptor, encounterIndex)),
+                "Clearing field " + targetField.name() + " (#" + encounterIndex + ")",
+                QueryMutation.withTransform(q -> withClearedField(q, targetField.descriptor(), encounterIndex)),
                 expectedAnswer);
     }
 }

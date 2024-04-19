@@ -23,9 +23,9 @@ import static com.hedera.node.app.service.consensus.impl.test.handlers.Consensus
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
@@ -276,10 +276,10 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         subject.handle(handleContext);
 
         final var createdTopic =
-                topicStore.get(TopicID.newBuilder().topicNum(1_234L).build());
-        assertTrue(createdTopic.isPresent());
+                topicStore.getTopic(TopicID.newBuilder().topicNum(1_234L).build());
+        assertNotNull(createdTopic);
 
-        final var actualTopic = createdTopic.get();
+        final var actualTopic = createdTopic;
         assertEquals(0L, actualTopic.sequenceNumber());
         assertEquals(memo, actualTopic.memo());
         assertEquals(adminKey, actualTopic.adminKey());
@@ -289,7 +289,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         assertEquals(autoRenewId, actualTopic.autoRenewAccountId());
         final var topicID = TopicID.newBuilder().topicNum(1_234L).build();
         verify(recordBuilder).topicID(topicID);
-        assertTrue(topicStore.get(TopicID.newBuilder().topicNum(1_234L).build()).isPresent());
+        assertNotNull(topicStore.getTopic(TopicID.newBuilder().topicNum(1_234L).build()));
     }
 
     @Test
@@ -314,10 +314,10 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         subject.handle(handleContext);
 
         final var createdTopic =
-                topicStore.get(TopicID.newBuilder().topicNum(1_234L).build());
-        assertTrue(createdTopic.isPresent());
+                topicStore.getTopic(TopicID.newBuilder().topicNum(1_234L).build());
+        assertNotNull(createdTopic);
 
-        final var actualTopic = createdTopic.get();
+        final var actualTopic = createdTopic;
         assertEquals(0L, actualTopic.sequenceNumber());
         assertEquals(memo, actualTopic.memo());
         assertEquals(SIMPLE_KEY_A, actualTopic.adminKey());
@@ -327,7 +327,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         assertEquals(autoRenewId, actualTopic.autoRenewAccountId());
         final var topicID = TopicID.newBuilder().topicNum(1_234L).build();
         verify(recordBuilder).topicID(topicID);
-        assertTrue(topicStore.get(TopicID.newBuilder().topicNum(1_234L).build()).isPresent());
+        assertNotNull(topicStore.getTopic(TopicID.newBuilder().topicNum(1_234L).build()));
     }
 
     @Test

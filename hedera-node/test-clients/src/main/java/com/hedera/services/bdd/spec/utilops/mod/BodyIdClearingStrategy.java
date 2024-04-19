@@ -23,6 +23,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
@@ -32,10 +33,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_REQUI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static java.util.Map.entry;
 import static java.util.Objects.requireNonNull;
 
-import com.google.protobuf.Descriptors;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 
@@ -44,7 +45,7 @@ import java.util.Map;
  * transaction body.
  */
 public class BodyIdClearingStrategy extends IdClearingStrategy<TxnModification> implements TxnModificationStrategy {
-    private static final Map<String, ExpectedResponse> CLEARED_ID_RESPONSES = Map.ofEntries(
+    private static final Map<String, ExpectedResponse> NON_SCHEDULED_CLEARED_ID_RESPONSES = Map.ofEntries(
             entry("proto.TransactionID.accountID", ExpectedResponse.atIngest(PAYER_ACCOUNT_NOT_FOUND)),
             entry("proto.TransactionBody.nodeAccountID", ExpectedResponse.atIngest(INVALID_NODE_ACCOUNT)),
             // (FUTURE) Switch to expecting any "atIngest()" response below to atConsensus()
@@ -116,16 +117,34 @@ public class BodyIdClearingStrategy extends IdClearingStrategy<TxnModification> 
             entry("proto.TokenMintTransactionBody.token", ExpectedResponse.atIngest(INVALID_TOKEN_ID)),
             entry("proto.TokenBurnTransactionBody.token", ExpectedResponse.atIngest(INVALID_TOKEN_ID)),
             entry("proto.TokenWipeAccountTransactionBody.token", ExpectedResponse.atIngest(INVALID_TOKEN_ID)),
-            entry("proto.TokenWipeAccountTransactionBody.account", ExpectedResponse.atIngest(INVALID_ACCOUNT_ID)));
+            entry("proto.TokenWipeAccountTransactionBody.account", ExpectedResponse.atIngest(INVALID_ACCOUNT_ID)),
+            entry("proto.TokenDissociateTransactionBody.account", ExpectedResponse.atIngest(INVALID_ACCOUNT_ID)),
+            entry(
+                    "proto.TokenDissociateTransactionBody.tokens",
+                    ExpectedResponse.atConsensusOneOf(SUCCESS, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)),
+            entry("proto.ScheduleCreateTransactionBody.payerAccountID", ExpectedResponse.atConsensus(SUCCESS)),
+            entry("proto.ScheduleDeleteTransactionBody.scheduleID", ExpectedResponse.atIngest(INVALID_SCHEDULE_ID)),
+            entry("proto.ScheduleSignTransactionBody.scheduleID", ExpectedResponse.atIngest(INVALID_SCHEDULE_ID)));
+
+    private static final Map<String, ExpectedResponse> SCHEDULED_CLEARED_ID_RESPONSES = Map.ofEntries(
+            entry("proto.AccountAmount.accountID", ExpectedResponse.atConsensusOneOf(INVALID_ACCOUNT_ID)));
 
     @NonNull
     @Override
-    public TxnModification modificationForTarget(@NonNull Descriptors.FieldDescriptor descriptor, int encounterIndex) {
-        final var expectedResponse = CLEARED_ID_RESPONSES.get(descriptor.getFullName());
-        requireNonNull(expectedResponse, "No expected response for field " + descriptor.getFullName());
+    public TxnModification modificationForTarget(@NonNull TargetField targetField, int encounterIndex) {
+        final var expectedResponse = targetField.isInScheduledTransaction()
+                ? SCHEDULED_CLEARED_ID_RESPONSES.get(targetField.name())
+                : NON_SCHEDULED_CLEARED_ID_RESPONSES.get(targetField.name());
+        requireNonNull(
+                expectedResponse,
+                "No expected response for " + (targetField.isInScheduledTransaction() ? "scheduled " : "")
+                        + "field "
+                        + targetField.name());
         return new TxnModification(
-                "Clearing field " + descriptor.getFullName() + " (#" + encounterIndex + ")",
-                BodyMutation.withTransform(b -> withClearedField(b, descriptor, encounterIndex)),
+                "Clearing "
+                        + (targetField.isInScheduledTransaction() ? "scheduled " : "")
+                        + "field " + targetField.name() + " (#" + encounterIndex + ")",
+                BodyMutation.withTransform(b -> withClearedField(b, targetField.descriptor(), encounterIndex)),
                 expectedResponse);
     }
 }
