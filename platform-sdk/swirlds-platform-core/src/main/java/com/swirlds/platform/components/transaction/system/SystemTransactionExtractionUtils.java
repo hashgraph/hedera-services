@@ -75,9 +75,13 @@ public class SystemTransactionExtractionUtils {
         final List<ScopedSystemTransaction<T>> scopedTransactions = new ArrayList<>();
 
         for (final Transaction transaction : event.getTransactions()) {
-            if (systemTransactionTypeClass.isInstance(transaction)) {
+            if (transaction.getPayload() != null
+                    && systemTransactionTypeClass.isInstance(
+                            transaction.getPayload().value())) {
                 scopedTransactions.add(new ScopedSystemTransaction<>(
-                        event.getCreatorId(), event.getSoftwareVersion(), (T) transaction));
+                        event.getCreatorId(),
+                        event.getSoftwareVersion(),
+                        (T) transaction.getPayload().value()));
             }
         }
         return scopedTransactions.isEmpty() ? null : scopedTransactions;
