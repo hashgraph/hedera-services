@@ -28,7 +28,7 @@ import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusConstants;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.proto.event.StateSignaturePayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -135,7 +135,7 @@ public class StateSignatureCollector {
      * @return a list of signed states that are now complete or too old, or null if there are none
      */
     public @Nullable List<ReservedSignedState> handlePreconsensusSignatures(
-            @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
+            @NonNull final List<ScopedSystemTransaction<StateSignaturePayload>> transactions) {
         Objects.requireNonNull(transactions, "transactions");
         return transactions.stream()
                 .map(this::handlePreconsensusSignature)
@@ -144,7 +144,7 @@ public class StateSignatureCollector {
     }
 
     private @Nullable ReservedSignedState handlePreconsensusSignature(
-            @NonNull final ScopedSystemTransaction<StateSignatureTransaction> scopedTransaction) {
+            @NonNull final ScopedSystemTransaction<StateSignaturePayload> scopedTransaction) {
 
         final long round = scopedTransaction.transaction().round();
         final Signature signature = new Signature(
@@ -173,7 +173,7 @@ public class StateSignatureCollector {
      * @return a list of signed states that are now complete or too old, or null if there are none
      */
     public @Nullable List<ReservedSignedState> handlePostconsensusSignatures(
-            @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
+            @NonNull final List<ScopedSystemTransaction<StateSignaturePayload>> transactions) {
         Objects.requireNonNull(transactions, "transactions");
         return transactions.stream()
                 .map(this::handlePostconsensusSignature)
@@ -182,7 +182,7 @@ public class StateSignatureCollector {
     }
 
     private @Nullable ReservedSignedState handlePostconsensusSignature(
-            @NonNull final ScopedSystemTransaction<StateSignatureTransaction> scopedTransaction) {
+            @NonNull final ScopedSystemTransaction<StateSignaturePayload> scopedTransaction) {
         final long round = scopedTransaction.transaction().round();
 
         final ReservedSignedState reservedState = incompleteStates.get(round);
