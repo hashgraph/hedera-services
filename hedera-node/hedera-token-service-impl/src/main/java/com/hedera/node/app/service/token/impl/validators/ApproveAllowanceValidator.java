@@ -30,6 +30,7 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
@@ -128,7 +129,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
         for (final var allowance : tokenAllowances) {
             final var owner = allowance.owner();
             final var spender = allowance.spenderOrThrow();
-            final var token = tokenStore.get(allowance.tokenIdOrThrow());
+            final var token = tokenStore.get(allowance.tokenIdOrElse(TokenID.DEFAULT));
             // check if token exists
             validateTrue(token != null, INVALID_TOKEN_ID);
 
@@ -168,7 +169,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
         for (final var allowance : nftAllowancesList) {
             final var owner = allowance.owner();
             final var spender = allowance.spenderOrThrow();
-            final var tokenId = allowance.tokenIdOrThrow();
+            final var tokenId = allowance.tokenIdOrElse(TokenID.DEFAULT);
             final var serialNums = allowance.serialNumbers();
 
             final var token = tokenStore.get(tokenId);

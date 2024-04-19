@@ -87,15 +87,6 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
-        return defaultHapiSpec("idVariantsTreatedAsExpected")
-                .given(createTopic("testTopic"))
-                .when()
-                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> submitMessageTo("testTopic")
-                        .message("HI")));
-    }
-
-    @HapiTest
     final HapiSpec pureCheckFails() {
         return defaultHapiSpec("testTopic")
                 .given(cryptoCreate("nonTopicId"))
@@ -104,6 +95,15 @@ public class SubmitMessageSuite extends HapiSuite {
                         submitMessageTo(spec -> asTopicId(spec.registry().getAccountID("nonTopicId")))
                                 .hasPrecheck(INVALID_TOPIC_ID),
                         submitMessageTo((String) null).hasPrecheck(INVALID_TOPIC_ID));
+    }
+
+    @HapiTest
+    public HapiSpec idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(createTopic("testTopic"))
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> submitMessageTo("testTopic")
+                        .message("HI")));
     }
 
     @HapiTest

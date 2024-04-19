@@ -19,11 +19,13 @@ package com.hedera.services.bdd.spec.utilops.mod;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withClearedField;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
@@ -124,7 +126,17 @@ public class BodyIdClearingStrategy extends IdClearingStrategy<TxnModification> 
                     ExpectedResponse.atConsensusOneOf(SUCCESS, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)),
             entry("proto.ScheduleCreateTransactionBody.payerAccountID", ExpectedResponse.atConsensus(SUCCESS)),
             entry("proto.ScheduleDeleteTransactionBody.scheduleID", ExpectedResponse.atIngest(INVALID_SCHEDULE_ID)),
-            entry("proto.ScheduleSignTransactionBody.scheduleID", ExpectedResponse.atIngest(INVALID_SCHEDULE_ID)));
+            entry("proto.ScheduleSignTransactionBody.scheduleID", ExpectedResponse.atIngest(INVALID_SCHEDULE_ID)),
+            entry("proto.TokenFeeScheduleUpdateTransactionBody.token_id", ExpectedResponse.atIngest(INVALID_TOKEN_ID)),
+            entry("proto.TokenPauseTransactionBody.token", ExpectedResponse.atIngest(INVALID_TOKEN_ID)),
+            entry("proto.TokenUnpauseTransactionBody.token", ExpectedResponse.atIngest(INVALID_TOKEN_ID)),
+            entry("proto.NftAllowance.tokenId", ExpectedResponse.atConsensus(INVALID_TOKEN_ID)),
+            entry("proto.NftAllowance.owner", ExpectedResponse.atConsensus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)),
+            entry("proto.NftAllowance.spender", ExpectedResponse.atIngest(INVALID_ALLOWANCE_SPENDER_ID)),
+            entry("proto.NftAllowance.delegating_spender", ExpectedResponse.atConsensus(INVALID_SIGNATURE)),
+            entry("proto.TokenAllowance.tokenId", ExpectedResponse.atConsensus(INVALID_TOKEN_ID)),
+            entry("proto.TokenAllowance.owner", ExpectedResponse.atConsensus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)),
+            entry("proto.TokenAllowance.spender", ExpectedResponse.atIngest(INVALID_ALLOWANCE_SPENDER_ID)));
 
     private static final Map<String, ExpectedResponse> SCHEDULED_CLEARED_ID_RESPONSES = Map.ofEntries(
             entry("proto.AccountAmount.accountID", ExpectedResponse.atConsensusOneOf(INVALID_ACCOUNT_ID)));

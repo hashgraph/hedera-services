@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withCle
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
@@ -43,7 +44,9 @@ public class QueryIdClearingStrategy extends IdClearingStrategy<QueryModificatio
                     "proto.TransactionID.accountID",
                     ExpectedAnswer.onAnswerOnly(INVALID_ACCOUNT_ID, INVALID_TRANSACTION_ID)),
             Map.entry("proto.ConsensusGetTopicInfoQuery.topicID", ExpectedAnswer.onAnswerOnly(INVALID_TOPIC_ID)),
-            Map.entry("proto.TokenGetInfoQuery.token", ExpectedAnswer.onAnswerOnly(INVALID_TOKEN_ID)));
+            Map.entry("proto.TokenGetInfoQuery.token", ExpectedAnswer.onAnswerOnly(INVALID_TOKEN_ID)),
+            Map.entry("proto.ScheduleGetInfoQuery.scheduleID", ExpectedAnswer.onAnswerOnly(INVALID_SCHEDULE_ID)),
+            Map.entry("proto.NftID.token_ID", ExpectedAnswer.onAnswerOnly(INVALID_TOKEN_ID)));
 
     @NonNull
     @Override

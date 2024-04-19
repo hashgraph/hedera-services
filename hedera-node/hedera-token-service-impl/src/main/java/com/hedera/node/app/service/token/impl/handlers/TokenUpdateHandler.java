@@ -71,9 +71,7 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -83,8 +81,6 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenUpdateHandler extends BaseTokenHandler implements TransactionHandler {
     private final TokenUpdateValidator tokenUpdateValidator;
-
-    private static final Set<NonAdminTokenKey> NON_ADMIN_TOKEN_KEYS = EnumSet.allOf(NonAdminTokenKey.class);
 
     @Inject
     public TokenUpdateHandler(@NonNull final TokenUpdateValidator tokenUpdateValidator) {
@@ -98,9 +94,6 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         validateTruePreCheck(op.hasToken(), INVALID_TOKEN_ID);
         if (op.hasFeeScheduleKey()) {
             validateTruePreCheck(isValid(op.feeScheduleKey()), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
-        }
-        for (final var nonAdminTokenKey : NON_ADMIN_TOKEN_KEYS) {
-            nonAdminTokenKey.assertValidOrMissing(op);
         }
     }
 

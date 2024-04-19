@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
@@ -42,8 +43,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociateWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreezeWithAlias;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreezeWithAlias;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnpause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccountWithAlias;
@@ -52,9 +55,11 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -294,6 +299,20 @@ public class TokenManagementSpecs extends HapiSuite {
                                         .freeze(Unfrozen))
                                 .logged())
                 .then();
+    }
+
+    @HapiTest
+    final HapiSpec getNftInfoIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("getNftInfoIdVariantsTreatedAsExpected")
+                .given(newKeyNamed("supplyKey"), cryptoCreate(TOKEN_TREASURY).balance(0L))
+                .when(
+                        tokenCreate("nft")
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey("supplyKey")
+                                .initialSupply(0)
+                                .treasury(TOKEN_TREASURY),
+                        mintToken("nft", List.of(copyFromUtf8("Please mind the vase."))))
+                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getTokenNftInfo("nft", 1L)));
     }
 
     // FULLY_NONDETERMINISTIC because in mono-service zero amount token transfers will create a tokenTransferLists
@@ -585,6 +604,16 @@ public class TokenManagementSpecs extends HapiSuite {
                 .then(
                         submitModified(withSuccessivelyVariedBodyIds(), () -> grantTokenKyc("t", "somebody")),
                         submitModified(withSuccessivelyVariedBodyIds(), () -> revokeTokenKyc("t", "somebody")));
+    }
+
+    @HapiTest
+    public HapiSpec pauseUnpauseIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("pauseUnpauseIdVariantsTreatedAsExpected")
+                .given(newKeyNamed("pauseKey"), tokenCreate("t").pauseKey("pauseKey"))
+                .when()
+                .then(
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> tokenPause("t")),
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> tokenUnpause("t")));
     }
 
     @HapiTest
