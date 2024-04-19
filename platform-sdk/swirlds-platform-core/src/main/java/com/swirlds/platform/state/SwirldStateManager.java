@@ -107,8 +107,16 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
      */
     public void setInitialState(@NonNull final State state) {
         Objects.requireNonNull(state);
-        initialState(state);
-        initialState(state);
+        state.throwIfDestroyed("state must not be destroyed");
+        state.throwIfImmutable("state must be mutable");
+
+        if (stateRef.get() != null) {
+            throw new IllegalStateException("Attempt to set initial state when there is already a state reference.");
+        }
+
+        // Create a fast copy so there is always an immutable state to
+        // invoke handleTransaction on for pre-consensus transactions
+        fastCopyAndUpdateRefs(state);
     }
 
     /**
@@ -160,19 +168,6 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
         state.throwIfDestroyed("state must not be destroyed");
         state.throwIfImmutable("state must be mutable");
 
-        fastCopyAndUpdateRefs(state);
-    }
-
-    private void initialState(final State state) {
-        state.throwIfDestroyed("state must not be destroyed");
-        state.throwIfImmutable("state must be mutable");
-
-        if (stateRef.get() != null) {
-            throw new IllegalStateException("Attempt to set initial state when there is already a state reference.");
-        }
-
-        // Create a fast copy so there is always an immutable state to
-        // invoke handleTransaction on for pre-consensus transactions
         fastCopyAndUpdateRefs(state);
     }
 
