@@ -140,7 +140,10 @@ public class TeacherPullVirtualTreeReceiveTask {
                 }
                 final boolean isClean = (teacherHash == null) || teacherHash.equals(learnerHash);
                 final VirtualLeafRecord<?, ?> leafData = (!isClean && view.isLeaf(path)) ? view.loadLeaf(path) : null;
-                final PullVirtualTreeResponse response = new PullVirtualTreeResponse(view, path, isClean, leafData);
+                final long firstLeafPath = view.reconnectState.getFirstLeafPath();
+                final long lastLeafPath = view.reconnectState.getLastLeafPath();
+                final PullVirtualTreeResponse response = new PullVirtualTreeResponse(
+                        view, path, isClean, firstLeafPath, lastLeafPath, leafData);
                 // All real work is done in the async output thread. This call just registers a response
                 // and returns immediately
                 out.sendAsync(viewId, response);

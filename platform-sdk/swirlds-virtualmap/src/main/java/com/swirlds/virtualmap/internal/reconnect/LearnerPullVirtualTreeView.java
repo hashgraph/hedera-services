@@ -182,44 +182,28 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         learnerSendTask.exec();
     }
 
-    private boolean isLeaf(long path) {
+    public boolean isLeaf(long path) {
         assert path <= reconnectState.getLastLeafPath();
         return path >= reconnectState.getFirstLeafPath();
     }
 
-    /**
-     * Reads a virtual node identified by a given path from the output stream. The node was previously
-     * written by reconnect teacher. This method should match {@link
-     * PullVirtualTreeResponse#serialize(SerializableDataOutputStream)}.
-     *
-     * <p>For a root node, reconnect state information is read: the first and the last leaf paths. Nothing
-     * is read for other internal nodes.
-     *
-     * <p>For dirty leaf nodes, leaf records are read. Nothing is read for clean leaf nodes.
-     *
-     * @param in the input stream to read from
-     * @param path the virtual path
-     * @param isClean indicates that the node with the given path is the same on the learner and teacher
-     * @throws IOException if an I/O error occurs
-     */
-    public void readNode(final SerializableDataInputStream in, final long path, final boolean isClean)
-            throws IOException {
-        if (path == Path.ROOT_PATH) {
-            final long firstLeafPath = in.readLong();
-            final long lastLeafPath = in.readLong();
-            if (firstNodeResponse) {
-                reconnectState.setFirstLeafPath(firstLeafPath);
-                reconnectState.setLastLeafPath(lastLeafPath);
-                root.prepareReconnectHashing(firstLeafPath, lastLeafPath);
-                nodeRemover.setPathInformation(firstLeafPath, lastLeafPath);
-                traversalOrder.start(firstLeafPath, lastLeafPath, nodeCount);
-                firstNodeResponse = false;
-                if (lastLeafPath <= 0) {
-                    return;
-                }
-            }
-        }
+    public void setReconnectPaths(final long firstLeafPath, final long lastLeafPath) {
+        assert firstNodeResponse : "Root node must be the first node received from the teacher";
+        reconnectState.setFirstLeafPath(firstLeafPath);
+        reconnectState.setLastLeafPath(lastLeafPath);
+        root.prepareReconnectHashing(firstLeafPath, lastLeafPath);
+        nodeRemover.setPathInformation(firstLeafPath, lastLeafPath);
+        traversalOrder.start(firstLeafPath, lastLeafPath, nodeCount);
+        firstNodeResponse = false;
+    }
+
+    public void responseReceived(final PullVirtualTreeResponse response) {
         assert !firstNodeResponse : "Root node must be the first node received from the teacher";
+        final long path = response.getPath();
+        if (reconnectState.getLastLeafPath() <= 0) {
+            return;
+        }
+        final boolean isClean = response.isClean();
         final boolean isLeaf = isLeaf(path);
         traversalOrder.nodeReceived(path, isClean);
         if (isLeaf) {
@@ -228,7 +212,7 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
                 firstLeaf = false;
             }
             if (!isClean) {
-                final VirtualLeafRecord<K, V> leaf = in.readSerializable(false, VirtualLeafRecord::new);
+                final VirtualLeafRecord<K, V> leaf = response.getLeafData();
                 assert path == leaf.getPath();
                 nodeRemover.newLeafNode(path, leaf.getKey());
                 root.handleReconnectLeaf(leaf); // may block if hashing is slower than ingest

@@ -19,7 +19,10 @@ package com.swirlds.virtualmap.internal.reconnect;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import java.io.IOException;
 
@@ -53,6 +56,9 @@ public class PullVirtualTreeResponse implements SelfSerializable {
 
     private boolean isClean;
 
+    private long firstLeafPath = -1;
+    private long lastLeafPath = -1;
+
     // If the response is not clean (learner hash != teacher hash), then leafData contains
     // the leaf data on the teacher side
     private VirtualLeafRecord leafData;
@@ -72,11 +78,15 @@ public class PullVirtualTreeResponse implements SelfSerializable {
             final TeacherPullVirtualTreeView teacherView,
             final long path,
             final boolean isClean,
+            final long firstLeafPath,
+            final long lastLeafPath,
             final VirtualLeafRecord leafData) {
         this.teacherView = teacherView;
         this.learnerView = null;
         this.path = path;
         this.isClean = isClean;
+        this.firstLeafPath = firstLeafPath;
+        this.lastLeafPath = lastLeafPath;
         this.leafData = leafData;
     }
 
@@ -99,10 +109,9 @@ public class PullVirtualTreeResponse implements SelfSerializable {
         assert teacherView != null;
         out.writeLong(path);
         out.write(isClean ? 0 : 1);
-        if (path == 0) {
-            final VirtualStateAccessor reconnectState = teacherView.getReconnectState();
-            out.writeLong(reconnectState.getFirstLeafPath());
-            out.writeLong(reconnectState.getLastLeafPath());
+        if (path == Path.ROOT_PATH) {
+            out.writeLong(firstLeafPath);
+            out.writeLong(lastLeafPath);
         }
         if (leafData != null) {
             assert !isClean;
@@ -117,12 +126,32 @@ public class PullVirtualTreeResponse implements SelfSerializable {
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         assert learnerView != null;
         path = in.readLong();
-        final boolean isClean = in.read() == 0;
-        learnerView.readNode(in, path, isClean);
+        isClean = in.read() == 0;
+        if (path == Path.ROOT_PATH) {
+            firstLeafPath = in.readLong();
+            lastLeafPath = in.readLong();
+            learnerView.setReconnectPaths(firstLeafPath, lastLeafPath);
+            if (lastLeafPath <= 0) {
+                return;
+            }
+        }
+        final boolean isLeaf = learnerView.isLeaf(path);
+        if (isLeaf && !isClean) {
+            leafData = in.readSerializable(false, VirtualLeafRecord::new);
+        }
     }
 
     public long getPath() {
         return path;
+    }
+
+    public boolean isClean() {
+        return isClean;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <K extends VirtualKey, V extends VirtualValue> VirtualLeafRecord<K, V> getLeafData() {
+        return (VirtualLeafRecord<K, V>) leafData;
     }
 
     /**

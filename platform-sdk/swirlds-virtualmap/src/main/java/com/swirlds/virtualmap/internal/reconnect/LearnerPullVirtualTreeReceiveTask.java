@@ -105,6 +105,7 @@ public class LearnerPullVirtualTreeReceiveTask {
                     if (response.getPath() == 0) {
                         rootResponseReceived.countDown();
                     }
+                    view.responseReceived(response);
                     expectedResponses.decrementAndGet();
                 } else {
                     Thread.onSpinWait();
