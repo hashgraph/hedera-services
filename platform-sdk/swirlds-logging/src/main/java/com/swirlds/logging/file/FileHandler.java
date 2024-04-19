@@ -98,6 +98,18 @@ public class FileHandler extends AbstractLogHandler {
     }
 
     /**
+     * All content for this handler that has been buffered will be written to destination.
+     */
+    @Override
+    public void flush() {
+        try {
+            this.outputStream.flush();
+        } catch (IOException e) {
+            EMERGENCY_LOGGER.log(Level.WARN, "Failed to flush to file output stream " + this.getName(), e);
+        }
+    }
+
+    /**
      * Stops the handler and no further events are processed
      */
     @Override
