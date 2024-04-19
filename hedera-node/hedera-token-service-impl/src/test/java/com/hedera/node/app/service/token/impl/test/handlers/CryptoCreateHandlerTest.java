@@ -24,6 +24,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
@@ -197,6 +198,21 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         txn = new CryptoCreateBuilder().withNoAutoRenewPeriod().build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
         assertEquals(INVALID_RENEWAL_PERIOD, msg.responseCode());
+    }
+
+    @Test
+    @DisplayName("pureChecks succeeds when expected shardId is specified")
+    void validateWhenZeroShardId() throws PreCheckException {
+        txn = new CryptoCreateBuilder().withShardId(0).build();
+        assertDoesNotThrow(() -> subject.pureChecks(txn));
+    }
+
+    @Test
+    @DisplayName("pureChecks fail when invalid maxAutoAssociations is specified")
+    void failsWhenInvalidMaxAutoAssociations() throws PreCheckException {
+        txn = new CryptoCreateBuilder().withMaxAutoAssociations(-5).build();
+        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
+        assertEquals(INVALID_TRANSACTION_BODY, msg.responseCode());
     }
 
     @Test
@@ -699,6 +715,8 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         private long receiveRecordThreshold = 0;
         private AccountID proxyAccountId = null;
         private long stakedAccountId = 0;
+        private long shardId = 0;
+        private int maxAutoAssociations = -1;
 
         private Key key = otherKey;
 
@@ -735,6 +753,9 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
             }
             if (memo != null) {
                 createTxnBody.memo(memo);
+            }
+            if (maxAutoAssociations != -1) {
+                createTxnBody.maxAutomaticTokenAssociations(maxAutoAssociations);
             }
 
             return TransactionBody.newBuilder()
@@ -801,6 +822,16 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
         public CryptoCreateBuilder withKey(final Key key) {
             this.key = key;
+            return this;
+        }
+
+        public CryptoCreateBuilder withShardId(final long id) {
+            this.shardId = id;
+            return this;
+        }
+
+        public CryptoCreateBuilder withMaxAutoAssociations(final int maxAutoAssociations) {
+            this.maxAutoAssociations = maxAutoAssociations;
             return this;
         }
     }

@@ -21,11 +21,12 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_NOT_PROVIDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
@@ -112,19 +113,26 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final var op = txn.cryptoCreateAccountOrThrow();
-        validateTruePreCheck(
-                op.autoRenewPeriod() != null && op.autoRenewPeriod().seconds() > -1, INVALID_RENEWAL_PERIOD);
+        // Note: validation lives here for now but should take place in handle in the future
+        if (op.hasAutoRenewPeriod()) {
+            validateTruePreCheck(op.autoRenewPeriodOrThrow().seconds() >= 0, INVALID_RENEWAL_PERIOD);
+        }
         if (op.hasShardID()) {
-            validateTruePreCheck(op.shardIDOrThrow().shardNum() >= 0, INVALID_ACCOUNT_ID);
+            validateTruePreCheck(op.shardIDOrThrow().shardNum() == 0, INVALID_ACCOUNT_ID);
         }
         if (op.hasRealmID()) {
-            validateTruePreCheck(op.realmIDOrThrow().realmNum() >= 0, INVALID_ACCOUNT_ID);
+            validateTruePreCheck(op.realmIDOrThrow().realmNum() == 0, INVALID_ACCOUNT_ID);
         }
-        if (op.hasNewRealmAdminKey()) {
-            validateFalsePreCheck(isEmpty(op.newRealmAdminKeyOrThrow()), INVALID_ADMIN_KEY);
-        }
-        validateTruePreCheck(op.maxAutomaticTokenAssociations() >= 0, INVALID_TRANSACTION_BODY);
+        // HIP 904 now allows for unlimited auto-associations
+        validateTruePreCheck(op.maxAutomaticTokenAssociations() >= -1, INVALID_TRANSACTION_BODY);
         validateTruePreCheck(op.initialBalance() >= 0L, INVALID_INITIAL_BALANCE);
+        // FUTURE: should this return SEND_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
+        validateTruePreCheck(op.sendRecordThreshold() >= 0L, INVALID_SEND_RECORD_THRESHOLD);
+        // FUTURE: should this return RECEIVE_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
+        validateTruePreCheck(op.receiveRecordThreshold() >= 0L, INVALID_RECEIVE_RECORD_THRESHOLD);
+        validateTruePreCheck(
+                op.proxyAccountIDOrElse(AccountID.DEFAULT).equals(AccountID.DEFAULT),
+                PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
         validateTruePreCheck(op.hasAutoRenewPeriod(), INVALID_RENEWAL_PERIOD);
         // sendRecordThreshold, receiveRecordThreshold and proxyAccountID are deprecated. So no need to check them.
         validateFalsePreCheck(op.hasProxyAccountID(), PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
