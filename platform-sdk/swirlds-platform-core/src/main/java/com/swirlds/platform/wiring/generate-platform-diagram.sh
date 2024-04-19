@@ -14,7 +14,7 @@ pcli diagram \
     -l 'gossip:get events:shadowgraph' \
     -l 'EventCreationManager:get transactions:transactionPool' \
     -l 'RunningEventHasher:future hash:consensusRoundHandler' \
-    -l 'eventStreamManager:future hash:consensusRoundHandler' \
+    -l 'ConsensusEventStream:future hash:consensusRoundHandler' \
     -s 'eventWindowManager:event window:🌀' \
     -s 'heartbeat:heartbeat:❤️' \
     -s 'applicationTransactionPrehandler:futures:🔮' \
@@ -34,12 +34,12 @@ pcli diagram \
     -g 'Event Validation:InternalEventValidator,EventDeduplicator,EventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
     -g 'Orphan Buffer:OrphanBuffer,OrphanBufferSplitter' \
-    -g 'Consensus Engine:consensusEngine,consensusEngineSplitter,eventWindowManager,getKeystoneEventSequenceNumber,getConsensusEvents' \
+    -g 'Consensus Engine:ConsensusEngine,ConsensusEngineSplitter,eventWindowManager,getKeystoneEventSequenceNumber,getConsensusEvents' \
     -g 'State File Manager:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction,statusManager_submitStateWritten,toNotification' \
     -g 'State File Management:State File Manager,📦,📀' \
     -g 'State Signature Collector:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions,latestCompleteStateNotifier' \
     -g 'State Signature Collection:State Signature Collector,latestCompleteStateNexus,💢' \
-    -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus,🕑' \
+    -g 'Preconsensus Event Stream:PcesSequencer,pcesWriter,eventDurabilityNexus,🕑' \
     -g 'Event Creation:EventCreationManager,transactionPool,SelfEventSigner,🍎' \
     -g 'Gossip:gossip,shadowgraph,InOrderLinker' \
     -g 'ISS Detector:issDetector,issNotificationSplitter,issHandler,statusManager_submitCatastrophicFailure' \

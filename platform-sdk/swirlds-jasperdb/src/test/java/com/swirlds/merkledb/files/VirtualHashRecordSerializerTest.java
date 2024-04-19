@@ -25,7 +25,6 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
-import java.nio.ByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -60,11 +59,9 @@ class VirtualHashRecordSerializerTest {
 
     @Test
     void serializeEnforcesDefaultDigest() {
-        final ByteBuffer bbuf = ByteBuffer.allocate(128);
-        final WritableSequentialData out = BufferedData.wrap(bbuf);
+        final WritableSequentialData out = BufferedData.allocate(128);
         final Hash nonDefaultHash = new Hash(DigestType.SHA_512);
         final VirtualHashRecord data = new VirtualHashRecord(1L, nonDefaultHash);
-        assertThrows(IllegalArgumentException.class, () -> subject.serialize(data, bbuf));
         assertThrows(IllegalArgumentException.class, () -> subject.serialize(data, out));
     }
 

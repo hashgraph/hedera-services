@@ -221,7 +221,9 @@ public class TokenAssociationSpecs extends HapiSuite {
                 .when(
                         cryptoDelete(TOKEN_TREASURY).hasKnownStatus(ACCOUNT_IS_TREASURY),
                         tokenAssociate("replacementTreasury", TBD_TOKEN),
-                        tokenUpdate(TBD_TOKEN).treasury("replacementTreasury"))
+                        tokenUpdate(TBD_TOKEN)
+                                .treasury("replacementTreasury")
+                                .signedByPayerAnd(MULTI_KEY, "replacementTreasury"))
                 .then(
                         // Updating the treasury transfers the 2 NFTs to the new
                         // treasury; hence the old treasury has numPositiveBalances=0

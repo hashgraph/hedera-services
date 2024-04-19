@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.network;
 
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
 
 import com.swirlds.common.context.PlatformContext;
@@ -26,11 +25,11 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
+import javax.security.auth.x500.X500Principal;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,52 +45,49 @@ public class NetworkPeerIdentifier {
      */
     private final RateLimitedLogger noPeerFoundLogger;
 
-    private final RateLimitedLogger multiplePeersFoundLogger;
+    // a mapping of X500Principal and their peers
+    private final Map<X500Principal, PeerInfo> x501PrincipalsAndPeers;
 
-    public NetworkPeerIdentifier(@NonNull final PlatformContext platformContext) {
+    /**
+     * constructor
+     *
+     * @param platformContext the platform context
+     * @param peers           list of peers
+     */
+    public NetworkPeerIdentifier(@NonNull final PlatformContext platformContext, @NonNull final List<PeerInfo> peers) {
         Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(peers);
         noPeerFoundLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(5));
-        multiplePeersFoundLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(5));
+        this.x501PrincipalsAndPeers = HashMap.newHashMap(peers.size());
+        for (final PeerInfo peerInfo : peers) {
+            x501PrincipalsAndPeers.put(
+                    ((X509Certificate) peerInfo.signingCertificate()).getSubjectX500Principal(), peerInfo);
+        }
     }
 
     /**
      * identifies a client on the other end of the socket using their signing certificate.
      *
-     * @param certs        a list of TLS certificates from the connected socket
-     * @param peerInfoList List of known peers
+     * @param certs a list of TLS certificates from the connected socket
      * @return info of the identified peer
      */
-    public @Nullable PeerInfo identifyTlsPeer(
-            @NonNull final Certificate[] certs, @NonNull final List<PeerInfo> peerInfoList) {
+    public @Nullable PeerInfo identifyTlsPeer(@NonNull final Certificate[] certs) {
         Objects.requireNonNull(certs);
-        Objects.requireNonNull(peerInfoList);
         if (certs.length == 0) {
             return null;
         }
 
-        PeerInfo matchingPair = null;
         // the peer certificates chain is an ordered array of peer certificates,
         // with the peer's own certificate first followed by any certificate authorities.
         // See https://www.rfc-editor.org/rfc/rfc5246
         final X509Certificate agreementCert = (X509Certificate) certs[0];
-        final Set<PeerInfo> peers = peerInfoList.stream()
-                .filter(peerInfo -> ((X509Certificate) peerInfo.signingCertificate())
-                        .getSubjectX500Principal()
-                        .equals(agreementCert.getIssuerX500Principal()))
-                .collect(Collectors.toSet());
-        final Optional<PeerInfo> peer = peers.stream().findFirst();
-        if (peer.isEmpty()) {
+        final PeerInfo matchedPeer = x501PrincipalsAndPeers.get(agreementCert.getIssuerX500Principal());
+        if (matchedPeer == null) {
             noPeerFoundLogger.warn(
                     SOCKET_EXCEPTIONS.getMarker(),
                     "Unable to identify peer with the presented certificate {}.",
                     agreementCert);
-        } else {
-            if (peers.size() > 1) {
-                multiplePeersFoundLogger.info(
-                        EXCEPTION.getMarker(), "Found {} matching peers for the presented certificate", peers.size());
-            }
-            matchingPair = peer.get();
         }
-        return matchingPair;
+        return matchedPeer;
     }
 }

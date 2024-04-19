@@ -40,10 +40,7 @@ import java.util.Objects;
 /**
  * DataFile's metadata that is stored in the data file's footer
  */
-@SuppressWarnings("unused")
-// Future work: make this class final, once DataFileMetadataJdb is dropped
-// See https://github.com/hashgraph/hedera-services/issues/8344 for details
-public class DataFileMetadata {
+public final class DataFileMetadata {
 
     /**
      * Maximum level of compaction for storage files.
@@ -51,14 +48,10 @@ public class DataFileMetadata {
     public static final int MAX_COMPACTION_LEVEL = 127;
 
     /** The file index, in a data file collection */
-    // Future work: make it private final, once this class is final again
-    // https://github.com/hashgraph/hedera-services/issues/8344
-    protected int index;
+    private final int index;
 
     /** The creation date of this file */
-    // Future work: make it private final, once this class is final again
-    // https://github.com/hashgraph/hedera-services/issues/8344
-    protected Instant creationDate;
+    private final Instant creationDate;
 
     /**
      * The number of data items the file contains. When metadata is loaded from a file, the number
@@ -67,17 +60,13 @@ public class DataFileMetadata {
      * right before the file is finished writing. For such new files, no code needs their metadata
      * until they are fully written, so wrong (zero) item count shouldn't be an issue.
      */
-    // Future work: make it private, once this class is final again
-    // https://github.com/hashgraph/hedera-services/issues/8344
-    protected volatile long itemsCount;
+    private volatile long itemsCount;
 
     /** Serialization version for data stored in the file */
-    // Future work: make it private final, once this class is final again
-    // https://github.com/hashgraph/hedera-services/issues/8344
-    protected long serializationVersion;
+    private final long serializationVersion;
 
     /** The level of compaction this file has. See {@link DataFileCompactor}*/
-    protected byte compactionLevel;
+    private final byte compactionLevel;
 
     // Set in writeTo()
     private long dataItemCountHeaderOffset = 0;
