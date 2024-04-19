@@ -138,6 +138,7 @@ public final class DefaultPlatformContext implements PlatformContext {
     }
 
     @Override
+    @NonNull
     public ExecutorFactory getExecutorFactory() {
         return executorFactory;
     }
