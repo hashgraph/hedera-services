@@ -27,10 +27,19 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 class BaseExecutorThreadFactory implements ThreadFactory {
 
+    /**
+     * The singleton instance of this factory.
+     */
     private static final BaseExecutorThreadFactory instance = new BaseExecutorThreadFactory();
 
+    /**
+     * The number of threads created by this factory.
+     */
     private AtomicLong threadNumber = new AtomicLong(1);
 
+    /**
+     * Constructs a new factory.
+     */
     private BaseExecutorThreadFactory() {}
 
     @Override

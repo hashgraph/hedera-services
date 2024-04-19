@@ -30,7 +30,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
-import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
@@ -43,9 +42,9 @@ import com.swirlds.platform.state.signed.SignedStateHasher;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.state.notifications.IssNotification;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.StateAndRound;
+import com.swirlds.proto.event.StateSignaturePayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -60,7 +59,6 @@ import java.util.List;
  * @param stateSignerScheduler                      the scheduler for the state signer
  * @param pcesReplayerScheduler                     the scheduler for the pces replayer
  * @param pcesWriterScheduler                       the scheduler for the pces writer
- * @param pcesSequencerScheduler                    the scheduler for the pces sequencer
  * @param eventDurabilityNexusScheduler             the scheduler for the event durability nexus
  * @param applicationTransactionPrehandlerScheduler the scheduler for the application transaction prehandler
  * @param stateSignatureCollectorScheduler          the scheduler for the state signature collector
@@ -77,10 +75,9 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
         @NonNull TaskScheduler<GossipEvent> postHashCollectorScheduler,
         @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
-        @NonNull TaskScheduler<StateSignatureTransaction> stateSignerScheduler,
+        @NonNull TaskScheduler<StateSignaturePayload> stateSignerScheduler,
         @NonNull TaskScheduler<DoneStreamingPcesTrigger> pcesReplayerScheduler,
         @NonNull TaskScheduler<Long> pcesWriterScheduler,
-        @NonNull TaskScheduler<GossipEvent> pcesSequencerScheduler,
         @NonNull TaskScheduler<Void> eventDurabilityNexusScheduler,
         @NonNull TaskScheduler<Void> applicationTransactionPrehandlerScheduler,
         @NonNull TaskScheduler<List<ReservedSignedState>> stateSignatureCollectorScheduler,
@@ -151,13 +148,6 @@ public record PlatformSchedulers(
                         .withUnhandledTaskCapacity(config.pcesWriterUnhandledCapacity())
                         .withUnhandledTaskMetricEnabled(true)
                         .withHyperlink(platformCoreHyperlink(PcesWriter.class))
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("pcesSequencer")
-                        .withType(config.pcesSequencerSchedulerType())
-                        .withUnhandledTaskCapacity(config.pcesSequencerUnhandledTaskCapacity())
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(PcesSequencer.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("eventDurabilityNexus")

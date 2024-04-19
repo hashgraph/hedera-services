@@ -33,7 +33,6 @@ import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.Closeable;
 import java.io.IOException;
-import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
@@ -165,7 +164,6 @@ public final class NetworkUtils {
         } catch (final NoSuchAlgorithmException
                 | UnrecoverableKeyException
                 | KeyStoreException
-                | KeyManagementException
                 | CertificateException
                 | IOException e) {
             throw new PlatformConstructionException("A problem occurred while creating the SocketFactory", e);
