@@ -24,14 +24,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHE
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_ADMIN_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -60,6 +53,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.util.TokenKeysHelper.TokenKeys;
 import com.hedera.node.app.service.token.impl.validators.TokenUpdateValidator;
 import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -73,7 +67,9 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -83,6 +79,7 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenUpdateHandler extends BaseTokenHandler implements TransactionHandler {
     private final TokenUpdateValidator tokenUpdateValidator;
+    private static final Set<TokenKeys> TOKEN_KEYS = EnumSet.allOf(TokenKeys.class);
 
     @Inject
     public TokenUpdateHandler(@NonNull final TokenUpdateValidator tokenUpdateValidator) {
@@ -115,7 +112,6 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         if (token == null) {
             throw new PreCheckException(INVALID_TOKEN_ID);
         }
-
         addRequiredSigners(context, op, token);
     }
 
@@ -375,42 +371,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
      */
     private void updateKeys(
             final TokenUpdateTransactionBody op, final Token originalToken, final Token.Builder builder) {
-        if (op.hasKycKey()) {
-            validateTrue(originalToken.hasKycKey(), TOKEN_HAS_NO_KYC_KEY);
-            builder.kycKey(getNewKeyValue(op.kycKey()));
-        }
-        if (op.hasFreezeKey()) {
-            validateTrue(originalToken.hasFreezeKey(), TOKEN_HAS_NO_FREEZE_KEY);
-            builder.freezeKey(getNewKeyValue(op.freezeKey()));
-        }
-        if (op.hasWipeKey()) {
-            validateTrue(originalToken.hasWipeKey(), TOKEN_HAS_NO_WIPE_KEY);
-            builder.wipeKey(getNewKeyValue(op.wipeKey()));
-        }
-        if (op.hasSupplyKey()) {
-            validateTrue(originalToken.hasSupplyKey(), TOKEN_HAS_NO_SUPPLY_KEY);
-            builder.supplyKey(getNewKeyValue(op.supplyKey()));
-        }
-        if (op.hasFeeScheduleKey()) {
-            validateTrue(originalToken.hasFeeScheduleKey(), TOKEN_HAS_NO_FEE_SCHEDULE_KEY);
-            builder.feeScheduleKey(getNewKeyValue(op.feeScheduleKey()));
-        }
-        if (op.hasPauseKey()) {
-            validateTrue(originalToken.hasPauseKey(), TOKEN_HAS_NO_PAUSE_KEY);
-            builder.pauseKey(getNewKeyValue(op.pauseKey()));
-        }
-        if (op.hasMetadataKey()) {
-            validateTrue(originalToken.hasMetadataKey(), TOKEN_HAS_NO_METADATA_KEY);
-            builder.metadataKey(getNewKeyValue(op.metadataKey()));
-        }
-        if (op.hasAdminKey()) {
-            validateTrue(originalToken.hasAdminKey(), TOKEN_HAS_NO_ADMIN_KEY);
-            builder.adminKey(getNewKeyValue(op.adminKey()));
-        }
-    }
-
-    private Key getNewKeyValue(Key newKey) {
-        return isKeyRemoval(newKey) ? null : newKey;
+        TOKEN_KEYS.forEach(key -> key.updateKey(op, originalToken, builder));
     }
 
     /**
