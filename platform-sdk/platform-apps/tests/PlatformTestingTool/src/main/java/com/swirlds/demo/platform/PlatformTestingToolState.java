@@ -724,7 +724,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      */
     private Optional<TestTransaction> unpackTransaction(final Transaction trans) {
         try {
-            final byte[] payloadBytes = trans.getContents();
+            final byte[] payloadBytes = trans.getAppPayload().toByteArray();
             if (getConfig().isAppendSig()) {
                 final byte[] testTransactionRawBytes = TestTransactionWrapper.parseFrom(payloadBytes)
                         .getTestTransactionRawBytes()
@@ -1082,6 +1082,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     }
 
     protected void preHandleTransaction(final Transaction transaction) {
+        if(transaction.isSystem()){
+            return;
+        }
         expandSignatures(transaction);
     }
 
@@ -1120,6 +1123,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             final ConsensusTransaction trans,
             final PlatformState platformState,
             final long roundNum) {
+        if(trans.isSystem()){
+            return;
+        }
         try {
             waitForSignatureValidation(trans);
             handleTransaction(
@@ -1158,7 +1164,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         if (getConfig().isAppendSig()) {
             try {
                 final TestTransactionWrapper testTransactionWrapper =
-                        TestTransactionWrapper.parseFrom(trans.getContents());
+                        TestTransactionWrapper.parseFrom(trans.getAppPayload().toByteArray());
                 final byte[] testTransactionRawBytes =
                         testTransactionWrapper.getTestTransactionRawBytes().toByteArray();
                 final byte[] publicKey =
@@ -1361,7 +1367,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     private void expandSignatures(final Transaction trans) {
         if (getConfig().isAppendSig()) {
             try {
-                final byte[] payloadBytes = trans.getContents();
+                final byte[] payloadBytes = trans.getAppPayload().toByteArray();
                 final TestTransactionWrapper testTransactionWrapper = TestTransactionWrapper.parseFrom(payloadBytes);
                 final byte[] testTransactionRawBytes =
                         testTransactionWrapper.getTestTransactionRawBytes().toByteArray();

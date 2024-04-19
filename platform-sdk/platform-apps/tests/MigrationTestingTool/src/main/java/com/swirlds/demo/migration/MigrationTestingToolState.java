@@ -261,7 +261,7 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
      */
     private static MigrationTestingToolTransaction parseTransaction(final Transaction transaction) {
         final SerializableDataInputStream in =
-                new SerializableDataInputStream(new ByteArrayInputStream(transaction.getContents()));
+                new SerializableDataInputStream(transaction.getAppPayload().toReadableSequentialData().asInputStream());
 
         try {
             return in.readSerializable(false, MigrationTestingToolTransaction::new);
@@ -281,6 +281,9 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
             for (final Iterator<ConsensusTransaction> transIt = event.consensusTransactionIterator();
                     transIt.hasNext(); ) {
                 final ConsensusTransaction trans = transIt.next();
+                if(trans.isSystem()){
+                    continue;
+                }
                 final MigrationTestingToolTransaction mTrans = parseTransaction(trans);
                 mTrans.applyTo(this);
             }

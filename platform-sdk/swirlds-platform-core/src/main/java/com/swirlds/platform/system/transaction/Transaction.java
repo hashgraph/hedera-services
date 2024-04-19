@@ -17,9 +17,11 @@
 package com.swirlds.platform.system.transaction;
 
 import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.io.SerializableWithKnownLength;
 import com.swirlds.proto.event.EventPayload;
+import com.swirlds.proto.event.EventPayload.PayloadOneOfType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.locks.ReadWriteLock;
 
@@ -66,7 +68,17 @@ public sealed interface Transaction extends SerializableWithKnownLength permits 
      * @return {@code true} if this is a system transaction; otherwise {@code false} if this is an application
      * 		transaction
      */
-    boolean isSystem();
+    default boolean isSystem(){
+        return getPayload().kind() != PayloadOneOfType.APPLICATION_PAYLOAD;
+    }
+
+    default boolean isApp(){
+        return getPayload().kind() == PayloadOneOfType.APPLICATION_PAYLOAD;
+    }
+
+    default Bytes getAppPayload() {
+        return isApp() ? getPayload().as() : Bytes.EMPTY;
+    }
 
     /**
      * Returns the custom metadata object set via {@link #setMetadata(Object)}.
