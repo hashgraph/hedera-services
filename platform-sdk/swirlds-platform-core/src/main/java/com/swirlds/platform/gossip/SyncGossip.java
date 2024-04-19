@@ -17,6 +17,7 @@
 package com.swirlds.platform.gossip;
 
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
+import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_UNDEFINED;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.common.context.PlatformContext;
@@ -76,13 +77,13 @@ import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -95,6 +96,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 /**
  * Boilerplate code for gossip.
@@ -154,6 +156,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      * @param intakeEventCounter            keeps track of the number of events in the intake pipeline from each peer
+     * @param statusActionSubmitter         for submitting updates to the platform status manager
      */
     protected SyncGossip(
             @NonNull final PlatformContext platformContext,
@@ -165,11 +168,12 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             @NonNull final SoftwareVersion appVersion,
             @NonNull final LongSupplier intakeQueueSizeSupplier,
             @NonNull final SwirldStateManager swirldStateManager,
-            @NonNull final SignedStateNexus latestCompleteState,
+            @NonNull final Supplier<ReservedSignedState> latestCompleteState,
             @NonNull final AtomicReference<PlatformStatus> currentPlatformStatus,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect,
-            @NonNull final IntakeEventCounter intakeEventCounter) {
+            @NonNull final IntakeEventCounter intakeEventCounter,
+            @NonNull final StatusActionSubmitter statusActionSubmitter) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.addressBook = Objects.requireNonNull(addressBook);
@@ -211,7 +215,13 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 .setWork(connectionServer)
                 .build());
 
-        fallenBehindManager = buildFallenBehindManager();
+        fallenBehindManager = new FallenBehindManagerImpl(
+                addressBook,
+                selfId,
+                topology.getConnectionGraph(),
+                statusActionSubmitter,
+                () -> getReconnectController().start(),
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
 
         syncManager = new SyncManagerImpl(
                 platformContext,
@@ -230,11 +240,22 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics(), addressBook);
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+
+        final LongSupplier getRoundSupplier = () -> {
+            try (final ReservedSignedState state = latestCompleteState.get()) {
+                if (state.isNull()) {
+                    return ROUND_UNDEFINED;
+                }
+
+                return state.get().getRound();
+            }
+        };
+
         reconnectHelper = new ReconnectHelper(
                 this::pause,
                 clearAllPipelinesForReconnect::run,
                 swirldStateManager::getConsensusState,
-                latestCompleteState::getRound,
+                getRoundSupplier,
                 new ReconnectLearnerThrottle(platformContext.getTime(), selfId, reconnectConfig),
                 loadReconnectState,
                 new ReconnectLearnerFactory(
@@ -300,7 +321,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             final NodeId selfId,
             final SoftwareVersion appVersion,
             final LongSupplier intakeQueueSizeSupplier,
-            final SignedStateNexus latestCompleteState,
+            final Supplier<ReservedSignedState> getLatestCompleteState,
             final SyncMetrics syncMetrics,
             final Duration hangingThreadDuration,
             final ProtocolConfig protocolConfig,
@@ -320,7 +341,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 platformContext,
                 threadManager,
                 reconnectThrottle,
-                () -> latestCompleteState.getState("SwirldsPlatform: ReconnectProtocol"),
+                getLatestCompleteState,
                 reconnectConfig.asyncStreamTimeout(),
                 reconnectMetrics,
                 reconnectController,
@@ -351,20 +372,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                                     syncProtocolFactory.build(otherId)))))
                     .build());
         }
-    }
-
-    /**
-     * Build the fallen behind manager.
-     */
-    @NonNull
-    private FallenBehindManagerImpl buildFallenBehindManager() {
-        return new FallenBehindManagerImpl(
-                addressBook,
-                selfId,
-                topology.getConnectionGraph(),
-                platformStatusAction -> {} /* TODO this needs to be wired into the platform status manager */,
-                () -> getReconnectController().start(),
-                platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
     }
 
     /**
@@ -401,8 +408,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             thread.stop();
         }
     }
-
-    // TODO this needs to be a wire
 
     /**
      * This method is called when the node has finished a reconnect

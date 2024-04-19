@@ -92,7 +92,6 @@ import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateLoadedFromDiskNotification;
 import com.swirlds.platform.metrics.RuntimeMetrics;
-import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.metrics.TransactionMetrics;
 import com.swirlds.platform.publisher.DefaultPlatformPublisher;
 import com.swirlds.platform.publisher.PlatformPublisher;
@@ -319,6 +318,7 @@ public class SwirldsPlatform implements Platform {
         };
         platformStatusManager = thingsToStart.add(
                 new PlatformStatusManager(platformContext, time, threadManager, statusChangeConsumer));
+        blocks.statusActionSubmitterReference().set(platformStatusManager);
 
         thingsToStart.add(Objects.requireNonNull(recycleBin));
 
@@ -396,12 +396,7 @@ public class SwirldsPlatform implements Platform {
         final long roundToIgnore = stateConfig.validateInitialState() ? DO_NOT_IGNORE_ROUNDS : initialState.getRound();
 
         final IssDetector issDetector = new IssDetector(
-                platformContext,
-                currentAddressBook,
-                null, // TODO
-                appVersion,
-                ignorePreconsensusSignatures,
-                roundToIgnore);
+                platformContext, currentAddressBook, appVersion, ignorePreconsensusSignatures, roundToIgnore);
 
         final SignedStateFileManager signedStateFileManager = new SignedStateFileManager(
                 platformContext,
@@ -456,14 +451,8 @@ public class SwirldsPlatform implements Platform {
                 platformContext.getConfiguration().getConfigData(TransactionConfig.class);
 
         // This object makes a copy of the state. After this point, initialState becomes immutable.
-        swirldStateManager = new SwirldStateManager(
-                platformContext,
-                currentAddressBook,
-                selfId,
-                new SwirldStateMetrics(platformContext.getMetrics()),
-                platformStatusManager,
-                initialState.getState(),
-                appVersion);
+        swirldStateManager = blocks.swirldStateManager();
+        swirldStateManager.setInitialState(initialState.getState());
 
         final EventWindowManager eventWindowManager = new DefaultEventWindowManager();
 
@@ -608,6 +597,11 @@ public class SwirldsPlatform implements Platform {
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
                 List.of(Pair.of(platformWiring, "platformWiring"), Pair.of(transactionPool, "transactionPool")));
+
+        blocks.getLatestCompleteStateReference()
+                .set(() -> latestCompleteStateNexus.getState("get latest complete state for reconnect"));
+        blocks.loadReconnectStateReference().set(this::loadReconnectState);
+        blocks.clearAllPipelinesForReconnectReference().set(clearAllPipelines::clear);
     }
 
     /**
@@ -632,13 +626,6 @@ public class SwirldsPlatform implements Platform {
                 platformState.getFirstVersionInBirthRoundMode(),
                 platformState.getLastRoundBeforeBirthRoundMode(),
                 platformState.getLowestJudgeGenerationBeforeBirthRoundMode());
-    }
-
-    /**
-     * Clears all pipelines in preparation for a reconnect. This method is needed to break a circular dependency.
-     */
-    private void clearAllPipelines() {
-        clearAllPipelines.clear();
     }
 
     /**
@@ -802,7 +789,7 @@ public class SwirldsPlatform implements Platform {
         } catch (final RuntimeException e) {
             logger.debug(RECONNECT.getMarker(), "`loadReconnectState` : FAILED, reason: {}", e.getMessage());
             // if the loading fails for whatever reason, we clear all data again in case some of it has been loaded
-            clearAllPipelines();
+            clearAllPipelines.clear();
             throw e;
         }
 

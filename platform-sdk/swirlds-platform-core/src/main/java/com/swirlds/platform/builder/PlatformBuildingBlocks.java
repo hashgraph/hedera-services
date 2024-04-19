@@ -25,9 +25,13 @@ import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.util.RandomBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -36,37 +40,50 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * This record contains core utilities and basic objects needed to build a platform. It should not contain any platform
  * components.
  *
- * @param platformContext                 the context for this platform
- * @param keysAndCerts                    an object holding all the public/private key pairs and the CSPRNG state for
- *                                        this member
- * @param recycleBin                      used to delete files that may be useful for later debugging
- * @param selfId                          the ID for this node
- * @param mainClassName                   the name of the app class inheriting from SwirldMain
- * @param swirldName                      the name of the swirld being run
- * @param appVersion                      the current version of the running application
- * @param initialState                    the initial state of the platform
- * @param preconsensusEventConsumer       the consumer for preconsensus events, null if publishing this data has not
- *                                        been enabled
- * @param snapshotOverrideConsumer        the consumer for snapshot overrides, null if publishing this data has not been
- *                                        enabled
- * @param intakeEventCounter              counts events that have been received by gossip but not yet inserted into
- *                                        gossip event storage, per peer
- * @param randomBuilder                   a builder for creating random number generators
- * @param transactionPool                 provides transactions to be added to new events
- * @param currentPlatformStatus           holds the current status of the platform, should be removed once the platform
- *                                        status manager is operated within the wiring framework
- * @param intakeQueueSizeSupplierSupplier supplies a method which supplies the size of the intake queue. This hack is
- *                                        required due to the lack of a platform health monitor.
- * @param isInFreezePeriodReference       a reference to a predicate that determines if a timestamp is in the freeze
- *                                        period, this can be deleted as soon as the CES is retired.
- * @param notificationEngine              for sending notifications to the application (legacy pattern)
- * @param firstPlatform                   if this is the first platform being built (there is static setup that needs to
- *                                        be done, long term plan is to stop using static variables)
+ * @param platformContext                        the context for this platform
+ * @param keysAndCerts                           an object holding all the public/private key pairs and the CSPRNG state
+ *                                               for this member
+ * @param recycleBin                             used to delete files that may be useful for later debugging
+ * @param selfId                                 the ID for this node
+ * @param mainClassName                          the name of the app class inheriting from SwirldMain
+ * @param swirldName                             the name of the swirld being run
+ * @param appVersion                             the current version of the running application
+ * @param initialState                           the initial state of the platform
+ * @param preconsensusEventConsumer              the consumer for preconsensus events, null if publishing this data has
+ *                                               not been enabled
+ * @param snapshotOverrideConsumer               the consumer for snapshot overrides, null if publishing this data has
+ *                                               not been enabled
+ * @param intakeEventCounter                     counts events that have been received by gossip but not yet inserted
+ *                                               into gossip event storage, per peer
+ * @param randomBuilder                          a builder for creating random number generators
+ * @param transactionPool                        provides transactions to be added to new events
+ * @param currentPlatformStatus                  holds the current status of the platform, should be removed once the
+ *                                               platform status manager is operated within the wiring framework
+ * @param intakeQueueSizeSupplierSupplier        supplies a method which supplies the size of the intake queue. This
+ *                                               hack is required due to the lack of a platform health monitor.
+ * @param isInFreezePeriodReference              a reference to a predicate that determines if a timestamp is in the
+ *                                               freeze period, this can be deleted as soon as the CES is retired.
+ * @param notificationEngine                     for sending notifications to the application (legacy pattern)
+ * @param firstPlatform                          if this is the first platform being built (there is static setup that
+ *                                               needs to be done, long term plan is to stop using static variables)
+ * @param statusActionSubmitterReference         a reference to the status action submitter, this can be deleted once
+ *                                               platform status management is handled by the wiring framework
+ * @param getLatestCompleteStateReference        a reference to a supplier that supplies the latest immutable state,
+ *                                               this is exposed here due to reconnect, can be removed once reconnect is
+ *                                               made compatible with the wiring framework
+ * @param loadReconnectStateReference            a reference to a consumer that loads the state for reconnect, can be
+ *                                               removed once reconnect is made compatible with the wiring framework
+ * @param clearAllPipelinesForReconnectReference a reference to a runnable that clears all pipelines for reconnect, can
+ *                                               be removed once reconnect is made compatible with the wiring framework
+ * @param swirldStateManager                     responsible for the mutable state, this is exposed here due to
+ *                                               reconnect, can be removed once reconnect is made compatible with the
+ *                                               wiring framework
  */
 public record PlatformBuildingBlocks(
         @NonNull PlatformContext platformContext,
@@ -86,4 +103,20 @@ public record PlatformBuildingBlocks(
         @NonNull AtomicReference<LongSupplier> intakeQueueSizeSupplierSupplier,
         @NonNull AtomicReference<Predicate<Instant>> isInFreezePeriodReference,
         @NonNull NotificationEngine notificationEngine,
-        boolean firstPlatform) {}
+        @NonNull AtomicReference<StatusActionSubmitter> statusActionSubmitterReference,
+        @NonNull SwirldStateManager swirldStateManager,
+        @NonNull AtomicReference<Supplier<ReservedSignedState>> getLatestCompleteStateReference,
+        @NonNull AtomicReference<Consumer<SignedState>> loadReconnectStateReference,
+        @NonNull AtomicReference<Runnable> clearAllPipelinesForReconnectReference,
+        boolean firstPlatform) {
+
+    /**
+     * Get the address book from the initial state.
+     *
+     * @return the initial address book
+     */
+    @NonNull
+    public AddressBook initialAddressBook() {
+        return initialState.get().getState().getPlatformState().getAddressBook();
+    }
+}

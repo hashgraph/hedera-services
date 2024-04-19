@@ -55,7 +55,6 @@ import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.state.nexus.LockFreeStateNexus;
 import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
@@ -219,13 +218,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public InternalEventValidator buildInternalEventValidator() {
         if (internalEventValidator == null) {
-            final boolean singleNodeNetwork = blocks.initialState()
-                            .get()
-                            .getState()
-                            .getPlatformState()
-                            .getAddressBook()
-                            .getSize()
-                    == 1;
+            final boolean singleNodeNetwork = blocks.initialAddressBook().getSize() == 1;
             internalEventValidator = new DefaultInternalEventValidator(
                     blocks.platformContext(), singleNodeNetwork, blocks.intakeEventCounter());
         }
@@ -296,7 +289,7 @@ public class PlatformComponentBuilder {
                     CryptoStatic::verifySignature,
                     blocks.appVersion(),
                     blocks.initialState().get().getState().getPlatformState().getPreviousAddressBook(),
-                    blocks.initialState().get().getState().getPlatformState().getAddressBook(),
+                    blocks.initialAddressBook(),
                     blocks.intakeEventCounter());
         }
         return eventSignatureValidator;
@@ -462,7 +455,7 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(),
                     blocks.randomBuilder().buildNonCryptographicRandom(),
                     data -> new PlatformSigner(blocks.keysAndCerts()).sign(data),
-                    blocks.initialState().get().getState().getPlatformState().getAddressBook(),
+                    blocks.initialAddressBook(),
                     blocks.selfId(),
                     blocks.appVersion(),
                     blocks.transactionPool());
@@ -569,7 +562,8 @@ public class PlatformComponentBuilder {
     /**
      * Build the PCES sequencer if it has not yet been built. If one has been provided via
      * {@link #withPcesSequencer(PcesSequencer)}, that sequencer will be used. If this method is called more than once,
-     * only the first call will build the PCES sequencer. Otherwise, the default sequencer will be created and
+     * only the first call will build the PCES sequencer. Otherwise, the default sequencer will
+     * be created and
      * returned.
      *
      * @return the PCES sequencer
@@ -608,23 +602,23 @@ public class PlatformComponentBuilder {
     @NonNull
     public Gossip buildGossip() {
         if (gossip == null) {
-            // TODO
 
             gossip = new SyncGossip(
                     blocks.platformContext(),
                     blocks.randomBuilder().buildNonCryptographicRandom(),
                     AdHocThreadManager.getStaticThreadManager(),
                     blocks.keysAndCerts(),
-                    blocks.initialState().get().getAddressBook(),
+                    blocks.initialAddressBook(),
                     blocks.selfId(),
                     blocks.appVersion(),
                     () -> blocks.intakeQueueSizeSupplierSupplier().get().getAsLong(),
-                    null, // TODO wrong
-                    new LockFreeStateNexus(), // TODO wrong
+                    blocks.swirldStateManager(),
+                    () -> blocks.getLatestCompleteStateReference().get().get(),
                     blocks.currentPlatformStatus(),
-                    state -> {}, // TODO wrong
-                    () -> {}, // TODO wrong
-                    blocks.intakeEventCounter()) {};
+                    state -> blocks.loadReconnectStateReference().get().accept(state),
+                    () -> blocks.clearAllPipelinesForReconnectReference().get().run(),
+                    blocks.intakeEventCounter(),
+                    x -> blocks.statusActionSubmitterReference().get().submitStatusAction(x)) {};
         }
         return gossip;
     }

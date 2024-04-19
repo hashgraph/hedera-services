@@ -69,10 +69,7 @@ public class IssDetector {
      * The address book of this network.
      */
     private final AddressBook addressBook;
-    /**
-     * The current epoch hash
-     */
-    private final Hash currentEpochHash;
+
     /**
      * The current software version
      */
@@ -112,10 +109,12 @@ public class IssDetector {
      * A round that should not be validated. Set to {@link #DO_NOT_IGNORE_ROUNDS} if all rounds should be validated.
      */
     private final long ignoredRound;
+
     /**
      * ISS related metrics
      */
     private final IssMetrics issMetrics;
+
     /**
      * Writes marker files to disk.
      */
@@ -126,7 +125,6 @@ public class IssDetector {
      *
      * @param platformContext              the platform context
      * @param addressBook                  the address book for the network
-     * @param currentEpochHash             the current epoch hash
      * @param currentSoftwareVersion       the current software version
      * @param ignorePreconsensusSignatures If true, ignore signatures from the preconsensus event stream, otherwise
      *                                     validate them like normal.
@@ -136,7 +134,6 @@ public class IssDetector {
     public IssDetector(
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
-            @Nullable final Hash currentEpochHash,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             final boolean ignorePreconsensusSignatures,
             final long ignoredRound) {
@@ -153,7 +150,6 @@ public class IssDetector {
         catastrophicIssRateLimiter = new RateLimiter(platformContext.getTime(), timeBetweenIssLogs);
 
         this.addressBook = Objects.requireNonNull(addressBook);
-        this.currentEpochHash = currentEpochHash;
         this.currentSoftwareVersion = Objects.requireNonNull(currentSoftwareVersion);
 
         this.roundData = new ConcurrentSequenceMap<>(
@@ -344,11 +340,6 @@ public class IssDetector {
 
         if (currentSoftwareVersion.compareTo(eventVersion) != 0) {
             // this is a signature from a different software version, ignore it
-            return null;
-        }
-
-        if (!hashEquals(currentEpochHash, signatureTransaction.epochHash())) {
-            // this is a signature from a different epoch, ignore it
             return null;
         }
 

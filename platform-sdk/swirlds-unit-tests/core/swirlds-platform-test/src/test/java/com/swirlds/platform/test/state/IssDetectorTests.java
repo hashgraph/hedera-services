@@ -64,7 +64,6 @@ import org.junit.jupiter.api.Test;
 
 @DisplayName("IssDetector Tests")
 class IssDetectorTests extends PlatformTest {
-    private static final Hash DEFAULT_EPOCH_HASH = null;
 
     /**
      * Generates a list of events, with each event containing a signature transaction from a node for the given round.
@@ -172,13 +171,8 @@ class IssDetectorTests extends PlatformTest {
 
         final PlatformContext platformContext = createDefaultPlatformContext();
 
-        final IssDetector issDetector = new IssDetector(
-                platformContext,
-                addressBook,
-                DEFAULT_EPOCH_HASH,
-                new BasicSoftwareVersion(1),
-                false,
-                DO_NOT_IGNORE_ROUNDS);
+        final IssDetector issDetector =
+                new IssDetector(platformContext, addressBook, new BasicSoftwareVersion(1), false, DO_NOT_IGNORE_ROUNDS);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         // signature events are generated for each round when that round is handled, and then are included randomly
@@ -296,13 +290,8 @@ class IssDetectorTests extends PlatformTest {
             }
         }
 
-        final IssDetector issDetector = new IssDetector(
-                platformContext,
-                addressBook,
-                DEFAULT_EPOCH_HASH,
-                new BasicSoftwareVersion(1),
-                false,
-                DO_NOT_IGNORE_ROUNDS);
+        final IssDetector issDetector =
+                new IssDetector(platformContext, addressBook, new BasicSoftwareVersion(1), false, DO_NOT_IGNORE_ROUNDS);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         long currentRound = 0;
@@ -386,13 +375,8 @@ class IssDetectorTests extends PlatformTest {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final IssDetector issDetector = new IssDetector(
-                platformContext,
-                addressBook,
-                DEFAULT_EPOCH_HASH,
-                new BasicSoftwareVersion(1),
-                false,
-                DO_NOT_IGNORE_ROUNDS);
+        final IssDetector issDetector =
+                new IssDetector(platformContext, addressBook, new BasicSoftwareVersion(1), false, DO_NOT_IGNORE_ROUNDS);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         long currentRound = 0;
@@ -513,13 +497,8 @@ class IssDetectorTests extends PlatformTest {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final IssDetector issDetector = new IssDetector(
-                platformContext,
-                addressBook,
-                DEFAULT_EPOCH_HASH,
-                new BasicSoftwareVersion(1),
-                false,
-                DO_NOT_IGNORE_ROUNDS);
+        final IssDetector issDetector =
+                new IssDetector(platformContext, addressBook, new BasicSoftwareVersion(1), false, DO_NOT_IGNORE_ROUNDS);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         long currentRound = 0;
@@ -603,13 +582,8 @@ class IssDetectorTests extends PlatformTest {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final IssDetector issDetector = new IssDetector(
-                platformContext,
-                addressBook,
-                DEFAULT_EPOCH_HASH,
-                new BasicSoftwareVersion(1),
-                false,
-                DO_NOT_IGNORE_ROUNDS);
+        final IssDetector issDetector =
+                new IssDetector(platformContext, addressBook, new BasicSoftwareVersion(1), false, DO_NOT_IGNORE_ROUNDS);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         long currentRound = 0;
@@ -685,8 +659,8 @@ class IssDetectorTests extends PlatformTest {
                 .getConfigData(ConsensusConfig.class)
                 .roundsNonAncient();
 
-        final IssDetector issDetector = new IssDetector(
-                platformContext, addressBook, DEFAULT_EPOCH_HASH, new BasicSoftwareVersion(1), false, 1);
+        final IssDetector issDetector =
+                new IssDetector(platformContext, addressBook, new BasicSoftwareVersion(1), false, 1);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         long currentRound = 0;

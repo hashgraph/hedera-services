@@ -59,6 +59,7 @@ import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Platform;
@@ -66,6 +67,7 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.util.RandomBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -468,6 +470,14 @@ public final class PlatformBuilder {
             intakeEventCounter = new NoOpIntakeEventCounter();
         }
 
+        final AtomicReference<StatusActionSubmitter> statusActionSubmitterAtomicReference = new AtomicReference<>();
+        final SwirldStateManager swirldStateManager = new SwirldStateManager(
+                platformContext,
+                initialState.get().getAddressBook(),
+                selfId,
+                x -> statusActionSubmitterAtomicReference.get().submitStatusAction(x),
+                softwareVersion);
+
         final PlatformBuildingBlocks buildingBlocks = new PlatformBuildingBlocks(
                 platformContext,
                 keysAndCerts.get(selfId),
@@ -483,9 +493,14 @@ public final class PlatformBuilder {
                 new RandomBuilder(),
                 new TransactionPool(platformContext),
                 new AtomicReference<>(STARTING_UP),
-                new AtomicReference<>(null),
-                new AtomicReference<>(null),
+                new AtomicReference<>(),
+                new AtomicReference<>(),
                 NotificationEngine.buildEngine(getStaticThreadManager()),
+                statusActionSubmitterAtomicReference,
+                swirldStateManager,
+                new AtomicReference<>(),
+                new AtomicReference<>(),
+                new AtomicReference<>(),
                 firstPlatform);
 
         return new PlatformComponentBuilder(buildingBlocks);
