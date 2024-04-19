@@ -73,8 +73,7 @@ class TlsFactoryTest extends ConnectivityTestBase {
         final List<PeerInfo> peersB = Utilities.createPeerInfoList(addressBook, nodeB);
 
         // create their socket factories
-        socketFactoryA =
-                NetworkUtils.createSocketFactory(nodeA, peersA, keysAndCerts.get(nodeA), TLS_NO_IP_TOS_CONFIG);
+        socketFactoryA = NetworkUtils.createSocketFactory(nodeA, peersA, keysAndCerts.get(nodeA), TLS_NO_IP_TOS_CONFIG);
         final SocketFactory socketFactoryB =
                 NetworkUtils.createSocketFactory(nodeB, peersB, keysAndCerts.get(nodeB), TLS_NO_IP_TOS_CONFIG);
 
@@ -94,7 +93,7 @@ class TlsFactoryTest extends ConnectivityTestBase {
         final Map<NodeId, KeysAndCerts> updatedKeysAndCerts = updatedAddressBookAndCerts.nodeIdKeysAndCertsMap();
         assertTrue(updatedAddressBook.getSize() > 1, "Address book must contain at least 2 nodes");
 
-        peersA = Utilities.createPeerInfoList(updatedAddressBook, nodeA); //Peers of A as in updated addressBook
+        peersA = Utilities.createPeerInfoList(updatedAddressBook, nodeA); // Peers of A as in updated addressBook
 
         // pick a node for the 3rd connection C.
         final NodeId nodeC = updatedAddressBook.getNodeId(4);
@@ -119,7 +118,7 @@ class TlsFactoryTest extends ConnectivityTestBase {
         // also, B can still talk to A
         testSocket(serverThread, clientSocketB);
 
-        //we're done
+        // we're done
         closeSeverConnection.set(true);
         serverThread.join();
         Assertions.assertTrue(serverSocket.isClosed());

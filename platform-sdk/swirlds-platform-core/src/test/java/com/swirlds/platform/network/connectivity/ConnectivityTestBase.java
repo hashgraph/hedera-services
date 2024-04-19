@@ -40,12 +40,10 @@ class ConnectivityTestBase {
     protected static final byte[] TEST_DATA = new byte[] {1, 2, 3};
 
     static {
-        TLS_NO_IP_TOS_CONFIG = new TestConfigBuilder()
-                .withValue(SocketConfig_.IP_TOS, "-1")
-                .getOrCreateConfig();
-        TLS_IP_TOS_CONFIG = new TestConfigBuilder()
-                .withValue(SocketConfig_.IP_TOS, "100")
-                .getOrCreateConfig();
+        TLS_NO_IP_TOS_CONFIG =
+                new TestConfigBuilder().withValue(SocketConfig_.IP_TOS, "-1").getOrCreateConfig();
+        TLS_IP_TOS_CONFIG =
+                new TestConfigBuilder().withValue(SocketConfig_.IP_TOS, "100").getOrCreateConfig();
 
         final Configuration configurationNoIpTos =
                 new TestConfigBuilder().withValue(SocketConfig_.IP_TOS, "-1").getOrCreateConfig();
