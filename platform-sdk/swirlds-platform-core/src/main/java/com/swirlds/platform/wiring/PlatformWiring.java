@@ -671,7 +671,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         stateSignerWiring.bind(stateSigner);
         pcesReplayerWiring.bind(pcesReplayer);
         pcesWriterWiring.bind(pcesWriter);
-        roundDurabilityBufferWiring.bind(builder.buildRoundDurabilityBuffer());
+        roundDurabilityBufferWiring.bind(builder::buildRoundDurabilityBuffer);
         shadowgraphWiring.bind(shadowgraph);
         pcesSequencerWiring.bind(builder::buildPcesSequencer);
         eventCreationManagerWiring.bind(builder::buildEventCreationManager);
