@@ -174,11 +174,6 @@ public final class StateSignatureTransaction extends ConsensusTransactionImpl {
     }
 
     @Override
-    public boolean isSystem() {
-        return true;
-    }
-
-    @Override
     public @NonNull OneOf<PayloadOneOfType> getPayload() {
         return payload;
     }

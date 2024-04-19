@@ -287,14 +287,6 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
         return contents == null ? 0 : contents.length;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isSystem() {
-        return false;
-    }
-
     @Override
     public @NonNull OneOf<PayloadOneOfType> getPayload() {
         return payload;
