@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.swirlds.base.test.fixtures.concurrent.internal.ConcurrentTestSupport;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -30,6 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -37,6 +39,7 @@ import org.junit.jupiter.api.Timeout;
 class ConcurrentTestSupportTest {
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testATaskThatRunsShort() {
         // given
         try (ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1))) {
@@ -48,6 +51,7 @@ class ConcurrentTestSupportTest {
     }
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testMultipleTasksThatRunsShort() {
         // given
         try (ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1))) {
@@ -61,6 +65,7 @@ class ConcurrentTestSupportTest {
     }
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testATaskThatRunsTooLong() {
         // given
         try (ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofMillis(500))) {
@@ -73,6 +78,7 @@ class ConcurrentTestSupportTest {
     }
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testMultipleTasksThatRunsTooLong() {
         // given
         try (ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1)); ) {
@@ -87,6 +93,7 @@ class ConcurrentTestSupportTest {
     }
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testMultipleCallsInOneConcurrentTestSupport() {
         // given
         try (ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1)); ) {
@@ -109,6 +116,7 @@ class ConcurrentTestSupportTest {
     }
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testMultipleCallsInMultipleConcurrentTestSupport() {
         // given
         try (ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1));
@@ -141,6 +149,7 @@ class ConcurrentTestSupportTest {
     }
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testMultipleCallable() {
         // given
         try (ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1))) {
@@ -156,6 +165,7 @@ class ConcurrentTestSupportTest {
     }
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testShortCallable() {
         // given
         try (ConcurrentTestSupport concurrentTestSupport = new ConcurrentTestSupport(Duration.ofSeconds(1))) {

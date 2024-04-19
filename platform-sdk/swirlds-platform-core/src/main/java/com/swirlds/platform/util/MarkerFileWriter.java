@@ -107,6 +107,11 @@ public class MarkerFileWriter {
         markerFilesWritten.computeIfAbsent(filename, key -> {
             final Path markerFile = markerFileDirectory.resolve(filename);
             try {
+                if (Files.exists(markerFile)) {
+                    failedToWriteMarkerFileLogger.error(
+                            LogMarker.ERROR.getMarker(), "Marker file already exists: {}", markerFile);
+                    return true;
+                }
                 Files.createFile(markerFile);
             } catch (final IOException e) {
                 failedToWriteMarkerFileLogger.error(

@@ -52,6 +52,7 @@ import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.test.PlatformTest;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import com.swirlds.platform.wiring.components.StateAndRound;
+import com.swirlds.proto.event.StateSignaturePayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -77,11 +78,12 @@ class IssDetectorTests extends PlatformTest {
 
         return hashGenerationData.nodeList().stream()
                 .map(nodeHashInfo -> {
-                    final StateSignatureTransaction signatureTransaction = new StateSignatureTransaction(
-                            roundNumber,
-                            Bytes.EMPTY,
-                            nodeHashInfo.nodeStateHash().getBytes(),
-                            Bytes.EMPTY);
+                    final StateSignatureTransaction signatureTransaction =
+                            new StateSignatureTransaction(StateSignaturePayload.newBuilder()
+                                    .round(roundNumber)
+                                    .signature(Bytes.EMPTY)
+                                    .hash(nodeHashInfo.nodeStateHash().getBytes())
+                                    .build());
 
                     final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
                     when(hashedData.getCreatorId()).thenReturn(nodeHashInfo.nodeId());
