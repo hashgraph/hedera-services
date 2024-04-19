@@ -74,8 +74,10 @@ import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectLearnerFactory;
 import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
+import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
@@ -465,16 +467,19 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             @NonNull final WiringModel model,
             @NonNull final BindableInputWire<GossipEvent, Void> eventInput,
             @NonNull final BindableInputWire<EventWindow, Void> eventWindowInput,
+            @NonNull final StandardOutputWire<GossipEvent> eventOutput,
             @NonNull final BindableInputWire<NoInput, Void> startInput,
             @NonNull final BindableInputWire<NoInput, Void> stopInput,
             @NonNull final BindableInputWire<NoInput, Void> clearInput,
-            @NonNull final BindableInputWire<NoInput, Void> resetFallenBehindInput,
-            @NonNull final StandardOutputWire<GossipEvent> eventOutput) {
+            @NonNull final StandardOutputWire<NoInput> startLearnerReconnectOutput,
+            @NonNull final BindableInputWire<State, Void> stateForLearnerInput,
+            @NonNull final StandardOutputWire<State> learnerReconnectFinishedOutput,
+            @NonNull final StandardOutputWire<NoInput> startTeacherReconnectOutput,
+            @NonNull final BindableInputWire<ReservedSignedState, Void> stateForTeacherInput) {
 
         startInput.bindConsumer(ignored -> start());
         stopInput.bindConsumer(ignored -> stop());
         clearInput.bindConsumer(ignored -> clear());
-        resetFallenBehindInput.bindConsumer(ignored -> resetFallenBehind());
 
         eventInput.bindConsumer(event -> {
             final EventImpl linkedEvent = inOrderLinker.linkEvent(event);
@@ -489,5 +494,12 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         });
 
         receivedEventHandler = eventOutput::forward;
+
+        // TODO bind
+        //  startLearnerReconnectOutput,
+        //  stateForLearnerInput,
+        //  learnerReconnectFinishedOutput,
+        //  startTeacherReconnectOutput,
+        //  stateForTeacherInput
     }
 }

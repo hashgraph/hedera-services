@@ -820,7 +820,7 @@ public class SwirldsPlatform implements Platform {
             throw e;
         }
 
-        platformWiring.resetFallenBehind();
+//        platformWiring.resetFallenBehind(); // TODO
     }
 
     /**

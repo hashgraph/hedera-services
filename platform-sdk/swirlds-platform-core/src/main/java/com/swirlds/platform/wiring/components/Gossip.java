@@ -21,33 +21,44 @@ import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Implements gossip with network peers.
  */
-public interface Gossip { // TODO
+public interface Gossip {
 
     /**
      * Bind the input wires to the gossip implementation.
      *
-     * @param model                  the wiring model for this node
-     * @param eventInput             the input wire for events, events sent here should be gossiped to the network
-     * @param eventWindowInput       the input wire for the current event window
-     * @param startInput             used to tell gossip to start
-     * @param stopInput              used to tell gossip to stop
-     * @param clearInput             used to tell gossip to clear its internal state
-     * @param resetFallenBehindInput used to tell gossip to reset the fallen behind flag
-     * @param eventOutput            the output wire for events received from peers during gossip
+     * @param model                          the wiring model for this node
+     * @param eventInput                     the input wire for events, events sent here should be gossiped to the
+     *                                       network
+     * @param eventWindowInput               the input wire for the current event window
+     * @param eventOutput                    the output wire for events received from peers during gossip
+     * @param startInput                     used to tell gossip to start
+     * @param stopInput                      used to tell gossip to stop
+     * @param clearInput                     used to tell gossip to clear its internal state
+     * @param startLearnerReconnectOutput    used to signal that gossip wants to perform reconnect as a learner
+     * @param stateForLearnerInput           used to provide the current state to gossip for reconnect as a learner
+     * @param learnerReconnectFinishedOutput used to signal that gossip has finished reconnect as a learner
+     * @param startTeacherReconnectOutput    used to signal that gossip wants to perform reconnect as a teacher
+     * @param stateForTeacherInput           used to provide a recent state for reconnect as a teacher
      */
     void bind(
             @NonNull WiringModel model,
             @NonNull BindableInputWire<GossipEvent, Void> eventInput,
             @NonNull BindableInputWire<EventWindow, Void> eventWindowInput,
+            @NonNull StandardOutputWire<GossipEvent> eventOutput,
             @NonNull BindableInputWire<NoInput, Void> startInput,
             @NonNull BindableInputWire<NoInput, Void> stopInput,
             @NonNull BindableInputWire<NoInput, Void> clearInput,
-            @NonNull BindableInputWire<NoInput, Void> resetFallenBehindInput, // TODO reconnect start/complete
-            @NonNull StandardOutputWire<GossipEvent> eventOutput);
+            @NonNull StandardOutputWire<NoInput> startLearnerReconnectOutput,
+            @NonNull BindableInputWire<State, Void> stateForLearnerInput,
+            @NonNull StandardOutputWire<State> learnerReconnectFinishedOutput,
+            @NonNull StandardOutputWire<NoInput> startTeacherReconnectOutput,
+            @NonNull BindableInputWire<ReservedSignedState, Void> stateForTeacherInput);
 }

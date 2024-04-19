@@ -685,13 +685,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
-     * Send a signal to the gossip component that we are no longer behind.
-     */
-    public void resetFallenBehind() {
-        gossipWiring.getResetFallenBehindInput().put(NoInput.getInstance());
-    }
-
-    /**
      * Start gossiping.
      */
     public void startGossip() {
