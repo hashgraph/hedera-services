@@ -128,7 +128,6 @@ public class LearnerPullVirtualTreeSendTask {
 
             while (true) {
                 final long path = traversalOrder.getNextPathToSend();
-                logger.trace(RECONNECT.getMarker(), "Learner send path: " + path);
                 if (path < Path.INVALID_PATH) {
                     Thread.onSpinWait();
                     continue;
@@ -141,7 +140,6 @@ public class LearnerPullVirtualTreeSendTask {
                 responsesExpected.incrementAndGet();
                 in.anticipateMessage();
             }
-            logger.trace(RECONNECT.getMarker(), "Learner send done");
         } catch (final InterruptedException ex) {
             logger.warn(RECONNECT.getMarker(), "Learner's sending task interrupted");
             Thread.currentThread().interrupt();

@@ -104,7 +104,6 @@ public class LearnerPullVirtualTreeReceiveTask {
             while (!finished || responseExpected) {
                 if (responseExpected) {
                     final PullVirtualTreeResponse response = in.readAnticipatedMessage(viewId);
-                    logger.trace(RECONNECT.getMarker(), "Learner receive path: " + response.getPath());
                     if (response.getPath() == 0) {
                         rootResponseReceived.countDown();
                     }
@@ -116,7 +115,6 @@ public class LearnerPullVirtualTreeReceiveTask {
                 finished = senderIsFinished.get();
                 responseExpected = expectedResponses.get() > 0;
             }
-            logger.trace(RECONNECT.getMarker(), "Learner receive done");
             success = true;
         } catch (final Exception ex) {
             throw new MerkleSynchronizationException("Exception in the learner's receiving task", ex);
