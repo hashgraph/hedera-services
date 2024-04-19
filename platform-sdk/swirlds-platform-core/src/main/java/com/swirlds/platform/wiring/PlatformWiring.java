@@ -252,7 +252,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         signedStateHasherWiring = StateHasherWiring.create(schedulers.stateHasherScheduler());
 
-        gossipWiring = new GossipWiring(model);
+        gossipWiring = new GossipWiring(platformContext, model);
 
         platformCoordinator = new PlatformCoordinator(
                 hashingObjectCounter,
@@ -420,7 +420,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         // This must use injection to avoid cyclical back pressure. There is a risk of OOM if gossip can't ingest
         // events fast enough, but we have no other choice until we implement the platform health monitor.
-        // TODO this should be showing up in the diagram as a dotted line but it isn't
         splitOrphanBufferOutput.solderTo(gossipWiring.getEventInput(), INJECT);
 
         final double eventCreationHeartbeatFrequency = platformContext

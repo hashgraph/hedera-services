@@ -101,8 +101,6 @@ import java.util.function.Supplier;
  * Boilerplate code for gossip.
  */
 public class SyncGossip implements ConnectionTracker, Gossip {
-    // TODO figure out which variables are actually needed
-
     private boolean started = false;
     private final ReconnectController reconnectController;
 
@@ -110,7 +108,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
     private final SyncPermitProvider syncPermitProvider;
     private final SyncConfig syncConfig;
     private final InOrderLinker inOrderLinker;
-    private final Shadowgraph shadowGraph;
+    private final Shadowgraph shadowgraph;
     private final ShadowgraphSynchronizer syncShadowgraphSynchronizer;
 
     /**
@@ -176,7 +174,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         this.currentPlatformStatus = Objects.requireNonNull(currentPlatformStatus);
 
         inOrderLinker = new GossipLinker(platformContext, intakeEventCounter);
-        shadowGraph = new Shadowgraph(platformContext, addressBook, intakeEventCounter);
+        shadowgraph = new Shadowgraph(platformContext, addressBook, intakeEventCounter);
 
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
 
@@ -274,7 +272,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         final SyncMetrics syncMetrics = new SyncMetrics(platformContext.getMetrics());
         syncShadowgraphSynchronizer = new ShadowgraphSynchronizer(
                 platformContext,
-                shadowGraph,
+                shadowgraph,
                 addressBook.getSize(),
                 syncMetrics,
                 event -> receivedEventHandler.accept(event),
@@ -375,7 +373,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
     /**
      * Get the reconnect controller. This method is needed to break a circular dependency.
      */
-    private ReconnectController getReconnectController() { // TODO is this still needed?
+    private ReconnectController getReconnectController() {
         return reconnectController;
     }
 
@@ -459,7 +457,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
      */
     private void clear() {
         inOrderLinker.clear();
-        shadowGraph.clear();
+        shadowgraph.clear();
     }
 
     /**
@@ -482,13 +480,13 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         eventInput.bindConsumer(event -> {
             final EventImpl linkedEvent = inOrderLinker.linkEvent(event);
             if (linkedEvent != null) {
-                shadowGraph.addEvent(linkedEvent);
+                shadowgraph.addEvent(linkedEvent);
             }
         });
 
         eventWindowInput.bindConsumer(eventWindow -> {
             inOrderLinker.setEventWindow(eventWindow);
-            shadowGraph.updateEventWindow(eventWindow);
+            shadowgraph.updateEventWindow(eventWindow);
         });
 
         receivedEventHandler = eventOutput::forward;

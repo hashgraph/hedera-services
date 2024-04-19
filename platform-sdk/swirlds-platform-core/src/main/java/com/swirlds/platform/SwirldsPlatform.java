@@ -792,8 +792,6 @@ public class SwirldsPlatform implements Platform {
             clearAllPipelines.clear();
             throw e;
         }
-
-        //        platformWiring.resetFallenBehind(); // TODO
     }
 
     /**

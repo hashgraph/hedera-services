@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.wiring.components;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
@@ -26,6 +26,7 @@ import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.wiring.NoInput;
+import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -73,14 +74,14 @@ public class GossipWiring {
      */
     private final BindableInputWire<NoInput, Void> clearInput;
 
-    public GossipWiring(@NonNull final WiringModel model) {
+    public GossipWiring(@NonNull final PlatformContext platformContext, @NonNull final WiringModel model) {
         this.model = model;
 
-        // TODO use configuration for this
         scheduler = model.schedulerBuilder("gossip")
-                .withType(TaskSchedulerType.SEQUENTIAL)
-                .withFlushingEnabled(true)
-                .withUnhandledTaskCapacity(500)
+                .configure(platformContext
+                        .getConfiguration()
+                        .getConfigData(PlatformSchedulersConfig.class)
+                        .gossip())
                 .build()
                 .cast();
 
