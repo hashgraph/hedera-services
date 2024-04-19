@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.base.example.store.metrics;
+package com.swirlds.platform.base.example.jdkmetrics;
 
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.metrics.api.Metrics;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.management.BufferPoolMXBean;
 import java.lang.management.ManagementFactory;
@@ -30,30 +31,30 @@ import java.util.List;
 /**
  * Registers JVM metrics with the purpose of Benchmarking app behaviour
  */
-public class BenchmarkMetrics {
+public class JVMInternalMetrics {
 
     private static final OperatingSystemMXBean OS_BEAN = ManagementFactory.getOperatingSystemMXBean();
     private static final BufferPoolMXBean DIRECT_MEM_MX_BEAN = getDirectMemMxBean();
-    static final String BENCHMARK_CATEGORY = "internal";
+    static final String INTERNAL_CATEGORY = "internal";
     private static final FunctionGauge.Config<String> TIMESTAMP_CONFIG = new FunctionGauge.Config<>(
-                    BENCHMARK_CATEGORY, "time", String.class, () -> DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z")
+                    INTERNAL_CATEGORY, "time", String.class, () -> DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z")
                             .format(Instant.now().atZone(ZoneId.of("UTC"))))
             .withDescription("the current time")
             .withFormat("%24s");
 
     static final String FORMAT_INTEGER = " %d";
     private static final FunctionGauge.Config<Long> MEM_TOT_CONFIG = new FunctionGauge.Config<>(
-                    BENCHMARK_CATEGORY, "memTot", Long.class, Runtime.getRuntime()::totalMemory)
+                    INTERNAL_CATEGORY, "memTot", Long.class, Runtime.getRuntime()::totalMemory)
             .withDescription("total bytes in the JVM heap")
             .withFormat(FORMAT_INTEGER);
 
     private static final FunctionGauge.Config<Long> MEM_FREE_CONFIG = new FunctionGauge.Config<>(
-                    BENCHMARK_CATEGORY, "memFree", Long.class, Runtime.getRuntime()::freeMemory)
+                    INTERNAL_CATEGORY, "memFree", Long.class, Runtime.getRuntime()::freeMemory)
             .withDescription("free bytes in the JVM heap")
             .withFormat(FORMAT_INTEGER);
 
     private static final FunctionGauge.Config<Long> DIRECT_MEM_CONFIG = new FunctionGauge.Config<>(
-                    BENCHMARK_CATEGORY,
+                    INTERNAL_CATEGORY,
                     "directMem",
                     Long.class,
                     DIRECT_MEM_MX_BEAN != null ? DIRECT_MEM_MX_BEAN::getMemoryUsed : () -> -1L)
@@ -62,7 +63,7 @@ public class BenchmarkMetrics {
 
     static final String FORMAT_FLOAT1 = " %.1f";
     private static final FunctionGauge.Config<Double> CPU_LOAD_PROC_CONFIG = new FunctionGauge.Config<>(
-                    BENCHMARK_CATEGORY,
+                    INTERNAL_CATEGORY,
                     "cpuLoadProc",
                     Double.class,
                     () -> OS_BEAN instanceof com.sun.management.OperatingSystemMXBean sunBean
@@ -72,7 +73,7 @@ public class BenchmarkMetrics {
             .withFormat(FORMAT_FLOAT1);
 
     private static final FunctionGauge.Config<Long> OPEN_FDS_CONFIG = new FunctionGauge.Config<>(
-                    BENCHMARK_CATEGORY,
+                    INTERNAL_CATEGORY,
                     "openFileDesc",
                     Long.class,
                     () -> OS_BEAN instanceof com.sun.management.UnixOperatingSystemMXBean unixBean
@@ -81,7 +82,7 @@ public class BenchmarkMetrics {
             .withDescription("Open file descriptors")
             .withFormat(FORMAT_INTEGER);
 
-    public static void registerMetrics(Metrics metrics) {
+    public static void registerMetrics(@NonNull final Metrics metrics) {
         metrics.getOrCreate(TIMESTAMP_CONFIG);
         metrics.getOrCreate(MEM_TOT_CONFIG);
         metrics.getOrCreate(MEM_FREE_CONFIG);
