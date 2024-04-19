@@ -42,11 +42,9 @@ class ConnectivityTestBase {
     static {
         TLS_NO_IP_TOS_CONFIG = new TestConfigBuilder()
                 .withValue(SocketConfig_.IP_TOS, "-1")
-                .withValue(SocketConfig_.USE_T_L_S, true)
                 .getOrCreateConfig();
         TLS_IP_TOS_CONFIG = new TestConfigBuilder()
                 .withValue(SocketConfig_.IP_TOS, "100")
-                .withValue(SocketConfig_.USE_T_L_S, true)
                 .getOrCreateConfig();
 
         final Configuration configurationNoIpTos =
@@ -63,6 +61,7 @@ class ConnectivityTestBase {
      *
      * @param serverSocket the server socket to listen on
      */
+    @NonNull
     static Thread createSocketThread(@NonNull final ServerSocket serverSocket) {
         return new Thread(() -> {
             try {
@@ -89,6 +88,7 @@ class ConnectivityTestBase {
      * @param serverSocket the server socket
      * @param stopFlag     flag for stopping the thread
      */
+    @NonNull
     static Thread createSocketThread(@NonNull final ServerSocket serverSocket, @NonNull final AtomicBoolean stopFlag) {
         Objects.requireNonNull(serverSocket);
         Objects.requireNonNull(stopFlag);
