@@ -73,6 +73,7 @@ public interface PlatformContext {
      *
      * @return the {@link ExecutorFactory} instance
      */
+    @NonNull
     ExecutorFactory getExecutorFactory();
 
     /**
