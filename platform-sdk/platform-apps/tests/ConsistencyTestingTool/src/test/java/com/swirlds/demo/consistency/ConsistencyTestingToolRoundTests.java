@@ -69,8 +69,7 @@ class ConsistencyTestingToolRoundTests {
             event.forEach(content -> {
                 final ConsensusTransactionImpl transaction = mock(ConsensusTransactionImpl.class);
                 final Bytes bytes = Bytes.wrap(longToByteArray(content));
-                final OneOf<PayloadOneOfType> payload = new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD,
-                        bytes);
+                final OneOf<PayloadOneOfType> payload = new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, bytes);
                 Mockito.when(transaction.getPayload()).thenReturn(payload);
                 Mockito.when(transaction.getAppPayload()).thenReturn(bytes);
                 Mockito.when(transaction.isSystem()).thenReturn(false);

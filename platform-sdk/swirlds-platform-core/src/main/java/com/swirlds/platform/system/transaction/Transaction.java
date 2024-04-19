@@ -68,11 +68,11 @@ public sealed interface Transaction extends SerializableWithKnownLength permits 
      * @return {@code true} if this is a system transaction; otherwise {@code false} if this is an application
      * 		transaction
      */
-    default boolean isSystem(){
+    default boolean isSystem() {
         return getPayload().kind() != PayloadOneOfType.APPLICATION_PAYLOAD;
     }
 
-    default boolean isApp(){
+    default boolean isApp() {
         return getPayload().kind() == PayloadOneOfType.APPLICATION_PAYLOAD;
     }
 

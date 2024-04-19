@@ -220,7 +220,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
      * @param transaction the transaction to apply
      */
     private void handleTransaction(final ConsensusTransaction transaction) {
-        if(transaction.isSystem()){
+        if (transaction.isSystem()) {
             return;
         }
         final int delta = ByteUtils.byteArrayToInt(transaction.getAppPayload().toByteArray(), 0);

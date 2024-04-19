@@ -102,7 +102,7 @@ public class StressTestingToolState extends PartialMerkleLeaf implements SwirldS
     }
 
     private void handleTransaction(@NonNull final ConsensusTransaction trans) {
-        if(trans.isSystem()){
+        if (trans.isSystem()) {
             return;
         }
         runningSum += ByteUtils.byteArrayToLong(trans.getAppPayload().toByteArray(), 0);

@@ -111,7 +111,7 @@ public class HelloSwirldDemoState extends PartialMerkleLeaf implements SwirldSta
     }
 
     private void handleTransaction(final Transaction transaction) {
-        if(transaction.isSystem()){
+        if (transaction.isSystem()) {
             return;
         }
         strings.add(new String(transaction.getAppPayload().toByteArray(), StandardCharsets.UTF_8));

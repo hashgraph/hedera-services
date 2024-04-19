@@ -56,7 +56,7 @@ public record ConsistencyTestingToolRound(long roundNumber, long currentState, @
         final List<Long> transactionContents = new ArrayList<>();
 
         round.forEachTransaction(transaction -> {
-            if(transaction.isSystem()){
+            if (transaction.isSystem()) {
                 return;
             }
             transactionContents.add(byteArrayToLong(transaction.getAppPayload().toByteArray(), 0));

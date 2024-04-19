@@ -1082,7 +1082,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     }
 
     protected void preHandleTransaction(final Transaction transaction) {
-        if(transaction.isSystem()){
+        if (transaction.isSystem()) {
             return;
         }
         expandSignatures(transaction);
@@ -1123,7 +1123,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             final ConsensusTransaction trans,
             final PlatformState platformState,
             final long roundNum) {
-        if(trans.isSystem()){
+        if (trans.isSystem()) {
             return;
         }
         try {

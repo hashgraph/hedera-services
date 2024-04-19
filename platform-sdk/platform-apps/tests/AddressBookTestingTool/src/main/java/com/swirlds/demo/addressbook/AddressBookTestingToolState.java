@@ -223,7 +223,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      * @param transaction the transaction to apply
      */
     private void handleTransaction(@NonNull final ConsensusTransaction transaction) {
-        if(transaction.isSystem()){
+        if (transaction.isSystem()) {
             return;
         }
         final int delta = ByteUtils.byteArrayToInt(transaction.getAppPayload().toByteArray(), 0);

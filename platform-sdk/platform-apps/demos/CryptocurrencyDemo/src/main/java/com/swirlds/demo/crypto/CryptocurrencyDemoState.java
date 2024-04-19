@@ -42,7 +42,6 @@ import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.Transaction;
-import com.swirlds.proto.event.EventPayload.PayloadOneOfType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -202,8 +201,7 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
     @Override
     public void handleConsensusRound(final Round round, final PlatformState swirldDualState) {
         throwIfImmutable();
-        round.forEachEventTransaction(
-                (event, transaction) -> handleTransaction(event.getCreatorId(), transaction));
+        round.forEachEventTransaction((event, transaction) -> handleTransaction(event.getCreatorId(), transaction));
     }
 
     /**
@@ -228,8 +226,7 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
      * {ASK,s,p} = ask to sell 1 share of stock s at p cents (where 1 &lt;= p &lt;= 127)
      * </pre>
      */
-    private void handleTransaction(
-            @NonNull final NodeId id, @NonNull final Transaction transaction) {
+    private void handleTransaction(@NonNull final NodeId id, @NonNull final Transaction transaction) {
         Objects.requireNonNull(id, "id must not be null");
         if (transaction.isSystem()) {
             return;
@@ -238,8 +235,7 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
         if (contents.length() == 0) {
             return;
         }
-        if (contents.getByte(0) == TransType.slow.ordinal()
-                || contents.getByte(0) == TransType.fast.ordinal()) {
+        if (contents.getByte(0) == TransType.slow.ordinal() || contents.getByte(0) == TransType.fast.ordinal()) {
             return;
         } else if (contents.length() < 3) {
             return; // ignore any bid/ask that doesn't have consensus yet

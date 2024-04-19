@@ -45,7 +45,6 @@ import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Iterator;
@@ -260,8 +259,8 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
      * Parse a {@link MigrationTestingToolTransaction} from a {@link Transaction}.
      */
     private static MigrationTestingToolTransaction parseTransaction(final Transaction transaction) {
-        final SerializableDataInputStream in =
-                new SerializableDataInputStream(transaction.getAppPayload().toReadableSequentialData().asInputStream());
+        final SerializableDataInputStream in = new SerializableDataInputStream(
+                transaction.getAppPayload().toReadableSequentialData().asInputStream());
 
         try {
             return in.readSerializable(false, MigrationTestingToolTransaction::new);
@@ -281,7 +280,7 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
             for (final Iterator<ConsensusTransaction> transIt = event.consensusTransactionIterator();
                     transIt.hasNext(); ) {
                 final ConsensusTransaction trans = transIt.next();
-                if(trans.isSystem()){
+                if (trans.isSystem()) {
                     continue;
                 }
                 final MigrationTestingToolTransaction mTrans = parseTransaction(trans);

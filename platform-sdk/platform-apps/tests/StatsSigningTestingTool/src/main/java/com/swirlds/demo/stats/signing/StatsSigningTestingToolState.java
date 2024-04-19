@@ -30,7 +30,6 @@ import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
@@ -44,7 +43,6 @@ import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
-import com.swirlds.proto.event.EventPayload.PayloadOneOfType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Arrays;
@@ -117,8 +115,8 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
                 if (transaction.isSystem()) {
                     return;
                 }
-                final TransactionSignature transactionSignature = sttTransactionPool.expandSignatures(
-                        transaction.getAppPayload());
+                final TransactionSignature transactionSignature =
+                        sttTransactionPool.expandSignatures(transaction.getAppPayload());
                 if (transactionSignature != null) {
                     transaction.setMetadata(transactionSignature);
                     CryptographyHolder.get().verifyAsync(List.of(transactionSignature));

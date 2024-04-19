@@ -23,7 +23,6 @@ import com.goterl.lazysodium.SodiumJava;
 import com.goterl.lazysodium.interfaces.Sign;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.platform.system.transaction.SwirldTransaction;
 import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Arrays;
