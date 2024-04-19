@@ -25,8 +25,6 @@ import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.state.State;
-import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -75,32 +73,6 @@ public class GossipWiring {
      */
     private final BindableInputWire<NoInput, Void> clearInput;
 
-    /**
-     * Gossip uses this wire to signal that it wants to perform reconnect as a learner.
-     */
-    private final StandardOutputWire<NoInput> startLearnerReconnectOutput;
-
-    /**
-     * After gossip signals it wants to perform reconnect as a learner, it receives the mutable state over this wire.
-     */
-    private final BindableInputWire<State, Void> stateForLearnerInput;
-
-    /**
-     * After gossip has successfully reconnected as a learner, it sends the new state over this wire.
-     */
-    private final StandardOutputWire<State> learnerReconnectFinishedOutput;
-
-    /**
-     * Gossip uses this wire to signal that it wants to perform reconnect as a teacher.
-     */
-    private final StandardOutputWire<NoInput> startTeacherReconnectOutput;
-
-    /**
-     * After gossip signals it wants to perform reconnect as a teacher, it receives a recent immutable state over this
-     * wire.
-     */
-    private final BindableInputWire<ReservedSignedState, Void> stateForTeacherInput;
-
     public GossipWiring(@NonNull final WiringModel model) {
         this.model = model;
 
@@ -119,13 +91,6 @@ public class GossipWiring {
         startInput = scheduler.buildInputWire("start");
         stopInput = scheduler.buildInputWire("stop");
         clearInput = scheduler.buildInputWire("clear");
-
-        startLearnerReconnectOutput = scheduler.buildSecondaryOutputWire();
-        stateForLearnerInput = scheduler.buildInputWire("state for learner");
-        learnerReconnectFinishedOutput = scheduler.buildSecondaryOutputWire();
-
-        startTeacherReconnectOutput = scheduler.buildSecondaryOutputWire();
-        stateForTeacherInput = scheduler.buildInputWire("state for teacher");
     }
 
     /**
@@ -134,19 +99,7 @@ public class GossipWiring {
      * @param gossip the gossip implementation
      */
     public void bind(@NonNull final Gossip gossip) {
-        gossip.bind(
-                model,
-                eventInput,
-                eventWindowInput,
-                eventOutput,
-                startInput,
-                stopInput,
-                clearInput,
-                startLearnerReconnectOutput,
-                stateForLearnerInput,
-                learnerReconnectFinishedOutput,
-                startTeacherReconnectOutput,
-                stateForTeacherInput);
+        gossip.bind(model, eventInput, eventWindowInput, eventOutput, startInput, stopInput, clearInput);
     }
 
     /**
@@ -212,55 +165,5 @@ public class GossipWiring {
      */
     public void flush() {
         scheduler.flush();
-    }
-
-    /**
-     * Get the wire that gossip uses to request a reconnect as a learner.
-     *
-     * @return the wire that gossip uses to request a reconnect as a learner
-     */
-    @NonNull
-    public StandardOutputWire<NoInput> getStartLearnerReconnectOutput() {
-        return startLearnerReconnectOutput;
-    }
-
-    /**
-     * Get the wire that gossip uses to receive the mutable state after requesting a reconnect as a learner.
-     *
-     * @return the wire that gossip uses to receive the mutable state after requesting a reconnect as a learner
-     */
-    @NonNull
-    public BindableInputWire<State, Void> getStateForLearnerInput() {
-        return stateForLearnerInput;
-    }
-
-    /**
-     * Get the wire that gossip uses to send the new state after successfully reconnecting as a learner.
-     *
-     * @return the wire that gossip uses to send the new state after successfully reconnecting as a learner
-     */
-    @NonNull
-    public StandardOutputWire<State> getLearnerReconnectFinishedOutput() {
-        return learnerReconnectFinishedOutput;
-    }
-
-    /**
-     * Get the wire that gossip uses to request a reconnect as a teacher.
-     *
-     * @return the wire that gossip uses to request a reconnect as a teacher
-     */
-    @NonNull
-    public StandardOutputWire<NoInput> getStartTeacherReconnectOutput() {
-        return startTeacherReconnectOutput;
-    }
-
-    /**
-     * Get the wire that gossip uses to receive the immutable state after requesting a reconnect as a teacher.
-     *
-     * @return the wire that gossip uses to receive the immutable state after requesting a reconnect as a teacher
-     */
-    @NonNull
-    public BindableInputWire<ReservedSignedState, Void> getStateForTeacherInput() {
-        return stateForTeacherInput;
     }
 }

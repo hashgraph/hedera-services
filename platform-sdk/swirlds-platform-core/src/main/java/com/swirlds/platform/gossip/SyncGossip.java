@@ -75,7 +75,6 @@ import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectLearnerFactory;
 import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
-import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -102,6 +101,8 @@ import java.util.function.Supplier;
  * Boilerplate code for gossip.
  */
 public class SyncGossip implements ConnectionTracker, Gossip {
+    // TODO figure out which variables are actually needed
+
     private boolean started = false;
     private final ReconnectController reconnectController;
 
@@ -122,9 +123,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
      */
     private final List<StoppableThread> syncProtocolThreads = new ArrayList<>();
 
-    private final PlatformContext platformContext;
-    private final AddressBook addressBook;
-    private final NodeId selfId;
     private final NetworkTopology topology;
     private final NetworkMetrics networkMetrics;
     private final ReconnectHelper reconnectHelper;
@@ -175,9 +173,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final StatusActionSubmitter statusActionSubmitter) {
 
-        this.platformContext = Objects.requireNonNull(platformContext);
-        this.addressBook = Objects.requireNonNull(addressBook);
-        this.selfId = Objects.requireNonNull(selfId);
         this.currentPlatformStatus = Objects.requireNonNull(currentPlatformStatus);
 
         inOrderLinker = new GossipLinker(platformContext, intakeEventCounter);
@@ -242,12 +237,12 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
 
         final LongSupplier getRoundSupplier = () -> {
-            try (final ReservedSignedState state = latestCompleteState.get()) {
-                if (state.isNull()) {
+            try (final ReservedSignedState reservedState = latestCompleteState.get()) {
+                if (reservedState == null || reservedState.isNull()) {
                     return ROUND_UNDEFINED;
                 }
 
-                return state.get().getRound();
+                return reservedState.get().getRound();
             }
         };
 
@@ -257,7 +252,10 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 swirldStateManager::getConsensusState,
                 getRoundSupplier,
                 new ReconnectLearnerThrottle(platformContext.getTime(), selfId, reconnectConfig),
-                loadReconnectState,
+                state -> {
+                    loadReconnectState.accept(state);
+                    resetFallenBehind();
+                },
                 new ReconnectLearnerFactory(
                         platformContext,
                         threadManager,
@@ -475,12 +473,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             @NonNull final StandardOutputWire<GossipEvent> eventOutput,
             @NonNull final BindableInputWire<NoInput, Void> startInput,
             @NonNull final BindableInputWire<NoInput, Void> stopInput,
-            @NonNull final BindableInputWire<NoInput, Void> clearInput,
-            @NonNull final StandardOutputWire<NoInput> startLearnerReconnectOutput,
-            @NonNull final BindableInputWire<State, Void> stateForLearnerInput,
-            @NonNull final StandardOutputWire<State> learnerReconnectFinishedOutput,
-            @NonNull final StandardOutputWire<NoInput> startTeacherReconnectOutput,
-            @NonNull final BindableInputWire<ReservedSignedState, Void> stateForTeacherInput) {
+            @NonNull final BindableInputWire<NoInput, Void> clearInput) {
 
         startInput.bindConsumer(ignored -> start());
         stopInput.bindConsumer(ignored -> stop());
@@ -499,12 +492,5 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         });
 
         receivedEventHandler = eventOutput::forward;
-
-        // TODO bind
-        //  startLearnerReconnectOutput,
-        //  stateForLearnerInput,
-        //  learnerReconnectFinishedOutput,
-        //  startTeacherReconnectOutput,
-        //  stateForTeacherInput
     }
 }
