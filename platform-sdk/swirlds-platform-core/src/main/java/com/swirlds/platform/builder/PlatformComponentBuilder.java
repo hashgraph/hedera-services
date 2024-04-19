@@ -44,8 +44,8 @@ import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
-import com.swirlds.platform.event.preconsensus.join.DefaultRoundDurabilityBuffer;
-import com.swirlds.platform.event.preconsensus.join.RoundDurabilityBuffer;
+import com.swirlds.platform.event.preconsensus.durability.DefaultRoundDurabilityBuffer;
+import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
 import com.swirlds.platform.event.runninghash.DefaultRunningEventHasher;
 import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.DefaultSelfEventSigner;
@@ -617,7 +617,7 @@ public class PlatformComponentBuilder {
     }
 
     /**
-     * Provide a round durability buffer in place of the platform's default PcesJoin.
+     * Provide a round durability buffer in place of the platform's default round durability buffer.
      *
      * @param roundDurabilityBuffer the RoundDurabilityBuffer to use
      * @return this builder
@@ -635,9 +635,9 @@ public class PlatformComponentBuilder {
 
     /**
      * Build the round durability buffer if it has not yet been built. If one has been provided via
-     * {@link #withRoundDurabilityBuffer(RoundDurabilityBuffer)}, that PcesJoin will be used. If this method is called
-     * more than once, only the first call will build the PcesJoin. Otherwise, the default PcesJoin will be created and
-     * returned.
+     * {@link #withRoundDurabilityBuffer(RoundDurabilityBuffer)}, that round durability buffer will be used. If this
+     * method is called more than once, only the first call will build the round durability buffer. Otherwise, the
+     * default round durability buffer will be created and returned.
      *
      * @return the RoundDurabilityBuffer
      */

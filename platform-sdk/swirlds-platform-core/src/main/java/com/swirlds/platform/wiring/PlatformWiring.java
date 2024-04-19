@@ -61,7 +61,7 @@ import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
-import com.swirlds.platform.event.preconsensus.join.RoundDurabilityBuffer;
+import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
 import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.SelfEventSigner;
 import com.swirlds.platform.event.stream.ConsensusEventStream;
@@ -518,7 +518,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .latestDurableSequenceNumberOutput()
                 .solderTo(
                         roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::setLatestDurableSequenceNumber),
-                        OFFER);
+                        INJECT);
         model.buildHeartbeatWire(platformContext
                         .getConfiguration()
                         .getConfigData(PcesConfig.class)

@@ -78,11 +78,11 @@ import java.time.Duration;
  * @param compactLastFileOnStartup             if true, then compact the last file's span on startup.
  * @param forceIgnorePcesSignatures            if true, then ignore the signatures on preconsensus events. Note: This is
  *                                             a TEST ONLY setting. It must never be enabled in production.
- * @param roundDurabilityBufferHeartbeatPeriod the period of the heartbeat heartbeats sent to the PCES join component,
- *                                             which uses the opportunity to check for and log when a round has been
- *                                             stuck for too long
- * @param suspiciousRoundDurabilityDuration    the duration after which a round is considered stuck in the PCES join
- *                                             component
+ * @param roundDurabilityBufferHeartbeatPeriod the period of the heartbeats sent to the round durability buffer
+ *                                             component, which uses the opportunity to check for and log when a round
+ *                                             has been stuck for too long
+ * @param suspiciousRoundDurabilityDuration    the duration after which a round is considered stuck in the round
+ *                                             durability buffer component
  */
 @ConfigData("event.preconsensus")
 public record PcesConfig(

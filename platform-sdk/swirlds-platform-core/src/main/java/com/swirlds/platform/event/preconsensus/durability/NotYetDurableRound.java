@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.preconsensus.join;
+package com.swirlds.platform.event.preconsensus.durability;
 
 import com.swirlds.platform.internal.ConsensusRound;
 import edu.umd.cs.findbugs.annotations.NonNull;

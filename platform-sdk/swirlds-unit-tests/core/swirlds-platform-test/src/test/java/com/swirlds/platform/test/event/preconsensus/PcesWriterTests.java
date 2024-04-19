@@ -670,7 +670,7 @@ class PcesWriterTests {
     @MethodSource("buildArguments")
     @DisplayName("Advance Non Ancient Boundary Test")
     void advanceNonAncientBoundaryTest(@NonNull final AncientMode ancientMode) throws IOException {
-        final Random random = RandomUtils.getRandomPrintSeed(284520236160395337L); // TODO
+        final Random random = RandomUtils.getRandomPrintSeed();
 
         final PlatformContext platformContext = buildContext(ancientMode);
         final FakeTime time = (FakeTime) platformContext.getTime();

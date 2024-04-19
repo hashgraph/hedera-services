@@ -81,7 +81,7 @@ import java.time.Duration;
  *                                                          garbage collector
  * @param platformPublisher                                 configuration for the platform publisher scheduler
  * @param consensusEventStream                              configuration for the consensus event stream scheduler
- * @param roundDurabilityBuffer                             configuration for the PCES join scheduler
+ * @param roundDurabilityBuffer                             configuration for the round durability buffer scheduler
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
