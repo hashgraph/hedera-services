@@ -174,11 +174,6 @@ public final class SmartContractMapValue implements VirtualValue {
         out.writeBytes(value);
     }
 
-    @Deprecated
-    void serialize(final ByteBuffer buffer) {
-        buffer.put(value);
-    }
-
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         value = new byte[getSizeInBytes()];
@@ -189,11 +184,6 @@ public final class SmartContractMapValue implements VirtualValue {
 
     void deserialize(final ReadableSequentialData in) {
         in.readBytes(this.value);
-    }
-
-    @Deprecated
-    void deserialize(final ByteBuffer buffer, final int version) {
-        buffer.get(this.value, 0, getSizeInBytes());
     }
 
     /**

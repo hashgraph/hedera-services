@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
@@ -28,6 +29,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
@@ -47,6 +49,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
@@ -58,6 +61,11 @@ import org.junit.jupiter.api.Tag;
 public class SelfDestructSuite extends HapiSuite {
 
     private final Logger LOGGER = LogManager.getLogger(SelfDestructSuite.class);
+
+    private static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
+    private static final String DYNAMIC_EVM_PROPERTY = "contracts.evm.version.dynamic";
+    private static final String EVM_VERSION_046 = "v0.46";
+    private static final String EVM_VERSION_050 = "v0.50";
 
     private static final String SELF_DESTRUCT_CALLABLE_CONTRACT = "SelfDestructCallable";
     private static final String DESTROY_EXPLICIT_BENEFICIARY = "destroyExplicitBeneficiary";
@@ -77,14 +85,17 @@ public class SelfDestructSuite extends HapiSuite {
         return List.of(
                 hscsEvm008SelfDestructInConstructorWorks(),
                 hscsEvm008SelfDestructWhenCalling(),
-                selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn(),
-                selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed(),
-                testSelfDestructForSystemAccounts());
+                selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn(EVM_VERSION_046),
+                selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn(EVM_VERSION_050),
+                selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed(EVM_VERSION_046),
+                selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed(EVM_VERSION_050),
+                testSelfDestructForSystemAccounts(EVM_VERSION_046),
+                testSelfDestructForSystemAccounts(EVM_VERSION_050));
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return true;
+        return false;
     }
 
     @HapiTest
@@ -130,10 +141,24 @@ public class SelfDestructSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn() {
+    final HapiSpec selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn46() {
+        return selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn(EVM_VERSION_046);
+    }
+
+    @HapiTest
+    final HapiSpec selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn50() {
+        return selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn(EVM_VERSION_050);
+    }
+
+    final HapiSpec selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn(
+            @NonNull final String evmVersion) {
         final AtomicLong beneficiaryId = new AtomicLong();
-        return defaultHapiSpec("selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn")
+        return propertyPreservingHapiSpec(
+                        "selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn" + evmVersion)
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
                 .given(
+                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
+                        overriding(EVM_VERSION_PROPERTY, evmVersion),
                         cryptoCreate(BENEFICIARY)
                                 .balance(ONE_HUNDRED_HBARS)
                                 .receiverSigRequired(true)
@@ -152,9 +177,24 @@ public class SelfDestructSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed() {
-        return defaultHapiSpec("selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed")
+    final HapiSpec selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed46() {
+        return selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed(EVM_VERSION_046);
+    }
+
+    @HapiTest
+    final HapiSpec selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed50() {
+        return selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed(EVM_VERSION_050);
+    }
+
+    final HapiSpec selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed(
+            @NonNull final String evmVersion) {
+        return propertyPreservingHapiSpec(
+                        "selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed"
+                                + evmVersion)
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
                 .given(
+                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
+                        overriding(EVM_VERSION_PROPERTY, evmVersion),
                         uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT),
                         contractCreate(SELF_DESTRUCT_CALLABLE_CONTRACT).balance(ONE_HBAR))
                 .when(contractCallLocal(
@@ -164,7 +204,16 @@ public class SelfDestructSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec testSelfDestructForSystemAccounts() {
+    final HapiSpec testSelfDestructForSystemAccounts46() {
+        return testSelfDestructForSystemAccounts(EVM_VERSION_046);
+    }
+
+    @HapiTest
+    final HapiSpec testSelfDestructForSystemAccounts50() {
+        return testSelfDestructForSystemAccounts(EVM_VERSION_050);
+    }
+
+    final HapiSpec testSelfDestructForSystemAccounts(@NonNull final String evmVersion) {
         final AtomicLong deployer = new AtomicLong();
         final var nonExistingAccountsOps = createOpsArray(
                 nonExistingSystemAccounts,
@@ -177,9 +226,11 @@ public class SelfDestructSuite extends HapiSuite {
 
         System.arraycopy(nonExistingAccountsOps, 0, opsArray, 0, nonExistingAccountsOps.length);
         System.arraycopy(existingAccountsOps, 0, opsArray, nonExistingAccountsOps.length, existingAccountsOps.length);
-
-        return defaultHapiSpec("testSelfDestructForSystemAccounts")
+        return propertyPreservingHapiSpec("testSelfDestructForSystemAccounts" + evmVersion)
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
                 .given(
+                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
+                        overriding(EVM_VERSION_PROPERTY, evmVersion),
                         cryptoCreate(BENEFICIARY)
                                 .balance(ONE_HUNDRED_HBARS)
                                 .receiverSigRequired(false)

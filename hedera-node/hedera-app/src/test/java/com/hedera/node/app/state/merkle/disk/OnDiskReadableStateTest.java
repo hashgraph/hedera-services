@@ -116,7 +116,7 @@ class OnDiskReadableStateTest extends MerkleTestBase {
     @Test
     @DisplayName("The method warm() calls the appropriate method on the virtual map")
     void warm(@Mock VirtualMap<OnDiskKey<String>, OnDiskValue<String>> virtualMapMock) {
-        final var state = new OnDiskReadableKVState<>(md, virtualMapMock, Runnable::run);
+        final var state = new OnDiskReadableKVState<>(md, virtualMapMock);
         state.warm(A_KEY);
         verify(virtualMapMock).warm(new OnDiskKey<>(md, A_KEY));
     }

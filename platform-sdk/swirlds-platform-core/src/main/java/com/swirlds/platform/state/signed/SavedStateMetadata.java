@@ -24,6 +24,8 @@ import static com.swirlds.platform.state.signed.SavedStateMetadataField.EPOCH_HA
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.EPOCH_HASH_MNEMONIC;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.HASH;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.HASH_MNEMONIC;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.LEGACY_RUNNING_EVENT_HASH;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.LEGACY_RUNNING_EVENT_HASH_MNEMONIC;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.MINIMUM_GENERATION_NON_ANCIENT;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.NODE_ID;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.NUMBER_OF_CONSENSUS_EVENTS;
@@ -64,44 +66,54 @@ import org.apache.logging.log4j.Logger;
  * Metadata about a saved state. Fields in this record may be null if they are not present in the metadata file. All
  * fields in this record will be null if the metadata file is missing.
  *
- * @param round                       the round of the signed state, corresponds to
- *                                    {@link SavedStateMetadataField#ROUND}
- * @param hash                        the root hash of the state
- * @param hashMnemonic                the root hash of the state in mnemonic form
- * @param numberOfConsensusEvents     the number of consensus events, starting from genesis, that have been handled to
- *                                    create this state, corresponds to
- *                                    {@link SavedStateMetadataField#NUMBER_OF_CONSENSUS_EVENTS}
- * @param consensusTimestamp          the consensus timestamp of this state, corresponds to
- *                                    {@link SavedStateMetadataField#CONSENSUS_TIMESTAMP}
- * @param runningEventHash            the running hash of all events, starting from genesis, that have been handled to
- *                                    create this state, corresponds to
- *                                    {@link SavedStateMetadataField#RUNNING_EVENT_HASH}
- * @param runningEventHashMnemonic    the mnemonic for the {@link #runningEventHash}
- * @param minimumGenerationNonAncient the minimum generation of non-ancient events after this state reached consensus,
- *                                    corresponds to {@link SavedStateMetadataField#MINIMUM_GENERATION_NON_ANCIENT}
- * @param softwareVersion             the application software version that created this state, corresponds to
- *                                    {@link SavedStateMetadataField#SOFTWARE_VERSION}
- * @param wallClockTime               the wall clock time when this state was written to disk, corresponds to
- *                                    {@link SavedStateMetadataField#WALL_CLOCK_TIME}
- * @param nodeId                      the ID of the node that wrote this state to disk, corresponds to
- *                                    {@link SavedStateMetadataField#NODE_ID}
- * @param signingNodes                a comma separated list of node IDs that signed this state, corresponds to
- *                                    {@link SavedStateMetadataField#SIGNING_NODES}
- * @param signingWeightSum            the sum of all signing nodes' weights, corresponds to
- *                                    {@link SavedStateMetadataField#SIGNING_WEIGHT_SUM}
- * @param totalWeight                 the total weight of all nodes in the network, corresponds to
- *                                    {@link SavedStateMetadataField#TOTAL_WEIGHT}
- * @param epochHash                   the epoch hash of the state, used by emergency recovery protocols
- * @param epochHashMnemonic           the mnemonic for the {@link #epochHash}, or "null" if the epoch hash is null
+ * @param round                          the round of the signed state, corresponds to
+ *                                       {@link SavedStateMetadataField#ROUND}
+ * @param hash                           the root hash of the state
+ * @param hashMnemonic                   the root hash of the state in mnemonic form
+ * @param numberOfConsensusEvents        the number of consensus events, starting from genesis, that have been handled
+ *                                       to create this state, corresponds to
+ *                                       {@link SavedStateMetadataField#NUMBER_OF_CONSENSUS_EVENTS}
+ * @param consensusTimestamp             the consensus timestamp of this state, corresponds to
+ *                                       {@link SavedStateMetadataField#CONSENSUS_TIMESTAMP}
+ * @param runningEventHash               the running hash of all events, starting from genesis, that have been handled
+ *                                       to create this state, corresponds to
+ *                                       {@link SavedStateMetadataField#RUNNING_EVENT_HASH}. (For networks that were
+ *                                       running prior to the running hash being introduced, this will be the running
+ *                                       hash of events since the introduction of the running hash.)
+ * @param runningEventHashMnemonic       the mnemonic for the {@link #runningEventHash}. Corresponds to
+ *                                       {@link SavedStateMetadataField#RUNNING_EVENT_HASH_MNEMONIC}.
+ * @param legacyRunningEventHash         the legacy running event hash used by the consensus event stream, corresponds
+ *                                       to {@link SavedStateMetadataField#LEGACY_RUNNING_EVENT_HASH}.
+ * @param legacyRunningEventHashMnemonic the mnemonic for the {@link #legacyRunningEventHash}, corresponds to
+ *                                       {@link SavedStateMetadataField#LEGACY_RUNNING_EVENT_HASH_MNEMONIC}.
+ * @param minimumGenerationNonAncient    the minimum generation of non-ancient events after this state reached
+ *                                       consensus, corresponds to
+ *                                       {@link SavedStateMetadataField#MINIMUM_GENERATION_NON_ANCIENT}
+ * @param softwareVersion                the application software version that created this state, corresponds to
+ *                                       {@link SavedStateMetadataField#SOFTWARE_VERSION}
+ * @param wallClockTime                  the wall clock time when this state was written to disk, corresponds to
+ *                                       {@link SavedStateMetadataField#WALL_CLOCK_TIME}
+ * @param nodeId                         the ID of the node that wrote this state to disk, corresponds to
+ *                                       {@link SavedStateMetadataField#NODE_ID}
+ * @param signingNodes                   a comma separated list of node IDs that signed this state, corresponds to
+ *                                       {@link SavedStateMetadataField#SIGNING_NODES}
+ * @param signingWeightSum               the sum of all signing nodes' weights, corresponds to
+ *                                       {@link SavedStateMetadataField#SIGNING_WEIGHT_SUM}
+ * @param totalWeight                    the total weight of all nodes in the network, corresponds to
+ *                                       {@link SavedStateMetadataField#TOTAL_WEIGHT}
+ * @param epochHash                      the epoch hash of the state, used by emergency recovery protocols
+ * @param epochHashMnemonic              the mnemonic for the {@link #epochHash}, or "null" if the epoch hash is null
  */
 public record SavedStateMetadata(
         long round,
-        @Nullable Hash hash,
-        @Nullable String hashMnemonic,
+        @NonNull Hash hash,
+        @NonNull String hashMnemonic,
         long numberOfConsensusEvents,
         @NonNull Instant consensusTimestamp,
-        @NonNull Hash runningEventHash,
+        @Nullable Hash runningEventHash,
         @Nullable String runningEventHashMnemonic,
+        @Nullable Hash legacyRunningEventHash,
+        @Nullable String legacyRunningEventHashMnemonic,
         long minimumGenerationNonAncient,
         @NonNull String softwareVersion,
         @NonNull Instant wallClockTime,
@@ -142,12 +154,14 @@ public record SavedStateMetadata(
         final Map<SavedStateMetadataField, String> data = parseStringMap(metadataFile);
         return new SavedStateMetadata(
                 parsePrimitiveLong(data, ROUND),
-                parseHash(data, HASH),
-                parseString(data, HASH_MNEMONIC),
+                parseNonNullHash(data, HASH),
+                parseNonNullString(data, HASH_MNEMONIC),
                 parsePrimitiveLong(data, NUMBER_OF_CONSENSUS_EVENTS),
                 parseNonNullInstant(data, CONSENSUS_TIMESTAMP),
-                parseNonNullHash(data, RUNNING_EVENT_HASH),
+                parseHash(data, RUNNING_EVENT_HASH),
                 parseString(data, RUNNING_EVENT_HASH_MNEMONIC),
+                parseHash(data, LEGACY_RUNNING_EVENT_HASH),
+                parseString(data, LEGACY_RUNNING_EVENT_HASH_MNEMONIC),
                 parsePrimitiveLong(data, MINIMUM_GENERATION_NON_ANCIENT),
                 parseNonNullString(data, SOFTWARE_VERSION),
                 parseNonNullInstant(data, WALL_CLOCK_TIME),
@@ -187,7 +201,11 @@ public record SavedStateMetadata(
                 platformState.getSnapshot().nextConsensusNumber(),
                 signedState.getConsensusTimestamp(),
                 platformState.getRunningEventHash(),
-                platformState.getRunningEventHash().toMnemonic(),
+                platformState.getRunningEventHash() == null
+                        ? null
+                        : platformState.getRunningEventHash().toMnemonic(),
+                platformState.getLegacyRunningEventHash(),
+                platformState.getLegacyRunningEventHash().toMnemonic(),
                 platformState.getAncientThreshold(),
                 convertToString(platformState.getCreationSoftwareVersion()),
                 now,
@@ -617,6 +635,8 @@ public record SavedStateMetadata(
         putRequireNonNull(map, CONSENSUS_TIMESTAMP, consensusTimestamp);
         putRequireNonNull(map, RUNNING_EVENT_HASH, runningEventHash);
         putRequireNonNull(map, RUNNING_EVENT_HASH_MNEMONIC, runningEventHashMnemonic);
+        putRequireNonNull(map, LEGACY_RUNNING_EVENT_HASH, legacyRunningEventHash);
+        putRequireNonNull(map, LEGACY_RUNNING_EVENT_HASH_MNEMONIC, legacyRunningEventHashMnemonic);
         putRequireNonNull(map, MINIMUM_GENERATION_NON_ANCIENT, minimumGenerationNonAncient);
         putRequireNonNull(map, SOFTWARE_VERSION, softwareVersion);
         putRequireNonNull(map, WALL_CLOCK_TIME, wallClockTime);

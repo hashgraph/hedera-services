@@ -18,11 +18,11 @@ package com.swirlds.platform.event;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import com.swirlds.platform.system.events.BaseEvent;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
@@ -37,7 +37,7 @@ import java.util.concurrent.CountDownLatch;
 /**
  * A class used to hold information about an event transferred through gossip
  */
-public class GossipEvent implements BaseEvent, ChatterEvent {
+public class GossipEvent implements BaseEvent, SelfSerializable {
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
     private static final int MAX_SIG_LENGTH = 384;
 
@@ -167,25 +167,28 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     }
 
     /**
-     * {@inheritDoc}
+     * Get the descriptor for the event.
+     *
+     * @return the descriptor for the event
      */
-    @Override
     public EventDescriptor getDescriptor() {
         return hashedData.getDescriptor();
     }
 
     /**
-     * {@inheritDoc}
+     * Get the generation of the event.
+     *
+     * @return the generation of the event
      */
-    @Override
     public long getGeneration() {
         return hashedData.getGeneration();
     }
 
     /**
-     * {@inheritDoc}
+     * Get the time this event was received via gossip
+     *
+     * @return the time this event was received
      */
-    @Override
     public @NonNull Instant getTimeReceived() {
         return timeReceived;
     }
@@ -294,7 +297,7 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     public long getAncientIndicator(@NonNull final AncientMode ancientMode) {
         return switch (ancientMode) {
-            case GENERATION_THRESHOLD -> getGeneration();
+            case GENERATION_THRESHOLD -> hashedData.getGeneration();
             case BIRTH_ROUND_THRESHOLD -> hashedData.getBirthRound();
         };
     }

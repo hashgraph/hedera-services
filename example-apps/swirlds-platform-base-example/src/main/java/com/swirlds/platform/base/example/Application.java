@@ -16,68 +16,23 @@
 
 package com.swirlds.platform.base.example;
 
-import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
-import com.swirlds.common.metrics.platform.prometheus.AbstractMetricAdapter;
-import com.swirlds.common.platform.NodeId;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.config.extensions.sources.ClasspathFileConfigSource;
-import com.swirlds.config.extensions.sources.PropertyFileConfigSource;
-import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
-import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
-import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.base.example.config.BaseExampleRestApiConfig;
-import com.swirlds.platform.base.example.internal.Context;
-import com.swirlds.platform.base.example.internal.InitialData;
-import com.swirlds.platform.base.example.internal.ServerUtils;
-import com.swirlds.platform.base.example.metrics.ApplicationMetrics;
-import com.swirlds.platform.base.example.metrics.BenchmarkMetrics;
-import java.nio.file.Path;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.swirlds.platform.base.example.ext.BaseContext;
+import com.swirlds.platform.base.example.ext.BaseContextFactory;
+import com.swirlds.platform.base.example.jdkmetrics.JVMInternalMetrics;
+import com.swirlds.platform.base.example.metricsample.MetricsSampleHandlerRegistry;
+import com.swirlds.platform.base.example.server.Server;
+import com.swirlds.platform.base.example.store.StoreExampleHandlerRegistry;
+import java.io.IOException;
 
 /**
  * This application serves as a testing environment for platform-base module frameworks.
  */
 public class Application {
-    private static final Logger logger = LogManager.getLogger(AbstractMetricAdapter.class);
-    public static final String APPLICATION_PROPERTIES = "app.properties";
-    public static final Path EXTERNAL_PROPERTIES = Path.of("./config/app.properties");
 
-    public static void main(String[] args) {
-        try {
-            final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
-
-            configurationBuilder
-                    .withSource(SystemEnvironmentConfigSource.getInstance())
-                    .withSource(SystemPropertiesConfigSource.getInstance())
-                    .withSource(new ClasspathFileConfigSource(Path.of(APPLICATION_PROPERTIES)))
-                    .autoDiscoverExtensions();
-
-            if (EXTERNAL_PROPERTIES.toFile().exists()) {
-                configurationBuilder.withSources(new PropertyFileConfigSource(EXTERNAL_PROPERTIES));
-            }
-
-            final Configuration configuration = configurationBuilder.build();
-            final DefaultMetricsProvider metricsProvider = new DefaultMetricsProvider(configuration);
-            final Metrics metrics = metricsProvider.createPlatformMetrics(NodeId.FIRST_NODE_ID);
-            final Context context = new Context(metrics, configuration);
-
-            // Add Benchmark metrics
-            BenchmarkMetrics.registerMetrics(context);
-            ApplicationMetrics.registerMetrics(context);
-
-            // Start metric provider
-            metricsProvider.start();
-
-            final BaseExampleRestApiConfig baseExampleRestApiConfig =
-                    configuration.getConfigData(BaseExampleRestApiConfig.class);
-            logger.trace("Loaded configuration {}", baseExampleRestApiConfig);
-            InitialData.populate();
-            ServerUtils.createServer(baseExampleRestApiConfig, context);
-
-        } catch (Exception e) {
-            logger.error("Error starting up", e);
-        }
+    public static void main(String[] args) throws IOException {
+        final BaseContext baseContext = BaseContextFactory.create();
+        // Add JDK metrics to track memory, cpu, etc
+        JVMInternalMetrics.registerMetrics(baseContext.metrics());
+        Server.start(baseContext, new StoreExampleHandlerRegistry(), new MetricsSampleHandlerRegistry());
     }
 }
