@@ -23,7 +23,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALA
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
@@ -213,6 +215,22 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         txn = new CryptoCreateBuilder().withMaxAutoAssociations(-5).build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
         assertEquals(INVALID_TRANSACTION_BODY, msg.responseCode());
+    }
+
+    @Test
+    @DisplayName("pureChecks fail when negative send record threshold is specified")
+    void sendRecordThresholdIsNegative() throws PreCheckException {
+        txn = new CryptoCreateBuilder().withSendRecordThreshold(-1).build();
+        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
+        assertEquals(INVALID_SEND_RECORD_THRESHOLD, msg.responseCode());
+    }
+
+    @Test
+    @DisplayName("pureChecks fail when negative receive record threshold is specified")
+    void receiveRecordThresholdIsNegative() throws PreCheckException {
+        txn = new CryptoCreateBuilder().withReceiveRecordThreshold(-1).build();
+        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
+        assertEquals(INVALID_RECEIVE_RECORD_THRESHOLD, msg.responseCode());
     }
 
     @Test
