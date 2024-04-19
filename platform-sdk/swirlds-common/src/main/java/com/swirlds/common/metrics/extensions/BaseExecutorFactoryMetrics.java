@@ -36,51 +36,32 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class BaseExecutorFactoryMetrics {
 
+    /**
+     * Prefix for all metrics
+     */
     public static final String BASE_EXECUTOR = "base_executor";
 
-    private static final BaseExecutorFactoryMetrics INSTANCE = new BaseExecutorFactoryMetrics();
+    private final TaskExecutionTimeMetric taskExecutionTimeMetric;
 
-    private TaskExecutionTimeMetric taskExecutionTimeMetric;
+    private final TaskExecutionTimeMetric taskDoneExecutionTimeMetric;
 
-    private TaskExecutionTimeMetric taskDoneExecutionTimeMetric;
+    private final TaskExecutionTimeMetric taskFailExecutionTimeMetric;
 
-    private TaskExecutionTimeMetric taskFailExecutionTimeMetric;
+    private final Counter taskCountAccumulator;
 
-    private Counter taskCountAccumulator;
+    private final Counter taskExecutionCountAccumulator;
 
-    private Counter taskExecutionCountAccumulator;
+    private final Counter tasksDoneCountAccumulator;
 
-    private Counter tasksDoneCountAccumulator;
-
-    private Counter tasksFailedCountAccumulator;
-
-    private boolean installed = false;
-
-    private BaseExecutorFactoryMetrics() {}
-
-    public synchronized void reset() {
-        Optional.ofNullable(taskExecutionTimeMetric).ifPresent(TaskExecutionTimeMetric::reset);
-        Optional.ofNullable(taskDoneExecutionTimeMetric).ifPresent(TaskExecutionTimeMetric::reset);
-        Optional.ofNullable(taskFailExecutionTimeMetric).ifPresent(TaskExecutionTimeMetric::reset);
-        Optional.ofNullable(taskCountAccumulator).ifPresent(Counter::reset);
-        Optional.ofNullable(taskExecutionCountAccumulator).ifPresent(Counter::reset);
-        Optional.ofNullable(tasksDoneCountAccumulator).ifPresent(Counter::reset);
-        Optional.ofNullable(tasksFailedCountAccumulator).ifPresent(Counter::reset);
-    }
+    private final Counter tasksFailedCountAccumulator;
 
     /**
-     * Installs metrics for the {@link BaseExecutorFactory}.
+     * Creates a new instance and installs metrics for the {@link BaseExecutorFactory}.
      *
      * @param metrics the metrics system
      */
-    public synchronized void installForBaseExecutor(@NonNull Metrics metrics) {
+    public BaseExecutorFactoryMetrics(@NonNull final Metrics metrics) {
         Objects.requireNonNull(metrics, "metrics must not be null");
-
-        if (installed) {
-            return;
-        } else {
-            installed = true;
-        }
 
         final Counter.Config taskCountAccumulatorConfig = new Counter.Config(BASE_EXECUTOR, "count")
                 .withUnit("tasks")
@@ -138,9 +119,22 @@ public class BaseExecutorFactoryMetrics {
     }
 
     /**
+     * Resets all metrics.
+     */
+    public void reset() {
+        Optional.ofNullable(taskExecutionTimeMetric).ifPresent(TaskExecutionTimeMetric::reset);
+        Optional.ofNullable(taskDoneExecutionTimeMetric).ifPresent(TaskExecutionTimeMetric::reset);
+        Optional.ofNullable(taskFailExecutionTimeMetric).ifPresent(TaskExecutionTimeMetric::reset);
+        Optional.ofNullable(taskCountAccumulator).ifPresent(Counter::reset);
+        Optional.ofNullable(taskExecutionCountAccumulator).ifPresent(Counter::reset);
+        Optional.ofNullable(tasksDoneCountAccumulator).ifPresent(Counter::reset);
+        Optional.ofNullable(tasksFailedCountAccumulator).ifPresent(Counter::reset);
+    }
+
+    /**
      * A metric that tracks the execution time of tasks.
      */
-    private static class TaskExecutionTimeMetric {
+    private class TaskExecutionTimeMetric {
 
         private final AtomicLong callCount;
 
@@ -195,9 +189,5 @@ public class BaseExecutorFactoryMetrics {
                 averageMillisMetric.set(Double.NaN);
             }
         }
-    }
-
-    public static BaseExecutorFactoryMetrics getInstance() {
-        return INSTANCE;
     }
 }

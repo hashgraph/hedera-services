@@ -31,11 +31,12 @@ public class BaseExecutorHandlerFactory implements HttpHandlerRegistry {
 
     @Override
     public Set<HttpHandlerDefinition> handlers(BaseContext context) {
-        BaseExecutorFactoryMetrics.getInstance().installForBaseExecutor(context.metrics());
+        final BaseExecutorFactoryMetrics metricsInstaller = new BaseExecutorFactoryMetrics(context.metrics());
+
         final Consumer<TaskDefinition> addTasksHandler = createTaskExecutionHandler();
 
         final Consumer<Void> resetHandler = v -> {
-            BaseExecutorFactoryMetrics.getInstance().reset();
+            metricsInstaller.reset();
         };
 
         return Set.of(
