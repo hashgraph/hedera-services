@@ -34,6 +34,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -82,7 +83,7 @@ public class AsyncInputStream implements AutoCloseable {
      */
     private final CountDownLatch finishedLatch;
 
-    private volatile boolean alive;
+    private final AtomicBoolean alive = new AtomicBoolean(true);
 
     private final Map<Integer, Supplier<SelfSerializable>> messageFactories;
 
@@ -107,7 +108,6 @@ public class AsyncInputStream implements AutoCloseable {
         this.pollTimeout = config.asyncStreamTimeout();
         this.anticipatedMessages = new AtomicInteger(0);
         this.finishedLatch = new CountDownLatch(1);
-        this.alive = true;
 
         this.viewMessages = new ConcurrentHashMap<>();
         this.messageFactories = new ConcurrentHashMap<>();
@@ -128,22 +128,13 @@ public class AsyncInputStream implements AutoCloseable {
     }
 
     /**
-     * Returns true if the message pump is still running or false if the message pump has terminated or will terminate.
-     *
-     * @return true if the message pump is still running; false if the message pump has terminated or will terminate
-     */
-    public boolean isAlive() {
-        return alive;
-    }
-
-    /**
      * This method is run on a background thread. Continuously reads things from the stream and puts them into the
      * queue.
      */
     private void run() {
         SelfSerializable message = null;
         try {
-            while (isAlive() && !Thread.currentThread().isInterrupted()) {
+            while (alive.get() && !Thread.currentThread().isInterrupted()) {
                 final int previous =
                         anticipatedMessages.getAndUpdate((final int value) -> value == 0 ? 0 : (value - 1));
 
@@ -245,6 +236,6 @@ public class AsyncInputStream implements AutoCloseable {
      */
     @Override
     public void close() {
-        alive = false;
+        alive.set(false);
     }
 }

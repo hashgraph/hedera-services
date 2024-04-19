@@ -17,7 +17,6 @@
 package com.swirlds.virtualmap.config;
 
 import static com.swirlds.virtualmap.config.VirtualMapReconnectMode.PULL_TWO_PHASE_PESSIMISTIC;
-import static com.swirlds.virtualmap.config.VirtualMapReconnectMode.PUSH;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;

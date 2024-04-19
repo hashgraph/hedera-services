@@ -131,7 +131,8 @@ class AsyncStreamTest {
     @DisplayName("Max Output Queue Size")
     void maxOutputQueueSize() throws InterruptedException, IOException {
 
-        final int bufferSize = 100;
+        // Expected async output queue size
+        final int bufferSize = 100 * reconnectConfig.maxParallelSubtrees();
         final int count = 1_000;
 
         final StandardWorkGroup workGroup = new StandardWorkGroup(getStaticThreadManager(), "test", null);
@@ -169,8 +170,11 @@ class AsyncStreamTest {
         // Sender will send until the sender buffer is full.
         MILLISECONDS.sleep(100);
 
-        // The buffer will fill up, and one message will be held by the sending thread (which is blocked)
-        assertEquals(bufferSize + 1, messagesSent.get(), "incorrect message count");
+        final int messageCount = messagesSent.get();
+        // The buffer will fill up, and one or more messages will be held by the sending thread (which is
+        // blocked), up to double buffer size
+        assertTrue(messageCount >= bufferSize + 1, "incorrect message count");
+        assertTrue(messageCount <= 2 * bufferSize, "incorrect message count");
 
         // Unblock the buffer, allowing remaining messages to be sent
         blockingOut.unlock();

@@ -27,14 +27,13 @@ import com.swirlds.common.utility.StopWatch;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
-import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -62,18 +61,10 @@ public class AsyncOutputStream implements AutoCloseable {
      */
     private final SerializableDataOutputStream outputStream;
 
-    private final int queueSize;
-
     /**
-     * A queue that need to be written to the output stream. The queue contains view IDs,
-     * which are then used to get message to write from {@link #viewMessages}.
+     * A queue that need to be written to the output stream.
      */
-    private final BlockingQueue<Integer> streamQueue;
-
-    /**
-     * Queues of messages scheduled to write to the output stream, per merkle sub-tree.
-     */
-    private final Map<Integer, BlockingQueue<SelfSerializable>> viewMessages;
+    private final BlockingQueue<QueueItem> streamQueue;
 
     /**
      * The time that has elapsed since the last flush was attempted.
@@ -88,7 +79,7 @@ public class AsyncOutputStream implements AutoCloseable {
     /**
      * If this becomes false then this object's worker thread will stop transmitting messages.
      */
-    private volatile boolean alive;
+    private final AtomicBoolean alive = new AtomicBoolean(true);
 
     /**
      * The number of messages that have been written to the stream but have not yet been flushed
@@ -118,15 +109,11 @@ public class AsyncOutputStream implements AutoCloseable {
 
         this.outputStream = Objects.requireNonNull(outputStream, "outputStream must not be null");
         this.workGroup = Objects.requireNonNull(workGroup, "workGroup must not be null");
-        this.queueSize = config.asyncStreamBufferSize();
-        this.streamQueue = new LinkedBlockingQueue<>(queueSize * config.maxParallelSubtrees());
-        this.alive = true;
+        this.streamQueue = new LinkedBlockingQueue<>(config.asyncStreamBufferSize() * config.maxParallelSubtrees());
         this.timeSinceLastFlush = new StopWatch();
         this.timeSinceLastFlush.start();
         this.flushInterval = config.asyncOutputStreamFlush();
         this.timeout = config.asyncStreamTimeout();
-
-        this.viewMessages = new ConcurrentHashMap<>();
     }
 
     /**
@@ -141,14 +128,15 @@ public class AsyncOutputStream implements AutoCloseable {
      *
      * @return true if the message pump is still running; false if the message pump has terminated or will terminate
      */
-    public boolean isAlive() {
-        return alive;
+    protected final boolean isAlive() {
+        return alive.get();
     }
 
     public void run() {
-        while ((isAlive() || !streamQueue.isEmpty()) && !Thread.currentThread().isInterrupted()) {
+        while ((alive.get() || !streamQueue.isEmpty())
+                && !Thread.currentThread().isInterrupted()) {
             flushIfRequired();
-            boolean workDone = handleNextMessage();
+            boolean workDone = handleQueuedMessages();
             if (!workDone) {
                 workDone = flush();
                 if (!workDone) {
@@ -156,7 +144,7 @@ public class AsyncOutputStream implements AutoCloseable {
                         Thread.sleep(0, 1);
                     } catch (final InterruptedException e) {
                         logger.warn(RECONNECT.getMarker(), "AsyncOutputStream interrupted");
-                        alive = false;
+                        alive.set(false);
                         Thread.currentThread().interrupt();
                         return;
                     }
@@ -174,14 +162,8 @@ public class AsyncOutputStream implements AutoCloseable {
             throw new MerkleSynchronizationException("Messages can not be sent after close has been called.");
         }
 
-        BlockingQueue<SelfSerializable> viewQueue = viewMessages.get(viewId);
-        if (viewQueue == null) {
-            viewQueue = new ArrayBlockingQueue<>(queueSize);
-            viewMessages.put(viewId, viewQueue);
-        }
-        boolean success = viewQueue.offer(message, timeout.toMillis(), TimeUnit.MILLISECONDS);
-        success = success && streamQueue.offer(viewId, timeout.toMillis(), TimeUnit.MILLISECONDS);
-
+        final boolean success =
+                streamQueue.offer(new QueueItem(viewId, message), timeout.toMillis(), TimeUnit.MILLISECONDS);
         if (!success) {
             try {
                 outputStream.close();
@@ -198,7 +180,7 @@ public class AsyncOutputStream implements AutoCloseable {
      */
     @Override
     public void close() {
-        alive = false;
+        alive.set(false);
     }
 
     /**
@@ -206,21 +188,22 @@ public class AsyncOutputStream implements AutoCloseable {
      *
      * @return true if a message was sent.
      */
-    private boolean handleNextMessage() {
+    private boolean handleQueuedMessages() {
         if (!streamQueue.isEmpty()) {
-            final int viewId = streamQueue.remove();
-            final Queue<SelfSerializable> viewQueue = viewMessages.get(viewId);
-            assert viewQueue != null;
-            assert !viewQueue.isEmpty();
-            final SelfSerializable message = viewQueue.remove();
-            try {
-                outputStream.writeInt(viewId);
-                serializeMessage(message);
-            } catch (final IOException e) {
-                throw new MerkleSynchronizationException(e);
+            final int size = streamQueue.size();
+            final List<QueueItem> localQueue = new ArrayList<>(size);
+            streamQueue.drainTo(localQueue, size);
+            for (final QueueItem item : localQueue) {
+                final int viewId = item.viewId();
+                final SelfSerializable message = item.message();
+                try {
+                    outputStream.writeInt(viewId);
+                    serializeMessage(message);
+                } catch (final IOException e) {
+                    throw new MerkleSynchronizationException(e);
+                }
+                bufferedMessageCount += 1;
             }
-
-            bufferedMessageCount += 1;
             return true;
         }
         return false;
@@ -253,4 +236,6 @@ public class AsyncOutputStream implements AutoCloseable {
             flush();
         }
     }
+
+    private final record QueueItem(int viewId, SelfSerializable message) {}
 }
