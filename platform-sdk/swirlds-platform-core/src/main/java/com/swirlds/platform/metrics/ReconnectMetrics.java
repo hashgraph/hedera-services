@@ -65,20 +65,20 @@ public class ReconnectMetrics {
     private final Map<NodeId, CountPerSecond> rejectionFrequency = new HashMap<>();
 
     private static final LongAccumulator.Config SENDER_DURATION_CONFIG = new LongAccumulator.Config(
-                    RECONNECT_CATEGORY, "senderReconnectDurationMs")
+                    RECONNECT_CATEGORY, "senderReconnectDurationSeconds")
             .withInitialValue(0)
             .withAccumulator(Long::sum)
             .withDescription("duration of reconnect as a sender")
-            .withUnit(TimeUnit.UNIT_MILLISECONDS.getAbbreviation());
-    private final LongAccumulator senderReconnectDurationMs;
+            .withUnit(TimeUnit.UNIT_SECONDS.getAbbreviation());
+    private final LongAccumulator senderReconnectDurationSeconds;
 
     private static final LongAccumulator.Config RECEIVER_DURATION_CONFIG = new LongAccumulator.Config(
-                    RECONNECT_CATEGORY, "receiverReconnectDurationMs")
+                    RECONNECT_CATEGORY, "receiverReconnectDurationSeconds")
             .withInitialValue(0)
             .withAccumulator(Long::sum)
             .withDescription("duration of reconnect as a receiver")
-            .withUnit(TimeUnit.UNIT_MILLISECONDS.getAbbreviation());
-    private final LongAccumulator receiverReconnectDurationMs;
+            .withUnit(TimeUnit.UNIT_SECONDS.getAbbreviation());
+    private final LongAccumulator receiverReconnectDurationSeconds;
 
     // Assuming that reconnect is a "singleton" operation (a single node cannot teach multiple learners
     // simultaneously, and a single node cannot learn from multiple teachers at once), we maintain
@@ -101,8 +101,8 @@ public class ReconnectMetrics {
         receiverStartTimes = metrics.getOrCreate(RECEIVER_START_TIMES_CONFIG);
         senderEndTimes = metrics.getOrCreate(SENDER_END_TIMES_CONFIG);
         receiverEndTimes = metrics.getOrCreate(RECEIVER_END_TIMES_CONFIG);
-        senderReconnectDurationMs = metrics.getOrCreate(SENDER_DURATION_CONFIG);
-        receiverReconnectDurationMs = metrics.getOrCreate(RECEIVER_DURATION_CONFIG);
+        senderReconnectDurationSeconds = metrics.getOrCreate(SENDER_DURATION_CONFIG);
+        receiverReconnectDurationSeconds = metrics.getOrCreate(RECEIVER_DURATION_CONFIG);
 
         for (final Address address : addressBook) {
             final NodeId nodeId = address.getNodeId();
@@ -132,14 +132,14 @@ public class ReconnectMetrics {
 
     public void incrementSenderEndTimes() {
         senderEndTimes.increment();
-        senderReconnectDurationMs.update(
-                Duration.ofNanos(System.nanoTime() - senderStartNanos).toMillis());
+        senderReconnectDurationSeconds.update(
+                Duration.ofNanos(System.nanoTime() - senderStartNanos).toSeconds());
     }
 
     public void incrementReceiverEndTimes() {
         receiverEndTimes.increment();
-        receiverReconnectDurationMs.update(
-                Duration.ofNanos(System.nanoTime() - receiverStartNanos).toMillis());
+        receiverReconnectDurationSeconds.update(
+                Duration.ofNanos(System.nanoTime() - receiverStartNanos).toSeconds());
     }
 
     /**
