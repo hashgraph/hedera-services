@@ -56,7 +56,7 @@ To run the application with gradle / docker-compose & intelliJ:
 2. Run the application using `gradlew run` or hit play in [Application.java](src%2Fmain%2Fjava%2Fcom%2Fswirlds%2Fplatform%2Fbase%2Fexample%2Fapp%2FApplication.java) main method.
 3. By default, embedded server will be running on port [localhost:8000](localhost:8080/).
 4. Go to `./docker` folder and run `docker compose up`
-5. Access the Swagger UI yml file for interacting with the REST API.[api.yaml](src/swagger/api.yaml). It is recommended to have OpenApi plugin on intellij.
+5. Access the Swagger UI yml file for interacting with the REST API.[api.yaml](src/swagger/store-rest-api.yaml). It is recommended to have OpenApi plugin on intellij.
 6. Monitor metrics using the Prometheus server running on [localhost:9090](http://localhost:9090/).
 7. Access application's scrap endpoint for prometheus at port [localhost:9999](http://localhost:9999/).
 8. Visualize metrics using Grafana on [localhost:3000](http://localhost:3000/). Anonymous access enabled. Go to explore/Main Dashboard.

@@ -33,6 +33,7 @@ import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
+import com.swirlds.proto.event.StateSignaturePayload;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -117,7 +118,11 @@ public abstract class DetGenerateUtils {
             if (system) {
                 final Bytes signature = randomSignatureBytes(random);
                 final Bytes hash = randomHashBytes(random);
-                list.add(new StateSignatureTransaction(random.nextLong(), signature, hash, Bytes.EMPTY));
+                list.add(new StateSignatureTransaction(StateSignaturePayload.newBuilder()
+                        .round(random.nextLong())
+                        .signature(signature)
+                        .hash(hash)
+                        .build()));
             } else {
                 list.add(new SwirldTransaction(bytes));
             }

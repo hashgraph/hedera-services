@@ -16,11 +16,13 @@
 
 package com.swirlds.platform.network.connectivity;
 
+import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.SocketConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -46,5 +48,10 @@ public class TcpFactory implements SocketFactory {
         final Socket clientSocket = new Socket();
         SocketFactory.configureAndConnect(clientSocket, socketConfig, hostname, port);
         return clientSocket;
+    }
+
+    @Override
+    public void reload(@NonNull final List<PeerInfo> peers) {
+        // not implemented for TCP Factory
     }
 }

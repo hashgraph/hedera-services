@@ -1,11 +1,11 @@
 openapi: 3.0.1
 info:
-  title: Platform Base Sample
-  description: Inventory Management API for managing items, operations, and detailed inventory
+  title: Platform Base Store Example API
+  description: Example Store API for managing items, operations, and detailed inventory
   version: 1.0.0
 
 servers:
-  - url: 'http://localhost:8000/swirlds/api/'
+  - url: 'http://localhost:8000/swirlds/store/'
 paths:
   /items:
     post:
@@ -15,7 +15,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Item'
+              $ref: '#/components/schemas/ItemCreation'
       responses:
         '201':
           description: item successfully created
@@ -23,8 +23,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Item'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       summary: Get all items
       responses:
@@ -36,6 +46,18 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Item'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /items/{itemId}:
     get:
       summary: Get a item
@@ -55,8 +77,16 @@ paths:
                 $ref: '#/components/schemas/Item'
         '404':
           description: Item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     delete:
       summary: Delete an Item by id
       parameters:
@@ -71,8 +101,22 @@ paths:
           description: item successfully deleted
         '404':
           description: item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /inventories/{itemId}:
     get:
       summary: Retrieve inventory info for an item
@@ -92,6 +136,22 @@ paths:
                 $ref: '#/components/schemas/Inventory'
         '404':
           description: Item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /operations:
     get:
       summary: Retrieve operations based on parameters
@@ -141,6 +201,16 @@ paths:
                   $ref: '#/components/schemas/Operation'
         '400':
           description: Search parameters error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       summary: Create a new operation
       requestBody:
@@ -158,8 +228,22 @@ paths:
                 $ref: '#/components/schemas/Operation'
         '400':
           description: Input error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /sales:
     post:
       summary: Create a new sale
@@ -178,6 +262,16 @@ paths:
                 $ref: '#/components/schemas/Sale'
         '400':
           description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /purchases:
     post:
       summary: Create a new purchase
@@ -196,8 +290,29 @@ paths:
                 $ref: '#/components/schemas/Purchase'
         '400':
           description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
+    ItemCreation:
+      type: object
+      properties:
+        description:
+          type: string
+        sku:
+          type: string
+        minimumStockLevel:
+          type: integer
+        category:
+          type: string
     Item:
       type: object
       properties:
@@ -339,3 +454,8 @@ components:
         date:
           type: string
           format: date-time
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
