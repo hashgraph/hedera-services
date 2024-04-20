@@ -28,6 +28,7 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator.asAccountId;
+import static java.util.Collections.nCopies;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -674,7 +675,8 @@ public class InitialModServiceTokenSchema extends Schema {
                         .nodeNumber(nodeId.nodeId())
                         .maxStake(maxStakePerNode)
                         .minStake(0L)
-                        .rewardSumHistory(new Long[numRewardHistoryStoredPeriods + 1])
+                        .rewardSumHistory(
+                                nCopies(numRewardHistoryStoredPeriods + 1, 0L).toArray(Long[]::new))
                         .weight(0)
                         .build();
                 stakingInfos.put(entityNum, newNodeStakingInfo);

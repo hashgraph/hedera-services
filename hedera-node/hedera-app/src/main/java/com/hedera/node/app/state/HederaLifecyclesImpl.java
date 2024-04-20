@@ -48,8 +48,8 @@ import com.swirlds.virtualmap.VirtualMapMigration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -61,10 +61,42 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
     private static final long LEDGER_TOTAL_TINY_BAR_FLOAT = 5000000000000000000L;
     private static final int NUM_REWARD_HISTORY_STORED_PERIODS = 365;
 
+    private static final BiConsumer<
+                    VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>>,
+                    BiConsumer<EntityNumber, StakingNodeInfo>>
+            WEIGHT_UPDATE_VISITOR = (map, visitor) -> {
+                try {
+                    VirtualMapMigration.extractVirtualMapData(
+                            AdHocThreadManager.getStaticThreadManager(),
+                            map,
+                            pair -> visitor.accept(
+                                    pair.key().getKey(), pair.value().getValue()),
+                            1);
+                } catch (InterruptedException e) {
+                    logger.error("Interrupted while updating weights", e);
+                    throw new IllegalStateException(e);
+                }
+            };
+
     private final Hedera hedera;
+    private final BiConsumer<
+                    VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>>,
+                    BiConsumer<EntityNumber, StakingNodeInfo>>
+            weightUpdateVisitor;
 
     public HederaLifecyclesImpl(@NonNull final Hedera hedera) {
-        this.hedera = Objects.requireNonNull(hedera);
+        this(hedera, WEIGHT_UPDATE_VISITOR);
+    }
+
+    public HederaLifecyclesImpl(
+            @NonNull final Hedera hedera,
+            @NonNull
+                    final BiConsumer<
+                                    VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>>,
+                                    BiConsumer<EntityNumber, StakingNodeInfo>>
+                            weightUpdateVisitor) {
+        this.hedera = requireNonNull(hedera);
+        this.weightUpdateVisitor = requireNonNull(weightUpdateVisitor);
     }
 
     @Override
@@ -95,7 +127,7 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
             @NonNull final PlatformContext context) {
         final var isMonoState = state.getChild(StateChildIndices.STAKING_INFO) instanceof MerkleMap;
         // Get all nodeIds added in the config.txt
-        final var configNodeIds = configAddressBook.getNodeIdSet();
+        final var nodeIdsLeftToUpdate = configAddressBook.getNodeIdSet();
         if (!isMonoState) {
             final var stakingInfoIndex = state.findNodeIndex(TokenService.NAME, STAKING_INFO_KEY);
             if (stakingInfoIndex == -1) {
@@ -105,24 +137,28 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
             @SuppressWarnings("unchecked")
             final var stakingInfoVMap = (VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>>)
                     state.getChild(stakingInfoIndex);
-            try {
-                VirtualMapMigration.extractVirtualMapData(
-                        AdHocThreadManager.getStaticThreadManager(),
-                        stakingInfoVMap,
-                        pair -> {
-                            final var nodeId = new NodeId(pair.key().getKey().number());
-                            if (configNodeIds.contains(nodeId)) {
-                                final var info = requireNonNull(pair.value().getValue());
-                                configAddressBook.updateWeight(nodeId, info.weight());
-                            }
-                        },
-                        1);
-            } catch (InterruptedException e) {
-                logger.error("Interrupted while updating weights", e);
-                throw new IllegalStateException(e);
-            }
+            // Since it is much easier to modify the in-state staking info after schemas
+            // are registered with MerkleHederaState, we do that work later in the token
+            // service schema's restart() hook. Here we only update the address book weights
+            // based on the staking info in the state.
+            weightUpdateVisitor.accept(stakingInfoVMap, (node, info) -> {
+                final var nodeId = new NodeId(node.number());
+                // If present in the address book, remove this node id from the
+                // set of node ids left to update and update its weight
+                if (nodeIdsLeftToUpdate.remove(nodeId)) {
+                    configAddressBook.updateWeight(nodeId, info.weight());
+                } else {
+                    logger.info(
+                            "Node {} is no longer in address book; restart() will ensure its staking info is marked deleted",
+                            nodeId);
+                }
+            });
+            nodeIdsLeftToUpdate.forEach(nodeId -> {
+                configAddressBook.updateWeight(nodeId, 0);
+                logger.info("Found new node {}; restart() will add its staking info", nodeId);
+            });
         } else {
-            final var configAddressBookSize = configNodeIds.size();
+            final var configAddressBookSize = nodeIdsLeftToUpdate.size();
             // When doing the first upgrade from 0.48 to 0.49, we will call updateWeight before BBM migration.
             // In this case, we need to update the weight in the stakingInfo map from mono service state.
             logger.info("Token service state is empty, so we are migrating from mono to mod-service with "
@@ -131,9 +167,9 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
                     (MerkleMap<EntityNum, MerkleStakingInfo>) state.getChild(StateChildIndices.STAKING_INFO));
             stakingInfosMap.forEachNode((nodeNum, stakingInfo) -> {
                 final NodeId nodeId = new NodeId(nodeNum.longValue());
-                if (configNodeIds.contains(nodeId)) {
+                if (nodeIdsLeftToUpdate.contains(nodeId)) {
                     configAddressBook.updateWeight(nodeId, stakingInfo.getWeight());
-                    configNodeIds.remove(nodeId);
+                    nodeIdsLeftToUpdate.remove(nodeId);
                 } else {
                     final var newStakingInfo = stakingInfosMap.getForModify(nodeNum);
                     newStakingInfo.setWeight(0);
@@ -145,8 +181,8 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
             });
             // for any newly added nodes that doesn't exist in state, weight should be set to 0
             // irrespective of the weight provided in config.txt
-            if (!configNodeIds.isEmpty()) {
-                configNodeIds.forEach(nodeId -> {
+            if (!nodeIdsLeftToUpdate.isEmpty()) {
+                nodeIdsLeftToUpdate.forEach(nodeId -> {
                     configAddressBook.updateWeight(nodeId, 0);
                     logger.info(
                             "Node {} is newly added in configAddressBook during upgrade "
@@ -155,7 +191,7 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
                 });
                 // update the state with new nodes and set weight to 0
                 addAdditionalNodesToState(
-                        stakingInfosMap, configNodeIds, context.getConfiguration(), configAddressBookSize);
+                        stakingInfosMap, nodeIdsLeftToUpdate, context.getConfiguration(), configAddressBookSize);
             }
         }
     }

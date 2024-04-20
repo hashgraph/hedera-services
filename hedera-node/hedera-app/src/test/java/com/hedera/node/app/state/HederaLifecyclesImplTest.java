@@ -16,36 +16,28 @@
 
 package com.hedera.node.app.state;
 
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_NETWORK_REWARDS_KEY;
 import static com.hedera.node.app.state.merkle.AddresBookUtils.createPretendBookFrom;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.Hedera;
-import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.hedera.node.app.spi.state.WritableSingletonState;
-import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleTestBase;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.node.app.state.merkle.disk.OnDiskKey;
+import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.PlatformState;
@@ -53,8 +45,10 @@ import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.Event;
+import com.swirlds.virtualmap.VirtualMap;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.function.BiConsumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,6 +57,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaLifecyclesImplTest extends MerkleTestBase {
+    private static final int PRETEND_STAKING_INFO_CHILD_INDEX = 7;
+
     @Mock
     private Hedera hedera;
 
@@ -99,11 +95,17 @@ class HederaLifecyclesImplTest extends MerkleTestBase {
     @Mock
     private Iterator<EntityNumber> mockIterator;
 
+    @Mock
+    private BiConsumer<
+                    VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>>,
+                    BiConsumer<EntityNumber, StakingNodeInfo>>
+            weightUpdateVisitor;
+
     private HederaLifecyclesImpl subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HederaLifecyclesImpl(hedera);
+        subject = new HederaLifecyclesImpl(hedera, weightUpdateVisitor);
     }
 
     @Test
@@ -129,8 +131,6 @@ class HederaLifecyclesImplTest extends MerkleTestBase {
 
     @Test
     void updatesAddressBookWithZeroWeightOnGenesisStart() {
-        setupForOnUpdateWeight();
-
         final var node0 = new NodeId(0);
         final var node1 = new NodeId(1);
         given(platform.getSelfId()).willReturn(node0);
@@ -150,35 +150,25 @@ class HederaLifecyclesImplTest extends MerkleTestBase {
 
     @Test
     void updatesAddressBookWithZeroWeightForNewNodes() {
-        setupForOnUpdateWeight();
-
         final var node0 = new NodeId(0);
         final var node1 = new NodeId(1);
         given(platform.getSelfId()).willReturn(node0);
-
         final var pretendAddressBook = createPretendBookFrom(platform, true);
-        final var writableStakingNodes = MapWritableKVState.<EntityNumber, StakingNodeInfo>builder(STAKING_INFO_KEY)
-                .value(
-                        EntityNumber.newBuilder().number(0L).build(),
-                        StakingNodeInfo.newBuilder()
-                                .nodeNumber(0L)
-                                .stake(1000L)
-                                .weight(500)
-                                .build())
-                .build();
-        given(writableStates.<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY))
-                .willReturn(writableStakingNodes);
-        given(readableStates.<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY))
-                .willReturn(writableStakingNodes);
-
-        assertEquals(
-                1000L,
-                writableStakingNodes
-                        .get(EntityNumber.newBuilder().number(0L).build())
-                        .stake());
-
-        assertEquals(10L, pretendAddressBook.getAddress(node0).getWeight());
-        assertEquals(10L, pretendAddressBook.getAddress(node1).getWeight());
+        given(merkleHederaState.findNodeIndex(TokenService.NAME, STAKING_INFO_KEY))
+                .willReturn(PRETEND_STAKING_INFO_CHILD_INDEX);
+        doAnswer(invocationOnMock -> {
+                    final BiConsumer<EntityNumber, StakingNodeInfo> visitor = invocationOnMock.getArgument(1);
+                    visitor.accept(
+                            EntityNumber.newBuilder().number(0L).build(),
+                            StakingNodeInfo.newBuilder()
+                                    .nodeNumber(0L)
+                                    .stake(1000L)
+                                    .weight(500)
+                                    .build());
+                    return null;
+                })
+                .when(weightUpdateVisitor)
+                .accept(any(), any());
 
         subject.onUpdateWeight(merkleHederaState, pretendAddressBook, platform.getContext());
 
@@ -190,67 +180,45 @@ class HederaLifecyclesImplTest extends MerkleTestBase {
 
     @Test
     void doesntUpdateAddressBookIfNodeIdFromStateDoesntExist() {
-        setupForOnUpdateWeight();
-
         final var node0 = new NodeId(0);
         final var node1 = new NodeId(1);
         final var node2 = new NodeId(2);
         given(platform.getSelfId()).willReturn(node0);
 
         final var pretendAddressBook = createPretendBookFrom(platform, true);
-        final var writableStakingNodes = MapWritableKVState.<EntityNumber, StakingNodeInfo>builder(STAKING_INFO_KEY)
-                .value(
-                        EntityNumber.newBuilder().number(0L).build(),
-                        StakingNodeInfo.newBuilder()
-                                .nodeNumber(0L)
-                                .stake(1000L)
-                                .weight(100)
-                                .build())
-                .value(
-                        EntityNumber.newBuilder().number(1L).build(),
-                        StakingNodeInfo.newBuilder()
-                                .nodeNumber(1L)
-                                .stake(1000L)
-                                .weight(200)
-                                .build())
-                .value(
-                        EntityNumber.newBuilder().number(2L).build(),
-                        StakingNodeInfo.newBuilder()
-                                .nodeNumber(3L)
-                                .stake(1000L)
-                                .weight(200)
-                                .build())
-                .build();
-        given(writableStates.<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY))
-                .willReturn(writableStakingNodes);
-        given(readableStates.<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY))
-                .willReturn(writableStakingNodes);
-
-        assertEquals(
-                1000L,
-                writableStakingNodes
-                        .get(EntityNumber.newBuilder().number(0L).build())
-                        .stake());
+        given(merkleHederaState.findNodeIndex(TokenService.NAME, STAKING_INFO_KEY))
+                .willReturn(PRETEND_STAKING_INFO_CHILD_INDEX);
+        doAnswer(invocationOnMock -> {
+                    final BiConsumer<EntityNumber, StakingNodeInfo> visitor = invocationOnMock.getArgument(1);
+                    visitor.accept(
+                            EntityNumber.newBuilder().number(0L).build(),
+                            StakingNodeInfo.newBuilder()
+                                    .nodeNumber(0L)
+                                    .stake(1000L)
+                                    .weight(100)
+                                    .build());
+                    visitor.accept(
+                            EntityNumber.newBuilder().number(1L).build(),
+                            StakingNodeInfo.newBuilder()
+                                    .nodeNumber(1L)
+                                    .stake(1000L)
+                                    .weight(200)
+                                    .build());
+                    visitor.accept(
+                            EntityNumber.newBuilder().number(2L).build(),
+                            StakingNodeInfo.newBuilder()
+                                    .nodeNumber(2L)
+                                    .stake(1000L)
+                                    .weight(200)
+                                    .build());
+                    return null;
+                })
+                .when(weightUpdateVisitor)
+                .accept(any(), any());
         // there is no node2 in the addressBook
         assertEquals(10L, pretendAddressBook.getAddress(node0).getWeight());
         assertEquals(10L, pretendAddressBook.getAddress(node1).getWeight());
         assertThrows(NoSuchElementException.class, () -> pretendAddressBook.getAddress(node2));
-        // But state has node 2
-        assertEquals(
-                100L,
-                writableStakingNodes
-                        .get(EntityNumber.newBuilder().number(0L).build())
-                        .weight());
-        assertEquals(
-                200L,
-                writableStakingNodes
-                        .get(EntityNumber.newBuilder().number(1L).build())
-                        .weight());
-        assertEquals(
-                200L,
-                writableStakingNodes
-                        .get(EntityNumber.newBuilder().number(2L).build())
-                        .weight());
 
         assertDoesNotThrow(() -> subject.onUpdateWeight(merkleHederaState, pretendAddressBook, platform.getContext()));
 
@@ -263,45 +231,33 @@ class HederaLifecyclesImplTest extends MerkleTestBase {
 
     @Test
     void updatesAddressBookWithNonZeroWeightsOnGenesisStartIfStakesExist() {
-        setupForOnUpdateWeight();
-
         final var node0 = new NodeId(0);
         final var node1 = new NodeId(1);
         given(platform.getSelfId()).willReturn(node0);
 
         final var pretendAddressBook = createPretendBookFrom(platform, true);
-
-        final var writableStakingNodes = MapWritableKVState.<EntityNumber, StakingNodeInfo>builder(STAKING_INFO_KEY)
-                .value(
-                        EntityNumber.newBuilder().number(0L).build(),
-                        StakingNodeInfo.newBuilder()
-                                .nodeNumber(0L)
-                                .stake(1000L)
-                                .weight(250)
-                                .build())
-                .value(
-                        EntityNumber.newBuilder().number(1L).build(),
-                        StakingNodeInfo.newBuilder()
-                                .nodeNumber(1L)
-                                .stake(1000L)
-                                .weight(250)
-                                .build())
-                .build();
-        given(writableStates.<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY))
-                .willReturn(writableStakingNodes);
-        given(readableStates.<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY))
-                .willReturn(writableStakingNodes);
-
-        assertEquals(
-                1000L,
-                writableStakingNodes
-                        .get(EntityNumber.newBuilder().number(0L).build())
-                        .stake());
-        assertEquals(
-                1000L,
-                writableStakingNodes
-                        .get(EntityNumber.newBuilder().number(1L).build())
-                        .stake());
+        given(merkleHederaState.findNodeIndex(TokenService.NAME, STAKING_INFO_KEY))
+                .willReturn(PRETEND_STAKING_INFO_CHILD_INDEX);
+        doAnswer(invocationOnMock -> {
+                    final BiConsumer<EntityNumber, StakingNodeInfo> visitor = invocationOnMock.getArgument(1);
+                    visitor.accept(
+                            EntityNumber.newBuilder().number(0L).build(),
+                            StakingNodeInfo.newBuilder()
+                                    .nodeNumber(0L)
+                                    .stake(1000L)
+                                    .weight(250)
+                                    .build());
+                    visitor.accept(
+                            EntityNumber.newBuilder().number(1L).build(),
+                            StakingNodeInfo.newBuilder()
+                                    .nodeNumber(0L)
+                                    .stake(1000L)
+                                    .weight(250)
+                                    .build());
+                    return null;
+                })
+                .when(weightUpdateVisitor)
+                .accept(any(), any());
 
         assertEquals(10L, pretendAddressBook.getAddress(node0).getWeight());
         assertEquals(10L, pretendAddressBook.getAddress(node1).getWeight());
@@ -316,52 +272,37 @@ class HederaLifecyclesImplTest extends MerkleTestBase {
 
     @Test
     void marksNonExistingNodesToDeletedInStateAndAddsNewNodesToState() {
-        final var stakingInfosState = MapWritableKVState.<EntityNumber, StakingNodeInfo>builder(STAKING_INFO_KEY)
-                .value(
-                        EntityNumber.newBuilder().number(2L).build(),
-                        StakingNodeInfo.newBuilder()
-                                .nodeNumber(2L)
-                                .stake(1000L)
-                                .weight(250)
-                                .build())
-                .value(
-                        EntityNumber.newBuilder().number(1L).build(),
-                        StakingNodeInfo.newBuilder()
-                                .nodeNumber(1L)
-                                .stake(1000L)
-                                .weight(250)
-                                .build())
-                .build();
-        final var accounts = MapWritableKVState.<AccountID, Account>builder(TokenServiceImpl.ACCOUNTS_KEY)
-                .build();
-        final var newStates = newStatesInstance(
-                accounts,
-                MapWritableKVState.<Bytes, AccountID>builder(ALIASES_KEY).build(),
-                new WritableSingletonStateBase<>(
-                        EntityIdService.ENTITY_ID_STATE_KEY, () -> new EntityNumber(1000), c -> {}),
-                stakingInfosState);
+        given(merkleHederaState.findNodeIndex(TokenService.NAME, STAKING_INFO_KEY))
+                .willReturn(PRETEND_STAKING_INFO_CHILD_INDEX);
+        doAnswer(invocationOnMock -> {
+                    final BiConsumer<EntityNumber, StakingNodeInfo> visitor = invocationOnMock.getArgument(1);
+                    visitor.accept(
+                            EntityNumber.newBuilder().number(2L).build(),
+                            StakingNodeInfo.newBuilder()
+                                    .nodeNumber(2L)
+                                    .stake(1000L)
+                                    .weight(250)
+                                    .build());
+                    visitor.accept(
+                            EntityNumber.newBuilder().number(1L).build(),
+                            StakingNodeInfo.newBuilder()
+                                    .nodeNumber(1L)
+                                    .stake(1000L)
+                                    .weight(250)
+                                    .build());
+                    return null;
+                })
+                .when(weightUpdateVisitor)
+                .accept(any(), any());
 
         final var node0 = new NodeId(0);
         final var node1 = new NodeId(1);
-        final var node2 = new NodeId(2);
 
-        final var entityNode0 = EntityNumber.newBuilder().number(0L).build();
-        final var entityNode1 = EntityNumber.newBuilder().number(1L).build();
-        final var entityNode2 = EntityNumber.newBuilder().number(2L).build();
-
-        given(merkleHederaState.getWritableStates(TokenService.NAME)).willReturn(newStates);
-        given(merkleHederaState.getReadableStates(TokenService.NAME)).willReturn(newStates);
         given(platform.getSelfId()).willReturn(node0);
-        given(platformContext.getConfiguration()).willReturn(HederaTestConfigBuilder.createConfig());
 
         // platform addressBook has nodes 0, 1
         final var pretendAddressBook = createPretendBookFrom(platform, true);
         // stakingInfo has 1, 2
-        assertEquals(1000L, stakingInfosState.get(entityNode1).stake());
-        assertEquals(1000L, stakingInfosState.get(entityNode2).stake());
-        assertThat(stakingInfosState.get(entityNode2).deleted()).isFalse();
-        assertThat(stakingInfosState.get(entityNode1).deleted()).isFalse();
-
         assertEquals(10L, pretendAddressBook.getAddress(node0).getWeight());
         assertEquals(10L, pretendAddressBook.getAddress(node1).getWeight());
 
@@ -373,69 +314,5 @@ class HederaLifecyclesImplTest extends MerkleTestBase {
 
         assertEquals(0L, pretendAddressBook.getAddress(node0).getWeight());
         assertEquals(250L, pretendAddressBook.getAddress(node1).getWeight());
-
-        final var updatedStates = newStates.get(STAKING_INFO_KEY);
-        // marks nodes 2 as deleted
-        assertThat(((StakingNodeInfo) updatedStates.get(entityNode0)).deleted()).isFalse();
-        assertThat(((StakingNodeInfo) updatedStates.get(entityNode1)).deleted()).isFalse();
-        assertThat(((StakingNodeInfo) updatedStates.get(entityNode2)).deleted()).isTrue();
-
-        assertThat(((StakingNodeInfo) updatedStates.get(entityNode0)).weight()).isEqualTo(0);
-        assertThat(((StakingNodeInfo) updatedStates.get(entityNode1)).weight()).isEqualTo(250);
-        assertThat(((StakingNodeInfo) updatedStates.get(entityNode2)).weight()).isEqualTo(0);
-        // Max stake is updated on all nodes
-        assertThat(((StakingNodeInfo) updatedStates.get(entityNode0)).maxStake())
-                .isEqualTo(2500000000000000000L);
-        assertThat(((StakingNodeInfo) updatedStates.get(entityNode1)).maxStake())
-                .isEqualTo(2500000000000000000L);
-        assertThat(((StakingNodeInfo) updatedStates.get(entityNode2)).maxStake())
-                .isEqualTo(2500000000000000000L);
-    }
-
-    private void setupForOnUpdateWeight() {
-        given(merkleHederaState.getWritableStates(TokenService.NAME)).willReturn(writableStates);
-        given(merkleHederaState.getReadableStates(TokenService.NAME)).willReturn(readableStates);
-        final var writableStakingNodes = MapWritableKVState.<EntityNumber, StakingNodeInfo>builder(STAKING_INFO_KEY)
-                .value(
-                        EntityNumber.newBuilder().number(0L).build(),
-                        StakingNodeInfo.newBuilder().nodeNumber(0L).build())
-                .value(
-                        EntityNumber.newBuilder().number(1L).build(),
-                        StakingNodeInfo.newBuilder().nodeNumber(1L).build())
-                .build();
-        final var readableStakingNodes = MapReadableKVState.<EntityNumber, StakingNodeInfo>builder(STAKING_INFO_KEY)
-                .value(
-                        EntityNumber.newBuilder().number(0L).build(),
-                        StakingNodeInfo.newBuilder().nodeNumber(0L).build())
-                .value(
-                        EntityNumber.newBuilder().number(1L).build(),
-                        StakingNodeInfo.newBuilder().nodeNumber(1L).build())
-                .build();
-        given(writableStates.<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY))
-                .willReturn(writableStakingNodes);
-        given(readableStates.<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY))
-                .willReturn(writableStakingNodes);
-
-        lenient().when(mockWritableKVState.keys()).thenReturn(mockIterator);
-        given(readableStates.<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY))
-                .willReturn(readableStakingNodes);
-        lenient().when(mockReadableKVState.keys()).thenReturn(mockIterator);
-        given(platform.getContext()).willReturn(platformContext);
-        lenient().when(platformContext.getConfiguration()).thenReturn(HederaTestConfigBuilder.createConfig());
-    }
-
-    private MapWritableStates newStatesInstance(
-            final MapWritableKVState<AccountID, Account> accts,
-            final MapWritableKVState<Bytes, AccountID> aliases,
-            final WritableSingletonState<EntityNumber> entityIdState,
-            final MapWritableKVState<EntityNumber, StakingNodeInfo> stakingInfo) {
-        //noinspection ReturnOfNull
-        return MapWritableStates.builder()
-                .state(accts)
-                .state(aliases)
-                .state(stakingInfo)
-                .state(new WritableSingletonStateBase<>(STAKING_NETWORK_REWARDS_KEY, () -> null, c -> {}))
-                .state(entityIdState)
-                .build();
     }
 }
