@@ -34,6 +34,7 @@ import com.hedera.hapi.node.transaction.NodeStakeUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
+import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
@@ -94,11 +95,12 @@ public class EndOfStakingPeriodUpdater {
         }
 
         final ReadableAccountStore accountStore = context.readableStore(ReadableAccountStore.class);
+        final ReadableStakingInfoStore iterableStakingInfoStore = context.readableStore(ReadableStakingInfoStore.class);
         final WritableStakingInfoStore stakingInfoStore = context.writableStore(WritableStakingInfoStore.class);
         final WritableNetworkStakingRewardsStore stakingRewardsStore =
                 context.writableStore(WritableNetworkStakingRewardsStore.class);
 
-        final var nodeIds = stakingInfoStore.getAll();
+        final var nodeIds = iterableStakingInfoStore.getAll();
         final var totalStakedRewardStart = stakingRewardsStore.totalStakeRewardStart();
         final var rewardRate = perHbarRewardRateForEndingPeriod(
                 totalStakedRewardStart, accountStore, stakingRewardsStore, stakingConfig);
