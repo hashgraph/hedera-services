@@ -201,30 +201,33 @@ public class InitialModServiceTokenSchema extends Schema {
      */
     @Override
     public void restart(@NonNull MigrationContext ctx) {
+        final var networkInfo = ctx.networkInfo();
+        final var newStakingInfos = ctx.newStates().<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
         // We need to validate and mark any node that are removed during upgrade as deleted.
         // Since restart is called in the schema after an upgrade, and we don't want to depend on
         // schema version change, validate all the nodeIds from the addressBook in state and mark
         // them as deleted if they are not yet deleted in staking info.
-        final var stakingToState = ctx.newStates().<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
-        final var networkInfo = ctx.networkInfo();
-        stakingToState.keys().forEachRemaining(nodeId -> {
-            final var stakingInfo = requireNonNull(stakingToState.get(nodeId));
-            if (!networkInfo.containsNode(nodeId.number()) && !stakingInfo.deleted()) {
-                stakingToState.put(
-                        nodeId,
-                        stakingInfo.copyBuilder().weight(0).deleted(true).build());
-                log.info(
-                        "Node {} is marked deleted since it is deleted from addressBook during restart.",
-                        nodeId.number());
-            }
-        });
+        if (!ctx.previousStates().isEmpty()) {
+            final var oldStakingInfos = ctx.previousStates().<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
+            oldStakingInfos.keys().forEachRemaining(nodeId -> {
+                final var stakingInfo = requireNonNull(oldStakingInfos.get(nodeId));
+                if (!networkInfo.containsNode(nodeId.number()) && !stakingInfo.deleted()) {
+                    newStakingInfos.put(
+                            nodeId,
+                            stakingInfo.copyBuilder().weight(0).deleted(true).build());
+                    log.info(
+                            "Node {} is marked deleted since it is deleted from addressBook during restart.",
+                            nodeId.number());
+                }
+            });
+        }
         // Validate if any new nodes are added in addressBook and not in staking info.
         // If so, add them to staking info/ with weight 0. Also update maxStake and
         // minStake for the new nodes.
-        addAdditionalNodesIfAny(stakingToState, networkInfo.addressBook(), ctx.configuration());
+        addAdditionalNodesIfAny(newStakingInfos, networkInfo.addressBook(), ctx.configuration());
 
-        if (stakingToState.isModified()) {
-            ((WritableKVStateBase<EntityNumber, StakingNodeInfo>) stakingToState).commit();
+        if (newStakingInfos.isModified()) {
+            ((WritableKVStateBase<EntityNumber, StakingNodeInfo>) newStakingInfos).commit();
         }
     }
 
