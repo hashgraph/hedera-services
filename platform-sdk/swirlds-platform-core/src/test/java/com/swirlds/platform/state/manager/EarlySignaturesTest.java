@@ -20,7 +20,6 @@ import static com.swirlds.platform.state.manager.SignatureVerificationTestUtils.
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.config.StateConfig;
@@ -108,8 +107,7 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
                                             .getAddress(addressBook.getNodeId(0))
                                             .getSigPublicKey(),
                                     states.get(round).getState().getHash()),
-                            states.get(round).getState().getHash().getBytes(),
-                            Bytes.EMPTY));
+                            states.get(round).getState().getHash().getBytes()));
             manager.handlePreconsensusSignatureTransaction(
                     addressBook.getNodeId(2),
                     new StateSignaturePayload(
@@ -119,8 +117,7 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
                                             .getAddress(addressBook.getNodeId(2))
                                             .getSigPublicKey(),
                                     states.get(round).getState().getHash()),
-                            states.get(round).getState().getHash().getBytes(),
-                            Bytes.EMPTY));
+                            states.get(round).getState().getHash().getBytes()));
 
             // Even numbered rounds have 3 sent very early.
             if (round % 2 == 0) {
@@ -133,8 +130,7 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
                                                 .getAddress(addressBook.getNodeId(3))
                                                 .getSigPublicKey(),
                                         states.get(round).getState().getHash()),
-                                states.get(round).getState().getHash().getBytes(),
-                                Bytes.EMPTY));
+                                states.get(round).getState().getHash().getBytes()));
             }
         }
 
