@@ -624,7 +624,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param signedStateFileManager    the signed state file manager to bind
      * @param stateSigner               the state signer to bind
      * @param pcesReplayer              the PCES replayer to bind
-     * @param pcesWriter                the PCES writer to bind
      * @param shadowgraph               the shadowgraph to bind
      * @param stateSignatureCollector   the signed state manager to bind
      * @param transactionPrehandler     the transaction prehandler to bind
@@ -648,7 +647,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final SignedStateFileManager signedStateFileManager,
             @NonNull final StateSigner stateSigner,
             @NonNull final PcesReplayer pcesReplayer,
-            @NonNull final PcesWriter pcesWriter,
             @NonNull final Shadowgraph shadowgraph,
             @NonNull final StateSignatureCollector stateSignatureCollector,
             @NonNull final TransactionPrehandler transactionPrehandler,
@@ -676,7 +674,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         signedStateFileManagerWiring.bind(signedStateFileManager);
         stateSignerWiring.bind(stateSigner);
         pcesReplayerWiring.bind(pcesReplayer);
-        pcesWriterWiring.bind(pcesWriter);
+        pcesWriterWiring.bind(builder::buildPcesWriter);
         roundDurabilityBufferWiring.bind(builder::buildRoundDurabilityBuffer);
         shadowgraphWiring.bind(shadowgraph);
         pcesSequencerWiring.bind(builder::buildPcesSequencer);

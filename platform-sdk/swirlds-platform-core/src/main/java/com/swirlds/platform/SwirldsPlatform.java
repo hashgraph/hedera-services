@@ -75,13 +75,10 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.preconsensus.DefaultPcesWriter;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
-import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
-import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
@@ -394,12 +391,14 @@ public class SwirldsPlatform implements Platform {
         final PcesConfig preconsensusEventStreamConfig =
                 platformContext.getConfiguration().getConfigData(PcesConfig.class);
 
-        final PcesFileManager preconsensusEventFileManager;
         try {
             final Path databaseDirectory = getDatabaseDirectory(platformContext, selfId);
 
             // When we perform the migration to using birth round bounding, we will need to read
             // the old type and start writing the new type.
+
+            // Note: we read these files twice: once here and once in the component builder.
+            // This duplicated work is low cost and is justified by the reduction in complexity.
             initialPcesFiles = PcesFileReader.readFilesFromDisk(
                     platformContext,
                     recycleBin,
@@ -407,14 +406,9 @@ public class SwirldsPlatform implements Platform {
                     initialState.getRound(),
                     preconsensusEventStreamConfig.permitGaps(),
                     ancientMode);
-
-            preconsensusEventFileManager =
-                    new PcesFileManager(platformContext, initialPcesFiles, selfId, initialState.getRound());
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
-
-        final PcesWriter pcesWriter = new DefaultPcesWriter(platformContext, preconsensusEventFileManager);
 
         // Only validate preconsensus signature transactions if we are not recovering from an ISS.
         // ISS round == null means we haven't observed an ISS yet.
@@ -549,7 +543,6 @@ public class SwirldsPlatform implements Platform {
                 signedStateFileManager,
                 stateSigner,
                 pcesReplayer,
-                pcesWriter,
                 shadowGraph,
                 stateSignatureCollector,
                 transactionPrehandler,
