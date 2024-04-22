@@ -75,6 +75,7 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.preconsensus.DefaultPcesWriter;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
@@ -413,7 +414,7 @@ public class SwirldsPlatform implements Platform {
             throw new UncheckedIOException(e);
         }
 
-        final PcesWriter pcesWriter = new PcesWriter(platformContext, preconsensusEventFileManager);
+        final PcesWriter pcesWriter = new DefaultPcesWriter(platformContext, preconsensusEventFileManager);
 
         // Only validate preconsensus signature transactions if we are not recovering from an ISS.
         // ISS round == null means we haven't observed an ISS yet.

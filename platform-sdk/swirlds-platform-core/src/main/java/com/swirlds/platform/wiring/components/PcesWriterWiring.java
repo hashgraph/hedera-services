@@ -23,7 +23,7 @@ import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
-import com.swirlds.platform.wiring.DoneStreamingPcesTrigger;
+import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -39,7 +39,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param latestDurableSequenceNumberOutput        the output wire for the latest durable sequence number
  */
 public record PcesWriterWiring(
-        @NonNull InputWire<DoneStreamingPcesTrigger> doneStreamingPcesInputWire,
+        @NonNull InputWire<NoInput> doneStreamingPcesInputWire,
         @NonNull InputWire<GossipEvent> eventInputWire,
         @NonNull InputWire<Long> discontinuityInputWire,
         @NonNull InputWire<EventWindow> eventWindowInput,
@@ -71,8 +71,8 @@ public record PcesWriterWiring(
      * @param pcesWriter the PCES writer to bind
      */
     public void bind(@NonNull final PcesWriter pcesWriter) {
-        ((BindableInputWire<DoneStreamingPcesTrigger, Long>) doneStreamingPcesInputWire)
-                .bindConsumer(pcesWriter::beginStreamingNewEvents);
+        ((BindableInputWire<NoInput, Long>) doneStreamingPcesInputWire)
+                .bindConsumer(x -> pcesWriter.beginStreamingNewEvents());
         ((BindableInputWire<GossipEvent, Long>) eventInputWire).bind(pcesWriter::writeEvent);
         ((BindableInputWire<Long, Long>) discontinuityInputWire).bind(pcesWriter::registerDiscontinuity);
         ((BindableInputWire<EventWindow, Long>) eventWindowInput)

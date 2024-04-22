@@ -74,7 +74,7 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> postHashCollectorScheduler,
         @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
         @NonNull TaskScheduler<StateSignaturePayload> stateSignerScheduler,
-        @NonNull TaskScheduler<DoneStreamingPcesTrigger> pcesReplayerScheduler,
+        @NonNull TaskScheduler<NoInput> pcesReplayerScheduler,
         @NonNull TaskScheduler<Long> pcesWriterScheduler,
         @NonNull TaskScheduler<Void> applicationTransactionPrehandlerScheduler,
         @NonNull TaskScheduler<List<ReservedSignedState>> stateSignatureCollectorScheduler,

@@ -51,6 +51,7 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
+import com.swirlds.platform.event.preconsensus.DefaultPcesWriter;
 import com.swirlds.platform.event.preconsensus.PcesConfig_;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
@@ -67,7 +68,6 @@ import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
-import com.swirlds.platform.wiring.DoneStreamingPcesTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -315,7 +315,7 @@ class PcesWriterTests {
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
-        final PcesWriter writer = new PcesWriter(platformContext, fileManager);
+        final PcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
         final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
         final List<GossipEvent> events = new LinkedList<>();
@@ -323,7 +323,7 @@ class PcesWriterTests {
             events.add(generator.generateEventWithoutIndex().getBaseEvent());
         }
 
-        writer.beginStreamingNewEvents(new DoneStreamingPcesTrigger());
+        writer.beginStreamingNewEvents();
 
         final Collection<GossipEvent> rejectedEvents = new HashSet<>();
 
@@ -381,7 +381,7 @@ class PcesWriterTests {
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
-        final PcesWriter writer = new PcesWriter(platformContext, fileManager);
+        final PcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
         final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
         // We will add this event at the very end, it should be ancient by then
@@ -392,7 +392,7 @@ class PcesWriterTests {
             events.add(generator.generateEventWithoutIndex().getBaseEvent());
         }
 
-        writer.beginStreamingNewEvents(new DoneStreamingPcesTrigger());
+        writer.beginStreamingNewEvents();
 
         final Collection<GossipEvent> rejectedEvents = new HashSet<>();
 
@@ -469,7 +469,7 @@ class PcesWriterTests {
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
-        final PcesWriter writer = new PcesWriter(platformContext, fileManager);
+        final PcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
         final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
         final List<GossipEvent> events = new LinkedList<>();
@@ -477,7 +477,7 @@ class PcesWriterTests {
             events.add(generator.generateEventWithoutIndex().getBaseEvent());
         }
 
-        writer.beginStreamingNewEvents(new DoneStreamingPcesTrigger());
+        writer.beginStreamingNewEvents();
 
         for (final GossipEvent event : events) {
             sequencer.assignStreamSequenceNumber(event);
@@ -513,7 +513,7 @@ class PcesWriterTests {
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
-        final PcesWriter writer = new PcesWriter(platformContext, fileManager);
+        final PcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
         final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
         final List<GossipEvent> events = new LinkedList<>();
@@ -559,7 +559,7 @@ class PcesWriterTests {
             final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
             final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
-            final PcesWriter writer = new PcesWriter(platformContext, fileManager);
+            final PcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
             final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
             final List<GossipEvent> eventsBeforeDiscontinuity = new LinkedList<>();
@@ -573,7 +573,7 @@ class PcesWriterTests {
                 }
             }
 
-            writer.beginStreamingNewEvents(new DoneStreamingPcesTrigger());
+            writer.beginStreamingNewEvents();
 
             final Collection<GossipEvent> rejectedEvents = new HashSet<>();
 
@@ -681,7 +681,7 @@ class PcesWriterTests {
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
-        final PcesWriter writer = new PcesWriter(platformContext, fileManager);
+        final PcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
         final AtomicLong latestDurableSequenceNumber = new AtomicLong(-1);
 
         final List<GossipEvent> events = new LinkedList<>();
@@ -689,7 +689,7 @@ class PcesWriterTests {
             events.add(generator.generateEventWithoutIndex().getBaseEvent());
         }
 
-        writer.beginStreamingNewEvents(new DoneStreamingPcesTrigger());
+        writer.beginStreamingNewEvents();
 
         final Set<GossipEvent> rejectedEvents = new HashSet<>();
 
@@ -770,9 +770,9 @@ class PcesWriterTests {
         final PlatformContext platformContext = buildContext(ancientMode);
         final PcesFileManager fileManager =
                 new PcesFileManager(platformContext, new PcesFileTracker(ancientMode), selfId, 0);
-        final PcesWriter writer = new PcesWriter(platformContext, fileManager);
+        final PcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
 
-        writer.beginStreamingNewEvents(new DoneStreamingPcesTrigger());
+        writer.beginStreamingNewEvents();
 
         final List<GossipEvent> events = new ArrayList<>();
         for (long i = 0; i < 9; i++) {
