@@ -16,9 +16,6 @@
 
 package com.swirlds.platform.system.events;
 
-import static com.swirlds.common.utility.CommonUtils.hex;
-
-import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -239,12 +236,9 @@ public class EventDescriptor implements SelfSerializable {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this)
-                .append("creator", creator)
-                .append("generation", generation)
-                .append("birthRound", birthRound)
-                .append("hash", hex(hash.getValue()).substring(0, 12))
-                .toString();
+        // This intentionally does not use the ToStringBuilder
+        // This is printed frequently, and must remain concise
+        return "(id: %d, gen: %d, br: %d, hash: %s)".formatted(creator.id(), generation, birthRound, hash.toMnemonic());
     }
 
     /**
