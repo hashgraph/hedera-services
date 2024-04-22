@@ -22,6 +22,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
@@ -65,6 +66,7 @@ import java.util.function.Predicate;
  *                                        required due to the lack of a platform health monitor.
  * @param isInFreezePeriodReference       a reference to a predicate that determines if a timestamp is in the freeze
  *                                        period, this can be deleted as soon as the CES is retired.
+ * @param initialPcesFiles                the initial set of PCES files present when the node starts
  * @param firstPlatform                   if this is the first platform being built (there is static setup that needs to
  *                                        be done, long term plan is to stop using static variables)
  */
@@ -86,4 +88,5 @@ public record PlatformBuildingBlocks(
         @NonNull AtomicReference<PlatformStatus> currentPlatformStatus,
         @NonNull AtomicReference<LongSupplier> intakeQueueSizeSupplierSupplier,
         @NonNull AtomicReference<Predicate<Instant>> isInFreezePeriodReference,
+        @NonNull PcesFileTracker initialPcesFiles,
         boolean firstPlatform) {}

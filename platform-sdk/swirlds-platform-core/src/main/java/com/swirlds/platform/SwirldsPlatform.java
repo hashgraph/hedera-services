@@ -23,7 +23,6 @@ import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.event.preconsensus.PcesBirthRoundMigration.migratePcesToBirthRoundMode;
-import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 import static com.swirlds.platform.state.BirthRoundStateMigration.modifyStateForBirthRoundMigration;
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
 import static com.swirlds.platform.state.iss.IssDetector.DO_NOT_IGNORE_ROUNDS;
@@ -76,7 +75,6 @@ import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
-import com.swirlds.platform.event.preconsensus.PcesFileReader;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
@@ -145,7 +143,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -311,7 +308,8 @@ public class SwirldsPlatform implements Platform {
         }
 
         emergencyRecoveryManager = blocks.emergencyRecoveryManager();
-        final Time time = Time.getCurrent();
+        selfId = blocks.selfId();
+        initialPcesFiles = blocks.initialPcesFiles();
 
         thingsToStart = new ThingsToStart();
 
@@ -322,8 +320,6 @@ public class SwirldsPlatform implements Platform {
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         final String actualMainClassName = stateConfig.getMainClassName(blocks.mainClassName());
-
-        selfId = blocks.selfId();
 
         currentAddressBook = initialState.getAddressBook();
 
@@ -345,8 +341,8 @@ public class SwirldsPlatform implements Platform {
                     .put(new PlatformStatusChangeNotification(s));
             emergencyState.platformStatusChanged(s);
         };
-        platformStatusManager = thingsToStart.add(
-                new PlatformStatusManager(platformContext, time, threadManager, statusChangeConsumer));
+        platformStatusManager = thingsToStart.add(new PlatformStatusManager(
+                platformContext, platformContext.getTime(), threadManager, statusChangeConsumer));
 
         thingsToStart.add(Objects.requireNonNull(recycleBin));
 
@@ -387,28 +383,6 @@ public class SwirldsPlatform implements Platform {
                 actualMainClassName,
                 epochHash,
                 initialState.getRound());
-
-        final PcesConfig preconsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PcesConfig.class);
-
-        try {
-            final Path databaseDirectory = getDatabaseDirectory(platformContext, selfId);
-
-            // When we perform the migration to using birth round bounding, we will need to read
-            // the old type and start writing the new type.
-
-            // Note: we read these files twice: once here and once in the component builder.
-            // This duplicated work is low cost and is justified by the reduction in complexity.
-            initialPcesFiles = PcesFileReader.readFilesFromDisk(
-                    platformContext,
-                    recycleBin,
-                    databaseDirectory,
-                    initialState.getRound(),
-                    preconsensusEventStreamConfig.permitGaps(),
-                    ancientMode);
-        } catch (final IOException e) {
-            throw new UncheckedIOException(e);
-        }
 
         // Only validate preconsensus signature transactions if we are not recovering from an ISS.
         // ISS round == null means we haven't observed an ISS yet.
@@ -486,7 +460,7 @@ public class SwirldsPlatform implements Platform {
 
         final StateSigner stateSigner = new StateSigner(new PlatformSigner(keysAndCerts), platformStatusManager);
         final PcesReplayer pcesReplayer = new PcesReplayer(
-                time,
+                platformContext.getTime(),
                 platformWiring.getPcesReplayerEventOutput(),
                 platformWiring::flushIntakePipeline,
                 platformWiring::flushConsensusRoundHandler,
