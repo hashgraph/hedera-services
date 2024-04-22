@@ -651,6 +651,9 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         final List<EventImpl> judges = roundElections.findAllJudges();
         final long decidedRoundNumber = rounds.getElectionRoundNumber();
 
+        // Check for no judges or super majority conditions.
+        checkJudges(judges, decidedRoundNumber);
+
         // update the round and generation values since fame has been decided for a new round
         rounds.currentElectionDecided();
 
@@ -690,9 +693,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         final long nonExpiredThreshold = ancientMode.selectIndicator(
                 getMinRoundGeneration(),
                 Math.max(previousRoundNonExpired, decidedRoundNumber - config.roundsExpired() + 1));
-
-        // Check for no judges or super majority conditions.
-        checkJudges(judges, decidedRoundNumber);
 
         return new ConsensusRound(
                 addressBook,
