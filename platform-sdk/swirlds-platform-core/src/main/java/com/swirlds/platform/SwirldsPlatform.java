@@ -75,7 +75,6 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
@@ -497,7 +496,6 @@ public class SwirldsPlatform implements Platform {
                 platformWiring::flushIntakePipeline,
                 platformWiring::flushConsensusRoundHandler,
                 () -> latestImmutableStateNexus.getState("PCES replay"));
-        final EventDurabilityNexus eventDurabilityNexus = new EventDurabilityNexus();
 
         initializeState(initialState);
 
@@ -516,12 +514,8 @@ public class SwirldsPlatform implements Platform {
 
         final EventWindowManager eventWindowManager = new DefaultEventWindowManager();
 
-        final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
-                platformContext,
-                swirldStateManager,
-                eventDurabilityNexus::waitUntilDurable,
-                platformStatusManager,
-                appVersion);
+        final ConsensusRoundHandler consensusRoundHandler =
+                new ConsensusRoundHandler(platformContext, swirldStateManager, platformStatusManager, appVersion);
 
         final LongSupplier intakeQueueSizeSupplier =
                 oldStyleIntakeQueue == null ? platformWiring.getIntakeQueueSizeSupplier() : oldStyleIntakeQueue::size;
@@ -555,7 +549,6 @@ public class SwirldsPlatform implements Platform {
                 stateSigner,
                 pcesReplayer,
                 pcesWriter,
-                eventDurabilityNexus,
                 shadowGraph,
                 stateSignatureCollector,
                 transactionPrehandler,
