@@ -47,7 +47,9 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.ALIAS;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.INITIAL_BALANCE;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
@@ -248,6 +250,17 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .hasScheduleId(ONLY_BODY_AND_MEMO)
                         .hasEntityMemo("sample memo")
                         .hasRecordedScheduledTxn());
+    }
+
+    @HapiTest
+    final HapiSpec idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(cryptoCreate(PAYER))
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> scheduleCreate(
+                                ONLY_BODY_AND_PAYER, cryptoTransfer(tinyBarsFromTo(PAYER, GENESIS, 1)))
+                        .withEntityMemo("" + new SecureRandom().nextLong())
+                        .designatingPayer(PAYER)));
     }
 
     @HapiTest
