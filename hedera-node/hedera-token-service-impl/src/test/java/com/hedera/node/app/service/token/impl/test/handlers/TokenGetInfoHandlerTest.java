@@ -248,9 +248,7 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void getComputedFeeIfMissingToken() {
-        final var data = TokenGetInfoQuery.newBuilder()
-                .header(QueryHeader.newBuilder().build())
-                .build();
+        final var data = TokenGetInfoQuery.newBuilder().build();
 
         final var query = Query.newBuilder().tokenGetInfo(data).build();
 

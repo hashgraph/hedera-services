@@ -198,9 +198,7 @@ class FileGetContentsTest extends FileTestBase {
 
     @Test
     void getComputedFeeIfMissingFileID() {
-        final var data = FileGetContentsQuery.newBuilder()
-                .header(QueryHeader.newBuilder().build())
-                .build();
+        final var data = FileGetContentsQuery.newBuilder().build();
 
         final var query = Query.newBuilder().fileGetContents(data).build();
 

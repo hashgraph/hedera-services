@@ -251,9 +251,7 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void getComputedFeeIfMissingNftID() {
-        final var data = TokenGetNftInfoQuery.newBuilder()
-                .header(QueryHeader.newBuilder().build())
-                .build();
+        final var data = TokenGetNftInfoQuery.newBuilder().build();
 
         final var query = Query.newBuilder().tokenGetNftInfo(data).build();
 

@@ -308,9 +308,7 @@ class CryptoGetAccountRecordsHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void getComputedFeeIfMissingAccountID() {
-        final var data = CryptoGetAccountRecordsQuery.newBuilder()
-                .header(QueryHeader.newBuilder().build())
-                .build();
+        final var data = CryptoGetAccountRecordsQuery.newBuilder().build();
 
         final var query = Query.newBuilder().cryptoGetAccountRecords(data).build();
 
