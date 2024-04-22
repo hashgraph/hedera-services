@@ -91,10 +91,7 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
                 latestImmutableState.get().getSwirldState().preHandle(eventImpl);
             } catch (final Throwable t) {
                 logger.error(
-                        EXCEPTION.getMarker(),
-                        "error invoking SwirldState.preHandle() for event {}",
-                        eventImpl.toMediumString(),
-                        t);
+                        EXCEPTION.getMarker(), "error invoking SwirldState.preHandle() for event {}", eventImpl, t);
             }
         } finally {
             event.signalPrehandleCompletion();

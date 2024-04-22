@@ -27,11 +27,9 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.common.stream.Timestamped;
-import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.EventMetadata;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.events.BaseEvent;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.ConsensusData;
@@ -58,8 +56,7 @@ import java.util.TreeSet;
  */
 @ConstructableIgnored
 public class EventImpl extends EventMetadata
-        implements BaseEvent,
-                Comparable<EventImpl>,
+        implements Comparable<EventImpl>,
                 PlatformEvent,
                 SerializableHashable,
                 OptionalSelfSerializable<EventSerializationOptions>,
@@ -374,25 +371,15 @@ public class EventImpl extends EventMetadata
     /**
      * @return The hashed part of a base event
      */
-    public BaseEventHashedData getBaseEventHashedData() {
+    public BaseEventHashedData getHashedData() {
         return baseEvent.getHashedData();
     }
 
     /**
      * @return The part of a base event which is not hashed
      */
-    public BaseEventUnhashedData getBaseEventUnhashedData() {
-        return baseEvent.getUnhashedData();
-    }
-
-    @Override
-    public BaseEventHashedData getHashedData() {
-        return getBaseEventHashedData();
-    }
-
-    @Override
     public BaseEventUnhashedData getUnhashedData() {
-        return getBaseEventUnhashedData();
+        return baseEvent.getUnhashedData();
     }
 
     /**
@@ -554,27 +541,9 @@ public class EventImpl extends EventMetadata
         return getTransactions() == null || getTransactions().length == 0;
     }
 
-    //
-    // String methods
-    //
-
-    /**
-     * @see EventStrings#toShortString(EventImpl)
-     */
-    public String toShortString() {
-        return EventStrings.toShortString(this);
-    }
-
-    /**
-     * @see EventStrings#toMediumString(EventImpl)
-     */
-    public String toMediumString() {
-        return EventStrings.toMediumString(this);
-    }
-
     @Override
     public String toString() {
-        return toMediumString();
+        return baseEvent.toString();
     }
 
     //
