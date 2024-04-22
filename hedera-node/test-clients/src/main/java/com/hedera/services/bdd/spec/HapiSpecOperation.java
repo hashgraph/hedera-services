@@ -22,8 +22,6 @@ import static java.util.Collections.EMPTY_LIST;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.MoreObjects;
-import com.google.common.base.Predicates;
-import com.google.common.collect.Iterables;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnknownFieldSet;
 import com.hedera.node.app.hapi.fees.usage.consensus.ConsensusOpsUsage;
@@ -357,7 +355,6 @@ public abstract class HapiSpecOperation {
 
         setKeyControlOverrides(spec);
         List<Key> keys = signersToUseFor(spec);
-        Iterables.removeIf(keys, Predicates.isNull());
 
         final Transaction.Builder builder = spec.txns().getReadyToSign(netDef);
         final Transaction provisional = getSigned(spec, builder, keys);
@@ -446,7 +443,7 @@ public abstract class HapiSpecOperation {
     public List<Key> signersToUseFor(final HapiSpec spec) {
         final List<Key> active = signers.orElse(defaultSigners()).stream()
                 .map(f -> f.apply(spec))
-                .filter(k -> k != Key.getDefaultInstance())
+                .filter(k -> k != null && k != Key.getDefaultInstance())
                 .collect(toList());
         if (!signers.isPresent()) {
             active.addAll(variableDefaultSigners().apply(spec));
