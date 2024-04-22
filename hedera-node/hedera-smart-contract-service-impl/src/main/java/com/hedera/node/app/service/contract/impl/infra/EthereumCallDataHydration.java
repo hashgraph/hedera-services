@@ -75,7 +75,6 @@ public class EthereumCallDataHydration {
             if (callDataFile.deleted()) {
                 return failureFrom(FILE_DELETED);
             }
-
             final byte[] callData;
             try {
                 callData = Hex.decode(callDataFile.contents().toByteArray());
