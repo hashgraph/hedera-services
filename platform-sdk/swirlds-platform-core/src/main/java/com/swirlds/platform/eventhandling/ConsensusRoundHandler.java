@@ -135,15 +135,11 @@ public class ConsensusRoundHandler {
 
         previousRoundLegacyRunningEventHash = platformContext.getCryptography().getNullHash();
 
-        final PlatformSchedulersConfig schedulersConfig = platformContext
-                .getConfiguration()
-                .getConfigData(PlatformSchedulersConfig.class);
+        final PlatformSchedulersConfig schedulersConfig =
+                platformContext.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
 
         // If the CES is using a no-op scheduler then the legacy running event hash won't be computed.
-        writeLegacyRunningEventHash = schedulersConfig
-                .consensusEventStream()
-                .type()
-                != TaskSchedulerType.NO_OP;
+        writeLegacyRunningEventHash = schedulersConfig.consensusEventStream().type() != TaskSchedulerType.NO_OP;
 
         // If the application transaction prehandler is a no-op then we don't need to wait for it.
         waitForPrehandle = schedulersConfig.applicationTransactionPrehandler().type() != TaskSchedulerType.NO_OP;
@@ -207,7 +203,8 @@ public class ConsensusRoundHandler {
 
             if (waitForPrehandle) {
                 handlerMetrics.setPhase(WAITING_FOR_PREHANDLE);
-                consensusRound.forEach(event -> ((EventImpl) event).getBaseEvent().awaitPrehandleCompletion());
+                consensusRound.forEach(
+                        event -> ((EventImpl) event).getBaseEvent().awaitPrehandleCompletion());
             }
 
             handlerMetrics.setPhase(HANDLING_CONSENSUS_ROUND);

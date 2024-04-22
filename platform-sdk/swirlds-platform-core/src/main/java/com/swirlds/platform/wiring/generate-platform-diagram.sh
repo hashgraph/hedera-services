@@ -9,14 +9,14 @@ SCRIPT_PATH="$(dirname "$(readlink -f "$0")")"
 # Add the flag "--less-mystery" to add back labels for mystery input wires (noisy diagram warning)
 
 pcli diagram \
-    -l 'ApplicationTransactionPrehandler:futures:consensusRoundHandler' \
+    -l 'TransactionPrehandler:futures:consensusRoundHandler' \
     -l 'gossip:get events:shadowgraph' \
     -l 'EventCreationManager:get transactions:transactionPool' \
     -l 'RunningEventHasher:future hash:consensusRoundHandler' \
     -l 'ConsensusEventStream:future hash:consensusRoundHandler' \
     -s 'eventWindowManager:event window:🌀' \
     -s 'heartbeat:heartbeat:❤️' \
-    -s 'ApplicationTransactionPrehandler:futures:🔮' \
+    -s 'TransactionPrehandler:futures:🔮' \
     -s 'pcesReplayer:done streaming pces:✅' \
     -s 'OrphanBufferSplitter:events to gossip:📬' \
     -s 'getKeystoneEventSequenceNumber:flush request:🚽' \

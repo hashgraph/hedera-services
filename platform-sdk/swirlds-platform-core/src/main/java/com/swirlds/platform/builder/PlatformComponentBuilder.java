@@ -680,8 +680,9 @@ public class PlatformComponentBuilder {
     @NonNull
     public TransactionPrehandler buildTransactionPrehandler() {
         if (transactionPrehandler == null) {
-            // TODO I'm intentionally making this not compile so I remember to revisit it.
-            transactionPrehandler = new DefaultTransactionPrehandler(blocks.platformContext(),);
+            transactionPrehandler = new DefaultTransactionPrehandler(
+                    blocks.platformContext(),
+                    () -> blocks.latestImmutableStateProviderReference().get().apply("transaction prehandle"));
         }
         return transactionPrehandler;
     }

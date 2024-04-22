@@ -245,8 +245,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         selfEventSignerWiring = new ComponentWiring<>(model, SelfEventSigner.class, config.selfEventSigner());
         pcesSequencerWiring = new ComponentWiring<>(model, PcesSequencer.class, config.pcesSequencer());
 
-        applicationTransactionPrehandlerWiring = new ComponentWiring<>(
-                model, TransactionPrehandler.class, config.applicationTransactionPrehandler());
+        applicationTransactionPrehandlerWiring =
+                new ComponentWiring<>(model, TransactionPrehandler.class, config.applicationTransactionPrehandler());
         stateSignatureCollectorWiring =
                 StateSignatureCollectorWiring.create(model, schedulers.stateSignatureCollectorScheduler());
         signedStateFileManagerWiring =
