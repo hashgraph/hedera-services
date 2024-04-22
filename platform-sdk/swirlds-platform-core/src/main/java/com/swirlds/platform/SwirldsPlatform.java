@@ -530,9 +530,6 @@ public class SwirldsPlatform implements Platform {
         final HashLogger hashLogger =
                 new HashLogger(platformContext.getConfiguration().getConfigData(StateConfig.class));
 
-        final TransactionPrehandler transactionPrehandler =
-                new DefaultTransactionPrehandler(platformContext, latestImmutableStateNexus);
-
         final BirthRoundMigrationShim birthRoundMigrationShim = buildBirthRoundMigrationShim(initialState);
 
         final SignedStateHasher signedStateHasher =
@@ -551,7 +548,6 @@ public class SwirldsPlatform implements Platform {
                 pcesWriter,
                 shadowGraph,
                 stateSignatureCollector,
-                transactionPrehandler,
                 eventWindowManager,
                 consensusRoundHandler,
                 issDetector,
