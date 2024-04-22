@@ -10,7 +10,6 @@ SCRIPT_PATH="$(dirname "$(readlink -f "$0")")"
 
 pcli diagram \
     -l 'applicationTransactionPrehandler:futures:consensusRoundHandler' \
-    -l 'eventDurabilityNexus:wait for durability:consensusRoundHandler' \
     -l 'gossip:get events:shadowgraph' \
     -l 'EventCreationManager:get transactions:transactionPool' \
     -l 'RunningEventHasher:future hash:consensusRoundHandler' \
@@ -18,7 +17,6 @@ pcli diagram \
     -s 'eventWindowManager:event window:🌀' \
     -s 'heartbeat:heartbeat:❤️' \
     -s 'applicationTransactionPrehandler:futures:🔮' \
-    -s 'eventDurabilityNexus:wait for durability:🕑' \
     -s 'pcesReplayer:done streaming pces:✅' \
     -s 'OrphanBufferSplitter:events to gossip:📬' \
     -s 'getKeystoneEventSequenceNumber:flush request:🚽' \
@@ -39,7 +37,7 @@ pcli diagram \
     -g 'State File Management:State File Manager,📦,📀' \
     -g 'State Signature Collector:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions,latestCompleteStateNotifier' \
     -g 'State Signature Collection:State Signature Collector,latestCompleteStateNexus,💢' \
-    -g 'Preconsensus Event Stream:PcesSequencer,pcesWriter,eventDurabilityNexus,🕑' \
+    -g 'Preconsensus Event Stream:PcesSequencer,pcesWriter' \
     -g 'Event Creation:EventCreationManager,transactionPool,SelfEventSigner,🍎' \
     -g 'Gossip:gossip,shadowgraph,InOrderLinker' \
     -g 'ISS Detector:issDetector,issNotificationSplitter,issHandler,statusManager_submitCatastrophicFailure' \
@@ -51,6 +49,7 @@ pcli diagram \
     -g 'Consensus:Consensus Engine,🚽,🌀' \
     -g 'State Verification:stateSigner,hashLogger,ISS Detector,🖋️,💥' \
     -g 'Transaction Handling:Consensus Round Handler,latestImmutableStateNexus' \
+    -g 'Round Durability Buffer:RoundDurabilityBuffer,RoundDurabilityBufferSplitter' \
     -c 'Orphan Buffer' \
     -c 'Consensus Engine' \
     -c 'State Signature Collector' \
@@ -58,4 +57,6 @@ pcli diagram \
     -c 'Consensus Round Handler' \
     -c 'State Hasher' \
     -c 'ISS Detector' \
+    -c 'Round Durability Buffer' \
+    -c 'Wait For Crash Durability' \
     -o "${SCRIPT_PATH}/../../../../../../../../docs/core/wiring-diagram.svg"
