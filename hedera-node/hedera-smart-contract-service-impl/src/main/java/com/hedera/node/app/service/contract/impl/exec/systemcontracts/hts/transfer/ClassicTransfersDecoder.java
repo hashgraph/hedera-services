@@ -155,8 +155,7 @@ public class ClassicTransfersDecoder {
         final Address[] from = call.get(1);
         final Address[] to = call.get(2);
         final long[] serialNo = call.get(3);
-
-        if ((from.length != to.length || from.length != serialNo.length) && from.length != 0) {
+        if (from.length != to.length || from.length != serialNo.length) {
             throw new IllegalArgumentException("Mismatched argument arrays (# from=" + from.length + ", # to="
                     + to.length + ", # serialNo=" + serialNo.length + ")");
         }
@@ -516,7 +515,7 @@ public class ClassicTransfersDecoder {
             @NonNull final long[] amount,
             @NonNull final AddressIdConverter addressIdConverter) {
         final var tokenId = ConversionUtils.asTokenId(token);
-        if (party.length != amount.length && party.length != 0) {
+        if (party.length != amount.length) {
             throw new IllegalArgumentException(
                     "Mismatched argument arrays (# party=" + party.length + ", # amount=" + amount.length + ")");
         }

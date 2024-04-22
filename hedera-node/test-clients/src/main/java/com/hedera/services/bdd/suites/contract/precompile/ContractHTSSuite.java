@@ -45,7 +45,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
@@ -254,6 +253,7 @@ public class ContractHTSSuite extends HapiSuite {
                                     .gas(GAS_TO_OFFER)
                                     .via(TXN_WITH_EMPTY_ACCOUNTS_ARRAY)
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                            emptyChildRecordsCheck(TXN_WITH_EMPTY_ACCOUNTS_ARRAY, CONTRACT_REVERT_EXECUTED),
                             // try transferTokens with not length-matching accountIds and amounts arrays
                             contractCall(
                                             TOKEN_TRANSFERS_CONTRACT,
@@ -307,10 +307,6 @@ public class ContractHTSSuite extends HapiSuite {
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
                 }))
                 .then(
-                        childRecordsCheck(
-                                TXN_WITH_EMPTY_ACCOUNTS_ARRAY,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS)),
                         childRecordsCheck(
                                 TXN_WITH_NEGATIVE_AMOUNTS,
                                 CONTRACT_REVERT_EXECUTED,
@@ -514,6 +510,7 @@ public class ContractHTSSuite extends HapiSuite {
                                     .gas(GAS_TO_OFFER)
                                     .via(TXN_WITH_EMPTY_SENDER_ARRAY)
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                            emptyChildRecordsCheck(TXN_WITH_EMPTY_SENDER_ARRAY, CONTRACT_REVERT_EXECUTED),
                             // try transferNFTs with empty receiver array
                             contractCall(
                                             TOKEN_TRANSFERS_CONTRACT,
@@ -586,10 +583,6 @@ public class ContractHTSSuite extends HapiSuite {
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
                 }))
                 .then(
-                        childRecordsCheck(
-                                TXN_WITH_EMPTY_SENDER_ARRAY,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS)),
                         childRecordsCheck(
                                 TXN_WITH_INVALID_TOKEN_ADDRESS,
                                 CONTRACT_REVERT_EXECUTED,
