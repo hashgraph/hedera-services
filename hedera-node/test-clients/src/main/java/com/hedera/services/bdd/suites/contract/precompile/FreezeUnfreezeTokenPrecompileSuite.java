@@ -247,19 +247,16 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                     allRunFor(
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
-                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS).distributing(TREASURY, SECP_256K1_SOURCE_KEY))
-                                    .logged(),
+                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS).distributing(TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                    .has(accountWith().hasEmptyKey())
-                                    .logged(),
+                                    .has(accountWith().hasEmptyKey()),
                             // Create a token with the ECDSA alias key as FREEZE key
                             tokenCreate(FUNGIBLE_TOKEN)
                                     .tokenType(FUNGIBLE_COMMON)
                                     .freezeKey(SECP_256K1_SOURCE_KEY)
                                     .initialSupply(100L)
-                                    .treasury(TREASURY)
-                                    .logged(),
+                                    .treasury(TREASURY),
                             // Transfer the created token to a completed account and auto associate it
                             cryptoTransfer(moving(1L, FUNGIBLE_TOKEN).between(TREASURY, ACCOUNT)));
                 }))
@@ -269,8 +266,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                             // Freeze the token using the ECDSA key
                             tokenFreeze(FUNGIBLE_TOKEN, ACCOUNT)
                                     .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(ACCOUNT)
-                                    .logged(),
+                                    .payingWith(ACCOUNT),
                             contractCall(
                                             FREEZE_CONTRACT,
                                             IS_FROZEN_FUNC,
@@ -292,8 +288,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                             // Unfreeze the token using the ECDSA key
                             tokenUnfreeze(FUNGIBLE_TOKEN, ACCOUNT)
                                     .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(ACCOUNT)
-                                    .logged(),
+                                    .payingWith(ACCOUNT),
                             contractCall(
                                             FREEZE_CONTRACT,
                                             IS_FROZEN_FUNC,
@@ -339,25 +334,21 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                     allRunFor(
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
-                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS).distributing(TREASURY, SECP_256K1_SOURCE_KEY))
-                                    .logged(),
+                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS).distributing(TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                    .has(accountWith().hasEmptyKey())
-                                    .logged(),
+                                    .has(accountWith().hasEmptyKey()),
                             // Create a token with the ECDSA alias key as FREEZE key
                             tokenCreate(NON_FUNGIBLE_TOKEN)
                                     .tokenType(NON_FUNGIBLE_UNIQUE)
                                     .freezeKey(SECP_256K1_SOURCE_KEY)
                                     .supplyKey(SECP_256K1_SOURCE_KEY)
                                     .initialSupply(0L)
-                                    .treasury(TREASURY)
-                                    .logged(),
+                                    .treasury(TREASURY),
                             // Mint the NFT
                             mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("metadata1")))
                                     .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(ACCOUNT)
-                                    .logged(),
+                                    .payingWith(ACCOUNT),
                             // Associate the token to the completed account
                             tokenAssociate(ACCOUNT, NON_FUNGIBLE_TOKEN));
                 }))
@@ -367,8 +358,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                             // Freeze the token using the ECDSA key
                             tokenFreeze(NON_FUNGIBLE_TOKEN, ACCOUNT)
                                     .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(ACCOUNT)
-                                    .logged(),
+                                    .payingWith(ACCOUNT),
                             contractCall(
                                             FREEZE_CONTRACT,
                                             IS_FROZEN_FUNC,
@@ -390,8 +380,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                             // Unfreeze the token using the ECDSA key
                             tokenUnfreeze(NON_FUNGIBLE_TOKEN, ACCOUNT)
                                     .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(ACCOUNT)
-                                    .logged(),
+                                    .payingWith(ACCOUNT),
                             contractCall(
                                             FREEZE_CONTRACT,
                                             IS_FROZEN_FUNC,

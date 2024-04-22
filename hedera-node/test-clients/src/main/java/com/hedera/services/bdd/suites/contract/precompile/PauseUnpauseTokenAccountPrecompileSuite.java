@@ -508,19 +508,16 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                     allRunFor(
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
-                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS).distributing(TREASURY, SECP_256K1_SOURCE_KEY))
-                                    .logged(),
+                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS).distributing(TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                    .has(accountWith().hasEmptyKey())
-                                    .logged(),
+                                    .has(accountWith().hasEmptyKey()),
                             // Create a token with the ECDSA alias key as PAUSE key
                             tokenCreate(FUNGIBLE_TOKEN)
                                     .tokenType(FUNGIBLE_COMMON)
                                     .pauseKey(SECP_256K1_SOURCE_KEY)
                                     .initialSupply(100L)
-                                    .treasury(TREASURY)
-                                    .logged());
+                                    .treasury(TREASURY));
                 }))
                 .then(withOpContext((spec, opLog) -> {
                     allRunFor(
@@ -528,15 +525,13 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                             // Pause the token using the ECDSA key
                             tokenPause(FUNGIBLE_TOKEN)
                                     .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(ACCOUNT)
-                                    .logged(),
+                                    .payingWith(ACCOUNT),
                             // Check whether the token is paused
                             getTokenInfo(FUNGIBLE_TOKEN).hasPauseStatus(Paused),
                             // Unpause the token using the ECDSA key
                             tokenUnpause(FUNGIBLE_TOKEN)
                                     .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(ACCOUNT)
-                                    .logged(),
+                                    .payingWith(ACCOUNT),
                             // Check whether the token is unpaused
                             getTokenInfo(FUNGIBLE_TOKEN).hasPauseStatus(Unpaused));
                 }));
@@ -564,20 +559,17 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                     allRunFor(
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
-                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS).distributing(TREASURY, SECP_256K1_SOURCE_KEY))
-                                    .logged(),
+                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS).distributing(TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                    .has(accountWith().hasEmptyKey())
-                                    .logged(),
+                                    .has(accountWith().hasEmptyKey()),
                             // Create a token with the ECDSA alias key as PAUSE key
                             tokenCreate(NON_FUNGIBLE_TOKEN)
                                     .tokenType(NON_FUNGIBLE_UNIQUE)
                                     .pauseKey(SECP_256K1_SOURCE_KEY)
                                     .supplyKey(SECP_256K1_SOURCE_KEY)
                                     .initialSupply(0L)
-                                    .treasury(TREASURY)
-                                    .logged());
+                                    .treasury(TREASURY));
                 }))
                 .then(withOpContext((spec, opLog) -> {
                     allRunFor(
@@ -585,15 +577,13 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                             // Pause the token using the ECDSA key
                             tokenPause(NON_FUNGIBLE_TOKEN)
                                     .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(ACCOUNT)
-                                    .logged(),
+                                    .payingWith(ACCOUNT),
                             // Check whether the token is paused
                             getTokenInfo(NON_FUNGIBLE_TOKEN).hasPauseStatus(Paused),
                             // Unpause the token using the ECDSA key
                             tokenUnpause(NON_FUNGIBLE_TOKEN)
                                     .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(ACCOUNT)
-                                    .logged(),
+                                    .payingWith(ACCOUNT),
                             // Check whether the token is unpaused
                             getTokenInfo(NON_FUNGIBLE_TOKEN).hasPauseStatus(Unpaused));
                 }));

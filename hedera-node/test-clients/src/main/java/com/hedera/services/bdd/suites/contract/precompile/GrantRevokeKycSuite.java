@@ -44,8 +44,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
-import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.FUNGIBLE_TOKEN;
-import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.NON_FUNGIBLE_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -88,7 +86,6 @@ public class GrantRevokeKycSuite extends HapiSuite {
     private static final String KYC_KEY = "kycKey";
     private static final String NON_KYC_KEY = "nonKycKey";
     private static final String TOKEN_WITHOUT_KEY = "withoutKey";
-    private static final String TREASURY = "treasury";
 
     public static void main(String... args) {
         new GrantRevokeKycSuite().runSuiteAsync();
@@ -366,7 +363,7 @@ public class GrantRevokeKycSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS * 5000L),
                         uploadInitCode(GRANT_REVOKE_KYC_CONTRACT),
                         contractCreate(GRANT_REVOKE_KYC_CONTRACT),
-                        cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS * 5000L))
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS * 5000L))
                 .when(withOpContext((spec, opLog) -> {
                     final var ecdsaKey = spec.registry()
                             .getKey(SECP_256K1_SOURCE_KEY)
@@ -381,34 +378,30 @@ public class GrantRevokeKycSuite extends HapiSuite {
                     allRunFor(
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
-                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS).distributing(TREASURY, SECP_256K1_SOURCE_KEY))
-                                    .logged(),
+                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS).distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                    .has(accountWith().hasEmptyKey())
-                                    .logged(),
+                                    .has(accountWith().hasEmptyKey()),
                             // Create a token with the ECDSA alias key as KYC key
-                            tokenCreate(FUNGIBLE_TOKEN)
+                            tokenCreate(VANILLA_TOKEN)
                                     .tokenType(FUNGIBLE_COMMON)
                                     .kycKey(SECP_256K1_SOURCE_KEY)
                                     .initialSupply(100L)
-                                    .treasury(TREASURY)
-                                    .logged(),
+                                    .treasury(TOKEN_TREASURY),
                             // Associate token to the completed account
-                            tokenAssociate(ACCOUNT, FUNGIBLE_TOKEN));
+                            tokenAssociate(ACCOUNT, VANILLA_TOKEN));
                 }))
                 .then(withOpContext((spec, opLog) -> {
                     allRunFor(
                             spec,
-                            grantTokenKyc(FUNGIBLE_TOKEN, ACCOUNT)
+                            grantTokenKyc(VANILLA_TOKEN, ACCOUNT)
                                     .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(ACCOUNT)
-                                    .logged(),
+                                    .payingWith(ACCOUNT),
                             contractCall(
                                             GRANT_REVOKE_KYC_CONTRACT,
                                             IS_KYC_GRANTED,
                                             asHeadlongAddress(
-                                                    asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                                    asAddress(spec.registry().getTokenID(VANILLA_TOKEN))),
                                             asHeadlongAddress(
                                                     asAddress(spec.registry().getAccountID(ACCOUNT))))
                                     .via("isKycGrantedTx"),
@@ -434,7 +427,7 @@ public class GrantRevokeKycSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS * 5000L),
                         uploadInitCode(GRANT_REVOKE_KYC_CONTRACT),
                         contractCreate(GRANT_REVOKE_KYC_CONTRACT),
-                        cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS * 5000L))
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS * 5000L))
                 .when(withOpContext((spec, opLog) -> {
                     final var ecdsaKey = spec.registry()
                             .getKey(SECP_256K1_SOURCE_KEY)
@@ -449,40 +442,35 @@ public class GrantRevokeKycSuite extends HapiSuite {
                     allRunFor(
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
-                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS).distributing(TREASURY, SECP_256K1_SOURCE_KEY))
-                                    .logged(),
+                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS).distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                    .has(accountWith().hasEmptyKey())
-                                    .logged(),
+                                    .has(accountWith().hasEmptyKey()),
                             // Create a token with the ECDSA alias key as KYC key
-                            tokenCreate(NON_FUNGIBLE_TOKEN)
+                            tokenCreate(VANILLA_TOKEN)
                                     .tokenType(NON_FUNGIBLE_UNIQUE)
                                     .kycKey(SECP_256K1_SOURCE_KEY)
                                     .supplyKey(SECP_256K1_SOURCE_KEY)
                                     .initialSupply(0L)
-                                    .treasury(TREASURY)
-                                    .logged(),
+                                    .treasury(TOKEN_TREASURY),
                             // Mint the NFT
-                            mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("metadata1")))
+                            mintToken(VANILLA_TOKEN, List.of(ByteString.copyFromUtf8("metadata1")))
                                     .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(ACCOUNT)
-                                    .logged(),
+                                    .payingWith(ACCOUNT),
                             // Associate token to the completed account
-                            tokenAssociate(ACCOUNT, NON_FUNGIBLE_TOKEN));
+                            tokenAssociate(ACCOUNT, VANILLA_TOKEN));
                 }))
                 .then(withOpContext((spec, opLog) -> {
                     allRunFor(
                             spec,
-                            grantTokenKyc(NON_FUNGIBLE_TOKEN, ACCOUNT)
+                            grantTokenKyc(VANILLA_TOKEN, ACCOUNT)
                                     .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(ACCOUNT)
-                                    .logged(),
+                                    .payingWith(ACCOUNT),
                             contractCall(
                                             GRANT_REVOKE_KYC_CONTRACT,
                                             IS_KYC_GRANTED,
                                             asHeadlongAddress(
-                                                    asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
+                                                    asAddress(spec.registry().getTokenID(VANILLA_TOKEN))),
                                             asHeadlongAddress(
                                                     asAddress(spec.registry().getAccountID(ACCOUNT))))
                                     .via("isKycGrantedTx"),

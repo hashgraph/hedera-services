@@ -396,19 +396,16 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
                             cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
-                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
-                                    .logged(),
+                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                    .has(accountWith().hasEmptyKey())
-                                    .logged(),
+                                    .has(accountWith().hasEmptyKey()),
                             // Create a token with the ECDSA alias key as WIPE key
                             tokenCreate(VANILLA_TOKEN)
                                     .tokenType(FUNGIBLE_COMMON)
                                     .wipeKey(SECP_256K1_SOURCE_KEY)
                                     .initialSupply(100L)
-                                    .treasury(TOKEN_TREASURY)
-                                    .logged(),
+                                    .treasury(TOKEN_TREASURY),
                             // Associate token to the completed account
                             tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                             // Transfer 1 token to the completed account
@@ -421,8 +418,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                             // Wipe 1 token from the completed account
                             wipeTokenAccount(VANILLA_TOKEN, ACCOUNT, 1)
                                     .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(ACCOUNT)
-                                    .logged(),
+                                    .payingWith(ACCOUNT),
                             getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 0));
                 }));
     }
@@ -450,25 +446,21 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
                             cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
-                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
-                                    .logged(),
+                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                    .has(accountWith().hasEmptyKey())
-                                    .logged(),
+                                    .has(accountWith().hasEmptyKey()),
                             // Create a token with the ECDSA alias key as WIPE key
                             tokenCreate(NON_FUNGIBLE_TOKEN)
                                     .tokenType(NON_FUNGIBLE_UNIQUE)
                                     .wipeKey(SECP_256K1_SOURCE_KEY)
                                     .supplyKey(SECP_256K1_SOURCE_KEY)
                                     .initialSupply(0L)
-                                    .treasury(TOKEN_TREASURY)
-                                    .logged(),
+                                    .treasury(TOKEN_TREASURY),
                             // Mint the NFT
                             mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("metadata1")))
                                     .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(ACCOUNT)
-                                    .logged(),
+                                    .payingWith(ACCOUNT),
                             // Associate token to the completed account
                             tokenAssociate(ACCOUNT, NON_FUNGIBLE_TOKEN),
                             // Transfer 1 token to the completed account
@@ -478,16 +470,13 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                     allRunFor(
                             spec,
                             getAccountBalance(ACCOUNT)
-                                    .hasTokenBalance(NON_FUNGIBLE_TOKEN, 1)
-                                    .logged(),
+                                    .hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
                             // Wipe 1 token from the completed account
                             wipeTokenAccount(NON_FUNGIBLE_TOKEN, ACCOUNT, List.of(1L))
                                     .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(ACCOUNT)
-                                    .logged(),
+                                    .payingWith(ACCOUNT),
                             getAccountBalance(ACCOUNT)
-                                    .hasTokenBalance(NON_FUNGIBLE_TOKEN, 0)
-                                    .logged());
+                                    .hasTokenBalance(NON_FUNGIBLE_TOKEN, 0));
                 }));
     }
 }

@@ -356,18 +356,15 @@ public class TopicUpdateSuite extends HapiSuite {
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
                             cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
-                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
-                                    .logged(),
+                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                    .has(accountWith().hasEmptyKey())
-                                    .logged(),
+                                    .has(accountWith().hasEmptyKey()),
                             // Update the topic with the ECDSA key as admin key
                             updateTopic("testTopic").adminKey(SECP_256K1_SOURCE_KEY));
                 }))
                 .then(getTopicInfo("testTopic")
-                        .hasAdminKey(SECP_256K1_SOURCE_KEY)
-                        .logged());
+                        .hasAdminKey(SECP_256K1_SOURCE_KEY));
     }
 
     @HapiTest
@@ -396,18 +393,15 @@ public class TopicUpdateSuite extends HapiSuite {
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
                             cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
-                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
-                                    .logged(),
+                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                    .has(accountWith().hasEmptyKey())
-                                    .logged(),
+                                    .has(accountWith().hasEmptyKey()),
                             // Update the topic with the ECDSA key as admin key
                             updateTopic("testTopic").submitKey(SECP_256K1_SOURCE_KEY));
                 }))
                 .then(getTopicInfo("testTopic")
-                        .hasSubmitKey(SECP_256K1_SOURCE_KEY)
-                        .logged());
+                        .hasSubmitKey(SECP_256K1_SOURCE_KEY));
     }
 
     @HapiTest
@@ -434,12 +428,10 @@ public class TopicUpdateSuite extends HapiSuite {
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
                             cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
-                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
-                                    .logged(),
+                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                    .has(accountWith().hasEmptyKey())
-                                    .logged(),
+                                    .has(accountWith().hasEmptyKey()),
                             // Update the topic with the ECDSA key as submit key but there is no admin key, so it should
                             // fail
                             updateTopic("testTopic")
@@ -475,22 +467,19 @@ public class TopicUpdateSuite extends HapiSuite {
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
                             cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
-                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
-                                    .logged(),
+                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                    .has(accountWith().hasEmptyKey())
-                                    .logged(),
+                                    .has(accountWith().hasEmptyKey()),
                             // Remove the submit key
                             updateTopic("testTopic").submitKey(EMPTY_KEY),
                             // Verify the submit key is removed
-                            getTopicInfo("testTopic").hasNoSubmitKey().logged(),
+                            getTopicInfo("testTopic").hasNoSubmitKey(),
                             // Update the topic with the ECDSA key as submit key
                             updateTopic("testTopic").submitKey(SECP_256K1_SOURCE_KEY));
                 }))
                 .then(getTopicInfo("testTopic")
-                        .hasSubmitKey(SECP_256K1_SOURCE_KEY)
-                        .logged());
+                        .hasSubmitKey(SECP_256K1_SOURCE_KEY));
     }
 
     @Override

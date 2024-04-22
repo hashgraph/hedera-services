@@ -585,30 +585,25 @@ public class ContractMintHTSSuite extends HapiSuite {
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
                             cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
-                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
-                                    .logged(),
+                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                    .has(accountWith().hasEmptyKey())
-                                    .logged(),
+                                    .has(accountWith().hasEmptyKey()),
                             // Create a token with the ECDSA alias key as SUPPLY key
                             tokenCreate(FUNGIBLE_TOKEN)
                                     .tokenType(FUNGIBLE_COMMON)
                                     .supplyKey(SECP_256K1_SOURCE_KEY)
                                     .initialSupply(100L)
-                                    .treasury(TOKEN_TREASURY)
-                                    .logged());
+                                    .treasury(TOKEN_TREASURY));
                 }))
                 .then(withOpContext((spec, opLog) -> {
                     allRunFor(
                             spec,
                             mintToken(FUNGIBLE_TOKEN, 5)
                                     .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(ACCOUNT)
-                                    .logged(),
+                                    .payingWith(ACCOUNT),
                             getAccountBalance(TOKEN_TREASURY)
-                                    .hasTokenBalance(FUNGIBLE_TOKEN, 105L)
-                                    .logged());
+                                    .hasTokenBalance(FUNGIBLE_TOKEN, 105L));
                 }));
     }
 
@@ -635,30 +630,25 @@ public class ContractMintHTSSuite extends HapiSuite {
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
                             cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
-                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
-                                    .logged(),
+                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                    .has(accountWith().hasEmptyKey())
-                                    .logged(),
+                                    .has(accountWith().hasEmptyKey()),
                             // Create a token with the ECDSA alias key as SUPPLY key
                             tokenCreate(NON_FUNGIBLE_TOKEN)
                                     .tokenType(NON_FUNGIBLE_UNIQUE)
                                     .supplyKey(SECP_256K1_SOURCE_KEY)
                                     .initialSupply(0L)
-                                    .treasury(TOKEN_TREASURY)
-                                    .logged());
+                                    .treasury(TOKEN_TREASURY));
                 }))
                 .then(withOpContext((spec, opLog) -> {
                     allRunFor(
                             spec,
                             mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("metadata1")))
                                     .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(ACCOUNT)
-                                    .logged(),
+                                    .payingWith(ACCOUNT),
                             getAccountBalance(TOKEN_TREASURY)
-                                    .hasTokenBalance(NON_FUNGIBLE_TOKEN, 1L)
-                                    .logged());
+                                    .hasTokenBalance(NON_FUNGIBLE_TOKEN, 1L));
                 }));
     }
 

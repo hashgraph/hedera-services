@@ -358,20 +358,17 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
                             cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
-                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
-                                    .logged(),
+                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                    .has(accountWith().hasEmptyKey())
-                                    .logged(),
+                                    .has(accountWith().hasEmptyKey()),
                             // Create a token with the ECDSA alias key as ADMIN key
                             tokenCreate(VANILLA_TOKEN)
                                     .tokenType(FUNGIBLE_COMMON)
                                     .adminKey(SECP_256K1_SOURCE_KEY)
                                     .freezeKey(freezeKey)
                                     .initialSupply(100L)
-                                    .treasury(TOKEN_TREASURY)
-                                    .logged());
+                                    .treasury(TOKEN_TREASURY));
                 }))
                 .then(withOpContext((spec, opLog) -> {
                     allRunFor(
@@ -379,12 +376,10 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                             tokenUpdate(VANILLA_TOKEN)
                                     .freezeKey(newFreezeKey)
                                     .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(ACCOUNT)
-                                    .logged(),
+                                    .payingWith(ACCOUNT),
                             getTokenInfo(VANILLA_TOKEN)
                                     .searchKeysGlobally()
-                                    .hasFreezeKey(newFreezeKey)
-                                    .logged());
+                                    .hasFreezeKey(newFreezeKey));
                 }));
     }
 
@@ -415,12 +410,10 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
                             cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
-                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
-                                    .logged(),
+                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                    .has(accountWith().hasEmptyKey())
-                                    .logged(),
+                                    .has(accountWith().hasEmptyKey()),
                             // Create a token with the ECDSA alias key as ADMIN key
                             tokenCreate(NFT_TOKEN)
                                     .tokenType(NON_FUNGIBLE_UNIQUE)
@@ -428,8 +421,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                     .supplyKey(SECP_256K1_SOURCE_KEY)
                                     .freezeKey(freezeKey)
                                     .initialSupply(0L)
-                                    .treasury(TOKEN_TREASURY)
-                                    .logged());
+                                    .treasury(TOKEN_TREASURY));
                 }))
                 .then(withOpContext((spec, opLog) -> {
                     allRunFor(
@@ -437,12 +429,10 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                             tokenUpdate(NFT_TOKEN)
                                     .freezeKey(newFreezeKey)
                                     .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(ACCOUNT)
-                                    .logged(),
+                                    .payingWith(ACCOUNT),
                             getTokenInfo(NFT_TOKEN)
                                     .searchKeysGlobally()
-                                    .hasFreezeKey(newFreezeKey)
-                                    .logged());
+                                    .hasFreezeKey(newFreezeKey));
                 }));
     }
 }

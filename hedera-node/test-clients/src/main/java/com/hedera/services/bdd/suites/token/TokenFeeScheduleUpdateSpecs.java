@@ -326,19 +326,16 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
                             cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
-                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
-                                    .logged(),
+                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                    .has(accountWith().hasEmptyKey())
-                                    .logged(),
+                                    .has(accountWith().hasEmptyKey()),
                             // Create a token with the ECDSA alias key as FEE SCHEDULE key
                             tokenCreate(VANILLA_TOKEN)
                                     .tokenType(FUNGIBLE_COMMON)
                                     .feeScheduleKey(SECP_256K1_SOURCE_KEY)
                                     .initialSupply(100L)
-                                    .treasury(TOKEN_TREASURY)
-                                    .logged());
+                                    .treasury(TOKEN_TREASURY));
                 }))
                 .then(withOpContext((spec, opLog) -> {
                     allRunFor(
@@ -353,8 +350,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
                                             OptionalLong.of(maximumToCollect),
                                             TOKEN_TREASURY))
                                     .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(GENESIS)
-                                    .logged(),
+                                    .payingWith(GENESIS),
                             getTokenInfo(VANILLA_TOKEN)
                                     .hasCustom(fixedHbarFeeInSchedule(hbarAmount, TOKEN_TREASURY))
                                     .hasCustom(fixedHtsFeeInSchedule(htsAmount, VANILLA_TOKEN, TOKEN_TREASURY))
@@ -393,20 +389,17 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
                             cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
-                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
-                                    .logged(),
+                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                    .has(accountWith().hasEmptyKey())
-                                    .logged(),
+                                    .has(accountWith().hasEmptyKey()),
                             // Create a token with the ECDSA alias key as FEE SCHEDULE key
                             tokenCreate(VANILLA_TOKEN)
                                     .tokenType(NON_FUNGIBLE_UNIQUE)
                                     .feeScheduleKey(SECP_256K1_SOURCE_KEY)
                                     .supplyKey(SECP_256K1_SOURCE_KEY)
                                     .initialSupply(0L)
-                                    .treasury(TOKEN_TREASURY)
-                                    .logged());
+                                    .treasury(TOKEN_TREASURY));
                 }))
                 .then(withOpContext((spec, opLog) -> {
                     allRunFor(
@@ -416,8 +409,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
                                     .withCustom(royaltyFeeWithFallback(
                                             1, 3, fixedHbarFeeInheritingRoyaltyCollector(10), TOKEN_TREASURY))
                                     .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(GENESIS)
-                                    .logged(),
+                                    .payingWith(GENESIS),
                             getTokenInfo(VANILLA_TOKEN)
                                     .hasCustom(fixedHbarFeeInSchedule(hbarAmount, TOKEN_TREASURY))
                                     .hasCustom(royaltyFeeWithFallbackInHbarsInSchedule(1, 3, 10, TOKEN_TREASURY)));
