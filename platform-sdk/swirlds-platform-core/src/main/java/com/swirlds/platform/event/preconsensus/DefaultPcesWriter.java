@@ -409,10 +409,9 @@ public class DefaultPcesWriter implements PcesWriter {
     }
 
     /**
-     * {@inheritDoc}
+     * Close the current mutable file.
      */
-    @Override
-    public void closeCurrentMutableFile() { // TODO where is this used?
+    public void closeCurrentMutableFile() {
         if (currentMutableFile != null) {
             try {
                 currentMutableFile.close();

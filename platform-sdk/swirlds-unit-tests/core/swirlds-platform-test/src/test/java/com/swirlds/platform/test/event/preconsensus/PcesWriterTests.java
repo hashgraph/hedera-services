@@ -315,7 +315,7 @@ class PcesWriterTests {
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
-        final PcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
+        final DefaultPcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
         final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
         final List<GossipEvent> events = new LinkedList<>();
@@ -381,7 +381,7 @@ class PcesWriterTests {
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
-        final PcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
+        final DefaultPcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
         final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
         // We will add this event at the very end, it should be ancient by then
@@ -469,7 +469,7 @@ class PcesWriterTests {
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
-        final PcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
+        final DefaultPcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
         final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
         final List<GossipEvent> events = new LinkedList<>();
@@ -513,7 +513,7 @@ class PcesWriterTests {
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
-        final PcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
+        final DefaultPcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
         final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
         final List<GossipEvent> events = new LinkedList<>();
@@ -559,7 +559,7 @@ class PcesWriterTests {
             final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
             final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
-            final PcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
+            final DefaultPcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
             final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
             final List<GossipEvent> eventsBeforeDiscontinuity = new LinkedList<>();
@@ -681,7 +681,7 @@ class PcesWriterTests {
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
-        final PcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
+        final DefaultPcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
         final AtomicLong latestDurableSequenceNumber = new AtomicLong(-1);
 
         final List<GossipEvent> events = new LinkedList<>();

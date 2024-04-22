@@ -78,9 +78,4 @@ public interface PcesWriter {
      * @param minimumAncientIdentifierToStore the minimum ancient indicator required to be stored on disk
      */
     void setMinimumAncientIdentifierToStore(final long minimumAncientIdentifierToStore);
-
-    /**
-     * Close the current mutable file.
-     */
-    void closeCurrentMutableFile();
 }
