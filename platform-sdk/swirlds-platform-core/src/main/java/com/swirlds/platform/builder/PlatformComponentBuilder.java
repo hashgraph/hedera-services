@@ -44,6 +44,8 @@ import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
+import com.swirlds.platform.event.preconsensus.durability.DefaultRoundDurabilityBuffer;
+import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
 import com.swirlds.platform.event.runninghash.DefaultRunningEventHasher;
 import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.DefaultSelfEventSigner;
@@ -101,6 +103,7 @@ public class PlatformComponentBuilder {
     private ConsensusEventStream consensusEventStream;
     private SignedStateSentinel signedStateSentinel;
     private PcesSequencer pcesSequencer;
+    private RoundDurabilityBuffer roundDurabilityBuffer;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -614,6 +617,39 @@ public class PlatformComponentBuilder {
             pcesSequencer = new DefaultPcesSequencer();
         }
         return pcesSequencer;
+    }
+
+    /**
+     * Provide a round durability buffer in place of the platform's default round durability buffer.
+     *
+     * @param roundDurabilityBuffer the RoundDurabilityBuffer to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withRoundDurabilityBuffer(
+            @NonNull final RoundDurabilityBuffer roundDurabilityBuffer) {
+        throwIfAlreadyUsed();
+        if (this.roundDurabilityBuffer != null) {
+            throw new IllegalStateException("RoundDurabilityBuffer has already been set");
+        }
+        this.roundDurabilityBuffer = Objects.requireNonNull(roundDurabilityBuffer);
+        return this;
+    }
+
+    /**
+     * Build the round durability buffer if it has not yet been built. If one has been provided via
+     * {@link #withRoundDurabilityBuffer(RoundDurabilityBuffer)}, that round durability buffer will be used. If this
+     * method is called more than once, only the first call will build the round durability buffer. Otherwise, the
+     * default round durability buffer will be created and returned.
+     *
+     * @return the RoundDurabilityBuffer
+     */
+    @NonNull
+    public RoundDurabilityBuffer buildRoundDurabilityBuffer() {
+        if (roundDurabilityBuffer == null) {
+            roundDurabilityBuffer = new DefaultRoundDurabilityBuffer(blocks.platformContext());
+        }
+        return roundDurabilityBuffer;
     }
 
     /**

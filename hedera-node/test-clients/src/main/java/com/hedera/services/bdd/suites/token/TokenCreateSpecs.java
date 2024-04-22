@@ -52,9 +52,13 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemProperty;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TOKEN_NAMES;
@@ -186,6 +190,44 @@ public class TokenCreateSpecs extends HapiSuite {
                 /* HIP-23 */
                 validateNewTokenAssociations(),
                 missingTreasurySignatureFails());
+    }
+
+    @HapiTest
+    public HapiSpec getInfoIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("getInfoIdVariantsTreatedAsExpected")
+                .given(tokenCreate("something"))
+                .when()
+                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getTokenInfo("something")));
+    }
+
+    @HapiTest
+    public HapiSpec idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed("supplyKey"),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate("autoRenewAccount"),
+                        cryptoCreate("feeCollector"),
+                        tokenCreate("feeToken"),
+                        tokenAssociate("feeCollector", "feeToken"))
+                .when()
+                .then(
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> tokenCreate("fungibleToken")
+                                .treasury(TOKEN_TREASURY)
+                                .autoRenewAccount("autoRenewAccount")
+                                .withCustom(fixedHbarFee(1L, "feeCollector"))
+                                .withCustom(fixedHtsFee(1L, "feeToken", "feeCollector"))
+                                .withCustom(fractionalFee(1L, 100L, 1L, OptionalLong.of(5L), "feeCollector"))
+                                .signedBy(DEFAULT_PAYER, TOKEN_TREASURY, "feeCollector", "autoRenewAccount")),
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> tokenCreate("nonFungibleToken")
+                                .treasury(TOKEN_TREASURY)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .supplyKey("supplyKey")
+                                .autoRenewAccount("autoRenewAccount")
+                                .withCustom(royaltyFeeWithFallback(
+                                        1L, 10L, fixedHbarFeeInheritingRoyaltyCollector(123L), "feeCollector"))
+                                .signedBy(DEFAULT_PAYER, TOKEN_TREASURY, "autoRenewAccount")));
     }
 
     @HapiTest

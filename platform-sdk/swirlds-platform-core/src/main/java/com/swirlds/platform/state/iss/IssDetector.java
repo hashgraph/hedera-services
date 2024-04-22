@@ -20,7 +20,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
@@ -42,9 +41,9 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.util.MarkerFileWriter;
 import com.swirlds.platform.wiring.components.StateAndRound;
+import com.swirlds.proto.event.StateSignaturePayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -69,10 +68,6 @@ public class IssDetector {
      * The address book of this network.
      */
     private final AddressBook addressBook;
-    /**
-     * The current epoch hash
-     */
-    private final Hash currentEpochHash;
     /**
      * The current software version
      */
@@ -126,7 +121,6 @@ public class IssDetector {
      *
      * @param platformContext              the platform context
      * @param addressBook                  the address book for the network
-     * @param currentEpochHash             the current epoch hash
      * @param currentSoftwareVersion       the current software version
      * @param ignorePreconsensusSignatures If true, ignore signatures from the preconsensus event stream, otherwise
      *                                     validate them like normal.
@@ -136,7 +130,6 @@ public class IssDetector {
     public IssDetector(
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
-            @Nullable final Hash currentEpochHash,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             final boolean ignorePreconsensusSignatures,
             final long ignoredRound) {
@@ -153,7 +146,6 @@ public class IssDetector {
         catastrophicIssRateLimiter = new RateLimiter(platformContext.getTime(), timeBetweenIssLogs);
 
         this.addressBook = Objects.requireNonNull(addressBook);
-        this.currentEpochHash = currentEpochHash;
         this.currentSoftwareVersion = Objects.requireNonNull(currentSoftwareVersion);
 
         this.roundData = new ConcurrentSequenceMap<>(
@@ -300,8 +292,8 @@ public class IssDetector {
      * @return a list of ISS notifications, which may be empty, but will not contain null
      */
     private @NonNull List<IssNotification> handlePostconsensusSignatures(@NonNull final ConsensusRound round) {
-        final List<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions =
-                SystemTransactionExtractionUtils.extractFromRound(round, StateSignatureTransaction.class);
+        final List<ScopedSystemTransaction<StateSignaturePayload>> stateSignatureTransactions =
+                SystemTransactionExtractionUtils.extractFromRound(round, StateSignaturePayload.class);
 
         if (stateSignatureTransactions == null) {
             return List.of();
@@ -327,9 +319,9 @@ public class IssDetector {
      * @return an ISS notification, or null if no ISS occurred
      */
     private @Nullable IssNotification handlePostconsensusSignature(
-            @NonNull final ScopedSystemTransaction<StateSignatureTransaction> transaction) {
+            @NonNull final ScopedSystemTransaction<StateSignaturePayload> transaction) {
         final NodeId signerId = transaction.submitterId();
-        final StateSignatureTransaction signatureTransaction = transaction.transaction();
+        final StateSignaturePayload signaturePayload = transaction.transaction();
         final SoftwareVersion eventVersion = transaction.softwareVersion();
 
         if (eventVersion == null) {
@@ -347,24 +339,19 @@ public class IssDetector {
             return null;
         }
 
-        if (!hashEquals(currentEpochHash, signatureTransaction.epochHash())) {
-            // this is a signature from a different epoch, ignore it
-            return null;
-        }
-
         if (!addressBook.contains(signerId)) {
             // we don't care about nodes not in the address book
             return null;
         }
 
-        if (signatureTransaction.round() == ignoredRound) {
+        if (signaturePayload.round() == ignoredRound) {
             // This round is intentionally ignored.
             return null;
         }
 
         final long nodeWeight = addressBook.getAddress(signerId).getWeight();
 
-        final RoundHashValidator roundValidator = roundData.get(signatureTransaction.round());
+        final RoundHashValidator roundValidator = roundData.get(signaturePayload.round());
         if (roundValidator == null) {
             // We are being asked to validate a signature from the far future or far past, or a round that has already
             // been decided.
@@ -372,7 +359,7 @@ public class IssDetector {
         }
 
         final boolean decided = roundValidator.reportHashFromNetwork(
-                signerId, nodeWeight, new Hash(signatureTransaction.hash().toByteArray()));
+                signerId, nodeWeight, new Hash(signaturePayload.hash().toByteArray()));
         if (decided) {
             return checkValidity(roundValidator);
         }
@@ -555,15 +542,5 @@ public class IssDetector {
                     .append(Duration.ofMinutes(1).toSeconds())
                     .append("seconds.");
         }
-    }
-
-    /**
-     * Checks equality of hashes when they are stored in different formats.
-     */
-    private static boolean hashEquals(@Nullable final Hash hash, @NonNull final Bytes bytes) {
-        if (hash == null && bytes.length() == 0) {
-            return true;
-        }
-        return hash != null && hash.equalBytes(bytes);
     }
 }

@@ -57,10 +57,11 @@ import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
-import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
+import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
+import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
 import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.SelfEventSigner;
 import com.swirlds.platform.event.stream.ConsensusEventStream;
@@ -93,7 +94,6 @@ import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
-import com.swirlds.platform.wiring.components.EventDurabilityNexusWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
 import com.swirlds.platform.wiring.components.HashLoggerWiring;
 import com.swirlds.platform.wiring.components.IssDetectorWiring;
@@ -143,8 +143,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final StateSignerWiring stateSignerWiring;
     private final PcesReplayerWiring pcesReplayerWiring;
     private final PcesWriterWiring pcesWriterWiring;
+    private final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring;
     private final ComponentWiring<PcesSequencer, GossipEvent> pcesSequencerWiring;
-    private final EventDurabilityNexusWiring eventDurabilityNexusWiring;
     private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
     private final ShadowgraphWiring shadowgraphWiring;
@@ -262,24 +262,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         signedStateHasherWiring = StateHasherWiring.create(schedulers.stateHasherScheduler());
 
-        platformCoordinator = new PlatformCoordinator(
-                hashingObjectCounter,
-                internalEventValidatorWiring,
-                eventDeduplicatorWiring,
-                eventSignatureValidatorWiring,
-                orphanBufferWiring,
-                inOrderLinkerWiring,
-                shadowgraphWiring,
-                consensusEngineWiring,
-                eventCreationManagerWiring,
-                applicationTransactionPrehandlerWiring,
-                stateSignatureCollectorWiring,
-                consensusRoundHandlerWiring,
-                signedStateHasherWiring);
-
         pcesReplayerWiring = PcesReplayerWiring.create(schedulers.pcesReplayerScheduler());
         pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
-        eventDurabilityNexusWiring = EventDurabilityNexusWiring.create(schedulers.eventDurabilityNexusScheduler());
+        roundDurabilityBufferWiring =
+                new ComponentWiring<>(model, RoundDurabilityBuffer.class, config.roundDurabilityBuffer());
 
         gossipWiring = GossipWiring.create(model);
         eventWindowManagerWiring = new ComponentWiring<>(
@@ -347,6 +333,22 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 new ComponentWiring<>(model, SignedStateSentinel.class, config.signedStateSentinel());
 
         runningEventHasherWiring = new ComponentWiring<>(model, RunningEventHasher.class, config.runningEventHasher());
+
+        platformCoordinator = new PlatformCoordinator(
+                hashingObjectCounter,
+                internalEventValidatorWiring,
+                eventDeduplicatorWiring,
+                eventSignatureValidatorWiring,
+                orphanBufferWiring,
+                inOrderLinkerWiring,
+                shadowgraphWiring,
+                consensusEngineWiring,
+                eventCreationManagerWiring,
+                applicationTransactionPrehandlerWiring,
+                stateSignatureCollectorWiring,
+                consensusRoundHandlerWiring,
+                roundDurabilityBufferWiring,
+                signedStateHasherWiring);
 
         wire();
     }
@@ -478,9 +480,14 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         // durably flushed to disk. Meanwhile, the PCES writer hasn't even received the flush request yet, so the
         // necessary keystone event is *never* flushed.
         consensusRoundOutputWire.orderedSolderTo(List.of(
-                keystoneEventSequenceNumberTransformer.getInputWire(), consensusRoundHandlerWiring.roundInput()));
+                keystoneEventSequenceNumberTransformer.getInputWire(),
+                roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::addRound)));
         consensusRoundOutputWire.solderTo(
                 eventWindowManagerWiring.getInputWire(EventWindowManager::extractEventWindow));
+
+        final OutputWire<ConsensusRound> splitRoundDurabilityBufferOutput =
+                roundDurabilityBufferWiring.getSplitOutput();
+        splitRoundDurabilityBufferOutput.solderTo(consensusRoundHandlerWiring.roundInput());
 
         consensusEngineWiring
                 .getSplitAndTransformedOutput(ConsensusEngine::getConsensusEvents)
@@ -515,10 +522,18 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         pcesWriterWiring
                 .latestDurableSequenceNumberOutput()
-                .solderTo(eventDurabilityNexusWiring.latestDurableSequenceNumber());
+                .solderTo(
+                        roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::setLatestDurableSequenceNumber),
+                        INJECT);
+        model.buildHeartbeatWire(platformContext
+                        .getConfiguration()
+                        .getConfigData(PcesConfig.class)
+                        .roundDurabilityBufferHeartbeatPeriod())
+                .solderTo(roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::checkForStaleRounds));
+
         signedStateFileManagerWiring
                 .oldestMinimumGenerationOnDiskOutputWire()
-                .solderTo(pcesWriterWiring.minimumAncientIdentifierToStoreInputWire());
+                .solderTo(pcesWriterWiring.minimumAncientIdentifierToStoreInputWire(), INJECT);
 
         runningEventHashOverrideWiring
                 .runningHashUpdateOutput()
@@ -566,6 +581,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventWindowManagerWiring.getInputWire(EventWindowManager::updateEventWindow);
         orphanBufferWiring.getInputWire(OrphanBuffer::clear);
         inOrderLinkerWiring.getInputWire(InOrderLinker::clear);
+        roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::clear);
     }
 
     /**
@@ -589,7 +605,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         stateSignerWiring
                 .stateSignature()
-                .solderTo("transactionPool", "signature transactions", transactionPool::submitSystemTransaction);
+                .solderTo("transactionPool", "signature transactions", transactionPool::submitPayload);
 
         issDetectorWiring
                 .issNotificationOutput()
@@ -609,7 +625,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param stateSigner               the state signer to bind
      * @param pcesReplayer              the PCES replayer to bind
      * @param pcesWriter                the PCES writer to bind
-     * @param eventDurabilityNexus      the event durability nexus to bind
      * @param shadowgraph               the shadowgraph to bind
      * @param stateSignatureCollector   the signed state manager to bind
      * @param transactionPrehandler     the transaction prehandler to bind
@@ -634,7 +649,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final StateSigner stateSigner,
             @NonNull final PcesReplayer pcesReplayer,
             @NonNull final PcesWriter pcesWriter,
-            @NonNull final EventDurabilityNexus eventDurabilityNexus,
             @NonNull final Shadowgraph shadowgraph,
             @NonNull final StateSignatureCollector stateSignatureCollector,
             @NonNull final TransactionPrehandler transactionPrehandler,
@@ -663,7 +677,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         stateSignerWiring.bind(stateSigner);
         pcesReplayerWiring.bind(pcesReplayer);
         pcesWriterWiring.bind(pcesWriter);
-        eventDurabilityNexusWiring.bind(eventDurabilityNexus);
+        roundDurabilityBufferWiring.bind(builder::buildRoundDurabilityBuffer);
         shadowgraphWiring.bind(shadowgraph);
         pcesSequencerWiring.bind(builder::buildPcesSequencer);
         eventCreationManagerWiring.bind(builder::buildEventCreationManager);
