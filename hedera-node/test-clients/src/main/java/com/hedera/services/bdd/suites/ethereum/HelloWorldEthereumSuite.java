@@ -408,10 +408,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .gasLimit(1_000_000L)
                         .hasKnownStatus(INSUFFICIENT_TX_FEE)
                         .via("insufficientTxFeeTxn"))
-                .then(getTxnRecord("insufficientTxFeeTxn")
-                        .andAllChildRecords()
-                        .logged()
-                        .hasChildRecordCount(0));
+                .then(getTxnRecord("insufficientTxFeeTxn").andAllChildRecords().hasNonStakingChildRecordCount(0));
     }
 
     @HapiTest
