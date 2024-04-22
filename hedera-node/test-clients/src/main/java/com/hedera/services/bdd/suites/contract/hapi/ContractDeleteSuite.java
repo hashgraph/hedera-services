@@ -43,6 +43,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
@@ -111,6 +113,24 @@ public class ContractDeleteSuite extends HapiSuite {
                 cannotDeleteOrSelfDestructContractWithNonZeroBalance(),
                 cannotSendValueToTokenAccount(),
                 cannotUseMoreThanChildContractLimit());
+    }
+
+    @HapiTest
+    public HapiSpec idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed("adminKey"),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT),
+                        cryptoCreate("transferAccount"))
+                .when(
+                        contractCreate("a").bytecode(CONTRACT).adminKey("adminKey"),
+                        contractCreate("b").bytecode(CONTRACT).adminKey("adminKey"))
+                .then(
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> contractDelete("a")
+                                .transferAccount("transferAccount")),
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> contractDelete("b")
+                                .transferContract(CONTRACT)));
     }
 
     @HapiTest
