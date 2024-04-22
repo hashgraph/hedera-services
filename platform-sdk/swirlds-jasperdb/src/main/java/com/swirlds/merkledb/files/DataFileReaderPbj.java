@@ -308,6 +308,8 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
      * threads are calling this method to replace it with a new channel, only one of them will
      * proceed, while the channel opened in the other thread will be closed immediately and
      * not used any further.
+     * <br/>
+     * Note: If {@link #fileChannels} has null value for the given index, this method does nothing.
      *
      * @param index File channel index in {@link #fileChannels}
      * @param closedChannel Closed file channel to replace
@@ -316,10 +318,11 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
      */
     protected void reopenFileChannel(final int index, final FileChannel closedChannel) throws IOException {
         assert index < MAX_FILE_CHANNELS;
-        // May be closedChannel or may be already reopened in a different thread
-        assert fileChannels.get(index) != null;
         assert !closedChannel.isOpen();
         final FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ);
+        // It may so happen that `fileChannels` collection was updated by another thread to null for this index
+        // (for example, if the compaction deletes the file)
+        // This is a valid scenario, and the method does nothing in this case
         if (!fileChannels.compareAndSet(index, closedChannel, fileChannel)) {
             fileChannel.close();
         }
