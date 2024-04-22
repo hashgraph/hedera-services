@@ -228,9 +228,7 @@ class NetworkTransactionGetRecordHandlerTest extends NetworkAdminHandlerTestBase
 
     @Test
     void getComputedFeeIfMissingHeader() {
-        final var data = TransactionGetRecordQuery.newBuilder()
-                .header(QueryHeader.newBuilder().build())
-                .build();
+        final var data = TransactionGetRecordQuery.newBuilder().build();
 
         final var query = Query.newBuilder().transactionGetRecord(data).build();
 
