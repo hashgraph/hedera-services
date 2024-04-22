@@ -56,7 +56,6 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-import static com.hedera.services.bdd.suites.contract.Utils.asSolidityAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.extractBytecodeUnhexed;
@@ -87,7 +86,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static org.hyperledger.besu.crypto.Hash.keccak256;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.DefaultExceptionalHaltReason.PRECOMPILE_ERROR;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
@@ -4267,7 +4265,10 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                                     spec.registry()
                                                                             .getContractId(contract))
                                                             .setGas(3870609)
-                                                            .setRecipientContract(childId)
+                                                            .setTargetedAddress(
+                                                                    ByteString.fromHex(
+                                                                            String.valueOf(expectedCreate2Address)
+                                                                                    .substring(2)))
                                                             .setGasUsed(44936)
                                                             .setValue(tcValue)
                                                             .setOutput(EMPTY)
@@ -4594,7 +4595,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
                                                 .setCallOperationType(CallOperationType.OP_CALL)
                                                 .setGas(978936)
-                                                .setGasUsed(963748)
+                                                .setGasUsed(18360)
                                                 .setOutput(EMPTY)
                                                 /*
                                                    For EVM v0.34 use this code block instead:
@@ -4606,18 +4607,20 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                 .setInput(encodeFunctionCall(REVERTING_CONTRACT, "callingWrongAddress"))
                                                 .build(),
                                         ContractAction.newBuilder()
-                                                .setCallType(CALL)
+                                                .setCallType(PRECOMPILE)
                                                 .setCallingContract(
                                                         spec.registry().getContractId(REVERTING_CONTRACT))
                                                 .setCallOperationType(CallOperationType.OP_CALL)
                                                 .setCallDepth(1)
-                                                .setGas(960576)
                                                 .setInput(ByteStringUtils.wrapUnsafely(
                                                         Function.parse("boo" + "(uint256)")
                                                                 .encodeCallWithArgs(BigInteger.valueOf(234))
                                                                 .array()))
-                                                .setGasUsed(960576)
-                                                .setError(ByteString.copyFromUtf8(PRECOMPILE_ERROR.name()))
+                                                .setGas(960576)
+                                                .setRecipientContract(ContractID.newBuilder()
+                                                        .setContractNum(0)
+                                                        .build())
+                                                .setOutput(EMPTY)
                                                 /*
                                                    For EVM v0.34 use this code block instead:
 
@@ -4625,7 +4628,6 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                 .setError(ByteString.copyFromUtf8(INVALID_SOLIDITY_ADDRESS.name()))
 
                                                 */
-                                                .setTargetedAddress(ByteString.copyFrom(asSolidityAddress(0, 0, 0)))
                                                 .build())))));
     }
 
