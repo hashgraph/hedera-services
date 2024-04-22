@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractIdWithEvmAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -64,7 +65,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -252,7 +252,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                 internalCallsAgainstSystemAccountsWithValue(),
                 // EOA -calls-> MakeCalls -call-> 0.0.357 (system account)
                 internalCallsAgainstSystemAccountsWithoutValue(),
-                // EOA -calls-> MakeCalls -call-> 0.0.2 (ethereum precompile)
+                // EOA -calls-> InternalCaller -call-> 0.0.2 (ethereum precompile)
                 internalCallToEthereumPrecompile0x2ResultsInSuccess(),
                 // EOA -calls-> InternalCaller -callWithValue-> 0.0.2 (ethereum precompile)
                 internalCallWithValueToEthereumPrecompile0x2ResultsInRevert(),
@@ -1334,9 +1334,9 @@ public class Evm46ValidationSuite extends HapiSuite {
                         contractCall(
                                         MAKE_CALLS_CONTRACT,
                                         withAmount,
-                                        asHeadlongAddress(hex(asAddress(AccountID.newBuilder()
+                                        idAsHeadlongAddress(AccountID.newBuilder()
                                                 .setAccountNum(357)
-                                                .build()))),
+                                                .build()),
                                         new byte[] {"system account".getBytes()[0]})
                                 .gas(GAS_LIMIT_FOR_CALL * 4)
                                 .sending(2L)
@@ -1360,9 +1360,9 @@ public class Evm46ValidationSuite extends HapiSuite {
                         contractCall(
                                         MAKE_CALLS_CONTRACT,
                                         withoutAmount,
-                                        asHeadlongAddress(hex(asAddress(AccountID.newBuilder()
+                                        idAsHeadlongAddress(AccountID.newBuilder()
                                                 .setAccountNum(357)
-                                                .build()))),
+                                                .build()),
                                         new byte[] {"system account".getBytes()[0]})
                                 .gas(GAS_LIMIT_FOR_CALL * 4)
                                 .via(INNER_TXN)

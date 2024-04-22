@@ -253,11 +253,11 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             @NonNull final Address codeAddress,
             @NonNull final MessageFrame frame,
             @NonNull final OperationTracer operationTracer) {
-        if (precompiles.get(codeAddress) == null && !transfersValue(frame)) {
+        if (transfersValue(frame)) {
+            doHalt(frame, INVALID_FEE_SUBMITTED, operationTracer);
+        } else if (precompiles.get(codeAddress) == null) {
             final PrecompileContractResult result = PrecompileContractResult.success(Bytes.EMPTY);
             finishPrecompileExecution(frame, result, PRECOMPILE, (ActionSidecarContentTracer) operationTracer);
-        } else if (transfersValue(frame)) {
-            doHalt(frame, INVALID_FEE_SUBMITTED, operationTracer);
         }
     }
 
