@@ -20,7 +20,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
@@ -546,15 +545,5 @@ public class IssDetector {
                     .append(Duration.ofMinutes(1).toSeconds())
                     .append("seconds.");
         }
-    }
-
-    /**
-     * Checks equality of hashes when they are stored in different formats.
-     */
-    private static boolean hashEquals(@Nullable final Hash hash, @NonNull final Bytes bytes) {
-        if (hash == null && bytes.length() == 0) {
-            return true;
-        }
-        return hash != null && hash.equalBytes(bytes);
     }
 }
