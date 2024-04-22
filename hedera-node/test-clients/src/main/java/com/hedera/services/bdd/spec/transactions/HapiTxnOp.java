@@ -97,6 +97,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     private boolean ensureResolvedStatusIsntFromDuplicate = false;
     private final TupleType LONG_TUPLE = TupleType.parse("(int64)");
 
+    protected boolean skipSubmission = false;
     protected boolean deferStatusResolution = false;
     protected boolean unavailableStatusIsOk = false;
     protected boolean acceptAnyStatus = false;
@@ -164,6 +165,9 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
             try {
                 if (fiddler.isPresent()) {
                     txn = fiddler.get().apply(txn);
+                }
+                if (skipSubmission) {
+                    return false;
                 }
                 response = timedCall(spec, txn);
             } catch (StatusRuntimeException e) {
@@ -826,6 +830,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     public T withBodyMutation(@Nullable final BodyMutation mutation) {
         this.bodyMutation = mutation;
+        return self();
+    }
+
+    public T skippingSubmission(final boolean skipSubmission) {
+        this.skipSubmission = skipSubmission;
         return self();
     }
 

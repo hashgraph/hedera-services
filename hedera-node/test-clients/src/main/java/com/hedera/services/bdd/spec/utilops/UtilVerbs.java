@@ -289,6 +289,12 @@ public class UtilVerbs {
         return new SubmitModificationsOp(txnOpSupplier, modificationsFn);
     }
 
+    public static SubmitModificationsOp submitOnlyModified(
+            @NonNull final Function<Transaction, List<TxnModification>> modificationsFn,
+            @NonNull final Supplier<HapiTxnOp<?>> txnOpSupplier) {
+        return new SubmitModificationsOp(true, txnOpSupplier, modificationsFn);
+    }
+
     /**
      * Returns an operation that repeatedly sends a query from the given
      * supplier, but each time after modifying the query with one of the

@@ -39,12 +39,21 @@ import java.util.stream.Stream;
  * original transaction.
  */
 public class SubmitModificationsOp extends UtilOp {
+    private final boolean skipSubmission;
     private final Supplier<HapiTxnOp<?>> txnOpSupplier;
     private final Function<Transaction, List<TxnModification>> modificationsFn;
 
     public SubmitModificationsOp(
             @NonNull final Supplier<HapiTxnOp<?>> txnOpSupplier,
             @NonNull final Function<Transaction, List<TxnModification>> modificationsFn) {
+        this(false, txnOpSupplier, modificationsFn);
+    }
+
+    public SubmitModificationsOp(
+            boolean skipSubmission,
+            @NonNull final Supplier<HapiTxnOp<?>> txnOpSupplier,
+            @NonNull final Function<Transaction, List<TxnModification>> modificationsFn) {
+        this.skipSubmission = skipSubmission;
         this.txnOpSupplier = txnOpSupplier;
         this.modificationsFn = modificationsFn;
     }
@@ -54,10 +63,13 @@ public class SubmitModificationsOp extends UtilOp {
         final List<TxnModification> modifications = new ArrayList<>();
         allRunFor(
                 spec,
-                txnOpSupplier.get().withTxnTransform(txn -> {
-                    modifications.addAll(modificationsFn.apply(txn));
-                    return txn;
-                }),
+                txnOpSupplier
+                        .get()
+                        .withTxnTransform(txn -> {
+                            modifications.addAll(modificationsFn.apply(txn));
+                            return txn;
+                        })
+                        .skippingSubmission(skipSubmission),
                 sourcing(() -> blockingOrder(modifications.stream()
                         .flatMap(modification -> {
                             final var op = txnOpSupplier.get();

@@ -61,6 +61,10 @@ public class ModificationUtils {
         return withTxnModificationStrategies(List.of(new BodyIdClearingStrategy()));
     }
 
+    public static Function<Transaction, List<TxnModification>> withLongZeroAliasTransfers() {
+        return withTxnModificationStrategies(List.of(new LongZeroAliasTransferStrategy()));
+    }
+
     /**
      * Returns a factory that computes a list of {@link QueryModification}s from a
      * {@link Query}, where these modifications focus on mutating entity ids.
