@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
@@ -136,7 +137,13 @@ public class BodyIdClearingStrategy extends IdClearingStrategy<TxnModification> 
             entry("proto.NftAllowance.delegating_spender", ExpectedResponse.atConsensus(INVALID_SIGNATURE)),
             entry("proto.TokenAllowance.tokenId", ExpectedResponse.atConsensus(INVALID_TOKEN_ID)),
             entry("proto.TokenAllowance.owner", ExpectedResponse.atConsensus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)),
-            entry("proto.TokenAllowance.spender", ExpectedResponse.atIngest(INVALID_ALLOWANCE_SPENDER_ID)));
+            entry("proto.TokenAllowance.spender", ExpectedResponse.atIngest(INVALID_ALLOWANCE_SPENDER_ID)),
+            entry("proto.NftRemoveAllowance.token_id", ExpectedResponse.atConsensus(INVALID_TOKEN_ID)),
+            entry("proto.NftRemoveAllowance.owner", ExpectedResponse.atConsensus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)),
+            entry(
+                    "proto.EthereumTransactionBody.call_data",
+                    ExpectedResponse.atConsensus(INVALID_ETHEREUM_TRANSACTION)),
+            entry("proto.TokenUpdateNftsTransactionBody.token", ExpectedResponse.atIngest(INVALID_TOKEN_ID)));
 
     private static final Map<String, ExpectedResponse> SCHEDULED_CLEARED_ID_RESPONSES = Map.ofEntries(
             entry("proto.AccountAmount.accountID", ExpectedResponse.atConsensusOneOf(INVALID_ACCOUNT_ID)));

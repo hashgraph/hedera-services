@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
@@ -157,6 +158,15 @@ public class MiscCryptoSuite extends HapiSuite {
                 .given()
                 .when()
                 .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getAccountBalance(DEFAULT_PAYER)));
+    }
+
+    @HapiTest
+    public HapiSpec getDetailsIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("getBalanceIdVariantsTreatedAsExpected")
+                .given()
+                .when()
+                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getAccountDetails(DEFAULT_PAYER)
+                        .payingWith(GENESIS)));
     }
 
     @HapiTest

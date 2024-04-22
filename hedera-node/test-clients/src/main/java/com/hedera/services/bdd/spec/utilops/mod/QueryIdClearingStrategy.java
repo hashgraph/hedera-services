@@ -46,7 +46,8 @@ public class QueryIdClearingStrategy extends IdClearingStrategy<QueryModificatio
             Map.entry("proto.ConsensusGetTopicInfoQuery.topicID", ExpectedAnswer.onAnswerOnly(INVALID_TOPIC_ID)),
             Map.entry("proto.TokenGetInfoQuery.token", ExpectedAnswer.onAnswerOnly(INVALID_TOKEN_ID)),
             Map.entry("proto.ScheduleGetInfoQuery.scheduleID", ExpectedAnswer.onAnswerOnly(INVALID_SCHEDULE_ID)),
-            Map.entry("proto.NftID.token_ID", ExpectedAnswer.onAnswerOnly(INVALID_TOKEN_ID)));
+            Map.entry("proto.NftID.token_ID", ExpectedAnswer.onAnswerOnly(INVALID_TOKEN_ID)),
+            Map.entry("proto.GetAccountDetailsQuery.account_id", ExpectedAnswer.onAnswerOnly(INVALID_ACCOUNT_ID)));
 
     @NonNull
     @Override
