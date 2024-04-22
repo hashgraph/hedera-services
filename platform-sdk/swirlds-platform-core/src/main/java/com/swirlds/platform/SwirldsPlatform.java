@@ -46,10 +46,6 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.stream.RunningEventHashOverride;
-import com.swirlds.common.threading.framework.QueueThread;
-import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
-import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
-import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
@@ -87,6 +83,7 @@ import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
+import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateLoadedFromDiskNotification;
@@ -408,23 +405,6 @@ public class SwirldsPlatform implements Platform {
         final LatestCompleteStateNexus latestCompleteStateNexus =
                 new DefaultLatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
 
-        final boolean useOldStyleIntakeQueue = eventConfig.useOldStyleIntakeQueue();
-
-        final QueueThread<GossipEvent> oldStyleIntakeQueue;
-        if (useOldStyleIntakeQueue) {
-            oldStyleIntakeQueue = new QueueThreadConfiguration<GossipEvent>(AdHocThreadManager.getStaticThreadManager())
-                    .setCapacity(10_000)
-                    .setThreadName("old_style_intake_queue")
-                    .setComponent("platform")
-                    .setHandler(event -> platformWiring.getGossipEventInput().put(event))
-                    .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableMaxSizeMetric())
-                    .build();
-            thingsToStart.add(oldStyleIntakeQueue);
-
-        } else {
-            oldStyleIntakeQueue = null;
-        }
-
         savedStateController = new DefaultSavedStateController(stateConfig);
 
         final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
@@ -457,8 +437,19 @@ public class SwirldsPlatform implements Platform {
         final ConsensusRoundHandler consensusRoundHandler =
                 new ConsensusRoundHandler(platformContext, swirldStateManager, platformStatusManager, appVersion);
 
-        final LongSupplier intakeQueueSizeSupplier =
-                oldStyleIntakeQueue == null ? platformWiring.getIntakeQueueSizeSupplier() : oldStyleIntakeQueue::size;
+        final boolean useOldStyleIntakeQueue = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .useOldStyleIntakeQueue();
+
+        final LongSupplier intakeQueueSizeSupplier;
+        if (useOldStyleIntakeQueue) {
+            final SyncGossip gossip = (SyncGossip) builder.buildGossip();
+            intakeQueueSizeSupplier = () -> gossip.getOldStyleIntakeQueueSize();
+        } else {
+            intakeQueueSizeSupplier = platformWiring.getIntakeQueueSizeSupplier();
+        }
+
         blocks.intakeQueueSizeSupplierSupplier().set(intakeQueueSizeSupplier);
         blocks.isInFreezePeriodReference().set(swirldStateManager::isInFreezePeriod);
 
@@ -534,18 +525,6 @@ public class SwirldsPlatform implements Platform {
                 new TransactionMetrics(metrics));
 
         final boolean startedFromGenesis = initialState.isGenesisState();
-
-        final Consumer<GossipEvent> eventFromGossipConsumer = oldStyleIntakeQueue == null
-                ? platformWiring.getGossipEventInput()::put
-                : event -> {
-                    try {
-                        oldStyleIntakeQueue.put(event);
-                    } catch (final InterruptedException e) {
-                        logger.error(
-                                EXCEPTION.getMarker(), "Interrupted while adding event to old style intake queue", e);
-                        Thread.currentThread().interrupt();
-                    }
-                };
 
         latestImmutableStateNexus.setState(initialState.reserve("set latest immutable to initial state"));
 
