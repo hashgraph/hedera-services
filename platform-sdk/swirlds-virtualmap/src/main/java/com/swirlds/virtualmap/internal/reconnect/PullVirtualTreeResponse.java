@@ -23,7 +23,6 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.Path;
-import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import java.io.IOException;
 
 /**

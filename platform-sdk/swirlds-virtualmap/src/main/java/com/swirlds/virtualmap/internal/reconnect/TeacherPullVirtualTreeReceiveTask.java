@@ -120,6 +120,8 @@ public class TeacherPullVirtualTreeReceiveTask {
      */
     private void run() {
         boolean success = false;
+        long requestCounter = 0;
+        final long start = System.currentTimeMillis();
         try {
             in.anticipateMessage(); // anticipate root node request
             while (true) {
@@ -129,6 +131,7 @@ public class TeacherPullVirtualTreeReceiveTask {
                     logger.info(RECONNECT.getMarker(), "Teacher receiver is complete as requested by the learner");
                     break;
                 }
+                requestCounter++;
                 final long path = request.getPath();
                 final Hash learnerHash = request.getHash();
                 assert learnerHash != null;
@@ -142,13 +145,21 @@ public class TeacherPullVirtualTreeReceiveTask {
                 final VirtualLeafRecord<?, ?> leafData = (!isClean && view.isLeaf(path)) ? view.loadLeaf(path) : null;
                 final long firstLeafPath = view.reconnectState.getFirstLeafPath();
                 final long lastLeafPath = view.reconnectState.getLastLeafPath();
-                final PullVirtualTreeResponse response = new PullVirtualTreeResponse(
-                        view, path, isClean, firstLeafPath, lastLeafPath, leafData);
+                final PullVirtualTreeResponse response =
+                        new PullVirtualTreeResponse(view, path, isClean, firstLeafPath, lastLeafPath, leafData);
                 // All real work is done in the async output thread. This call just registers a response
                 // and returns immediately
                 out.sendAsync(viewId, response);
                 in.anticipateMessage();
             }
+            final long end = System.currentTimeMillis();
+            final double requestRate = (end == start) ? 0.0 : (double) requestCounter / (end - start);
+            logger.info(
+                    RECONNECT.getMarker(),
+                    "Teacher's receiving task: duration={}ms, requests={}, rate={}",
+                    end - start,
+                    requestCounter,
+                    requestRate);
             success = true;
         } catch (final InterruptedException ex) {
             logger.warn(RECONNECT.getMarker(), "Teacher's receiving task is interrupted");

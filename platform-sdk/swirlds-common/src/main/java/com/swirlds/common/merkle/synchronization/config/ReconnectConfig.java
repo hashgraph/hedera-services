@@ -71,5 +71,5 @@ public record ReconnectConfig(
         @ConfigProperty(defaultValue = "10m") Duration minimumTimeBetweenReconnects,
         @ConfigProperty(defaultValue = "0") int teacherMaxNodesPerSecond,
         @ConfigProperty(defaultValue = "1us") Duration teacherRateLimiterSleep,
-        @ConfigProperty(defaultValue = "2") int maxParallelSubtrees,
+        @ConfigProperty(defaultValue = "3") int maxParallelSubtrees,
         @ConfigProperty(defaultValue = "60s") Duration pullLearnerRootResponseTimeout) {}
