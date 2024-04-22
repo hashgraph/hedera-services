@@ -22,11 +22,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.platform.state.HederaState;
-import com.swirlds.platform.state.spi.ReadableStates;
+import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
-import com.swirlds.platform.test.fixtures.state.MapWritableStates;
 import com.swirlds.platform.test.fixtures.state.StateTestBase;
+import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.ReadableStates;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;

@@ -22,9 +22,9 @@ import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.spi.ReadableStates;
 import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
 import com.swirlds.platform.test.fixtures.state.MapReadableStates;
+import com.swirlds.state.spi.ReadableStates;
 import java.util.Map;
 
 /**

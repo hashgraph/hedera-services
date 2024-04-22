@@ -16,11 +16,11 @@
 
 package com.hedera.node.app.state;
 
-import com.swirlds.platform.state.spi.ReadableKVState;
-import com.swirlds.platform.state.spi.ReadableQueueState;
-import com.swirlds.platform.state.spi.ReadableSingletonState;
-import com.swirlds.platform.state.spi.ReadableStates;
-import com.swirlds.platform.state.spi.WritableStates;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.ReadableQueueState;
+import com.swirlds.state.spi.ReadableSingletonState;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 

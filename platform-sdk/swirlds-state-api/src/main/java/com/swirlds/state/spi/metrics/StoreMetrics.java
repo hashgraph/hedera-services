@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.spi.metrics;
+package com.swirlds.state.spi.metrics;
 
 /**
  * Helper class that maintains utilization metrics for a store.

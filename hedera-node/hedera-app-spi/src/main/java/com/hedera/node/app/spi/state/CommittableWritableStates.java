@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.spi;
+package com.hedera.node.app.spi.state;
+
+import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
+import com.swirlds.state.spi.WritableStates;
 
 /**
- * A {@link WritableStates} implementation at the "bottom" of a com.hedera.node.app.spi.workflows.HandleContext.SavepointStack; i.e., an
+ * A {@link WritableStates} implementation at the "bottom" of a {@link SavepointStack}; i.e., an
  * implementation that is not buffering changes for a wrapped delegate, but itself knows how to
  * persist changes.
  */

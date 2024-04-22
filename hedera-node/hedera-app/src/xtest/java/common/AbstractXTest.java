@@ -64,8 +64,8 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.state.HederaState;
-import com.swirlds.platform.state.spi.ReadableKVState;
+import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.ReadableKVState;
 import contract.AbstractContractXTest;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;

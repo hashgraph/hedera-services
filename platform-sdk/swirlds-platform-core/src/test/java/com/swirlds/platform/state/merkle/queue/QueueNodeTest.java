@@ -25,14 +25,18 @@ import org.junit.jupiter.api.Test;
 class QueueNodeTest extends MerkleTestBase {
     @Test
     void usesQueueNodeIdFromMetadataIfAvailable() {
-        final var node =
-                new QueueNode<>(FIRST_SERVICE, FRUIT_STATE_KEY, queueNodeClassId(FRUIT_STATE_KEY), STRING_CODEC);
+        final var node = new QueueNode<>(
+                FIRST_SERVICE,
+                FRUIT_STATE_KEY,
+                queueNodeClassId(FRUIT_STATE_KEY),
+                singletonClassId(FRUIT_STATE_KEY),
+                STRING_CODEC);
         assertNotEquals(0x990FF87AD2691DCL, node.getClassId());
     }
 
     @Test
     void usesDefaultClassIdWithoutMetadata() {
-        final var node = new QueueNode();
+        final var node = new QueueNode<>();
         assertEquals(0x990FF87AD2691DCL, node.getClassId());
     }
 }

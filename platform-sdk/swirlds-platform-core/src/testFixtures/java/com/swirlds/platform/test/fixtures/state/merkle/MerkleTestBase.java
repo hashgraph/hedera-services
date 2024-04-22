@@ -153,26 +153,42 @@ public class MerkleTestBase extends StateTestBase {
         fruitVirtualLabel = StateUtils.computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY);
         fruitVirtualMap = createVirtualMap(
                 fruitVirtualLabel,
-                onDiskKeySerializerClassId(STEAM_STATE_KEY),
+                onDiskKeySerializerClassId(FRUIT_STATE_KEY),
                 STRING_CODEC,
-                onDiskValueSerializerClassId(STEAM_STATE_KEY),
+                onDiskValueSerializerClassId(FRUIT_STATE_KEY),
                 STRING_CODEC);
     }
 
     protected static long onDiskKeyClassId(String stateKey) {
-        return computeClassId(FIRST_SERVICE, stateKey, TEST_VERSION, ON_DISK_KEY_CLASS_ID_SUFFIX);
+        return onDiskKeyClassId(FIRST_SERVICE, stateKey);
+    }
+
+    protected static long onDiskKeyClassId(String serviceName, String stateKey) {
+        return computeClassId(serviceName, stateKey, TEST_VERSION, ON_DISK_KEY_CLASS_ID_SUFFIX);
     }
 
     protected static long onDiskKeySerializerClassId(String stateKey) {
-        return computeClassId(FIRST_SERVICE, stateKey, TEST_VERSION, ON_DISK_KEY_SERIALIZER_CLASS_ID_SUFFIX);
+        return onDiskKeySerializerClassId(FIRST_SERVICE, stateKey);
+    }
+
+    protected static long onDiskKeySerializerClassId(String serviceName, String stateKey) {
+        return computeClassId(serviceName, stateKey, TEST_VERSION, ON_DISK_KEY_SERIALIZER_CLASS_ID_SUFFIX);
     }
 
     protected static long onDiskValueClassId(String stateKey) {
-        return computeClassId(FIRST_SERVICE, stateKey, TEST_VERSION, ON_DISK_VALUE_CLASS_ID_SUFFIX);
+        return onDiskValueClassId(FIRST_SERVICE, stateKey);
+    }
+
+    protected static long onDiskValueClassId(String serviceName, String stateKey) {
+        return computeClassId(serviceName, stateKey, TEST_VERSION, ON_DISK_VALUE_CLASS_ID_SUFFIX);
     }
 
     protected static long onDiskValueSerializerClassId(String stateKey) {
-        return computeClassId(FIRST_SERVICE, stateKey, TEST_VERSION, ON_DISK_VALUE_SERIALIZER_CLASS_ID_SUFFIX);
+        return onDiskValueSerializerClassId(FIRST_SERVICE, stateKey);
+    }
+
+    protected static long onDiskValueSerializerClassId(String serviceName, String stateKey) {
+        return computeClassId(serviceName, stateKey, TEST_VERSION, ON_DISK_VALUE_SERIALIZER_CLASS_ID_SUFFIX);
     }
 
     protected static long queueNodeClassId(String stateKey) {
@@ -212,9 +228,10 @@ public class MerkleTestBase extends StateTestBase {
     protected void setupSteamQueue() {
         steamLabel = StateUtils.computeLabel(FIRST_SERVICE, STEAM_STATE_KEY);
         steamQueue = new QueueNode<>(
-                STEAM_STATE_KEY,
+                FIRST_SERVICE,
                 STEAM_STATE_KEY,
                 computeClassId(FIRST_SERVICE, STEAM_STATE_KEY, TEST_VERSION, QUEUE_NODE_CLASS_ID_SUFFIX),
+                computeClassId(FIRST_SERVICE, STEAM_STATE_KEY, TEST_VERSION, SINGLETON_CLASS_ID_SUFFIX),
                 STRING_CODEC);
     }
 

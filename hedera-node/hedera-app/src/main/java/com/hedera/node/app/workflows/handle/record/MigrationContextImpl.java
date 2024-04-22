@@ -26,8 +26,8 @@ import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.spi.ReadableStates;
-import com.swirlds.platform.state.spi.WritableStates;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 

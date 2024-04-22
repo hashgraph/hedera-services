@@ -20,7 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.swirlds.common.metrics.FunctionGauge.Config;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.state.spi.metrics.StoreMetrics;
+import com.swirlds.state.spi.metrics.StoreMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicLong;
 

@@ -26,7 +26,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.HederaState;
+import com.swirlds.state.HederaState;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 

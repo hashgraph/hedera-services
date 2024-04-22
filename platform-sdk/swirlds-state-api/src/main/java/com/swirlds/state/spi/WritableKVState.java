@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.spi;
+package com.swirlds.state.spi;
 
-import com.swirlds.platform.state.spi.metrics.StoreMetrics;
+import com.swirlds.state.spi.metrics.StoreMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Iterator;

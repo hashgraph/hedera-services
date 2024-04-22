@@ -18,6 +18,7 @@ package com.swirlds.platform.state.spi;
 
 import static java.util.Objects.requireNonNull;
 
+import com.swirlds.state.spi.WritableQueueState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;

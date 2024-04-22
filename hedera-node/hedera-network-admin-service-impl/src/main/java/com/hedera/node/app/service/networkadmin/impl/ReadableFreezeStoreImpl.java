@@ -24,8 +24,8 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.spi.ReadableSingletonState;
-import com.swirlds.platform.state.spi.ReadableStates;
+import com.swirlds.state.spi.ReadableSingletonState;
+import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 

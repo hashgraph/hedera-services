@@ -28,7 +28,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenHandlers;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.platform.state.HederaState;
+import com.swirlds.state.HederaState;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;

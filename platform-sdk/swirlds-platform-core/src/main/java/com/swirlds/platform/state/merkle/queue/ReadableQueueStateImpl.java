@@ -18,8 +18,8 @@ package com.swirlds.platform.state.merkle.queue;
 
 import static java.util.Objects.requireNonNull;
 
-import com.swirlds.platform.state.spi.ReadableQueueState;
 import com.swirlds.platform.state.spi.ReadableQueueStateBase;
+import com.swirlds.state.spi.ReadableQueueState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Iterator;

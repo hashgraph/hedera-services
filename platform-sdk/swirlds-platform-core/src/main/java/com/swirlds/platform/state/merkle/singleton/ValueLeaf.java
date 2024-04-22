@@ -38,7 +38,7 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
      * {@deprecated} Needed for ConstructableRegistry, TO BE REMOVED ASAP
      */
     @Deprecated(forRemoval = true)
-    private static final long CLASS_ID = 0x65A48B28C563D72EL;
+    public static final long CLASS_ID = 0x65A48B28C563D72EL;
 
     private final long classId;
     private final Codec<T> codec;
@@ -58,23 +58,23 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
      * Used by the deserialization system to create an {@link ValueLeaf} that does not yet have a
      * value. Normally this should not be used.
      *
-     * @param classId The class ID of the object
+     * @param singletonClassId The class ID of the object
      * @param codec   The codec to use for serialization
      */
-    public ValueLeaf(final long classId, @NonNull Codec<T> codec) {
+    public ValueLeaf(final long singletonClassId, @NonNull Codec<T> codec) {
         this.codec = requireNonNull(codec);
-        this.classId = classId;
+        this.classId = singletonClassId;
     }
 
     /**
      * Create a new instance with the given value.
      *
-     * @param classId The class ID of the object
+     * @param singletonClassId The class ID of the object
      * @param codec   The codec to use for serialization
      * @param value The value.
      */
-    public ValueLeaf(final long classId, @NonNull Codec<T> codec, @Nullable final T value) {
-        this(classId, codec);
+    public ValueLeaf(final long singletonClassId, @NonNull Codec<T> codec, @Nullable final T value) {
+        this(singletonClassId, codec);
         this.val = value;
     }
 

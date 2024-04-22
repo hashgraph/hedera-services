@@ -23,7 +23,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
 
 /**
- * An implementation of {@link com.swirlds.platform.state.spi.WritableQueueState} based on {@link QueueNode}.
+ * An implementation of {@link com.swirlds.state.spi.WritableQueueState} based on {@link QueueNode}.
  * @param <E> The type of element in the queue
  */
 public class WritableQueueStateImpl<E> extends WritableQueueStateBase<E> {

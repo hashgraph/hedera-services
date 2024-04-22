@@ -31,7 +31,7 @@ import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
-import com.swirlds.platform.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;

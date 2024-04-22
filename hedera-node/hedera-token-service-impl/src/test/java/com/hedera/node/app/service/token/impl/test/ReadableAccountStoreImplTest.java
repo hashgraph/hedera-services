@@ -31,7 +31,7 @@ import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.spi.ReadableKVState;
+import com.swirlds.state.spi.ReadableKVState;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

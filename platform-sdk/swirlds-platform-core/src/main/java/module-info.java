@@ -45,7 +45,6 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.stats.simple;
     exports com.swirlds.platform.state.signed;
     exports com.swirlds.platform.state.address;
-    exports com.swirlds.platform.state.spi.metrics;
     exports com.swirlds.platform.gossip.sync;
     exports com.swirlds.platform.system;
     exports com.swirlds.platform.system.address;
@@ -134,6 +133,7 @@ module com.swirlds.platform.core {
     requires transitive com.swirlds.merkle;
     requires transitive com.swirlds.merkledb;
     requires transitive com.swirlds.metrics.api;
+    requires transitive com.swirlds.state.api;
     requires transitive com.swirlds.virtualmap;
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;

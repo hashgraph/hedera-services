@@ -34,7 +34,7 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.spi.WritableKVStateBase;
-import com.swirlds.platform.state.spi.WritableStates;
+import com.swirlds.state.spi.WritableStates;
 import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;

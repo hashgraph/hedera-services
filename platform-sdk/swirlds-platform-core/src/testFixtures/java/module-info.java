@@ -5,6 +5,7 @@ open module com.swirlds.platform.core.test.fixtures {
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.merkle;
     requires transitive com.swirlds.platform.core;
+    requires transitive com.swirlds.state.api;
     requires transitive com.swirlds.virtualmap;
     requires transitive org.junit.jupiter.params;
     requires com.swirlds.logging;

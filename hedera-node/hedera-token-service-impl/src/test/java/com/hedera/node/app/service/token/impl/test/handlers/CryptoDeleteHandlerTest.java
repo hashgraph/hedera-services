@@ -62,7 +62,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.spi.WritableStates;
+import com.swirlds.state.spi.WritableStates;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;

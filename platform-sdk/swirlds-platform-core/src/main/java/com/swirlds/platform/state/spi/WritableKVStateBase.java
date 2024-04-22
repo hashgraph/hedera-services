@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state.spi;
 
+import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.*;

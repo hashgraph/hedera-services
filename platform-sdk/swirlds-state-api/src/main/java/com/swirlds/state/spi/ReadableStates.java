@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.spi;
+package com.swirlds.state.spi;
 
 import com.hedera.pbj.runtime.Schema;
 import edu.umd.cs.findbugs.annotations.NonNull;

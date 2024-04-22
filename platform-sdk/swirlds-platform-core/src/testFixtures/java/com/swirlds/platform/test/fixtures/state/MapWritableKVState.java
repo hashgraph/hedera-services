@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * A simple implementation of {@link com.swirlds.platform.state.spi.WritableKVState} backed by a
+ * A simple implementation of {@link com.swirlds.state.spi.WritableKVState} backed by a
  * {@link Map}. Test code has the option of creating an instance disregarding the backing map, or by
  * supplying the backing map to use. This latter option is useful if you want to use Mockito to spy
  * on it, or if you want to pre-populate it, or use Mockito to make the map throw an exception in

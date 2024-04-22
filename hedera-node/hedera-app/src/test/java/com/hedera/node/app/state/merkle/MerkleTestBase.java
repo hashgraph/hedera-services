@@ -16,22 +16,6 @@
 
 package com.hedera.node.app.state.merkle;
 
-/*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.pbj.runtime.Codec;
@@ -43,8 +27,6 @@ import com.swirlds.platform.state.merkle.disk.OnDiskKey;
 import com.swirlds.platform.state.merkle.disk.OnDiskValue;
 import com.swirlds.platform.state.merkle.memory.InMemoryKey;
 import com.swirlds.platform.state.merkle.memory.InMemoryValue;
-import com.swirlds.platform.state.merkle.queue.QueueNode;
-import com.swirlds.platform.state.merkle.singleton.SingletonNode;
 import com.swirlds.platform.test.fixtures.state.StateTestBase;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.AfterEach;
@@ -76,23 +58,12 @@ public class MerkleTestBase extends com.swirlds.platform.test.fixtures.state.mer
     protected StateMetadata<String, String> fruitMetadata;
     protected StateMetadata<String, String> fruitVirtualMetadata;
     protected StateMetadata<String, String> animalMetadata;
-
-    // The "SPACE" map is part of SECOND_SERVICE and uses the long-based keys
-    protected String spaceLabel;
     protected StateMetadata<Long, String> spaceMetadata;
-    protected MerkleMap<InMemoryKey<Long>, InMemoryValue<Long, Long>> spaceMerkleMap;
-
-    // The "STEAM" queue is part of FIRST_SERVICE
-    protected String steamLabel;
     protected StateMetadata<String, String> steamMetadata;
-    protected QueueNode<String> steamQueue;
-
-    // The "COUNTRY" singleton is part of FIRST_SERVICE
-    protected String countryLabel;
     protected StateMetadata<String, String> countryMetadata;
-    protected SingletonNode<String> countrySingleton;
 
     /** Sets up the "Fruit" merkle map, label, and metadata. */
+    @Override
     protected void setupFruitMerkleMap() {
         super.setupFruitMerkleMap();
         fruitMetadata = new StateMetadata<>(
@@ -102,6 +73,7 @@ public class MerkleTestBase extends com.swirlds.platform.test.fixtures.state.mer
     }
 
     /** Sets up the "Fruit" virtual map, label, and metadata. */
+    @Override
     protected void setupFruitVirtualMap() {
         super.setupFruitVirtualMap();
         fruitVirtualMetadata = new StateMetadata<>(
@@ -111,6 +83,7 @@ public class MerkleTestBase extends com.swirlds.platform.test.fixtures.state.mer
     }
 
     /** Sets up the "Animal" merkle map, label, and metadata. */
+    @Override
     protected void setupAnimalMerkleMap() {
         super.setupAnimalMerkleMap();
         animalMetadata = new StateMetadata<>(
@@ -120,16 +93,25 @@ public class MerkleTestBase extends com.swirlds.platform.test.fixtures.state.mer
     }
 
     /** Sets up the "Space" merkle map, label, and metadata. */
+    @Override
     protected void setupSpaceMerkleMap() {
         super.setupSpaceMerkleMap();
         spaceMetadata = new StateMetadata<>(
                 SECOND_SERVICE, new TestSchema(1), StateDefinition.inMemory(SPACE_STATE_KEY, LONG_CODEC, STRING_CODEC));
     }
 
+    @Override
     protected void setupSingletonCountry() {
         super.setupSingletonCountry();
         countryMetadata = new StateMetadata<>(
                 FIRST_SERVICE, new TestSchema(1), StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_CODEC));
+    }
+
+    @Override
+    protected void setupSteamQueue() {
+        super.setupSteamQueue();
+        steamMetadata = new StateMetadata<>(
+                FIRST_SERVICE, new TestSchema(1), StateDefinition.queue(STEAM_STATE_KEY, STRING_CODEC));
     }
 
     /** Creates a new arbitrary virtual map with the given label, storageDir, and metadata */

@@ -22,8 +22,8 @@ import static com.swirlds.platform.state.merkle.logging.StateLogger.logMapIterat
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.Codec;
-import com.swirlds.platform.state.spi.ReadableKVState;
 import com.swirlds.platform.state.spi.ReadableKVStateBase;
+import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import edu.umd.cs.findbugs.annotations.NonNull;

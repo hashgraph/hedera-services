@@ -48,7 +48,9 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
     private final Codec<E> codec;
 
     /** Key class id. */
-    private final Long classId;
+    private final Long queueNodeClassId;
+
+    private final Long leafClassId;
 
     /**
      * @deprecated Only exists for constructable registry as it works today. Remove ASAP!
@@ -58,7 +60,8 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
         setLeft(new StringLeaf());
         setRight(null);
         this.codec = null;
-        this.classId = CLASS_ID;
+        this.queueNodeClassId = CLASS_ID;
+        this.leafClassId = ValueLeaf.CLASS_ID;
     }
 
     /**
@@ -67,11 +70,16 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
      *
      */
     public QueueNode(
-            @NonNull String serviceName, @NonNull String stateKey, final long classId, @NonNull final Codec<E> codec) {
+            @NonNull String serviceName,
+            @NonNull String stateKey,
+            final long queueNodeClassId,
+            final long leafClassId,
+            @NonNull final Codec<E> codec) {
         setLeft(new StringLeaf(StateUtils.computeLabel(serviceName, stateKey)));
         setRight(new FCQueue<ValueLeaf<E>>());
         this.codec = requireNonNull(codec);
-        this.classId = classId;
+        this.queueNodeClassId = queueNodeClassId;
+        this.leafClassId = leafClassId;
     }
 
     /** Copy constructor */
@@ -79,7 +87,8 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
         this.setLeft(other.getLeft().copy());
         this.setRight(other.getRight().copy());
         this.codec = other.codec;
-        this.classId = other.classId;
+        this.queueNodeClassId = other.queueNodeClassId;
+        this.leafClassId = other.leafClassId;
     }
 
     @Override
@@ -89,7 +98,7 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
 
     @Override
     public long getClassId() {
-        return classId;
+        return queueNodeClassId;
     }
 
     @Override
@@ -105,7 +114,7 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
 
     /** Adds an element to this queue. */
     public void add(E element) {
-        getQueue().add(new ValueLeaf<>(classId, codec, element));
+        getQueue().add(new ValueLeaf<>(leafClassId, codec, element));
         // Log to transaction state log, what was added
         logQueueAdd(getLabel(), element);
     }

@@ -19,9 +19,10 @@ package com.hedera.node.app.spi.state;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import com.swirlds.platform.state.spi.ReadableStates;
 import com.swirlds.platform.test.fixtures.state.MapReadableStates;
 import com.swirlds.platform.test.fixtures.state.StateTestBase;
+import com.swirlds.state.spi.ReadableStates;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -137,6 +138,17 @@ class FilteredReadableStatesTest {
         @DisplayName("Throws IAE for any non-null Queue key")
         void nonNullQueueKey() {
             assertThatThrownBy(() -> states.getQueue(UNKNOWN_KEY)).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @NonNull
+        protected MapReadableStates allReadableStates() {
+            return MapReadableStates.builder()
+                    .state(readableFruitState())
+                    .state(readableCountryState())
+                    .state(readableAnimalState())
+                    .state(readableSTEAMState())
+                    .state(readableSpaceState())
+                    .build();
         }
     }
 

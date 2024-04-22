@@ -83,11 +83,13 @@ import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
+import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.schemas.InitialModServiceAdminSchema;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
+import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
@@ -115,7 +117,6 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
-import com.swirlds.platform.state.HederaState;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.spi.WritableSingletonStateBase;
 import com.swirlds.platform.system.InitTrigger;
@@ -127,6 +128,7 @@ import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.Transaction;
+import com.swirlds.state.HederaState;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -317,15 +319,15 @@ public final class Hedera implements SwirldMain {
                         ENTITY_SERVICE,
                         CONSENSUS_SERVICE,
                         CONTRACT_SERVICE,
-                        // FILE_SERVICE,
-                        // new FreezeServiceImpl(),
-                        // SCHEDULE_SERVICE,
-                        // TOKEN_SERVICE,
-                        //         new UtilServiceImpl(),
-                        //       RECORD_SERVICE,
-                        //     BLOCK_SERVICE,
-                        //   FEE_SERVICE,
-                        // CONGESTION_THROTTLE_SERVICE,
+                        FILE_SERVICE,
+                        new FreezeServiceImpl(),
+                        SCHEDULE_SERVICE,
+                        TOKEN_SERVICE,
+                        new UtilServiceImpl(),
+                        RECORD_SERVICE,
+                        BLOCK_SERVICE,
+                        FEE_SERVICE,
+                        CONGESTION_THROTTLE_SERVICE,
                         new NetworkServiceImpl())
                 .forEach(servicesRegistry::register);
 

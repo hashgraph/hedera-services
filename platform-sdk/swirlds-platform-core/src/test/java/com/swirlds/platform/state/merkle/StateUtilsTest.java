@@ -44,7 +44,7 @@ class StateUtilsTest extends MerkleTestBase {
     }
 
     @ParameterizedTest
-    @MethodSource("illegalIdentifiers")
+    @MethodSource("com.swirlds.platform.test.fixtures.state.merkle.TestArgumentUtils#illegalIdentifiers")
     @DisplayName("Service Names with illegal characters throw an exception")
     void invalidServiceNameThrows(final String serviceName) {
         assertThatThrownBy(() -> StateUtils.validateServiceName(serviceName))
@@ -52,7 +52,7 @@ class StateUtilsTest extends MerkleTestBase {
     }
 
     @ParameterizedTest
-    @MethodSource("legalIdentifiers")
+    @MethodSource("com.swirlds.platform.test.fixtures.state.merkle.TestArgumentUtils#legalIdentifiers")
     @DisplayName("Service names with legal characters are valid")
     void validServiceNameWorks(final String serviceName) {
         assertThat(StateUtils.validateServiceName(serviceName)).isEqualTo(serviceName);
@@ -74,14 +74,14 @@ class StateUtilsTest extends MerkleTestBase {
     }
 
     @ParameterizedTest
-    @MethodSource("illegalIdentifiers")
+    @MethodSource("com.swirlds.platform.test.fixtures.state.merkle.TestArgumentUtils#illegalIdentifiers")
     @DisplayName("State keys with illegal characters throw an exception")
     void invalidStateKeyThrows(final String stateKey) {
         assertThatThrownBy(() -> StateUtils.validateStateKey(stateKey)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @ParameterizedTest
-    @MethodSource("legalIdentifiers")
+    @MethodSource("com.swirlds.platform.test.fixtures.state.merkle.TestArgumentUtils#legalIdentifiers")
     @DisplayName("State keys with legal characters are valid")
     void validStateKeyWorks(final String stateKey) {
         assertThat(StateUtils.validateServiceName(stateKey)).isEqualTo(stateKey);
@@ -101,7 +101,7 @@ class StateUtilsTest extends MerkleTestBase {
     }
 
     @ParameterizedTest
-    @MethodSource("illegalIdentifiers")
+    @MethodSource("com.swirlds.platform.test.fixtures.state.merkle.TestArgumentUtils#illegalIdentifiers")
     @DisplayName("Identifiers with illegal characters throw an exception")
     void invalidIdentifierThrows(final String identifier) {
         assertThatThrownBy(() -> StateUtils.validateIdentifier(identifier))
@@ -109,7 +109,7 @@ class StateUtilsTest extends MerkleTestBase {
     }
 
     @ParameterizedTest
-    @MethodSource("legalIdentifiers")
+    @MethodSource("com.swirlds.platform.test.fixtures.state.merkle.TestArgumentUtils#legalIdentifiers")
     @DisplayName("Identifiers with legal characters are valid")
     void validIdentifierWorks(final String identifier) {
         assertThat(StateUtils.validateIdentifier(identifier)).isEqualTo(identifier);

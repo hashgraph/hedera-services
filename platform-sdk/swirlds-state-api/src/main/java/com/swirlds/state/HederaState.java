@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state;
+package com.swirlds.state;
 
-import com.swirlds.platform.state.spi.ReadableKVState;
-import com.swirlds.platform.state.spi.ReadableStates;
-import com.swirlds.platform.state.spi.WritableKVState;
-import com.swirlds.platform.state.spi.WritableStates;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

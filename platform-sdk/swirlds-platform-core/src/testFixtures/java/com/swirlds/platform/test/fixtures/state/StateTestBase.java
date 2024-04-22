@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.test.fixtures.state;
 
-import com.swirlds.platform.state.spi.ReadableSingletonState;
 import com.swirlds.platform.state.spi.ReadableSingletonStateBase;
-import com.swirlds.platform.state.spi.WritableSingletonState;
 import com.swirlds.platform.state.spi.WritableSingletonStateBase;
+import com.swirlds.state.spi.ReadableSingletonState;
+import com.swirlds.state.spi.WritableSingletonState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -186,27 +186,5 @@ public class StateTestBase extends TestBase {
     protected WritableSingletonState<String> writableCountryState() {
         final AtomicReference<String> backingValue = new AtomicReference<>(AUSTRALIA);
         return new WritableSingletonStateBase<>(COUNTRY_STATE_KEY, backingValue::get, backingValue::set);
-    }
-
-    @NonNull
-    protected MapReadableStates allReadableStates() {
-        return MapReadableStates.builder()
-                .state(readableFruitState())
-                .state(readableCountryState())
-                .state(readableAnimalState())
-                .state(readableSTEAMState())
-                .state(readableSpaceState())
-                .build();
-    }
-
-    @NonNull
-    protected MapWritableStates allWritableStates() {
-        return MapWritableStates.builder()
-                .state(writableAnimalState())
-                .state(writableCountryState())
-                .state(writableAnimalState())
-                .state(writableSTEAMState())
-                .state(writableSpaceState())
-                .build();
     }
 }

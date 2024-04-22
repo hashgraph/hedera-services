@@ -83,7 +83,7 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.platform.state.HederaState;
+import com.swirlds.state.HederaState;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.util.function.Function;

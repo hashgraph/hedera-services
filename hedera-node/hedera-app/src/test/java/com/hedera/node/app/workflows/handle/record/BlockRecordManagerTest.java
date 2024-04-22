@@ -47,12 +47,12 @@ import com.hedera.node.app.records.impl.producers.formats.BlockRecordWriterFacto
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.HederaState;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.spi.ReadableSingletonStateBase;
-import com.swirlds.platform.state.spi.ReadableStates;
-import com.swirlds.platform.state.spi.WritableStates;
 import com.swirlds.platform.test.fixtures.state.MapReadableStates;
+import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;

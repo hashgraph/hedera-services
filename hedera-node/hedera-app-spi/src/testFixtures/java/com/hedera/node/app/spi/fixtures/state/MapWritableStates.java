@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.fixtures.state;
+package com.hedera.node.app.spi.fixtures.state;
 
 import static java.util.Objects.requireNonNull;
 
-import com.swirlds.platform.state.spi.CommittableWritableStates;
-import com.swirlds.platform.state.spi.WritableKVState;
+import com.hedera.node.app.spi.state.CommittableWritableStates;
 import com.swirlds.platform.state.spi.WritableKVStateBase;
-import com.swirlds.platform.state.spi.WritableQueueState;
 import com.swirlds.platform.state.spi.WritableQueueStateBase;
-import com.swirlds.platform.state.spi.WritableSingletonState;
 import com.swirlds.platform.state.spi.WritableSingletonStateBase;
-import com.swirlds.platform.state.spi.WritableStates;
+import com.swirlds.platform.test.fixtures.state.MapReadableStates;
+import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableQueueState;
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.HashMap;

@@ -18,8 +18,8 @@ package com.hedera.node.app.state;
 
 import static java.util.Objects.requireNonNull;
 
-import com.swirlds.platform.state.spi.ReadableKVState;
-import com.swirlds.platform.state.spi.WritableKVState;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Iterator;

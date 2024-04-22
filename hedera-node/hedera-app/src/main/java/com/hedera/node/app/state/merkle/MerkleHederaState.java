@@ -20,6 +20,7 @@ import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.Hedera;
+import com.hedera.node.app.spi.state.CommittableWritableStates;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.context.PlatformContext;
@@ -29,7 +30,6 @@ import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.state.HederaState;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.merkle.StateUtils;
 import com.swirlds.platform.state.merkle.disk.OnDiskReadableKVState;
@@ -42,18 +42,9 @@ import com.swirlds.platform.state.merkle.queue.WritableQueueStateImpl;
 import com.swirlds.platform.state.merkle.singleton.ReadableSingletonStateImpl;
 import com.swirlds.platform.state.merkle.singleton.SingletonNode;
 import com.swirlds.platform.state.merkle.singleton.WritableSingletonStateImpl;
-import com.swirlds.platform.state.spi.CommittableWritableStates;
-import com.swirlds.platform.state.spi.ReadableKVState;
-import com.swirlds.platform.state.spi.ReadableQueueState;
-import com.swirlds.platform.state.spi.ReadableSingletonState;
-import com.swirlds.platform.state.spi.ReadableStates;
-import com.swirlds.platform.state.spi.WritableKVState;
 import com.swirlds.platform.state.spi.WritableKVStateBase;
-import com.swirlds.platform.state.spi.WritableQueueState;
 import com.swirlds.platform.state.spi.WritableQueueStateBase;
-import com.swirlds.platform.state.spi.WritableSingletonState;
 import com.swirlds.platform.state.spi.WritableSingletonStateBase;
-import com.swirlds.platform.state.spi.WritableStates;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -63,6 +54,15 @@ import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
+import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.ReadableQueueState;
+import com.swirlds.state.spi.ReadableSingletonState;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableQueueState;
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableStates;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -782,7 +782,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     }
 
     @NonNull
-    private static String extractStateKey(@NonNull StateMetadata md) {
+    private static String extractStateKey(@NonNull final StateMetadata<?, ?> md) {
         return md.stateDefinition().stateKey();
     }
 }

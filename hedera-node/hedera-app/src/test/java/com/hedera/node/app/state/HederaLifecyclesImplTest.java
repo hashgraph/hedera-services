@@ -30,6 +30,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleTestBase;
 import com.swirlds.common.context.PlatformContext;
@@ -44,17 +45,15 @@ import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
 import com.swirlds.platform.test.fixtures.state.MapReadableStates;
 import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
-import com.swirlds.platform.test.fixtures.state.MapWritableStates;
 import com.swirlds.virtualmap.VirtualMap;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.function.BiConsumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.function.BiConsumer;
 
 @ExtendWith(MockitoExtension.class)
 class HederaLifecyclesImplTest extends MerkleTestBase {

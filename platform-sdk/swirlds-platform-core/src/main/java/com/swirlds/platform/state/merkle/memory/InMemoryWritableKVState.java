@@ -25,8 +25,8 @@ import static com.swirlds.platform.state.merkle.logging.StateLogger.logMapRemove
 
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.platform.state.spi.WritableKVState;
 import com.swirlds.platform.state.spi.WritableKVStateBase;
+import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Iterator;

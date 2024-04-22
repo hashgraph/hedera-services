@@ -52,7 +52,7 @@ import com.swirlds.platform.state.merkle.queue.QueueNode;
 import com.swirlds.platform.state.merkle.singleton.SingletonNode;
 import com.swirlds.platform.state.merkle.singleton.StringLeaf;
 import com.swirlds.platform.state.merkle.singleton.ValueLeaf;
-import com.swirlds.platform.state.spi.ReadableStates;
+import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -226,6 +226,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                             md.serviceName(),
                                             md.stateDefinition().stateKey(),
                                             md.queueNodeClassId(),
+                                            md.singletonClassId(),
                                             md.stateDefinition().valueCodec()));
                         } else if (!def.onDisk()) {
                             hederaState.putServiceStateIfAbsent(md, () -> {
@@ -487,6 +488,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                             md.serviceName(),
                             md.stateDefinition().stateKey(),
                             md.queueNodeClassId(),
+                            md.singletonClassId(),
                             md.stateDefinition().valueCodec())));
             constructableRegistry.registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
             constructableRegistry.registerConstructable(new ClassConstructorPair(

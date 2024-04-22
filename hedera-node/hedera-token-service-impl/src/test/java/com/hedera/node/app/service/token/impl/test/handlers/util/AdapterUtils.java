@@ -38,12 +38,12 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
 import com.hedera.test.utils.TestFixturesKeyLookup;
-import com.swirlds.platform.state.spi.ReadableKVState;
-import com.swirlds.platform.state.spi.ReadableStates;
-import com.swirlds.platform.state.spi.WritableKVState;
-import com.swirlds.platform.state.spi.WritableStates;
 import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
 import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableStates;
 import java.util.Map;
 import org.mockito.Mockito;
 

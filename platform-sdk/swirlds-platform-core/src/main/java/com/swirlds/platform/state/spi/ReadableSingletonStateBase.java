@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state.spi;
 
+import com.swirlds.state.spi.ReadableSingletonState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Supplier;

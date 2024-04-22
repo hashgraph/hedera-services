@@ -21,8 +21,8 @@ import static com.swirlds.platform.state.merkle.logging.StateLogger.logMapGetSiz
 import static com.swirlds.platform.state.merkle.logging.StateLogger.logMapIterate;
 
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.platform.state.spi.ReadableKVState;
 import com.swirlds.platform.state.spi.ReadableKVStateBase;
+import com.swirlds.state.spi.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
 import java.util.Objects;

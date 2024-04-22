@@ -18,7 +18,7 @@ package com.hedera.node.app.spi.api;
 
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.spi.WritableStates;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
