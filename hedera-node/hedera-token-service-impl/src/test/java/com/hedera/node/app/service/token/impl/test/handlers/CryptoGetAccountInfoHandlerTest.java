@@ -68,6 +68,7 @@ import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountInfoHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableSingletonStateBase;
@@ -427,6 +428,14 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         final var cryptoGetInfoResponse = response.cryptoGetInfo();
         assertEquals(ResponseCodeEnum.OK, cryptoGetInfoResponse.header().nodeTransactionPrecheckCode());
         assertEquals(expectedInfo, cryptoGetInfoResponse.accountInfo());
+    }
+
+    @Test
+    void getComputedFeeIfMissingCryptoGetInfo() {
+        when(context.query()).thenReturn(Query.newBuilder().build());
+
+        final var response = subject.computeFees(context);
+        assertEquals(response, Fees.FREE);
     }
 
     private void setupAccountStore() {

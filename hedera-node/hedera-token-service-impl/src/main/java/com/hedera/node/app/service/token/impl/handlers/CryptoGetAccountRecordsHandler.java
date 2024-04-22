@@ -116,8 +116,14 @@ public class CryptoGetAccountRecordsHandler extends PaidQueryHandler {
     public Fees computeFees(@NonNull final QueryContext queryContext) {
         final var query = queryContext.query();
         final var accountStore = queryContext.createStore(ReadableAccountStore.class);
-        final var op = query.cryptoGetAccountRecordsOrThrow();
-        final var accountId = op.accountIDOrThrow();
+        if (!query.hasCryptoGetAccountRecords()) {
+            return Fees.FREE;
+        }
+        final var op = query.cryptoGetAccountRecords();
+        if (!op.hasAccountID()) {
+            return Fees.FREE;
+        }
+        final var accountId = op.accountID();
         final var account = accountStore.getAccountById(accountId);
 
         final var records = recordCache.getRecords(accountId);

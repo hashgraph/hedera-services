@@ -77,9 +77,15 @@ public class ScheduleGetInfoHandler extends PaidQueryHandler {
     @NonNull
     @Override
     public Fees computeFees(@NonNull final QueryContext context) {
-        // Need to work out if this is correct, note we effectively (much) more than double total effort
-        // here just to calculate fees based on a single instance of that effort...
-        final Schedule found = findSchedule(context);
+        final Schedule found;
+        try {
+            // Need to work out if this is correct, note we effectively (much) more than double total effort
+            // here just to calculate fees based on a single instance of that effort...
+            found = findSchedule(context);
+        } catch (Exception e) {
+            return Fees.FREE;
+        }
+
         if (found != null) {
             final LedgerConfig ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
             final ScheduleInfo.Builder builder = ScheduleInfo.newBuilder();

@@ -23,9 +23,11 @@ import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.QueryHeader;
@@ -43,6 +45,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountRecordsHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -293,6 +296,28 @@ class CryptoGetAccountRecordsHandlerTest extends CryptoHandlerTestBase {
         Assertions.assertThat(result.cryptoGetAccountRecords().accountID()).isEqualTo(id);
         // Make sure the appropriate records are returned
         Assertions.assertThat(result.cryptoGetAccountRecords().records()).hasSize(2);
+    }
+
+    @Test
+    void getComputedFeeIfMissingCryptoGetAccountRecords() {
+        when(context.query()).thenReturn(Query.newBuilder().build());
+
+        final var response = subject.computeFees(context);
+        assertEquals(response, Fees.FREE);
+    }
+
+    @Test
+    void getComputedFeeIfMissingAccountID() {
+        final var data = CryptoGetAccountRecordsQuery.newBuilder()
+                .header(QueryHeader.newBuilder().build())
+                .build();
+
+        final var query = Query.newBuilder().cryptoGetAccountRecords(data).build();
+
+        when(context.query()).thenReturn(query);
+
+        final var response = subject.computeFees(context);
+        assertEquals(response, Fees.FREE);
     }
 
     private ResponseHeader okResponseHeader() {

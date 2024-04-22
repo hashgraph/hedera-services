@@ -21,9 +21,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.QueryHeader;
@@ -146,6 +148,14 @@ class ScheduleGetInfoHandlerTest extends ScheduleHandlerTestBase {
         assertThat(actual.serviceFee()).isEqualTo(0L);
         assertThat(actual.totalFee()).isEqualTo(0L);
         verify(feeSpy).legacyCalculate(any());
+    }
+
+    @Test
+    void getComputedFeeIfMissingScheduleGetInfo() {
+        when(mockQueryContext.query()).thenReturn(Query.newBuilder().build());
+
+        final var response = subject.computeFees(mockQueryContext);
+        assertEquals(response, Fees.FREE);
     }
 
     @NonNull

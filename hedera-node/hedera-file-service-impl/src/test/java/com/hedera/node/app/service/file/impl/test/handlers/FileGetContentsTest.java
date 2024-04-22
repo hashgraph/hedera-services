@@ -45,6 +45,7 @@ import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileGetContentsHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -185,6 +186,28 @@ class FileGetContentsTest extends FileTestBase {
         final var fileContentResponse = response.fileGetContentsOrThrow();
         assertEquals(
                 ResponseCodeEnum.INVALID_FILE_ID, fileContentResponse.header().nodeTransactionPrecheckCode());
+    }
+
+    @Test
+    void getComputedFeeIfMissingFileGetContents() {
+        when(context.query()).thenReturn(Query.newBuilder().build());
+
+        final var response = subject.computeFees(context);
+        assertEquals(response, Fees.FREE);
+    }
+
+    @Test
+    void getComputedFeeIfMissingFileID() {
+        final var data = FileGetContentsQuery.newBuilder()
+                .header(QueryHeader.newBuilder().build())
+                .build();
+
+        final var query = Query.newBuilder().fileGetContents(data).build();
+
+        when(context.query()).thenReturn(query);
+
+        final var response = subject.computeFees(context);
+        assertEquals(response, Fees.FREE);
     }
 
     private FileContents getExpectedContent() {

@@ -50,6 +50,7 @@ import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -213,6 +214,28 @@ class FileGetInfoTest extends FileTestBase {
         final var fileInfoResponse = response.fileGetInfoOrThrow();
         assertEquals(ResponseCodeEnum.OK, fileInfoResponse.header().nodeTransactionPrecheckCode());
         assertEquals(expectedInfo, fileInfoResponse.fileInfo());
+    }
+
+    @Test
+    void getComputedFeeIfMissingFileGetInfo() {
+        when(context.query()).thenReturn(Query.newBuilder().build());
+
+        final var response = subject.computeFees(context);
+        assertEquals(response, Fees.FREE);
+    }
+
+    @Test
+    void getComputedFeeIfMissingFileID() {
+        final var data = FileGetInfoQuery.newBuilder()
+                .header(QueryHeader.newBuilder().build())
+                .build();
+
+        final var query = Query.newBuilder().fileGetInfo(data).build();
+
+        when(context.query()).thenReturn(query);
+
+        final var response = subject.computeFees(context);
+        assertEquals(response, Fees.FREE);
     }
 
     private FileInfo getExpectedInfo() {

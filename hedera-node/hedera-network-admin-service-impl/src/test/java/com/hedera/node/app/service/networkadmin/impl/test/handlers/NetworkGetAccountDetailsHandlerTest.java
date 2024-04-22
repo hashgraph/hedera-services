@@ -56,6 +56,7 @@ import com.hedera.node.app.service.networkadmin.impl.utils.NetworkAdminServiceUt
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.ArrayList;
@@ -331,6 +332,14 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
         final var accountDetailsResponse = response.accountDetailsOrThrow();
         assertEquals(ResponseCodeEnum.OK, accountDetailsResponse.header().nodeTransactionPrecheckCode());
         assertEquals(expectedInfo, accountDetailsResponse.accountDetails());
+    }
+
+    @Test
+    void getComputedFeeIfMissingFileGetInfo() {
+        when(context.query()).thenReturn(Query.newBuilder().build());
+
+        final var response = networkGetAccountDetailsHandler.computeFees(context);
+        assertEquals(response, Fees.FREE);
     }
 
     private AccountDetails getExpectedInfo(

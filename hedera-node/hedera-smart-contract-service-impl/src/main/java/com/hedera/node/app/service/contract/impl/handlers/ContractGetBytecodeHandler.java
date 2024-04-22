@@ -101,13 +101,17 @@ public class ContractGetBytecodeHandler extends PaidQueryHandler {
     @Override
     public Fees computeFees(@NonNull final QueryContext context) {
         final Bytes effectiveBytecode;
+        final var query = context.query();
+        if (!query.hasContractGetBytecode()) {
+            return Fees.FREE;
+        }
         final var contract = contractFrom(context);
         if (contract == null || contract.deleted()) {
             effectiveBytecode = Bytes.EMPTY;
         } else {
             effectiveBytecode = bytecodeFrom(context, contract);
         }
-        final var op = context.query().contractGetBytecodeOrThrow();
+        final var op = query.contractGetBytecode();
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         final var usage = feeBuilder.getContractByteCodeQueryFeeMatrices(
                 (int) effectiveBytecode.length(), fromPbjResponseType(responseType));

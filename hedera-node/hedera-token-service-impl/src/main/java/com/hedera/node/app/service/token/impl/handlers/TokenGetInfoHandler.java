@@ -206,8 +206,14 @@ public class TokenGetInfoHandler extends PaidQueryHandler {
     public Fees computeFees(@NonNull final QueryContext queryContext) {
         final var query = queryContext.query();
         final var tokenStore = queryContext.createStore(ReadableTokenStore.class);
-        final var op = query.tokenGetInfoOrThrow();
-        final var tokenId = op.tokenOrThrow();
+        if (!query.hasTokenGetInfo()) {
+            return Fees.FREE;
+        }
+        final var op = query.tokenGetInfo();
+        if (!op.hasToken()) {
+            return Fees.FREE;
+        }
+        final var tokenId = op.token();
         final var token = tokenStore.get(tokenId);
 
         return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetTokenInfoResourceUsage()

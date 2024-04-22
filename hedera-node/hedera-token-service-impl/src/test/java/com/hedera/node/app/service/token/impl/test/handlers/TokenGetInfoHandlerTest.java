@@ -53,6 +53,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.TokenGetInfoHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -235,6 +236,28 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
         final var store = new ReadableTokenStoreImpl(readableStates);
 
         checkResponse(responseHeader, expectedInfo, store);
+    }
+
+    @Test
+    void getComputedFeeIfMissingTokenGetInfo() {
+        when(context.query()).thenReturn(Query.newBuilder().build());
+
+        final var response = subject.computeFees(context);
+        assertEquals(response, Fees.FREE);
+    }
+
+    @Test
+    void getComputedFeeIfMissingToken() {
+        final var data = TokenGetInfoQuery.newBuilder()
+                .header(QueryHeader.newBuilder().build())
+                .build();
+
+        final var query = Query.newBuilder().tokenGetInfo(data).build();
+
+        when(context.query()).thenReturn(query);
+
+        final var response = subject.computeFees(context);
+        assertEquals(response, Fees.FREE);
     }
 
     private void checkResponse(

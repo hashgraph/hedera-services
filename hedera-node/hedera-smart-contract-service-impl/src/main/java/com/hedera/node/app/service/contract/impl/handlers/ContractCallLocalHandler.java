@@ -127,7 +127,11 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
     @Override
     public Fees computeFees(@NonNull final QueryContext context) {
         requireNonNull(context);
-        final var op = context.query().contractCallLocalOrThrow();
+        final var query = context.query();
+        if (!query.hasContractCallLocal()) {
+            return Fees.FREE;
+        }
+        final var op = query.contractCallLocal();
         final var contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
         return context.feeCalculator().legacyCalculate(sigValueObj -> {
             final var contractFnResult = ContractFunctionResult.newBuilder()

@@ -39,6 +39,7 @@ import com.hedera.hapi.node.transaction.TransactionGetRecordQuery;
 import com.hedera.hapi.node.transaction.TransactionGetRecordResponse;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkTransactionGetRecordHandler;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
@@ -215,6 +216,43 @@ class NetworkTransactionGetRecordHandlerTest extends NetworkAdminHandlerTestBase
         assertEquals(expectedChildRecordList, op.childTransactionRecords());
         assertEquals(
                 expectedChildRecordList.size(), op.childTransactionRecords().size());
+    }
+
+    @Test
+    void getComputedFeeIfMissingNetworkTransactionGetRecord() {
+        when(context.query()).thenReturn(Query.newBuilder().build());
+
+        final var response = networkTransactionGetRecordHandler.computeFees(context);
+        assertEquals(response, Fees.FREE);
+    }
+
+    @Test
+    void getComputedFeeIfMissingHeader() {
+        final var data = TransactionGetRecordQuery.newBuilder()
+                .header(QueryHeader.newBuilder().build())
+                .build();
+
+        final var query = Query.newBuilder().transactionGetRecord(data).build();
+
+        when(context.query()).thenReturn(query);
+
+        final var response = networkTransactionGetRecordHandler.computeFees(context);
+        assertEquals(response, Fees.FREE);
+    }
+
+    @Test
+    void getComputedFeeIfMissingTransactionID() {
+        final var data = TransactionGetRecordQuery.newBuilder()
+                .header(QueryHeader.newBuilder().build())
+                .includeDuplicates(true)
+                .build();
+
+        final var query = Query.newBuilder().transactionGetRecord(data).build();
+
+        when(context.query()).thenReturn(query);
+
+        final var response = networkTransactionGetRecordHandler.computeFees(context);
+        assertEquals(response, Fees.FREE);
     }
 
     private TransactionRecord getExpectedRecord(TransactionID transactionID) {

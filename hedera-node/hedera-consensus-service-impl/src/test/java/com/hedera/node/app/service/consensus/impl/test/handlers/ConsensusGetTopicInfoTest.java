@@ -44,6 +44,7 @@ import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -216,6 +217,14 @@ class ConsensusGetTopicInfoTest extends ConsensusTestBase {
         final var topicInfoResponse = response.consensusGetTopicInfoOrThrow();
         assertEquals(ResponseCodeEnum.OK, topicInfoResponse.header().nodeTransactionPrecheckCode());
         assertEquals(expectedInfo, topicInfoResponse.topicInfo());
+    }
+
+    @Test
+    void getComputedFeeIfMissingConsensusGetTopicInfo() {
+        when(context.query()).thenReturn(Query.newBuilder().build());
+
+        final var response = subject.computeFees(context);
+        assertEquals(response, Fees.FREE);
     }
 
     private ConsensusTopicInfo getExpectedInfo() {

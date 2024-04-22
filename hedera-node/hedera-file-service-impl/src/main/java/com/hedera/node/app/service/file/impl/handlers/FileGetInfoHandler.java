@@ -92,8 +92,14 @@ public class FileGetInfoHandler extends FileQueryBase {
     public @NonNull Fees computeFees(@NonNull QueryContext queryContext) {
         final var query = queryContext.query();
         final var fileStore = queryContext.createStore(ReadableFileStore.class);
-        final var op = query.fileGetInfoOrThrow();
-        final var fileId = op.fileIDOrThrow();
+        if (!query.hasFileGetInfo()) {
+            return Fees.FREE;
+        }
+        final var op = query.fileGetInfo();
+        if (!op.hasFileID()) {
+            return Fees.FREE;
+        }
+        final var fileId = op.fileID();
         final File file = fileStore.getFileLeaf(fileId);
 
         return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetFileInfoResourceUsage(fileOpsUsage)

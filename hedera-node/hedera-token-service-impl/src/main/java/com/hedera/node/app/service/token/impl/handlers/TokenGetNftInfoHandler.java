@@ -156,9 +156,14 @@ public class TokenGetNftInfoHandler extends PaidQueryHandler {
     public Fees computeFees(@NonNull final QueryContext queryContext) {
         final var query = queryContext.query();
         final var nftStore = queryContext.createStore(ReadableNftStore.class);
-        final var op = query.tokenGetNftInfoOrThrow();
-        final var nftId = op.nftIDOrThrow();
-        final var nft = nftStore.get(nftId);
+        if (!query.hasTokenGetNftInfo()) {
+            return Fees.FREE;
+        }
+        final var op = query.tokenGetNftInfo();
+        if (!op.hasNftID()) {
+            return Fees.FREE;
+        }
+        final var nft = nftStore.get(op.nftID());
 
         return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetTokenNftInfoResourceUsage()
                 .usageGiven(query, nft));

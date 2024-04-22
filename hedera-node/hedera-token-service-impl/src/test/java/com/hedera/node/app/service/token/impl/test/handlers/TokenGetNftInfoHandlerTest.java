@@ -44,6 +44,7 @@ import com.hedera.node.app.service.token.impl.ReadableNftStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.TokenGetNftInfoHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -238,6 +239,28 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
         final var tokenStore = new ReadableTokenStoreImpl(readableStates);
 
         checkResponse(responseHeader, expectedInfo, store, tokenStore);
+    }
+
+    @Test
+    void getComputedFeeIfMissingTokenGetNftInfo() {
+        when(context.query()).thenReturn(Query.newBuilder().build());
+
+        final var response = subject.computeFees(context);
+        assertEquals(response, Fees.FREE);
+    }
+
+    @Test
+    void getComputedFeeIfMissingNftID() {
+        final var data = TokenGetNftInfoQuery.newBuilder()
+                .header(QueryHeader.newBuilder().build())
+                .build();
+
+        final var query = Query.newBuilder().tokenGetNftInfo(data).build();
+
+        when(context.query()).thenReturn(query);
+
+        final var response = subject.computeFees(context);
+        assertEquals(response, Fees.FREE);
     }
 
     private void checkResponse(

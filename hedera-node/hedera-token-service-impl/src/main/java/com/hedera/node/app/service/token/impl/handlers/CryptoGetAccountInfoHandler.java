@@ -189,7 +189,10 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
     public Fees computeFees(@NonNull final QueryContext queryContext) {
         final var query = queryContext.query();
         final var accountStore = queryContext.createStore(ReadableAccountStore.class);
-        final var op = query.cryptoGetInfoOrThrow();
+        if (!query.hasCryptoGetInfo()) {
+            return Fees.FREE;
+        }
+        final var op = query.cryptoGetInfo();
         final var accountId = op.accountIDOrElse(AccountID.DEFAULT);
         final var account = accountStore.getAliasedAccountById(accountId);
 

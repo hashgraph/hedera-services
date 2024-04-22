@@ -158,13 +158,20 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
     @Override
     public Fees computeFees(@NonNull final QueryContext queryContext) {
         final RecordCache recordCache = queryContext.recordCache();
-        final TransactionGetRecordQuery op = queryContext.query().transactionGetRecordOrThrow();
+        final var query = queryContext.query();
+        if (!query.hasTransactionGetRecord()) {
+            return Fees.FREE;
+        }
+        final TransactionGetRecordQuery op = query.transactionGetRecord();
 
         // fees are the same for all records for a given response type,
         // so we calculate them once and multiply by the number of records found
 
         // calculate per-record fees
-        final ResponseType responseType = op.headerOrThrow().responseType();
+        if (!op.hasHeader()) {
+            return Fees.FREE;
+        }
+        final ResponseType responseType = op.header().responseType();
         final int stateProofSize =
                 responseType == ResponseType.ANSWER_STATE_PROOF || responseType == ResponseType.COST_ANSWER_STATE_PROOF
                         ? STATE_PROOF_SIZE
@@ -182,7 +189,10 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
 
         int recordCount = 1;
         if (op.includeDuplicates() || op.includeChildRecords()) {
-            final var history = recordCache.getHistory(op.transactionIDOrThrow());
+            if (!op.hasTransactionID()) {
+                return Fees.FREE;
+            }
+            final var history = recordCache.getHistory(op.transactionID());
             if (history != null) {
                 recordCount += op.includeDuplicates() ? history.duplicateCount() : 0;
                 recordCount += op.includeChildRecords() ? history.childRecords().size() : 0;

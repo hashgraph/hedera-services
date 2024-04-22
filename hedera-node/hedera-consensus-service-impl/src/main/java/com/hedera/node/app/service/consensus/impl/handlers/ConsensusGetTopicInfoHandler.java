@@ -161,7 +161,10 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
     public Fees computeFees(@NonNull QueryContext queryContext) {
         final var query = queryContext.query();
         final var topicStore = queryContext.createStore(ReadableTopicStore.class);
-        final var op = query.consensusGetTopicInfoOrThrow();
+        if (!query.hasConsensusGetTopicInfo()) {
+            return Fees.FREE;
+        }
+        final var op = query.consensusGetTopicInfo();
         final var topicId = op.topicIDOrElse(TopicID.DEFAULT);
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         final var topic = topicStore.getTopic(topicId);

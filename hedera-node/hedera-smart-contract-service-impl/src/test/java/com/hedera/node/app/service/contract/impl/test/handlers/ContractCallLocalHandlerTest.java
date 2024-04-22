@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -227,10 +228,9 @@ class ContractCallLocalHandlerTest {
 
     @Test
     void computesFeesSuccessfully() {
-
-        final var id = ContractID.newBuilder().contractNum(10).build();
         given(context.query()).willReturn(query);
-        given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
+        given(query.hasContractCallLocal()).willReturn(true);
+        given(query.contractCallLocal()).willReturn(contractCallLocalQuery);
         given(context.feeCalculator()).willReturn(feeCalculator);
         givenAllowCallsToNonContractAccountOffConfig();
 
@@ -244,6 +244,14 @@ class ContractCallLocalHandlerTest {
         var fees = subject.computeFees(context);
 
         assertThat(fees).isEqualTo(new Fees(10L, 0L, 0L));
+    }
+
+    @Test
+    void getComputedFeeIfMissingContractCallLocal() {
+        when(context.query()).thenReturn(Query.newBuilder().build());
+
+        final var response = subject.computeFees(context);
+        assertEquals(response, Fees.FREE);
     }
 
     private void givenDefaultConfig() {
