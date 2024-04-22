@@ -1764,7 +1764,10 @@ class SequentialTaskSchedulerTests {
         // insertion may briefly push the count up to 12 (although it should always fall immediately after).
         MILLISECONDS.sleep(50);
         assertEventuallyEquals(
-                11, taskSchedulerC::getUnprocessedTaskCount, Duration.ofSeconds(1), "should have 11 unprocessed tasks");
+                11L,
+                taskSchedulerC::getUnprocessedTaskCount,
+                Duration.ofSeconds(1),
+                "should have 11 unprocessed tasks");
 
         // Push some more data into A and B. A will be unable to process it because it's still
         // stuck pushing the previous value.
