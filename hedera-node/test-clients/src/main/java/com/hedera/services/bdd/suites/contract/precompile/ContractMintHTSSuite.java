@@ -584,8 +584,8 @@ public class ContractMintHTSSuite extends HapiSuite {
                     allRunFor(
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
-                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
-                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
+                            cryptoTransfer(
+                                    movingHbar(ONE_HUNDRED_HBARS).distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                     .has(accountWith().hasEmptyKey()),
@@ -602,8 +602,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                             mintToken(FUNGIBLE_TOKEN, 5)
                                     .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
                                     .payingWith(ACCOUNT),
-                            getAccountBalance(TOKEN_TREASURY)
-                                    .hasTokenBalance(FUNGIBLE_TOKEN, 105L));
+                            getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 105L));
                 }));
     }
 
@@ -629,8 +628,8 @@ public class ContractMintHTSSuite extends HapiSuite {
                     allRunFor(
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
-                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
-                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
+                            cryptoTransfer(
+                                    movingHbar(ONE_HUNDRED_HBARS).distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                     .has(accountWith().hasEmptyKey()),
@@ -647,8 +646,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                             mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("metadata1")))
                                     .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
                                     .payingWith(ACCOUNT),
-                            getAccountBalance(TOKEN_TREASURY)
-                                    .hasTokenBalance(NON_FUNGIBLE_TOKEN, 1L));
+                            getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1L));
                 }));
     }
 

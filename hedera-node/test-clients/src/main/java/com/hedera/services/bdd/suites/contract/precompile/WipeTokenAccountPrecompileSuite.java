@@ -395,8 +395,8 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                     allRunFor(
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
-                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
-                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
+                            cryptoTransfer(
+                                    movingHbar(ONE_HUNDRED_HBARS).distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                     .has(accountWith().hasEmptyKey()),
@@ -445,8 +445,8 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                     allRunFor(
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
-                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
-                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
+                            cryptoTransfer(
+                                    movingHbar(ONE_HUNDRED_HBARS).distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                     .has(accountWith().hasEmptyKey()),
@@ -469,14 +469,12 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                 .then(withOpContext((spec, opLog) -> {
                     allRunFor(
                             spec,
-                            getAccountBalance(ACCOUNT)
-                                    .hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
+                            getAccountBalance(ACCOUNT).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
                             // Wipe 1 token from the completed account
                             wipeTokenAccount(NON_FUNGIBLE_TOKEN, ACCOUNT, List.of(1L))
                                     .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
                                     .payingWith(ACCOUNT),
-                            getAccountBalance(ACCOUNT)
-                                    .hasTokenBalance(NON_FUNGIBLE_TOKEN, 0));
+                            getAccountBalance(ACCOUNT).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0));
                 }));
     }
 }

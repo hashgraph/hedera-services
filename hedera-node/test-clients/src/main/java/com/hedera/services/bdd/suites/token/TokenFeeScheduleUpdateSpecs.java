@@ -325,8 +325,8 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
                     allRunFor(
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
-                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
-                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
+                            cryptoTransfer(
+                                    movingHbar(ONE_HUNDRED_HBARS).distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                     .has(accountWith().hasEmptyKey()),
@@ -388,8 +388,8 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
                     allRunFor(
                             spec,
                             // Transfer money to the alias --> creates HOLLOW ACCOUNT
-                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
-                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
+                            cryptoTransfer(
+                                    movingHbar(ONE_HUNDRED_HBARS).distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
                             // Verify that the account is created and is hollow
                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                     .has(accountWith().hasEmptyKey()),
