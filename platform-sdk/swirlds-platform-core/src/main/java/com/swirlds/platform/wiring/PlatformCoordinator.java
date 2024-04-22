@@ -23,6 +23,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
@@ -58,6 +59,7 @@ public class PlatformCoordinator {
     private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
+    private final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring;
     private final StateHasherWiring stateHasherWiring;
 
     /**
@@ -74,6 +76,7 @@ public class PlatformCoordinator {
      * @param applicationTransactionPrehandlerWiring the application transaction prehandler wiring
      * @param stateSignatureCollectorWiring          the system transaction prehandler wiring
      * @param consensusRoundHandlerWiring            the consensus round handler wiring
+     * @param roundDurabilityBufferWiring            the round durability buffer wiring
      * @param stateHasherWiring                      the state hasher wiring
      */
     public PlatformCoordinator(
@@ -88,6 +91,7 @@ public class PlatformCoordinator {
             @NonNull final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring,
             @NonNull final StateSignatureCollectorWiring stateSignatureCollectorWiring,
             @NonNull final ConsensusRoundHandlerWiring consensusRoundHandlerWiring,
+            @NonNull final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring,
             @NonNull final StateHasherWiring stateHasherWiring) {
 
         this.hashingObjectCounter = Objects.requireNonNull(hashingObjectCounter);
@@ -101,6 +105,7 @@ public class PlatformCoordinator {
         this.applicationTransactionPrehandlerWiring = Objects.requireNonNull(applicationTransactionPrehandlerWiring);
         this.stateSignatureCollectorWiring = Objects.requireNonNull(stateSignatureCollectorWiring);
         this.consensusRoundHandlerWiring = Objects.requireNonNull(consensusRoundHandlerWiring);
+        this.roundDurabilityBufferWiring = Objects.requireNonNull(roundDurabilityBufferWiring);
         this.stateHasherWiring = Objects.requireNonNull(stateHasherWiring);
     }
 
@@ -159,6 +164,7 @@ public class PlatformCoordinator {
         flushIntakePipeline();
         stateHasherWiring.flushRunnable().run();
         stateSignatureCollectorWiring.flush();
+        roundDurabilityBufferWiring.flush();
         consensusRoundHandlerWiring.flushRunnable().run();
 
         // Phase 3: stop squelching
@@ -174,5 +180,6 @@ public class PlatformCoordinator {
         gossipWiring.getClearInput().inject(NoInput.getInstance());
         stateSignatureCollectorWiring.getClearInput().inject(NoInput.getInstance());
         eventCreationManagerWiring.getInputWire(EventCreationManager::clear).inject(NoInput.getInstance());
+        roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::clear).inject(NoInput.getInstance());
     }
 }

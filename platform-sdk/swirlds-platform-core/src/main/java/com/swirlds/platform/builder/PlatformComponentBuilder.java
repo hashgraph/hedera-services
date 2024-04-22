@@ -43,6 +43,8 @@ import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
+import com.swirlds.platform.event.preconsensus.durability.DefaultRoundDurabilityBuffer;
+import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
 import com.swirlds.platform.event.runninghash.DefaultRunningEventHasher;
 import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.DefaultSelfEventSigner;
@@ -98,6 +100,7 @@ public class PlatformComponentBuilder {
     private ConsensusEngine consensusEngine;
     private ConsensusEventStream consensusEventStream;
     private PcesSequencer pcesSequencer;
+    private RoundDurabilityBuffer roundDurabilityBuffer;
     private Gossip gossip;
 
     /**
@@ -562,8 +565,7 @@ public class PlatformComponentBuilder {
     /**
      * Build the PCES sequencer if it has not yet been built. If one has been provided via
      * {@link #withPcesSequencer(PcesSequencer)}, that sequencer will be used. If this method is called more than once,
-     * only the first call will build the PCES sequencer. Otherwise, the default sequencer will
-     * be created and
+     * only the first call will build the PCES sequencer. Otherwise, the default sequencer will be created and
      * returned.
      *
      * @return the PCES sequencer
@@ -574,6 +576,39 @@ public class PlatformComponentBuilder {
             pcesSequencer = new DefaultPcesSequencer();
         }
         return pcesSequencer;
+    }
+
+    /**
+     * Provide a round durability buffer in place of the platform's default round durability buffer.
+     *
+     * @param roundDurabilityBuffer the RoundDurabilityBuffer to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withRoundDurabilityBuffer(
+            @NonNull final RoundDurabilityBuffer roundDurabilityBuffer) {
+        throwIfAlreadyUsed();
+        if (this.roundDurabilityBuffer != null) {
+            throw new IllegalStateException("RoundDurabilityBuffer has already been set");
+        }
+        this.roundDurabilityBuffer = Objects.requireNonNull(roundDurabilityBuffer);
+        return this;
+    }
+
+    /**
+     * Build the round durability buffer if it has not yet been built. If one has been provided via
+     * {@link #withRoundDurabilityBuffer(RoundDurabilityBuffer)}, that round durability buffer will be used. If this
+     * method is called more than once, only the first call will build the round durability buffer. Otherwise, the
+     * default round durability buffer will be created and returned.
+     *
+     * @return the RoundDurabilityBuffer
+     */
+    @NonNull
+    public RoundDurabilityBuffer buildRoundDurabilityBuffer() {
+        if (roundDurabilityBuffer == null) {
+            roundDurabilityBuffer = new DefaultRoundDurabilityBuffer(blocks.platformContext());
+        }
+        return roundDurabilityBuffer;
     }
 
     /**
@@ -593,9 +628,9 @@ public class PlatformComponentBuilder {
     }
 
     /**
-     * Build the gossip if it has not yet been built. If one has been provided via
-     * {@link #withGossip(Gossip)}, that gossip will be used. If this method is called more than once, only the first call
-     * will build the gossip. Otherwise, the default gossip will be created and returned.
+     * Build the gossip if it has not yet been built. If one has been provided via {@link #withGossip(Gossip)}, that
+     * gossip will be used. If this method is called more than once, only the first call will build the gossip.
+     * Otherwise, the default gossip will be created and returned.
      *
      * @return the gossip
      */
@@ -618,7 +653,8 @@ public class PlatformComponentBuilder {
                     state -> blocks.loadReconnectStateReference().get().accept(state),
                     () -> blocks.clearAllPipelinesForReconnectReference().get().run(),
                     blocks.intakeEventCounter(),
-                    x -> blocks.statusActionSubmitterReference().get().submitStatusAction(x)) {};
+                    x -> blocks.statusActionSubmitterReference().get().submitStatusAction(x)) {
+            };
         }
         return gossip;
     }

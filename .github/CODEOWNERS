@@ -41,7 +41,7 @@
 /hedera-node/hedera-token*/                     @hashgraph/hedera-base @hashgraph/hedera-services
 /hedera-node/hedera-util*/                      @hashgraph/hedera-base @hashgraph/hedera-services
 /hedera-node/hedera-staking*/                   @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/test-clients/                      @hashgraph/hedera-base @hashgraph/hedera-services
+/hedera-node/test-clients/                      @hashgraph/hedera-base @hashgraph/hedera-services @hashgraph/hedera-smart-contracts
 /hedera-node/**/module-info.java                @hashgraph/hedera-base @hashgraph/hedera-services @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 #########################
