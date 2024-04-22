@@ -60,7 +60,7 @@ import java.time.Duration;
  * @param suspiciousSignedStateAge      The age of a signed state which is considered to be suspicious. Suspicious
  *                                      states cause a large amount of data to be logged that helps to debug the
  *                                      potential state leak.
- * @param signedStateAgeCheckPeriod     The period of time between checks for signed states that are suspiciously old.
+ * @param signedStateAgeNotifyRateLimit The minimum period between notifications of suspiciously old signed states.
  * @param stateHistoryEnabled           If true, then a history of operations that modify the signed state reference
  *                                      count are kept for debugging purposes.
  * @param debugStackTracesEnabled       if true and stateHistoryEnabled is true, then stack traces are captured each
@@ -93,7 +93,7 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "26") int roundsToKeepForSigning,
         @ConfigProperty(defaultValue = "0") int roundsToKeepAfterSigning,
         @ConfigProperty(defaultValue = "5m") Duration suspiciousSignedStateAge,
-        @ConfigProperty(defaultValue = "10m") Duration signedStateAgeCheckPeriod,
+        @ConfigProperty(defaultValue = "10m") Duration signedStateAgeNotifyRateLimit,
         @ConfigProperty(defaultValue = "false") boolean stateHistoryEnabled,
         @ConfigProperty(defaultValue = "false") boolean debugStackTracesEnabled,
         @ConfigProperty(defaultValue = "emergencyRecovery.yaml") String emergencyStateFileName,

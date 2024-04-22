@@ -17,6 +17,7 @@
 package com.swirlds.platform.state.signed;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
+import java.time.Instant;
 
 /**
  * The {@link SignedStateSentinel} is responsible for observing the lifespans of signed states, and taking action if a
@@ -25,7 +26,9 @@ import com.swirlds.common.wiring.component.InputWireLabel;
 public interface SignedStateSentinel {
     /**
      * Check the maximum age of signed states, and take action if a really old state is observed.
+     *
+     * @param now the current time
      */
     @InputWireLabel("heartbeat")
-    void checkSignedStates();
+    void checkSignedStates(final Instant now);
 }

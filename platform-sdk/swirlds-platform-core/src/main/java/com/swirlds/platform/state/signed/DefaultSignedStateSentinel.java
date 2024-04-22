@@ -27,6 +27,7 @@ import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.platform.config.StateConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.time.Instant;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,7 +53,7 @@ public class DefaultSignedStateSentinel implements SignedStateSentinel {
         this.time = platformContext.getTime();
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         maxSignedStateAge = stateConfig.suspiciousSignedStateAge();
-        final Duration rateLimitPeriod = stateConfig.signedStateAgeCheckPeriod();
+        final Duration rateLimitPeriod = stateConfig.signedStateAgeNotifyRateLimit();
         rateLimiter = new RateLimiter(Time.getCurrent(), rateLimitPeriod);
     }
 
@@ -60,7 +61,7 @@ public class DefaultSignedStateSentinel implements SignedStateSentinel {
      * {@inheritDoc}
      */
     @Override
-    public void checkSignedStates() {
+    public void checkSignedStates(@NonNull final Instant now) {
         if (!rateLimiter.request()) {
             return;
         }
@@ -72,7 +73,10 @@ public class DefaultSignedStateSentinel implements SignedStateSentinel {
         if (CompareTo.isGreaterThan(objectRecord.getAge(time.now()), maxSignedStateAge)
                 && rateLimiter.requestAndTrigger()) {
             final SignedStateHistory history = objectRecord.getMetadata();
-            logger.error(EXCEPTION.getMarker(), "old signed state detected, memory leak probable.\n{}", history);
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "Old signed state detected. The most likely causes are either the node has gotten stuck or a memory leak.\n{}",
+                    history);
         }
     }
 }
