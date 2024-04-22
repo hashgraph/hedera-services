@@ -36,8 +36,7 @@ public interface RecordStreamValidator {
         // No-op
     }
 
-    default void validateAccountAliases(Set<BBMHederaAccount> accountsFromState, List<RecordWithSidecars> records)
-            throws InvocationTargetException, IllegalAccessException {
+    default void validateAccountAliases(Set<BBMHederaAccount> accountsFromState, List<RecordWithSidecars> records) {
         // No-op
     }
 }

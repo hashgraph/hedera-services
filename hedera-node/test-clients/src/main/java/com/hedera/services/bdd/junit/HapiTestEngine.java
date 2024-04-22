@@ -26,7 +26,6 @@ import static org.junit.platform.commons.support.HierarchyTraversalMode.TOP_DOWN
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.service.mono.statedumpers.accounts.BBMHederaAccount;
 import com.hedera.services.bdd.junit.validators.AccountAliasValidator;
-import com.hedera.services.bdd.junit.validators.BlockNoValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.suites.BddMethodIsNotATest;

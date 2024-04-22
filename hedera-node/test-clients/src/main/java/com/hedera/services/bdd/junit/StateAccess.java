@@ -27,7 +27,6 @@ import static com.hedera.node.app.statedumpers.accounts.AccountDumpUtils.gatherA
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
-// import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.service.mono.statedumpers.accounts.BBMHederaAccount;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
@@ -35,19 +34,10 @@ import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateCommonConfig;
-// import com.swirlds.common.context.DefaultPlatformContext;
-// import com.swirlds.common.context.PlatformContext;
-// import com.swirlds.common.crypto.Cryptography;
-// import com.swirlds.common.crypto.CryptographyFactory;
-// import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyFactory;
-// import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-// import com.swirlds.common.merkle.crypto.MerkleCryptography;
-// import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
-// import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
