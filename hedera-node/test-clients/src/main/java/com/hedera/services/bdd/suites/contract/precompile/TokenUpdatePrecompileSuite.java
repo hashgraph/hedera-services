@@ -49,6 +49,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_NOT_PROVIDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -338,6 +339,9 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
         final var newName = "New Name";
         final var sym1 = "SYM1";
         final var newMemo = "New Memo";
+        final var updateToEdKey = "updateTokenKeyEd";
+        final var updateToContractId = "updateTokenKeyContractId";
+        final var contractIdKey = "contractIdKey";
         final AtomicReference<TokenID> token = new AtomicReference<>();
         final AtomicReference<AccountID> newTreasury = new AtomicReference<>();
         final AtomicReference<AccountID> autoRenewAccount = new AtomicReference<>();
@@ -347,12 +351,13 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         uploadInitCode(tokenInfoUpdateContract),
                         contractCreate(tokenInfoUpdateContract).gas(GAS_TO_OFFER),
                         newKeyNamed(MULTI_KEY).shape(KEY_SHAPE.signedWith(sigs(ON, tokenInfoUpdateContract))),
-                        newKeyNamed(ED25519KEY).shape(KEY_SHAPE.signedWith(sigs(ON, tokenInfoUpdateContract))),
+                        newKeyNamed(ED25519KEY).shape(ED25519),
+                        newKeyNamed(contractIdKey).shape(CONTRACT.signedWith(tokenInfoUpdateContract)),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(MULTI_KEY),
                         cryptoCreate(newTokenTreasury).key(MULTI_KEY).exposingCreatedIdTo(newTreasury::set),
                         cryptoCreate(AUTO_RENEW_ACCOUNT)
                                 .balance(ONE_MILLION_HBARS)
-                                .key(ED25519KEY)
+                                .key(MULTI_KEY)
                                 .exposingCreatedIdTo(autoRenewAccount::set),
                         tokenCreate(TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -379,6 +384,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         cryptoTransfer(moving(500, TOKEN).between(TOKEN_TREASURY, ACCOUNT)))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
+
+                        // Try updating token name
                         contractCall(
                                         tokenInfoUpdateContract,
                                         "updateTokenName",
@@ -402,13 +409,14 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .hasSupplyType(TokenSupplyType.INFINITE)
                                 .searchKeysGlobally()
                                 .hasAdminKey(MULTI_KEY)
-                                .hasPauseKey(MULTI_KEY)
                                 .hasKycKey(MULTI_KEY)
                                 .hasFreezeKey(MULTI_KEY)
                                 .hasWipeKey(MULTI_KEY)
                                 .hasFeeScheduleKey(MULTI_KEY)
                                 .hasSupplyKey(MULTI_KEY)
                                 .hasPauseKey(MULTI_KEY),
+
+                        // Try updating token symbol
                         contractCall(
                                         tokenInfoUpdateContract,
                                         "updateTokenSymbol",
@@ -432,13 +440,14 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .hasSupplyType(TokenSupplyType.INFINITE)
                                 .searchKeysGlobally()
                                 .hasAdminKey(MULTI_KEY)
-                                .hasPauseKey(MULTI_KEY)
                                 .hasKycKey(MULTI_KEY)
                                 .hasFreezeKey(MULTI_KEY)
                                 .hasWipeKey(MULTI_KEY)
                                 .hasFeeScheduleKey(MULTI_KEY)
                                 .hasSupplyKey(MULTI_KEY)
                                 .hasPauseKey(MULTI_KEY),
+
+                        // Try updating token memo
                         contractCall(
                                         tokenInfoUpdateContract,
                                         "updateTokenMemo",
@@ -462,13 +471,14 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .hasSupplyType(TokenSupplyType.INFINITE)
                                 .searchKeysGlobally()
                                 .hasAdminKey(MULTI_KEY)
-                                .hasPauseKey(MULTI_KEY)
                                 .hasKycKey(MULTI_KEY)
                                 .hasFreezeKey(MULTI_KEY)
                                 .hasWipeKey(MULTI_KEY)
                                 .hasFeeScheduleKey(MULTI_KEY)
                                 .hasSupplyKey(MULTI_KEY)
                                 .hasPauseKey(MULTI_KEY),
+
+                        // Try updating token treasury
                         contractCall(
                                         tokenInfoUpdateContract,
                                         "updateTokenTreasury",
@@ -492,13 +502,14 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .hasSupplyType(TokenSupplyType.INFINITE)
                                 .searchKeysGlobally()
                                 .hasAdminKey(MULTI_KEY)
-                                .hasPauseKey(MULTI_KEY)
                                 .hasKycKey(MULTI_KEY)
                                 .hasFreezeKey(MULTI_KEY)
                                 .hasWipeKey(MULTI_KEY)
                                 .hasFeeScheduleKey(MULTI_KEY)
                                 .hasSupplyKey(MULTI_KEY)
                                 .hasPauseKey(MULTI_KEY),
+
+                        // Try updating auto-renew account
                         contractCall(
                                         tokenInfoUpdateContract,
                                         "updateTokenAutoRenewAccount",
@@ -522,13 +533,14 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .hasSupplyType(TokenSupplyType.INFINITE)
                                 .searchKeysGlobally()
                                 .hasAdminKey(MULTI_KEY)
-                                .hasPauseKey(MULTI_KEY)
                                 .hasKycKey(MULTI_KEY)
                                 .hasFreezeKey(MULTI_KEY)
                                 .hasWipeKey(MULTI_KEY)
                                 .hasFeeScheduleKey(MULTI_KEY)
                                 .hasSupplyKey(MULTI_KEY)
                                 .hasPauseKey(MULTI_KEY),
+
+                        // Try updating auto-renew period
                         contractCall(
                                         tokenInfoUpdateContract,
                                         "updateTokenAutoRenewPeriod",
@@ -552,13 +564,482 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .hasSupplyType(TokenSupplyType.INFINITE)
                                 .searchKeysGlobally()
                                 .hasAdminKey(MULTI_KEY)
-                                .hasPauseKey(MULTI_KEY)
                                 .hasKycKey(MULTI_KEY)
                                 .hasFreezeKey(MULTI_KEY)
                                 .hasWipeKey(MULTI_KEY)
                                 .hasFeeScheduleKey(MULTI_KEY)
                                 .hasSupplyKey(MULTI_KEY)
-                                .hasPauseKey(MULTI_KEY))))
+                                .hasPauseKey(MULTI_KEY),
+
+                        // Try update token admin key
+                        contractCall(
+                                        tokenInfoUpdateContract,
+                                        updateToEdKey,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(token.get())),
+                                        spec.registry()
+                                                .getKey(ED25519KEY)
+                                                .getEd25519()
+                                                .toByteArray(),
+                                        0)
+                                .via("updateOnlyAdminKeyWithEd")
+                                .logged()
+                                .signedBy(ED25519KEY, MULTI_KEY)
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        getTokenInfo(TOKEN)
+                                .logged()
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasSymbol(sym1)
+                                .hasName(newName)
+                                .hasEntityMemo(newMemo)
+                                .hasTreasury(newTokenTreasury)
+                                .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+                                .hasAutoRenewPeriod(AUTO_RENEW_PERIOD - 1000L)
+                                .hasSupplyType(TokenSupplyType.INFINITE)
+                                .searchKeysGlobally()
+                                .hasAdminKey(MULTI_KEY)
+                                .hasKycKey(MULTI_KEY)
+                                .hasFreezeKey(MULTI_KEY)
+                                .hasWipeKey(MULTI_KEY)
+                                .hasFeeScheduleKey(MULTI_KEY)
+                                .hasSupplyKey(MULTI_KEY)
+                                .hasPauseKey(MULTI_KEY),
+                        contractCall(
+                                        tokenInfoUpdateContract,
+                                        updateToContractId,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(token.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(spec.registry()
+                                                .getKey(contractIdKey)
+                                                .getContractID())),
+                                        0)
+                                .via("updateOnlyAdminKey")
+                                .logged()
+                                .signedBy(ED25519KEY, MULTI_KEY)
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTokenInfo(TOKEN)
+                                .logged()
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasSymbol(sym1)
+                                .hasName(newName)
+                                .hasEntityMemo(newMemo)
+                                .hasTreasury(newTokenTreasury)
+                                .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+                                .hasAutoRenewPeriod(AUTO_RENEW_PERIOD - 1000L)
+                                .hasSupplyType(TokenSupplyType.INFINITE)
+                                .searchKeysGlobally()
+                                .hasAdminKey(contractIdKey)
+                                .hasKycKey(MULTI_KEY)
+                                .hasFreezeKey(MULTI_KEY)
+                                .hasWipeKey(MULTI_KEY)
+                                .hasFeeScheduleKey(MULTI_KEY)
+                                .hasSupplyKey(MULTI_KEY)
+                                .hasPauseKey(MULTI_KEY),
+
+                        // Try update token kyc key
+                        contractCall(
+                                        tokenInfoUpdateContract,
+                                        updateToEdKey,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(token.get())),
+                                        spec.registry()
+                                                .getKey(ED25519KEY)
+                                                .getEd25519()
+                                                .toByteArray(),
+                                        1)
+                                .via("updateOnlyKycKeyWithEd")
+                                .logged()
+                                .signedBy(ED25519KEY, MULTI_KEY)
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTokenInfo(TOKEN)
+                                .logged()
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasSymbol(sym1)
+                                .hasName(newName)
+                                .hasEntityMemo(newMemo)
+                                .hasTreasury(newTokenTreasury)
+                                .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+                                .hasAutoRenewPeriod(AUTO_RENEW_PERIOD - 1000L)
+                                .hasSupplyType(TokenSupplyType.INFINITE)
+                                .searchKeysGlobally()
+                                .hasAdminKey(contractIdKey)
+                                .hasKycKey(ED25519KEY)
+                                .hasFreezeKey(MULTI_KEY)
+                                .hasWipeKey(MULTI_KEY)
+                                .hasFeeScheduleKey(MULTI_KEY)
+                                .hasSupplyKey(MULTI_KEY)
+                                .hasPauseKey(MULTI_KEY),
+                        contractCall(
+                                        tokenInfoUpdateContract,
+                                        updateToContractId,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(token.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(spec.registry()
+                                                .getKey(contractIdKey)
+                                                .getContractID())),
+                                        1)
+                                .via("updateOnlyKycKey")
+                                .logged()
+                                .signedBy(MULTI_KEY)
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTokenInfo(TOKEN)
+                                .logged()
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasSymbol(sym1)
+                                .hasName(newName)
+                                .hasEntityMemo(newMemo)
+                                .hasTreasury(newTokenTreasury)
+                                .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+                                .hasAutoRenewPeriod(AUTO_RENEW_PERIOD - 1000L)
+                                .hasSupplyType(TokenSupplyType.INFINITE)
+                                .searchKeysGlobally()
+                                .hasAdminKey(contractIdKey)
+                                .hasKycKey(contractIdKey)
+                                .hasFreezeKey(MULTI_KEY)
+                                .hasWipeKey(MULTI_KEY)
+                                .hasFeeScheduleKey(MULTI_KEY)
+                                .hasSupplyKey(MULTI_KEY)
+                                .hasPauseKey(MULTI_KEY),
+
+                        // Try update token freeze key
+                        contractCall(
+                                        tokenInfoUpdateContract,
+                                        updateToEdKey,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(token.get())),
+                                        spec.registry()
+                                                .getKey(ED25519KEY)
+                                                .getEd25519()
+                                                .toByteArray(),
+                                        2)
+                                .via("updateOnlyFreezeKeyWithEd")
+                                .logged()
+                                .signedBy(contractIdKey, MULTI_KEY)
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTokenInfo(TOKEN)
+                                .logged()
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasSymbol(sym1)
+                                .hasName(newName)
+                                .hasEntityMemo(newMemo)
+                                .hasTreasury(newTokenTreasury)
+                                .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+                                .hasAutoRenewPeriod(AUTO_RENEW_PERIOD - 1000L)
+                                .hasSupplyType(TokenSupplyType.INFINITE)
+                                .searchKeysGlobally()
+                                .hasAdminKey(contractIdKey)
+                                .hasKycKey(contractIdKey)
+                                .hasFreezeKey(ED25519KEY)
+                                .hasWipeKey(MULTI_KEY)
+                                .hasFeeScheduleKey(MULTI_KEY)
+                                .hasSupplyKey(MULTI_KEY)
+                                .hasPauseKey(MULTI_KEY),
+                        contractCall(
+                                        tokenInfoUpdateContract,
+                                        updateToContractId,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(token.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(spec.registry()
+                                                .getKey(contractIdKey)
+                                                .getContractID())),
+                                        2)
+                                .via("updateOnlyFreezeKey")
+                                .logged()
+                                .signedBy(ED25519KEY, MULTI_KEY)
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTokenInfo(TOKEN)
+                                .logged()
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasSymbol(sym1)
+                                .hasName(newName)
+                                .hasEntityMemo(newMemo)
+                                .hasTreasury(newTokenTreasury)
+                                .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+                                .hasAutoRenewPeriod(AUTO_RENEW_PERIOD - 1000L)
+                                .hasSupplyType(TokenSupplyType.INFINITE)
+                                .searchKeysGlobally()
+                                .hasAdminKey(contractIdKey)
+                                .hasKycKey(contractIdKey)
+                                .hasFreezeKey(contractIdKey)
+                                .hasWipeKey(MULTI_KEY)
+                                .hasFeeScheduleKey(MULTI_KEY)
+                                .hasSupplyKey(MULTI_KEY)
+                                .hasPauseKey(MULTI_KEY),
+
+                        // Try update token wipe key
+                        contractCall(
+                                        tokenInfoUpdateContract,
+                                        updateToEdKey,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(token.get())),
+                                        spec.registry()
+                                                .getKey(ED25519KEY)
+                                                .getEd25519()
+                                                .toByteArray(),
+                                        3)
+                                .via("updateOnlyWipeKeyWithEd")
+                                .logged()
+                                .signedBy(contractIdKey, MULTI_KEY)
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTokenInfo(TOKEN)
+                                .logged()
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasSymbol(sym1)
+                                .hasName(newName)
+                                .hasEntityMemo(newMemo)
+                                .hasTreasury(newTokenTreasury)
+                                .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+                                .hasAutoRenewPeriod(AUTO_RENEW_PERIOD - 1000L)
+                                .hasSupplyType(TokenSupplyType.INFINITE)
+                                .searchKeysGlobally()
+                                .hasAdminKey(contractIdKey)
+                                .hasKycKey(contractIdKey)
+                                .hasFreezeKey(contractIdKey)
+                                .hasWipeKey(ED25519KEY)
+                                .hasFeeScheduleKey(MULTI_KEY)
+                                .hasSupplyKey(MULTI_KEY)
+                                .hasPauseKey(MULTI_KEY),
+                        contractCall(
+                                        tokenInfoUpdateContract,
+                                        updateToContractId,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(token.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(spec.registry()
+                                                .getKey(contractIdKey)
+                                                .getContractID())),
+                                        3)
+                                .via("updateOnlyWipeKey")
+                                .logged()
+                                .signedBy(contractIdKey, MULTI_KEY)
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTokenInfo(TOKEN)
+                                .logged()
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasSymbol(sym1)
+                                .hasName(newName)
+                                .hasEntityMemo(newMemo)
+                                .hasTreasury(newTokenTreasury)
+                                .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+                                .hasAutoRenewPeriod(AUTO_RENEW_PERIOD - 1000L)
+                                .hasSupplyType(TokenSupplyType.INFINITE)
+                                .searchKeysGlobally()
+                                .hasAdminKey(contractIdKey)
+                                .hasKycKey(contractIdKey)
+                                .hasFreezeKey(contractIdKey)
+                                .hasWipeKey(contractIdKey)
+                                .hasFeeScheduleKey(MULTI_KEY)
+                                .hasSupplyKey(MULTI_KEY)
+                                .hasPauseKey(MULTI_KEY),
+
+                        // Try update token supply key
+                        contractCall(
+                                        tokenInfoUpdateContract,
+                                        updateToEdKey,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(token.get())),
+                                        spec.registry()
+                                                .getKey(ED25519KEY)
+                                                .getEd25519()
+                                                .toByteArray(),
+                                        4)
+                                .via("updateOnlySupplyKeyWithEd")
+                                .logged()
+                                .signedBy(contractIdKey, MULTI_KEY)
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTokenInfo(TOKEN)
+                                .logged()
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasSymbol(sym1)
+                                .hasName(newName)
+                                .hasEntityMemo(newMemo)
+                                .hasTreasury(newTokenTreasury)
+                                .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+                                .hasAutoRenewPeriod(AUTO_RENEW_PERIOD - 1000L)
+                                .hasSupplyType(TokenSupplyType.INFINITE)
+                                .searchKeysGlobally()
+                                .hasAdminKey(contractIdKey)
+                                .hasKycKey(contractIdKey)
+                                .hasFreezeKey(contractIdKey)
+                                .hasWipeKey(contractIdKey)
+                                .hasSupplyKey(ED25519KEY)
+                                .hasFeeScheduleKey(MULTI_KEY)
+                                .hasPauseKey(MULTI_KEY),
+                        contractCall(
+                                        tokenInfoUpdateContract,
+                                        updateToContractId,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(token.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(spec.registry()
+                                                .getKey(contractIdKey)
+                                                .getContractID())),
+                                        4)
+                                .via("updateOnlySupplyKey")
+                                .logged()
+                                .signedBy(contractIdKey, MULTI_KEY)
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTokenInfo(TOKEN)
+                                .logged()
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasSymbol(sym1)
+                                .hasName(newName)
+                                .hasEntityMemo(newMemo)
+                                .hasTreasury(newTokenTreasury)
+                                .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+                                .hasAutoRenewPeriod(AUTO_RENEW_PERIOD - 1000L)
+                                .hasSupplyType(TokenSupplyType.INFINITE)
+                                .searchKeysGlobally()
+                                .hasAdminKey(contractIdKey)
+                                .hasKycKey(contractIdKey)
+                                .hasFreezeKey(contractIdKey)
+                                .hasWipeKey(contractIdKey)
+                                .hasSupplyKey(contractIdKey)
+                                .hasPauseKey(MULTI_KEY)
+                                .hasFeeScheduleKey(MULTI_KEY)
+                                .hasPauseKey(MULTI_KEY),
+
+                        // Try update token fee schedule key
+                        contractCall(
+                                        tokenInfoUpdateContract,
+                                        updateToEdKey,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(token.get())),
+                                        spec.registry()
+                                                .getKey(ED25519KEY)
+                                                .getEd25519()
+                                                .toByteArray(),
+                                        5)
+                                .via("updateOnlyFeeKeyWithEd")
+                                .logged()
+                                .signedBy(contractIdKey, MULTI_KEY)
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTokenInfo(TOKEN)
+                                .logged()
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasSymbol(sym1)
+                                .hasName(newName)
+                                .hasEntityMemo(newMemo)
+                                .hasTreasury(newTokenTreasury)
+                                .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+                                .hasAutoRenewPeriod(AUTO_RENEW_PERIOD - 1000L)
+                                .hasSupplyType(TokenSupplyType.INFINITE)
+                                .searchKeysGlobally()
+                                .hasAdminKey(contractIdKey)
+                                .hasKycKey(contractIdKey)
+                                .hasFreezeKey(contractIdKey)
+                                .hasWipeKey(contractIdKey)
+                                .hasSupplyKey(contractIdKey)
+                                .hasFeeScheduleKey(ED25519KEY)
+                                .hasPauseKey(MULTI_KEY),
+                        contractCall(
+                                        tokenInfoUpdateContract,
+                                        updateToContractId,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(token.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(spec.registry()
+                                                .getKey(contractIdKey)
+                                                .getContractID())),
+                                        5)
+                                .via("updateOnlyFeeKey")
+                                .logged()
+                                .signedBy(contractIdKey, MULTI_KEY)
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTokenInfo(TOKEN)
+                                .logged()
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasSymbol(sym1)
+                                .hasName(newName)
+                                .hasEntityMemo(newMemo)
+                                .hasTreasury(newTokenTreasury)
+                                .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+                                .hasAutoRenewPeriod(AUTO_RENEW_PERIOD - 1000L)
+                                .hasSupplyType(TokenSupplyType.INFINITE)
+                                .searchKeysGlobally()
+                                .hasAdminKey(contractIdKey)
+                                .hasKycKey(contractIdKey)
+                                .hasFreezeKey(contractIdKey)
+                                .hasWipeKey(contractIdKey)
+                                .hasSupplyKey(contractIdKey)
+                                .hasFeeScheduleKey(contractIdKey)
+                                .hasPauseKey(MULTI_KEY),
+
+                        // Try update token pause key
+                        contractCall(
+                                        tokenInfoUpdateContract,
+                                        updateToEdKey,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(token.get())),
+                                        spec.registry()
+                                                .getKey(ED25519KEY)
+                                                .getEd25519()
+                                                .toByteArray(),
+                                        6)
+                                .via("updateOnlyPauseKeyWithEd")
+                                .logged()
+                                .signedBy(contractIdKey, MULTI_KEY)
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTokenInfo(TOKEN)
+                                .logged()
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasSymbol(sym1)
+                                .hasName(newName)
+                                .hasEntityMemo(newMemo)
+                                .hasTreasury(newTokenTreasury)
+                                .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+                                .hasAutoRenewPeriod(AUTO_RENEW_PERIOD - 1000L)
+                                .hasSupplyType(TokenSupplyType.INFINITE)
+                                .searchKeysGlobally()
+                                .hasAdminKey(contractIdKey)
+                                .hasKycKey(contractIdKey)
+                                .hasFreezeKey(contractIdKey)
+                                .hasWipeKey(contractIdKey)
+                                .hasSupplyKey(contractIdKey)
+                                .hasFeeScheduleKey(contractIdKey)
+                                .hasPauseKey(ED25519KEY),
+                        contractCall(
+                                        tokenInfoUpdateContract,
+                                        updateToContractId,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(token.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(spec.registry()
+                                                .getKey(contractIdKey)
+                                                .getContractID())),
+                                        6)
+                                .via("updateOnlyPauseKey")
+                                .logged()
+                                .signedBy(contractIdKey, MULTI_KEY)
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTokenInfo(TOKEN)
+                                .logged()
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasSymbol(sym1)
+                                .hasName(newName)
+                                .hasEntityMemo(newMemo)
+                                .hasTreasury(newTokenTreasury)
+                                .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+                                .hasAutoRenewPeriod(AUTO_RENEW_PERIOD - 1000L)
+                                .hasSupplyType(TokenSupplyType.INFINITE)
+                                .searchKeysGlobally()
+                                .hasAdminKey(contractIdKey)
+                                .hasKycKey(contractIdKey)
+                                .hasFreezeKey(contractIdKey)
+                                .hasWipeKey(contractIdKey)
+                                .hasSupplyKey(contractIdKey)
+                                .hasFeeScheduleKey(contractIdKey)
+                                .hasPauseKey(contractIdKey))))
                 .then(
                         childRecordsCheck(
                                 "updateOnlyName", SUCCESS, recordWith().status(SUCCESS)),
@@ -574,6 +1055,42 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         childRecordsCheck(
                                 "updateOnlyAutoRenewPeriod",
                                 SUCCESS,
-                                recordWith().status(SUCCESS)));
+                                recordWith().status(SUCCESS)),
+                        childRecordsCheck(
+                                "updateOnlyAdminKeyWithEd",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_SIGNATURE)),
+                        childRecordsCheck(
+                                "updateOnlyAdminKey", SUCCESS, recordWith().status(SUCCESS)),
+                        childRecordsCheck(
+                                "updateOnlyKycKeyWithEd", SUCCESS, recordWith().status(SUCCESS)),
+                        childRecordsCheck(
+                                "updateOnlyKycKey", SUCCESS, recordWith().status(SUCCESS)),
+                        childRecordsCheck(
+                                "updateOnlyFreezeKeyWithEd",
+                                SUCCESS,
+                                recordWith().status(SUCCESS)),
+                        childRecordsCheck(
+                                "updateOnlyFreezeKey", SUCCESS, recordWith().status(SUCCESS)),
+                        childRecordsCheck(
+                                "updateOnlyWipeKeyWithEd", SUCCESS, recordWith().status(SUCCESS)),
+                        childRecordsCheck(
+                                "updateOnlyWipeKey", SUCCESS, recordWith().status(SUCCESS)),
+                        childRecordsCheck(
+                                "updateOnlySupplyKeyWithEd",
+                                SUCCESS,
+                                recordWith().status(SUCCESS)),
+                        childRecordsCheck(
+                                "updateOnlySupplyKey", SUCCESS, recordWith().status(SUCCESS)),
+                        childRecordsCheck(
+                                "updateOnlyFeeKeyWithEd", SUCCESS, recordWith().status(SUCCESS)),
+                        childRecordsCheck(
+                                "updateOnlyFeeKey", SUCCESS, recordWith().status(SUCCESS)),
+                        childRecordsCheck(
+                                "updateOnlyPauseKeyWithEd",
+                                SUCCESS,
+                                recordWith().status(SUCCESS)),
+                        childRecordsCheck(
+                                "updateOnlyPauseKey", SUCCESS, recordWith().status(SUCCESS)));
     }
 }

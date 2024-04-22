@@ -148,6 +148,52 @@
         "type": "address"
       },
       {
+        "internalType": "address",
+        "name": "contractId",
+        "type": "address"
+      },
+      {
+        "internalType": "enum KeyHelper.KeyType",
+        "name": "keyType",
+        "type": "uint8"
+      }
+    ],
+    "name": "updateTokenKeyContractId",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "tokenAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "newKey",
+        "type": "bytes"
+      },
+      {
+        "internalType": "enum KeyHelper.KeyType",
+        "name": "keyType",
+        "type": "uint8"
+      }
+    ],
+    "name": "updateTokenKeyEd",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "tokenAddress",
+        "type": "address"
+      },
+      {
         "internalType": "string",
         "name": "memo",
         "type": "string"
