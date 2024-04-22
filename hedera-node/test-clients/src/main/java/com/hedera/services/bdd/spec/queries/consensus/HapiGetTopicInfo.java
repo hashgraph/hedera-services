@@ -150,7 +150,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) {
-        Query query = getTopicInfoQuery(spec, payment, false);
+        Query query = maybeModified(maybeModified(getTopicInfoQuery(spec, payment, false), spec), spec);
         response = spec.clients().getConsSvcStub(targetNodeFor(spec), useTls).getTopicInfo(query);
         if (verboseLoggingOn) {
             String message = String.format(

@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -30,6 +31,7 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.NFT_ALLOWANCE_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.TOKEN_ALLOWANCE_SIZE;
 import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.isValidOwner;
 import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.validateAllowanceLimit;
+import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.validation.Validations.validateNullableAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -116,11 +118,13 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             validateNullableAccountID(allowance.owner());
             validateTruePreCheck(allowance.amount() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
             validateAccountID(allowance.spender(), INVALID_ALLOWANCE_SPENDER_ID);
+            mustExist(allowance.tokenId(), INVALID_TOKEN_ID);
         }
 
         for (final var allowance : nftAllowances) {
             validateNullableAccountID(allowance.owner());
             validateAccountID(allowance.spender(), INVALID_ALLOWANCE_SPENDER_ID);
+            mustExist(allowance.tokenId(), INVALID_TOKEN_ID);
         }
     }
 
