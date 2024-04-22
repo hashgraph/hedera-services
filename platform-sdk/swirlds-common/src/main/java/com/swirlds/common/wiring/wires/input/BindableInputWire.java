@@ -16,7 +16,9 @@
 
 package com.swirlds.common.wiring.wires.input;
 
-import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.NO_OP;
+
+import com.swirlds.common.wiring.model.TraceableWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -34,7 +36,7 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindabl
 
     private final TaskSchedulerInput<OUT> taskSchedulerInput;
     private final String taskSchedulerName;
-    private final StandardWiringModel model;
+    private final TraceableWiringModel model;
 
     /**
      * Supplier for whether the task scheduler is currently squelching.
@@ -44,6 +46,11 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindabl
     private final Supplier<Boolean> currentlySquelching;
 
     /**
+     * True if this is a wire on a no-op scheduler.
+     */
+    private final boolean noOp;
+
+    /**
      * Constructor.
      *
      * @param model         the wiring model containing this input wire
@@ -51,7 +58,7 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindabl
      * @param name          the name of the input wire
      */
     public BindableInputWire(
-            @NonNull final StandardWiringModel model,
+            @NonNull final TraceableWiringModel model,
             @NonNull final TaskScheduler<OUT> taskScheduler,
             @NonNull final String name) {
         super(taskScheduler, name);
@@ -60,6 +67,11 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindabl
         taskSchedulerName = taskScheduler.getName();
         currentlySquelching = taskScheduler::currentlySquelching;
 
+        noOp = taskScheduler.getType() == NO_OP;
+
+        if (noOp) {
+            return;
+        }
         model.registerInputWireCreation(taskSchedulerName, name);
     }
 
@@ -69,6 +81,9 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindabl
     @SuppressWarnings("unchecked")
     public void bindConsumer(@NonNull final Consumer<IN> handler) {
         Objects.requireNonNull(handler);
+        if (noOp) {
+            return;
+        }
         setHandler(i -> {
             if (currentlySquelching.get()) {
                 return;
@@ -85,6 +100,9 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindabl
     @SuppressWarnings("unchecked")
     public void bind(@NonNull final Function<IN, OUT> handler) {
         Objects.requireNonNull(handler);
+        if (noOp) {
+            return;
+        }
         setHandler(i -> {
             if (currentlySquelching.get()) {
                 return;

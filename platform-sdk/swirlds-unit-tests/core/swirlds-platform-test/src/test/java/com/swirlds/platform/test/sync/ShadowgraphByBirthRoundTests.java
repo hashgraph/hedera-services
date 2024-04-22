@@ -35,8 +35,9 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.eventhandling.EventConfig_;
+import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.ReservedEventWindow;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
@@ -109,7 +110,7 @@ class ShadowgraphByBirthRoundTests {
         final EventEmitterFactory factory = new EventEmitterFactory(platformContext, random, addressBook);
         emitter = factory.newStandardEmitter();
 
-        shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
+        shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class), new NoOpIntakeEventCounter());
 
         for (int i = 0; i < numEvents; i++) {
             final IndexedEvent event = emitter.emitEvent();
@@ -170,7 +171,7 @@ class ShadowgraphByBirthRoundTests {
 
         final long expireBelowBirthRound = random.nextInt(10) + 1;
 
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+        final EventWindow eventWindow = new EventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 expireBelowBirthRound,
@@ -303,7 +304,7 @@ class ShadowgraphByBirthRoundTests {
         final long expireBelowBirthRound = ROUND_FIRST + 1;
 
         final ReservedEventWindow r1 = shadowGraph.reserve();
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+        final EventWindow eventWindow = new EventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 expireBelowBirthRound,
@@ -368,7 +369,7 @@ class ShadowgraphByBirthRoundTests {
         initShadowGraph(random, numEvents, numNodes);
 
         final long expireBelowBirthRound = random.nextInt((int) maxBirthRound) + 2;
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+        final EventWindow eventWindow = new EventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 expireBelowBirthRound,
@@ -412,13 +413,13 @@ class ShadowgraphByBirthRoundTests {
         SyncTestUtils.printEvents("generated events", generatedEvents);
 
         final ReservedEventWindow r0 = shadowGraph.reserve();
-        shadowGraph.updateEventWindow(new NonAncientEventWindow(
+        shadowGraph.updateEventWindow(new EventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 ROUND_FIRST + 1,
                 BIRTH_ROUND_THRESHOLD));
         final ReservedEventWindow r1 = shadowGraph.reserve();
-        shadowGraph.updateEventWindow(new NonAncientEventWindow(
+        shadowGraph.updateEventWindow(new EventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 ROUND_FIRST + 2,
@@ -434,7 +435,7 @@ class ShadowgraphByBirthRoundTests {
         r2.close();
 
         // Attempt to expire everything up to
-        shadowGraph.updateEventWindow(new NonAncientEventWindow(
+        shadowGraph.updateEventWindow(new EventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 ROUND_FIRST + 2,
@@ -444,7 +445,7 @@ class ShadowgraphByBirthRoundTests {
         assertEventsBelowBirthRoundAreExpired(0);
 
         r0.close();
-        shadowGraph.updateEventWindow(new NonAncientEventWindow(
+        shadowGraph.updateEventWindow(new EventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 ROUND_FIRST + 2,
@@ -534,7 +535,7 @@ class ShadowgraphByBirthRoundTests {
     void testAddNullEvent() {
         initShadowGraph(RandomUtils.getRandomPrintSeed(), 0, 4);
         assertThrows(
-                ShadowgraphInsertionException.class,
+                NullPointerException.class,
                 () -> shadowGraph.addEvent(null),
                 "A null event should not be added to the shadow graph.");
     }
@@ -557,7 +558,7 @@ class ShadowgraphByBirthRoundTests {
     void testAddEventWithExpiredBirthRound() {
         initShadowGraph(RandomUtils.getRandomPrintSeed(), 100, 4);
 
-        shadowGraph.updateEventWindow(new NonAncientEventWindow(
+        shadowGraph.updateEventWindow(new EventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 ROUND_FIRST + 1,
@@ -596,7 +597,7 @@ class ShadowgraphByBirthRoundTests {
         initShadowGraph(RandomUtils.getRandomPrintSeed(), 100, 4);
 
         final IndexedEvent newEvent = emitter.emitEvent();
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+        final EventWindow eventWindow = new EventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 newEvent.getBaseEvent().getAncientIndicator(BIRTH_ROUND_THRESHOLD),
@@ -722,7 +723,7 @@ class ShadowgraphByBirthRoundTests {
         final int numTipsBeforeExpiry = shadowGraph.getTips().size();
         assertTrue(numTipsBeforeExpiry > 0, "Shadow graph should have tips after events are added.");
 
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+        final EventWindow eventWindow = new EventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 oldestTipBirthRound + 1,

@@ -602,7 +602,7 @@ final class SignatureExpanderImplTest extends AppTestBase implements Scenarios {
 
     /** Creates a {@link SignaturePair} for each unique key in the key list */
     private static List<SignaturePair> sufficientSignatures(@NonNull final KeyList key, final boolean fullPrefix) {
-        return key.keysOrThrow().stream()
+        return key.keys().stream()
                 .map(k -> sufficientSignatures(k, fullPrefix))
                 .flatMap(List::stream)
                 .distinct()

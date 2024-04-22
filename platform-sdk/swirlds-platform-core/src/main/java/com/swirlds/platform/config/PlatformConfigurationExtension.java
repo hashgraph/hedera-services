@@ -25,6 +25,7 @@ import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.config.api.ConfigurationExtension;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
@@ -32,7 +33,6 @@ import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.ProtocolConfig;
-import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.health.OSHealthCheckConfig;
 import com.swirlds.platform.network.SocketConfig;
@@ -62,7 +62,6 @@ public class PlatformConfigurationExtension implements ConfigurationExtension {
                 AddressBookConfig.class,
                 BasicCommonConfig.class,
                 BasicConfig.class,
-                ChatterConfig.class,
                 ConsensusConfig.class,
                 CryptoConfig.class,
                 EventConfig.class,
@@ -87,5 +86,11 @@ public class PlatformConfigurationExtension implements ConfigurationExtension {
                 TransactionConfig.class,
                 UptimeConfig.class,
                 VirtualMapConfig.class);
+    }
+
+    @NonNull
+    @Override
+    public Set<ConverterPair<?>> getConverters() {
+        return Set.of(new ConverterPair<>(TaskSchedulerConfiguration.class, TaskSchedulerConfiguration::parse));
     }
 }

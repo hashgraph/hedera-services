@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval;
 
+import static java.util.Objects.requireNonNull;
+
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
@@ -33,7 +35,6 @@ import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.Arrays;
-import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -112,7 +113,7 @@ public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
                 : GrantApprovalTranslator.GRANT_APPROVAL_NFT.decodeCall(attempt.inputBytes());
         final var tokenAddress = call.get(0);
         final var spender = attempt.addressIdConverter().convert(call.get(1));
-        final var amount = call.get(2);
+        final var amount = exactLongFrom(call.get(2));
         return new ClassicGrantApprovalCall(
                 attempt.systemContractGasCalculator(),
                 attempt.enhancement(),
@@ -120,22 +121,27 @@ public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
                 attempt.senderId(),
                 ConversionUtils.asTokenId((Address) tokenAddress),
                 spender,
-                (BigInteger) amount,
+                amount,
                 tokenType);
     }
 
     private ERCGrantApprovalCall bodyForErc(final HtsCallAttempt attempt) {
         final var call = GrantApprovalTranslator.ERC_GRANT_APPROVAL.decodeCall(attempt.inputBytes());
         final var spenderId = attempt.addressIdConverter().convert(call.get(0));
-        final var amount = call.get(1);
+        final var amount = exactLongFrom(call.get(1));
         return new ERCGrantApprovalCall(
                 attempt.enhancement(),
                 attempt.systemContractGasCalculator(),
                 attempt.defaultVerificationStrategy(),
                 attempt.senderId(),
-                Objects.requireNonNull(attempt.redirectTokenId()),
+                requireNonNull(attempt.redirectTokenId()),
                 spenderId,
-                (BigInteger) amount,
-                Objects.requireNonNull(attempt.redirectTokenType()));
+                amount,
+                requireNonNull(attempt.redirectTokenType()));
+    }
+
+    private long exactLongFrom(@NonNull final BigInteger value) {
+        requireNonNull(value);
+        return value.longValueExact();
     }
 }

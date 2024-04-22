@@ -44,7 +44,7 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
      * If the version changes the class id will be different and the upgrade will have issues.
      */
     private final SemanticVersion VERSION =
-            SemanticVersion.newBuilder().major(0).minor(48).patch(0).build();
+            SemanticVersion.newBuilder().major(0).minor(49).patch(0).build();
     /** We have to register with the {@link ConstructableRegistry} based on the schemas of the services */
     private final ConstructableRegistry constructableRegistry;
     /** The set of registered services */

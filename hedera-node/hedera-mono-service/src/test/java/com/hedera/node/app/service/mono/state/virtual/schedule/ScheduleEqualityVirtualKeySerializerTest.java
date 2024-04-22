@@ -22,9 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
 
 class ScheduleEqualityVirtualKeySerializerTest {
@@ -35,8 +34,6 @@ class ScheduleEqualityVirtualKeySerializerTest {
 
     @Test
     void gettersWork() {
-        final ByteBuffer bin = ByteBuffer.allocate(Long.BYTES);
-
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.getSerializedSize());
         assertEquals(ScheduleEqualityVirtualKeySerializer.DATA_VERSION, subject.getCurrentDataVersion());
         assertEquals(ScheduleEqualityVirtualKeySerializer.CLASS_ID, subject.getClassId());
@@ -44,44 +41,44 @@ class ScheduleEqualityVirtualKeySerializerTest {
     }
 
     @Test
-    void deserializeWorks() throws IOException {
-        final ByteBuffer bin = ByteBuffer.allocate(Long.BYTES);
+    void deserializeWorks() {
+        final BufferedData bin = BufferedData.allocate(Long.BYTES);
         final var expectedKey = new ScheduleEqualityVirtualKey(longKey);
-        bin.putLong(longKey);
-        bin.rewind();
+        bin.writeLong(longKey);
+        bin.reset();
 
-        assertEquals(expectedKey, subject.deserialize(bin, 1));
+        assertEquals(expectedKey, subject.deserialize(bin));
     }
 
     @Test
-    void serializeWorks() throws IOException {
-        final ByteBuffer out = ByteBuffer.allocate(Long.BYTES);
-        final ByteBuffer verify = ByteBuffer.allocate(Long.BYTES);
+    void serializeWorks() {
+        final BufferedData out = BufferedData.allocate(Long.BYTES);
+        final BufferedData verify = BufferedData.allocate(Long.BYTES);
 
         final var virtualKey = new ScheduleEqualityVirtualKey(longKey);
-        verify.putLong(longKey);
-        verify.rewind();
+        verify.writeLong(longKey);
+        verify.reset();
 
         subject.serialize(virtualKey, out);
         assertEquals(BYTES_IN_SERIALIZED_FORM, out.position());
-        out.rewind();
+        out.reset();
 
         assertEquals(verify, out);
     }
 
     @Test
-    void equalsUsingByteBufferWorks() throws IOException {
+    void equalsUsingByteBufferWorks() {
         final var someKey = new ScheduleEqualityVirtualKey(longKey);
         final var diffNum = new ScheduleEqualityVirtualKey(otherLongKey);
 
-        final ByteBuffer bin = ByteBuffer.allocate(Long.BYTES);
-        bin.putLong(someKey.getKeyAsLong());
-        bin.rewind();
+        final BufferedData bin = BufferedData.allocate(Long.BYTES);
+        bin.writeLong(someKey.getKeyAsLong());
+        bin.reset();
 
-        assertTrue(subject.equals(bin, 1, someKey));
-        bin.rewind();
+        assertTrue(subject.equals(bin, someKey));
+        bin.reset();
 
-        assertFalse(subject.equals(bin, 1, diffNum));
+        assertFalse(subject.equals(bin, diffNum));
     }
 
     @Test

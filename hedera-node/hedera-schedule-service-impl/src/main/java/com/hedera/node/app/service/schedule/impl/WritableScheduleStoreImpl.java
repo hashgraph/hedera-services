@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
-import static java.util.Collections.emptyList;
+import static com.hedera.node.app.service.schedule.impl.ScheduleStoreUtility.addOrReplace;
 
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
@@ -25,14 +25,15 @@ import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.config.data.SchedulingConfig;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -56,12 +57,22 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
      * Create a new {@link WritableScheduleStoreImpl} instance.
      *
      * @param states The state to use.
+     * @param configuration The configuration used to read the maximum capacity.
+     * @param storeMetricsService Service that provides utilization metrics.
      */
-    public WritableScheduleStoreImpl(@NonNull final WritableStates states) {
+    public WritableScheduleStoreImpl(
+            @NonNull final WritableStates states,
+            @NonNull final Configuration configuration,
+            @NonNull final StoreMetricsService storeMetricsService) {
         super(states);
         schedulesByIdMutable = states.get(ScheduleServiceImpl.SCHEDULES_BY_ID_KEY);
         schedulesByEqualityMutable = states.get(ScheduleServiceImpl.SCHEDULES_BY_EQUALITY_KEY);
         schedulesByExpirationMutable = states.get(ScheduleServiceImpl.SCHEDULES_BY_EXPIRY_SEC_KEY);
+
+        final long maxCapacity =
+                configuration.getConfigData(SchedulingConfig.class).maxNumber();
+        final var storeMetrics = storeMetricsService.get(StoreType.SCHEDULE, maxCapacity);
+        schedulesByIdMutable.setMetrics(storeMetrics);
     }
 
     /**
@@ -107,26 +118,18 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
     @Override
     public void put(@NonNull final Schedule scheduleToAdd) {
         schedulesByIdMutable.put(scheduleToAdd.scheduleIdOrThrow(), scheduleToAdd);
+
         final ProtoBytes newHash = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(scheduleToAdd));
         final ScheduleList inStateEquality = schedulesByEqualityMutable.get(newHash);
-        List<Schedule> byEquality =
-                inStateEquality != null ? new LinkedList<>(inStateEquality.schedulesOrElse(emptyList())) : null;
-        if (byEquality == null) {
-            byEquality = new LinkedList<>();
-        }
-        byEquality.add(scheduleToAdd);
-        schedulesByEqualityMutable.put(newHash, new ScheduleList(byEquality));
+        final var newEqualityScheduleList = addOrReplace(scheduleToAdd, inStateEquality);
+        schedulesByEqualityMutable.put(newHash, newEqualityScheduleList);
+
         // calculated expiration time is never null...
         final ProtoLong expirationSecond = new ProtoLong(scheduleToAdd.calculatedExpirationSecond());
         final ScheduleList inStateExpiration = schedulesByExpirationMutable.get(expirationSecond);
         // we should not be modifying the schedules list directly. This could cause ISS
-        List<Schedule> byExpiration = inStateExpiration != null ? new ArrayList<>(inStateExpiration.schedules()) : null;
-        if (byExpiration == null) {
-            byExpiration = new LinkedList<>();
-        }
-        byExpiration.add(scheduleToAdd);
-        final var newScheduleList = new ScheduleList(byExpiration);
-        schedulesByExpirationMutable.put(expirationSecond, newScheduleList);
+        final var newExpiryScheduleList = addOrReplace(scheduleToAdd, inStateExpiration);
+        schedulesByExpirationMutable.put(expirationSecond, newExpiryScheduleList);
     }
 
     @NonNull

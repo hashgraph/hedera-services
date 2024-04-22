@@ -17,7 +17,6 @@
 package com.swirlds.base;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 
 /**
  * Class that contains common checks like null checks as static methods.
@@ -45,7 +44,9 @@ public final class ArgumentUtils {
     @NonNull
     public static String throwArgBlank(@NonNull final String argument, @NonNull final String argumentName)
             throws NullPointerException, IllegalArgumentException {
-        Objects.requireNonNull(argument, ERROR_ARGUMENT_NULL.formatted(argumentName));
+        if (argument == null) {
+            throw new NullPointerException(ERROR_ARGUMENT_NULL.formatted(argumentName));
+        }
         if (argument.isBlank()) {
             throw new IllegalArgumentException(ERROR_ARGUMENT_BLANK.formatted(argumentName));
         }

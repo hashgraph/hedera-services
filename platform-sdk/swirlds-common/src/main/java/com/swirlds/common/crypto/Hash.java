@@ -18,12 +18,15 @@ package com.swirlds.common.crypto;
 
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.common.utility.Mnemonics.generateMnemonic;
+import static java.util.Objects.requireNonNull;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.io.SerializableWithKnownLength;
 import com.swirlds.common.io.exceptions.BadIOException;
 import com.swirlds.common.io.streams.AugmentedDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -154,6 +157,13 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
     }
 
     /**
+     * @return the hash value as an immutable {@link Bytes} object
+     */
+    public Bytes getBytes() {
+        return Bytes.wrap(value);
+    }
+
+    /**
      * Get a deep copy of this hash.
      *
      * @return a new hash
@@ -183,6 +193,8 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
+        requireNonNull(digestType, "digestType");
+        requireNonNull(value, "value");
         out.writeInt(digestType.id());
         out.writeByteArray(value);
     }
@@ -205,6 +217,10 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
 
         this.digestType = digestType;
         this.value = in.readByteArray(digestType.digestLength());
+
+        if (value == null) {
+            throw new BadIOException("Invalid hash value read from the stream");
+        }
     }
 
     /**
@@ -221,6 +237,17 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
         }
 
         return digestType.id() == that.digestType.id() && Arrays.equals(value, that.value);
+    }
+
+    /**
+     * Check if the bytes of this hash are equal to the bytes supplied.
+     *
+     * @param bytes
+     * 		the bytes to compare
+     * @return true if the bytes are equal, false otherwise
+     */
+    public boolean equalBytes(@Nullable final Bytes bytes) {
+        return bytes != null && value.length == bytes.length() && bytes.contains(0, value);
     }
 
     /**

@@ -42,7 +42,7 @@ class AncestorSearchTest {
 
     final EventVisitedMark mark = new EventVisitedMark();
     final AncestorSearch search = new AncestorSearch(mark);
-    final List<EventImpl> events = SimpleGraphs.graph9e3n(RandomUtils.getRandom());
+    final List<EventImpl> events = SimpleGraphs.graph9e3n(RandomUtils.getRandomPrintSeed());
     final EventImpl root = events.get(8);
 
     @RepeatedTest(3)

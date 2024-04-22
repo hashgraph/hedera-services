@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.computeNonZeroBytes;
-import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.serializePackedBytesToBuffer;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.serializePackedBytesToPbj;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -30,7 +29,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes32;
@@ -393,13 +391,6 @@ public class IterableContractValue implements VirtualValue {
         serializePossiblyMissingKeyToBuffer(nextUint256Key, nextUint256KeyNonZeroBytes, out);
     }
 
-    @Deprecated
-    void serialize(final ByteBuffer out) {
-        out.put(uint256Value);
-        serializePossiblyMissingKeyToBuffer(prevUint256Key, prevUint256KeyNonZeroBytes, out);
-        serializePossiblyMissingKeyToBuffer(nextUint256Key, nextUint256KeyNonZeroBytes, out);
-    }
-
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         if (isImmutable) {
@@ -416,15 +407,6 @@ public class IterableContractValue implements VirtualValue {
         }
         in.readBytes(this.uint256Value);
         deserializeKeys(in, ReadableSequentialData::readByte);
-    }
-
-    @Deprecated
-    void deserialize(final ByteBuffer buffer, final int version) {
-        if (isImmutable) {
-            throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
-        }
-        buffer.get(this.uint256Value);
-        deserializeKeys(buffer, ByteBuffer::get);
     }
 
     // --- Internal helpers
@@ -453,16 +435,6 @@ public class IterableContractValue implements VirtualValue {
         this.nextUint256Key = packedEvmKey;
         if (packedEvmKey != null) {
             this.nextUint256KeyNonZeroBytes = computeNonZeroBytes(nextUint256Key);
-        }
-    }
-
-    private void serializePossiblyMissingKeyToBuffer(
-            final @Nullable int[] key, final byte nonZeroBytes, final ByteBuffer out) {
-        if (key == null) {
-            out.put(KeyPackingUtils.MISSING_KEY_SENTINEL);
-        } else {
-            out.put(nonZeroBytes);
-            serializePackedBytesToBuffer(key, nonZeroBytes, out);
         }
     }
 

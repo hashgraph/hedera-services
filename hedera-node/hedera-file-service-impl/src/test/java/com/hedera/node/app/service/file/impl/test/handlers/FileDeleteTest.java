@@ -46,6 +46,7 @@ import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -95,6 +96,9 @@ class FileDeleteTest extends FileTestBase {
     @Mock
     protected FileFeeBuilder usageEstimator;
 
+    @Mock
+    private StoreMetricsService storeMetricsService;
+
     protected Configuration testConfig;
 
     @BeforeEach
@@ -104,8 +108,8 @@ class FileDeleteTest extends FileTestBase {
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        writableStore = new WritableFileStore(writableStates);
         testConfig = HederaTestConfigBuilder.createConfig();
+        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
         lenient().when(preHandleContext.configuration()).thenReturn(testConfig);
         lenient().when(handleContext.configuration()).thenReturn(testConfig);
         when(mockStoreFactory.getStore(ReadableFileStore.class)).thenReturn(mockStore);
@@ -178,7 +182,7 @@ class FileDeleteTest extends FileTestBase {
 
         writableFileState = emptyWritableFileState();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        writableStore = new WritableFileStore(writableStates);
+        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         given(handleContext.body())
@@ -197,7 +201,7 @@ class FileDeleteTest extends FileTestBase {
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        writableStore = new WritableFileStore(writableStates);
+        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         given(handleContext.body())

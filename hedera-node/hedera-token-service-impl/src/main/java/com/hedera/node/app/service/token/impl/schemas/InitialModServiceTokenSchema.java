@@ -185,27 +185,7 @@ public class InitialModServiceTokenSchema extends Schema {
     }
 
     @Override
-    public void restart(@NonNull MigrationContext ctx) {
-        // We need to validate and mark any node that are removed during upgrade as deleted.
-        // Since restart is called in the schema after an upgrade, and we don't want to depend on schema version change
-        // validate all the nodeIds from the addressBook in state and mark them as deleted if they are not yet deleted
-        // in staking info.
-        final var stakingToState = ctx.newStates().<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
-        final var networkInfo = ctx.networkInfo();
-        stakingToState.keys().forEachRemaining(nodeId -> {
-            final var stakingInfo = requireNonNull(stakingToState.get(nodeId));
-            if (!networkInfo.containsNode(nodeId.number()) && !stakingInfo.deleted()) {
-                stakingToState.put(
-                        nodeId, stakingInfo.copyBuilder().deleted(true).build());
-                log.info(
-                        "Node {} is marked deleted since it is deleted from addressBook during restart.",
-                        nodeId.number());
-            }
-        });
-        if (stakingToState.isModified()) {
-            ((WritableKVStateBase) stakingToState).commit();
-        }
-    }
+    public void restart(@NonNull MigrationContext ctx) {}
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
@@ -307,6 +287,7 @@ public class InitialModServiceTokenSchema extends Schema {
                                 .build(),
                         toStakingInfo);
             });
+
             if (stakingToState.isModified()) ((WritableKVStateBase) stakingToState).commit();
             final var stakingConfig = ctx.configuration().getConfigData(StakingConfig.class);
             final var currentStakingPeriod =
@@ -588,7 +569,7 @@ public class InitialModServiceTokenSchema extends Schema {
         final var numberOfNodes = addressBook.size();
 
         final long maxStakePerNode = ledgerConfig.totalTinyBarFloat() / numberOfNodes;
-        final long minStakePerNode = maxStakePerNode / 2;
+        final long minStakePerNode = 0;
 
         final var numRewardHistoryStoredPeriods = stakingConfig.rewardHistoryNumStoredPeriods();
         final var stakingInfoState = ctx.newStates().get(STAKING_INFO_KEY);

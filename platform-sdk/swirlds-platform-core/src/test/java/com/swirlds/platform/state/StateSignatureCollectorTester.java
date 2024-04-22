@@ -22,12 +22,14 @@ import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesCons
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.consensus.EventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.state.nexus.DefaultLatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.proto.event.StateSignaturePayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -71,29 +73,36 @@ public class StateSignatureCollectorTester extends StateSignatureCollector {
 
     @Override
     public List<ReservedSignedState> addReservedState(@NonNull final ReservedSignedState reservedSignedState) {
-        latestSignedState.newIncompleteState(reservedSignedState.get().getRound());
+        final EventWindow window = new EventWindow(
+                reservedSignedState.get().getRound(),
+                1 /* ignored by this test */,
+                1 /* ignored by this test */,
+                AncientMode.GENERATION_THRESHOLD /* ignored by this test*/);
+
+        latestSignedState.updateEventWindow(window);
+
         return processStates(super.addReservedState(reservedSignedState));
     }
 
     @Override
     public List<ReservedSignedState> handlePreconsensusSignatures(
-            @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
+            @NonNull final List<ScopedSystemTransaction<StateSignaturePayload>> transactions) {
         return processStates(super.handlePreconsensusSignatures(transactions));
     }
 
     public void handlePreconsensusSignatureTransaction(
-            @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction signatureTransaction) {
+            @NonNull final NodeId signerId, @NonNull final StateSignaturePayload signatureTransaction) {
         handlePreconsensusSignatures(List.of(new ScopedSystemTransaction<>(signerId, null, signatureTransaction)));
     }
 
     @Override
     public List<ReservedSignedState> handlePostconsensusSignatures(
-            @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
+            @NonNull final List<ScopedSystemTransaction<StateSignaturePayload>> transactions) {
         return processStates(super.handlePostconsensusSignatures(transactions));
     }
 
     public void handlePostconsensusSignatureTransaction(
-            @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction transaction) {
+            @NonNull final NodeId signerId, @NonNull final StateSignaturePayload transaction) {
         handlePostconsensusSignatures(List.of(new ScopedSystemTransaction<>(signerId, null, transaction)));
     }
 

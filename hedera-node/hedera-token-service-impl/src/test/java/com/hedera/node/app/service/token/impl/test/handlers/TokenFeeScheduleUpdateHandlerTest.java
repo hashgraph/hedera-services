@@ -41,6 +41,7 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHand
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -69,6 +70,9 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Mock(strictness = LENIENT)
     private TokenBaseRecordBuilder recordBuilder;
+
+    @Mock
+    private StoreMetricsService storeMetricsService;
 
     @BeforeEach
     void setup() {
@@ -160,7 +164,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .value(fungibleTokenId, tokenWithoutFeeScheduleKey)
                 .build();
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
-        writableTokenStore = new WritableTokenStore(writableStates);
+        writableTokenStore = new WritableTokenStore(writableStates, configuration, storeMetricsService);
         given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
         assertThatThrownBy(() -> subject.handle(context))
@@ -173,7 +177,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     void rejectsInvalidTokenId() {
         writableTokenState = emptyWritableTokenState();
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
-        writableTokenStore = new WritableTokenStore(writableStates);
+        writableTokenStore = new WritableTokenStore(writableStates, configuration, storeMetricsService);
         given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
         assertThatThrownBy(() -> subject.handle(context))

@@ -140,7 +140,7 @@ class ActionStackTest {
         allActions.add(new ActionWrapper(ContractAction.DEFAULT));
         allActions.add(new ActionWrapper(ContractAction.DEFAULT));
         final var actions = subject.asContractActions();
-        assertEquals(actions.contractActionsOrThrow(), List.of(ContractAction.DEFAULT, ContractAction.DEFAULT));
+        assertEquals(actions.contractActions(), List.of(ContractAction.DEFAULT, ContractAction.DEFAULT));
     }
 
     @Test
@@ -215,14 +215,6 @@ class ActionStackTest {
         assertEquals(REMAINING_GAS, finalAction.gasUsed());
         assertSame(Bytes.EMPTY, finalAction.error());
         assertTrue(actionsStack.isEmpty());
-    }
-
-    @Test
-    void haltedHederaPrecompileIsAlreadyFinalized() {
-        given(parentFrame.getState()).willReturn(MessageFrame.State.EXCEPTIONAL_HALT);
-
-        assertDoesNotThrow(
-                () -> subject.finalizeLastStackActionAsPrecompile(parentFrame, PRECOMPILE, ActionStack.Validation.ON));
     }
 
     @Test

@@ -27,6 +27,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome.ExternalizeAbortResult;
@@ -84,6 +85,11 @@ public class EthereumTransactionHandler implements TransactionHandler {
                 context.configuration());
     }
 
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        // nothing to do
+    }
+
     /**
      * If the given transaction, when hydrated from the given file store with the given config, implies a valid
      * {@link EthTxSigs}, returns it. Otherwise, returns null.
@@ -109,14 +115,12 @@ public class EthereumTransactionHandler implements TransactionHandler {
         // Create the transaction-scoped component
         final var component = provider.get().create(context, ETHEREUM_TRANSACTION);
 
-        // Assemble the appropriate top-level record for the result
-        final var ethTxData =
-                requireNonNull(requireNonNull(component.hydratedEthTxData()).ethTxData());
-
         // Run its in-scope transaction and get the outcome
         final var outcome = component.contextTransactionProcessor().call();
 
         // Assemble the appropriate top-level record for the result
+        final var ethTxData =
+                requireNonNull(requireNonNull(component.hydratedEthTxData()).ethTxData());
         context.recordBuilder(EthereumTransactionRecordBuilder.class)
                 .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()));
         if (ethTxData.hasToAddress()) {
@@ -151,6 +155,11 @@ public class EthereumTransactionHandler implements TransactionHandler {
         validateTruePreCheck(hydratedTx.status() == OK, hydratedTx.status());
         final var ethTxData = hydratedTx.ethTxData();
         validateTruePreCheck(ethTxData != null, INVALID_ETHEREUM_TRANSACTION);
-        return ethereumSignatures.computeIfAbsent(ethTxData);
+        try {
+            return ethereumSignatures.computeIfAbsent(ethTxData);
+        } catch (RuntimeException ignore) {
+            // Ignore and translate any signature computation exception
+            throw new PreCheckException(INVALID_ETHEREUM_TRANSACTION);
+        }
     }
 }

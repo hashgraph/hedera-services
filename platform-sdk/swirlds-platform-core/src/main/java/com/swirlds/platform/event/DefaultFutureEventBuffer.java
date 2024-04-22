@@ -22,9 +22,9 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.eventhandling.EventConfig;
-import com.swirlds.platform.wiring.ClearTrigger;
+import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -44,7 +44,7 @@ public class DefaultFutureEventBuffer implements FutureEventBuffer {
      */
     private static final Function<Long, List<GossipEvent>> BUILD_LIST = x -> new ArrayList<>();
 
-    private NonAncientEventWindow eventWindow;
+    private EventWindow eventWindow;
 
     private final SequenceMap<Long /* birth round */, List<GossipEvent>> futureEvents =
             new StandardSequenceMap<>(ROUND_FIRST, 8, true, x -> x);
@@ -62,7 +62,7 @@ public class DefaultFutureEventBuffer implements FutureEventBuffer {
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
 
-        eventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
 
         platformContext
                 .getMetrics()
@@ -99,7 +99,7 @@ public class DefaultFutureEventBuffer implements FutureEventBuffer {
      */
     @Override
     @Nullable
-    public List<GossipEvent> updateEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
+    public List<GossipEvent> updateEventWindow(@NonNull final EventWindow eventWindow) {
         this.eventWindow = Objects.requireNonNull(eventWindow);
 
         // We want to release all events with birth rounds less than or equal to the pending consensus round.
@@ -124,7 +124,7 @@ public class DefaultFutureEventBuffer implements FutureEventBuffer {
      * {@inheritDoc}
      */
     @Override
-    public void clear(@NonNull final ClearTrigger clearTrigger) {
+    public void clear(@NonNull final NoInput ignored) {
         futureEvents.clear();
     }
 }

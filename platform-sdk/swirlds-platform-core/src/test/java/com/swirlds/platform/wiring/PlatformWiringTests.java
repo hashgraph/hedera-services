@@ -22,21 +22,25 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.StateSigner;
+import com.swirlds.platform.builder.PlatformBuildingBlocks;
+import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.components.AppNotifier;
-import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
+import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
-import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
-import com.swirlds.platform.event.stream.EventStreamManager;
+import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
+import com.swirlds.platform.event.runninghash.RunningEventHasher;
+import com.swirlds.platform.event.signing.SelfEventSigner;
+import com.swirlds.platform.event.stream.ConsensusEventStream;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
@@ -49,6 +53,7 @@ import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateHasher;
+import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.util.HashLogger;
@@ -67,27 +72,36 @@ class PlatformWiringTests {
 
         final PlatformWiring wiring = new PlatformWiring(platformContext, true, true);
 
+        final PlatformComponentBuilder componentBuilder =
+                new PlatformComponentBuilder(mock(PlatformBuildingBlocks.class));
+
+        componentBuilder
+                .withEventHasher(mock(EventHasher.class))
+                .withInternalEventValidator(mock(InternalEventValidator.class))
+                .withEventDeduplicator(mock(EventDeduplicator.class))
+                .withEventSignatureValidator(mock(EventSignatureValidator.class))
+                .withStateGarbageCollector(mock(StateGarbageCollector.class))
+                .withSelfEventSigner(mock(SelfEventSigner.class))
+                .withOrphanBuffer(mock(OrphanBuffer.class))
+                .withRunningEventHasher(mock(RunningEventHasher.class))
+                .withEventCreationManager(mock(EventCreationManager.class))
+                .withInOrderLinker(mock(InOrderLinker.class))
+                .withConsensusEngine(mock(ConsensusEngine.class))
+                .withConsensusEventStream(mock(ConsensusEventStream.class))
+                .withPcesSequencer(mock(PcesSequencer.class))
+                .withRoundDurabilityBuffer(mock(RoundDurabilityBuffer.class));
+
         wiring.bind(
-                mock(EventHasher.class),
-                mock(InternalEventValidator.class),
-                mock(EventDeduplicator.class),
-                mock(EventSignatureValidator.class),
-                mock(OrphanBuffer.class),
-                mock(InOrderLinker.class),
-                mock(ConsensusEngine.class),
+                componentBuilder,
                 mock(SignedStateFileManager.class),
                 mock(StateSigner.class),
                 mock(PcesReplayer.class),
                 mock(PcesWriter.class),
-                mock(EventDurabilityNexus.class),
                 mock(Shadowgraph.class),
-                mock(PcesSequencer.class),
-                mock(EventCreationManager.class),
                 mock(StateSignatureCollector.class),
                 mock(TransactionPrehandler.class),
                 mock(EventWindowManager.class),
                 mock(ConsensusRoundHandler.class),
-                mock(EventStreamManager.class),
                 mock(IssDetector.class),
                 mock(IssHandler.class),
                 mock(HashLogger.class),
