@@ -48,6 +48,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
@@ -4491,7 +4492,8 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
         final var hbarsToSend = 1;
         final var transferTxn = "payTxn";
         return defaultHapiSpec(
-                        "traceabilityE2EScenario19", NONDETERMINISTIC_ETHEREUM_DATA, NONDETERMINISTIC_TRANSACTION_FEES)
+                        "traceabilityE2EScenario19",
+                        FULLY_NONDETERMINISTIC)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RECEIVER).balance(0L),
@@ -4558,7 +4560,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @HapiTest
     @Order(22)
     final HapiSpec traceabilityE2EScenario21() {
-        return defaultHapiSpec("traceabilityE2EScenario21")
+        return defaultHapiSpec("traceabilityE2EScenario21", NONDETERMINISTIC_CONTRACT_CALL_RESULTS, HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         uploadInitCode(REVERTING_CONTRACT),
                         contractCreate(REVERTING_CONTRACT, BigInteger.valueOf(6))
