@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event.preconsensus;
 
+import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -26,11 +27,22 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 public interface PcesWriter {
 
+    // TODO
+    //            return new PcesWriterWiring(
+    //            taskScheduler.buildInputWire("done streaming pces"),
+    //                taskScheduler.buildInputWire("events to write"),
+    //                        taskScheduler.buildInputWire("discontinuity"),
+    //                        taskScheduler.buildInputWire("event window"),
+    //                        taskScheduler.buildInputWire("minimum identifier to store"),
+    //                        taskScheduler.buildInputWire("flush request"),
+    //                        taskScheduler.getOutputWire());
+
     /**
      * Prior to this method being called, all events added to the preconsensus event stream are assumed to be events
      * read from the preconsensus event stream on disk. The events from the stream on disk are not re-written to the
      * disk, and are considered to be durable immediately upon ingest.
      */
+    @InputWireLabel("done streaming pces")
     void beginStreamingNewEvents();
 
     /**
@@ -40,6 +52,7 @@ public interface PcesWriter {
      * @return the sequence number of the last event durably written to the stream, or null if this method call didn't
      * result in any additional events being durably written to the stream
      */
+    @InputWireLabel("events to write")
     @Nullable
     Long writeEvent(@NonNull GossipEvent event);
 
@@ -50,8 +63,9 @@ public interface PcesWriter {
      * @return the sequence number of the last event durably written to the stream, or null if this method call didn't
      * result in any additional events being durably written to the stream
      */
+    @InputWireLabel("discontinuity")
     @Nullable
-    Long registerDiscontinuity(long newOriginRound);
+    Long registerDiscontinuity(@NonNull Long newOriginRound);
 
     /**
      * Submit a request to flush a given sequence number to disk as soon as possible. This flush request will be honored
@@ -61,8 +75,9 @@ public interface PcesWriter {
      * @return the sequence number of the last event durably written to the stream, or null if this method call didn't
      * result in any additional events being durably written to the stream
      */
+    @InputWireLabel("flush request")
     @Nullable
-    Long submitFlushRequest(final long sequenceNumber);
+    Long submitFlushRequest(@NonNull Long sequenceNumber);
 
     /**
      * Let the event writer know the current non-ancient event boundary. Ancient events will be ignored if added to the
@@ -70,12 +85,14 @@ public interface PcesWriter {
      *
      * @param nonAncientBoundary describes the boundary between ancient and non-ancient events
      */
-    void updateNonAncientEventBoundary(@NonNull final EventWindow nonAncientBoundary);
+    @InputWireLabel("event window")
+    void updateNonAncientEventBoundary(@NonNull EventWindow nonAncientBoundary);
 
     /**
      * Set the minimum ancient indicator needed to be kept on disk.
      *
      * @param minimumAncientIdentifierToStore the minimum ancient indicator required to be stored on disk
      */
-    void setMinimumAncientIdentifierToStore(final long minimumAncientIdentifierToStore);
+    @InputWireLabel("minimum identifier to store")
+    void setMinimumAncientIdentifierToStore(@NonNull Long minimumAncientIdentifierToStore);
 }

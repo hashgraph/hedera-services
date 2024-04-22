@@ -257,7 +257,7 @@ public class DefaultPcesWriter implements PcesWriter {
      */
     @Override
     @Nullable
-    public Long registerDiscontinuity(final long newOriginRound) {
+    public Long registerDiscontinuity(@NonNull final Long newOriginRound) {
         if (!streamingNewEvents) {
             logger.error(EXCEPTION.getMarker(), "registerDiscontinuity() called while replaying events");
         }
@@ -279,7 +279,7 @@ public class DefaultPcesWriter implements PcesWriter {
      */
     @Override
     @Nullable
-    public Long submitFlushRequest(final long sequenceNumber) {
+    public Long submitFlushRequest(@NonNull final Long sequenceNumber) {
         flushRequests.add(sequenceNumber);
 
         return processFlushRequests() ? lastFlushedEvent : null;
@@ -302,7 +302,7 @@ public class DefaultPcesWriter implements PcesWriter {
      * {@inheritDoc}
      */
     @Override
-    public void setMinimumAncientIdentifierToStore(final long minimumAncientIdentifierToStore) {
+    public void setMinimumAncientIdentifierToStore(@NonNull final Long minimumAncientIdentifierToStore) {
         this.minimumAncientIdentifierToStore = minimumAncientIdentifierToStore;
         pruneOldFiles();
     }

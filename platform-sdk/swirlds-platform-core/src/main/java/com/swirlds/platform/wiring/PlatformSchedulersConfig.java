@@ -39,7 +39,7 @@ import java.time.Duration;
  * @param internalEventValidator                            configuration for the internal event validator scheduler
  * @param eventDeduplicator                                 configuration for the event deduplicator scheduler
  * @param eventSignatureValidator                           configuration for the event signature validator scheduler
- * @param orphanBuffer                                      configuration for the orphan buffer scheduler scheduler
+ * @param orphanBuffer                                      configuration for the orphan buffer scheduler
  * @param consensusEngine                                   configuration for the consensus engine scheduler
  * @param inOrderLinker                                     configuration for the in order linker scheduler
  * @param eventCreationManager                              configuration for the event creation manager scheduler
@@ -50,9 +50,7 @@ import java.time.Duration;
  * @param stateSignerSchedulerType                          the state signer scheduler type
  * @param stateSignerUnhandledCapacity                      number of unhandled tasks allowed in the state signer
  *                                                          scheduler, default is -1 (unlimited)
- * @param pcesWriterSchedulerType                           the preconsensus event writer scheduler type
- * @param pcesWriterUnhandledCapacity                       number of unhandled tasks allowed in the preconsensus event
- *                                                          writer scheduler
+ * @param pcesWriter                                        configuration for the preconsensus event writer scheduler
  * @param pcesSequencer                                     configuration for the preconsensus event sequencer
  *                                                          scheduler
  * @param applicationTransactionPrehandlerSchedulerType     the application transaction prehandler scheduler type
@@ -109,8 +107,8 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "20") int signedStateFileManagerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateSignerSchedulerType,
         @ConfigProperty(defaultValue = "-1") int stateSignerUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType pcesWriterSchedulerType,
-        @ConfigProperty(defaultValue = "500") int pcesWriterUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD CAPACITY(500) UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration pcesWriter,
         @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration pcesSequencer,
         @ConfigProperty(defaultValue = "CONCURRENT") TaskSchedulerType applicationTransactionPrehandlerSchedulerType,
         @ConfigProperty(defaultValue = "500") int applicationTransactionPrehandlerUnhandledCapacity,

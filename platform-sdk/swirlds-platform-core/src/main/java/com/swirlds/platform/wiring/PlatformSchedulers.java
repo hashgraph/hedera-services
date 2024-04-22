@@ -29,7 +29,6 @@ import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
-import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
@@ -57,7 +56,6 @@ import java.util.List;
  * @param signedStateFileManagerScheduler           the scheduler for the signed state file manager
  * @param stateSignerScheduler                      the scheduler for the state signer
  * @param pcesReplayerScheduler                     the scheduler for the pces replayer
- * @param pcesWriterScheduler                       the scheduler for the pces writer
  * @param applicationTransactionPrehandlerScheduler the scheduler for the application transaction prehandler
  * @param stateSignatureCollectorScheduler          the scheduler for the state signature collector
  * @param shadowgraphScheduler                      the scheduler for the shadowgraph
@@ -75,7 +73,6 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
         @NonNull TaskScheduler<StateSignaturePayload> stateSignerScheduler,
         @NonNull TaskScheduler<NoInput> pcesReplayerScheduler,
-        @NonNull TaskScheduler<Long> pcesWriterScheduler,
         @NonNull TaskScheduler<Void> applicationTransactionPrehandlerScheduler,
         @NonNull TaskScheduler<List<ReservedSignedState>> stateSignatureCollectorScheduler,
         @NonNull TaskScheduler<Void> shadowgraphScheduler,
@@ -138,13 +135,6 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("pcesReplayer")
                         .withType(TaskSchedulerType.DIRECT)
                         .withHyperlink(platformCoreHyperlink(PcesReplayer.class))
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("pcesWriter")
-                        .withType(config.pcesWriterSchedulerType())
-                        .withUnhandledTaskCapacity(config.pcesWriterUnhandledCapacity())
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(PcesWriter.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("applicationTransactionPrehandler")
