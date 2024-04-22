@@ -16,13 +16,19 @@
 
 package com.swirlds.common.wiring.component;
 
+import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
+
 import com.swirlds.common.wiring.component.internal.FilterToBind;
 import com.swirlds.common.wiring.component.internal.InputWireToBind;
 import com.swirlds.common.wiring.component.internal.TransformerToBind;
 import com.swirlds.common.wiring.component.internal.WiringComponentProxy;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.transformers.RoutableData;
 import com.swirlds.common.wiring.transformers.WireFilter;
+import com.swirlds.common.wiring.transformers.WireRouter;
 import com.swirlds.common.wiring.transformers.WireTransformer;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
@@ -40,6 +46,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Builds and manages input/output wires for a component.
@@ -92,12 +99,25 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
     private OutputWire<Object> splitterOutput;
 
     /**
+     * A router (if one has been constructed).
+     */
+    private WireRouter<?> router;
+
+    /**
+     * A router that consumes the output of a splitter (if one has been constructed).
+     */
+    private WireRouter<?> splitRouter;
+
+    /**
      * Create a new component wiring.
      *
      * @param model     the wiring model that will contain the component
      * @param clazz     the interface class of the component
      * @param scheduler the task scheduler that will run the component
+     * @deprecated use {@link #ComponentWiring(WiringModel, Class, TaskSchedulerConfiguration)} instead. Once all uses
+     * have been updated, this constructor will be removed.
      */
+    @Deprecated
     public ComponentWiring(
             @NonNull final WiringModel model,
             @NonNull final Class<COMPONENT_TYPE> clazz,
@@ -105,6 +125,43 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
 
         this.model = Objects.requireNonNull(model);
         this.scheduler = Objects.requireNonNull(scheduler);
+
+        if (!clazz.isInterface()) {
+            throw new IllegalArgumentException("Component class " + clazz.getName() + " is not an interface.");
+        }
+
+        proxyComponent = (COMPONENT_TYPE) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] {clazz}, proxy);
+    }
+
+    /**
+     * Create a new component wiring.
+     *
+     * @param model                  the wiring model that will contain the component
+     * @param clazz                  the interface class of the component
+     * @param schedulerConfiguration for the task scheduler that will run the component
+     */
+    public ComponentWiring(
+            @NonNull final WiringModel model,
+            @NonNull final Class<COMPONENT_TYPE> clazz,
+            @NonNull final TaskSchedulerConfiguration schedulerConfiguration) {
+
+        this.model = Objects.requireNonNull(model);
+        Objects.requireNonNull(schedulerConfiguration);
+
+        final String schedulerName;
+        final SchedulerLabel schedulerLabelAnnotation = clazz.getAnnotation(SchedulerLabel.class);
+        if (schedulerLabelAnnotation == null) {
+            schedulerName = clazz.getSimpleName();
+        } else {
+            schedulerName = schedulerLabelAnnotation.value();
+        }
+
+        this.scheduler = model.schedulerBuilder(schedulerName)
+                .configure(schedulerConfiguration)
+                // FUTURE WORK: all components not currently in platform core should move there
+                .withHyperlink(platformCoreHyperlink(clazz))
+                .build()
+                .cast();
 
         if (!clazz.isInterface()) {
             throw new IllegalArgumentException("Component class " + clazz.getName() + " is not an interface.");
@@ -293,6 +350,118 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
             splitterOutput = getOutputWire().buildSplitter(scheduler.getName() + "Splitter", "data");
         }
         return (OutputWire<ELEMENT>) splitterOutput;
+    }
+
+    /**
+     * Get an output wire that will emit a specific type of routed data. Data routing is when a component has multiple
+     * outputs, and different things want to receive a subset of that output. Each output is described by a routing
+     * address, which are implemented by enum values.
+     * <p>
+     * This method should only be used for components which have an output type of
+     * {@link com.swirlds.common.wiring.transformers.RoutableData RoutableData}. Calling this method more than once with
+     * different enum classes will throw.
+     *
+     * @param address       an enum value that describes one of the different types of data that can be routed
+     * @param <ROUTER_ENUM> the enum that describes the different types of data handled by this router
+     * @param <DATA_TYPE>   the type of data that travels over the output wire
+     * @return the output wire
+     */
+    @NonNull
+    public <ROUTER_ENUM extends Enum<ROUTER_ENUM>, DATA_TYPE> OutputWire<DATA_TYPE> getRoutedOutput(
+            @NonNull final ROUTER_ENUM address) {
+
+        final Class<ROUTER_ENUM> clazz = (Class<ROUTER_ENUM>) address.getClass();
+        return getOrBuildRouter(clazz).getOutput(address);
+    }
+
+    /**
+     * Get an output wire that will receive a specific type of routed data after being split apart. Data routing is when
+     * a component has multiple outputs, and different things want to receive a subset of that output. Each output is
+     * described by a routing address, which are implemented by enum values.
+     * <p>
+     * This method should only be used for components which have an output type of
+     * {@link com.swirlds.common.wiring.transformers.RoutableData List&lt;RoutableData&gt;}. Calling this method more
+     * than once with different enum classes will throw.
+     *
+     * @param address       an enum value that describes one of the different types of data that can be routed
+     * @param <ROUTER_ENUM> the enum that describes the different types of data handled by this router
+     * @param <DATA_TYPE>   the type of data that travels over the output wire
+     * @return the output wire
+     */
+    @NonNull
+    public <ROUTER_ENUM extends Enum<ROUTER_ENUM>, DATA_TYPE> OutputWire<DATA_TYPE> getSplitAndRoutedOutput(
+            @NonNull final ROUTER_ENUM address) {
+
+        final Class<ROUTER_ENUM> clazz = (Class<ROUTER_ENUM>) address.getClass();
+        return getOrBuildSplitRouter(clazz).getOutput(address);
+    }
+
+    /**
+     * Get the router for this component if one has been built. Build and return a new router if one has not been
+     * built.
+     *
+     * @param routerType    the type of the router
+     * @param <ROUTER_TYPE> the type of the router
+     * @return the router
+     */
+    @NonNull
+    private <ROUTER_TYPE extends Enum<ROUTER_TYPE>> WireRouter<ROUTER_TYPE> getOrBuildRouter(
+            @NonNull final Class<ROUTER_TYPE> routerType) {
+
+        if (splitRouter != null) {
+            throw new IllegalStateException("Only one type of router can be constructed per task scheduler. "
+                    + "This task scheduler already has a router that was built using the split output type, "
+                    + "so a router cannot be created with the unmodified output type.");
+        }
+
+        if (router != null) {
+            if (!router.getRouterType().equals(routerType)) {
+                throw new IllegalArgumentException("Only one type of router can be constructed per task scheduler. "
+                        + "This task scheduler already has a router of type "
+                        + router.getRouterType().getName() + "but an attempt was made to construct a router of type "
+                        + routerType.getName());
+            }
+        } else {
+            router = new WireRouter<>(model, getSchedulerName() + "Router", "data", routerType);
+            getOutputWire().solderTo((InputWire<OUTPUT_TYPE>) router.getInput());
+        }
+
+        return (WireRouter<ROUTER_TYPE>) router;
+    }
+
+    /**
+     * Get the router for split data for this component if one has been built. Build and return a new splitter and
+     * router if one has not been built.
+     *
+     * @param routerType    the type of the router
+     * @param <ROUTER_TYPE> the type of the router
+     * @return the router
+     */
+    @NonNull
+    private <ROUTER_TYPE extends Enum<ROUTER_TYPE>> WireRouter<ROUTER_TYPE> getOrBuildSplitRouter(
+            @NonNull final Class<ROUTER_TYPE> routerType) {
+
+        if (router != null) {
+            throw new IllegalStateException("Only one type of router can be constructed per task scheduler. "
+                    + "This task scheduler already has a router that was built using the unmodified output type, "
+                    + "so a router cannot be created with the split output type.");
+        }
+
+        if (splitRouter != null) {
+            if (!splitRouter.getRouterType().equals(routerType)) {
+                throw new IllegalArgumentException("Only one type of router can be constructed per task scheduler. "
+                        + "This task scheduler already has a router of type "
+                        + router.getRouterType().getName() + "but an attempt was made to construct a router of type "
+                        + routerType.getName());
+            }
+        } else {
+            splitRouter = new WireRouter<>(model, getSchedulerName() + "Router", "data", routerType);
+            final OutputWire<RoutableData<ROUTER_TYPE>> splitOutput = getSplitOutput();
+            final InputWire<RoutableData<ROUTER_TYPE>> routerInput = ((WireRouter<ROUTER_TYPE>) splitRouter).getInput();
+            splitOutput.solderTo(routerInput);
+        }
+
+        return (WireRouter<ROUTER_TYPE>) splitRouter;
     }
 
     /**
@@ -565,5 +734,29 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
         for (final FilterToBind<COMPONENT_TYPE, Object> filterToBind : filtersToBind) {
             filterToBind.filter().bind(x -> filterToBind.predicate().apply(component, x));
         }
+    }
+
+    /**
+     * Bind to a component. This method is similar to {@link #bind(Object)}, but it allows the component to be created
+     * if and only if we need to bind to it. This method will invoke the supplier if the task scheduler type is anything
+     * other than a {@link com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType#NO_OP NO_OP} scheduler.
+     *
+     * @param componentBuilder builds or supplies the component
+     */
+    public void bind(@NonNull final Supplier<COMPONENT_TYPE> componentBuilder) {
+        Objects.requireNonNull(componentBuilder);
+        if (scheduler.getType() != TaskSchedulerType.NO_OP) {
+            bind(componentBuilder.get());
+        }
+    }
+
+    /**
+     * Get the name of the scheduler that is running this component.
+     *
+     * @return the name of the scheduler
+     */
+    @NonNull
+    public String getSchedulerName() {
+        return scheduler.getName();
     }
 }

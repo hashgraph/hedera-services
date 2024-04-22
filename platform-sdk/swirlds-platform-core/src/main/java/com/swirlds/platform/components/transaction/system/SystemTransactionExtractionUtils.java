@@ -21,7 +21,6 @@ import static java.util.stream.Collectors.toList;
 
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.system.events.BaseEvent;
-import com.swirlds.platform.system.transaction.SystemTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -46,7 +45,7 @@ public class SystemTransactionExtractionUtils {
      * @param <T>                        the type of system transaction to extract
      * @return the extracted system transactions, or {@code null} if there are none
      */
-    public static @Nullable <T extends SystemTransaction> List<ScopedSystemTransaction<T>> extractFromRound(
+    public static @Nullable <T> List<ScopedSystemTransaction<T>> extractFromRound(
             @NonNull final ConsensusRound round, @NonNull final Class<T> systemTransactionTypeClass) {
 
         return round.getConsensusEvents().stream()
@@ -65,7 +64,7 @@ public class SystemTransactionExtractionUtils {
      * @return the extracted system transactions, or {@code null} if there are none
      */
     @SuppressWarnings("unchecked")
-    public static @Nullable <T extends SystemTransaction> List<ScopedSystemTransaction<T>> extractFromEvent(
+    public static @Nullable <T> List<ScopedSystemTransaction<T>> extractFromEvent(
             @NonNull final BaseEvent event, @NonNull final Class<T> systemTransactionTypeClass) {
 
         final var transactions = event.getHashedData().getTransactions();
@@ -76,11 +75,13 @@ public class SystemTransactionExtractionUtils {
         final List<ScopedSystemTransaction<T>> scopedTransactions = new ArrayList<>();
 
         for (final Transaction transaction : event.getHashedData().getTransactions()) {
-            if (systemTransactionTypeClass.isInstance(transaction)) {
+            if (transaction.getPayload() != null
+                    && systemTransactionTypeClass.isInstance(
+                            transaction.getPayload().value())) {
                 scopedTransactions.add(new ScopedSystemTransaction<>(
                         event.getHashedData().getCreatorId(),
                         event.getHashedData().getSoftwareVersion(),
-                        (T) transaction));
+                        (T) transaction.getPayload().value()));
             }
         }
         return scopedTransactions.isEmpty() ? null : scopedTransactions;

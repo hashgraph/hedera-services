@@ -20,13 +20,12 @@ import static com.swirlds.platform.test.fixtures.event.EventUtils.staticDynamicV
 import static com.swirlds.platform.test.fixtures.event.EventUtils.weightedChoice;
 import static com.swirlds.platform.test.fixtures.event.RandomEventUtils.DEFAULT_FIRST_EVENT_TIME_CREATED;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.ConsensusImpl;
+import com.swirlds.platform.event.linking.ConsensusLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
-import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.metrics.NoOpConsensusMetrics;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
@@ -72,9 +71,8 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     private double eventPeriodStandardDeviation = 0.000_01;
 
     /**
-     * The probability, as a fraction of 1.0, that an event has the same timestamp as the proceeding event. If
-     * the proceeding event has the same self parent then this is ignored and the events are not made to be
-     * simultaneous.
+     * The probability, as a fraction of 1.0, that an event has the same timestamp as the proceeding event. If the
+     * proceeding event has the same self parent then this is ignored and the events are not made to be simultaneous.
      */
     private double simultaneousEventFraction = 0.01;
 
@@ -121,10 +119,8 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
      * Construct a new StandardEventGenerator.
      *
      * @param platformContext the platform context
-     * @param seed
-     * 		The random seed used to generate events.
-     * @param eventSources
-     * 		One or more event sources.
+     * @param seed            The random seed used to generate events.
+     * @param eventSources    One or more event sources.
      */
     public StandardGraphGenerator(
             @NonNull PlatformContext platformContext,
@@ -147,12 +143,9 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     /**
      * Construct a new StandardEventGenerator.
      *
-     * @param seed
-     * 		The random seed used to generate events.
-     * @param eventSources
-     * 		One or more event sources.
-     * @param addressBook
-     *         The address book to use with the event sources.
+     * @param seed         The random seed used to generate events.
+     * @param eventSources One or more event sources.
+     * @param addressBook  The address book to use with the event sources.
      */
     public StandardGraphGenerator(
             @NonNull final PlatformContext platformContext,
@@ -203,11 +196,12 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
 
     private void initializeInternalConsensus() {
         consensus = new ConsensusImpl(platformContext, new NoOpConsensusMetrics(), addressBook);
-        inOrderLinker = new InOrderLinker(platformContext, Time.getCurrent(), new NoOpIntakeEventCounter());
+        inOrderLinker = new ConsensusLinker(platformContext, new NodeId(0));
     }
 
     /**
-     * builds a random address book, updates the weight of the addresses from the event sources, and initialize the node ids of the event sources from the addresses.
+     * builds a random address book, updates the weight of the addresses from the event sources, and initialize the node
+     * ids of the event sources from the addresses.
      *
      * @param eventSources the event sources to initialize.
      */
@@ -244,10 +238,10 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     /**
      * Set the affinity of each node for choosing the parents of its events.
      *
-     * @param affinityMatrix
-     * 		An n by n matrix where n is the number of event sources. Each row defines the preference of a particular
-     * 		node when choosing other parents. Node 0 is described by the first row, node 1 by the next, etc.
-     * 		Each entry should be a weight. Weights of self (i.e. the weights on the diagonal) should be 0.
+     * @param affinityMatrix An n by n matrix where n is the number of event sources. Each row defines the preference of
+     *                       a particular node when choosing other parents. Node 0 is described by the first row, node 1
+     *                       by the next, etc. Each entry should be a weight. Weights of self (i.e. the weights on the
+     *                       diagonal) should be 0.
      */
     public void setOtherParentAffinity(final List<List<Double>> affinityMatrix) {
         setOtherParentAffinity(staticDynamicValue(affinityMatrix));
@@ -256,9 +250,8 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     /**
      * Set the affinity of each node for choosing the parents of its events.
      *
-     * @param affinityMatrix
-     * 		A dynamic n by n matrix where n is the number of event sources. Each entry should be a weight.
-     * 		Weights of self (i.e. the weights on the diagonal) should be 0.
+     * @param affinityMatrix A dynamic n by n matrix where n is the number of event sources. Each entry should be a
+     *                       weight. Weights of self (i.e. the weights on the diagonal) should be 0.
      */
     public void setOtherParentAffinity(final DynamicValue<List<List<Double>>> affinityMatrix) {
         this.affinityMatrix = new DynamicValueGenerator<>(affinityMatrix);
@@ -267,10 +260,8 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     /**
      * Get the affinity vector for a particular node.
      *
-     * @param eventIndex
-     * 		the current event index
-     * @param nodeId
-     * 		the node ID that is being requested
+     * @param eventIndex the current event index
+     * @param nodeId     the node ID that is being requested
      */
     private List<Double> getOtherParentAffinityVector(final long eventIndex, final int nodeId) {
         return affinityMatrix.get(getRandom(), eventIndex).get(nodeId);
@@ -331,18 +322,16 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     }
 
     /**
-     * Set the probability, as a fraction of 1.0, that an event has the same timestamp as the proceeding event. If
-     * the proceeding event has the same self parent then this is ignored and the events are not made to be
-     * simultaneous.
+     * Set the probability, as a fraction of 1.0, that an event has the same timestamp as the proceeding event. If the
+     * proceeding event has the same self parent then this is ignored and the events are not made to be simultaneous.
      */
     public double getSimultaneousEventFraction() {
         return simultaneousEventFraction;
     }
 
     /**
-     * Get the probability, as a fraction of 1.0, that an event has the same timestamp as the proceeding event. If
-     * the proceeding event has the same self parent then this is ignored and the events are not made to be
-     * simultaneous.
+     * Get the probability, as a fraction of 1.0, that an event has the same timestamp as the proceeding event. If the
+     * proceeding event has the same self parent then this is ignored and the events are not made to be simultaneous.
      *
      * @return this
      */
@@ -375,6 +364,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
         final int nodeIndex = addressBook.getIndexOfNodeId(nodeID);
         return sources.get(nodeIndex);
     }
+
     /**
      * Get the event source for a particular node index.
      *
@@ -397,8 +387,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
      * compared to the other sources. Could be static or dynamic depending on how many events have already been
      * generated.
      *
-     * @param eventIndex
-     * 		the index of the event
+     * @param eventIndex the index of the event
      * @return list of new event weights
      */
     private List<Double> getSourceWeights(final long eventIndex) {
@@ -442,8 +431,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     /**
      * Get the node that will be the other parent for the new event.
      *
-     * @param source
-     * 		The node that is creating the event.
+     * @param source The node that is creating the event.
      */
     private EventSource<?> getNextOtherParentSource(final long eventIndex, final EventSource<?> source) {
         final List<Double> affinityVector =
@@ -512,7 +500,6 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
         // This may leak memory, but is fine in the current testing framework.
         // When the test ends any memory used will be released.
         CryptographyHolder.get().digestSync(next.getBaseEvent().getHashedData());
-        next.getBaseEvent().buildDescriptor();
         consensus.addEvent(inOrderLinker.linkEvent(next.getBaseEvent()));
 
         return next;

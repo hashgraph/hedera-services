@@ -40,12 +40,11 @@ public class RandomTokenAssociation implements OpProvider {
     public static final int MAX_TOKENS_PER_OP = 2;
     public static final int DEFAULT_CEILING_NUM = 10_000;
 
-    private int ceilingNum = DEFAULT_CEILING_NUM;
+    protected int ceilingNum = DEFAULT_CEILING_NUM;
 
-    private final RegistrySourcedNameProvider<TokenID> tokens;
-    private final RegistrySourcedNameProvider<AccountID> accounts;
-    private final RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels;
-
+    protected final RegistrySourcedNameProvider<TokenID> tokens;
+    protected final RegistrySourcedNameProvider<AccountID> accounts;
+    protected final RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels;
     private final ResponseCodeEnum[] permissibleOutcomes =
             standardOutcomesAnd(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, TOKEN_WAS_DELETED, ACCOUNT_DELETED);
 

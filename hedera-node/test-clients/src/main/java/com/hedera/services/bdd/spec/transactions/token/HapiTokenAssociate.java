@@ -17,11 +17,12 @@
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
@@ -31,9 +32,17 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -45,9 +54,13 @@ import org.apache.logging.log4j.Logger;
 public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
     static final Logger log = LogManager.getLogger(HapiTokenAssociate.class);
 
+    public static final long DEFAULT_FEE = 100_000_000L;
+
     private String account;
     private List<String> tokens = new ArrayList<>();
     private Optional<ResponseCodeEnum[]> permissibleCostAnswerPrechecks = Optional.empty();
+    private String alias = null;
+    private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
 
     @Override
     public HederaFunctionality type() {
@@ -55,7 +68,16 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
     }
 
     public HapiTokenAssociate(String account, String... tokens) {
-        this.account = account;
+        this(account, ReferenceType.REGISTRY_NAME, tokens);
+    }
+
+    public HapiTokenAssociate(String reference, ReferenceType referenceType, String... tokens) {
+        this.referenceType = referenceType;
+        if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
+            this.alias = reference;
+        } else {
+            this.account = reference;
+        }
         this.tokens.addAll(List.of(tokens));
     }
 
@@ -82,7 +104,7 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
             return spec.fees()
                     .forActivityBasedOp(HederaFunctionality.TokenAssociateToAccount, metricsCalc, txn, numPayerKeys);
         } catch (Throwable ignore) {
-            return 100_000_000L;
+            return DEFAULT_FEE;
         }
     }
 
@@ -138,14 +160,22 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
-        var aId = TxnUtils.asId(account, spec);
+        AccountID aId;
+        if (account != null && referenceType == ReferenceType.REGISTRY_NAME) {
+            aId = TxnUtils.asId(account, spec);
+        } else if (account != null) {
+            aId = asIdForKeyLookUp(alias, spec);
+            account = asAccountString(aId);
+        }
         TokenAssociateTransactionBody opBody = spec.txns()
                 .<TokenAssociateTransactionBody, TokenAssociateTransactionBody.Builder>body(
                         TokenAssociateTransactionBody.class, b -> {
-                            b.setAccount(aId);
+                            if (account != null) {
+                                b.setAccount(TxnUtils.asId(account, spec));
+                            }
                             b.addAllTokens(tokens.stream()
                                     .map(lit -> TxnUtils.asTokenId(lit, spec))
-                                    .collect(toList()));
+                                    .toList());
                         });
         return b -> b.setTokenAssociate(opBody);
     }
@@ -172,8 +202,10 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        MoreObjects.ToStringHelper helper =
-                super.toStringHelper().add("account", account).add("tokens", tokens);
+        MoreObjects.ToStringHelper helper = super.toStringHelper()
+                .add("account", account)
+                .add("tokens", tokens)
+                .add("alias", alias);
         return helper;
     }
 }

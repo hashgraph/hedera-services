@@ -38,11 +38,12 @@ jmhModuleInfo {
 }
 
 testModuleInfo {
-    requires("com.hedera.pbj.runtime")
     requires("com.swirlds.base.test.fixtures")
     requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.logging.test.fixtures")
     requires("com.swirlds.platform.core")
     requires("com.swirlds.config.extensions.test.fixtures")
+    requires("jakarta.inject")
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")

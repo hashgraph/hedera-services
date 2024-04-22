@@ -17,7 +17,7 @@
 package com.swirlds.platform.event.validation;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -35,15 +35,15 @@ public interface EventSignatureValidator {
      */
     @InputWireLabel("GossipEvent")
     @Nullable
-    public GossipEvent validateSignature(@NonNull final GossipEvent event);
+    GossipEvent validateSignature(@NonNull final GossipEvent event);
 
     /**
-     * Set the non-ancient event window that defines the minimum threshold required for an event to be non-ancient
+     * Set the event window that defines the minimum threshold required for an event to be non-ancient
      *
-     * @param nonAncientEventWindow the non-ancient event window
+     * @param eventWindow the event window
      */
-    @InputWireLabel("NonAncientEventWindow")
-    public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow);
+    @InputWireLabel("event window")
+    void setEventWindow(@NonNull final EventWindow eventWindow);
 
     /**
      * Set the previous and current address books
@@ -51,5 +51,5 @@ public interface EventSignatureValidator {
      * @param addressBookUpdate the new address books
      */
     @InputWireLabel("AddressBookUpdate")
-    public void updateAddressBooks(@NonNull final AddressBookUpdate addressBookUpdate);
+    void updateAddressBooks(@NonNull final AddressBookUpdate addressBookUpdate);
 }

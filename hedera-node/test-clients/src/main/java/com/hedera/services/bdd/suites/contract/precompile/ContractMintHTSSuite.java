@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -280,8 +281,8 @@ public class ContractMintHTSSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT.signedWith(NEGATIVE_MINT_CONTRACT)),
-                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
-                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(MULTI_KEY),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(MULTI_KEY),
                         contractCall(
                                         NEGATIVE_MINT_CONTRACT,
                                         mintToken,
@@ -343,7 +344,18 @@ public class ContractMintHTSSuite extends HapiSuite {
                         childRecordsCheck(
                                 mintWithZeroedAddressAndMetadataTest,
                                 CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_TOKEN_ID)));
+                                recordWith().status(INVALID_TOKEN_ID)),
+                        withOpContext((spec, opLog) -> {
+                            final var baseTxnId = spec.registry().getTxnId(mintWithZeroedAddressAndMetadataTest);
+                            final var childTxnId =
+                                    baseTxnId.toBuilder().setNonce(1).build();
+                            allRunFor(spec, getReceipt(childTxnId).hasPriorityStatus(INVALID_TOKEN_ID));
+                            allRunFor(
+                                    spec,
+                                    getTxnRecord(childTxnId)
+                                            .assertingNothingAboutHashes()
+                                            .hasPriority(recordWith().status(INVALID_TOKEN_ID)));
+                        }));
     }
 
     @HapiTest
@@ -381,7 +393,9 @@ public class ContractMintHTSSuite extends HapiSuite {
                         newKeyNamed(DELEGATE_CONTRACT_KEY_NAME)
                                 .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, NESTED_MINT_CONTRACT))),
                         cryptoUpdate(TOKEN_TREASURY).key(DELEGATE_CONTRACT_KEY_NAME),
-                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(DELEGATE_CONTRACT_KEY_NAME),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN)
+                                .supplyKey(DELEGATE_CONTRACT_KEY_NAME)
+                                .signedByPayerAnd(MULTI_KEY),
                         contractCall(
                                         NESTED_MINT_CONTRACT,
                                         "sendNFTAfterMint",

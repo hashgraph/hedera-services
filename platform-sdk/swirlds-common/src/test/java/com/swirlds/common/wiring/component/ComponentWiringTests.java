@@ -23,14 +23,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.schedulers.TaskScheduler;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.model.WiringModelBuilder;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -109,6 +108,7 @@ public class ComponentWiringTests {
         }
     }
 
+    @SchedulerLabel("actuallyCallThisSomethingDifferent")
     private interface ComponentWithListOutput {
         @NonNull
         List<String> handleInputA(@NonNull String s);
@@ -153,16 +153,13 @@ public class ComponentWiringTests {
                 TestPlatformContextBuilder.create().build();
 
         final WiringModel wiringModel =
-                WiringModel.create(platformContext, platformContext.getTime(), ForkJoinPool.commonPool());
+                WiringModelBuilder.create(platformContext).build();
 
-        final TaskScheduler<Long> scheduler = wiringModel
-                .schedulerBuilder("test")
-                .withType(TaskSchedulerType.DIRECT)
-                .build()
-                .cast();
+        final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
 
         final ComponentWiring<FooBarBaz, Long> fooBarBazWiring =
-                new ComponentWiring<>(wiringModel, FooBarBaz.class, scheduler);
+                new ComponentWiring<>(wiringModel, FooBarBaz.class, schedulerConfiguration);
+        assertEquals("FooBarBaz", fooBarBazWiring.getSchedulerName());
 
         assertThrows(IllegalArgumentException.class, () -> fooBarBazWiring.getInputWire((x, y) -> 0L));
         assertThrows(IllegalArgumentException.class, () -> fooBarBazWiring.getInputWire((x, y) -> {}));
@@ -178,16 +175,13 @@ public class ComponentWiringTests {
                 TestPlatformContextBuilder.create().build();
 
         final WiringModel wiringModel =
-                WiringModel.create(platformContext, platformContext.getTime(), ForkJoinPool.commonPool());
+                WiringModelBuilder.create(platformContext).build();
 
-        final TaskScheduler<Long> scheduler = wiringModel
-                .schedulerBuilder("test")
-                .withType(TaskSchedulerType.DIRECT)
-                .build()
-                .cast();
+        final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
 
         final ComponentWiring<FooBarBaz, Long> fooBarBazWiring =
-                new ComponentWiring<>(wiringModel, FooBarBaz.class, scheduler);
+                new ComponentWiring<>(wiringModel, FooBarBaz.class, schedulerConfiguration);
+        assertEquals("FooBarBaz", fooBarBazWiring.getSchedulerName());
 
         final FooBarBazImpl fooBarBazImpl = new FooBarBazImpl();
 
@@ -271,18 +265,15 @@ public class ComponentWiringTests {
                 TestPlatformContextBuilder.create().build();
 
         final WiringModel wiringModel =
-                WiringModel.create(platformContext, platformContext.getTime(), ForkJoinPool.commonPool());
+                WiringModelBuilder.create(platformContext).build();
 
-        final TaskScheduler<Long> scheduler = wiringModel
-                .schedulerBuilder("test")
-                .withType(TaskSchedulerType.DIRECT)
-                .build()
-                .cast();
+        final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
 
         final FooBarBazImpl fooBarBazImpl = new FooBarBazImpl();
 
         final ComponentWiring<FooBarBaz, Long> fooBarBazWiring =
-                new ComponentWiring<>(wiringModel, FooBarBaz.class, scheduler);
+                new ComponentWiring<>(wiringModel, FooBarBaz.class, schedulerConfiguration);
+        assertEquals("FooBarBaz", fooBarBazWiring.getSchedulerName());
 
         if (bindLocation == 0) {
             fooBarBazWiring.bind(fooBarBazImpl);
@@ -344,18 +335,15 @@ public class ComponentWiringTests {
                 TestPlatformContextBuilder.create().build();
 
         final WiringModel wiringModel =
-                WiringModel.create(platformContext, platformContext.getTime(), ForkJoinPool.commonPool());
+                WiringModelBuilder.create(platformContext).build();
 
-        final TaskScheduler<Long> scheduler = wiringModel
-                .schedulerBuilder("test")
-                .withType(TaskSchedulerType.DIRECT)
-                .build()
-                .cast();
+        final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
 
         final FooBarBazImpl fooBarBazImpl = new FooBarBazImpl();
 
         final ComponentWiring<FooBarBaz, Long> fooBarBazWiring =
-                new ComponentWiring<>(wiringModel, FooBarBaz.class, scheduler);
+                new ComponentWiring<>(wiringModel, FooBarBaz.class, schedulerConfiguration);
+        assertEquals("FooBarBaz", fooBarBazWiring.getSchedulerName());
 
         if (bindLocation == 0) {
             fooBarBazWiring.bind(fooBarBazImpl);
@@ -419,16 +407,13 @@ public class ComponentWiringTests {
                 TestPlatformContextBuilder.create().build();
 
         final WiringModel wiringModel =
-                WiringModel.create(platformContext, platformContext.getTime(), ForkJoinPool.commonPool());
+                WiringModelBuilder.create(platformContext).build();
 
-        final TaskScheduler<List<String>> scheduler = wiringModel
-                .schedulerBuilder("test")
-                .withType(TaskSchedulerType.DIRECT)
-                .build()
-                .cast();
+        final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
 
         final ComponentWiring<ComponentWithListOutput, List<String>> componentWiring =
-                new ComponentWiring<>(wiringModel, ComponentWithListOutput.class, scheduler);
+                new ComponentWiring<>(wiringModel, ComponentWithListOutput.class, schedulerConfiguration);
+        assertEquals("actuallyCallThisSomethingDifferent", componentWiring.getSchedulerName());
 
         if (bindLocation == 0) {
             componentWiring.bind(new ComponentWithListOutputImpl());
@@ -462,16 +447,13 @@ public class ComponentWiringTests {
                 TestPlatformContextBuilder.create().build();
 
         final WiringModel wiringModel =
-                WiringModel.create(platformContext, platformContext.getTime(), ForkJoinPool.commonPool());
+                WiringModelBuilder.create(platformContext).build();
 
-        final TaskScheduler<List<String>> scheduler = wiringModel
-                .schedulerBuilder("test")
-                .withType(TaskSchedulerType.DIRECT)
-                .build()
-                .cast();
+        final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
 
         final ComponentWiring<ComponentWithListOutput, List<String>> componentWiring =
-                new ComponentWiring<>(wiringModel, ComponentWithListOutput.class, scheduler);
+                new ComponentWiring<>(wiringModel, ComponentWithListOutput.class, schedulerConfiguration);
+        assertEquals("actuallyCallThisSomethingDifferent", componentWiring.getSchedulerName());
 
         if (bindLocation == 0) {
             componentWiring.bind(new ComponentWithListOutputImpl());
@@ -514,19 +496,13 @@ public class ComponentWiringTests {
                 TestPlatformContextBuilder.create().build();
 
         final WiringModel wiringModel =
-                WiringModel.create(platformContext, platformContext.getTime(), ForkJoinPool.commonPool());
+                WiringModelBuilder.create(platformContext).build();
 
-        final TaskScheduler<List<String>> scheduler = wiringModel
-                .schedulerBuilder("test")
-                .withType(TaskSchedulerType.DIRECT)
-                .withUncaughtExceptionHandler((t, e) -> {
-                    e.printStackTrace();
-                })
-                .build()
-                .cast();
+        final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
 
         final ComponentWiring<ComponentWithListOutput, List<String>> componentWiring =
-                new ComponentWiring<>(wiringModel, ComponentWithListOutput.class, scheduler);
+                new ComponentWiring<>(wiringModel, ComponentWithListOutput.class, schedulerConfiguration);
+        assertEquals("actuallyCallThisSomethingDifferent", componentWiring.getSchedulerName());
 
         if (bindLocation == 0) {
             componentWiring.bind(new ComponentWithListOutputImpl());

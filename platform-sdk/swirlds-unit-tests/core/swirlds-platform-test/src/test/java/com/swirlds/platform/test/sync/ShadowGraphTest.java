@@ -33,7 +33,8 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
+import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.ReservedEventWindow;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
@@ -102,7 +103,7 @@ class ShadowgraphTest {
 
         final EventEmitterFactory factory = new EventEmitterFactory(platformContext, random, addressBook);
         emitter = factory.newStandardEmitter();
-        shadowgraph = new Shadowgraph(platformContext, mock(AddressBook.class));
+        shadowgraph = new Shadowgraph(platformContext, mock(AddressBook.class), new NoOpIntakeEventCounter());
 
         for (int i = 0; i < numEvents; i++) {
             final IndexedEvent event = emitter.emitEvent();
@@ -160,7 +161,7 @@ class ShadowgraphTest {
 
         final long expireBelowGen = random.nextInt(10) + 1;
 
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+        final EventWindow eventWindow = new EventWindow(
                 0 /* ignored by shadowgraph */, 0 /* ignored by shadowgraph */, expireBelowGen, GENERATION_THRESHOLD);
 
         shadowgraph.updateEventWindow(eventWindow);
@@ -289,7 +290,7 @@ class ShadowgraphTest {
         final long expireBelowGen = FIRST_GENERATION + 1;
 
         final ReservedEventWindow r1 = shadowgraph.reserve();
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+        final EventWindow eventWindow = new EventWindow(
                 0 /* ignored by shadowgraph */, 0 /* ignored by shadowgraph */, expireBelowGen, GENERATION_THRESHOLD);
         shadowgraph.updateEventWindow(eventWindow);
 
@@ -351,7 +352,7 @@ class ShadowgraphTest {
         initShadowgraph(random, numEvents, numNodes);
 
         final long expireBelowGen = random.nextInt((int) maxGen) + 2;
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+        final EventWindow eventWindow = new EventWindow(
                 0 /* ignored by shadowgraph */, 0 /* ignored by shadowgraph */, expireBelowGen, GENERATION_THRESHOLD);
         shadowgraph.updateEventWindow(eventWindow);
 
@@ -392,13 +393,13 @@ class ShadowgraphTest {
         SyncTestUtils.printEvents("generated events", generatedEvents);
 
         final ReservedEventWindow r0 = shadowgraph.reserve();
-        shadowgraph.updateEventWindow(new NonAncientEventWindow(
+        shadowgraph.updateEventWindow(new EventWindow(
                 0 /* ignored by shadowgraph */,
                 0 /* ignored by shadowgraph */,
                 FIRST_GENERATION + 1,
                 GENERATION_THRESHOLD));
         final ReservedEventWindow r1 = shadowgraph.reserve();
-        shadowgraph.updateEventWindow(new NonAncientEventWindow(
+        shadowgraph.updateEventWindow(new EventWindow(
                 0 /* ignored by shadowgraph */,
                 0 /* ignored by shadowgraph */,
                 FIRST_GENERATION + 2,
@@ -414,7 +415,7 @@ class ShadowgraphTest {
         r2.close();
 
         // Attempt to expire everything up to
-        shadowgraph.updateEventWindow(new NonAncientEventWindow(
+        shadowgraph.updateEventWindow(new EventWindow(
                 0 /* ignored by shadowgraph */,
                 0 /* ignored by shadowgraph */,
                 FIRST_GENERATION + 2,
@@ -424,7 +425,7 @@ class ShadowgraphTest {
         assertEventsBelowGenAreExpired(0);
 
         r0.close();
-        shadowgraph.updateEventWindow(new NonAncientEventWindow(
+        shadowgraph.updateEventWindow(new EventWindow(
                 0 /* ignored by shadowgraph */,
                 0 /* ignored by shadowgraph */,
                 FIRST_GENERATION + 2,
@@ -514,7 +515,7 @@ class ShadowgraphTest {
     void testAddNullEvent() {
         initShadowgraph(RandomUtils.getRandomPrintSeed(), 0, 4);
         assertThrows(
-                ShadowgraphInsertionException.class,
+                NullPointerException.class,
                 () -> shadowgraph.addEvent(null),
                 "A null event should not be added to the shadow graph.");
     }
@@ -537,7 +538,7 @@ class ShadowgraphTest {
     void testAddEventWithExpiredGeneration() {
         initShadowgraph(RandomUtils.getRandomPrintSeed(), 100, 4);
 
-        shadowgraph.updateEventWindow(new NonAncientEventWindow(
+        shadowgraph.updateEventWindow(new EventWindow(
                 0 /* ignored by shadowgraph */,
                 0 /* ignored by shadowgraph */,
                 FIRST_GENERATION + 1,
@@ -576,7 +577,7 @@ class ShadowgraphTest {
         initShadowgraph(RandomUtils.getRandomPrintSeed(), 100, 4);
 
         final IndexedEvent newEvent = emitter.emitEvent();
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+        final EventWindow eventWindow = new EventWindow(
                 0 /* ignored by shadowgraph */,
                 0 /* ignored by shadowgraph */,
                 newEvent.getGeneration(),
@@ -701,7 +702,7 @@ class ShadowgraphTest {
         final int numTipsBeforeExpiry = shadowgraph.getTips().size();
         assertTrue(numTipsBeforeExpiry > 0, "Shadow graph should have tips after events are added.");
 
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+        final EventWindow eventWindow = new EventWindow(
                 0 /* ignored by shadowgraph */, 0 /* ignored by shadowgraph */, oldestTipGen + 1, GENERATION_THRESHOLD);
         shadowgraph.updateEventWindow(eventWindow);
 
@@ -727,7 +728,7 @@ class ShadowgraphTest {
 
         final EventEmitterFactory factory = new EventEmitterFactory(platformContext, random, addressBook);
         emitter = factory.newStandardEmitter();
-        shadowgraph = new Shadowgraph(platformContext, mock(AddressBook.class));
+        shadowgraph = new Shadowgraph(platformContext, mock(AddressBook.class), new NoOpIntakeEventCounter());
         for (int i = 0; i < numEvents; i++) {
             shadowgraph.addEvent(emitter.emitEvent());
         }

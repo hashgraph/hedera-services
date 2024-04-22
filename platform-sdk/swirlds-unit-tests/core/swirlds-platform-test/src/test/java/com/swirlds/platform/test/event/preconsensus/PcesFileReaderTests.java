@@ -22,6 +22,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.event.preconsensus.PcesFileManager.NO_LOWER_BOUND;
+import static java.lang.Math.max;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -166,7 +167,7 @@ class PcesFileReaderTests {
                     PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, 0, fileDirectory);
 
             lowerBound = random.nextLong(lowerBound, upperBound + 1);
-            upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
+            upperBound = max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
             files.add(file);
@@ -213,7 +214,7 @@ class PcesFileReaderTests {
                         PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, 0, fileDirectory);
 
                 lowerBound = random.nextLong(lowerBound, upperBound + 1);
-                upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
+                upperBound = max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
                 timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
                 if (sequenceNumber == sequenceNumberToSkip) {
@@ -271,7 +272,7 @@ class PcesFileReaderTests {
                     PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, 0, fileDirectory);
 
             lowerBound = random.nextLong(lowerBound, upperBound + 1);
-            upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
+            upperBound = max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
             files.add(file);
@@ -314,9 +315,9 @@ class PcesFileReaderTests {
     }
 
     /**
-     * Similar to the other test that starts iteration in the middle, except that files will have the same
-     * bounds with high probability. Not a scenario we are likely to encounter in production, but it's a tricky edge
-     * case we need to handle elegantly.
+     * Similar to the other test that starts iteration in the middle, except that files will have the same bounds with
+     * high probability. Not a scenario we are likely to encounter in production, but it's a tricky edge case we need to
+     * handle elegantly.
      */
     @ParameterizedTest
     @MethodSource("buildArguments")
@@ -344,7 +345,7 @@ class PcesFileReaderTests {
             // Advance the bounds only 10% of the time
             if (random.nextLong() < 0.1) {
                 lowerBound = random.nextLong(lowerBound, upperBound + 1);
-                upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
+                upperBound = max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
             }
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
@@ -411,7 +412,7 @@ class PcesFileReaderTests {
                     PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, 0, fileDirectory);
 
             lowerBound = random.nextLong(lowerBound, upperBound + 1);
-            upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
+            upperBound = max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
             files.add(file);
@@ -511,7 +512,7 @@ class PcesFileReaderTests {
                     PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, origin, fileDirectory);
 
             lowerBound = random.nextLong(lowerBound, upperBound + 1);
-            upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
+            upperBound = max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
             files.add(file);
@@ -658,7 +659,7 @@ class PcesFileReaderTests {
 
         // Scenario 3: choose an origin that comes before the discontinuity. This will cause the files
         // after the discontinuity to be deleted.
-        final long startingRound3 = random.nextLong(startingOrigin, origin - 1);
+        final long startingRound3 = random.nextLong(startingOrigin, max(origin - 1, startingOrigin + 1));
         final PcesFileTracker fileTracker3 = PcesFileReader.readFilesFromDisk(
                 platformContext, recycleBin, fileDirectory, startingRound3, false, ancientMode);
         assertIteratorEquality(
@@ -765,7 +766,7 @@ class PcesFileReaderTests {
 
         // Scenario 3: choose an origin that comes before the discontinuity. This will cause the files
         // after the discontinuity to be deleted.
-        final long startingRound3 = random.nextLong(startingOrigin, origin - 1);
+        final long startingRound3 = random.nextLong(startingOrigin, max(origin - 1, startingOrigin + 1));
         final PcesFileTracker fileTracker3 = PcesFileReader.readFilesFromDisk(
                 platformContext, recycleBin, fileDirectory, startingRound3, false, ancientMode);
         // There is no files with a compatible origin and events with ancient indicators in the span we want.
@@ -912,7 +913,7 @@ class PcesFileReaderTests {
                     GENERATION_THRESHOLD, timestamp, sequenceNumber, lowerBound, upperBound, 0, fileDirectory);
 
             lowerBound = random.nextLong(lowerBound, upperBound + 1);
-            upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
+            upperBound = max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
             generationFiles.add(file);
@@ -930,7 +931,7 @@ class PcesFileReaderTests {
                     BIRTH_ROUND_THRESHOLD, timestamp, sequenceNumber, lowerBound, upperBound, 0, fileDirectory);
 
             lowerBound = random.nextLong(lowerBound, upperBound + 1);
-            upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
+            upperBound = max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
             birthRoundFiles.add(file);

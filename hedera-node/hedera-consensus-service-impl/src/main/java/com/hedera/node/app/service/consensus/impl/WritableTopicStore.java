@@ -16,16 +16,18 @@
 
 package com.hedera.node.app.service.consensus.impl;
 
-import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.config.data.TopicsConfig;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -35,19 +37,28 @@ import java.util.Set;
  * <p>This class is not exported from the module. It is an internal implementation detail.
  * This class is not complete, it will be extended with other methods like remove, update etc.,
  */
-public class WritableTopicStore {
-    /** The underlying data storage class that holds the topic data. */
-    private final WritableKVState<TopicID, Topic> topicState;
-
+public class WritableTopicStore extends ReadableTopicStoreImpl {
     /**
      * Create a new {@link WritableTopicStore} instance.
      *
      * @param states The state to use.
+     * @param configuration The configuration used to read the maximum capacity.
+     * @param storeMetricsService Service that provides utilization metrics.
      */
-    public WritableTopicStore(@NonNull final WritableStates states) {
-        requireNonNull(states);
+    public WritableTopicStore(
+            @NonNull final WritableStates states,
+            @NonNull final Configuration configuration,
+            @NonNull final StoreMetricsService storeMetricsService) {
+        super(states);
 
-        this.topicState = states.get(TOPICS_KEY);
+        final long maxCapacity = configuration.getConfigData(TopicsConfig.class).maxNumber();
+        final var storeMetrics = storeMetricsService.get(StoreType.TOPIC, maxCapacity);
+        topicState().setMetrics(storeMetrics);
+    }
+
+    @Override
+    protected WritableKVState<TopicID, Topic> topicState() {
+        return super.topicState();
     }
 
     /**
@@ -57,16 +68,9 @@ public class WritableTopicStore {
      * @param topic - the topic to be mapped onto a new {@link MerkleTopic} and persisted.
      */
     public void put(@NonNull final Topic topic) {
-        topicState.put(requireNonNull(topic.topicId()), requireNonNull(topic));
-    }
-
-    /**
-     * Returns the {@link Topic} with the given number. If no such topic exists, returns {@code Optional.empty()}
-     * @param topicID - the id of the topic to be retrieved.
-     */
-    public Optional<Topic> get(@NonNull final TopicID topicID) {
-        final var topic = topicState.get(topicID);
-        return Optional.ofNullable(topic);
+        requireNonNull(topic);
+        requireNonNull(topic.topicId());
+        topicState().put(topic.topicId(), topic);
     }
 
     /**
@@ -74,10 +78,9 @@ public class WritableTopicStore {
      * If no such topic exists, returns {@code Optional.empty()}
      * @param topicID - the id of the topic to be retrieved.
      */
-    public Optional<Topic> getForModify(@NonNull final TopicID topicID) {
+    public Topic getForModify(@NonNull final TopicID topicID) {
         requireNonNull(topicID);
-        final var topic = topicState.getForModify(topicID);
-        return Optional.ofNullable(topic);
+        return topicState().getForModify(topicID);
     }
 
     /**
@@ -85,7 +88,7 @@ public class WritableTopicStore {
      * @return the number of topics in the state.
      */
     public long sizeOfState() {
-        return topicState.size();
+        return topicState().size();
     }
 
     /**
@@ -93,6 +96,6 @@ public class WritableTopicStore {
      * @return the set of topics modified in existing state
      */
     public Set<TopicID> modifiedTopics() {
-        return topicState.modifiedKeys();
+        return topicState().modifiedKeys();
     }
 }

@@ -296,10 +296,12 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
         ContractCallTransactionBody opBody = spec.txns()
                 .<ContractCallTransactionBody, ContractCallTransactionBody.Builder>body(
                         ContractCallTransactionBody.class, builder -> {
-                            if (!tryAsHexedAddressIfLenMatches) {
-                                builder.setContractID(spec.registry().getContractId(contract));
-                            } else {
-                                builder.setContractID(TxnUtils.asContractId(contract, spec));
+                            if (contract != null) {
+                                if (!tryAsHexedAddressIfLenMatches) {
+                                    builder.setContractID(spec.registry().getContractId(contract));
+                                } else {
+                                    builder.setContractID(TxnUtils.asContractId(contract, spec));
+                                }
                             }
                             builder.setFunctionParameters(ByteString.copyFrom(callData));
                             valueSent.ifPresent(builder::setAmount);

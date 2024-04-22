@@ -99,6 +99,7 @@ import java.util.stream.LongStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -107,6 +108,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(LazyCreateThroughPrecompileSuite.class);
     private static final long GAS_TO_OFFER = 4_000_000L;
+    private static final long GAS_PRICE = 71L;
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
     private static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
     private static final String MULTI_KEY = "purpose";
@@ -338,7 +340,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                             BigInteger.valueOf(2))
                                     .refusingEthConversion()
                                     .via(TRANSFER_TXN)
-                                    .gas(GAS_TO_OFFER)
+                                    .gas(780_000L)
                                     .hasKnownStatus(SUCCESS),
                             getAliasedAccountInfo(ECDSA_KEY)
                                     .has(AccountInfoAsserts.accountWith()
@@ -357,7 +359,13 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     TRANSFER_TXN,
                                     SUCCESS,
                                     recordWith().status(SUCCESS),
-                                    recordWith().status(SUCCESS)));
+                                    recordWith().status(SUCCESS)),
+                            getTxnRecord(TRANSFER_TXN).exposingTo(record -> {
+                                Assertions.assertEquals(
+                                        GAS_PRICE,
+                                        record.getTransactionFee()
+                                                / record.getContractCallResult().getGasUsed());
+                            }));
                 }))
                 .then();
     }
@@ -448,7 +456,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                             HapiParserUtil.asHeadlongAddress(addressBytes),
                                             BigInteger.TWO)
                                     .refusingEthConversion()
-                                    .gas(4_000_000)
+                                    .gas(780_000L)
                                     .via(TRANSFER_FROM_ACCOUNT_TXN)
                                     .hasKnownStatus(SUCCESS),
                             getAliasedAccountInfo(ECDSA_KEY)
@@ -472,7 +480,13 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     TRANSFER_FROM_ACCOUNT_TXN,
                                     SUCCESS,
                                     recordWith().status(SUCCESS),
-                                    recordWith().status(SUCCESS)));
+                                    recordWith().status(SUCCESS)),
+                            getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN).exposingTo(record -> {
+                                Assertions.assertEquals(
+                                        GAS_PRICE,
+                                        record.getTransactionFee()
+                                                / record.getContractCallResult().getGasUsed());
+                            }));
                 }))
                 .then();
     }
@@ -546,7 +560,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                             BigInteger.valueOf(1))
                                     .refusingEthConversion()
                                     .via(TRANSFER_FROM_ACCOUNT_TXN)
-                                    .gas(GAS_TO_OFFER)
+                                    .gas(780_000L)
                                     .hasKnownStatus(SUCCESS),
                             getAliasedAccountInfo(ECDSA_KEY)
                                     .has(AccountInfoAsserts.accountWith()
@@ -565,7 +579,13 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     TRANSFER_FROM_ACCOUNT_TXN,
                                     SUCCESS,
                                     recordWith().status(SUCCESS),
-                                    recordWith().status(SUCCESS)));
+                                    recordWith().status(SUCCESS)),
+                            getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN).exposingTo(record -> {
+                                Assertions.assertEquals(
+                                        GAS_PRICE,
+                                        record.getTransactionFee()
+                                                / record.getContractCallResult().getGasUsed());
+                            }));
                 }))
                 .then();
     }

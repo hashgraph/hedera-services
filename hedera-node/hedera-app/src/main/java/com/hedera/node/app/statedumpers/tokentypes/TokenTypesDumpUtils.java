@@ -99,7 +99,6 @@ public class TokenTypesDumpUtils {
     }
 
     private static BBMToken fromMod(@NonNull final Token token) {
-        BBMToken tokenRes = null;
         final var adminKey = (JKey) fromPbjKey(token.adminKey()).orElse(null);
         final var feeScheduleKey = (JKey) fromPbjKey(token.feeScheduleKey()).orElse(null);
         final var freezeKey = (JKey) fromPbjKey(token.freezeKey()).orElse(null);
@@ -107,11 +106,11 @@ public class TokenTypesDumpUtils {
         final var pauseKey = (JKey) fromPbjKey(token.pauseKey()).orElse(null);
         final var supplyKey = (JKey) fromPbjKey(token.supplyKey()).orElse(null);
         final var wipeKey = (JKey) fromPbjKey(token.wipeKey()).orElse(null);
-        tokenRes = new BBMToken(
+        final BBMToken tokenRes = new BBMToken(
                 com.hedera.node.app.service.evm.store.tokens.TokenType.valueOf(
                         token.tokenType().protoName()),
                 token.supplyType(),
-                token.tokenId().tokenNum(),
+                token.tokenIdOrThrow().tokenNum(),
                 token.symbol(),
                 token.name(),
                 token.memo(),
@@ -125,8 +124,8 @@ public class TokenTypesDumpUtils {
                 token.autoRenewSeconds() == -1L ? Optional.empty() : Optional.of(token.autoRenewSeconds()),
                 token.accountsFrozenByDefault(),
                 token.accountsKycGrantedByDefault(),
-                idFromMod(token.treasuryAccountId()),
-                idFromMod(token.autoRenewAccountId()),
+                token.treasuryAccountId() != null ? idFromMod(token.treasuryAccountId()) : null,
+                token.autoRenewAccountId() != null ? idFromMod(token.autoRenewAccountId()) : null,
                 customFeesFromMod(token.customFees()),
                 adminKey == null ? Optional.empty() : Optional.of(adminKey),
                 feeScheduleKey == null ? Optional.empty() : Optional.of(feeScheduleKey),

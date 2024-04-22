@@ -41,7 +41,7 @@ public class TriggeredFinalizeContext extends ChildFinalizeContextImpl implement
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             @NonNull final Instant consensusNow,
             @NonNull final Configuration configuration) {
-        super(readableStoreFactory, writableStoreFactory, recordBuilder);
+        super(configuration, readableStoreFactory, writableStoreFactory, recordBuilder);
         this.consensusNow = Objects.requireNonNull(consensusNow);
         this.configuration = Objects.requireNonNull(configuration);
     }
@@ -66,5 +66,10 @@ public class TriggeredFinalizeContext extends ChildFinalizeContextImpl implement
     @Override
     public <T> void forEachChildRecord(@NonNull Class<T> recordBuilderClass, @NonNull Consumer<T> consumer) {
         // No-op, as contract operations cannot be scheduled at this time
+    }
+
+    @Override
+    public boolean isScheduleDispatch() {
+        return true;
     }
 }

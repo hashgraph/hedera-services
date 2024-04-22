@@ -42,11 +42,18 @@ public class HederaSoftwareVersion implements SoftwareVersion {
 
     public static final long CLASS_ID = 0x6f2b1bc2df8cbd0cL;
     public static final int RELEASE_027_VERSION = 1;
+    public static final int RELEASE_048_VERSION = 2;
     public static final Pattern ALPHA_PRE_PATTERN = Pattern.compile("alpha[.](\\d+)");
 
     private int configVersion;
     private SemanticVersion hapiVersion;
     private SemanticVersion servicesVersion;
+
+    /**
+     * The version of this object that was deserialized. When serializing a software version, we need to write it
+     * to the stream using the same format as when it was deserialized.
+     */
+    private int deserializedVersion = RELEASE_048_VERSION;
 
     public HederaSoftwareVersion() {
         // For ConstructableRegistry. Do not use.
@@ -74,7 +81,7 @@ public class HederaSoftwareVersion implements SoftwareVersion {
 
     @Override
     public int getVersion() {
-        return RELEASE_027_VERSION;
+        return deserializedVersion;
     }
 
     @Override
@@ -100,9 +107,14 @@ public class HederaSoftwareVersion implements SoftwareVersion {
     }
 
     @Override
-    public void deserialize(SerializableDataInputStream in, int i) throws IOException {
+    public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
+        deserializedVersion = version;
+
         hapiVersion = deserializeSemVer(in);
         servicesVersion = deserializeSemVer(in);
+        if (version >= RELEASE_048_VERSION) {
+            configVersion = in.readInt();
+        }
     }
 
     private static SemanticVersion deserializeSemVer(final SerializableDataInputStream in) throws IOException {
@@ -121,6 +133,9 @@ public class HederaSoftwareVersion implements SoftwareVersion {
     public void serialize(SerializableDataOutputStream out) throws IOException {
         serializeSemVer(hapiVersion, out);
         serializeSemVer(servicesVersion, out);
+        if (deserializedVersion >= RELEASE_048_VERSION) {
+            out.writeInt(configVersion);
+        }
     }
 
     private static void serializeSemVer(final SemanticVersion semVer, final SerializableDataOutputStream out)
@@ -161,7 +176,7 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         // This is called by the platform when printing information on saved states to logs
         return "HederaSoftwareVersion{" + "hapiVersion="
                 + HapiUtils.toString(hapiVersion) + ", servicesVersion="
-                + HapiUtils.toString(servicesVersion) + '}';
+                + HapiUtils.toString(servicesVersion) + (configVersion == 0 ? "" : "-c" + configVersion) + '}';
     }
 
     /**

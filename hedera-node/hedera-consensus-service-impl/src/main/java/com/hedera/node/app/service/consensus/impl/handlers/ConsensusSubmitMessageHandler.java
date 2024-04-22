@@ -31,6 +31,7 @@ import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleTopic.RUNNING_HASH_VERSION;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -61,7 +62,6 @@ import java.io.ObjectOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -76,13 +76,20 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
     }
 
     @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        final ConsensusSubmitMessageTransactionBody op = txn.consensusSubmitMessageOrThrow();
+        validateTruePreCheck(op.hasTopicID(), INVALID_TOPIC_ID);
+        validateFalsePreCheck(op.message().length() == 0, INVALID_TOPIC_MESSAGE);
+    }
+
+    @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
 
         final var op = context.body().consensusSubmitMessageOrThrow();
         final var topicStore = context.createStore(ReadableTopicStore.class);
         // The topic ID must be present on the transaction and the topic must exist.
-        final var topic = topicStore.getTopic(op.topicID());
+        final var topic = topicStore.getTopic(op.topicIDOrElse(TopicID.DEFAULT));
         mustExist(topic, INVALID_TOPIC_ID);
         validateFalsePreCheck(topic.deleted(), INVALID_TOPIC_ID);
         // If a submit key is specified on the topic, then only those transactions signed by that key can be
@@ -107,14 +114,14 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
 
         final var topicStore = handleContext.writableStore(WritableTopicStore.class);
         final var topic = topicStore.getForModify(op.topicIDOrElse(TopicID.DEFAULT));
+        // preHandle already checks for topic existence, so topic should never be null.
 
         /* Validate all needed fields in the transaction */
         final var config = handleContext.configuration().getConfigData(ConsensusConfig.class);
         validateTransaction(txn, config, topic);
 
-        /* since we have validated topic exists, topic.get() is safe to be called */
         try {
-            final var updatedTopic = updateRunningHashAndSequenceNumber(txn, topic.get(), handleContext.consensusNow());
+            final var updatedTopic = updateRunningHashAndSequenceNumber(txn, topic, handleContext.consensusNow());
 
             /* --- Put the modified topic. It will be in underlying state's modifications map.
             It will not be committed to state until commit is called on the state.--- */
@@ -136,8 +143,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
      * @param config the {@link ConsensusConfig}
      * @param topic the topic to which the message is being submitted
      */
-    private void validateTransaction(
-            final TransactionBody txn, final ConsensusConfig config, final Optional<Topic> topic) {
+    private void validateTransaction(final TransactionBody txn, final ConsensusConfig config, final Topic topic) {
         final var txnId = txn.transactionID();
         final var payer = txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT);
         final var op = txn.consensusSubmitMessageOrThrow();
@@ -145,9 +151,6 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         /* Check if the message submitted is empty */
         // Question do we need this check ?
         final var msgLen = op.message().length();
-        if (msgLen == 0) {
-            throw new HandleException(INVALID_TOPIC_MESSAGE);
-        }
 
         /* Check if the message submitted is greater than acceptable size */
         if (msgLen > config.messageMaxBytesAllowed()) {
@@ -155,7 +158,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         }
 
         /* Check if the topic exists */
-        if (topic.isEmpty()) {
+        if (topic == null) {
             throw new HandleException(INVALID_TOPIC_ID);
         }
         /* If the message is too large, user will be able to submit the message fragments in chunks. Validate if chunk info is correct */

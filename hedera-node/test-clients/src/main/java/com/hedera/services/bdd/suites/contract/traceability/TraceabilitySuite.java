@@ -38,12 +38,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.stripSelector;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilStateChange.stateChangesToGrpc;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
@@ -57,15 +54,12 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion.recordStreamLocFor;
-import static com.hedera.services.bdd.suites.contract.Utils.FunctionType;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asSolidityAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.extractBytecodeUnhexed;
-import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.CONTRACT_REPORTED_ADDRESS_MESSAGE;
@@ -74,6 +68,12 @@ import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSu
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.EXPECTED_CREATE2_ADDRESS_MESSAGE;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.GET_ADDRESS;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.GET_BYTECODE;
+import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.encodeFunctionCall;
+import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.encodeTuple;
+import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.formattedAssertionValue;
+import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.getInitcode;
+import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.hexedSolidityAddressToHeadlongAddress;
+import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.uint256ReturnWithValue;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.PARTY;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.stream.proto.ContractActionType.CALL;
@@ -88,12 +88,9 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static org.hyperledger.besu.crypto.Hash.keccak256;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.DefaultExceptionalHaltReason.PRECOMPILE_ERROR;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TupleType;
 import com.google.common.hash.Hashing;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
@@ -111,13 +108,10 @@ import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.verification.traceability.ExpectedSidecar;
-import com.hedera.services.bdd.spec.verification.traceability.SidecarWatcher;
-import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.SidecarAwareHapiSuite;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction;
-import com.hedera.services.stream.proto.ContractActions;
 import com.hedera.services.stream.proto.ContractBytecode;
-import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -126,19 +120,15 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.utility.CommonUtils;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
@@ -147,11 +137,10 @@ import org.junit.jupiter.api.TestMethodOrder;
 @HapiTestSuite(fuzzyMatch = true)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @Tag(SMART_CONTRACT)
-public class TraceabilitySuite extends HapiSuite {
+public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     private static final Logger log = LogManager.getLogger(TraceabilitySuite.class);
 
-    private static SidecarWatcher sidecarWatcher;
     private static final ByteString EMPTY = ByteStringUtils.wrapUnsafely(new byte[0]);
     private static final ByteString CALL_CODE_INPUT_SUFFIX = ByteStringUtils.wrapUnsafely(new byte[28]);
     private static final String TRACEABILITY = "Traceability";
@@ -181,7 +170,6 @@ public class TraceabilitySuite extends HapiSuite {
         new TraceabilitySuite().runSuiteSync();
     }
 
-    @SuppressWarnings("java:S5960")
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
@@ -222,10 +210,10 @@ public class TraceabilitySuite extends HapiSuite {
                 .given()
                 .when()
                 .then(
+                        initializeSidecarWatcher(),
                         overridingTwo(
                                 "contracts.throttle.throttleByGas", "false",
-                                "contracts.enforceCreationThrottle", "false"),
-                        withOpContext((spec, opLog) -> initializeWatcherOf(recordStreamLocFor(spec))));
+                                "contracts.enforceCreationThrottle", "false"));
     }
 
     @HapiTest
@@ -5162,64 +5150,18 @@ public class TraceabilitySuite extends HapiSuite {
                         }));
     }
 
-    @SuppressWarnings("java:S5960")
     @HapiTest
-    @Order(28)
-    final HapiSpec assertSidecars() {
+    @Order(Integer.MAX_VALUE)
+    public final HapiSpec assertSidecars() {
         return defaultHapiSpec("assertSidecars")
-                .given(
-                        // send a dummy transaction to trigger externalization of last sidecars
-                        cryptoCreate("externalizeFinalSidecars").delayBy(2000))
-                .when(withOpContext((spec, opLog) -> {
-                    sidecarWatcher.waitUntilFinished();
-                    sidecarWatcher.tearDown();
-                }))
-                .then(assertionsHold((spec, assertLog) -> {
-                    assertTrue(sidecarWatcher.thereAreNoMismatchedSidecars(), sidecarWatcher.getMismatchErrors());
-                    assertTrue(
-                            sidecarWatcher.thereAreNoPendingSidecars(),
-                            "There are some sidecars that have not been yet"
-                                    + " externalized in the sidecar files after all"
-                                    + " specs: " + sidecarWatcher.getPendingErrors());
-                }));
+                .given()
+                .when(tearDownSidecarWatcher())
+                .then(assertNoMismatchedSidecars());
     }
 
     @Override
     protected Logger getResultsLogger() {
         return log;
-    }
-
-    private CustomSpecAssert expectContractActionSidecarFor(final String txnName, final List<ContractAction> actions) {
-        return withOpContext((spec, opLog) -> {
-            final var txnRecord = getTxnRecord(txnName);
-            allRunFor(spec, txnRecord);
-            final var consensusTimestamp = txnRecord.getResponseRecord().getConsensusTimestamp();
-            sidecarWatcher.addExpectedSidecar(new ExpectedSidecar(
-                    spec.getName(),
-                    TransactionSidecarRecord.newBuilder()
-                            .setConsensusTimestamp(consensusTimestamp)
-                            .setActions(ContractActions.newBuilder()
-                                    .addAllContractActions(actions)
-                                    .build())
-                            .build()));
-        });
-    }
-
-    private CustomSpecAssert expectContractStateChangesSidecarFor(
-            final String txnName, final List<StateChange> stateChanges) {
-        return withOpContext((spec, opLog) -> {
-            final var txnRecord = getTxnRecord(txnName);
-            allRunFor(spec, txnRecord);
-            final var consensusTimestamp = txnRecord.getResponseRecord().getConsensusTimestamp();
-            sidecarWatcher.addExpectedSidecar(new ExpectedSidecar(
-                    spec.getName(),
-                    TransactionSidecarRecord.newBuilder()
-                            .setConsensusTimestamp(consensusTimestamp)
-                            .setStateChanges(ContractStateChanges.newBuilder()
-                                    .addAllContractStateChanges(stateChangesToGrpc(stateChanges, spec))
-                                    .build())
-                            .build()));
-        });
     }
 
     private CustomSpecAssert expectContractBytecodeSidecarFor(
@@ -5233,7 +5175,7 @@ public class TraceabilitySuite extends HapiSuite {
             allRunFor(spec, txnRecord, contractBytecode);
             final var consensusTimestamp = txnRecord.getResponseRecord().getConsensusTimestamp();
             final var initCode = getInitcode(binFileName, constructorArgs);
-            sidecarWatcher.addExpectedSidecar(new ExpectedSidecar(
+            addExpectedSidecar(new ExpectedSidecar(
                     spec.getName(),
                     TransactionSidecarRecord.newBuilder()
                             .setConsensusTimestamp(consensusTimestamp)
@@ -5257,7 +5199,7 @@ public class TraceabilitySuite extends HapiSuite {
             allRunFor(spec, txnRecord);
             final var consensusTimestamp = txnRecord.getResponseRecord().getConsensusTimestamp();
             final var initCode = getInitcode(binFileName, constructorArgs);
-            sidecarWatcher.addExpectedSidecar(new ExpectedSidecar(
+            addExpectedSidecar(new ExpectedSidecar(
                     spec.getName(),
                     TransactionSidecarRecord.newBuilder()
                             .setConsensusTimestamp(consensusTimestamp)
@@ -5276,7 +5218,7 @@ public class TraceabilitySuite extends HapiSuite {
             allRunFor(spec, txnRecord, contractBytecode);
             final var consensusTimestamp =
                     txnRecord.getFirstNonStakingChildRecord().getConsensusTimestamp();
-            sidecarWatcher.addExpectedSidecar(new ExpectedSidecar(
+            addExpectedSidecar(new ExpectedSidecar(
                     spec.getName(),
                     TransactionSidecarRecord.newBuilder()
                             .setConsensusTimestamp(consensusTimestamp)
@@ -5298,7 +5240,7 @@ public class TraceabilitySuite extends HapiSuite {
             final var contractBytecode = getContractBytecode(contractName).saveResultTo(RUNTIME_CODE);
             allRunFor(spec, txnRecord, contractBytecode);
             final var consensusTimestamp = txnRecord.getResponseRecord().getConsensusTimestamp();
-            sidecarWatcher.addExpectedSidecar(new ExpectedSidecar(
+            addExpectedSidecar(new ExpectedSidecar(
                     spec.getName(),
                     TransactionSidecarRecord.newBuilder()
                             .setConsensusTimestamp(consensusTimestamp)
@@ -5320,7 +5262,7 @@ public class TraceabilitySuite extends HapiSuite {
             final ContractID contractID,
             final ByteString initCode,
             final ByteString runtimeCode) {
-        sidecarWatcher.addExpectedSidecar(new ExpectedSidecar(
+        addExpectedSidecar(new ExpectedSidecar(
                 specName,
                 TransactionSidecarRecord.newBuilder()
                         .setConsensusTimestamp(timestamp)
@@ -5332,48 +5274,5 @@ public class TraceabilitySuite extends HapiSuite {
                                 .setRuntimeBytecode(runtimeCode)
                                 .build())
                         .build()));
-    }
-
-    private ByteString getInitcode(final String binFileName, final Object... constructorArgs) {
-        final var initCode = extractBytecodeUnhexed(getResourcePath(binFileName, ".bin"));
-        final var params = constructorArgs.length == 0
-                ? new byte[] {}
-                : Function.fromJson(getABIFor(FunctionType.CONSTRUCTOR, StringUtils.EMPTY, binFileName))
-                        .encodeCall(Tuple.of(constructorArgs))
-                        .array();
-        return initCode.concat(ByteStringUtils.wrapUnsafely(params.length > 4 ? stripSelector(params) : params));
-    }
-
-    private static void initializeWatcherOf(@NonNull final String recordStreamLoc) throws Exception {
-        final var absolutePath = Paths.get(recordStreamLoc).toAbsolutePath();
-        log.info("Watching for sidecars at absolute path {}", absolutePath);
-        sidecarWatcher = new SidecarWatcher(Paths.get(recordStreamLoc));
-        sidecarWatcher.watch();
-    }
-
-    private ByteString encodeFunctionCall(final String contractName, final String functionName, final Object... args) {
-        return ByteStringUtils.wrapUnsafely(
-                Function.fromJson(getABIFor(FunctionType.FUNCTION, functionName, contractName))
-                        .encodeCallWithArgs(args)
-                        .array());
-    }
-
-    byte[] encodeTuple(final String argumentsSignature, final Object... actualArguments) {
-        return TupleType.parse(argumentsSignature)
-                .encode(Tuple.of(actualArguments))
-                .array();
-    }
-
-    private ByteString uint256ReturnWithValue(final BigInteger value) {
-        return ByteStringUtils.wrapUnsafely(encodeTuple("(uint256)", value));
-    }
-
-    private Address hexedSolidityAddressToHeadlongAddress(final String hexedSolidityAddress) {
-        return Address.wrap(Address.toChecksumAddress("0x" + hexedSolidityAddress));
-    }
-
-    private ByteString formattedAssertionValue(final long value) {
-        return ByteString.copyFrom(
-                Bytes.wrap(UInt256.valueOf(value)).trimLeadingZeros().toArrayUnsafe());
     }
 }

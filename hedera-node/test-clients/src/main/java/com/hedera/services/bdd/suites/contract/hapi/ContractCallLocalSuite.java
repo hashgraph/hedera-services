@@ -46,6 +46,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
@@ -102,6 +103,8 @@ public class ContractCallLocalSuite extends HapiSuite {
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 successOnDeletedContract(),
+                gasBelowIntrinsicGasFails(),
+                insufficientGasFails(),
                 invalidContractID(),
                 impureCallFails(),
                 insufficientFeeFails(),
@@ -198,6 +201,28 @@ public class ContractCallLocalSuite extends HapiSuite {
                                         .resultViaFunctionName("getIndirect", CONTRACT, isLiteralResult(new Object[] {
                                             BigInteger.valueOf(7L)
                                         }))));
+    }
+
+    @HapiTest
+    final HapiSpec gasBelowIntrinsicGasFails() {
+        return defaultHapiSpec("gasBelowIntrinsicGasFails", NONDETERMINISTIC_TRANSACTION_FEES)
+                .given(cryptoCreate("payer"), uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                .when(contractCall(CONTRACT, "create").gas(785_000))
+                .then(
+                        sleepFor(3_000L),
+                        contractCallLocal(CONTRACT, "getIndirect").gas(2_000L).hasAnswerOnlyPrecheck(INSUFFICIENT_GAS));
+    }
+
+    @HapiTest
+    final HapiSpec insufficientGasFails() {
+        return defaultHapiSpec("insufficientGasFails", NONDETERMINISTIC_TRANSACTION_FEES)
+                .given(cryptoCreate("payer"), uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                .when(contractCall(CONTRACT, "create").gas(785_000))
+                .then(
+                        sleepFor(3_000L),
+                        contractCallLocal(CONTRACT, "getIndirect")
+                                .gas(22_000L)
+                                .hasAnswerOnlyPrecheck(INSUFFICIENT_GAS));
     }
 
     @HapiTest

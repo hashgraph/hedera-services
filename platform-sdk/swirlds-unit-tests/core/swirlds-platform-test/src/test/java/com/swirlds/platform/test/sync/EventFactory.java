@@ -39,7 +39,7 @@ public class EventFactory {
             @NonNull final Random random, final ShadowEvent selfParent, final ShadowEvent otherParent) {
 
         final EventImpl eventImpl = EventImplTestUtils.createEventImpl(
-                TestingEventBuilder.builder(random),
+                new TestingEventBuilder(random),
                 selfParent == null ? null : selfParent.getEvent(),
                 otherParent == null ? null : otherParent.getEvent());
 

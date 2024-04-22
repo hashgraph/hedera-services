@@ -39,13 +39,14 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 
 /**
  * Factory for all writable stores. It creates new writable stores based on the {@link HederaState}.
@@ -70,19 +71,29 @@ public class WritableStoreFactory {
                 WritableTokenRelationStore.class, new StoreEntry(TokenService.NAME, WritableTokenRelationStore::new));
         newMap.put(
                 WritableNetworkStakingRewardsStore.class,
-                new StoreEntry(TokenService.NAME, WritableNetworkStakingRewardsStore::new));
-        newMap.put(WritableStakingInfoStore.class, new StoreEntry(TokenService.NAME, WritableStakingInfoStore::new));
+                new StoreEntry(
+                        TokenService.NAME,
+                        (states, config, metrics) -> new WritableNetworkStakingRewardsStore(states)));
+        newMap.put(
+                WritableStakingInfoStore.class,
+                new StoreEntry(TokenService.NAME, (states, config, metrics) -> new WritableStakingInfoStore(states)));
         // FreezeService
-        newMap.put(WritableFreezeStore.class, new StoreEntry(FreezeService.NAME, WritableFreezeStore::new));
+        newMap.put(
+                WritableFreezeStore.class,
+                new StoreEntry(FreezeService.NAME, (states, config, metrics) -> new WritableFreezeStore(states)));
         // FileService
         newMap.put(WritableFileStore.class, new StoreEntry(FileService.NAME, WritableFileStore::new));
-        newMap.put(WritableUpgradeFileStore.class, new StoreEntry(FileService.NAME, WritableUpgradeFileStore::new));
+        newMap.put(
+                WritableUpgradeFileStore.class,
+                new StoreEntry(FileService.NAME, (states, config, metrics) -> new WritableUpgradeFileStore(states)));
         // ContractService
         newMap.put(
                 WritableContractStateStore.class,
                 new StoreEntry(ContractService.NAME, WritableContractStateStore::new));
         // EntityIdService
-        newMap.put(WritableEntityIdStore.class, new StoreEntry(EntityIdService.NAME, WritableEntityIdStore::new));
+        newMap.put(
+                WritableEntityIdStore.class,
+                new StoreEntry(EntityIdService.NAME, (states, config, metrics) -> new WritableEntityIdStore(states)));
         // Schedule Service
         newMap.put(WritableScheduleStore.class, new StoreEntry(ScheduleService.NAME, WritableScheduleStoreImpl::new));
         return Collections.unmodifiableMap(newMap);
@@ -90,20 +101,30 @@ public class WritableStoreFactory {
 
     private final String serviceName;
     private final WritableStates states;
+    private final Configuration configuration;
+    private final StoreMetricsService storeMetricsService;
 
     /**
      * Constructor of {@code WritableStoreFactory}
      *
-     * @param state       the {@link HederaState} to use
+     * @param state the {@link HederaState} to use
      * @param serviceName the name of the service to create stores for
+     * @param configuration the configuration to use for the created stores
+     * @param storeMetricsService Service that provides utilization metrics.
      * @throws NullPointerException     if one of the arguments is {@code null}
      * @throws IllegalArgumentException if the service name is unknown
      */
-    public WritableStoreFactory(@NonNull final HederaState state, @NonNull final String serviceName) {
+    public WritableStoreFactory(
+            @NonNull final HederaState state,
+            @NonNull final String serviceName,
+            @NonNull final Configuration configuration,
+            @NonNull final StoreMetricsService storeMetricsService) {
         requireNonNull(state, "The argument 'stack' cannot be null!");
-        requireNonNull(serviceName, "The argument 'serviceName' cannot be null!");
+        this.serviceName = requireNonNull(serviceName, "The argument 'serviceName' cannot be null!");
+        this.configuration = requireNonNull(configuration, "The argument 'configuration' cannot be null!");
+        this.storeMetricsService =
+                requireNonNull(storeMetricsService, "The argument 'storeMetricsService' cannot be null!");
 
-        this.serviceName = serviceName;
         this.states = state.getWritableStates(serviceName);
     }
 
@@ -121,7 +142,7 @@ public class WritableStoreFactory {
         requireNonNull(storeInterface, "The supplied argument 'storeInterface' cannot be null!");
         final var entry = STORE_FACTORY.get(storeInterface);
         if (entry != null && serviceName.equals(entry.name())) {
-            final var store = entry.factory().apply(states);
+            final var store = entry.factory().create(states, configuration, storeMetricsService);
             if (!storeInterface.isInstance(store)) {
                 throw new IllegalArgumentException("No instance " + storeInterface
                         + " is available"); // This needs to be ensured while stores are registered
@@ -131,5 +152,12 @@ public class WritableStoreFactory {
         throw new IllegalArgumentException("No store of the given class is available");
     }
 
-    private record StoreEntry(@NonNull String name, @NonNull Function<WritableStates, ?> factory) {}
+    private interface StoreFactory {
+        Object create(
+                @NonNull WritableStates states,
+                @NonNull Configuration configuration,
+                @NonNull StoreMetricsService storeMetricsService);
+    }
+
+    private record StoreEntry(@NonNull String name, @NonNull StoreFactory factory) {}
 }

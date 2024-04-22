@@ -133,7 +133,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         final var keyIsEmpty = isEmpty(key);
         if (!isInternal && keyIsEmpty) {
             if (key == null) {
-                throw new PreCheckException(INVALID_ALIAS_KEY);
+                throw new PreCheckException(alias.length() > 0 ? INVALID_ALIAS_KEY : KEY_REQUIRED);
             } else if (key.hasThresholdKey() || key.hasKeyList()) {
                 throw new PreCheckException(KEY_REQUIRED);
             } else {

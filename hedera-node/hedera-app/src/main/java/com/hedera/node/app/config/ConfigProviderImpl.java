@@ -32,7 +32,9 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -54,22 +56,38 @@ public class ConfigProviderImpl extends ConfigProviderBase {
     /** Provides synchronous access to updating the configuration to one thread at a time. */
     private final AutoClosableLock updateLock = Locks.createAutoLock();
 
+    private final ConfigMetrics configMetrics;
+
     /**
      * Create a new instance, particularly from dependency injection.
      */
     public ConfigProviderImpl() {
-        this(false);
+        this(false, null);
+    }
+
+    /**
+     * Create a new instance that does not report metrics.
+     */
+    public ConfigProviderImpl(final boolean useGenesisSource) {
+        this(useGenesisSource, null);
     }
 
     /**
      * Create a new instance. You must specify whether to use the genesis.properties file as a source for the
      * configuration. This should only be true if the node is starting from genesis.
      */
-    public ConfigProviderImpl(final boolean useGenesisSource) {
+    public ConfigProviderImpl(final boolean useGenesisSource, @Nullable final Metrics metrics) {
         final var builder = createConfigurationBuilder();
         addFileSources(builder, useGenesisSource);
         final Configuration config = builder.build();
         configuration = new AtomicReference<>(new VersionedConfigImpl(config, 0));
+
+        if (metrics != null) {
+            configMetrics = new ConfigMetrics(metrics);
+            configMetrics.reportMetrics(config);
+        } else {
+            configMetrics = null;
+        }
     }
 
     @Override
@@ -95,6 +113,9 @@ public class ConfigProviderImpl extends ConfigProviderBase {
             final Configuration config = builder.build();
             configuration.set(
                     new VersionedConfigImpl(config, this.configuration.get().getVersion() + 1));
+            if (configMetrics != null) {
+                configMetrics.reportMetrics(config);
+            }
         }
     }
 
@@ -114,7 +135,7 @@ public class ConfigProviderImpl extends ConfigProviderBase {
         try {
             final var configurationList =
                     ServicesConfigurationList.PROTOBUF.parseStrict(propertyFileContent.toReadableSequentialData());
-            final var configSource = new SettingsConfigSource(configurationList.nameValueOrThrow(), 101);
+            final var configSource = new SettingsConfigSource(configurationList.nameValue(), 101);
             builder.withSource(configSource);
         } catch (ParseException | NullPointerException e) {
             // Ignore. This method may be called with a partial file during regular execution.
