@@ -653,8 +653,7 @@ public class PlatformComponentBuilder {
                     state -> blocks.loadReconnectStateReference().get().accept(state),
                     () -> blocks.clearAllPipelinesForReconnectReference().get().run(),
                     blocks.intakeEventCounter(),
-                    x -> blocks.statusActionSubmitterReference().get().submitStatusAction(x)) {
-            };
+                    x -> blocks.statusActionSubmitterReference().get().submitStatusAction(x)) {};
         }
         return gossip;
     }
