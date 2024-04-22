@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.token.CryptoGetAccountBalanceQuery.BalanceSourceOneOfType.UNSET;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
+import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -86,7 +87,6 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
         final var query = context.query();
         final var accountStore = context.createStore(ReadableAccountStore.class);
         final CryptoGetAccountBalanceQuery op = query.cryptogetAccountBalanceOrThrow();
-        mustExist(op.balanceSource(), INVALID_CONTRACT_ID);
         if (op.balanceSource().kind().equals(UNSET)) {
             throw new PreCheckException(INVALID_ACCOUNT_ID);
         }
@@ -102,29 +102,25 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
     private void validateContractId(CryptoGetAccountBalanceQuery op, ReadableAccountStore accountStore)
             throws PreCheckException {
         mustExist(op.contractID(), INVALID_CONTRACT_ID);
-        ContractID contractId = (ContractID) op.balanceSource().value();
+        final ContractID contractId = (ContractID) op.balanceSource().value();
         validateTruePreCheck(contractId.shardNum() == 0, INVALID_CONTRACT_ID);
         validateTruePreCheck(contractId.realmNum() == 0, INVALID_CONTRACT_ID);
         validateTruePreCheck(contractId.contractNumOrThrow() >= 0, INVALID_CONTRACT_ID);
         final var contract = accountStore.getContractById(requireNonNull(op.contractID()));
-        validateFalsePreCheck(contract == null || !contract.smartContract(), INVALID_CONTRACT_ID);
+        validateFalsePreCheck(contract == null, INVALID_CONTRACT_ID);
+        validateTruePreCheck(contract.smartContract(), INVALID_CONTRACT_ID);
         validateFalsePreCheck(contract.deleted(), CONTRACT_DELETED);
     }
 
     private void validateAccountId(CryptoGetAccountBalanceQuery op, ReadableAccountStore accountStore)
             throws PreCheckException {
-        mustExist(op.accountID(), INVALID_ACCOUNT_ID);
-        final var account = accountStore.getAliasedAccountById(requireNonNull(op.accountID()));
-        validateFalsePreCheck(account == null, INVALID_ACCOUNT_ID);
-        validateFalsePreCheck(account.deleted(), ACCOUNT_DELETED);
-
         AccountID accountId = (AccountID) op.balanceSource().value();
         validateTruePreCheck(accountId.shardNum() == 0, INVALID_ACCOUNT_ID);
         validateTruePreCheck(accountId.realmNum() == 0, INVALID_ACCOUNT_ID);
-        validateTruePreCheck(accountId.accountNumOrThrow() >= 0, INVALID_ACCOUNT_ID);
-        if (accountId.hasAlias()) {
-            validateTruePreCheck(accountId.aliasOrThrow().length() >= 0, INVALID_ACCOUNT_ID);
-        }
+        validateAccountID(accountId, INVALID_ACCOUNT_ID);
+        final var account = accountStore.getAliasedAccountById(requireNonNull(op.accountID()));
+        validateFalsePreCheck(account == null, INVALID_ACCOUNT_ID);
+        validateFalsePreCheck(account.deleted(), ACCOUNT_DELETED);
     }
 
     @Override
