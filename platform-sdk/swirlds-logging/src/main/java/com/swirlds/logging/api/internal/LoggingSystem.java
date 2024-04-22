@@ -16,6 +16,7 @@
 
 package com.swirlds.logging.api.internal;
 
+import com.swirlds.base.internal.BaseExecutorFactory;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Marker;
@@ -41,6 +42,7 @@ import java.util.ServiceLoader.Provider;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -49,6 +51,7 @@ import java.util.stream.Collectors;
  * The implementation of the logging system.
  */
 public class LoggingSystem implements LogEventConsumer {
+    private static final int FLUSH_FREQUENCY = 1000;
     private static final String LOGGING_HANDLER_PREFIX = "logging.handler.";
     private static final int LOGGING_HANDLER_PREFIX_LENGTH = LOGGING_HANDLER_PREFIX.length();
     private static final String LOGGING_HANDLER_TYPE = LOGGING_HANDLER_PREFIX + "%s.type";
@@ -98,6 +101,25 @@ public class LoggingSystem implements LogEventConsumer {
         this.handlers = new CopyOnWriteArrayList<>();
         this.loggers = new ConcurrentHashMap<>();
         this.levelConfig = new AtomicReference<>(HandlerLoggingLevelConfig.create(configuration, null));
+        Runtime.getRuntime().addShutdownHook(new Thread(this::stopAndFinalize)); // makes sure all things get to disk
+        BaseExecutorFactory.getInstance() // Add a forced flush for the handlers at regular cadence
+                .scheduleAtFixedRate(this::flushHandlers, FLUSH_FREQUENCY, FLUSH_FREQUENCY, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Flush all active handlers.
+     * Logs to the {@code EMERGENCY_LOGGER} in case of error
+     */
+    private void flushHandlers() {
+        handlers.forEach(h -> {
+            try {
+                if (h.isActive()) {
+                    h.flush();
+                }
+            } catch (Exception e) {
+                EMERGENCY_LOGGER.log(Level.WARN, "Unexpected error flushing " + h.getName(), e);
+            }
+        });
     }
 
     /**
@@ -185,7 +207,7 @@ public class LoggingSystem implements LogEventConsumer {
     /**
      * Process the event if any of the handlers is able to handle it
      *
-     * @param event     the event to process
+     * @param event the event to process
      */
     public void accept(@NonNull final LogEvent event) {
         if (event == null) {
