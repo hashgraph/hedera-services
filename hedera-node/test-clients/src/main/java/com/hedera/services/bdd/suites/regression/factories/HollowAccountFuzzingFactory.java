@@ -122,7 +122,9 @@ public class HollowAccountFuzzingFactory {
                     // This token create op uses normal accounts to create the tokens because token create will
                     // fail if we use hollow account and not set any tokens in registry but we need them for association
                     // expects success
-                    .withOp(new RandomToken(tokens, validAccounts, validAccounts), intPropOrElse("randomToken.bias", 0, props))
+                    .withOp(
+                            new RandomToken(tokens, validAccounts, validAccounts),
+                            intPropOrElse("randomToken.bias", 0, props))
                     // expects invalid signature
                     .withOp(
                             new RandomTokenHollowAccount(tokens, hollowAccounts, UNIQUE_PAYER_ACCOUNT),
