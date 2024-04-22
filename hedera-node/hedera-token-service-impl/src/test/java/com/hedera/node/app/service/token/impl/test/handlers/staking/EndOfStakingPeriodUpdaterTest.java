@@ -209,9 +209,7 @@ public class EndOfStakingPeriodUpdaterTest {
         given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(stakingRewardsStore);
         given(context.addUncheckedPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class))
                 .willReturn(nodeStakeUpdateRecordBuilder);
-        given(context.readableStore(ReadableStakingInfoStore.class)).willReturn(iterableStakingInfoStore);
-        given(iterableStakingInfoStore.getAll())
-                .willReturn(Set.of(NODE_NUM_1.number(), NODE_NUM_2.number(), NODE_NUM_3.number()));
+        given(context.knownNodeIds()).willReturn(Set.of(NODE_NUM_1.number(), NODE_NUM_2.number(), NODE_NUM_3.number()));
 
         // Assert preconditions
         Assertions.assertThat(STAKING_INFO_1.weight()).isZero();
@@ -281,9 +279,7 @@ public class EndOfStakingPeriodUpdaterTest {
         given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(stakingRewardsStore);
         given(context.addUncheckedPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class))
                 .willReturn(nodeStakeUpdateRecordBuilder);
-        given(context.readableStore(ReadableStakingInfoStore.class)).willReturn(iterableStakingInfoStore);
-        given(iterableStakingInfoStore.getAll())
-                .willReturn(Set.of(NODE_NUM_1.number(), NODE_NUM_2.number(), NODE_NUM_3.number()));
+        given(context.knownNodeIds()).willReturn(Set.of(NODE_NUM_1.number(), NODE_NUM_2.number(), NODE_NUM_3.number()));
 
         // Assert preconditions
         Assertions.assertThat(STAKING_INFO_1.weight()).isZero();
