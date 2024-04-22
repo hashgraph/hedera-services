@@ -16,26 +16,32 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnpause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -44,6 +50,8 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.suites.contract.Utils.asHexedAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
+import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.FUNGIBLE_TOKEN;
+import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.NON_FUNGIBLE_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
@@ -57,6 +65,7 @@ import static com.hederahashgraph.api.proto.java.TokenPauseStatus.Unpaused;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -88,6 +97,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     private static final KeyShape THRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
 
     private static final String ACCOUNT = "account";
+    private static final String TREASURY = "treasury";
 
     public static final long INITIAL_BALANCE = 1_000_000_000L;
     private static final long GAS_TO_OFFER = 4_000_000L;
@@ -119,7 +129,9 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                 pauseFungibleToken(),
                 unpauseFungibleToken(),
                 pauseNonFungibleToken(),
-                unpauseNonFungibleToken());
+                unpauseNonFungibleToken(),
+                createFungibleTokenPauseKeyFromHollowAccountAlias(),
+                createNFTTokenPauseKeyFromHollowAccountAlias());
     }
 
     @HapiTest
@@ -472,5 +484,118 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(
                                                         htsPrecompileResult().withStatus(TOKEN_HAS_NO_PAUSE_KEY)))));
+    }
+
+    @HapiTest
+    public HapiSpec createFungibleTokenPauseKeyFromHollowAccountAlias() {
+        return defaultHapiSpec("CreateFungibleTokenPauseKeyFromHollowAccountAlias")
+                .given(
+                        // Create an ECDSA key
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS * 5000L).maxAutomaticTokenAssociations(2),
+                        cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS * 5000L))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry()
+                            .getKey(SECP_256K1_SOURCE_KEY)
+                            .getECDSASecp256K1()
+                            .toByteArray();
+                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                    spec.registry()
+                            .saveAccountAlias(
+                                    SECP_256K1_SOURCE_KEY,
+                                    AccountID.newBuilder().setAlias(evmAddress).build());
+
+                    allRunFor(
+                            spec,
+                            // Transfer money to the alias --> creates HOLLOW ACCOUNT
+                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS).distributing(TREASURY, SECP_256K1_SOURCE_KEY))
+                                    .logged(),
+                            // Verify that the account is created and is hollow
+                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                    .has(accountWith().hasEmptyKey())
+                                    .logged(),
+                            // Create a token with the ECDSA alias key as PAUSE key
+                            tokenCreate(FUNGIBLE_TOKEN)
+                                    .tokenType(FUNGIBLE_COMMON)
+                                    .pauseKey(SECP_256K1_SOURCE_KEY)
+                                    .initialSupply(100L)
+                                    .treasury(TREASURY)
+                                    .logged());
+                }))
+                .then(withOpContext((spec, opLog) -> {
+                    allRunFor(
+                            spec,
+                            // Pause the token using the ECDSA key
+                            tokenPause(FUNGIBLE_TOKEN)
+                                    .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
+                                    .payingWith(ACCOUNT)
+                                    .logged(),
+                            // Check whether the token is paused
+                            getTokenInfo(FUNGIBLE_TOKEN).hasPauseStatus(Paused),
+                            // Unpause the token using the ECDSA key
+                            tokenUnpause(FUNGIBLE_TOKEN)
+                                    .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
+                                    .payingWith(ACCOUNT)
+                                    .logged(),
+                            // Check whether the token is unpaused
+                            getTokenInfo(FUNGIBLE_TOKEN).hasPauseStatus(Unpaused));
+                }));
+    }
+
+    @HapiTest
+    public HapiSpec createNFTTokenPauseKeyFromHollowAccountAlias() {
+        return defaultHapiSpec("CreateNFTTokenPauseKeyFromHollowAccountAlias")
+                .given(
+                        // Create an ECDSA key
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS * 5000L).maxAutomaticTokenAssociations(2),
+                        cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS * 5000L))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry()
+                            .getKey(SECP_256K1_SOURCE_KEY)
+                            .getECDSASecp256K1()
+                            .toByteArray();
+                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                    spec.registry()
+                            .saveAccountAlias(
+                                    SECP_256K1_SOURCE_KEY,
+                                    AccountID.newBuilder().setAlias(evmAddress).build());
+
+                    allRunFor(
+                            spec,
+                            // Transfer money to the alias --> creates HOLLOW ACCOUNT
+                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS).distributing(TREASURY, SECP_256K1_SOURCE_KEY))
+                                    .logged(),
+                            // Verify that the account is created and is hollow
+                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                    .has(accountWith().hasEmptyKey())
+                                    .logged(),
+                            // Create a token with the ECDSA alias key as PAUSE key
+                            tokenCreate(NON_FUNGIBLE_TOKEN)
+                                    .tokenType(NON_FUNGIBLE_UNIQUE)
+                                    .pauseKey(SECP_256K1_SOURCE_KEY)
+                                    .supplyKey(SECP_256K1_SOURCE_KEY)
+                                    .initialSupply(0L)
+                                    .treasury(TREASURY)
+                                    .logged());
+                }))
+                .then(withOpContext((spec, opLog) -> {
+                    allRunFor(
+                            spec,
+                            // Pause the token using the ECDSA key
+                            tokenPause(NON_FUNGIBLE_TOKEN)
+                                    .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
+                                    .payingWith(ACCOUNT)
+                                    .logged(),
+                            // Check whether the token is paused
+                            getTokenInfo(NON_FUNGIBLE_TOKEN).hasPauseStatus(Paused),
+                            // Unpause the token using the ECDSA key
+                            tokenUnpause(NON_FUNGIBLE_TOKEN)
+                                    .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
+                                    .payingWith(ACCOUNT)
+                                    .logged(),
+                            // Check whether the token is unpaused
+                            getTokenInfo(NON_FUNGIBLE_TOKEN).hasPauseStatus(Unpaused));
+                }));
     }
 }

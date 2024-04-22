@@ -16,14 +16,21 @@
 
 package com.hedera.services.bdd.suites.consensus;
 
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
@@ -37,12 +44,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicUpdate;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import java.nio.charset.StandardCharsets;
@@ -85,7 +94,10 @@ public class TopicUpdateSuite extends HapiSuite {
                 feeAsExpected(),
                 updateExpiryOnTopicWithNoAdminKey(),
                 updateToMissingTopicFails(),
-                canRemoveSubmitKeyDuringUpdate());
+                canRemoveSubmitKeyDuringUpdate(),
+                updateAdminKeyToHollowAccountAlias(),
+                updateSubmitKeyToHollowAccountAlias(),
+                updateRemovedSubmitKeyToHollowAccountAlias());
     }
 
     @Override
@@ -317,6 +329,168 @@ public class TopicUpdateSuite extends HapiSuite {
                         .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
                         .via("updateTopic"))
                 .then(validateChargedUsdWithin("updateTopic", 0.00022, 3.0));
+    }
+
+    @HapiTest
+    final HapiSpec updateAdminKeyToHollowAccountAlias() {
+        return defaultHapiSpec("updateAdminKeyToHollowAccountAlias")
+                .given(
+                        // Create an ECDSA key
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed("initialKey"),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS * 5000L),
+                        // Create the topic
+                        createTopic("testTopic").adminKeyName("initialKey"))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry()
+                            .getKey(SECP_256K1_SOURCE_KEY)
+                            .getECDSASecp256K1()
+                            .toByteArray();
+                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                    spec.registry()
+                            .saveAccountAlias(
+                                    SECP_256K1_SOURCE_KEY,
+                                    AccountID.newBuilder().setAlias(evmAddress).build());
+
+                    allRunFor(
+                            spec,
+                            // Transfer money to the alias --> creates HOLLOW ACCOUNT
+                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
+                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
+                                    .logged(),
+                            // Verify that the account is created and is hollow
+                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                    .has(accountWith().hasEmptyKey())
+                                    .logged(),
+                            // Update the topic with the ECDSA key as admin key
+                            updateTopic("testTopic").adminKey(SECP_256K1_SOURCE_KEY));
+                }))
+                .then(getTopicInfo("testTopic")
+                        .hasAdminKey(SECP_256K1_SOURCE_KEY)
+                        .logged());
+    }
+
+    @HapiTest
+    final HapiSpec updateSubmitKeyToHollowAccountAlias() {
+        return defaultHapiSpec("updateSubmitKeyToHollowAccountAlias")
+                .given(
+                        // Create an ECDSA key
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed("adminKey"),
+                        newKeyNamed("submitKey"),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS * 5000L),
+                        // Create the topic
+                        createTopic("testTopic").adminKeyName("adminKey").submitKeyName("submitKey"))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry()
+                            .getKey(SECP_256K1_SOURCE_KEY)
+                            .getECDSASecp256K1()
+                            .toByteArray();
+                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                    spec.registry()
+                            .saveAccountAlias(
+                                    SECP_256K1_SOURCE_KEY,
+                                    AccountID.newBuilder().setAlias(evmAddress).build());
+
+                    allRunFor(
+                            spec,
+                            // Transfer money to the alias --> creates HOLLOW ACCOUNT
+                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
+                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
+                                    .logged(),
+                            // Verify that the account is created and is hollow
+                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                    .has(accountWith().hasEmptyKey())
+                                    .logged(),
+                            // Update the topic with the ECDSA key as admin key
+                            updateTopic("testTopic").submitKey(SECP_256K1_SOURCE_KEY));
+                }))
+                .then(getTopicInfo("testTopic")
+                        .hasSubmitKey(SECP_256K1_SOURCE_KEY)
+                        .logged());
+    }
+
+    @HapiTest
+    final HapiSpec updateSubmitKeyWithNoAdminKeyToHollowAccountAliasShouldFail() {
+        return defaultHapiSpec("updateSubmitKeyWithNoAdminKeyToHollowAccountAliasShouldFail")
+                .given(
+                        // Create an ECDSA key
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS * 5000L),
+                        // Create the topic with no admin key
+                        createTopic("testTopic"))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry()
+                            .getKey(SECP_256K1_SOURCE_KEY)
+                            .getECDSASecp256K1()
+                            .toByteArray();
+                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                    spec.registry()
+                            .saveAccountAlias(
+                                    SECP_256K1_SOURCE_KEY,
+                                    AccountID.newBuilder().setAlias(evmAddress).build());
+
+                    allRunFor(
+                            spec,
+                            // Transfer money to the alias --> creates HOLLOW ACCOUNT
+                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
+                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
+                                    .logged(),
+                            // Verify that the account is created and is hollow
+                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                    .has(accountWith().hasEmptyKey())
+                                    .logged(),
+                            // Update the topic with the ECDSA key as submit key but there is no admin key, so it should
+                            // fail
+                            updateTopic("testTopic")
+                                    .submitKey(SECP_256K1_SOURCE_KEY)
+                                    .hasKnownStatus(UNAUTHORIZED));
+                }))
+                .then();
+    }
+
+    @HapiTest
+    final HapiSpec updateRemovedSubmitKeyToHollowAccountAlias() {
+        return defaultHapiSpec("updateRemovedSubmitKeyToHollowAccountAlias")
+                .given(
+                        // Create an ECDSA key
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed("adminKey"),
+                        newKeyNamed("submitKey"),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS * 5000L),
+                        // Create the topic
+                        createTopic("testTopic").adminKeyName("adminKey").submitKeyName("submitKey"))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry()
+                            .getKey(SECP_256K1_SOURCE_KEY)
+                            .getECDSASecp256K1()
+                            .toByteArray();
+                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                    spec.registry()
+                            .saveAccountAlias(
+                                    SECP_256K1_SOURCE_KEY,
+                                    AccountID.newBuilder().setAlias(evmAddress).build());
+
+                    allRunFor(
+                            spec,
+                            // Transfer money to the alias --> creates HOLLOW ACCOUNT
+                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
+                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
+                                    .logged(),
+                            // Verify that the account is created and is hollow
+                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                    .has(accountWith().hasEmptyKey())
+                                    .logged(),
+                            // Remove the submit key
+                            updateTopic("testTopic").submitKey(EMPTY_KEY),
+                            // Verify the submit key is removed
+                            getTopicInfo("testTopic").hasNoSubmitKey().logged(),
+                            // Update the topic with the ECDSA key as submit key
+                            updateTopic("testTopic").submitKey(SECP_256K1_SOURCE_KEY));
+                }))
+                .then(getTopicInfo("testTopic")
+                        .hasSubmitKey(SECP_256K1_SOURCE_KEY)
+                        .logged());
     }
 
     @Override

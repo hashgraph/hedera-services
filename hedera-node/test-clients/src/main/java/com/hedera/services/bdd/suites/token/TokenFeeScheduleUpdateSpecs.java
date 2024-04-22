@@ -16,23 +16,34 @@
 
 package com.hedera.services.bdd.suites.token;
 
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFeeScheduleUpdate;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.incompleteCustomFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.royaltyFeeWithFallbackInHbarsInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
@@ -41,12 +52,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.AccountID;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -60,6 +75,7 @@ import org.junit.jupiter.api.Tag;
 public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TokenFeeScheduleUpdateSpecs.class);
+    private static final String ACCOUNT = "anybody";
 
     public static void main(String... args) {
         new TokenFeeScheduleUpdateSpecs().runSuiteSync();
@@ -68,7 +84,10 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
-            onlyValidCustomFeeScheduleCanBeUpdated(), baseOperationIsChargedExpectedFee(),
+            onlyValidCustomFeeScheduleCanBeUpdated(),
+            baseOperationIsChargedExpectedFee(),
+            createFungibleTokenFeeScheduleKeyFromHollowAccountAlias(),
+            createNFTTokenFeeScheduleKeyFromHollowAccountAlias()
         });
     }
 
@@ -275,6 +294,134 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
                                 OptionalLong.of(newMaximumToCollect),
                                 false,
                                 newTokenCollector)));
+    }
+
+    @HapiTest
+    public HapiSpec createFungibleTokenFeeScheduleKeyFromHollowAccountAlias() {
+        final var hbarAmount = 1_234L;
+        final var htsAmount = 2_345L;
+        final var numerator = 1;
+        final var denominator = 10;
+        final var minimumToCollect = 5;
+        final var maximumToCollect = 50;
+
+        return defaultHapiSpec("CreateFungibleTokenFeeScheduleKeyFromHollowAccountAlias")
+                .given(
+                        // Create an ECDSA key
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS * 5000L),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS * 5000L))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry()
+                            .getKey(SECP_256K1_SOURCE_KEY)
+                            .getECDSASecp256K1()
+                            .toByteArray();
+                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                    spec.registry()
+                            .saveAccountAlias(
+                                    SECP_256K1_SOURCE_KEY,
+                                    AccountID.newBuilder().setAlias(evmAddress).build());
+
+                    allRunFor(
+                            spec,
+                            // Transfer money to the alias --> creates HOLLOW ACCOUNT
+                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
+                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
+                                    .logged(),
+                            // Verify that the account is created and is hollow
+                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                    .has(accountWith().hasEmptyKey())
+                                    .logged(),
+                            // Create a token with the ECDSA alias key as FEE SCHEDULE key
+                            tokenCreate(VANILLA_TOKEN)
+                                    .tokenType(FUNGIBLE_COMMON)
+                                    .feeScheduleKey(SECP_256K1_SOURCE_KEY)
+                                    .initialSupply(100L)
+                                    .treasury(TOKEN_TREASURY)
+                                    .logged());
+                }))
+                .then(withOpContext((spec, opLog) -> {
+                    allRunFor(
+                            spec,
+                            tokenFeeScheduleUpdate(VANILLA_TOKEN)
+                                    .withCustom(fixedHbarFee(hbarAmount, TOKEN_TREASURY))
+                                    .withCustom(fixedHtsFee(htsAmount, VANILLA_TOKEN, TOKEN_TREASURY))
+                                    .withCustom(fractionalFee(
+                                            numerator,
+                                            denominator,
+                                            minimumToCollect,
+                                            OptionalLong.of(maximumToCollect),
+                                            TOKEN_TREASURY))
+                                    .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
+                                    .payingWith(GENESIS)
+                                    .logged(),
+                            getTokenInfo(VANILLA_TOKEN)
+                                    .hasCustom(fixedHbarFeeInSchedule(hbarAmount, TOKEN_TREASURY))
+                                    .hasCustom(fixedHtsFeeInSchedule(htsAmount, VANILLA_TOKEN, TOKEN_TREASURY))
+                                    .hasCustom(fractionalFeeInSchedule(
+                                            numerator,
+                                            denominator,
+                                            minimumToCollect,
+                                            OptionalLong.of(maximumToCollect),
+                                            false,
+                                            TOKEN_TREASURY)));
+                }));
+    }
+
+    @HapiTest
+    public HapiSpec createNFTTokenFeeScheduleKeyFromHollowAccountAlias() {
+        final var hbarAmount = 1_234L;
+
+        return defaultHapiSpec("CreateNFTTokenFeeScheduleKeyFromHollowAccountAlias")
+                .given(
+                        // Create an ECDSA key
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS * 5000L),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS * 5000L))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry()
+                            .getKey(SECP_256K1_SOURCE_KEY)
+                            .getECDSASecp256K1()
+                            .toByteArray();
+                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                    spec.registry()
+                            .saveAccountAlias(
+                                    SECP_256K1_SOURCE_KEY,
+                                    AccountID.newBuilder().setAlias(evmAddress).build());
+
+                    allRunFor(
+                            spec,
+                            // Transfer money to the alias --> creates HOLLOW ACCOUNT
+                            cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS)
+                                            .distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
+                                    .logged(),
+                            // Verify that the account is created and is hollow
+                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                    .has(accountWith().hasEmptyKey())
+                                    .logged(),
+                            // Create a token with the ECDSA alias key as FEE SCHEDULE key
+                            tokenCreate(VANILLA_TOKEN)
+                                    .tokenType(NON_FUNGIBLE_UNIQUE)
+                                    .feeScheduleKey(SECP_256K1_SOURCE_KEY)
+                                    .supplyKey(SECP_256K1_SOURCE_KEY)
+                                    .initialSupply(0L)
+                                    .treasury(TOKEN_TREASURY)
+                                    .logged());
+                }))
+                .then(withOpContext((spec, opLog) -> {
+                    allRunFor(
+                            spec,
+                            tokenFeeScheduleUpdate(VANILLA_TOKEN)
+                                    .withCustom(fixedHbarFee(hbarAmount, TOKEN_TREASURY))
+                                    .withCustom(royaltyFeeWithFallback(
+                                            1, 3, fixedHbarFeeInheritingRoyaltyCollector(10), TOKEN_TREASURY))
+                                    .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
+                                    .payingWith(GENESIS)
+                                    .logged(),
+                            getTokenInfo(VANILLA_TOKEN)
+                                    .hasCustom(fixedHbarFeeInSchedule(hbarAmount, TOKEN_TREASURY))
+                                    .hasCustom(royaltyFeeWithFallbackInHbarsInSchedule(1, 3, 10, TOKEN_TREASURY)));
+                }));
     }
 
     @Override
