@@ -19,6 +19,7 @@ package com.swirlds.platform.wiring;
 import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder.UNLIMITED_CAPACITY;
 
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.wiring.counters.ObjectCounter;
@@ -43,7 +44,6 @@ import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.StateAndRound;
-import com.swirlds.proto.event.StateSignaturePayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
