@@ -59,6 +59,8 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.RealmID;
+import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.List;
@@ -294,6 +296,8 @@ public class CryptoCreateSuite extends HapiSuite {
     final HapiSpec createAnAccountEmptyKeyList() {
         KeyShape shape = listOf(0);
         long initialBalance = 10_000L;
+        ShardID shardID = ShardID.newBuilder().build();
+        RealmID realmID = RealmID.newBuilder().build();
 
         return defaultHapiSpec("createAnAccountEmptyKeyList")
                 .given()
@@ -302,6 +306,8 @@ public class CryptoCreateSuite extends HapiSuite {
                         cryptoCreate(NO_KEYS)
                                 .keyShape(shape)
                                 .balance(initialBalance)
+                                .shardId(shardID)
+                                .realmId(realmID)
                                 .logged()
                                 .hasPrecheck(KEY_REQUIRED)
                         // In modular code this error is thrown in handle, but it is fixed using dynamic property

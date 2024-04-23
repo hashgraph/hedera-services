@@ -87,7 +87,7 @@ public class EvmTokenUtil {
                 },
                 () -> {
                     info.setKycKey(new EvmKey());
-                    info.setDefaultKycStatus(true);
+                    info.setDefaultKycStatus(false);
                 });
 
         final var supplyCandidate = token.supplyKey();
