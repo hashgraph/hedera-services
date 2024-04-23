@@ -16,6 +16,9 @@
 
 package com.swirlds.platform.reconnect;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
+
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -33,16 +36,12 @@ import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusNexus;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.function.Supplier;
-
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Implements the reconnect protocol over a bidirectional network
@@ -307,16 +306,16 @@ public class ReconnectProtocol implements Protocol {
     private void teacher(final Connection connection) {
         try (final ReservedSignedState state = teacherState) {
             new ReconnectTeacher(
-                    platformContext,
-                    time,
-                    threadManager,
-                    connection,
-                    reconnectSocketTimeout,
-                    connection.getSelfId(),
-                    connection.getOtherId(),
-                    state.get().getRound(),
-                    reconnectMetrics,
-                    configuration)
+                            platformContext,
+                            time,
+                            threadManager,
+                            connection,
+                            reconnectSocketTimeout,
+                            connection.getSelfId(),
+                            connection.getOtherId(),
+                            state.get().getRound(),
+                            reconnectMetrics,
+                            configuration)
                     .execute(state.get());
         } finally {
             teacherThrottle.reconnectAttemptFinished();

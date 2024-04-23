@@ -89,7 +89,6 @@ import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
-import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateLoadedFromDiskNotification;
 import com.swirlds.platform.metrics.RuntimeMetrics;
@@ -133,7 +132,6 @@ import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.events.DefaultBirthRoundMigrationShim;
 import com.swirlds.platform.system.status.DefaultPlatformStatusNexus;
-import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusNexus;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
@@ -341,15 +339,6 @@ public class SwirldsPlatform implements Platform {
         final Consumer<ConsensusSnapshot> snapshotOverrideConsumer = blocks.snapshotOverrideConsumer();
         platformWiring = thingsToStart.add(new PlatformWiring(
                 platformContext, preconsensusEventConsumer != null, snapshotOverrideConsumer != null));
-
-        final Consumer<PlatformStatus> statusChangeConsumer = s -> {
-            blocks.currentPlatformStatus().set(s);
-            platformWiring
-                    .getNotifierWiring()
-                    .getInputWire(AppNotifier::sendPlatformStatusChangeNotification)
-                    .put(new PlatformStatusChangeNotification(s));
-            emergencyState.platformStatusChanged(s);
-        };
 
         thingsToStart.add(Objects.requireNonNull(recycleBin));
 

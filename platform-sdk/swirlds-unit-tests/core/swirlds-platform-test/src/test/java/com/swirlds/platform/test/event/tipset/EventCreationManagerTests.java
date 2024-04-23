@@ -31,6 +31,7 @@ import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.creation.EventCreationStatus;
 import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
+import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -73,7 +74,9 @@ class EventCreationManagerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final EventCreationManager manager = new DefaultEventCreationManager(platformContext, creator, rule);
+        // TODO
+        final EventCreationManager manager =
+                new DefaultEventCreationManager(platformContext, mock(TransactionPool.class), () -> 1L, creator);
         assertEquals(0, eventWasCreatedCount.get());
 
         final BaseEventHashedData e0 = manager.maybeCreateEvent();
@@ -124,7 +127,9 @@ class EventCreationManagerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final EventCreationManager manager = new DefaultEventCreationManager(platformContext, creator, rule);
+        // TODO
+        final EventCreationManager manager =
+                new DefaultEventCreationManager(platformContext, mock(TransactionPool.class), () -> 1L, creator);
 
         assertEquals(0, eventWasCreatedCount.get());
 

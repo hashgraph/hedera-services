@@ -21,7 +21,6 @@ import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.status.actions.PlatformStatusAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.time.Instant;
 
 /**

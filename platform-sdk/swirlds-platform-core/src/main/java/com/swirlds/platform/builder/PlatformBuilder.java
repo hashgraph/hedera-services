@@ -26,7 +26,6 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMet
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
-import static com.swirlds.platform.system.status.PlatformStatus.STARTING_UP;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
@@ -491,7 +490,6 @@ public final class PlatformBuilder {
                 intakeEventCounter,
                 new RandomBuilder(),
                 new TransactionPool(platformContext),
-                new AtomicReference<>(STARTING_UP),
                 new AtomicReference<>(null),
                 new AtomicReference<>(null),
                 firstPlatform);

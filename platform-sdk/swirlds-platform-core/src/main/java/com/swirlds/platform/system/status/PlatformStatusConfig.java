@@ -18,8 +18,6 @@ package com.swirlds.platform.system.status;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
-import com.swirlds.platform.system.status.actions.PlatformStatusAction;
-import com.swirlds.platform.system.status.actions.TimeElapsedAction;
 import java.time.Duration;
 
 /**

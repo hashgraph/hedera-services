@@ -29,6 +29,7 @@ pcli diagram \
     -s 'OrphanBufferSplitter:preconsensus signatures:🔰' \
     -s 'RunningEventHashOverride:hash override:💨' \
     -s 'toStateWrittenToDiskAction:PlatformStatusAction:💾' \
+    -s 'StatusStateMachine:PlatformStatus:🚦' \
     -g 'Event Validation:InternalEventValidator,EventDeduplicator,EventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
     -g 'Orphan Buffer:OrphanBuffer,OrphanBufferSplitter' \

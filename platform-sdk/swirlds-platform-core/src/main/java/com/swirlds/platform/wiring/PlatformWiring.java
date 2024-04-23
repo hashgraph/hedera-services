@@ -396,6 +396,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         issDetectorWiring
                 .issNotificationOutput()
                 .solderTo(notifierWiring.getInputWire(AppNotifier::sendIssNotification));
+        statusStateMachineWiring
+                .getOutputWire()
+                .solderTo(notifierWiring.getInputWire(AppNotifier::sendPlatformStatusChangeNotification));
     }
 
     /**
@@ -565,6 +568,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         statusStateMachineWiring
                 .getOutputWire()
                 .solderTo(platformStatusNexusWiring.getInputWire(PlatformStatusNexus::setCurrentStatus));
+        statusStateMachineWiring
+                .getOutputWire()
+                .solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::updatePlatformStatus));
         platformStatusNexusWiring
                 .getOutputWire()
                 .solderTo(statusStateMachineWiring.getInputWire(StatusStateMachine::submitStatusAction));

@@ -28,11 +28,6 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.creation.DefaultEventCreationManager;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.creation.EventCreator;
-import com.swirlds.platform.event.creation.rules.AggregateEventCreationRules;
-import com.swirlds.platform.event.creation.rules.BackpressureRule;
-import com.swirlds.platform.event.creation.rules.EventCreationRule;
-import com.swirlds.platform.event.creation.rules.MaximumRateRule;
-import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
 import com.swirlds.platform.event.creation.tipset.TipsetEventCreator;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.deduplication.StandardEventDeduplicator;
@@ -471,15 +466,11 @@ public class PlatformComponentBuilder {
                     blocks.appVersion(),
                     blocks.transactionPool());
 
-            final EventCreationRule eventCreationRules = AggregateEventCreationRules.of(
-                    new MaximumRateRule(blocks.platformContext()),
-                    new BackpressureRule(
-                            blocks.platformContext(),
-                            () -> blocks.intakeQueueSizeSupplierSupplier().get().getAsLong()),
-                    new PlatformStatusRule(() -> blocks.currentPlatformStatus().get(), blocks.transactionPool()));
-
-            eventCreationManager =
-                    new DefaultEventCreationManager(blocks.platformContext(), eventCreator, eventCreationRules);
+            eventCreationManager = new DefaultEventCreationManager(
+                    blocks.platformContext(),
+                    blocks.transactionPool(),
+                    blocks.intakeQueueSizeSupplierSupplier().get(),
+                    eventCreator);
         }
         return eventCreationManager;
     }
