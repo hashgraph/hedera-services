@@ -93,7 +93,7 @@ public class HapiGetAccountNftInfos extends HapiQueryOp<HapiGetAccountNftInfos> 
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) {
-        Query query = getAccountNftInfosQuery(spec, payment, false);
+        Query query = maybeModified(getAccountNftInfosQuery(spec, payment, false), spec);
         response = spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getAccountNftInfos(query);
         if (verboseLoggingOn) {
             StringBuilder information = new StringBuilder("Nft information for '" + account + "': \n");

@@ -21,6 +21,8 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMet
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 
 import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.components.consensus.ConsensusEngine;
+import com.swirlds.platform.components.consensus.DefaultConsensusEngine;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.creation.DefaultEventCreationManager;
@@ -40,14 +42,21 @@ import com.swirlds.platform.event.linking.GossipLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
+import com.swirlds.platform.event.preconsensus.PcesSequencer;
+import com.swirlds.platform.event.preconsensus.durability.DefaultRoundDurabilityBuffer;
+import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
 import com.swirlds.platform.event.runninghash.DefaultRunningEventHasher;
 import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.DefaultSelfEventSigner;
 import com.swirlds.platform.event.signing.SelfEventSigner;
+import com.swirlds.platform.event.stream.ConsensusEventStream;
+import com.swirlds.platform.event.stream.DefaultConsensusEventStream;
 import com.swirlds.platform.event.validation.DefaultEventSignatureValidator;
 import com.swirlds.platform.event.validation.DefaultInternalEventValidator;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
@@ -88,6 +97,10 @@ public class PlatformComponentBuilder {
     private RunningEventHasher runningEventHasher;
     private EventCreationManager eventCreationManager;
     private InOrderLinker inOrderLinker;
+    private ConsensusEngine consensusEngine;
+    private ConsensusEventStream consensusEventStream;
+    private PcesSequencer pcesSequencer;
+    private RoundDurabilityBuffer roundDurabilityBuffer;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -469,22 +482,6 @@ public class PlatformComponentBuilder {
     }
 
     /**
-     * Provide an in-order linker in place of the platform's default in-order linker.
-     *
-     * @param inOrderLinker the in-order linker to use
-     * @return this builder
-     */
-    @NonNull
-    public PlatformComponentBuilder withInOrderLinker(@NonNull final InOrderLinker inOrderLinker) {
-        throwIfAlreadyUsed();
-        if (this.inOrderLinker != null) {
-            throw new IllegalStateException("In-order linker has already been set");
-        }
-        this.inOrderLinker = Objects.requireNonNull(inOrderLinker);
-        return this;
-    }
-
-    /**
      * Build the in-order linker if it has not yet been built. If one has been provided via
      * {@link #withInOrderLinker(InOrderLinker)}, that in-order linker will be used. If this method is called more than
      * once, only the first call will build the in-order linker. Otherwise, the default in-order linker will be created
@@ -498,5 +495,157 @@ public class PlatformComponentBuilder {
             inOrderLinker = new GossipLinker(blocks.platformContext(), blocks.intakeEventCounter());
         }
         return inOrderLinker;
+    }
+
+    /**
+     * Provide an in-order linker in place of the platform's default in-order linker.
+     *
+     * @param inOrderLinker the in-order linker to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withInOrderLinker(@NonNull final InOrderLinker inOrderLinker) {
+        throwIfAlreadyUsed();
+        if (this.inOrderLinker != null) {
+            throw new IllegalStateException("In-order linker has already been set");
+        }
+        this.inOrderLinker = Objects.requireNonNull(inOrderLinker);
+
+        return this;
+    }
+
+    /**
+     * Provide a consensus engine in place of the platform's default consensus engine.
+     *
+     * @param consensusEngine the consensus engine to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withConsensusEngine(@NonNull final ConsensusEngine consensusEngine) {
+        throwIfAlreadyUsed();
+        if (this.consensusEngine != null) {
+            throw new IllegalStateException("Consensus engine has already been set");
+        }
+        this.consensusEngine = Objects.requireNonNull(consensusEngine);
+        return this;
+    }
+
+    /**
+     * Build the consensus engine if it has not yet been built. If one has been provided via
+     * {@link #withConsensusEngine(ConsensusEngine)}, that engine will be used. If this method is called more than once,
+     * only the first call will build the consensus engine. Otherwise, the default engine will be created and returned.
+     *
+     * @return the consensus engine
+     */
+    @NonNull
+    public ConsensusEngine buildConsensusEngine() {
+        if (consensusEngine == null) {
+            consensusEngine = new DefaultConsensusEngine(
+                    blocks.platformContext(), blocks.initialState().get().getAddressBook(), blocks.selfId());
+        }
+        return consensusEngine;
+    }
+
+    /**
+     * Provide a consensus event stream in place of the platform's default consensus event stream.
+     *
+     * @param consensusEventStream the consensus event stream to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withConsensusEventStream(@NonNull final ConsensusEventStream consensusEventStream) {
+        throwIfAlreadyUsed();
+        if (this.consensusEventStream != null) {
+            throw new IllegalStateException("Consensus event stream has already been set");
+        }
+        this.consensusEventStream = Objects.requireNonNull(consensusEventStream);
+        return this;
+    }
+
+    /**
+     * Build the consensus event stream if it has not yet been built. If one has been provided via
+     * {@link #withConsensusEventStream(ConsensusEventStream)}, that stream will be used. If this method is called more
+     * than once, only the first call will build the consensus event stream. Otherwise, the default stream will be
+     * created and returned.
+     *
+     * @return the consensus event stream
+     */
+    @NonNull
+    public ConsensusEventStream buildConsensusEventStream() {
+        if (consensusEventStream == null) {
+            consensusEventStream = new DefaultConsensusEventStream(
+                    blocks.platformContext(),
+                    blocks.selfId(),
+                    (byte[] data) -> new PlatformSigner(blocks.keysAndCerts()).sign(data),
+                    "" + blocks.selfId().id(),
+                    (EventImpl event) -> event.isLastInRoundReceived()
+                            && blocks.isInFreezePeriodReference().get().test(event.getConsensusTimestamp()));
+        }
+        return consensusEventStream;
+    }
+
+    /**
+     * Provide a PCES sequencer in place of the platform's default PCES sequencer.
+     *
+     * @param pcesSequencer the PCES sequencer to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withPcesSequencer(@NonNull final PcesSequencer pcesSequencer) {
+        throwIfAlreadyUsed();
+        if (this.pcesSequencer != null) {
+            throw new IllegalStateException("PCES sequencer has already been set");
+        }
+        this.pcesSequencer = Objects.requireNonNull(pcesSequencer);
+        return this;
+    }
+
+    /**
+     * Build the PCES sequencer if it has not yet been built. If one has been provided via
+     * {@link #withPcesSequencer(PcesSequencer)}, that sequencer will be used. If this method is called more than once,
+     * only the first call will build the PCES sequencer. Otherwise, the default sequencer will be created and
+     * returned.
+     *
+     * @return the PCES sequencer
+     */
+    @NonNull
+    public PcesSequencer buildPcesSequencer() {
+        if (pcesSequencer == null) {
+            pcesSequencer = new DefaultPcesSequencer();
+        }
+        return pcesSequencer;
+    }
+
+    /**
+     * Provide a round durability buffer in place of the platform's default round durability buffer.
+     *
+     * @param roundDurabilityBuffer the RoundDurabilityBuffer to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withRoundDurabilityBuffer(
+            @NonNull final RoundDurabilityBuffer roundDurabilityBuffer) {
+        throwIfAlreadyUsed();
+        if (this.roundDurabilityBuffer != null) {
+            throw new IllegalStateException("RoundDurabilityBuffer has already been set");
+        }
+        this.roundDurabilityBuffer = Objects.requireNonNull(roundDurabilityBuffer);
+        return this;
+    }
+
+    /**
+     * Build the round durability buffer if it has not yet been built. If one has been provided via
+     * {@link #withRoundDurabilityBuffer(RoundDurabilityBuffer)}, that round durability buffer will be used. If this
+     * method is called more than once, only the first call will build the round durability buffer. Otherwise, the
+     * default round durability buffer will be created and returned.
+     *
+     * @return the RoundDurabilityBuffer
+     */
+    @NonNull
+    public RoundDurabilityBuffer buildRoundDurabilityBuffer() {
+        if (roundDurabilityBuffer == null) {
+            roundDurabilityBuffer = new DefaultRoundDurabilityBuffer(blocks.platformContext());
+        }
+        return roundDurabilityBuffer;
     }
 }

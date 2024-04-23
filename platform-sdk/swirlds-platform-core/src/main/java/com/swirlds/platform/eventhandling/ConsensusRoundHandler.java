@@ -25,16 +25,14 @@ import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.IDLE
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.SETTING_EVENT_CONSENSUS_DATA;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.UPDATING_PLATFORM_STATE;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.UPDATING_PLATFORM_STATE_RUNNING_HASH;
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.WAITING_FOR_EVENT_DURABILITY;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.WAITING_FOR_PREHANDLE;
 
-import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.RunningEventHashOverride;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.RoundHandlingMetrics;
@@ -46,6 +44,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
+import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -93,11 +92,6 @@ public class ConsensusRoundHandler {
     private final SoftwareVersion softwareVersion;
 
     /**
-     * A method that blocks until an event becomes durable.
-     */
-    private final CheckedConsumer<GossipEvent, InterruptedException> waitForEventDurability;
-
-    /**
      * The number of non-ancient rounds.
      */
     private final int roundsNonAncient;
@@ -105,24 +99,26 @@ public class ConsensusRoundHandler {
     private final PlatformContext platformContext;
 
     /**
+     * If true then write the legacy running event hash each round.
+     */
+    private boolean writeLegacyRunningEventHash;
+
+    /**
      * Constructor
      *
-     * @param platformContext        contains various platform utilities
-     * @param swirldStateManager     the swirld state manager to send events to
-     * @param waitForEventDurability a method that blocks until an event becomes durable
-     * @param statusActionSubmitter  enables submitting of platform status actions
-     * @param softwareVersion        the current version of the software
+     * @param platformContext       contains various platform utilities
+     * @param swirldStateManager    the swirld state manager to send events to
+     * @param statusActionSubmitter enables submitting of platform status actions
+     * @param softwareVersion       the current version of the software
      */
     public ConsensusRoundHandler(
             @NonNull final PlatformContext platformContext,
             @NonNull final SwirldStateManager swirldStateManager,
-            @NonNull final CheckedConsumer<GossipEvent, InterruptedException> waitForEventDurability,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final SoftwareVersion softwareVersion) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.swirldStateManager = Objects.requireNonNull(swirldStateManager);
-        this.waitForEventDurability = Objects.requireNonNull(waitForEventDurability);
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
 
@@ -133,6 +129,14 @@ public class ConsensusRoundHandler {
         this.handlerMetrics = new RoundHandlingMetrics(platformContext);
 
         previousRoundLegacyRunningEventHash = platformContext.getCryptography().getNullHash();
+
+        // If the CES is using a no-op scheduler then the legacy running event hash won't be computed.
+        writeLegacyRunningEventHash = platformContext
+                        .getConfiguration()
+                        .getConfigData(PlatformSchedulersConfig.class)
+                        .consensusEventStream()
+                        .type()
+                != TaskSchedulerType.NO_OP;
     }
 
     /**
@@ -181,9 +185,6 @@ public class ConsensusRoundHandler {
         handlerMetrics.recordConsensusTime(consensusRound.getConsensusTimestamp());
 
         try {
-            handlerMetrics.setPhase(WAITING_FOR_EVENT_DURABILITY);
-            waitForEventDurability.accept(consensusRound.getKeystoneEvent().getBaseEvent());
-
             handlerMetrics.setPhase(SETTING_EVENT_CONSENSUS_DATA);
             for (final EventImpl event : consensusRound.getConsensusEvents()) {
                 event.consensusReached();
@@ -242,18 +243,23 @@ public class ConsensusRoundHandler {
 
         platformState.setRunningEventHash(round.getRunningEventHash());
 
-        // Update the running hash object. If there are no events, the running hash does not change.
-        // Future work: this is a redundant check, since empty rounds are currently ignored entirely. The check is here
-        // anyway, for when that changes in the future.
-        if (!round.isEmpty()) {
-            previousRoundLegacyRunningEventHash = round.getConsensusEvents()
-                    .getLast()
-                    .getRunningHash()
-                    .getFutureHash()
-                    .getAndRethrow();
-        }
+        if (writeLegacyRunningEventHash) {
+            // Update the running hash object. If there are no events, the running hash does not change.
+            // Future work: this is a redundant check, since empty rounds are currently ignored entirely. The check is
+            // here anyway, for when that changes in the future.
+            if (!round.isEmpty()) {
+                previousRoundLegacyRunningEventHash = round.getConsensusEvents()
+                        .getLast()
+                        .getRunningHash()
+                        .getFutureHash()
+                        .getAndRethrow();
+            }
 
-        platformState.setLegacyRunningEventHash(previousRoundLegacyRunningEventHash);
+            platformState.setLegacyRunningEventHash(previousRoundLegacyRunningEventHash);
+        } else {
+            platformState.setLegacyRunningEventHash(
+                    platformContext.getCryptography().getNullHash());
+        }
     }
 
     /**

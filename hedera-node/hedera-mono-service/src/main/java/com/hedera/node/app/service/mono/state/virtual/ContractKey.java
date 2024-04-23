@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.deserializeUint256Key;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.serializePackedBytes;
-import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.serializePackedBytesToBuffer;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.serializePackedBytesToPbj;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
@@ -187,15 +186,6 @@ public final class ContractKey implements VirtualKey {
         serializePackedBytesToPbj(uint256Key, uint256KeyNonZeroBytes, out);
     }
 
-    @Deprecated
-    void serialize(final ByteBuffer buffer) {
-        buffer.put(getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
-        for (int b = contractIdNonZeroBytes - 1; b >= 0; b--) {
-            buffer.put((byte) (contractId >> (b * 8)));
-        }
-        serializePackedBytesToBuffer(uint256Key, uint256KeyNonZeroBytes, buffer);
-    }
-
     @Override
     public void deserialize(final SerializableDataInputStream in, final int i) throws IOException {
         final byte packedSize = in.readByte();
@@ -211,15 +201,6 @@ public final class ContractKey implements VirtualKey {
         this.uint256KeyNonZeroBytes = getUint256KeyNonZeroBytesFromPacked(packedSize);
         this.contractId = deserializeContractID(contractIdNonZeroBytes, in, ReadableSequentialData::readByte);
         this.uint256Key = deserializeUint256Key(uint256KeyNonZeroBytes, in, ReadableSequentialData::readByte);
-    }
-
-    @Deprecated
-    void deserialize(final ByteBuffer buf) {
-        final byte packedSize = buf.get();
-        this.contractIdNonZeroBytes = getContractIdNonZeroBytesFromPacked(packedSize);
-        this.uint256KeyNonZeroBytes = getUint256KeyNonZeroBytesFromPacked(packedSize);
-        this.contractId = deserializeContractID(contractIdNonZeroBytes, buf, ByteBuffer::get);
-        this.uint256Key = deserializeUint256Key(uint256KeyNonZeroBytes, buf, ByteBuffer::get);
     }
 
     boolean equalsTo(final BufferedData buf) {
@@ -243,18 +224,6 @@ public final class ContractKey implements VirtualKey {
     @Override
     public int getVersion() {
         return MERKLE_VERSION;
-    }
-
-    /**
-     * Read the key size in bytes from a byte buffer containing a serialized ContractKey
-     *
-     * @param buf The buffer to read from, its position will be restored after we read
-     * @return the size in byte for the key contained in buffer.
-     */
-    public static int readKeySize(final ByteBuffer buf) {
-        final byte packedSize = buf.get();
-        buf.position(buf.position() - 1); // move position back, like we never read anything
-        return 1 + getContractIdNonZeroBytesFromPacked(packedSize) + getUint256KeyNonZeroBytesFromPacked(packedSize);
     }
 
     // =================================================================================================================

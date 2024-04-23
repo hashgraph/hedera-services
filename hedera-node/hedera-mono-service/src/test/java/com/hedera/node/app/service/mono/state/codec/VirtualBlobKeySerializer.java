@@ -21,8 +21,6 @@ import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 
 public class VirtualBlobKeySerializer implements KeySerializer<VirtualBlobKey> {
 
@@ -63,11 +61,6 @@ public class VirtualBlobKeySerializer implements KeySerializer<VirtualBlobKey> {
         key.serialize(out);
     }
 
-    @Override
-    public void serialize(final VirtualBlobKey key, final ByteBuffer byteBuffer) throws IOException {
-        key.serialize(byteBuffer);
-    }
-
     // Key deserialization
 
     @Override
@@ -78,19 +71,7 @@ public class VirtualBlobKeySerializer implements KeySerializer<VirtualBlobKey> {
     }
 
     @Override
-    public VirtualBlobKey deserialize(ByteBuffer byteBuffer, long version) throws IOException {
-        final var key = new VirtualBlobKey();
-        key.deserialize(byteBuffer);
-        return key;
-    }
-
-    @Override
     public boolean equals(@NonNull final BufferedData buf, @NonNull final VirtualBlobKey keyToCompare) {
         return keyToCompare.equalsTo(buf);
-    }
-
-    @Override
-    public boolean equals(final ByteBuffer buffer, final int version, final VirtualBlobKey key) throws IOException {
-        return key.getType().ordinal() == (0xff & buffer.get()) && key.getEntityNumCode() == buffer.getInt();
     }
 }

@@ -287,7 +287,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getAccountInfoQuery(spec, payment, false);
+        Query query = maybeModified(getAccountInfoQuery(spec, payment, false), spec);
         response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getAccountInfo(query);
         final var infoResponse = response.getCryptoGetInfo();
         if (loggingHexedCryptoKeys) {
@@ -367,7 +367,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        return super.toStringHelper().add("account", account);
+        return super.toStringHelper().add("account", account).add("aliasKeySource", aliasKeySource);
     }
 
     private String repr() {

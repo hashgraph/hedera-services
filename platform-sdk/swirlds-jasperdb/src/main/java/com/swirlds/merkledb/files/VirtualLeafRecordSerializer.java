@@ -24,18 +24,14 @@ import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.merkledb.MerkleDbTableConfig;
-import com.swirlds.merkledb.serialize.DataItemHeader;
-import com.swirlds.merkledb.serialize.DataItemSerializer;
+import com.swirlds.merkledb.serialize.BaseSerializer;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
@@ -58,7 +54,7 @@ import java.util.Objects;
  * </pre>>
  */
 public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends VirtualValue>
-        implements DataItemSerializer<VirtualLeafRecord<K, V>> {
+        implements BaseSerializer<VirtualLeafRecord<K, V>> {
 
     static final FieldDefinition FIELD_LEAFRECORD_PATH =
             new FieldDefinition("path", FieldType.FIXED64, false, true, false, 1);
@@ -66,12 +62,6 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
             new FieldDefinition("key", FieldType.BYTES, false, true, false, 2);
     static final FieldDefinition FIELD_LEAFRECORD_VALUE =
             new FieldDefinition("value", FieldType.BYTES, false, true, false, 3);
-
-    /**
-     * The digest type to use for Virtual hashes, if this is changed then serialized version need
-     * to change
-     */
-    public static final DigestType DEFAULT_DIGEST = DigestType.SHA_384;
 
     private final long currentVersion;
 
@@ -133,22 +123,6 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
     }
 
     @Override
-    @Deprecated(forRemoval = true)
-    public int getHeaderSize() {
-        final boolean variableSize = keySerializer.isVariableSize() || valueSerializer.isVariableSize();
-        return Long.BYTES + (variableSize ? Integer.BYTES : 0);
-    }
-
-    @Override
-    @Deprecated(forRemoval = true)
-    public DataItemHeader deserializeHeader(final ByteBuffer buffer) {
-        // path is used as data item key
-        final long path = buffer.getLong();
-        final int size = isVariableSize() ? buffer.getInt() : getSerializedSize();
-        return new DataItemHeader(size, path);
-    }
-
-    @Override
     public void serialize(
             @NonNull final VirtualLeafRecord<K, V> leafRecord, @NonNull final WritableSequentialData out) {
         if (leafRecord.getPath() != 0) {
@@ -165,27 +139,6 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
                 FIELD_LEAFRECORD_VALUE,
                 valueSerializer.getSerializedSize(leafRecord.getValue()),
                 o -> valueSerializer.serialize(leafRecord.getValue(), o));
-    }
-
-    @Override
-    @Deprecated(forRemoval = true)
-    public void serialize(VirtualLeafRecord<K, V> leafRecord, ByteBuffer buffer) throws IOException {
-        final int initialPos = buffer.position();
-        // path
-        buffer.putLong(leafRecord.getPath());
-        // total length, if variable size
-        if (isVariableSize()) {
-            buffer.putInt(0); // will be updated below
-        }
-        // key
-        keySerializer.serialize(leafRecord.getKey(), buffer);
-        valueSerializer.serialize(leafRecord.getValue(), buffer);
-
-        if (isVariableSize()) {
-            final int finalPos = buffer.position();
-            final int totalSize = finalPos - initialPos;
-            buffer.putInt(initialPos + Long.BYTES, totalSize);
-        }
     }
 
     @Override
@@ -236,28 +189,6 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
         in.limit(limit);
         assert valueSize == valueSerializer.getSerializedSize(value);
         return value;
-    }
-
-    @Override
-    @Deprecated(forRemoval = true)
-    public VirtualLeafRecord<K, V> deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
-        final int hashSerializationVersion = (int) (0x000000000000FFFFL & dataVersion);
-        final int keySerializationVersion = (int) (0x000000000000FFFFL & (dataVersion >>> 16));
-        final int valueSerializationVersion = (int) (0x000000000000FFFFL & (dataVersion >>> 32));
-        final DataItemHeader dataItemHeader = deserializeHeader(buffer);
-        // deserialize path from the header
-        final long path = dataItemHeader.getKey();
-
-        if (hashSerializationVersion != 0) {
-            // compatibility: read hash
-            buffer.position(buffer.position() + DEFAULT_DIGEST.digestLength());
-        }
-        // deserialize key
-        final K key = keySerializer.deserialize(buffer, keySerializationVersion);
-        // deserialize value
-        final V value = valueSerializer.deserialize(buffer, valueSerializationVersion);
-        // return new VirtualLeafRecord
-        return new VirtualLeafRecord<>(path, key, value);
     }
 
     /** {@inheritDoc} */

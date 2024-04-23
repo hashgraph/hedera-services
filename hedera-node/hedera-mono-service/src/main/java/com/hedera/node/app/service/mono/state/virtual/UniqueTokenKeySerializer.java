@@ -21,7 +21,6 @@ import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
@@ -78,14 +77,6 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     }
 
     @Override
-    @Deprecated
-    public void serialize(final UniqueTokenKey key, final ByteBuffer buffer) {
-        Objects.requireNonNull(key);
-        Objects.requireNonNull(buffer);
-        key.serializeTo(buffer::put);
-    }
-
-    @Override
     public UniqueTokenKey deserialize(@NonNull final ReadableSequentialData in) {
         Objects.requireNonNull(in);
         final UniqueTokenKey tokenKey = new UniqueTokenKey();
@@ -94,25 +85,9 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     }
 
     @Override
-    @Deprecated
-    public UniqueTokenKey deserialize(final ByteBuffer buffer, final long dataVersion) {
-        Objects.requireNonNull(buffer);
-        final UniqueTokenKey tokenKey = new UniqueTokenKey();
-        tokenKey.deserializeFrom(buffer::get);
-        return tokenKey;
-    }
-
-    @Override
     public boolean equals(@NonNull final BufferedData buffer, @NonNull final UniqueTokenKey key) {
         Objects.requireNonNull(buffer);
         Objects.requireNonNull(key);
         return key.equalsTo(buffer::readByte);
-    }
-
-    @Override
-    @Deprecated
-    public boolean equals(final ByteBuffer buffer, final int version, final UniqueTokenKey key) {
-        Objects.requireNonNull(buffer);
-        return key.equalsTo(buffer::get);
     }
 }

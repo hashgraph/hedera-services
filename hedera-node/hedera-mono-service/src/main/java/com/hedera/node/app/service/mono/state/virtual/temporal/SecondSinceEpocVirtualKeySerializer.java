@@ -22,8 +22,6 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeyIndexType;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public class SecondSinceEpocVirtualKeySerializer implements KeySerializer<SecondSinceEpocVirtualKey> {
@@ -72,12 +70,6 @@ public class SecondSinceEpocVirtualKeySerializer implements KeySerializer<Second
         key.serialize(out);
     }
 
-    @Override
-    @Deprecated
-    public void serialize(final SecondSinceEpocVirtualKey key, final ByteBuffer buffer) throws IOException {
-        key.serialize(buffer);
-    }
-
     // Key deserialization
 
     @Override
@@ -88,23 +80,9 @@ public class SecondSinceEpocVirtualKeySerializer implements KeySerializer<Second
     }
 
     @Override
-    @Deprecated
-    public SecondSinceEpocVirtualKey deserialize(ByteBuffer buffer, long version) throws IOException {
-        final var key = new SecondSinceEpocVirtualKey();
-        key.deserialize(buffer);
-        return key;
-    }
-
-    @Override
     public boolean equals(@NonNull BufferedData buffer, @NonNull SecondSinceEpocVirtualKey keyToCompare) {
         Objects.requireNonNull(buffer);
         Objects.requireNonNull(keyToCompare);
         return keyToCompare.equalsTo(buffer);
-    }
-
-    @Override
-    @Deprecated
-    public boolean equals(ByteBuffer buffer, int version, SecondSinceEpocVirtualKey key) throws IOException {
-        return key.equalsTo(buffer, version);
     }
 }
