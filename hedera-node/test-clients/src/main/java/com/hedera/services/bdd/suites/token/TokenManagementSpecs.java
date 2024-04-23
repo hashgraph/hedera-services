@@ -575,14 +575,15 @@ public class TokenManagementSpecs extends HapiSuite {
                         cryptoCreate("autoRenewAccount"),
                         tokenCreate("t").adminKey("adminKey"))
                 .when()
-                .then(submitModified(
-                        withSuccessivelyVariedBodyIds(),
-                        () -> tokenUpdate("t").autoRenewPeriod(7776000L).autoRenewAccount("autoRenewAccount")));
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> tokenUpdate("t")
+                        .autoRenewPeriod(7776000L)
+                        .autoRenewAccount("autoRenewAccount")
+                        .signedBy(DEFAULT_PAYER, "adminKey", "autoRenewAccount")));
     }
 
     @HapiTest
     public HapiSpec wipeIdVariantsTreatedAsExpected() {
-        return defaultHapiSpec("updateIdVariantsTreatedAsExpected")
+        return defaultHapiSpec("wipeIdVariantsTreatedAsExpected")
                 .given(
                         newKeyNamed("wipeKey"),
                         cryptoCreate("holder").maxAutomaticTokenAssociations(2),
