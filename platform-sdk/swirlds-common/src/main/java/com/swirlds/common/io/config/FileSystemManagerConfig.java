@@ -24,8 +24,7 @@ import java.time.Duration;
 /**
  * Settings for {@link FileSystemManager}
  *
- * @param rootPath
- * 		The directory where temporary files are created.
+ * @param rootPath The directory where temporary files are created.
  * @param recycleBinMaximumFileAge   the maximum age of a file in the recycle bin before it is deleted
  * @param recycleBinCollectionPeriod the period between recycle bin collection runs
  */
