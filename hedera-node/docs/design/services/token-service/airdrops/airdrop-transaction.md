@@ -154,15 +154,16 @@ If the airdrop transaction fees from the list above are covered by a separate pa
         - Check that the airdrop sender account is a valid account. That is:
           - an existing account, which was not deleted or expired
           - a non-existing account, pointed by an alias of `evm_address` or public `ECDSA key`
-        - Check that the token being airdropped, does not contain a custom fee, which needs to be covered by the recipient. Such transactions should be reverted and rejected.
+        - Check that the token being airdropped, does not contain a custom fee, which needs to be covered by the recipient. This includes `fractionalFees` with `net_of_transfers=false` and `royaltyFees`, including `fallbackRoyaltyFees`.
+        - Such transactions should be reverted and rejected.
         - The business logic for sending pending airdrops
             - Check the association status and the existence of the recipient:
 
               - It is an existing one and has `max_auto_associations` set to -1 and is not associated to the token →
-                the token is auto associated and is directly transferred to the recipient and a `TokenTransferList` is added to the `TransactionRecord`, as well as a `TokenAssociation`
+                the token is auto associated and is directly transferred to the recipient and a `TokenTransferList` is added to the `TransactionRecord`, as well as a new `TokenAssociation` entry in the `automatic_token_associations`
 
               - It is an existing one and has `max_auto_associations`, which is a positive number and there are free auto association slots and the recipient is not associated to the token →
-                the token is auto associated and is directly transferred to the recipient and a `TokenTransferList` is added to the `TransactionRecord`, as well as a `TokenAssociation`
+                the token is auto associated and is directly transferred to the recipient and a `TokenTransferList` is added to the `TransactionRecord`, as well as a new `TokenAssociation` entry in the `automatic_token_associations`
 
               - It is an existing one and has `max_auto_associations`, which is a positive number but there are no free auto association slots and the recipient is not associated to the token →
                 the token transfer is interpreted as a pending and a `TokenPendingAirdrop` entry is added to the `TransactionRecord`
@@ -187,6 +188,7 @@ If the airdrop transaction fees from the list above are covered by a separate pa
             - token association fee (pre-paid if account is not associated to the token)
             - auto account creation (assessed if the recipient does not exist and they are referred by their public `ECDSA` key or `evm_address`)
 - Interact with the pending airdrop state - if the recipient is not associated to the token, then the `TokenAirdropTransaction` responsibilities in term of interacting with the pending state would be to just add the airdrop information in the state
+- Add this new operation type to the `ThroughputLimits` throttle bucket group, so that it's included in the throttling mechanism
 
 ## Acceptance Tests
 
