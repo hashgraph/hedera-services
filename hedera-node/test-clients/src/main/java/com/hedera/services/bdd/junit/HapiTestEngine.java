@@ -455,12 +455,10 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
         private static final long MIN_GZIP_SIZE_IN_BYTES = 26;
 
-        private static final String HAPI_TEST_STREAMS_LOC_TPL =
-                "hedera-node/data/recordStreams/record0.0.3";
-        //"hedera-node/test-clients/build/hapi-test/node%d/data/recordStreams/record0.0.%d";
+        private static final String HAPI_TEST_STREAMS_LOC_TPL = "hedera-node/data/recordStreams/record0.0.3";
+        // "hedera-node/test-clients/build/hapi-test/node%d/data/recordStreams/record0.0.%d";
 
-        private static final List<RecordStreamValidator> validators = List.of(
-                new AccountAliasValidator());
+        private static final List<RecordStreamValidator> validators = List.of(new AccountAliasValidator());
 
         public RecordStreamValidationTestDescriptor(TestDescriptor parent) {
             super(parent.getUniqueId().append("validation", "recordStream"), "recordStreamValidation");

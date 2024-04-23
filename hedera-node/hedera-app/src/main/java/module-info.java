@@ -58,9 +58,11 @@ module com.hedera.node.app {
     exports com.hedera.node.app.workflows to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.state.merkle to
-            com.hedera.node.services.cli, com.hedera.node.test.clients;
+            com.hedera.node.services.cli,
+            com.hedera.node.test.clients;
     exports com.hedera.node.app.state.merkle.disk to
-            com.hedera.node.services.cli, com.hedera.node.test.clients;
+            com.hedera.node.services.cli,
+            com.hedera.node.test.clients;
     exports com.hedera.node.app.state.merkle.memory to
             com.hedera.node.services.cli;
     exports com.hedera.node.app.workflows.dispatcher;
