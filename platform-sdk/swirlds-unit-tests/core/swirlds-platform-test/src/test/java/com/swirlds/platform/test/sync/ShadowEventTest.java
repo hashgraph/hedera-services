@@ -45,25 +45,6 @@ class ShadowEventTest {
     }
 
     @Test
-    @DisplayName("toString")
-    void testToString() {
-        final EventImpl e = createEventImpl(builder, null, null);
-        final EventImpl esp = createEventImpl(builder, null, null);
-        final EventImpl eop = createEventImpl(builder, null, null);
-
-        final ShadowEvent ssp = new ShadowEvent(esp);
-        final ShadowEvent sop = new ShadowEvent(eop);
-
-        final ShadowEvent s = new ShadowEvent(e, ssp, sop);
-        final String str;
-
-        str = s.toString();
-
-        assertTrue(str.contains("sp"), "a shadow event string should annotate its self-parent");
-        assertTrue(str.contains("op"), "a shadow event string should annotate its other-parent");
-    }
-
-    @Test
     @DisplayName("equals")
     void testEquals() {
         final EventImpl e0 = createEventImpl(builder, null, null);

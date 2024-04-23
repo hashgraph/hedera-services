@@ -42,6 +42,7 @@ import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.stats.OpObs;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
+import com.hedera.services.bdd.spec.utilops.mod.BodyMutation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -108,6 +109,9 @@ public abstract class HapiSpecOperation {
 
     @Nullable
     protected HapiSpecSetup.TxnProtoStructure explicitProtoStructure = null;
+
+    @Nullable
+    protected BodyMutation bodyMutation = null;
 
     protected boolean asTxnWithSignedTxnBytesAndSigMap = false;
     protected boolean asTxnWithSignedTxnBytesAndBodyBytes = false;
@@ -366,7 +370,7 @@ public abstract class HapiSpecOperation {
         setKeyControlOverrides(spec);
         List<Key> keys = signersToUseFor(spec);
 
-        final Transaction.Builder builder = spec.txns().getReadyToSign(netDef);
+        final Transaction.Builder builder = spec.txns().getReadyToSign(netDef, spec, bodyMutation);
         final Transaction provisional = getSigned(spec, builder, keys);
         if (fee.isPresent()) {
             txn = provisional;
@@ -376,7 +380,7 @@ public abstract class HapiSpecOperation {
             final int numPayerKeys = hardcodedNumPayerKeys.orElse(spec.keys().controlledKeyCount(payerKey, overrides));
             final long customFee = feeFor(spec, provisional, numPayerKeys);
             netDef = netDef.andThen(b -> b.setTransactionFee(customFee));
-            txn = getSigned(spec, spec.txns().getReadyToSign(netDef), keys);
+            txn = getSigned(spec, spec.txns().getReadyToSign(netDef, spec, bodyMutation), keys);
         }
 
         return finalizedTxnFromTxnWithBodyBytesAndSigMap(txn);

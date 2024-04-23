@@ -22,6 +22,8 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileUndelete;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
@@ -60,6 +62,24 @@ public class SysDelSysUndelSpec extends HapiSuite {
                 systemDeleteThenUndeleteRestoresContentsAndExpiry(),
                 systemDeleteWithPastExpiryDestroysFile(),
                 distinguishesAdminPrivileges());
+    }
+
+    @HapiTest
+    public HapiSpec sysDelIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("sysDelIdVariantsTreatedAsExpected")
+                .given(fileCreate("misc").contents(ORIG_FILE))
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> systemFileDelete("misc")
+                        .payingWith(SYSTEM_DELETE_ADMIN)));
+    }
+
+    @HapiTest
+    public HapiSpec sysUndelIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("sysUndelIdVariantsTreatedAsExpected")
+                .given(fileCreate("misc").contents(ORIG_FILE))
+                .when(systemFileDelete("misc").payingWith(SYSTEM_DELETE_ADMIN))
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> systemFileUndelete("misc")
+                        .payingWith(SYSTEM_UNDELETE_ADMIN)));
     }
 
     @HapiTest
