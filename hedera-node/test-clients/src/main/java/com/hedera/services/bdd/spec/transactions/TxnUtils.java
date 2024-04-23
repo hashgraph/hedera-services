@@ -192,6 +192,14 @@ public class TxnUtils {
                         : lookUpAccount(lookupSpec, s));
     }
 
+    public static AccountID aliase(final String s, final HapiSpec lookupSpec) {
+        return isIdLiteral(s)
+                ? asAccount(s)
+                : (lookupSpec.registry().hasAccountId(s)
+                        ? lookupSpec.registry().getAccountID(s)
+                        : lookUpAccount(lookupSpec, s));
+    }
+
     private static AccountID lookUpAccount(final HapiSpec spec, final String alias) {
         final var key = spec.registry().getKey(alias);
         final var lookedUpKey = spec.registry().getKey(alias).toByteString().toStringUtf8();

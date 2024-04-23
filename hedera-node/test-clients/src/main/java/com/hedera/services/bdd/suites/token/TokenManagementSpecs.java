@@ -19,7 +19,6 @@ package com.hedera.services.bdd.suites.token;
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
@@ -36,6 +35,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKycWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newAliasedAccount;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKycWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
@@ -92,7 +92,6 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -164,8 +163,7 @@ public class TokenManagementSpecs extends HapiSuite {
                         newKeyNamed(KYC_KEY),
                         newKeyNamed(FREEZE_KEY),
                         newKeyNamed(WIPE_KEY),
-                        cryptoTransfer(tinyBarsFromToWithAlias(CIVILIAN, partyAlias, ONE_HBAR)),
-                        cryptoTransfer(tinyBarsFromToWithAlias(CIVILIAN, counterAlias, ONE_HBAR)))
+                        newAliasedAccount(partyAlias))
                 .when(
                         tokenCreate(PRIMARY)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -199,18 +197,15 @@ public class TokenManagementSpecs extends HapiSuite {
                         tokenUnfreezeWithAlias(PRIMARY, partyAlias).hasPrecheck(INVALID_ACCOUNT_ID),
 
                         // wipe won't happen if the kyc key exists and kyc not granted
-                        grantTokenKycWithAlias(PRIMARY, partyAlias).hasPrecheck(INVALID_ACCOUNT_ID).logged(),
-                        withOpContext((spec, opLog) -> {
-                                    final var aliasAccount = spec.registry()
-                                            .getAccountID(spec.registry()
-                                                    .getKey(partyAlias)
-                                                    .toByteString()
-                                                    .toStringUtf8());
-                                    final var op1 = tokenAssociate(asAccountString(aliasAccount), PRIMARY);
-                                    // Only wipe works with alias. But because it is not associated it fails here
-                                    final var op2 = wipeTokenAccountWithAlias(PRIMARY, partyAlias, 1);
-                                    allRunFor(spec, op1, op2);
-                        }))
+                        grantTokenKycWithAlias(PRIMARY, partyAlias)
+                                .hasPrecheck(INVALID_ACCOUNT_ID)
+                                .logged(),
+                        tokenAssociate(partyAlias, PRIMARY),
+                        grantTokenKyc(PRIMARY, partyAlias),
+                        cryptoTransfer(moving(1, PRIMARY).between(TOKEN_TREASURY, partyAlias))
+                                .signedBy(DEFAULT_PAYER, TOKEN_TREASURY),
+                        // Only wipe works with alias. But because it is not associated it fails here
+                        wipeTokenAccountWithAlias(PRIMARY, partyAlias, 1))
                 .then();
     }
 
