@@ -29,8 +29,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
@@ -119,6 +121,16 @@ public class TopicUpdateSuite extends HapiSuite {
                 .given()
                 .when()
                 .then(updateTopic("1.2.3").hasKnownStatus(INVALID_TOPIC_ID));
+    }
+
+    @HapiTest
+    public HapiSpec idVariantsTreatedAsExpected() {
+        final var autoRenewAccount = "autoRenewAccount";
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(cryptoCreate(autoRenewAccount), cryptoCreate("replacementAccount"), newKeyNamed("adminKey"))
+                .when(createTopic("topic").adminKeyName("adminKey").autoRenewAccountId(autoRenewAccount))
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> updateTopic("topic")
+                        .autoRenewAccountId("replacementAccount")));
     }
 
     @HapiTest

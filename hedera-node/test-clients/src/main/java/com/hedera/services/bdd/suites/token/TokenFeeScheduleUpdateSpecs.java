@@ -41,7 +41,9 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.roy
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
@@ -116,6 +118,19 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
                         .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
                         .via("baseFeeSchUpd"))
                 .then(validateChargedUsdWithin("baseFeeSchUpd", expectedBasePriceUsd, 1.0));
+    }
+
+    @HapiTest
+    public HapiSpec idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed("feeScheduleKey"),
+                        cryptoCreate("feeCollector"),
+                        tokenCreate("t").feeScheduleKey("feeScheduleKey"),
+                        tokenAssociate("feeCollector", "t"))
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> tokenFeeScheduleUpdate("t")
+                        .withCustom(fixedHbarFee(1, "feeCollector"))));
     }
 
     @HapiTest

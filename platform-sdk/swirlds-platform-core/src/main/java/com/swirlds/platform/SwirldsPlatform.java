@@ -444,12 +444,7 @@ public class SwirldsPlatform implements Platform {
         final long roundToIgnore = stateConfig.validateInitialState() ? DO_NOT_IGNORE_ROUNDS : initialState.getRound();
 
         final IssDetector issDetector = new IssDetector(
-                platformContext,
-                currentAddressBook,
-                epochHash,
-                appVersion,
-                ignorePreconsensusSignatures,
-                roundToIgnore);
+                platformContext, currentAddressBook, appVersion, ignorePreconsensusSignatures, roundToIgnore);
 
         final SignedStateFileManager signedStateFileManager = new SignedStateFileManager(
                 platformContext,
