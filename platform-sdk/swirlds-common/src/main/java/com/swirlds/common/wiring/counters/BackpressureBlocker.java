@@ -90,23 +90,15 @@ class BackpressureBlocker implements ManagedBlocker {
      */
     @Override
     public boolean isReleasable() {
-        while (true) {
-            final long currentCount = count.get();
-
-            if (currentCount >= capacity) {
-                // We've reached capacity, so we need to block.
-                return false;
-            }
-
-            final boolean success = count.compareAndSet(currentCount, currentCount + 1);
-            if (success) {
-                // We've successfully incremented the count, so we're done.
-                return true;
-            }
-
-            // We were unable to increment the count because another thread concurrently modified it.
-            // Try again. We will keep trying until we are either successful or we observe there is
-            // insufficient capacity.
+        final long resultingCount = count.incrementAndGet();
+        if (resultingCount <= capacity) {
+            // We didn't violate capacity by incrementing the count, so we're done.
+            return true;
+        } else {
+            // We may have violated capacity restrictions by incrementing the count.
+            // Decrement count and take the slow pathway.
+            count.decrementAndGet();
+            return false;
         }
     }
 }

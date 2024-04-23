@@ -74,7 +74,7 @@ import com.swirlds.config.extensions.validators.DefaultConfigViolation;
 @ConfigData("merkleDb")
 public record MerkleDbConfig(
         @Positive @ConfigProperty(defaultValue = "500000000") long maxNumOfKeys,
-        @Min(0) @ConfigProperty(defaultValue = "0") long hashesRamToDiskThreshold,
+        @Min(0) @ConfigProperty(defaultValue = "8388608") long hashesRamToDiskThreshold,
         @Min(1) @ConfigProperty(defaultValue = "3") int compactionThreads,
         @ConstraintMethod("minNumberOfFilesInCompactionValidation") @ConfigProperty(defaultValue = "8")
                 int minNumberOfFilesInCompaction,

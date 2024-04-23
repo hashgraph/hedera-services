@@ -239,6 +239,11 @@ public class TransactionChecker {
         }
         if (!txBody.hasTransactionID()) {
             throw new PreCheckException(INVALID_TRANSACTION_ID);
+        } else {
+            final var txnId = txBody.transactionIDOrThrow();
+            if (!txnId.hasAccountID()) {
+                throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND);
+            }
         }
         return checkParsed(new TransactionInfo(tx, txBody, signatureMap, bodyBytes, functionality));
     }
