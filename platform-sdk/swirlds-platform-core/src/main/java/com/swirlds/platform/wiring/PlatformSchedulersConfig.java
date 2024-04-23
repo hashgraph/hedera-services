@@ -53,11 +53,7 @@ import java.time.Duration;
  * @param pcesWriterSchedulerType                           the preconsensus event writer scheduler type
  * @param pcesWriterUnhandledCapacity                       number of unhandled tasks allowed in the preconsensus event
  *                                                          writer scheduler
- * @param pcesSequencerSchedulerType                        the preconsensus event sequencer scheduler type
- * @param pcesSequencerUnhandledTaskCapacity                number of unhandled tasks allowed in the preconsensus event
- *                                                          sequencer scheduler
- * @param eventDurabilityNexusSchedulerType                 the durability nexus scheduler type
- * @param eventDurabilityNexusUnhandledTaskCapacity         number of unhandled tasks allowed in the durability nexus
+ * @param pcesSequencer                                     configuration for the preconsensus event sequencer
  *                                                          scheduler
  * @param applicationTransactionPrehandlerSchedulerType     the application transaction prehandler scheduler type
  * @param applicationTransactionPrehandlerUnhandledCapacity number of unhandled tasks allowed for the application
@@ -84,6 +80,8 @@ import java.time.Duration;
  * @param stateGarbageCollectorHeartbeatPeriod              the frequency that heartbeats should be sent to the state
  *                                                          garbage collector
  * @param platformPublisher                                 configuration for the platform publisher scheduler
+ * @param consensusEventStream                              configuration for the consensus event stream scheduler
+ * @param roundDurabilityBuffer                             configuration for the round durability buffer scheduler
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -113,10 +111,7 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "-1") int stateSignerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType pcesWriterSchedulerType,
         @ConfigProperty(defaultValue = "500") int pcesWriterUnhandledCapacity,
-        @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerType pcesSequencerSchedulerType,
-        @ConfigProperty(defaultValue = "-1") int pcesSequencerUnhandledTaskCapacity,
-        @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerType eventDurabilityNexusSchedulerType,
-        @ConfigProperty(defaultValue = "-1") int eventDurabilityNexusUnhandledTaskCapacity,
+        @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration pcesSequencer,
         @ConfigProperty(defaultValue = "CONCURRENT") TaskSchedulerType applicationTransactionPrehandlerSchedulerType,
         @ConfigProperty(defaultValue = "500") int applicationTransactionPrehandlerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType stateSignatureCollectorSchedulerType,
@@ -138,4 +133,7 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration stateGarbageCollector,
         @ConfigProperty(defaultValue = "200ms") Duration stateGarbageCollectorHeartbeatPeriod,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
-                TaskSchedulerConfiguration platformPublisher) {}
+                TaskSchedulerConfiguration platformPublisher,
+        @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration consensusEventStream,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(5) FLUSHABLE UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration roundDurabilityBuffer) {}

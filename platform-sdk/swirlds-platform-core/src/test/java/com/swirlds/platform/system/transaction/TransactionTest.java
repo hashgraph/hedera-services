@@ -20,10 +20,10 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomHashBytes;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
+import com.swirlds.proto.event.StateSignaturePayload;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -65,9 +65,11 @@ public class TransactionTest {
             random.nextBytes(bytes);
             final boolean system = random.nextBoolean();
             if (system) {
-                final Bytes sigature = randomSignatureBytes(random);
-                list.add(new StateSignatureTransaction(
-                        random.nextLong(), sigature, randomHashBytes(random), Bytes.EMPTY));
+                list.add(new StateSignatureTransaction(StateSignaturePayload.newBuilder()
+                        .round(random.nextLong())
+                        .signature(randomSignatureBytes(random))
+                        .hash(randomHashBytes(random))
+                        .build()));
             } else {
                 list.add(new SwirldTransaction(bytes));
             }
