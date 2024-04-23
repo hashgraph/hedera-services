@@ -901,7 +901,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.setMetadata(metadata);
         subject.setDeserializedStateVersion(10);
         subject.setPlatform(platform);
-        given(platform.getAddressBook()).willReturn(addressBook);
 
         given(networkContext.copy()).willReturn(networkContext);
         given(specialFiles.copy()).willReturn(specialFiles);
