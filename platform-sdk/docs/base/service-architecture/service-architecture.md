@@ -1,3 +1,5 @@
+[⇧ Platform Wiki](../../platformWiki.md)
+
 ## Service architecture
 
 The main goal of the base modules is not to provide static util functions.
