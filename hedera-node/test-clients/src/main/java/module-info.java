@@ -53,6 +53,9 @@ module com.hedera.node.test.clients {
     requires transitive tuweni.bytes;
     requires com.hedera.node.app.service.contract.impl;
     requires com.hedera.node.app.service.evm;
+    requires com.hedera.node.app.service.mono;
+    requires com.hedera.node.app.service.token.impl;
+    requires com.hedera.node.app.service.token;
     requires com.hedera.node.app;
     requires com.hedera.node.config;
     requires com.fasterxml.jackson.core;
@@ -62,7 +65,9 @@ module com.hedera.node.test.clients {
     requires com.swirlds.base;
     requires com.swirlds.config.api;
     requires com.swirlds.config.extensions.test.fixtures;
+    requires com.swirlds.metrics.api;
     requires com.swirlds.platform.core;
+    requires com.swirlds.virtualmap;
     requires grpc.netty;
     requires grpc.stub;
     requires io.netty.handler;
