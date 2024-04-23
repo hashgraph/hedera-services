@@ -20,7 +20,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
@@ -69,10 +68,6 @@ public class IssDetector {
      * The address book of this network.
      */
     private final AddressBook addressBook;
-    /**
-     * The current epoch hash
-     */
-    private final Hash currentEpochHash;
     /**
      * The current software version
      */
@@ -126,7 +121,6 @@ public class IssDetector {
      *
      * @param platformContext              the platform context
      * @param addressBook                  the address book for the network
-     * @param currentEpochHash             the current epoch hash
      * @param currentSoftwareVersion       the current software version
      * @param ignorePreconsensusSignatures If true, ignore signatures from the preconsensus event stream, otherwise
      *                                     validate them like normal.
@@ -136,7 +130,6 @@ public class IssDetector {
     public IssDetector(
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
-            @Nullable final Hash currentEpochHash,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             final boolean ignorePreconsensusSignatures,
             final long ignoredRound) {
@@ -153,7 +146,6 @@ public class IssDetector {
         catastrophicIssRateLimiter = new RateLimiter(platformContext.getTime(), timeBetweenIssLogs);
 
         this.addressBook = Objects.requireNonNull(addressBook);
-        this.currentEpochHash = currentEpochHash;
         this.currentSoftwareVersion = Objects.requireNonNull(currentSoftwareVersion);
 
         this.roundData = new ConcurrentSequenceMap<>(
@@ -344,11 +336,6 @@ public class IssDetector {
 
         if (currentSoftwareVersion.compareTo(eventVersion) != 0) {
             // this is a signature from a different software version, ignore it
-            return null;
-        }
-
-        if (!hashEquals(currentEpochHash, signaturePayload.epochHash())) {
-            // this is a signature from a different epoch, ignore it
             return null;
         }
 
@@ -555,15 +542,5 @@ public class IssDetector {
                     .append(Duration.ofMinutes(1).toSeconds())
                     .append("seconds.");
         }
-    }
-
-    /**
-     * Checks equality of hashes when they are stored in different formats.
-     */
-    private static boolean hashEquals(@Nullable final Hash hash, @NonNull final Bytes bytes) {
-        if (hash == null && bytes.length() == 0) {
-            return true;
-        }
-        return hash != null && hash.equalBytes(bytes);
     }
 }

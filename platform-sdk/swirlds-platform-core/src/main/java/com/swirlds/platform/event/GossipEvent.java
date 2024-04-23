@@ -22,8 +22,6 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.system.events.BaseEvent;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -37,7 +35,7 @@ import java.util.concurrent.CountDownLatch;
 /**
  * A class used to hold information about an event transferred through gossip
  */
-public class GossipEvent implements BaseEvent, SelfSerializable {
+public class GossipEvent implements SelfSerializable {
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
     private static final int MAX_SIG_LENGTH = 384;
 
@@ -153,7 +151,6 @@ public class GossipEvent implements BaseEvent, SelfSerializable {
     /**
      * Get the hashed data for the event.
      */
-    @Override
     public BaseEventHashedData getHashedData() {
         return hashedData;
     }
@@ -161,7 +158,6 @@ public class GossipEvent implements BaseEvent, SelfSerializable {
     /**
      * Get the unhashed data for the event.
      */
-    @Override
     public BaseEventUnhashedData getUnhashedData() {
         return unhashedData;
     }
@@ -261,7 +257,34 @@ public class GossipEvent implements BaseEvent, SelfSerializable {
      */
     @Override
     public String toString() {
-        return EventStrings.toMediumString(this);
+        final StringBuilder stringBuilder = new StringBuilder();
+
+        stringBuilder.append(hashedData.getDescriptor());
+        stringBuilder.append("\n");
+        stringBuilder.append("    sp: ");
+
+        final EventDescriptor selfParent = hashedData.getSelfParent();
+        if (selfParent != null) {
+            stringBuilder.append(selfParent);
+        } else {
+            stringBuilder.append("null");
+        }
+        stringBuilder.append("\n");
+
+        int otherParentCount = 0;
+        for (final EventDescriptor otherParent : hashedData.getOtherParents()) {
+            stringBuilder.append("    op");
+            stringBuilder.append(otherParentCount);
+            stringBuilder.append(": ");
+            stringBuilder.append(otherParent);
+
+            otherParentCount++;
+            if (otherParentCount != hashedData.getOtherParents().size()) {
+                stringBuilder.append("\n");
+            }
+        }
+
+        return stringBuilder.toString();
     }
 
     /**
