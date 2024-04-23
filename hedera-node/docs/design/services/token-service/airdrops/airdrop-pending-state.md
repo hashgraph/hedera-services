@@ -34,14 +34,6 @@ We should define the structure of pending changes that would be kept in the `Ini
 
 We can have a case, where we have multiple airdrops for the same fungible token. In this case the  `PendingAirdropValue` would be updated with the new aggregated value.
 
-### Serialization
-
-In order for the pending state to be kept during node upgrades or restarts we should write it on disk with a serialization mechanism, as we do for other context or state related information. This could be done in the `InitialModServiceTokenSchema` since the pending airdrop state would be written in the already existing token state.
-
-We should define a new entry in `StateChildIndices` called `AIRDROPS`. Based on it, we would fetch a `VirtualMap` entry for the airdrops. It would include an `AirdropKey`, which would be a `PendingAirdropId` representation as a key and an `EntityNum` , which would be a `PendingAirdropValue` representation as a value. The `AirdropKey` should implement the `VirtualKey` interface, so that the key has a very strong hash algorithm to optimize performance. `EntityNum` is an already existing numeric wrapper for long values that extend the `VirtualValue` interface and provide better efficiency for usage in `VirtualMaps`.
-
-We would also need to create genesis children for this map in `ServicesState`  and a boolean property for enabling/disabling virtual merkle state from them - `tokens.airdrops.useVirtualMerkle` .
-
 ### Stores
 
 We need to define a special `WritableStore` for the airdrops, so that we can manipulate the content in them. This would be the `WritableAirdropStore`.
@@ -53,10 +45,13 @@ public interface ReadableAirdropStore {
 	PendingAirdropValue get(@NonNull final PendingAirdropId airdropId);
 	long sizeOfState();
 	void warm(@NonNull final PendingAirdropId airdropId);
+    List<PendingAirdropId> getPendingAirdropIdsBySender(final AccountId sender);
 }
 ```
 
 The `ReadableAirdropStoreImpl` would keep an instance of `ReadableKVState<PendingAirdropId, PendingAirdropValue> airdropsState`.
+
+An additional method `getPendingAirdropIdsBySender` would be added to the `ReadableAirdropStore` to get all PendingAirdropIds for a specific sender. This would be useful for traversing all sender's airdrops when their account expires or gets deleted. Then we should iterate over all of their pending airdrops and cancel them.
 
 The `WritableAirdropStore` would add additional methods for operating over the airdrops state, so it would have the following methods:
 
@@ -75,12 +70,13 @@ public class WritableAirdropStore {
 
 ### Operations
 
-1. Fetching airdrop values from the collections. This would be applicable only for fungible airdrops.
+1. Fetching airdrop values from the collections. This would be applicable only for fungible airdrops (for both `TokenAirdrop` and `TokenClaimAirdrop` transactions).
    For a specific `PendingAirdropId`, we would get the corresponding `PendingAirdropValue`.
 2. Handling a new airdrop in state. We can have several cases:
    - Only a single fungible or non-fungible airdrop for a specific token defined - we just put a new entry in the map
    - An airdrop for an existing `PendingAirdropId` is already defined - we should replace the existing `PendingAirdropValue` for this `PendingAirdropId` with the aggregated new fungible amount
 3. Handling an airdrop `cancel` in state - we remove the `PendingAirdropId` key for the airdrop we want to cancel
+4. Handling an airdrop `claim` in state - we remove the `PendingAirdropId` key for the airdrop after we claim it and create a synthetic crypto transfer for it
 
 ## Acceptance tests
 
