@@ -56,6 +56,8 @@ import com.swirlds.platform.event.validation.DefaultEventSignatureValidator;
 import com.swirlds.platform.event.validation.DefaultInternalEventValidator;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
+import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.DefaultSignedStateSentinel;
 import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
@@ -104,6 +106,7 @@ public class PlatformComponentBuilder {
     private SignedStateSentinel signedStateSentinel;
     private PcesSequencer pcesSequencer;
     private RoundDurabilityBuffer roundDurabilityBuffer;
+    private TransactionPrehandler transactionPrehandler;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -682,5 +685,40 @@ public class PlatformComponentBuilder {
             signedStateSentinel = new DefaultSignedStateSentinel(blocks.platformContext());
         }
         return signedStateSentinel;
+    }
+
+    /**
+     * Provide a transaction prehandler in place of the platform's default transaction prehandler.
+     *
+     * @param transactionPrehandler the transaction prehandler to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withTransactionPrehandler(
+            @NonNull final TransactionPrehandler transactionPrehandler) {
+        throwIfAlreadyUsed();
+        if (this.transactionPrehandler != null) {
+            throw new IllegalStateException("Transaction prehandler has already been set");
+        }
+        this.transactionPrehandler = Objects.requireNonNull(transactionPrehandler);
+        return this;
+    }
+
+    /**
+     * Build the transaction prehandler if it has not yet been built. If one has been provided via
+     * {@link #withTransactionPrehandler(TransactionPrehandler)}, that transaction prehandler will be used. If this
+     * method is called more than once, only the first call will build the transaction prehandler. Otherwise, the
+     * default transaction prehandler will be created and returned.
+     *
+     * @return the transaction prehandler
+     */
+    @NonNull
+    public TransactionPrehandler buildTransactionPrehandler() {
+        if (transactionPrehandler == null) {
+            transactionPrehandler = new DefaultTransactionPrehandler(
+                    blocks.platformContext(),
+                    () -> blocks.latestImmutableStateProviderReference().get().apply("transaction prehandle"));
+        }
+        return transactionPrehandler;
     }
 }
