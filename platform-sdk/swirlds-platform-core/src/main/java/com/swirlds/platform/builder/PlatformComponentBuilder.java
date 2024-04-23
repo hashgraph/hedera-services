@@ -230,11 +230,11 @@ public class PlatformComponentBuilder {
     public InternalEventValidator buildInternalEventValidator() {
         if (internalEventValidator == null) {
             final boolean singleNodeNetwork = blocks.initialState()
-                    .get()
-                    .getState()
-                    .getPlatformState()
-                    .getAddressBook()
-                    .getSize()
+                            .get()
+                            .getState()
+                            .getPlatformState()
+                            .getAddressBook()
+                            .getSize()
                     == 1;
             internalEventValidator = new DefaultInternalEventValidator(
                     blocks.platformContext(), singleNodeNetwork, blocks.intakeEventCounter());

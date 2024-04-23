@@ -27,16 +27,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 public interface PcesWriter {
 
-    // TODO
-    //            return new PcesWriterWiring(
-    //            taskScheduler.buildInputWire("done streaming pces"),
-    //                taskScheduler.buildInputWire("events to write"),
-    //                        taskScheduler.buildInputWire("discontinuity"),
-    //                        taskScheduler.buildInputWire("event window"),
-    //                        taskScheduler.buildInputWire("minimum identifier to store"),
-    //                        taskScheduler.buildInputWire("flush request"),
-    //                        taskScheduler.getOutputWire());
-
     /**
      * Prior to this method being called, all events added to the preconsensus event stream are assumed to be events
      * read from the preconsensus event stream on disk. The events from the stream on disk are not re-written to the

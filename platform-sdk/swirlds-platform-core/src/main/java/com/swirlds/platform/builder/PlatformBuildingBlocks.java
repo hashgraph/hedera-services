@@ -96,5 +96,4 @@ public record PlatformBuildingBlocks(
         @NonNull AtomicReference<Predicate<Instant>> isInFreezePeriodReference,
         @NonNull AtomicReference<Function<String, ReservedSignedState>> latestImmutableStateProviderReference,
         @NonNull PcesFileTracker initialPcesFiles,
-        boolean firstPlatform) {
-}
+        boolean firstPlatform) {}
