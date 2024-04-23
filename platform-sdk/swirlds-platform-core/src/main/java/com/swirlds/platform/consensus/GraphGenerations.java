@@ -69,7 +69,8 @@ public interface GraphGenerations {
     }
 
     /**
-     * Same as {@link #isAncient(PlatformEvent)} but for {@link GossipEvent}
+     * Checks if the supplied event is ancient or not. An event is ancient if its generation is smaller than the round
+     * generation of the oldest non-ancient round.
      *
      * @param event the event to check
      * @return true if the event is ancient, false otherwise
