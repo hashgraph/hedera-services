@@ -583,7 +583,7 @@ public class TokenManagementSpecs extends HapiSuite {
 
     @HapiTest
     public HapiSpec wipeIdVariantsTreatedAsExpected() {
-        return defaultHapiSpec("updateIdVariantsTreatedAsExpected")
+        return defaultHapiSpec("wipeIdVariantsTreatedAsExpected")
                 .given(
                         newKeyNamed("wipeKey"),
                         cryptoCreate("holder").maxAutomaticTokenAssociations(2),
