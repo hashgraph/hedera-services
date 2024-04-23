@@ -22,8 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
-import com.swirlds.platform.system.events.PlatformEvent;
 import java.util.Random;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -75,7 +75,7 @@ class GenerationsTests {
         assertFalse(genesisGenerations.areAnyEventsAncient(), "at genesis, no events should be ancient");
 
         final long randomGeneration = Math.abs(new Random().nextLong());
-        final PlatformEvent e = Mockito.mock(PlatformEvent.class);
+        final GossipEvent e = Mockito.mock(GossipEvent.class);
         Mockito.when(e.getGeneration()).thenReturn(randomGeneration);
 
         assertFalse(genesisGenerations.isAncient(e), "at genesis, no events should be ancient");
@@ -83,9 +83,9 @@ class GenerationsTests {
         final GraphGenerations randomNonAncient =
                 new Generations(randomGeneration - generationDiff, randomGeneration, randomGeneration + generationDiff);
 
-        final PlatformEvent newer = Mockito.mock(PlatformEvent.class);
+        final GossipEvent newer = Mockito.mock(GossipEvent.class);
         Mockito.when(newer.getGeneration()).thenReturn(randomGeneration + 1);
-        final PlatformEvent older = Mockito.mock(PlatformEvent.class);
+        final GossipEvent older = Mockito.mock(GossipEvent.class);
         Mockito.when(older.getGeneration()).thenReturn(randomGeneration - 1);
 
         assertFalse(

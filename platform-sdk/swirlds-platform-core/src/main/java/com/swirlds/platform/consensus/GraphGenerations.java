@@ -17,7 +17,6 @@
 package com.swirlds.platform.consensus;
 
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.system.events.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public interface GraphGenerations {
@@ -67,17 +66,6 @@ public interface GraphGenerations {
      */
     default boolean areAnyEventsAncient() {
         return getMinGenerationNonAncient() > FIRST_GENERATION;
-    }
-
-    /**
-     * Checks if the supplied event is ancient or not. An event is ancient if its generation is smaller than the round
-     * generation of the oldest non-ancient round.
-     *
-     * @param event the event to check
-     * @return true if its ancient, false otherwise
-     */
-    default boolean isAncient(@NonNull final PlatformEvent event) {
-        return event.getGeneration() < getMinGenerationNonAncient();
     }
 
     /**
