@@ -72,7 +72,11 @@ public final class TokenStateTranslator {
                 .maxSupply(token.maxSupply())
                 .paused(token.isPaused())
                 .accountsFrozenByDefault(token.accountsAreFrozenByDefault())
-                .accountsKycGrantedByDefault(token.accountsKycGrantedByDefault())
+                // KYC is never granted by default as that would defeat the purpose;
+                // but for tokens without a KYC key, mono-service would leave this
+                // as true for convenience. There's no reason to do that in mod-service,
+                // so just set every migrated token to false.
+                .accountsKycGrantedByDefault(false)
                 .customFees(convertMonoCustomFees(token.customFeeSchedule()));
         if (token.hasAdminKey()) {
             builder.adminKey(PbjConverter.asPbjKey(token.getAdminKey()));
