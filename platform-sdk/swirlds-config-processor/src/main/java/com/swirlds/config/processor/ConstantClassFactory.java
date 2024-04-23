@@ -71,17 +71,28 @@ public final class ConstantClassFactory {
         configDataRecordDefinition.propertyDefinitions().forEach(propertyDefinition -> {
             final String name = toConstantName(
                     propertyDefinition.name().replace(configDataRecordDefinition.configDataName() + ".", ""));
-            FieldSpec fieldSpec = FieldSpec.builder(
-                            String.class, name, Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
-                    .initializer("$S", propertyDefinition.name())
-                    .addJavadoc(
-                            "Name of the {@link $L#$L} property\n@see $L#$L\n",
-                            originalRecordClassName,
-                            propertyDefinition.fieldName(),
-                            originalRecordClassName,
-                            propertyDefinition.fieldName())
-                    .build();
-            constantsClassBuilder.addField(fieldSpec);
+
+            try {
+
+                FieldSpec fieldSpec = FieldSpec.builder(
+                                String.class, name, Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
+                        .initializer("$S", propertyDefinition.name())
+                        .addJavadoc(
+                                "Name of the {@link $L#$L} property\n@see $L#$L\n",
+                                originalRecordClassName,
+                                propertyDefinition.fieldName(),
+                                originalRecordClassName,
+                                propertyDefinition.fieldName())
+                        .build();
+                constantsClassBuilder.addField(fieldSpec);
+            } catch (Exception e) {
+                throw new IllegalArgumentException(
+                        "Error processing record:"
+                                + configDataRecordDefinition.simpleClassName() + " field:"
+                                + propertyDefinition.fieldName() + " annotation value:\"" + propertyDefinition.name()
+                                + "\" cannot be used as a valid constant. Check if should be a defaultValue instead.",
+                        e);
+            }
         });
 
         TypeSpec constantsClass = constantsClassBuilder.build();

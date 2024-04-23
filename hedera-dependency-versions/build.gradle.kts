@@ -81,7 +81,7 @@ moduleInfo {
     version("javax.inject", "1")
     version("lazysodium.java", "5.1.1")
     version("net.i2p.crypto.eddsa", "0.3.0")
-    version("org.antlr.antlr4.runtime", "4.11.1")
+    version("org.antlr.antlr4.runtime", "4.13.1")
     version("org.apache.commons.codec", "1.15")
     version("org.apache.commons.collections4", "4.4")
     version("org.apache.commons.io", "2.15.1")
