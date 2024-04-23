@@ -162,7 +162,7 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getFileContentQuery(spec, payment, false);
+        Query query = maybeModified(getFileContentQuery(spec, payment, false), spec);
         preQueryCb.ifPresent(cb -> cb.accept(fileId));
         response = spec.clients().getFileSvcStub(targetNodeFor(spec), useTls).getFileContent(query);
         postQueryCb.ifPresent(cb -> cb.accept(response));
