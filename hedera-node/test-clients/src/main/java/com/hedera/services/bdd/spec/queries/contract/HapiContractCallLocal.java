@@ -175,7 +175,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getContractCallLocal(spec, payment, false);
+        Query query = maybeModified(getContractCallLocal(spec, payment, false), spec);
         response = spec.clients().getScSvcStub(targetNodeFor(spec), useTls).contractCallLocalMethod(query);
         if (verboseLoggingOn) {
             LOG.info(
