@@ -53,7 +53,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.util.TokenKeysHelper.TokenKeys;
+import com.hedera.node.app.service.token.impl.util.TokenKeys;
 import com.hedera.node.app.service.token.impl.validators.TokenUpdateValidator;
 import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -70,6 +70,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -459,36 +460,37 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     private List<Key> getAllRequiredLowPrioritySigners(
             @NonNull final Token originalToken, @NonNull final TokenUpdateTransactionBody op) {
         List<Key> lowPriorityKeys = new ArrayList<>();
-        addLowPrioritySigner(lowPriorityKeys, originalToken.hasWipeKey(), originalToken.wipeKey(), op.hasWipeKey());
-        addLowPrioritySigner(lowPriorityKeys, originalToken.hasKycKey(), originalToken.kycKey(), op.hasKycKey());
-        addLowPrioritySigner(
-                lowPriorityKeys, originalToken.hasSupplyKey(), originalToken.supplyKey(), op.hasSupplyKey());
-        addLowPrioritySigner(
-                lowPriorityKeys, originalToken.hasFreezeKey(), originalToken.freezeKey(), op.hasFreezeKey());
-        addLowPrioritySigner(
-                lowPriorityKeys,
-                originalToken.hasFeeScheduleKey(),
-                originalToken.feeScheduleKey(),
-                op.hasFeeScheduleKey());
-        addLowPrioritySigner(lowPriorityKeys, originalToken.hasPauseKey(), originalToken.pauseKey(), op.hasPauseKey());
-        addLowPrioritySigner(
-                lowPriorityKeys, originalToken.hasMetadataKey(), originalToken.metadataKey(), op.hasMetadataKey());
-        addLowPrioritySigner(
-                lowPriorityKeys, originalToken.hasMetadataKey(), originalToken.metadataKey(), op.hasMetadata());
+        final var NonAdminKeys =
+                TOKEN_KEYS.stream().filter(key -> key != TokenKeys.ADMIN_KEY).collect(Collectors.toSet());
 
+        for (final var tokenKey : NonAdminKeys) {
+            if (tokenKey.isPresentInUpdate(op)) {
+                final Key presentKey = tokenKey.getFromToken(originalToken);
+                if (presentKey != null) {
+                    lowPriorityKeys.add(presentKey);
+                }
+            }
+        }
+        // metadata field can be updated also with only metadata key signature
+        if (op.hasMetadata()) {
+            final Key metadataKey = originalToken.metadataKey();
+            if (metadataKey != null) {
+                lowPriorityKeys.add(metadataKey);
+            }
+        }
         return lowPriorityKeys;
     }
 
-    private void addLowPrioritySigner(
-            @NonNull List<Key> lowPriorityKeys,
-            final boolean tokenHasKey,
-            @NonNull final Key originalKey,
-            final boolean updateHasField) {
-        if (updateHasField) {
-            if (tokenHasKey) {
-                lowPriorityKeys.add(originalKey);
+    /**
+     * Check if TokenUpdateOp tries to remove some of the token keys
+     */
+    private static boolean containsKeyRemoval(@NonNull final TokenUpdateTransactionBody op) {
+        for (final var tokenKey : TOKEN_KEYS) {
+            if (isKeyRemoval(tokenKey.getFromUpdate(op))) {
+                return true;
             }
         }
+        return false;
     }
 
     /**

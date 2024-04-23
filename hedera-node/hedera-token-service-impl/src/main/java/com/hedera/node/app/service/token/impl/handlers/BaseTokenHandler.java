@@ -26,7 +26,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
-import static com.hedera.node.app.spi.validation.AttributeValidator.isKeyRemoval;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -43,19 +42,24 @@ import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.util.TokenKeys;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class BaseTokenHandler {
     private static final Logger log = LogManager.getLogger(BaseTokenHandler.class);
+    private static final Set<TokenKeys> TOKEN_KEYS = EnumSet.allOf(TokenKeys.class);
     /**
      * Mints fungible tokens. This method is called in both token create and mint.
      * @param token the new or existing token to mint
@@ -424,21 +428,6 @@ public class BaseTokenHandler {
     }
 
     /**
-     * Check if TokenUpdateOp wants to remove some of the token keys
-     * low priority keys are -> wipeKey, kycKey, supplyKey, freezeKey, feeScheduleKey, pauseKey, metadataKey
-     */
-    public static boolean containsKeyRemoval(@NonNull final TokenUpdateTransactionBody op) {
-        return isKeyRemoval(op.adminKey())
-                || isKeyRemoval(op.wipeKey())
-                || isKeyRemoval(op.kycKey())
-                || isKeyRemoval(op.supplyKey())
-                || isKeyRemoval(op.freezeKey())
-                || isKeyRemoval(op.feeScheduleKey())
-                || isKeyRemoval(op.pauseKey())
-                || isKeyRemoval(op.metadataKey());
-    }
-
-    /**
      * Check if TokenUpdateOp wants to update only some of the low priority keys or the metadata field
      * low priority keys are -> wipeKey, kycKey, supplyKey, freezeKey, feeScheduleKey, pauseKey or metadataKey
      */
@@ -458,13 +447,14 @@ public class BaseTokenHandler {
      * Check if a given token already has some of the low priority keys
      */
     public static boolean hasAlreadySomeNonAdminKeys(@NonNull final Token token) {
-        return token.hasWipeKey()
-                || token.hasKycKey()
-                || token.hasSupplyKey()
-                || token.hasFreezeKey()
-                || token.hasFeeScheduleKey()
-                || token.hasPauseKey()
-                || token.hasMetadataKey();
+        final var NonAdminKeys =
+                TOKEN_KEYS.stream().filter(key -> key != TokenKeys.ADMIN_KEY).collect(Collectors.toSet());
+        for (final var tokenKey : NonAdminKeys) {
+            if (tokenKey.isPresentInitially(token)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @NonNull
