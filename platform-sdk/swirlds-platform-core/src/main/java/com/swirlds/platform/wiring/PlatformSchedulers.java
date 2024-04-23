@@ -19,6 +19,7 @@ package com.swirlds.platform.wiring;
 import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder.UNLIMITED_CAPACITY;
 
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.wiring.counters.ObjectCounter;
@@ -30,7 +31,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
-import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
@@ -42,7 +42,6 @@ import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.StateAndRound;
-import com.swirlds.proto.event.StateSignaturePayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -56,7 +55,6 @@ import java.util.List;
  * @param signedStateFileManagerScheduler           the scheduler for the signed state file manager
  * @param stateSignerScheduler                      the scheduler for the state signer
  * @param pcesReplayerScheduler                     the scheduler for the pces replayer
- * @param applicationTransactionPrehandlerScheduler the scheduler for the application transaction prehandler
  * @param stateSignatureCollectorScheduler          the scheduler for the state signature collector
  * @param shadowgraphScheduler                      the scheduler for the shadowgraph
  * @param consensusRoundHandlerScheduler            the scheduler for the consensus round handler
@@ -73,7 +71,6 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
         @NonNull TaskScheduler<StateSignaturePayload> stateSignerScheduler,
         @NonNull TaskScheduler<NoInput> pcesReplayerScheduler,
-        @NonNull TaskScheduler<Void> applicationTransactionPrehandlerScheduler,
         @NonNull TaskScheduler<List<ReservedSignedState>> stateSignatureCollectorScheduler,
         @NonNull TaskScheduler<Void> shadowgraphScheduler,
         @NonNull TaskScheduler<StateAndRound> consensusRoundHandlerScheduler,
@@ -135,14 +132,6 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("pcesReplayer")
                         .withType(TaskSchedulerType.DIRECT)
                         .withHyperlink(platformCoreHyperlink(PcesReplayer.class))
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("applicationTransactionPrehandler")
-                        .withType(config.applicationTransactionPrehandlerSchedulerType())
-                        .withUnhandledTaskCapacity(config.applicationTransactionPrehandlerUnhandledCapacity())
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(TransactionPrehandler.class))
-                        .withFlushingEnabled(true)
                         .build()
                         .cast(),
                 model.schedulerBuilder("stateSignatureCollector")

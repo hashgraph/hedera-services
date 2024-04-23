@@ -91,7 +91,7 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getContractBytecodeQuery(spec, payment, false);
+        Query query = maybeModified(getContractBytecodeQuery(spec, payment, false), spec);
         response = spec.clients().getScSvcStub(targetNodeFor(spec), useTls).contractGetBytecode(query);
 
         final var code = response.getContractGetBytecodeResponse().getBytecode();

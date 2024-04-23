@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.crypto;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
@@ -38,7 +39,11 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUniqueWithAllowance;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithAllowance;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.TRANSFER_TXN_2;
+import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.createHollowAccountFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -88,6 +93,9 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
                 transferNonFungibleWithRoyaltyHbarFee(),
                 transferNonFungibleWithRoyaltyFungibleFee(),
                 transferNonFungibleWithRoyaltyFallbackHbarFee(),
+                transferNonFungibleWithHollowAccountAndRoyaltyHbarFee(),
+                transferNonFungibleWithHollowAccountAndRoyaltyFungibleFee(),
+                transferNonFungibleWithHollowAccountAndRoyaltyFallbackHbarFee(),
                 transferNonFungibleWithRoyaltyFallbackFungibleFee(),
                 transferNonFungibleWithRoyaltyHbarFeeInsufficientBalance(),
                 transferNonFungibleWithRoyaltyFungibleFeeInsufficientBalance(),
@@ -1329,6 +1337,133 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
                                 .hasTokenBalance(feeDenom, 0)
                                 .hasTokenBalance(nonFungibleToken, 2),
                         getAccountBalance(alice).hasTinyBars(60).hasTokenBalance(feeDenom, 60));
+    }
+
+    @HapiTest
+    public HapiSpec transferNonFungibleWithHollowAccountAndRoyaltyHbarFee() {
+        final var fourHundredHbars = 4 * ONE_HUNDRED_HBARS;
+        final var twoHundredHbars = 2 * ONE_HUNDRED_HBARS;
+        return defaultHapiSpec("transferNonFungibleWithHollowAccountAndRoyaltyHbarFee")
+                .given(
+                        newKeyNamed(NFT_KEY),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(tokenReceiver).balance(fourHundredHbars),
+                        cryptoCreate(tokenTreasury),
+                        cryptoCreate(tokenOwner).balance(0L))
+                .when(createHollowAccountFrom(SECP_256K1_SOURCE_KEY))
+                .then(withOpContext((spec, opLog) -> {
+                    final var hollowAccountCollector =
+                            spec.registry().getAccountIdName(spec.registry().getAccountAlias(SECP_256K1_SOURCE_KEY));
+
+                    allRunFor(
+                            spec,
+                            tokenCreate(nonFungibleToken)
+                                    .treasury(tokenTreasury)
+                                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                    .initialSupply(0)
+                                    .supplyKey(NFT_KEY)
+                                    .supplyType(TokenSupplyType.INFINITE)
+                                    .withCustom(royaltyFeeNoFallback(1, 2, hollowAccountCollector)),
+                            tokenAssociate(tokenReceiver, nonFungibleToken),
+                            tokenAssociate(tokenOwner, nonFungibleToken),
+                            mintToken(nonFungibleToken, List.of(ByteStringUtils.wrapUnsafely("meta1".getBytes()))),
+                            cryptoTransfer(movingUnique(nonFungibleToken, 1L).between(tokenTreasury, tokenOwner)),
+                            cryptoTransfer(
+                                    movingUnique(nonFungibleToken, 1L).between(tokenOwner, tokenReceiver),
+                                    movingHbar(fourHundredHbars).between(tokenReceiver, tokenOwner)),
+                            getAccountBalance(tokenOwner)
+                                    .hasTinyBars(twoHundredHbars)
+                                    .hasTokenBalance(nonFungibleToken, 0),
+                            getAccountBalance(tokenReceiver).hasTinyBars(0).hasTokenBalance(nonFungibleToken, 1),
+                            getAccountBalance(hollowAccountCollector).hasTinyBars(ONE_HUNDRED_HBARS + twoHundredHbars));
+                }));
+    }
+
+    @HapiTest
+    public HapiSpec transferNonFungibleWithHollowAccountAndRoyaltyFungibleFee() {
+        return defaultHapiSpec("transferNonFungibleWithHollowAccountAndRoyaltyFungibleFee")
+                .given(
+                        newKeyNamed(NFT_KEY),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(tokenReceiver).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(tokenTreasury),
+                        cryptoCreate(tokenOwner))
+                .when(createHollowAccountFrom(SECP_256K1_SOURCE_KEY))
+                .then(withOpContext((spec, opLog) -> {
+                    final var hollowAccountCollector =
+                            spec.registry().getAccountIdName(spec.registry().getAccountAlias(SECP_256K1_SOURCE_KEY));
+                    allRunFor(
+                            spec,
+                            tokenCreate(feeDenom)
+                                    .treasury(tokenReceiver)
+                                    .payingWith(SECP_256K1_SOURCE_KEY)
+                                    .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
+                                    .initialSupply(4),
+                            tokenAssociate(hollowAccountCollector, feeDenom),
+                            tokenAssociate(tokenOwner, feeDenom),
+                            tokenCreate(nonFungibleToken)
+                                    .treasury(tokenTreasury)
+                                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                    .initialSupply(0)
+                                    .supplyKey(NFT_KEY)
+                                    .supplyType(TokenSupplyType.INFINITE)
+                                    .payingWith(SECP_256K1_SOURCE_KEY)
+                                    .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
+                                    .via(TRANSFER_TXN_2)
+                                    .withCustom(royaltyFeeNoFallback(1, 2, hollowAccountCollector)),
+                            tokenAssociate(tokenReceiver, nonFungibleToken),
+                            tokenAssociate(tokenOwner, nonFungibleToken),
+                            mintToken(nonFungibleToken, List.of(ByteStringUtils.wrapUnsafely("meta1".getBytes()))),
+                            cryptoTransfer(movingUnique(nonFungibleToken, 1L).between(tokenTreasury, tokenOwner)),
+                            cryptoTransfer(
+                                    movingUnique(nonFungibleToken, 1L).between(tokenOwner, tokenReceiver),
+                                    moving(4, feeDenom).between(tokenReceiver, tokenOwner)),
+                            getAccountBalance(tokenOwner)
+                                    .hasTokenBalance(nonFungibleToken, 0)
+                                    .hasTokenBalance(feeDenom, 2),
+                            getAccountBalance(tokenReceiver)
+                                    .hasTokenBalance(nonFungibleToken, 1)
+                                    .hasTokenBalance(feeDenom, 0),
+                            getAccountBalance(hollowAccountCollector).hasTokenBalance(feeDenom, 2));
+                }));
+    }
+
+    @HapiTest
+    public HapiSpec transferNonFungibleWithHollowAccountAndRoyaltyFallbackHbarFee() {
+        return defaultHapiSpec("transferNonFungibleWithHollowAccountAndRoyaltyFallbackHbarFee")
+                .given(
+                        newKeyNamed(NFT_KEY),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(tokenReceiver).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(tokenTreasury),
+                        cryptoCreate(tokenOwner))
+                .when(createHollowAccountFrom(SECP_256K1_SOURCE_KEY))
+                .then(withOpContext((spec, opLog) -> {
+                    final var hollowAccountCollector =
+                            spec.registry().getAccountIdName(spec.registry().getAccountAlias(SECP_256K1_SOURCE_KEY));
+                    allRunFor(
+                            spec,
+                            tokenCreate(nonFungibleToken)
+                                    .treasury(tokenTreasury)
+                                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                    .initialSupply(0)
+                                    .supplyKey(NFT_KEY)
+                                    .supplyType(TokenSupplyType.INFINITE)
+                                    .via(TRANSFER_TXN_2)
+                                    .withCustom(royaltyFeeWithFallback(
+                                            1, 2, fixedHbarFeeInheritingRoyaltyCollector(100), hollowAccountCollector)),
+                            tokenAssociate(tokenReceiver, nonFungibleToken),
+                            tokenAssociate(tokenOwner, nonFungibleToken),
+                            mintToken(nonFungibleToken, List.of(ByteStringUtils.wrapUnsafely("meta1".getBytes()))),
+                            cryptoTransfer(movingUnique(nonFungibleToken, 1L).between(tokenTreasury, tokenOwner)),
+                            cryptoTransfer(movingUnique(nonFungibleToken, 1L).between(tokenOwner, tokenReceiver))
+                                    .signedByPayerAnd(tokenReceiver, tokenOwner),
+                            getAccountBalance(tokenOwner).hasTokenBalance(nonFungibleToken, 0),
+                            getAccountBalance(tokenReceiver)
+                                    .hasTokenBalance(nonFungibleToken, 1)
+                                    .hasTinyBars(ONE_MILLION_HBARS - 100),
+                            getAccountBalance(hollowAccountCollector).hasTinyBars(ONE_HUNDRED_HBARS + 100));
+                }));
     }
 
     @Override

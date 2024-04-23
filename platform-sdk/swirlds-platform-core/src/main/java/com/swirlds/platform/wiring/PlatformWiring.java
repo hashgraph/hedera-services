@@ -244,8 +244,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         selfEventSignerWiring = new ComponentWiring<>(model, SelfEventSigner.class, config.selfEventSigner());
         pcesSequencerWiring = new ComponentWiring<>(model, PcesSequencer.class, config.pcesSequencer());
 
-        applicationTransactionPrehandlerWiring = new ComponentWiring<>(
-                model, TransactionPrehandler.class, schedulers.applicationTransactionPrehandlerScheduler());
+        applicationTransactionPrehandlerWiring =
+                new ComponentWiring<>(model, TransactionPrehandler.class, config.applicationTransactionPrehandler());
         stateSignatureCollectorWiring =
                 StateSignatureCollectorWiring.create(model, schedulers.stateSignatureCollectorScheduler());
         signedStateFileManagerWiring =
@@ -626,7 +626,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param pcesReplayer              the PCES replayer to bind
      * @param shadowgraph               the shadowgraph to bind
      * @param stateSignatureCollector   the signed state manager to bind
-     * @param transactionPrehandler     the transaction prehandler to bind
      * @param eventWindowManager        the event window manager to bind
      * @param consensusRoundHandler     the consensus round handler to bind
      * @param issDetector               the ISS detector to bind
@@ -649,7 +648,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final PcesReplayer pcesReplayer,
             @NonNull final Shadowgraph shadowgraph,
             @NonNull final StateSignatureCollector stateSignatureCollector,
-            @NonNull final TransactionPrehandler transactionPrehandler,
             @NonNull final EventWindowManager eventWindowManager,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final IssDetector issDetector,
@@ -682,7 +680,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         selfEventSignerWiring.bind(builder::buildSelfEventSigner);
         stateSignatureCollectorWiring.bind(stateSignatureCollector);
         eventWindowManagerWiring.bind(eventWindowManager);
-        applicationTransactionPrehandlerWiring.bind(transactionPrehandler);
+        applicationTransactionPrehandlerWiring.bind(builder::buildTransactionPrehandler);
         consensusRoundHandlerWiring.bind(consensusRoundHandler);
         runningEventHasherWiring.bind(builder::buildRunningEventHasher);
         consensusEventStreamWiring.bind(builder::buildConsensusEventStream);

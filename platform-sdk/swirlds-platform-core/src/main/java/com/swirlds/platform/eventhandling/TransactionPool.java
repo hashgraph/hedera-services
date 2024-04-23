@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.eventhandling;
 
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
@@ -23,7 +24,6 @@ import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
-import com.swirlds.proto.event.StateSignaturePayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedList;

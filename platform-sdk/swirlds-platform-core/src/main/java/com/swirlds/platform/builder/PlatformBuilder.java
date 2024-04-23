@@ -522,8 +522,9 @@ public final class PlatformBuilder {
                 new RandomBuilder(),
                 new TransactionPool(platformContext),
                 new AtomicReference<>(STARTING_UP),
-                new AtomicReference<>(null),
-                new AtomicReference<>(null),
+                new AtomicReference<>(),
+                new AtomicReference<>(),
+                new AtomicReference<>(),
                 initialPcesFiles,
                 firstPlatform);
 

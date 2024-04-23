@@ -59,6 +59,8 @@ import com.swirlds.platform.event.validation.DefaultEventSignatureValidator;
 import com.swirlds.platform.event.validation.DefaultInternalEventValidator;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
+import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -106,6 +108,7 @@ public class PlatformComponentBuilder {
     private ConsensusEventStream consensusEventStream;
     private PcesSequencer pcesSequencer;
     private RoundDurabilityBuffer roundDurabilityBuffer;
+    private TransactionPrehandler transactionPrehandler;
     private PcesWriter pcesWriter;
 
     /**
@@ -227,11 +230,11 @@ public class PlatformComponentBuilder {
     public InternalEventValidator buildInternalEventValidator() {
         if (internalEventValidator == null) {
             final boolean singleNodeNetwork = blocks.initialState()
-                            .get()
-                            .getState()
-                            .getPlatformState()
-                            .getAddressBook()
-                            .getSize()
+                    .get()
+                    .getState()
+                    .getPlatformState()
+                    .getAddressBook()
+                    .getSize()
                     == 1;
             internalEventValidator = new DefaultInternalEventValidator(
                     blocks.platformContext(), singleNodeNetwork, blocks.intakeEventCounter());
@@ -653,6 +656,41 @@ public class PlatformComponentBuilder {
             roundDurabilityBuffer = new DefaultRoundDurabilityBuffer(blocks.platformContext());
         }
         return roundDurabilityBuffer;
+    }
+
+    /**
+     * Provide a transaction prehandler in place of the platform's default transaction prehandler.
+     *
+     * @param transactionPrehandler the transaction prehandler to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withTransactionPrehandler(
+            @NonNull final TransactionPrehandler transactionPrehandler) {
+        throwIfAlreadyUsed();
+        if (this.transactionPrehandler != null) {
+            throw new IllegalStateException("Transaction prehandler has already been set");
+        }
+        this.transactionPrehandler = Objects.requireNonNull(transactionPrehandler);
+        return this;
+    }
+
+    /**
+     * Build the transaction prehandler if it has not yet been built. If one has been provided via
+     * {@link #withTransactionPrehandler(TransactionPrehandler)}, that transaction prehandler will be used. If this
+     * method is called more than once, only the first call will build the transaction prehandler. Otherwise, the
+     * default transaction prehandler will be created and returned.
+     *
+     * @return the transaction prehandler
+     */
+    @NonNull
+    public TransactionPrehandler buildTransactionPrehandler() {
+        if (transactionPrehandler == null) {
+            transactionPrehandler = new DefaultTransactionPrehandler(
+                    blocks.platformContext(),
+                    () -> blocks.latestImmutableStateProviderReference().get().apply("transaction prehandle"));
+        }
+        return transactionPrehandler;
     }
 
     /**

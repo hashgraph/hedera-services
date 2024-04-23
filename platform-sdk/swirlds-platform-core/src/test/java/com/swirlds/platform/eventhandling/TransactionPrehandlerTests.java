@@ -60,7 +60,7 @@ class TransactionPrehandlerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
         final TransactionPrehandler transactionPrehandler =
-                new DefaultTransactionPrehandler(platformContext, latestImmutableStateNexus);
+                new DefaultTransactionPrehandler(platformContext, () -> latestImmutableStateNexus.getState("test"));
 
         final GossipEvent gossipEvent = new TestingEventBuilder(random).build();
 

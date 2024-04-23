@@ -90,6 +90,7 @@ class PlatformWiringTests {
                 .withConsensusEventStream(mock(ConsensusEventStream.class))
                 .withPcesSequencer(mock(PcesSequencer.class))
                 .withRoundDurabilityBuffer(mock(RoundDurabilityBuffer.class))
+                .withTransactionPrehandler(mock(TransactionPrehandler.class))
                 .withPcesWriter(mock(PcesWriter.class));
 
         wiring.bind(
@@ -99,7 +100,6 @@ class PlatformWiringTests {
                 mock(PcesReplayer.class),
                 mock(Shadowgraph.class),
                 mock(StateSignatureCollector.class),
-                mock(TransactionPrehandler.class),
                 mock(EventWindowManager.class),
                 mock(ConsensusRoundHandler.class),
                 mock(IssDetector.class),

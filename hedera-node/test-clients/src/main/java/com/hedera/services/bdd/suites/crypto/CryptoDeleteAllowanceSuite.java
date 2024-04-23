@@ -40,7 +40,11 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoApprove
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.OWNER;
+import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.SPENDER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
@@ -90,6 +94,44 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
             duplicateEntriesDoesntThrow(),
             canDeleteAllowanceForDeletedSpender()
         });
+    }
+
+    @HapiTest
+    public HapiSpec idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed("supplyKey"),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(OWNER).maxAutomaticTokenAssociations(2),
+                        cryptoCreate("delegatingOwner").maxAutomaticTokenAssociations(1),
+                        cryptoCreate(SPENDER))
+                .when(
+                        tokenCreate("fungibleToken").initialSupply(123).treasury(TOKEN_TREASURY),
+                        tokenCreate("nonFungibleToken")
+                                .treasury(TOKEN_TREASURY)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .supplyKey("supplyKey"),
+                        mintToken(
+                                "nonFungibleToken",
+                                List.of(
+                                        ByteString.copyFromUtf8("A"),
+                                        ByteString.copyFromUtf8("B"),
+                                        ByteString.copyFromUtf8("C"))),
+                        cryptoTransfer(
+                                movingUnique("nonFungibleToken", 1L, 2L).between(TOKEN_TREASURY, OWNER),
+                                moving(10, "fungibleToken").between(TOKEN_TREASURY, OWNER)),
+                        cryptoTransfer(movingUnique("nonFungibleToken", 3L).between(TOKEN_TREASURY, "delegatingOwner")))
+                .then(
+                        cryptoApproveAllowance()
+                                .addNftAllowance("delegatingOwner", "nonFungibleToken", OWNER, true, List.of())
+                                .signedBy(DEFAULT_PAYER, "delegatingOwner"),
+                        cryptoApproveAllowance()
+                                .addNftAllowance(OWNER, "nonFungibleToken", SPENDER, false, List.of(1L))
+                                .signedBy(DEFAULT_PAYER, OWNER),
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> cryptoDeleteAllowance()
+                                .addNftDeleteAllowance(OWNER, "nonFungibleToken", List.of(1L))
+                                .signedBy(DEFAULT_PAYER, OWNER)));
     }
 
     @HapiTest
