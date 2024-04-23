@@ -16,12 +16,6 @@
 
 package com.hedera.services.bdd.junit;
 
-// import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
-// import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
-// import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
-// import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
-// import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
-
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
 import static com.hedera.node.app.statedumpers.accounts.AccountDumpUtils.gatherAccounts;
 

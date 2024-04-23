@@ -418,7 +418,6 @@ public final class PlatformBuilder {
 
         final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
-
         final EmergencyRecoveryManager emergencyRecoveryManager =
                 new EmergencyRecoveryManager(stateConfig, basicConfig.getEmergencyRecoveryFileLoadDir());
 
