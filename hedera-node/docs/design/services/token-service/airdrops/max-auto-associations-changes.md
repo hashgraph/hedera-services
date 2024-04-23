@@ -33,6 +33,9 @@ The charged fees for `CryptoCreate` transaction should not depend on the value o
 
 We should update any validation logic in the transaction handlers for `CryptoCreate` so that the value of -1 is permitted for `maxAutoAssociations` and also update the fee calculation logic so that it does not depend on the value of `maxAutoAssociations`.
 
+**Classes to be updated:**
+- `CryptoCreateHandler`
+
 ### Auto- & Lazy-creation
 
 When we create an account with `auto-create`/ `lazy-create` logic, the default `maxAutoAssociations` value for the newly created account should be `-1`.
@@ -40,6 +43,9 @@ When we create an account with `auto-create`/ `lazy-create` logic, the default `
 Those types of account creation are achieved through transfers resulting in synthetic `CryptoCreate` transactions, so the fees should not depend on the value of the `maxAutoAssociations` of the resulting account.
 
 In the case for which the auto-/ lazy-create is from a transfer of fungible token or an NFT, the fees should include the auto association fee and the first auto-renewal period rent for the token association, and should be paid by the sender.
+
+**Classes to be updated:**
+- `AutoAccountCreator`
 
 ### Contract creation
 
@@ -67,11 +73,20 @@ For the purposes of [HIP-904](https://hips.hedera.com/hip/hip-904) those contrac
 
 That way if the hollow account was created with token transfer then the resulting contract will still be associated with only those tokens and can participate in further transfers with them. If the hollow account was created with HBAR transfer then the resulting contract should have no `maxAutoAssociations` (0) and will be spam-free.
 
+**Classes to be updated:**
+- `HevmTransactionFactory`
+- `HandleHederaOperations`
+- `SynthTxnUtils`
+
 ### CryptoUpdate & ContractUpdate
 
 `CryptoUpdate` & `ContractUpdate` should be able to set `maxAutoAssociations` on a specific account including to the value of -1.
 
 We should update any validation logic in the transaction handlers for `CryptoUpdate` & `ContractUpdate` so that the value of -1 is permitted for `maxAutoAssociations` and also update the fee calculation logic so that it does not depend on the value of `maxAutoAssociations`.
+
+**Classes to be updated:**
+- `CryptoUpdateHandler`
+- `ContractUpdateHandler`
 
 ### CryptoTransfer
 
@@ -79,6 +94,9 @@ We should update any validation logic in the transaction handlers for `CryptoUpd
 
 - in case token auto association is triggered the sender should cover the fee for it
 - in case token auto association is triggered the sender should cover the first auto-renewal period’s rent for that token association
+
+**Classes to be updated:**
+- `CryptoTransferHandler`
 
 ### **Grandfathering existing accounts**
 
