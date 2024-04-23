@@ -84,7 +84,7 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
     protected static CustomSpecAssert tearDownSidecarWatcher() {
         return withOpContext((spec, opLog) -> {
             // send a dummy transaction to trigger externalization of last sidecars
-            allRunFor(spec, cryptoCreate("externalizeFinalSidecars").delayBy(2000));
+            allRunFor(spec, cryptoCreate("externalizeFinalSidecars").delayBy(3000));
             sidecarWatcher.waitUntilFinished();
             sidecarWatcher.tearDown();
         });
