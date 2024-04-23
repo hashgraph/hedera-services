@@ -355,7 +355,7 @@ public class GrantRevokeKycSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec createFungibleTokenKycKeyFromHollowAccountAlias() {
+    final HapiSpec createFungibleTokenKycKeyFromHollowAccountAlias() {
         return defaultHapiSpec("CreateFungibleTokenKycKeyFromHollowAccountAlias")
                 .given(
                         // Create an ECDSA key
@@ -420,7 +420,7 @@ public class GrantRevokeKycSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec createNFTTokenKycKeyFromHollowAccountAlias() {
+    final HapiSpec createNFTTokenKycKeyFromHollowAccountAlias() {
         return defaultHapiSpec("CreateNFTTokenKycKeyFromHollowAccountAlias")
                 .given(
                         // Create an ECDSA key
