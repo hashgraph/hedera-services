@@ -30,7 +30,8 @@ import static com.hedera.node.app.spi.validation.AttributeValidator.isKeyRemoval
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -70,6 +71,12 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     }
 
     @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        final ConsensusUpdateTopicTransactionBody op = txn.consensusUpdateTopicOrThrow();
+        validateTruePreCheck(op.hasTopicID(), INVALID_TOPIC_ID);
+    }
+
+    @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().consensusUpdateTopicOrThrow();
@@ -78,6 +85,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         // The topic ID must be present on the transaction and the topic must exist.
         final var topic = topicStore.getTopic(op.topicIDOrElse(TopicID.DEFAULT));
         mustExist(topic, INVALID_TOPIC_ID);
+        validateFalsePreCheck(topic.deleted(), INVALID_TOPIC_ID);
 
         // Extending the expiry is the *only* update operation permitted without an admin key. So if that is the
         // only thing this transaction is doing, then we don't need to worry about checking any additional keys.
@@ -103,11 +111,6 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         }
     }
 
-    @Override
-    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-        // nothing to do
-    }
-
     private boolean onlyExtendsExpiry(@NonNull final ConsensusUpdateTopicTransactionBody op) {
         return op.hasExpirationTime()
                 && !op.hasMemo()
@@ -127,22 +130,22 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext handleContext) {
         requireNonNull(handleContext);
 
-        final var topicUpdate = handleContext.body().consensusUpdateTopic();
+        final var txn = handleContext.body();
+        final var op = txn.consensusUpdateTopicOrThrow();
+
         final var topicStore = handleContext.writableStore(WritableTopicStore.class);
-        final var maybeTopic = requireNonNull(topicStore).get(topicUpdate.topicIDOrElse(TopicID.DEFAULT));
-        validateTrue(maybeTopic.isPresent(), INVALID_TOPIC_ID);
-        final var topic = maybeTopic.get();
-        validateFalse(topic.deleted(), INVALID_TOPIC_ID);
+        final var topic = topicStore.getTopic(op.topicIDOrElse(TopicID.DEFAULT));
+        // preHandle already checks for topic existence, so topic should never be null.
 
         // First validate this topic is mutable; and the pending mutations are allowed
-        validateFalse(topic.adminKey() == null && wantsToMutateNonExpiryField(topicUpdate), UNAUTHORIZED);
-        if (!(topicUpdate.hasAutoRenewAccount() && designatesAccountRemoval(topicUpdate.autoRenewAccount()))
+        validateFalse(topic.adminKey() == null && wantsToMutateNonExpiryField(op), UNAUTHORIZED);
+        if (!(op.hasAutoRenewAccount() && designatesAccountRemoval(op.autoRenewAccount()))
                 && topic.hasAutoRenewAccountId()) {
             validateFalse(
-                    !topic.hasAdminKey() || (topicUpdate.hasAdminKey() && isEmpty(topicUpdate.adminKey())),
+                    !topic.hasAdminKey() || (op.hasAdminKey() && isEmpty(op.adminKey())),
                     AUTORENEW_ACCOUNT_NOT_ALLOWED);
         }
-        validateMaybeNewAttributes(handleContext, topicUpdate, topic);
+        validateMaybeNewAttributes(handleContext, op, topic);
 
         // Now we apply the mutations to a builder
         final var builder = new Topic.Builder();
@@ -152,7 +155,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         builder.runningHash(topic.runningHash());
         builder.deleted(topic.deleted());
         // And then resolve mutable attributes, and put the new topic back
-        resolveMutableBuilderAttributes(handleContext, topicUpdate, builder, topic);
+        resolveMutableBuilderAttributes(handleContext, op, builder, topic);
         topicStore.put(builder.build());
     }
 

@@ -20,15 +20,22 @@ import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.verifyAddLiveHashNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.verifyUserFreezeNotAuthorized;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -143,6 +150,49 @@ public class MiscCryptoSuite extends HapiSuite {
                 .given()
                 .when()
                 .then(getAccountBalance(GENESIS).logged());
+    }
+
+    @HapiTest
+    public HapiSpec getBalanceIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("getBalanceIdVariantsTreatedAsExpected")
+                .given()
+                .when()
+                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getAccountBalance(DEFAULT_PAYER)));
+    }
+
+    @HapiTest
+    public HapiSpec getDetailsIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("getBalanceIdVariantsTreatedAsExpected")
+                .given()
+                .when()
+                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getAccountDetails(DEFAULT_PAYER)
+                        .payingWith(GENESIS)));
+    }
+
+    @HapiTest
+    public HapiSpec getRecordsIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("getRecordsIdVariantsTreatedAsExpected")
+                .given()
+                .when()
+                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getAccountRecords(DEFAULT_PAYER)));
+    }
+
+    @HapiTest
+    public HapiSpec getInfoIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("getInfoIdVariantsTreatedAsExpected")
+                .given()
+                .when()
+                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getAccountInfo(DEFAULT_PAYER)));
+    }
+
+    @HapiTest
+    public HapiSpec getRecordAndReceiptIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("getRecordIdVariantsTreatedAsExpected")
+                .given(cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1)).via("spot"))
+                .when()
+                .then(
+                        sendModified(withSuccessivelyVariedQueryIds(), () -> getTxnRecord("spot")),
+                        sendModified(withSuccessivelyVariedQueryIds(), () -> getReceipt("spot")));
     }
 
     @HapiTest

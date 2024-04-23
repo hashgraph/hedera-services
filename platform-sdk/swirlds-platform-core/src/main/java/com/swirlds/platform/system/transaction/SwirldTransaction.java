@@ -18,11 +18,15 @@ package com.swirlds.platform.system.transaction;
 
 import static com.swirlds.common.io.streams.AugmentedDataOutputStream.getArraySerializedLength;
 
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.config.TransactionConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -44,6 +48,8 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
 
     /** The content (payload) of the transaction */
     private byte[] contents;
+    /** The data stored as protobuf */
+    private OneOf<PayloadOneOfType> payload;
 
     public SwirldTransaction() {}
 
@@ -60,6 +66,7 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
             throw new IllegalArgumentException(CONTENT_ERROR);
         }
         this.contents = contents.clone();
+        this.payload = new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(this.contents));
     }
 
     /**
@@ -77,6 +84,7 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         final TransactionConfig transactionConfig = ConfigurationHolder.getConfigData(TransactionConfig.class);
         this.contents = in.readByteArray(transactionConfig.transactionMaxBytes());
+        this.payload = new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(this.contents));
     }
 
     /**
@@ -285,5 +293,10 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
     @Override
     public boolean isSystem() {
         return false;
+    }
+
+    @Override
+    public @NonNull OneOf<PayloadOneOfType> getPayload() {
+        return payload;
     }
 }
