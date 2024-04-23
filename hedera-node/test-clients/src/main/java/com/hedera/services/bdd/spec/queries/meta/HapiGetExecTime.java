@@ -88,7 +88,7 @@ public class HapiGetExecTime extends HapiQueryOp<HapiGetExecTime> {
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) {
-        Query query = getExecTimesQuery(spec, payment, false);
+        Query query = maybeModified(getExecTimesQuery(spec, payment, false), spec);
         response = spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls).getExecutionTime(query);
         timesResponse = response.getNetworkGetExecutionTime();
         if (verboseLoggingOn) {

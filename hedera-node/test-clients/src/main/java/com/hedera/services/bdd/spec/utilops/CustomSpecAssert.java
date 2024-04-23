@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.spec.utilops;
 
-import static com.hedera.services.bdd.spec.utilops.UtilStateChange.initializeEthereumAccountForSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.createEthereumAccountForSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.isEthereumAccountCreatedForSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.convertHapiCallsToEthereumCalls;
 
@@ -33,7 +33,7 @@ public class CustomSpecAssert extends UtilOp {
     public static void allRunFor(final HapiSpec spec, final List<HapiSpecOperation> ops) {
         if (spec.isUsingEthCalls()) {
             if (!isEthereumAccountCreatedForSpec(spec)) {
-                initializeEthereumAccountForSpec(spec);
+                ops.addAll(createEthereumAccountForSpec(spec));
             }
             executeEthereumOps(spec, ops);
         } else {
