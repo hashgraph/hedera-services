@@ -26,6 +26,7 @@ import static org.junit.platform.commons.support.HierarchyTraversalMode.TOP_DOWN
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.service.mono.statedumpers.accounts.BBMHederaAccount;
 import com.hedera.services.bdd.junit.validators.AccountAliasValidator;
+import com.hedera.services.bdd.junit.validators.BlockNoValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.suites.BddMethodIsNotATest;
@@ -85,7 +86,7 @@ import org.junit.platform.engine.support.hierarchical.Node;
  */
 public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecutionContext> /* implements TestEngine */ {
 
-    public static final int NODE_COUNT = 1;
+    public static final int NODE_COUNT = 4;
 
     static {
         // This is really weird, but it exists because we have to force JUL to use Log4J as early as possible.
@@ -218,7 +219,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
             // Allow for a simple switch to enable in-process Alice node for debugging
             final String debugEnv = System.getenv("HAPI_DEBUG_NODE");
-            final boolean debugMode = true;
+            final boolean debugMode = Boolean.parseBoolean(debugEnv);;
             final var nodesType = debugMode ? IN_PROCESS_ALICE : OUT_OF_PROCESS_ALICE;
             // For now, switching to non-in process servers, because in process doesn't work for the
             // restart and reconnect testing.
@@ -455,10 +456,16 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
         private static final long MIN_GZIP_SIZE_IN_BYTES = 26;
 
-        private static final String HAPI_TEST_STREAMS_LOC_TPL = "hedera-node/data/recordStreams/record0.0.3";
-        // "hedera-node/test-clients/build/hapi-test/node%d/data/recordStreams/record0.0.%d";
+        private static final String HAPI_TEST_STREAMS_LOC_TPL = //"hedera-node/data/recordStreams/record0.0.%d";
+         "hedera-node/test-clients/build/hapi-test/node%d/data/recordStreams/record0.0.%d";
 
-        private static final List<RecordStreamValidator> validators = List.of(new AccountAliasValidator());
+        private static final List<RecordStreamValidator> validators = List.of(
+                new BlockNoValidator(),
+                new TransactionBodyValidator(),
+                new ExpiryRecordsValidator(),
+                new BalanceReconciliationValidator(),
+                new TokenReconciliationValidator(),
+                new AccountAliasValidator());
 
         public RecordStreamValidationTestDescriptor(TestDescriptor parent) {
             super(parent.getUniqueId().append("validation", "recordStream"), "recordStreamValidation");
