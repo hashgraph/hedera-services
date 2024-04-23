@@ -50,7 +50,6 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
-import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesConfig_;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
@@ -84,6 +83,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -277,19 +277,19 @@ class PcesWriterTests {
     }
 
     /**
-     * Pass the most recent durable sequence number to the durability nexus.
+     * Pass the most recent durable sequence number to the output wire.
      * <p>
      * The intention of this method is to simply pass the return value from any writer call that returns a sequence
      * number. This simulates the components being wired together.
      *
      * @param mostRecentDurableSequenceNumber the most recent durable sequence number
-     * @param eventDurabilityNexus            the event durability nexus
+     * @param latestDurableSequenceNumber     container for the latest durable sequence number
      */
     private static void passValueToDurabilityNexus(
             @Nullable final Long mostRecentDurableSequenceNumber,
-            @NonNull final EventDurabilityNexus eventDurabilityNexus) {
+            @NonNull final AtomicLong latestDurableSequenceNumber) {
         if (mostRecentDurableSequenceNumber != null) {
-            eventDurabilityNexus.setLatestDurableSequenceNumber(mostRecentDurableSequenceNumber);
+            latestDurableSequenceNumber.set(mostRecentDurableSequenceNumber);
         }
     }
 
@@ -309,7 +309,7 @@ class PcesWriterTests {
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
         final PcesWriter writer = new PcesWriter(platformContext, fileManager);
-        final EventDurabilityNexus eventDurabilityNexus = new EventDurabilityNexus();
+        final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
         final List<GossipEvent> events = new LinkedList<>();
         for (int i = 0; i < numEvents; i++) {
@@ -326,7 +326,7 @@ class PcesWriterTests {
             final GossipEvent event = iterator.next();
 
             sequencer.assignStreamSequenceNumber(event);
-            passValueToDurabilityNexus(writer.writeEvent(event), eventDurabilityNexus);
+            passValueToDurabilityNexus(writer.writeEvent(event), latestDurableSequenceNumber);
 
             lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
 
@@ -342,15 +342,16 @@ class PcesWriterTests {
             // request a flush sometimes
             if (random.nextInt(10) == 0) {
                 passValueToDurabilityNexus(
-                        writer.submitFlushRequest(event.getStreamSequenceNumber()), eventDurabilityNexus);
+                        writer.submitFlushRequest(event.getStreamSequenceNumber()), latestDurableSequenceNumber);
             }
         }
 
         passValueToDurabilityNexus(
-                writer.submitFlushRequest(events.getLast().getStreamSequenceNumber()), eventDurabilityNexus);
+                writer.submitFlushRequest(events.getLast().getStreamSequenceNumber()), latestDurableSequenceNumber);
 
-        events.forEach(event -> assertTrue(eventDurabilityNexus.isEventDurable(event)));
-        rejectedEvents.forEach(event -> assertFalse(eventDurabilityNexus.isEventDurable(event)));
+        events.forEach(event -> assertTrue(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber()));
+        rejectedEvents.forEach(
+                event -> assertFalse(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber()));
 
         verifyStream(events, platformContext, 0, ancientMode);
 
@@ -374,7 +375,7 @@ class PcesWriterTests {
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
         final PcesWriter writer = new PcesWriter(platformContext, fileManager);
-        final EventDurabilityNexus eventDurabilityNexus = new EventDurabilityNexus();
+        final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
         // We will add this event at the very end, it should be ancient by then
         final GossipEvent ancientEvent = generator.generateEventWithoutIndex().getBaseEvent();
@@ -394,7 +395,7 @@ class PcesWriterTests {
             final GossipEvent event = iterator.next();
 
             sequencer.assignStreamSequenceNumber(event);
-            passValueToDurabilityNexus(writer.writeEvent(event), eventDurabilityNexus);
+            passValueToDurabilityNexus(writer.writeEvent(event), latestDurableSequenceNumber);
 
             lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
 
@@ -410,12 +411,12 @@ class PcesWriterTests {
             // request a flush sometimes
             if (random.nextInt(10) == 0) {
                 passValueToDurabilityNexus(
-                        writer.submitFlushRequest(event.getStreamSequenceNumber()), eventDurabilityNexus);
+                        writer.submitFlushRequest(event.getStreamSequenceNumber()), latestDurableSequenceNumber);
             }
         }
 
         passValueToDurabilityNexus(
-                writer.submitFlushRequest(events.getLast().getStreamSequenceNumber()), eventDurabilityNexus);
+                writer.submitFlushRequest(events.getLast().getStreamSequenceNumber()), latestDurableSequenceNumber);
 
         // Add the ancient event
         sequencer.assignStreamSequenceNumber(ancientEvent);
@@ -432,11 +433,12 @@ class PcesWriterTests {
             }
         }
 
-        passValueToDurabilityNexus(writer.writeEvent(ancientEvent), eventDurabilityNexus);
+        passValueToDurabilityNexus(writer.writeEvent(ancientEvent), latestDurableSequenceNumber);
         rejectedEvents.add(ancientEvent);
 
-        events.forEach(event -> assertTrue(eventDurabilityNexus.isEventDurable(event)));
-        rejectedEvents.forEach(event -> assertFalse(eventDurabilityNexus.isEventDurable(event)));
+        events.forEach(event -> assertTrue(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber()));
+        rejectedEvents.forEach(
+                event -> assertFalse(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber()));
 
         verifyStream(events, platformContext, 0, ancientMode);
 
@@ -461,7 +463,7 @@ class PcesWriterTests {
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
         final PcesWriter writer = new PcesWriter(platformContext, fileManager);
-        final EventDurabilityNexus eventDurabilityNexus = new EventDurabilityNexus();
+        final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
         final List<GossipEvent> events = new LinkedList<>();
         for (int i = 0; i < numEvents; i++) {
@@ -472,11 +474,11 @@ class PcesWriterTests {
 
         for (final GossipEvent event : events) {
             sequencer.assignStreamSequenceNumber(event);
-            passValueToDurabilityNexus(writer.writeEvent(event), eventDurabilityNexus);
+            passValueToDurabilityNexus(writer.writeEvent(event), latestDurableSequenceNumber);
         }
 
         passValueToDurabilityNexus(
-                writer.submitFlushRequest(events.getLast().getStreamSequenceNumber()), eventDurabilityNexus);
+                writer.submitFlushRequest(events.getLast().getStreamSequenceNumber()), latestDurableSequenceNumber);
 
         writer.closeCurrentMutableFile();
 
@@ -505,7 +507,7 @@ class PcesWriterTests {
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
         final PcesWriter writer = new PcesWriter(platformContext, fileManager);
-        final EventDurabilityNexus eventDurabilityNexus = new EventDurabilityNexus();
+        final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
         final List<GossipEvent> events = new LinkedList<>();
         for (int i = 0; i < numEvents; i++) {
@@ -518,13 +520,13 @@ class PcesWriterTests {
         long lowerBound = ancientMode.selectIndicator(0, 1);
         for (final GossipEvent event : events) {
             sequencer.assignStreamSequenceNumber(event);
-            passValueToDurabilityNexus(writer.writeEvent(event), eventDurabilityNexus);
+            passValueToDurabilityNexus(writer.writeEvent(event), latestDurableSequenceNumber);
 
             lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
             writer.updateNonAncientEventBoundary(new EventWindow(1, lowerBound, lowerBound, ancientMode));
         }
 
-        assertTrue(eventDurabilityNexus.isEventDurable(events.getLast()));
+        assertTrue(latestDurableSequenceNumber.get() >= events.getLast().getStreamSequenceNumber());
 
         // We shouldn't find any events in the stream.
         assertFalse(() ->
@@ -551,7 +553,7 @@ class PcesWriterTests {
 
             final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
             final PcesWriter writer = new PcesWriter(platformContext, fileManager);
-            final EventDurabilityNexus eventDurabilityNexus = new EventDurabilityNexus();
+            final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
             final List<GossipEvent> eventsBeforeDiscontinuity = new LinkedList<>();
             final List<GossipEvent> eventsAfterDiscontinuity = new LinkedList<>();
@@ -574,7 +576,7 @@ class PcesWriterTests {
                 final GossipEvent event = iterator1.next();
 
                 sequencer.assignStreamSequenceNumber(event);
-                passValueToDurabilityNexus(writer.writeEvent(event), eventDurabilityNexus);
+                passValueToDurabilityNexus(writer.writeEvent(event), latestDurableSequenceNumber);
 
                 lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
                 writer.updateNonAncientEventBoundary(new EventWindow(1, lowerBound, lowerBound, ancientMode));
@@ -589,12 +591,13 @@ class PcesWriterTests {
                 // request a flush sometimes
                 if (random.nextInt(10) == 0) {
                     passValueToDurabilityNexus(
-                            writer.submitFlushRequest(event.getStreamSequenceNumber()), eventDurabilityNexus);
+                            writer.submitFlushRequest(event.getStreamSequenceNumber()), latestDurableSequenceNumber);
                 }
             }
 
-            passValueToDurabilityNexus(writer.registerDiscontinuity(100), eventDurabilityNexus);
-            eventsBeforeDiscontinuity.forEach(event -> assertTrue(eventDurabilityNexus.isEventDurable(event)));
+            passValueToDurabilityNexus(writer.registerDiscontinuity(100), latestDurableSequenceNumber);
+            eventsBeforeDiscontinuity.forEach(
+                    event -> assertTrue(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber()));
 
             if (truncateLastFile) {
                 // Remove a single byte from the last file. This will corrupt the last event that was written.
@@ -614,7 +617,7 @@ class PcesWriterTests {
                 final GossipEvent event = iterator2.next();
 
                 sequencer.assignStreamSequenceNumber(event);
-                passValueToDurabilityNexus(writer.writeEvent(event), eventDurabilityNexus);
+                passValueToDurabilityNexus(writer.writeEvent(event), latestDurableSequenceNumber);
 
                 lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
                 writer.updateNonAncientEventBoundary(new EventWindow(1, lowerBound, lowerBound, ancientMode));
@@ -629,18 +632,22 @@ class PcesWriterTests {
                 // request a flush sometimes
                 if (random.nextInt(10) == 0) {
                     passValueToDurabilityNexus(
-                            writer.submitFlushRequest(event.getStreamSequenceNumber()), eventDurabilityNexus);
+                            writer.submitFlushRequest(event.getStreamSequenceNumber()), latestDurableSequenceNumber);
                 }
             }
 
             passValueToDurabilityNexus(
                     writer.submitFlushRequest(eventsAfterDiscontinuity.getLast().getStreamSequenceNumber()),
-                    eventDurabilityNexus);
+                    latestDurableSequenceNumber);
 
-            assertTrue(eventDurabilityNexus.isEventDurable(
-                    eventsAfterDiscontinuity.get(eventsAfterDiscontinuity.size() - 1)));
-            eventsAfterDiscontinuity.forEach(event -> assertTrue(eventDurabilityNexus.isEventDurable(event)));
-            rejectedEvents.forEach(event -> assertFalse(eventDurabilityNexus.isEventDurable(event)));
+            assertTrue(latestDurableSequenceNumber.get()
+                    >= eventsAfterDiscontinuity
+                            .get(eventsAfterDiscontinuity.size() - 1)
+                            .getStreamSequenceNumber());
+            eventsAfterDiscontinuity.forEach(
+                    event -> assertTrue(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber()));
+            rejectedEvents.forEach(
+                    event -> assertFalse(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber()));
 
             verifyStream(eventsBeforeDiscontinuity, platformContext, truncateLastFile ? 1 : 0, ancientMode);
 
@@ -668,7 +675,7 @@ class PcesWriterTests {
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
         final PcesWriter writer = new PcesWriter(platformContext, fileManager);
-        final EventDurabilityNexus eventDurabilityNexus = new EventDurabilityNexus();
+        final AtomicLong latestDurableSequenceNumber = new AtomicLong(-1);
 
         final List<GossipEvent> events = new LinkedList<>();
         for (int i = 0; i < numEvents; i++) {
@@ -683,8 +690,8 @@ class PcesWriterTests {
         for (final GossipEvent event : events) {
             sequencer.assignStreamSequenceNumber(event);
 
-            passValueToDurabilityNexus(writer.writeEvent(event), eventDurabilityNexus);
-            assertFalse(eventDurabilityNexus.isEventDurable(event));
+            passValueToDurabilityNexus(writer.writeEvent(event), latestDurableSequenceNumber);
+            assertFalse(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber());
 
             time.tick(Duration.ofSeconds(1));
 
@@ -699,18 +706,19 @@ class PcesWriterTests {
             // request a flush sometimes
             if (random.nextInt(10) == 0) {
                 passValueToDurabilityNexus(
-                        writer.submitFlushRequest(event.getStreamSequenceNumber()), eventDurabilityNexus);
+                        writer.submitFlushRequest(event.getStreamSequenceNumber()), latestDurableSequenceNumber);
             }
         }
 
         passValueToDurabilityNexus(
-                writer.submitFlushRequest(events.getLast().getStreamSequenceNumber()), eventDurabilityNexus);
+                writer.submitFlushRequest(events.getLast().getStreamSequenceNumber()), latestDurableSequenceNumber);
 
         // Remove the rejected events from the list
         events.removeIf(rejectedEvents::contains);
 
-        events.forEach(event -> assertTrue(eventDurabilityNexus.isEventDurable(event)));
-        rejectedEvents.forEach(event -> assertFalse(eventDurabilityNexus.isEventDurable(event)));
+        events.forEach(event -> assertTrue(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber()));
+        rejectedEvents.forEach(
+                event -> assertFalse(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber()));
         verifyStream(events, platformContext, 0, ancientMode);
 
         // Advance the time so that all files are GC eligible according to the clock.

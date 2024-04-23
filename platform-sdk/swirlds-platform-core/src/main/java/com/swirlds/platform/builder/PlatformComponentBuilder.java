@@ -44,6 +44,8 @@ import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
+import com.swirlds.platform.event.preconsensus.durability.DefaultRoundDurabilityBuffer;
+import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
 import com.swirlds.platform.event.runninghash.DefaultRunningEventHasher;
 import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.DefaultSelfEventSigner;
@@ -54,6 +56,8 @@ import com.swirlds.platform.event.validation.DefaultEventSignatureValidator;
 import com.swirlds.platform.event.validation.DefaultInternalEventValidator;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
+import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -98,6 +102,8 @@ public class PlatformComponentBuilder {
     private ConsensusEngine consensusEngine;
     private ConsensusEventStream consensusEventStream;
     private PcesSequencer pcesSequencer;
+    private RoundDurabilityBuffer roundDurabilityBuffer;
+    private TransactionPrehandler transactionPrehandler;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -611,5 +617,73 @@ public class PlatformComponentBuilder {
             pcesSequencer = new DefaultPcesSequencer();
         }
         return pcesSequencer;
+    }
+
+    /**
+     * Provide a round durability buffer in place of the platform's default round durability buffer.
+     *
+     * @param roundDurabilityBuffer the RoundDurabilityBuffer to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withRoundDurabilityBuffer(
+            @NonNull final RoundDurabilityBuffer roundDurabilityBuffer) {
+        throwIfAlreadyUsed();
+        if (this.roundDurabilityBuffer != null) {
+            throw new IllegalStateException("RoundDurabilityBuffer has already been set");
+        }
+        this.roundDurabilityBuffer = Objects.requireNonNull(roundDurabilityBuffer);
+        return this;
+    }
+
+    /**
+     * Build the round durability buffer if it has not yet been built. If one has been provided via
+     * {@link #withRoundDurabilityBuffer(RoundDurabilityBuffer)}, that round durability buffer will be used. If this
+     * method is called more than once, only the first call will build the round durability buffer. Otherwise, the
+     * default round durability buffer will be created and returned.
+     *
+     * @return the RoundDurabilityBuffer
+     */
+    @NonNull
+    public RoundDurabilityBuffer buildRoundDurabilityBuffer() {
+        if (roundDurabilityBuffer == null) {
+            roundDurabilityBuffer = new DefaultRoundDurabilityBuffer(blocks.platformContext());
+        }
+        return roundDurabilityBuffer;
+    }
+
+    /**
+     * Provide a transaction prehandler in place of the platform's default transaction prehandler.
+     *
+     * @param transactionPrehandler the transaction prehandler to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withTransactionPrehandler(
+            @NonNull final TransactionPrehandler transactionPrehandler) {
+        throwIfAlreadyUsed();
+        if (this.transactionPrehandler != null) {
+            throw new IllegalStateException("Transaction prehandler has already been set");
+        }
+        this.transactionPrehandler = Objects.requireNonNull(transactionPrehandler);
+        return this;
+    }
+
+    /**
+     * Build the transaction prehandler if it has not yet been built. If one has been provided via
+     * {@link #withTransactionPrehandler(TransactionPrehandler)}, that transaction prehandler will be used. If this
+     * method is called more than once, only the first call will build the transaction prehandler. Otherwise, the
+     * default transaction prehandler will be created and returned.
+     *
+     * @return the transaction prehandler
+     */
+    @NonNull
+    public TransactionPrehandler buildTransactionPrehandler() {
+        if (transactionPrehandler == null) {
+            transactionPrehandler = new DefaultTransactionPrehandler(
+                    blocks.platformContext(),
+                    () -> blocks.latestImmutableStateProviderReference().get().apply("transaction prehandle"));
+        }
+        return transactionPrehandler;
     }
 }

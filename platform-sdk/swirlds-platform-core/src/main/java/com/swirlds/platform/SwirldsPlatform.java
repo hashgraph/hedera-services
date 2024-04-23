@@ -74,7 +74,6 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
@@ -83,10 +82,8 @@ import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
-import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.TransactionPool;
-import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
@@ -434,12 +431,7 @@ public class SwirldsPlatform implements Platform {
         final long roundToIgnore = stateConfig.validateInitialState() ? DO_NOT_IGNORE_ROUNDS : initialState.getRound();
 
         final IssDetector issDetector = new IssDetector(
-                platformContext,
-                currentAddressBook,
-                epochHash,
-                appVersion,
-                ignorePreconsensusSignatures,
-                roundToIgnore);
+                platformContext, currentAddressBook, appVersion, ignorePreconsensusSignatures, roundToIgnore);
 
         final SignedStateFileManager signedStateFileManager = new SignedStateFileManager(
                 platformContext,
@@ -486,7 +478,6 @@ public class SwirldsPlatform implements Platform {
                 platformWiring::flushIntakePipeline,
                 platformWiring::flushConsensusRoundHandler,
                 () -> latestImmutableStateNexus.getState("PCES replay"));
-        final EventDurabilityNexus eventDurabilityNexus = new EventDurabilityNexus();
 
         initializeState(initialState);
 
@@ -505,12 +496,8 @@ public class SwirldsPlatform implements Platform {
 
         final EventWindowManager eventWindowManager = new DefaultEventWindowManager();
 
-        final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
-                platformContext,
-                swirldStateManager,
-                eventDurabilityNexus::waitUntilDurable,
-                platformStatusManager,
-                appVersion);
+        final ConsensusRoundHandler consensusRoundHandler =
+                new ConsensusRoundHandler(platformContext, swirldStateManager, platformStatusManager, appVersion);
 
         final LongSupplier intakeQueueSizeSupplier =
                 oldStyleIntakeQueue == null ? platformWiring.getIntakeQueueSizeSupplier() : oldStyleIntakeQueue::size;
@@ -524,9 +511,6 @@ public class SwirldsPlatform implements Platform {
 
         final HashLogger hashLogger =
                 new HashLogger(platformContext.getConfiguration().getConfigData(StateConfig.class));
-
-        final TransactionPrehandler transactionPrehandler =
-                new DefaultTransactionPrehandler(platformContext, latestImmutableStateNexus);
 
         final BirthRoundMigrationShim birthRoundMigrationShim = buildBirthRoundMigrationShim(initialState);
 
@@ -544,10 +528,8 @@ public class SwirldsPlatform implements Platform {
                 stateSigner,
                 pcesReplayer,
                 pcesWriter,
-                eventDurabilityNexus,
                 shadowGraph,
                 stateSignatureCollector,
-                transactionPrehandler,
                 eventWindowManager,
                 consensusRoundHandler,
                 issDetector,
@@ -672,6 +654,8 @@ public class SwirldsPlatform implements Platform {
                         Pair.of(platformWiring, "platformWiring"),
                         Pair.of(shadowGraph, "shadowGraph"),
                         Pair.of(transactionPool, "transactionPool")));
+
+        blocks.latestImmutableStateProviderReference().set(latestImmutableStateNexus::getState);
     }
 
     /**
