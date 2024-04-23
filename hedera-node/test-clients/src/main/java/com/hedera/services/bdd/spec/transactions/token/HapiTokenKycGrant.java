@@ -65,6 +65,7 @@ public class HapiTokenKycGrant extends HapiTxnOp<HapiTokenKycGrant> {
         this.referenceType = referenceType;
         if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
             this.alias = reference;
+            this.account = null;
         } else {
             this.account = reference;
         }

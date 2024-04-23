@@ -19,6 +19,8 @@ package com.hedera.services.bdd.suites.token;
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -48,12 +50,18 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccoun
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccountWithAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.A_TOKEN;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.TOKEN_A_CREATE;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.VALID_ALIAS;
+import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.CIVILIAN;
+import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_TXN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
@@ -75,6 +83,7 @@ import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Granted;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
+import static com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -83,6 +92,7 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -120,6 +130,7 @@ public class TokenManagementSpecs extends HapiSuite {
                 supplyMgmtSuccessCasesWork(),
                 wipeAccountFailureCasesWork(),
                 wipeAccountSuccessCasesWork(),
+                wipeAccountWithAliasesWork(),
                 supplyMgmtFailureCasesWork(),
                 burnTokenFailsDueToInsufficientTreasuryBalance(),
                 frozenTreasuryCannotBeMintedOrBurned(),
@@ -188,8 +199,18 @@ public class TokenManagementSpecs extends HapiSuite {
                         tokenUnfreezeWithAlias(PRIMARY, partyAlias).hasPrecheck(INVALID_ACCOUNT_ID),
 
                         // wipe won't happen if the kyc key exists and kyc not granted
-                        grantTokenKycWithAlias(PRIMARY, partyAlias).hasPrecheck(INVALID_ACCOUNT_ID),
-                        wipeTokenAccountWithAlias(PRIMARY, partyAlias, 1).hasPrecheck(INVALID_ACCOUNT_ID))
+                        grantTokenKycWithAlias(PRIMARY, partyAlias).hasPrecheck(INVALID_ACCOUNT_ID).logged(),
+                        withOpContext((spec, opLog) -> {
+                                    final var aliasAccount = spec.registry()
+                                            .getAccountID(spec.registry()
+                                                    .getKey(partyAlias)
+                                                    .toByteString()
+                                                    .toStringUtf8());
+                                    final var op1 = tokenAssociate(asAccountString(aliasAccount), PRIMARY);
+                                    // Only wipe works with alias. But because it is not associated it fails here
+                                    final var op2 = wipeTokenAccountWithAlias(PRIMARY, partyAlias, 1);
+                                    allRunFor(spec, op1, op2);
+                        }))
                 .then();
     }
 
@@ -458,6 +479,52 @@ public class TokenManagementSpecs extends HapiSuite {
                         getTokenInfo(wipeableToken).hasTotalSupply(500),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(wipeableToken, 500),
                         getTxnRecord(WIPE_TXN).logged());
+    }
+
+    @HapiTest
+    public HapiSpec wipeAccountWithAliasesWork() {
+        final var initialTokenSupply = 1000;
+        return defaultHapiSpec("wipeAccountWithAliasesWork")
+                .given(
+                        newKeyNamed(VALID_ALIAS),
+                        newKeyNamed("wipeKey"),
+                        cryptoCreate(TOKEN_TREASURY).balance(10 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(2),
+                        tokenCreate(A_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .supplyType(FINITE)
+                                .initialSupply(initialTokenSupply)
+                                .maxSupply(10L * initialTokenSupply)
+                                .wipeKey("wipeKey")
+                                .treasury(TOKEN_TREASURY)
+                                .via(TOKEN_A_CREATE),
+                        getTxnRecord(TOKEN_A_CREATE).hasNewTokenAssociation(A_TOKEN, TOKEN_TREASURY),
+                        tokenAssociate(CIVILIAN, A_TOKEN),
+                        cryptoTransfer(moving(10, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN)),
+                        getAccountInfo(CIVILIAN)
+                                .hasToken(relationshipWith(A_TOKEN).balance(10)))
+                .when(
+                        cryptoTransfer(
+                                        movingHbar(10L).between(CIVILIAN, VALID_ALIAS),
+                                        moving(5, A_TOKEN).between(CIVILIAN, VALID_ALIAS))
+                                .signedBy(DEFAULT_PAYER, CIVILIAN)
+                                .via(TRANSFER_TXN),
+                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
+                        getAliasedAccountInfo(VALID_ALIAS)
+                                .has(accountWith().balance(10L))
+                                .hasToken(relationshipWith(A_TOKEN).balance(5L))
+                                .logged())
+                .then(
+                        wipeTokenAccountWithAlias(A_TOKEN, VALID_ALIAS, 4).via(WIPE_TXN),
+                        getAliasedAccountInfo(VALID_ALIAS)
+                                .has(accountWith().balance(10L))
+                                .hasToken(relationshipWith(A_TOKEN).balance(1L))
+                                .logged(),
+                        wipeTokenAccountWithAlias(A_TOKEN, VALID_ALIAS, 0),
+                        getAliasedAccountInfo(VALID_ALIAS)
+                                .has(accountWith().balance(10L))
+                                .hasToken(relationshipWith(A_TOKEN).balance(1L))
+                                .logged());
     }
 
     @HapiTest
