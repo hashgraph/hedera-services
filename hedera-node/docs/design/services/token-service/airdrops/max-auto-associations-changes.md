@@ -61,7 +61,7 @@ Contract accounts by default will be spam-free in nature i.e. with `maxAutoAssoc
 
 **`CREATE2` merge into existing hollow account**
 
-The current Services behaviour for this case is that `maxAutoAssociations` will be limited (positive integer) if the hollow account was created with token transfer or no `maxAutoAssociations` (0) if the hollow account was created with HBAR transfer.
+The current Services behaviour for this case is that `maxAutoAssociations` will be limited to the number of already associated tokens in balance if the hollow account was created with token transfer or no `maxAutoAssociations` (0) if the hollow account was created with HBAR transfer.
 
 For the purposes of [HIP-904](https://hips.hedera.com/hip/hip-904) those contract accounts should have limited number of `maxAutoAssociations` that is equal to the number of associations of the hollow account so that any associated tokens with the hollow account could be still transferred to the same address but no new tokens can be airdropped.
 
