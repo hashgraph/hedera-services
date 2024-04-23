@@ -75,7 +75,7 @@ public class DefaultSignedStateSentinel implements SignedStateSentinel {
             final SignedStateHistory history = objectRecord.getMetadata();
             logger.error(
                     EXCEPTION.getMarker(),
-                    "Old signed state detected. The most likely causes are either the node has gotten stuck or a memory leak.\n{}",
+                    "Old signed state detected. The most likely causes are either that the node has gotten stuck or that there has been a memory leak.\n{}",
                     history);
         }
     }
