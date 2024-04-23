@@ -16,13 +16,10 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.records.TokenRejectRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -46,26 +43,19 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        final var txn = context.body();
         // Todo implement the preHandle logic
     }
 
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-        requireNonNull(txn);
-        final var op = txn.tokenRejectOrThrow();
-        final var rejections = op.rejections();
-        validateTruePreCheck(!rejections.isEmpty(), INVALID_TRANSACTION_BODY);
         // Todo: Implement the pureChecks logic
-
+        throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         final var op = context.body().tokenRejectOrThrow();
         final var rejections = op.rejections();
-        final var recordBuilder = context.recordBuilder(TokenRejectRecordBuilder.class);
-        final var payer = context.payer();
         // Todo: Implement the logic for token rejection
     }
 
