@@ -104,6 +104,11 @@ public class ConsensusRoundHandler {
     private boolean writeLegacyRunningEventHash;
 
     /**
+     * If true then wait for application transactions to be prehandled before handling the consensus round.
+     */
+    private final boolean waitForPrehandle;
+
+    /**
      * Constructor
      *
      * @param platformContext    contains various platform utilities
@@ -130,13 +135,14 @@ public class ConsensusRoundHandler {
 
         previousRoundLegacyRunningEventHash = platformContext.getCryptography().getNullHash();
 
+        final PlatformSchedulersConfig schedulersConfig =
+                platformContext.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
+
         // If the CES is using a no-op scheduler then the legacy running event hash won't be computed.
-        writeLegacyRunningEventHash = platformContext
-                        .getConfiguration()
-                        .getConfigData(PlatformSchedulersConfig.class)
-                        .consensusEventStream()
-                        .type()
-                != TaskSchedulerType.NO_OP;
+        writeLegacyRunningEventHash = schedulersConfig.consensusEventStream().type() != TaskSchedulerType.NO_OP;
+
+        // If the application transaction prehandler is a no-op then we don't need to wait for it.
+        waitForPrehandle = schedulersConfig.applicationTransactionPrehandler().type() != TaskSchedulerType.NO_OP;
     }
 
     /**
@@ -196,8 +202,11 @@ public class ConsensusRoundHandler {
             // state is passed into the application handle method, and should contain the data for the current round
             updatePlatformState(consensusRound);
 
-            handlerMetrics.setPhase(WAITING_FOR_PREHANDLE);
-            consensusRound.forEach(event -> ((EventImpl) event).getBaseEvent().awaitPrehandleCompletion());
+            if (waitForPrehandle) {
+                handlerMetrics.setPhase(WAITING_FOR_PREHANDLE);
+                consensusRound.forEach(
+                        event -> ((EventImpl) event).getBaseEvent().awaitPrehandleCompletion());
+            }
 
             handlerMetrics.setPhase(HANDLING_CONSENSUS_ROUND);
             swirldStateManager.handleConsensusRound(consensusRound);

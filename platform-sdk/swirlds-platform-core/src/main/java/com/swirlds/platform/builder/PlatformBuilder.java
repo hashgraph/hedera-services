@@ -25,6 +25,7 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.doStat
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
+import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
@@ -53,6 +54,10 @@ import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.preconsensus.PcesConfig;
+import com.swirlds.platform.event.preconsensus.PcesFileReader;
+import com.swirlds.platform.event.preconsensus.PcesFileTracker;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.DefaultIntakeEventCounter;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -71,6 +76,8 @@ import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.util.RandomBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
@@ -475,6 +482,29 @@ public final class PlatformBuilder {
             intakeEventCounter = new NoOpIntakeEventCounter();
         }
 
+        final PcesConfig preconsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PcesConfig.class);
+
+        final PcesFileTracker initialPcesFiles;
+        try {
+            final Path databaseDirectory = getDatabaseDirectory(platformContext, selfId);
+
+            // When we perform the migration to using birth round bounding, we will need to read
+            // the old type and start writing the new type.
+            initialPcesFiles = PcesFileReader.readFilesFromDisk(
+                    platformContext,
+                    recycleBin,
+                    databaseDirectory,
+                    initialState.get().getRound(),
+                    preconsensusEventStreamConfig.permitGaps(),
+                    platformContext
+                            .getConfiguration()
+                            .getConfigData(EventConfig.class)
+                            .getAncientMode());
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
         final PlatformBuildingBlocks buildingBlocks = new PlatformBuildingBlocks(
                 platformContext,
                 keysAndCerts.get(selfId),
@@ -490,8 +520,10 @@ public final class PlatformBuilder {
                 intakeEventCounter,
                 new RandomBuilder(),
                 new TransactionPool(platformContext),
-                new AtomicReference<>(null),
-                new AtomicReference<>(null),
+                new AtomicReference<>(),
+                new AtomicReference<>(),
+                new AtomicReference<>(),
+                initialPcesFiles,
                 firstPlatform);
 
         return new PlatformComponentBuilder(buildingBlocks);
