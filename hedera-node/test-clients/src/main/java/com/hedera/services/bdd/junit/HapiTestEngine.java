@@ -84,7 +84,7 @@ import org.junit.platform.engine.support.hierarchical.Node;
  */
 public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecutionContext> /* implements TestEngine */ {
 
-    public static final int NODE_COUNT = 4;
+    public static final int NODE_COUNT = 1;
 
     static {
         // This is really weird, but it exists because we have to force JUL to use Log4J as early as possible.

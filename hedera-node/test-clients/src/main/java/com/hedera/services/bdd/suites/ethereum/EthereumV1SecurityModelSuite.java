@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.ethereum;
 
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -27,6 +28,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
@@ -56,6 +58,8 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -74,6 +78,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Assertions;
 
 @SuppressWarnings("java:S5960")
+@HapiTestSuite
 public class EthereumV1SecurityModelSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(EthereumV1SecurityModelSuite.class);
@@ -423,6 +428,7 @@ public class EthereumV1SecurityModelSuite extends HapiSuite {
                                                 spec.registry().getBytes(ETH_HASH_KEY)))))));
     }
 
+    @HapiTest
     final HapiSpec etx007FungibleTokenCreateWithFeesHappyPath() {
         final var createdTokenNum = new AtomicLong();
         final var feeCollectorAndAutoRenew = "feeCollectorAndAutoRenew";
@@ -430,26 +436,19 @@ public class EthereumV1SecurityModelSuite extends HapiSuite {
         final var EXISTING_TOKEN = "EXISTING_TOKEN";
         final var firstTxn = "firstCreateTxn";
         final long DEFAULT_AMOUNT_TO_SEND = 20 * ONE_HBAR;
-
-        return propertyPreservingHapiSpec("etx007FungibleTokenCreateWithFeesHappyPath")
-                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("etx007FungibleTokenCreateWithFeesHappyPath")
                 .given(
-                        overridingTwo(
-                                CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
-                                "ContractCall,CryptoTransfer,TokenAssociateToAccount,TokenCreate",
-                                CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
-                                CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via(AUTO_ACCOUNT_TRANSACTION_NAME),
                         cryptoCreate(feeCollectorAndAutoRenew)
                                 .keyShape(SigControl.ED25519_ON)
-                                .balance(ONE_HUNDRED_HBARS),
+                                .balance(ONE_MILLION_HBARS),
                         uploadInitCode(contract),
                         contractCreate(contract).gas(GAS_LIMIT),
                         tokenCreate(EXISTING_TOKEN).decimals(5),
-                        tokenAssociate(feeCollectorAndAutoRenew, EXISTING_TOKEN))
+                        tokenAssociate(feeCollectorAndAutoRenew, EXISTING_TOKEN),
+                        cryptoUpdate(feeCollectorAndAutoRenew).key(SECP_256K1_SOURCE_KEY))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         ethereumCall(
@@ -468,8 +467,9 @@ public class EthereumV1SecurityModelSuite extends HapiSuite {
                                         8_000_000L)
                                 .via(firstTxn)
                                 .gasLimit(GAS_LIMIT)
+                                .payingWith(feeCollectorAndAutoRenew)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .alsoSigningWithFullPrefix(feeCollectorAndAutoRenew)
+                                .hasKnownStatus(SUCCESS)
                                 .exposingResultTo(result -> {
                                     log.info("Explicit create result" + " is {}", result[0]);
                                     final var res = (Address) result[0];
@@ -479,7 +479,7 @@ public class EthereumV1SecurityModelSuite extends HapiSuite {
                         getTxnRecord(firstTxn).andAllChildRecords().logged(),
                         childRecordsCheck(
                                 firstTxn,
-                                ResponseCodeEnum.SUCCESS,
+                                SUCCESS,
                                 TransactionRecordAsserts.recordWith().status(ResponseCodeEnum.SUCCESS)),
                         withOpContext((spec, ignore) -> {
                             final var op = getTxnRecord(firstTxn);
