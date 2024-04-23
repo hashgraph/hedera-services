@@ -182,6 +182,8 @@ public class DefaultStatusStateMachine implements StatusStateMachine {
 
             return submitStatusAction(new CatastrophicFailureAction());
         }
+
+        // don't change status for other types of ISS
         return null;
     }
 

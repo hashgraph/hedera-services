@@ -151,7 +151,7 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
      * @param swirldStateManager            manages the mutable state
      * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
      * @param syncMetrics                   metrics for sync
-     * @param statusNexus                   the platform status manager
+     * @param statusNexus                   the platform status nexus
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      * @param intakeEventCounter            keeps track of the number of events in the intake pipeline from each peer

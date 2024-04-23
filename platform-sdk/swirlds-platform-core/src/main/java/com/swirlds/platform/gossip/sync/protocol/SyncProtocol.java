@@ -93,7 +93,7 @@ public class SyncProtocol implements Protocol {
 
     private final PlatformContext platformContext;
 
-    private final PlatformStatusNexus platformStatusGetter;
+    private final PlatformStatusNexus statusNexus;
 
     /**
      * Constructs a new sync protocol
@@ -107,7 +107,7 @@ public class SyncProtocol implements Protocol {
      * @param intakeIsTooFull      returns true if the intake queue is too full to continue syncing, false otherwise
      * @param sleepAfterSync       the amount of time to sleep after a sync
      * @param syncMetrics          metrics tracking syncing
-     * @param platformStatusGetter provides the current platform status
+     * @param statusNexus provides the current platform status
      */
     public SyncProtocol(
             @NonNull final PlatformContext platformContext,
@@ -119,7 +119,7 @@ public class SyncProtocol implements Protocol {
             @NonNull final BooleanSupplier intakeIsTooFull,
             @NonNull final Duration sleepAfterSync,
             @NonNull final SyncMetrics syncMetrics,
-            @NonNull final PlatformStatusNexus platformStatusGetter) {
+            @NonNull final PlatformStatusNexus statusNexus) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.peerId = Objects.requireNonNull(peerId);
@@ -130,7 +130,7 @@ public class SyncProtocol implements Protocol {
         this.intakeIsTooFull = Objects.requireNonNull(intakeIsTooFull);
         this.sleepAfterSync = Objects.requireNonNull(sleepAfterSync);
         this.syncMetrics = Objects.requireNonNull(syncMetrics);
-        this.platformStatusGetter = Objects.requireNonNull(platformStatusGetter);
+        this.statusNexus = Objects.requireNonNull(statusNexus);
     }
 
     /**
@@ -149,7 +149,7 @@ public class SyncProtocol implements Protocol {
      * @return true if the node should sync, false otherwise
      */
     private boolean shouldSync() {
-        if (!SyncStatusChecker.doesStatusPermitSync(platformStatusGetter.getCurrentStatus())) {
+        if (!SyncStatusChecker.doesStatusPermitSync(statusNexus.getCurrentStatus())) {
             syncMetrics.doNotSyncPlatformStatus();
             return false;
         }

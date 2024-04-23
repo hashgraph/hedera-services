@@ -244,7 +244,8 @@ public class SwirldsPlatform implements Platform {
     /**
      * A nexus for getting and setting the current platform status.
      * <p>
-     * Future work: usage of this member should be replaced by consuming the status updates from {@link com.swirlds.platform.system.status.StatusStateMachine}
+     * Future work: usage of this member should be replaced by consuming the status updates from
+     * {@link com.swirlds.platform.system.status.StatusStateMachine}
      */
     private final PlatformStatusNexus statusNexus;
 

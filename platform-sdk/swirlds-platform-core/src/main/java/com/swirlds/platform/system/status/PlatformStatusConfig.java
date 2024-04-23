@@ -30,15 +30,10 @@ import java.time.Duration;
  * @param activeStatusDelay                 the amount of wall clock time that the status will remain ACTIVE without
  *                                          seeing any self events reach consensus
  * @param statusStateMachineHeartbeatPeriod the amount of wall clock time between heartbeats sent to the status state
- *                                          machine.
- *                                          {@link PlatformStatusAction PlatformStatusAction}s before executing its
- *                                          idle callback, which triggers a {@link TimeElapsedAction TimeElapsedAction}
- * @param statusActionQueueCapacity         the capacity of the queue that holds incoming
- *                                          {@link PlatformStatusAction PlatformStatusAction}s
+ *                                          machine
  */
 @ConfigData("platformStatus")
 public record PlatformStatusConfig(
         @ConfigProperty(defaultValue = "10s") Duration observingStatusDelay,
         @ConfigProperty(defaultValue = "10s") Duration activeStatusDelay,
-        @ConfigProperty(defaultValue = "100ms") Duration statusStateMachineHeartbeatPeriod,
-        @ConfigProperty(defaultValue = "1024") int statusActionQueueCapacity) {}
+        @ConfigProperty(defaultValue = "100ms") Duration statusStateMachineHeartbeatPeriod) {}

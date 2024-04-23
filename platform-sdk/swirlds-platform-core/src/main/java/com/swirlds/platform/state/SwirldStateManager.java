@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
-
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
@@ -33,9 +31,12 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.PlatformStatusNexus;
 import com.swirlds.platform.uptime.UptimeTracker;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 
 /**
  * Manages all interactions with the state object required by {@link SwirldState}.
@@ -75,13 +76,13 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
     /**
      * Creates a new instance with the provided state.
      *
-     * @param platformContext       the platform context
-     * @param addressBook           the address book
-     * @param selfId                this node's id
-     * @param swirldStateMetrics    metrics related to SwirldState
-     * @param statusNexus enables submitting platform status actions
-     * @param state                 the genesis state
-     * @param softwareVersion       the current software version
+     * @param platformContext    the platform context
+     * @param addressBook        the address book
+     * @param selfId             this node's id
+     * @param swirldStateMetrics metrics related to SwirldState
+     * @param statusNexus        enables submitting platform status actions
+     * @param state              the genesis state
+     * @param softwareVersion    the current software version
      */
     public SwirldStateManager(
             @NonNull final PlatformContext platformContext,

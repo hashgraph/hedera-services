@@ -565,7 +565,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         statusStateMachineWiring
                 .getOutputWire()
                 .solderTo(platformStatusNexusWiring.getInputWire(PlatformStatusNexus::setCurrentStatus));
-
         platformStatusNexusWiring
                 .getOutputWire()
                 .solderTo(statusStateMachineWiring.getInputWire(StatusStateMachine::submitStatusAction));

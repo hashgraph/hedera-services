@@ -42,7 +42,7 @@ public class SyncProtocolFactory implements ProtocolFactory {
     private final BooleanSupplier intakeIsTooFull;
     private final Duration sleepAfterSync;
     private final SyncMetrics syncMetrics;
-    private final PlatformStatusNexus platformStatusGetter;
+    private final PlatformStatusNexus statusNexus;
 
     /**
      * Constructs a new sync protocol
@@ -76,7 +76,7 @@ public class SyncProtocolFactory implements ProtocolFactory {
         this.intakeIsTooFull = Objects.requireNonNull(intakeIsTooFull);
         this.sleepAfterSync = Objects.requireNonNull(sleepAfterSync);
         this.syncMetrics = Objects.requireNonNull(syncMetrics);
-        this.platformStatusGetter = Objects.requireNonNull(statusNexus);
+        this.statusNexus = Objects.requireNonNull(statusNexus);
     }
 
     /**
@@ -95,6 +95,6 @@ public class SyncProtocolFactory implements ProtocolFactory {
                 intakeIsTooFull,
                 sleepAfterSync,
                 syncMetrics,
-                platformStatusGetter);
+                statusNexus);
     }
 }

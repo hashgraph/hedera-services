@@ -51,7 +51,7 @@ public class ReconnectProtocolFactory implements ProtocolFactory {
     /**
      * Provides the platform status.
      */
-    private final PlatformStatusNexus platformStatusGetter;
+    private final PlatformStatusNexus statusNexus;
 
     private final Configuration configuration;
 
@@ -68,7 +68,7 @@ public class ReconnectProtocolFactory implements ProtocolFactory {
             @NonNull final ReconnectController reconnectController,
             @NonNull final SignedStateValidator validator,
             @NonNull final FallenBehindManager fallenBehindManager,
-            @NonNull final PlatformStatusNexus platformStatusGetter,
+            @NonNull final PlatformStatusNexus statusNexus,
             @NonNull final Configuration configuration) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
@@ -80,7 +80,7 @@ public class ReconnectProtocolFactory implements ProtocolFactory {
         this.reconnectController = Objects.requireNonNull(reconnectController);
         this.validator = Objects.requireNonNull(validator);
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
-        this.platformStatusGetter = Objects.requireNonNull(platformStatusGetter);
+        this.statusNexus = Objects.requireNonNull(statusNexus);
         this.configuration = Objects.requireNonNull(configuration);
         this.time = Objects.requireNonNull(platformContext.getTime());
     }
@@ -102,7 +102,7 @@ public class ReconnectProtocolFactory implements ProtocolFactory {
                 reconnectController,
                 validator,
                 fallenBehindManager,
-                platformStatusGetter,
+                statusNexus,
                 configuration,
                 time);
     }

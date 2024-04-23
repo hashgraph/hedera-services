@@ -30,7 +30,7 @@ import com.swirlds.platform.system.transaction.SwirldTransaction;
  */
 public class SwirldTransactionSubmitter {
 
-    private final PlatformStatusNexus platformStatusGetter;
+    private final PlatformStatusNexus statusNexus;
     private final TransactionConfig transactionConfig;
     private final BooleanFunction<SwirldTransaction> addToTransactionPool;
     private final TransactionMetrics transactionMetrics;
@@ -38,7 +38,7 @@ public class SwirldTransactionSubmitter {
     /**
      * Creates a new instance.
      *
-     * @param platformStatusGetter
+     * @param statusNexus
      * 		supplier of the current status of the platform
      * @param transactionConfig
      * 		provider of static settings
@@ -48,12 +48,12 @@ public class SwirldTransactionSubmitter {
      * 		stats relevant to transactions
      */
     public SwirldTransactionSubmitter(
-            final PlatformStatusNexus platformStatusGetter,
+            final PlatformStatusNexus statusNexus,
             final TransactionConfig transactionConfig,
             final BooleanFunction<SwirldTransaction> addToTransactionPool,
             final TransactionMetrics transactionMetrics) {
 
-        this.platformStatusGetter = platformStatusGetter;
+        this.statusNexus = statusNexus;
         this.transactionConfig = transactionConfig;
         this.addToTransactionPool = addToTransactionPool;
         this.transactionMetrics = transactionMetrics;
@@ -69,7 +69,7 @@ public class SwirldTransactionSubmitter {
     public boolean submitTransaction(final SwirldTransaction trans) {
 
         // if the platform is not active, it is better to reject transactions submitted by the app
-        if (platformStatusGetter.getCurrentStatus() != PlatformStatus.ACTIVE) {
+        if (statusNexus.getCurrentStatus() != PlatformStatus.ACTIVE) {
             return false;
         }
 
