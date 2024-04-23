@@ -101,7 +101,9 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
         final ContractID contractId = (ContractID) op.balanceSource().value();
         validateTruePreCheck(contractId.shardNum() == 0, INVALID_CONTRACT_ID);
         validateTruePreCheck(contractId.realmNum() == 0, INVALID_CONTRACT_ID);
-        validateTruePreCheck(contractId.contractNumOrThrow() >= 0, INVALID_CONTRACT_ID);
+        validateTruePreCheck(
+                (contractId.hasContractNum() && contractId.contractNumOrThrow() >= 0) || contractId.hasEvmAddress(),
+                INVALID_CONTRACT_ID);
         final var contract = accountStore.getContractById(requireNonNull(op.contractID()));
         validateFalsePreCheck(contract == null, INVALID_CONTRACT_ID);
         validateTruePreCheck(contract.smartContract(), INVALID_CONTRACT_ID);
