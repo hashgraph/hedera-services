@@ -191,9 +191,9 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
 
         topology = new StaticTopology(random, addressBook, selfId, basicConfig.numConnections());
         final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
-
+        final NetworkPeerIdentifier peerIdentifier = new NetworkPeerIdentifier(platformContext, peers);
         final SocketFactory socketFactory =
-                NetworkUtils.createSocketFactory(selfId, addressBook, keysAndCerts, platformContext.getConfiguration());
+                NetworkUtils.createSocketFactory(selfId, peers, keysAndCerts, platformContext.getConfiguration());
         // create an instance that can create new outbound connections
         final OutboundConnectionCreator connectionCreator =
                 new OutboundConnectionCreator(platformContext, selfId, this, socketFactory, addressBook);
@@ -201,14 +201,14 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
                 platformContext,
                 this,
-                new NetworkPeerIdentifier(platformContext),
+                peerIdentifier,
                 selfId,
                 connectionManagers::newConnection,
                 platformContext.getTime());
         // allow other members to create connections to me
         final Address address = addressBook.getAddress(selfId);
         final ConnectionServer connectionServer = new ConnectionServer(
-                threadManager, address.getListenPort(), socketFactory, inboundConnectionHandler::handle, peers);
+                threadManager, address.getListenPort(), socketFactory, inboundConnectionHandler::handle);
         thingsToStart.add(new StoppableThreadConfiguration<>(threadManager)
                 .setPriority(threadConfig.threadPrioritySync())
                 .setNodeId(selfId)

@@ -157,7 +157,7 @@ public class AddedEventMetrics {
     public void eventAdded(final EventImpl event) {
         if (event.isCreatedBy(selfId)) {
             eventsCreatedPerSecond.cycle();
-            if (event.getBaseEventHashedData().hasOtherParent()) {
+            if (event.getHashedData().hasOtherParent()) {
                 averageOtherParentAgeDiff.update(event.getGeneration() - event.getOtherParentGen());
             }
         } else {

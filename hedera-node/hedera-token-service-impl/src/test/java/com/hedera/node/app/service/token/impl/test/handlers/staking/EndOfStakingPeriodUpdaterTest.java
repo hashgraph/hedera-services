@@ -348,6 +348,10 @@ public class EndOfStakingPeriodUpdaterTest {
             EntityNumber.newBuilder().number(2).build();
     public static final EntityNumber NODE_NUM_3 =
             EntityNumber.newBuilder().number(3).build();
+    public static final EntityNumber NODE_NUM_4 =
+            EntityNumber.newBuilder().number(4).build();
+    public static final EntityNumber NODE_NUM_8 =
+            EntityNumber.newBuilder().number(8).build();
     public static final StakingNodeInfo STAKING_INFO_1 = StakingNodeInfo.newBuilder()
             .nodeNumber(NODE_NUM_1.number())
             .minStake(MIN_STAKE)

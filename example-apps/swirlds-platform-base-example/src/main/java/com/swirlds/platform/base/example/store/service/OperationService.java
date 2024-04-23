@@ -19,16 +19,18 @@ package com.swirlds.platform.base.example.store.service;
 import static java.util.Objects.isNull;
 
 import com.google.common.base.Preconditions;
-import com.swirlds.platform.base.example.BaseContext;
+import com.swirlds.platform.base.example.ext.BaseContext;
 import com.swirlds.platform.base.example.server.CrudService;
 import com.swirlds.platform.base.example.store.domain.Inventory;
+import com.swirlds.platform.base.example.store.domain.Item;
 import com.swirlds.platform.base.example.store.domain.Operation;
 import com.swirlds.platform.base.example.store.domain.Operation.OperationDetail;
 import com.swirlds.platform.base.example.store.domain.OperationType;
 import com.swirlds.platform.base.example.store.domain.Stock;
 import com.swirlds.platform.base.example.store.domain.StockHandlingMode;
-import com.swirlds.platform.base.example.store.metrics.ApplicationMetrics;
+import com.swirlds.platform.base.example.store.metrics.StoreExampleMetrics;
 import com.swirlds.platform.base.example.store.persistence.InventoryDao;
+import com.swirlds.platform.base.example.store.persistence.ItemDao;
 import com.swirlds.platform.base.example.store.persistence.OperationDao;
 import com.swirlds.platform.base.example.store.persistence.OperationDao.Criteria;
 import com.swirlds.platform.base.example.store.persistence.StockDao;
@@ -51,11 +53,13 @@ import org.apache.logging.log4j.Logger;
  * Creates Operations
  */
 public class OperationService extends CrudService<Operation> {
+
     private static final Logger logger = LogManager.getLogger(OperationService.class);
-    private final @NonNull OperationDao operationDao;
-    private final @NonNull InventoryDao inventoryDao;
-    private final @NonNull StockDao stockDao;
-    private final @NonNull BaseContext context;
+    private final OperationDao operationDao;
+    private final InventoryDao inventoryDao;
+    private final StockDao stockDao;
+    private final BaseContext context;
+    private final ItemDao itemDao;
 
     public OperationService(@NonNull final BaseContext context) {
         super(Operation.class);
@@ -63,6 +67,7 @@ public class OperationService extends CrudService<Operation> {
         this.operationDao = OperationDao.getInstance();
         this.stockDao = StockDao.getInstance();
         this.inventoryDao = InventoryDao.getInstance();
+        this.itemDao = ItemDao.getInstance();
     }
 
     @NonNull
@@ -106,6 +111,17 @@ public class OperationService extends CrudService<Operation> {
                 .findFirst()
                 .orElse(null);
 
+        final String belowStockLevelItem = updatedAmounts.entrySet().stream()
+                .filter(e -> e.getValue() != null)
+                .filter(e -> {
+                    final Item byId = itemDao.findById(e.getKey());
+                    return e.getValue() < existences.get(e.getKey()).amount()
+                            && byId.minimumStockLevel() >= e.getValue();
+                })
+                .map(Entry::getKey)
+                .findFirst()
+                .orElse(null);
+
         if (Objects.nonNull(notFoundItem)) {
             existences.entrySet().stream()
                     .filter(e -> e.getValue() != null)
@@ -121,6 +137,15 @@ public class OperationService extends CrudService<Operation> {
                     .forEach(inventoryDao::release);
             logger.error("item with not enough stock: {}", notEnoughStockItem);
             throw new IllegalArgumentException("Item " + notEnoughStockItem + " has not enough stock");
+        }
+        if (Objects.nonNull(belowStockLevelItem)) {
+            existences.entrySet().stream()
+                    .filter(e -> e.getValue() != null)
+                    .map(Entry::getKey)
+                    .forEach(inventoryDao::release);
+            logger.error("item with not enough stock: {}", belowStockLevelItem);
+            throw new IllegalArgumentException(
+                    "Item " + belowStockLevelItem + " would be below the stock minimum amount");
         }
 
         final Operation saved = operationDao.save(operation);
@@ -155,8 +180,8 @@ public class OperationService extends CrudService<Operation> {
         existences.keySet().forEach(inventoryDao::release);
 
         final Duration duration = Duration.of(System.nanoTime() - startNano, ChronoUnit.NANOS);
-        context.metrics().getOrCreate(ApplicationMetrics.OPERATION_TIME).set(duration);
-        context.metrics().getOrCreate(ApplicationMetrics.OPERATION_TOTAL).increment();
+        context.metrics().getOrCreate(StoreExampleMetrics.OPERATION_TIME).set(duration);
+        context.metrics().getOrCreate(StoreExampleMetrics.OPERATION_TOTAL).increment();
         logger.debug("Executed operation {} in {}", saved, duration);
         return saved;
     }

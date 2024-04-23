@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
 import static com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler.noThrowSha384HashOf;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
@@ -122,6 +123,20 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
     }
 
     @Test
+    @DisplayName("pureChecks fails if submit message missing topic ID")
+    void topicWithoutIdNotFound() {
+        assertThrowsPreCheck(() -> subject.pureChecks(newDefaultSubmitMessageTxn()), INVALID_TOPIC_ID);
+    }
+
+    @Test
+    @DisplayName("pureChecks fails if submit message is empty")
+    void failsIfMessageIsEmpty() {
+        givenValidTopic();
+        final var txn = newSubmitMessageTxn(topicEntityNum, "");
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_TOPIC_MESSAGE);
+    }
+
+    @Test
     @DisplayName("Topic submission key sig required")
     void submissionKeySigRequired() throws PreCheckException {
         readableStore = mock(ReadableTopicStore.class);
@@ -147,19 +162,6 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
         given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
         final var context = new FakePreHandleContext(accountStore, newDefaultSubmitMessageTxn(topicEntityNum));
-        context.registerStore(ReadableTopicStore.class, readableStore);
-
-        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOPIC_ID);
-    }
-
-    @Test
-    @DisplayName("Topic without id returns error")
-    void topicWithoutIdNotFound() throws PreCheckException {
-        mockPayerLookup();
-        readableTopicState = emptyReadableTopicState();
-        given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
-        readableStore = new ReadableTopicStoreImpl(readableStates);
-        final var context = new FakePreHandleContext(accountStore, newDefaultSubmitMessageTxn());
         context.registerStore(ReadableTopicStore.class, readableStore);
 
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOPIC_ID);
@@ -219,17 +221,6 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
         verify(recordBuilder).topicRunningHash(expectedTopic.runningHash());
         verify(recordBuilder).topicSequenceNumber(expectedTopic.sequenceNumber());
         verify(recordBuilder).topicRunningHashVersion(RUNNING_HASH_VERSION);
-    }
-
-    @Test
-    @DisplayName("Handle fails if submit message is empty")
-    void failsIfMessageIsEmpty() {
-        givenValidTopic();
-        final var txn = newSubmitMessageTxn(topicEntityNum, "");
-        given(handleContext.body()).willReturn(txn);
-
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(ResponseCodeEnum.INVALID_TOPIC_MESSAGE, msg.getStatus());
     }
 
     @Test

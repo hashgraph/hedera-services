@@ -21,8 +21,6 @@ import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 
 public class TestKeySerializer implements KeySerializer<TestKey> {
 
@@ -52,11 +50,6 @@ public class TestKeySerializer implements KeySerializer<TestKey> {
     }
 
     @Override
-    public void serialize(final TestKey data, final ByteBuffer buffer) {
-        data.serialize(buffer);
-    }
-
-    @Override
     public TestKey deserialize(final ReadableSequentialData in) {
         final TestKey key = new TestKey();
         key.deserialize(in);
@@ -64,19 +57,7 @@ public class TestKeySerializer implements KeySerializer<TestKey> {
     }
 
     @Override
-    public TestKey deserialize(final ByteBuffer buffer, final long dataVersion) {
-        final TestKey key = new TestKey();
-        key.deserialize(buffer);
-        return key;
-    }
-
-    @Override
     public boolean equals(@NonNull final BufferedData buffer, @NonNull final TestKey keyToCompare) {
         return buffer.readLong() == keyToCompare.getKeyAsLong();
-    }
-
-    @Override
-    public boolean equals(ByteBuffer buffer, int dataVersion, TestKey keyToCompare) throws IOException {
-        return buffer.getLong() == keyToCompare.getKeyAsLong();
     }
 }
