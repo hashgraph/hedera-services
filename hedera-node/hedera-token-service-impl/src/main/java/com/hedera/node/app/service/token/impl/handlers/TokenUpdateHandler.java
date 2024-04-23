@@ -486,7 +486,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
      */
     private static boolean containsKeyRemoval(@NonNull final TokenUpdateTransactionBody op) {
         for (final var tokenKey : TOKEN_KEYS) {
-            if (isKeyRemoval(tokenKey.getFromUpdate(op))) {
+            if (tokenKey.containsKeyRemoval(op)) {
                 return true;
             }
         }

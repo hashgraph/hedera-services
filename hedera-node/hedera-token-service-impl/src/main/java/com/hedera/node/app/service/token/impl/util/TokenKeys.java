@@ -305,6 +305,13 @@ public enum TokenKeys {
         return isKeyRemoval(newKey) ? null : newKey;
     }
 
+    public boolean containsKeyRemoval(TokenUpdateTransactionBody update) {
+        if (isPresentInUpdate(update)) {
+            return isKeyRemoval(getFromUpdate(update));
+        }
+        return false;
+    }
+
     public void updateKey(TokenUpdateTransactionBody update, Token originalToken, final Token.Builder builder) {
         if (isPresentInUpdate(update)) {
             validateTrue(isPresentInitially(originalToken), tokenHasNoKeyStatus());
