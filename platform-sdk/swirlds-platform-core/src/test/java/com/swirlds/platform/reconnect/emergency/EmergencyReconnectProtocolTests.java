@@ -45,7 +45,7 @@ import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
-import com.swirlds.platform.system.status.StatusActionSubmitter;
+import com.swirlds.platform.system.status.PlatformStatusNexus;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -115,7 +115,7 @@ public class EmergencyReconnectProtocolTests {
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
-                mock(StatusActionSubmitter.class),
+                mock(PlatformStatusNexus.class),
                 configuration);
 
         assertEquals(
@@ -141,7 +141,7 @@ public class EmergencyReconnectProtocolTests {
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
-                mock(StatusActionSubmitter.class),
+                mock(PlatformStatusNexus.class),
                 configuration);
 
         assertEquals(
@@ -175,7 +175,7 @@ public class EmergencyReconnectProtocolTests {
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
-                mock(StatusActionSubmitter.class),
+                mock(PlatformStatusNexus.class),
                 configuration);
         final Protocol protocol = emergencyReconnectProtocolFactory.build(PEER_ID);
         // the ReconnectController must be running in order to provide permits
@@ -225,7 +225,7 @@ public class EmergencyReconnectProtocolTests {
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
-                mock(StatusActionSubmitter.class),
+                mock(PlatformStatusNexus.class),
                 configuration);
         final Protocol protocol = emergencyReconnectProtocolFactory.build(PEER_ID);
 

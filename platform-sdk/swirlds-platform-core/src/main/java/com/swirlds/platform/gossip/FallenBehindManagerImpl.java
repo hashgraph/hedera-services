@@ -20,7 +20,7 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.status.StatusActionSubmitter;
+import com.swirlds.platform.system.status.PlatformStatusNexus;
 import com.swirlds.platform.system.status.actions.FallenBehindAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -56,7 +56,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager {
     /**
      * Enables submitting platform status actions
      */
-    private final StatusActionSubmitter statusActionSubmitter;
+    private final PlatformStatusNexus statusNexus;
 
     /**
      * Called when the status becomes fallen behind
@@ -73,7 +73,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager {
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final RandomGraph connectionGraph,
-            @NonNull final StatusActionSubmitter statusActionSubmitter,
+            @NonNull final PlatformStatusNexus statusNexus,
             @NonNull final Runnable fallenBehindCallback,
             @NonNull final ReconnectConfig config) {
         Objects.requireNonNull(addressBook, "addressBook");
@@ -89,7 +89,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager {
         for (final int neighbor : neighbors) {
             allNeighbors.add(addressBook.getNodeId(neighbor));
         }
-        this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
+        this.statusNexus = Objects.requireNonNull(statusNexus);
         this.fallenBehindCallback =
                 Objects.requireNonNull(fallenBehindCallback, "fallenBehindCallback must not be null");
         this.config = Objects.requireNonNull(config, "config must not be null");
@@ -108,7 +108,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager {
             notYetReportFallenBehind.remove(id);
             numReportFallenBehind++;
             if (!previouslyFallenBehind && hasFallenBehind()) {
-                statusActionSubmitter.submitStatusAction(new FallenBehindAction());
+                statusNexus.submitStatusAction(new FallenBehindAction());
                 fallenBehindCallback.run();
             }
         }

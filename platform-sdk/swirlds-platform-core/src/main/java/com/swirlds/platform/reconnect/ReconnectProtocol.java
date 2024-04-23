@@ -34,7 +34,7 @@ import com.swirlds.platform.network.protocol.Protocol;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.system.status.PlatformStatus;
-import com.swirlds.platform.system.status.PlatformStatusGetter;
+import com.swirlds.platform.system.status.PlatformStatusNexus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
@@ -62,7 +62,7 @@ public class ReconnectProtocol implements Protocol {
     /**
      * Provides the platform status.
      */
-    private final PlatformStatusGetter platformStatusGetter;
+    private final PlatformStatusNexus platformStatusGetter;
 
     private final Configuration configuration;
     private ReservedSignedState teacherState;
@@ -102,7 +102,7 @@ public class ReconnectProtocol implements Protocol {
             @NonNull final ReconnectController reconnectController,
             @NonNull final SignedStateValidator validator,
             @NonNull final FallenBehindManager fallenBehindManager,
-            @NonNull final PlatformStatusGetter platformStatusGetter,
+            @NonNull final PlatformStatusNexus platformStatusGetter,
             @NonNull final Configuration configuration,
             @NonNull final Time time) {
 

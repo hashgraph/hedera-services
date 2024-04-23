@@ -22,7 +22,7 @@ import com.swirlds.base.function.BooleanFunction;
 import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.metrics.TransactionMetrics;
 import com.swirlds.platform.system.status.PlatformStatus;
-import com.swirlds.platform.system.status.PlatformStatusGetter;
+import com.swirlds.platform.system.status.PlatformStatusNexus;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 
 /**
@@ -30,7 +30,7 @@ import com.swirlds.platform.system.transaction.SwirldTransaction;
  */
 public class SwirldTransactionSubmitter {
 
-    private final PlatformStatusGetter platformStatusGetter;
+    private final PlatformStatusNexus platformStatusGetter;
     private final TransactionConfig transactionConfig;
     private final BooleanFunction<SwirldTransaction> addToTransactionPool;
     private final TransactionMetrics transactionMetrics;
@@ -48,7 +48,7 @@ public class SwirldTransactionSubmitter {
      * 		stats relevant to transactions
      */
     public SwirldTransactionSubmitter(
-            final PlatformStatusGetter platformStatusGetter,
+            final PlatformStatusNexus platformStatusGetter,
             final TransactionConfig transactionConfig,
             final BooleanFunction<SwirldTransaction> addToTransactionPool,
             final TransactionMetrics transactionMetrics) {

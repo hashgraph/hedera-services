@@ -31,7 +31,7 @@ import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;
-import com.swirlds.platform.system.status.PlatformStatusGetter;
+import com.swirlds.platform.system.status.PlatformStatusNexus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
@@ -93,7 +93,7 @@ public class SyncProtocol implements Protocol {
 
     private final PlatformContext platformContext;
 
-    private final PlatformStatusGetter platformStatusGetter;
+    private final PlatformStatusNexus platformStatusGetter;
 
     /**
      * Constructs a new sync protocol
@@ -119,7 +119,7 @@ public class SyncProtocol implements Protocol {
             @NonNull final BooleanSupplier intakeIsTooFull,
             @NonNull final Duration sleepAfterSync,
             @NonNull final SyncMetrics syncMetrics,
-            @NonNull final PlatformStatusGetter platformStatusGetter) {
+            @NonNull final PlatformStatusNexus platformStatusGetter) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.peerId = Objects.requireNonNull(peerId);

@@ -62,7 +62,7 @@ import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.status.StatusActionSubmitter;
+import com.swirlds.platform.system.status.PlatformStatusNexus;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import java.io.IOException;
 import java.time.Duration;
@@ -294,7 +294,7 @@ class EmergencyReconnectTests {
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
-                mock(StatusActionSubmitter.class),
+                mock(PlatformStatusNexus.class),
                 configuration);
         return emergencyReconnectProtocolFactory.build(teacherId);
     }
@@ -316,7 +316,7 @@ class EmergencyReconnectTests {
                         Duration.of(100, ChronoUnit.MILLIS),
                         mock(ReconnectMetrics.class),
                         reconnectController,
-                        mock(StatusActionSubmitter.class),
+                        mock(PlatformStatusNexus.class),
                         configuration)
                 .build(learnerId);
     }

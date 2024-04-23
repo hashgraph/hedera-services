@@ -28,7 +28,7 @@ import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.reconnect.emergency.EmergencyReconnectProtocol;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.system.status.StatusActionSubmitter;
+import com.swirlds.platform.system.status.PlatformStatusNexus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Objects;
@@ -50,10 +50,10 @@ public class EmergencyReconnectProtocolFactory implements ProtocolFactory {
     private final Configuration configuration;
     private final Time time;
     private final PlatformContext platformContext;
-    private final StatusActionSubmitter statusActionSubmitter;
+    private final PlatformStatusNexus statusNexus;
 
     /**
-     * @param  platformContext         the platform context
+     * @param platformContext          the platform context
      * @param threadManager            responsible for managing thread lifecycles
      * @param notificationEngine       the notification engine to use
      * @param emergencyRecoveryManager the state of emergency recovery, if any
@@ -62,7 +62,7 @@ public class EmergencyReconnectProtocolFactory implements ProtocolFactory {
      * @param reconnectSocketTimeout   the socket timeout to use when executing a reconnect
      * @param reconnectMetrics         tracks reconnect metrics
      * @param reconnectController      controls reconnecting as a learner
-     * @param statusActionSubmitter    enables submitting platform status actions
+     * @param statusNexus              enables submitting platform status actions
      * @param configuration            the platform configuration
      */
     public EmergencyReconnectProtocolFactory(
@@ -75,7 +75,7 @@ public class EmergencyReconnectProtocolFactory implements ProtocolFactory {
             @NonNull final Duration reconnectSocketTimeout,
             @NonNull final ReconnectMetrics reconnectMetrics,
             @NonNull final ReconnectController reconnectController,
-            @NonNull final StatusActionSubmitter statusActionSubmitter,
+            @NonNull final PlatformStatusNexus statusNexus,
             @NonNull final Configuration configuration) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
@@ -87,7 +87,7 @@ public class EmergencyReconnectProtocolFactory implements ProtocolFactory {
         this.reconnectSocketTimeout = Objects.requireNonNull(reconnectSocketTimeout);
         this.reconnectMetrics = Objects.requireNonNull(reconnectMetrics);
         this.reconnectController = Objects.requireNonNull(reconnectController);
-        this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
+        this.statusNexus = Objects.requireNonNull(statusNexus);
         this.configuration = Objects.requireNonNull(configuration);
         this.time = Objects.requireNonNull(platformContext.getTime());
     }
@@ -110,7 +110,7 @@ public class EmergencyReconnectProtocolFactory implements ProtocolFactory {
                 reconnectSocketTimeout,
                 reconnectMetrics,
                 reconnectController,
-                statusActionSubmitter,
+                statusNexus,
                 configuration);
     }
 }

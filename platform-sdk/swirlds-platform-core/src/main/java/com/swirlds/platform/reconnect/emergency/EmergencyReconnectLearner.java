@@ -23,7 +23,7 @@ import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectException;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
-import com.swirlds.platform.system.status.StatusActionSubmitter;
+import com.swirlds.platform.system.status.PlatformStatusNexus;
 import com.swirlds.platform.system.status.actions.EmergencyReconnectStartedAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -43,25 +43,25 @@ public class EmergencyReconnectLearner {
     /**
      * Used to submit status actions
      */
-    private final StatusActionSubmitter statusActionSubmitter;
+    private final PlatformStatusNexus statusNexus;
 
     /**
      * @param stateConfig           the state configuration from the platform
      * @param emergencyRecoveryFile the emergency recovery file used for this reconnect
      * @param reconnectController   controls reconnecting as a learner
-     * @param statusActionSubmitter used to submit status actions
+     * @param statusNexus           used to submit status actions
      */
     public EmergencyReconnectLearner(
             @NonNull final StateConfig stateConfig,
             @NonNull final EmergencyRecoveryFile emergencyRecoveryFile,
             @NonNull final ReconnectController reconnectController,
-            @NonNull final StatusActionSubmitter statusActionSubmitter) {
+            @NonNull final PlatformStatusNexus statusNexus) {
 
         Objects.requireNonNull(stateConfig);
 
         this.emergencyRecoveryFile = Objects.requireNonNull(emergencyRecoveryFile);
         this.reconnectController = Objects.requireNonNull(reconnectController);
-        this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
+        this.statusNexus = Objects.requireNonNull(statusNexus);
 
         validator = new EmergencySignedStateValidator(stateConfig, emergencyRecoveryFile);
     }
@@ -76,7 +76,7 @@ public class EmergencyReconnectLearner {
         try {
             final boolean teacherHasState = teacherHasState(connection);
             if (teacherHasState) {
-                statusActionSubmitter.submitStatusAction(new EmergencyReconnectStartedAction());
+                statusNexus.submitStatusAction(new EmergencyReconnectStartedAction());
 
                 logger.info(
                         RECONNECT.getMarker(),

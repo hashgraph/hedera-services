@@ -30,7 +30,7 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.status.StatusActionSubmitter;
+import com.swirlds.platform.system.status.PlatformStatusNexus;
 import com.swirlds.platform.uptime.UptimeTracker;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -79,7 +79,7 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
      * @param addressBook           the address book
      * @param selfId                this node's id
      * @param swirldStateMetrics    metrics related to SwirldState
-     * @param statusActionSubmitter enables submitting platform status actions
+     * @param statusNexus enables submitting platform status actions
      * @param state                 the genesis state
      * @param softwareVersion       the current software version
      */
@@ -88,7 +88,7 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final SwirldStateMetrics swirldStateMetrics,
-            @NonNull final StatusActionSubmitter statusActionSubmitter,
+            @NonNull final PlatformStatusNexus statusNexus,
             @NonNull final State state,
             @NonNull final SoftwareVersion softwareVersion) {
 
@@ -96,13 +96,12 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(selfId);
         this.stats = Objects.requireNonNull(swirldStateMetrics);
-        Objects.requireNonNull(statusActionSubmitter);
+        Objects.requireNonNull(statusNexus);
         Objects.requireNonNull(state);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
 
         this.transactionHandler = new TransactionHandler(selfId, stats);
-        this.uptimeTracker =
-                new UptimeTracker(platformContext, addressBook, statusActionSubmitter, selfId, Time.getCurrent());
+        this.uptimeTracker = new UptimeTracker(platformContext, addressBook, statusNexus, selfId, Time.getCurrent());
         initialState(state);
     }
 

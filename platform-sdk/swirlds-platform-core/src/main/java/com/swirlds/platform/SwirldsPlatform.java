@@ -122,7 +122,6 @@ import com.swirlds.platform.state.signed.StartupStateUtils;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.state.signed.StateToDiskReason;
-import com.swirlds.platform.stats.StatConstructor;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -133,8 +132,9 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.events.DefaultBirthRoundMigrationShim;
+import com.swirlds.platform.system.status.DefaultPlatformStatusNexus;
 import com.swirlds.platform.system.status.PlatformStatus;
-import com.swirlds.platform.system.status.PlatformStatusManager;
+import com.swirlds.platform.system.status.PlatformStatusNexus;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.platform.system.status.actions.StartedReplayingEventsAction;
@@ -242,9 +242,11 @@ public class SwirldsPlatform implements Platform {
     private final PcesFileTracker initialPcesFiles;
 
     /**
-     * Manages the status of the platform.
+     * A nexus for getting and setting the current platform status.
+     * <p>
+     * Future work: usage of this member should be replaced by consuming the status updates from {@link com.swirlds.platform.system.status.StatusStateMachine}
      */
-    private final PlatformStatusManager platformStatusManager;
+    private final PlatformStatusNexus statusNexus;
 
     /**
      * Responsible for transmitting and receiving events from the network.
@@ -347,18 +349,10 @@ public class SwirldsPlatform implements Platform {
                     .put(new PlatformStatusChangeNotification(s));
             emergencyState.platformStatusChanged(s);
         };
-        platformStatusManager = thingsToStart.add(
-                new PlatformStatusManager(platformContext, time, threadManager, statusChangeConsumer));
 
         thingsToStart.add(Objects.requireNonNull(recycleBin));
 
         metrics = platformContext.getMetrics();
-
-        metrics.getOrCreate(StatConstructor.createEnumStat(
-                "PlatformStatus",
-                Metrics.PLATFORM_CATEGORY,
-                PlatformStatus.values(),
-                platformStatusManager::getCurrentStatus));
 
         registerAddressBookMetrics(metrics, currentAddressBook, selfId);
 
@@ -484,7 +478,9 @@ public class SwirldsPlatform implements Platform {
 
         final LatestCompleteStateNotifier latestCompleteStateNotifier = new DefaultLatestCompleteStateNotifier();
 
-        final StateSigner stateSigner = new StateSigner(new PlatformSigner(keysAndCerts), platformStatusManager);
+        statusNexus = new DefaultPlatformStatusNexus(platformContext);
+
+        final StateSigner stateSigner = new StateSigner(new PlatformSigner(keysAndCerts), statusNexus);
         final PcesReplayer pcesReplayer = new PcesReplayer(
                 time,
                 platformWiring.getPcesReplayerEventOutput(),
@@ -503,21 +499,21 @@ public class SwirldsPlatform implements Platform {
                 currentAddressBook,
                 selfId,
                 new SwirldStateMetrics(platformContext.getMetrics()),
-                platformStatusManager,
+                statusNexus,
                 initialState.getState(),
                 appVersion);
 
         final EventWindowManager eventWindowManager = new DefaultEventWindowManager();
 
         final ConsensusRoundHandler consensusRoundHandler =
-                new ConsensusRoundHandler(platformContext, swirldStateManager, platformStatusManager, appVersion);
+                new ConsensusRoundHandler(platformContext, swirldStateManager, statusNexus, appVersion);
 
         final LongSupplier intakeQueueSizeSupplier =
                 oldStyleIntakeQueue == null ? platformWiring.getIntakeQueueSizeSupplier() : oldStyleIntakeQueue::size;
         blocks.intakeQueueSizeSupplierSupplier().set(intakeQueueSizeSupplier);
         blocks.isInFreezePeriodReference().set(swirldStateManager::isInFreezePeriod);
 
-        platformWiring.wireExternalComponents(platformStatusManager, blocks.transactionPool());
+        platformWiring.wireExternalComponents(blocks.transactionPool());
 
         final IssHandler issHandler =
                 new IssHandler(stateConfig, this::haltRequested, SystemExitUtils::handleFatalError, issScratchpad);
@@ -584,7 +580,7 @@ public class SwirldsPlatform implements Platform {
 
         final TransactionPool transactionPool = blocks.transactionPool();
         transactionSubmitter = new SwirldTransactionSubmitter(
-                platformStatusManager::getCurrentStatus,
+                statusNexus,
                 transactionConfig,
                 transaction -> transactionPool.submitTransaction(transaction, false),
                 new TransactionMetrics(metrics));
@@ -620,7 +616,7 @@ public class SwirldsPlatform implements Platform {
                 swirldStateManager,
                 latestCompleteStateNexus,
                 syncMetrics,
-                platformStatusManager,
+                statusNexus,
                 this::loadReconnectState,
                 this::clearAllPipelines,
                 blocks.intakeEventCounter(),
@@ -829,7 +825,7 @@ public class SwirldsPlatform implements Platform {
 
             // kick off transition to RECONNECT_COMPLETE before beginning to save the reconnect state to disk
             // this guarantees that the platform status will be RECONNECT_COMPLETE before the state is saved
-            platformStatusManager.submitStatusAction(new ReconnectCompleteAction(signedState.getRound()));
+            statusNexus.submitStatusAction(new ReconnectCompleteAction(signedState.getRound()));
             latestImmutableStateNexus.setState(signedState.reserve("set latest immutable to reconnect state"));
             savedStateController.reconnectStateReceived(
                     signedState.reserve("savedStateController.reconnectStateReceived"));
@@ -960,7 +956,7 @@ public class SwirldsPlatform implements Platform {
      * Replay preconsensus events.
      */
     private void replayPreconsensusEvents() {
-        platformStatusManager.submitStatusAction(new StartedReplayingEventsAction());
+        statusNexus.submitStatusAction(new StartedReplayingEventsAction());
 
         final boolean emergencyRecoveryNeeded = emergencyRecoveryManager.isEmergencyStateRequired();
 
@@ -985,7 +981,7 @@ public class SwirldsPlatform implements Platform {
         platformWiring.flushStateHasher();
         platformWiring.getIssDetectorWiring().endOfPcesReplay().put(NoInput.getInstance());
 
-        platformStatusManager.submitStatusAction(
+        statusNexus.submitStatusAction(
                 new DoneReplayingEventsAction(Time.getCurrent().now()));
     }
 

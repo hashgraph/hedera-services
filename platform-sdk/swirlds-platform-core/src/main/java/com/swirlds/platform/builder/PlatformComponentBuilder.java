@@ -61,6 +61,8 @@ import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.status.DefaultStatusStateMachine;
+import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.util.MetricsDocUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -101,6 +103,7 @@ public class PlatformComponentBuilder {
     private ConsensusEventStream consensusEventStream;
     private PcesSequencer pcesSequencer;
     private RoundDurabilityBuffer roundDurabilityBuffer;
+    private StatusStateMachine statusStateMachine;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -647,5 +650,38 @@ public class PlatformComponentBuilder {
             roundDurabilityBuffer = new DefaultRoundDurabilityBuffer(blocks.platformContext());
         }
         return roundDurabilityBuffer;
+    }
+
+    /**
+     * Provide a status state machine in place of the platform's default status state machine.
+     *
+     * @param statusStateMachine the status state machine to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withStatusStateMachine(@NonNull final StatusStateMachine statusStateMachine) {
+        throwIfAlreadyUsed();
+        if (this.statusStateMachine != null) {
+            throw new IllegalStateException("Status state machine has already been set");
+        }
+        this.statusStateMachine = Objects.requireNonNull(statusStateMachine);
+        return this;
+    }
+
+    /**
+     * Build the status state machine if it has not yet been built. If one has been provided via
+     * {@link #withStatusStateMachine(StatusStateMachine)}, that state machine will be used. If this method is called
+     * more
+     * than once, only the first call will build the status state machine. Otherwise, the default state machine will be
+     * created and returned.
+     *
+     * @return the status state machine
+     */
+    @NonNull
+    public StatusStateMachine buildStatusStateMachine() {
+        if (statusStateMachine == null) {
+            statusStateMachine = new DefaultStatusStateMachine(blocks.platformContext());
+        }
+        return statusStateMachine;
     }
 }

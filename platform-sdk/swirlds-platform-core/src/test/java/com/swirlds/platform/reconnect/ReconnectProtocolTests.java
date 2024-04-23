@@ -52,7 +52,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.system.status.PlatformStatus;
-import com.swirlds.platform.system.status.PlatformStatusGetter;
+import com.swirlds.platform.system.status.PlatformStatusNexus;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -76,7 +76,7 @@ class ReconnectProtocolTests {
     /**
      * Status getter that always returns ACTIVE
      */
-    private PlatformStatusGetter activeStatusGetter;
+    private PlatformStatusNexus activeStatusGetter;
 
     private ReconnectController reconnectController;
     private ReconnectThrottle teacherThrottle;
@@ -134,7 +134,7 @@ class ReconnectProtocolTests {
 
     @BeforeEach
     void setup() {
-        activeStatusGetter = mock(PlatformStatusGetter.class);
+        activeStatusGetter = mock(PlatformStatusNexus.class);
         when(activeStatusGetter.getCurrentStatus()).thenReturn(PlatformStatus.ACTIVE);
 
         reconnectController = mock(ReconnectController.class);
@@ -467,7 +467,7 @@ class ReconnectProtocolTests {
 
         final ReservedSignedState reservedSignedState = signedState.reserve("test");
 
-        final PlatformStatusGetter inactiveStatusGetter = mock(PlatformStatusGetter.class);
+        final PlatformStatusNexus inactiveStatusGetter = mock(PlatformStatusNexus.class);
         when(inactiveStatusGetter.getCurrentStatus()).thenReturn(PlatformStatus.CHECKING);
 
         final PlatformContext platformContext =

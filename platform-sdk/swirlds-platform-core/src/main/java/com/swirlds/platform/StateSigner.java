@@ -22,7 +22,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.status.PlatformStatus;
-import com.swirlds.platform.system.status.PlatformStatusGetter;
+import com.swirlds.platform.system.status.PlatformStatusNexus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -34,7 +34,7 @@ public class StateSigner {
     /** An object responsible for signing states with this node's key. */
     private final PlatformSigner signer;
     /** provides the current platform status */
-    private final PlatformStatusGetter platformStatusGetter;
+    private final PlatformStatusNexus platformStatusGetter;
 
     /**
      * Create a new {@link StateSigner} instance.
@@ -42,7 +42,7 @@ public class StateSigner {
      * @param signer               an object responsible for signing states with this node's key
      * @param platformStatusGetter provides the current platform status
      */
-    public StateSigner(@NonNull final PlatformSigner signer, @NonNull final PlatformStatusGetter platformStatusGetter) {
+    public StateSigner(@NonNull final PlatformSigner signer, @NonNull final PlatformStatusNexus platformStatusGetter) {
         this.signer = Objects.requireNonNull(signer);
         this.platformStatusGetter = Objects.requireNonNull(platformStatusGetter);
     }

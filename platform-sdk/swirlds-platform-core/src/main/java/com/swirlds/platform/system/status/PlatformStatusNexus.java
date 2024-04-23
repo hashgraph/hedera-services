@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.system.status;
 
+import com.swirlds.platform.system.status.actions.PlatformStatusAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Functional interface for accessing the current platform status
+ * A nexus for holding the current platform status, and providing thread-safe access to it.
  */
-@FunctionalInterface
-public interface PlatformStatusGetter {
+public interface PlatformStatusNexus {
     /**
      * Get the current status
      *
@@ -30,4 +30,20 @@ public interface PlatformStatusGetter {
      */
     @NonNull
     PlatformStatus getCurrentStatus();
+
+    /**
+     * Set a new status
+     *
+     * @param status the new status
+     */
+    void setCurrentStatus(@NonNull final PlatformStatus status);
+
+    /**
+     * Submit a status action to the state machine
+     *
+     * @param action the action to submit
+     * @return the action, which will be wired into the state machine
+     */
+    @NonNull
+    PlatformStatusAction submitStatusAction(@NonNull final PlatformStatusAction action);
 }

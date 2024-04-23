@@ -28,7 +28,7 @@ import com.swirlds.platform.reconnect.ReconnectProtocol;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
-import com.swirlds.platform.system.status.PlatformStatusGetter;
+import com.swirlds.platform.system.status.PlatformStatusNexus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Objects;
@@ -51,7 +51,7 @@ public class ReconnectProtocolFactory implements ProtocolFactory {
     /**
      * Provides the platform status.
      */
-    private final PlatformStatusGetter platformStatusGetter;
+    private final PlatformStatusNexus platformStatusGetter;
 
     private final Configuration configuration;
 
@@ -68,7 +68,7 @@ public class ReconnectProtocolFactory implements ProtocolFactory {
             @NonNull final ReconnectController reconnectController,
             @NonNull final SignedStateValidator validator,
             @NonNull final FallenBehindManager fallenBehindManager,
-            @NonNull final PlatformStatusGetter platformStatusGetter,
+            @NonNull final PlatformStatusNexus platformStatusGetter,
             @NonNull final Configuration configuration) {
 
         this.platformContext = Objects.requireNonNull(platformContext);

@@ -82,6 +82,8 @@ import java.time.Duration;
  * @param platformPublisher                                 configuration for the platform publisher scheduler
  * @param consensusEventStream                              configuration for the consensus event stream scheduler
  * @param roundDurabilityBuffer                             configuration for the round durability buffer scheduler
+ * @param statusStateMachine                                configuration for the status state machine scheduler
+ * @param platformStatusNexus                  configuration for the status nexus scheduler
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -97,8 +99,8 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration orphanBuffer,
         @ConfigProperty(
-                        defaultValue =
-                                "SEQUENTIAL_THREAD CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
+                        defaultValue = "SEQUENTIAL_THREAD CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC "
+                                + "BUSY_FRACTION_METRIC")
                 TaskSchedulerConfiguration consensusEngine,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration inOrderLinker,
@@ -136,4 +138,7 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration platformPublisher,
         @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration consensusEventStream,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(5) FLUSHABLE UNHANDLED_TASK_METRIC")
-                TaskSchedulerConfiguration roundDurabilityBuffer) {}
+                TaskSchedulerConfiguration roundDurabilityBuffer,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration statusStateMachine,
+        @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration platformStatusNexus) {}
