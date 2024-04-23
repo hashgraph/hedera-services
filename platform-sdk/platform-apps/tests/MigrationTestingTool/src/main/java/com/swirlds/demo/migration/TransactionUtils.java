@@ -18,14 +18,18 @@ package com.swirlds.demo.migration;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
+/**
+ * Utility methods for migration testing tool transactions
+ */
 public class TransactionUtils {
     /**
      * Parse a {@link MigrationTestingToolTransaction} from a {@link Bytes}.
      */
-    public static MigrationTestingToolTransaction parseTransaction(final Bytes bytes) {
+    public static @NonNull MigrationTestingToolTransaction parseTransaction(@NonNull final Bytes bytes) {
         final SerializableDataInputStream in = new SerializableDataInputStream(bytes.toInputStream());
 
         try {

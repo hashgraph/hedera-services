@@ -228,7 +228,7 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
      */
     private void handleTransaction(@NonNull final NodeId id, @NonNull final Transaction transaction) {
         Objects.requireNonNull(id, "id must not be null");
-        Objects.requireNonNull(id, "transaction must not be null");
+        Objects.requireNonNull(transaction, "transaction must not be null");
         if (transaction.isSystem()) {
             return;
         }
