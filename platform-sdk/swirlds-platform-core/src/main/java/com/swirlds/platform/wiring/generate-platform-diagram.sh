@@ -9,13 +9,13 @@ SCRIPT_PATH="$(dirname "$(readlink -f "$0")")"
 # Add the flag "--less-mystery" to add back labels for mystery input wires (noisy diagram warning)
 
 pcli diagram \
-    -l 'applicationTransactionPrehandler:futures:consensusRoundHandler' \
+    -l 'TransactionPrehandler:futures:consensusRoundHandler' \
     -l 'EventCreationManager:get transactions:transactionPool' \
     -l 'RunningEventHasher:future hash:consensusRoundHandler' \
     -l 'ConsensusEventStream:future hash:consensusRoundHandler' \
     -s 'eventWindowManager:event window:🌀' \
     -s 'heartbeat:heartbeat:❤️' \
-    -s 'applicationTransactionPrehandler:futures:🔮' \
+    -s 'TransactionPrehandler:futures:🔮' \
     -s 'pcesReplayer:done streaming pces:✅' \
     -s 'OrphanBufferSplitter:events to gossip:📬' \
     -s 'getKeystoneEventSequenceNumber:flush request:🚽' \
@@ -41,7 +41,6 @@ pcli diagram \
     -g 'ISS Detector:issDetector,issNotificationSplitter,issHandler,statusManager_submitCatastrophicFailure' \
     -g 'Heartbeat:heartbeat,❤️' \
     -g 'PCES Replay:pcesReplayer,✅' \
-    -g 'Transaction Prehandling:applicationTransactionPrehandler,🔮' \
     -g 'Consensus Round Handler:consensusRoundHandler,postHandler_stateAndRoundReserver,getState,savedStateController' \
     -g 'State Hasher:stateHasher,postHasher_stateAndRoundReserver,postHasher_getConsensusRound,postHasher_stateReserver' \
     -g 'Consensus:Consensus Engine,🚽,🌀' \

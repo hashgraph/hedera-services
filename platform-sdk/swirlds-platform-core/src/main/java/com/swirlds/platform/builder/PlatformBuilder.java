@@ -495,6 +495,7 @@ public final class PlatformBuilder {
                 new AtomicReference<>(STARTING_UP),
                 new AtomicReference<>(),
                 new AtomicReference<>(),
+                new AtomicReference<>(),
                 NotificationEngine.buildEngine(getStaticThreadManager()),
                 statusActionSubmitterAtomicReference,
                 swirldStateManager,

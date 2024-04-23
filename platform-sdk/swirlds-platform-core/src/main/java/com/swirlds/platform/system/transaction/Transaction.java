@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.system.transaction;
 
+import com.hedera.hapi.platform.event.EventPayload;
 import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.io.SerializableWithKnownLength;
-import com.swirlds.proto.event.EventPayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.locks.ReadWriteLock;
 

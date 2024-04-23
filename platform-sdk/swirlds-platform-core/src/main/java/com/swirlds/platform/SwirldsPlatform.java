@@ -79,10 +79,8 @@ import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
-import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.TransactionPool;
-import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
@@ -461,9 +459,6 @@ public class SwirldsPlatform implements Platform {
         final HashLogger hashLogger =
                 new HashLogger(platformContext.getConfiguration().getConfigData(StateConfig.class));
 
-        final TransactionPrehandler transactionPrehandler =
-                new DefaultTransactionPrehandler(platformContext, latestImmutableStateNexus);
-
         final BirthRoundMigrationShim birthRoundMigrationShim = buildBirthRoundMigrationShim(initialState);
 
         final SignedStateHasher signedStateHasher =
@@ -481,7 +476,6 @@ public class SwirldsPlatform implements Platform {
                 pcesReplayer,
                 pcesWriter,
                 stateSignatureCollector,
-                transactionPrehandler,
                 eventWindowManager,
                 consensusRoundHandler,
                 issDetector,
@@ -574,6 +568,7 @@ public class SwirldsPlatform implements Platform {
                 .set(() -> latestCompleteStateNexus.getState("get latest complete state for reconnect"));
         blocks.loadReconnectStateReference().set(this::loadReconnectState);
         blocks.clearAllPipelinesForReconnectReference().set(clearAllPipelines::clear);
+        blocks.latestImmutableStateProviderReference().set(latestImmutableStateNexus::getState);
     }
 
     /**

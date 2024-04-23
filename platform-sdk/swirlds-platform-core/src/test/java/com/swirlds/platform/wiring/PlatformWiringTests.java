@@ -93,7 +93,8 @@ class PlatformWiringTests {
                 .withConsensusEngine(mock(ConsensusEngine.class))
                 .withConsensusEventStream(mock(ConsensusEventStream.class))
                 .withPcesSequencer(mock(PcesSequencer.class))
-                .withRoundDurabilityBuffer(mock(RoundDurabilityBuffer.class));
+                .withRoundDurabilityBuffer(mock(RoundDurabilityBuffer.class))
+                .withTransactionPrehandler(mock(TransactionPrehandler.class));
 
         // Gossip is a special case, it's not like other components.
         // Currently we just have a facade between gossip and the wiring framework.
@@ -125,7 +126,6 @@ class PlatformWiringTests {
                 mock(PcesReplayer.class),
                 mock(PcesWriter.class),
                 mock(StateSignatureCollector.class),
-                mock(TransactionPrehandler.class),
                 mock(EventWindowManager.class),
                 mock(ConsensusRoundHandler.class),
                 mock(IssDetector.class),
