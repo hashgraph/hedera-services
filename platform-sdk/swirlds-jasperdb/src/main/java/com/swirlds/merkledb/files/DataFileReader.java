@@ -445,14 +445,14 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
             final int fcIndex = leaseFileChannel();
             final FileChannel fileChannel = fileChannels.get(fcIndex);
             if (fileChannel == null) {
-                // On rare occasions, if we have a race condition with compaction, the file channel
+                // On rare occasions, if we have a race condition with compaction, the file reader
                 // may be closed. We need to return null, so that the caller can retry with a new reader
                 return null;
             }
             try {
                 // Fill the byte buffer from the channel
-                readBB.clear();
-                readBB.limit(PRE_READ_BUF_SIZE); // No need to read more than that for a header
+                readBuf.reset();
+                readBuf.limit(PRE_READ_BUF_SIZE); // No need to read more than that for a header
                 int bytesRead = MerkleDbFileUtils.completelyRead(fileChannel, readBB, byteOffsetInFile);
                 assert !isFileCompleted() || (bytesRead == Math.min(PRE_READ_BUF_SIZE, getSize() - byteOffsetInFile));
                 // Then read the tag and size from the read buffer, since it's wrapped over the byte buffer
@@ -469,14 +469,14 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
                     return readBuf;
                 }
                 // Otherwise read it separately
-                if (readBB.capacity() <= size) {
+                if (readBuf.capacity() <= size) {
                     readBB = ByteBuffer.allocate(size);
                     BUFFER_CACHE.set(readBB);
                     readBuf = BufferedData.wrap(readBB);
                     BUFFEREDDATA_CACHE.set(readBuf);
                 } else {
-                    readBB.position(0);
-                    readBB.limit(size);
+                    readBuf.resetPosition();
+                    readBuf.limit(size);
                 }
                 bytesRead = MerkleDbFileUtils.completelyRead(fileChannel, readBB, byteOffsetInFile + dataItemOffset);
                 assert bytesRead == size : "Failed to read all data item bytes";

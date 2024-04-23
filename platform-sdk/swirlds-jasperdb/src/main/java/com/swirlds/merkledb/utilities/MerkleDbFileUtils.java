@@ -88,7 +88,7 @@ public final class MerkleDbFileUtils {
             final FileChannel fileChannel, final ByteBuffer dstBuffer, final long startPosition) throws IOException {
         int totalBytesRead = 0;
         while (dstBuffer.hasRemaining()) {
-            final long bytesRead = fileChannel.read(dstBuffer, startPosition + totalBytesRead);
+            final int bytesRead = fileChannel.read(dstBuffer, startPosition + totalBytesRead);
             if (bytesRead < 0) {
                 // Reached EOF
                 break;

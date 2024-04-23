@@ -220,7 +220,11 @@ public final class DataFileWriter<D> {
                     FIELD_DATAFILE_ITEMS,
                     dataItemSize,
                     out -> dataItemSerializer.serialize(dataItem, out));
-            assert writingPbjData.position() == currentWritingMmapPos + totalSize;
+            // Integrity check
+            if (writingPbjData.position() != currentWritingMmapPos + totalSize) {
+                throw new IOException("Error storing data item: path=" + path + " start=" + currentWritingMmapPos +
+                        " pos=" + writingPbjData.position() + " size=" + totalSize);
+            }
         } catch (final BufferOverflowException e) {
             // Buffer overflow here means the mapped buffer is smaller than even a single data item
             throw new IOException(DataFileCommon.ERROR_DATAITEM_TOO_LARGE, e);

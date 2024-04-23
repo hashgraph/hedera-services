@@ -311,6 +311,17 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
             ProtoWriterTools.writeDelimited(
                     out, FIELD_BUCKETENTRY_KEYBYTES, keySize, t -> keySerializer.serialize(key, t));
         });
+        // Integrity check
+        if (bucketData.remaining() != 0) {
+            logger.error(MERKLE_DB.getMarker(),
+                    "Error writing new bucket entry: off={} totalSize={} key={} bd.rem={} bd.data={}",
+                    entryOffset,
+                    totalSize,
+                    key,
+                    bucketData.remaining(),
+                    bucketData);
+            throw new IllegalStateException("Cannot write a new bucket entry");
+        }
     }
 
     public void readFrom(final ReadableSequentialData in) {
