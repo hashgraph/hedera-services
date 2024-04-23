@@ -125,7 +125,7 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getFileInfoQuery(spec, payment, false);
+        Query query = maybeModified(getFileInfoQuery(spec, payment, false), spec);
         response = spec.clients().getFileSvcStub(targetNodeFor(spec), useTls).getFileInfo(query);
         if (verboseLoggingOn) {
             LOG.info("Info for file '{}': {}", file, response.getFileGetInfo());
