@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.token.CryptoGetAccountBalanceQuery.BalanceSourceOneOfType.UNSET;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
@@ -87,9 +86,6 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
         final var query = context.query();
         final var accountStore = context.createStore(ReadableAccountStore.class);
         final CryptoGetAccountBalanceQuery op = query.cryptogetAccountBalanceOrThrow();
-        if (op.balanceSource().kind().equals(UNSET)) {
-            throw new PreCheckException(INVALID_ACCOUNT_ID);
-        }
         if (op.hasAccountID()) {
             validateAccountId(op, accountStore);
         } else if (op.hasContractID()) {
