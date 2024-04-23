@@ -686,18 +686,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
-     * Get the input wire gossip. All events received from peers during should be passed to this wire.
-     *
-     * @return the wire where all events from gossip should be passed
-     */
-    @NonNull
-    public InputWire<GossipEvent> getGossipEventInput() {
-        // TODO this should fully pass through the gossip wire...?
-        //  I think we need to move the old style intake queue inside here
-        return eventHasherWiring.getInputWire(EventHasher::hashEvent);
-    }
-
-    /**
      * Start gossiping.
      */
     public void startGossip() {
@@ -847,7 +835,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         // Since there is asynchronous access to the shadowgraph, it's important to ensure that
         // it has fully ingested the new event window before continuing.
-        // TODO evaluate why this is necessary
         gossipWiring.flush();
     }
 
