@@ -204,7 +204,7 @@ public class TokenManagementSpecs extends HapiSuite {
                         grantTokenKyc(PRIMARY, partyAlias),
                         cryptoTransfer(moving(1, PRIMARY).between(TOKEN_TREASURY, partyAlias))
                                 .signedBy(DEFAULT_PAYER, TOKEN_TREASURY),
-                        // Only wipe works with alias. But because it is not associated it fails here
+                        // Only wipe works with alias apart from CryptoTransfer
                         wipeTokenAccountWithAlias(PRIMARY, partyAlias, 1))
                 .then();
     }
