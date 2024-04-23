@@ -19,11 +19,17 @@ package com.hedera.services.bdd.suites.crypto;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.*;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.*;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.TRANSFER_TXN_2;
+import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.createHollowAccountFrom;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -71,6 +77,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     private List<HapiSpec> positiveTests() {
         return List.of(
                 transferWithFractionalCustomFee(),
+                transferWithFractionalCustomFeeAndHollowAccountCollector(),
                 transferWithFractionalCustomFeeNumeratorBiggerThanDenominator(),
                 transferWithFractionalCustomFeeBellowMinimumAmount(),
                 transferWithFractionalCustomFeeAboveMaximumAmount(),
@@ -1030,6 +1037,44 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
                         getAccountBalance(alice).hasTokenBalance(token, 41L),
                         getAccountBalance(bob).hasTokenBalance(token, 15L),
                         getAccountBalance(carol).hasTokenBalance(token, 17L));
+    }
+
+    @HapiTest
+    public HapiSpec transferWithFractionalCustomFeeAndHollowAccountCollector() {
+        return defaultHapiSpec("transferWithFractionalCustomFeeAndHollowAccountCollector")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(tokenReceiver),
+                        cryptoCreate(tokenTreasury).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(tokenOwner).balance(ONE_MILLION_HBARS))
+                .when(createHollowAccountFrom(SECP_256K1_SOURCE_KEY))
+                .then(withOpContext((spec, opLog) -> {
+                    final var hollowAccountCollector =
+                            spec.registry().getAccountIdName(spec.registry().getAccountAlias(SECP_256K1_SOURCE_KEY));
+                    allRunFor(
+                            spec,
+                            tokenCreate(token)
+                                    .treasury(tokenTreasury)
+                                    .initialSupply(tokenTotal)
+                                    .payingWith(SECP_256K1_SOURCE_KEY)
+                                    .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
+                                    .via(TRANSFER_TXN_2)
+                                    .withCustom(fractionalFee(
+                                            numerator,
+                                            denominator,
+                                            minHtsFee,
+                                            OptionalLong.of(maxHtsFee),
+                                            hollowAccountCollector)),
+                            tokenAssociate(tokenReceiver, token),
+                            tokenAssociate(tokenOwner, token),
+                            cryptoTransfer(moving(tokenTotal, token).between(tokenTreasury, tokenOwner)),
+                            cryptoTransfer(moving(100L, token).between(tokenOwner, tokenReceiver))
+                                    .fee(ONE_HUNDRED_HBARS)
+                                    .payingWith(tokenOwner),
+                            getAccountBalance(tokenOwner).hasTokenBalance(token, 900L),
+                            getAccountBalance(tokenReceiver).hasTokenBalance(token, 90L),
+                            getAccountBalance(hollowAccountCollector).hasTokenBalance(token, 10L));
+                }));
     }
 
     @Override
