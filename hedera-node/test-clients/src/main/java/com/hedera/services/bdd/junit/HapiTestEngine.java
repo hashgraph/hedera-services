@@ -219,7 +219,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
             // Allow for a simple switch to enable in-process Alice node for debugging
             final String debugEnv = System.getenv("HAPI_DEBUG_NODE");
-            final boolean debugMode = Boolean.parseBoolean(debugEnv);;
+            final boolean debugMode = Boolean.parseBoolean(debugEnv);
             final var nodesType = debugMode ? IN_PROCESS_ALICE : OUT_OF_PROCESS_ALICE;
             // For now, switching to non-in process servers, because in process doesn't work for the
             // restart and reconnect testing.
@@ -456,8 +456,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
         private static final long MIN_GZIP_SIZE_IN_BYTES = 26;
 
-        private static final String HAPI_TEST_STREAMS_LOC_TPL = //"hedera-node/data/recordStreams/record0.0.%d";
-         "hedera-node/test-clients/build/hapi-test/node%d/data/recordStreams/record0.0.%d";
+        private static final String HAPI_TEST_STREAMS_LOC_TPL =
+                "hedera-node/test-clients/build/hapi-test/node%d/data/recordStreams/record0.0.%d";
 
         private static final List<RecordStreamValidator> validators = List.of(
                 new BlockNoValidator(),
