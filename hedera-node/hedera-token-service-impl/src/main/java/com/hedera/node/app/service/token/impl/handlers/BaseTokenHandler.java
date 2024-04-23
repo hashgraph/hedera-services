@@ -447,6 +447,7 @@ public class BaseTokenHandler {
      * Check if a given token already has some of the low priority keys
      */
     public static boolean hasAlreadySomeNonAdminKeys(@NonNull final Token token) {
+        // here we want to remove the admin key case because we need only low priority keys
         final var NonAdminKeys =
                 TOKEN_KEYS.stream().filter(key -> key != TokenKeys.ADMIN_KEY).collect(Collectors.toSet());
         for (final var tokenKey : NonAdminKeys) {

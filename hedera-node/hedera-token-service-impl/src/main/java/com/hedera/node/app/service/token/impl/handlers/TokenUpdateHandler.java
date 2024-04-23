@@ -392,11 +392,6 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                 // if op admin key is valid we require the signature
                 context.requireKey(op.adminKeyOrThrow());
             }
-            if (originalToken.hasAdminKey()) {
-                // if it's not, case is that the current admin key wants to
-                // set itself to an invalid key, hence we require only the current admin key signature
-                context.requireKey(originalToken.adminKey());
-            }
         }
 
         if (op.hasTreasury()) {
@@ -460,6 +455,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     private List<Key> getAllRequiredLowPrioritySigners(
             @NonNull final Token originalToken, @NonNull final TokenUpdateTransactionBody op) {
         List<Key> lowPriorityKeys = new ArrayList<>();
+        // here we want to remove the admin key case because we need only low priority keys
         final var NonAdminKeys =
                 TOKEN_KEYS.stream().filter(key -> key != TokenKeys.ADMIN_KEY).collect(Collectors.toSet());
 
