@@ -174,7 +174,6 @@ class CustomMessageCallProcessorTest {
         givenHaltableFrame(isHalted);
         givenCallWithCode(ADDRESS_6);
         given(addressChecks.isSystemAccount(ADDRESS_6)).willReturn(true);
-        lenient().when(registry.get(ADDRESS_6)).thenReturn(nativePrecompile);
         given(frame.getValue()).willReturn(Wei.ONE);
 
         subject.start(frame, operationTracer);
