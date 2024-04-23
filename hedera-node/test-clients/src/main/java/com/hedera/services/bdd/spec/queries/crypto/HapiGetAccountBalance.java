@@ -336,7 +336,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             } else if (referenceType == ReferenceType.LITERAL_ACCOUNT_ALIAS) {
                 id = AccountID.newBuilder().setAlias(rawAlias).build();
             } else {
-                id = spec.registry().aliasIdFor(aliasKeySource);
+                id = spec.registry().keyAliasIdFor(aliasKeySource);
             }
             config = b -> b.setAccountID(id);
             accountID = Optional.of(id);
