@@ -350,7 +350,7 @@ public class TopicUpdateSuite extends HapiSuite {
                         // Create an ECDSA key
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed("initialKey"),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS * 5000L),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS),
                         // Create the topic
                         createTopic("testTopic").adminKeyName("initialKey"))
                 .when(withOpContext((spec, opLog) -> {
@@ -386,7 +386,7 @@ public class TopicUpdateSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed("adminKey"),
                         newKeyNamed("submitKey"),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS * 5000L),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS),
                         // Create the topic
                         createTopic("testTopic").adminKeyName("adminKey").submitKeyName("submitKey"))
                 .when(withOpContext((spec, opLog) -> {
@@ -420,7 +420,7 @@ public class TopicUpdateSuite extends HapiSuite {
                 .given(
                         // Create an ECDSA key
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS * 5000L),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS),
                         // Create the topic with no admin key
                         createTopic("testTopic"))
                 .when(withOpContext((spec, opLog) -> {
@@ -459,7 +459,7 @@ public class TopicUpdateSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed("adminKey"),
                         newKeyNamed("submitKey"),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS * 5000L),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS),
                         // Create the topic
                         createTopic("testTopic").adminKeyName("adminKey").submitKeyName("submitKey"))
                 .when(withOpContext((spec, opLog) -> {

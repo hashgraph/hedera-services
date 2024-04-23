@@ -229,10 +229,10 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                 .given(
                         // Create an ECDSA key
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS * 5000L).maxAutomaticTokenAssociations(2),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).maxAutomaticTokenAssociations(2),
                         uploadInitCode(FREEZE_CONTRACT),
                         contractCreate(FREEZE_CONTRACT),
-                        cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS * 5000L))
+                        cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS))
                 .when(withOpContext((spec, opLog) -> {
                     final var ecdsaKey = spec.registry()
                             .getKey(SECP_256K1_SOURCE_KEY)
@@ -316,10 +316,10 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                 .given(
                         // Create an ECDSA key
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS * 5000L),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
                         uploadInitCode(FREEZE_CONTRACT),
                         contractCreate(FREEZE_CONTRACT),
-                        cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS * 5000L))
+                        cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS))
                 .when(withOpContext((spec, opLog) -> {
                     final var ecdsaKey = spec.registry()
                             .getKey(SECP_256K1_SOURCE_KEY)

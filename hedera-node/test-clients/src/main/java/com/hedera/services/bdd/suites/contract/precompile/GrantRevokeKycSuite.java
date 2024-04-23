@@ -360,10 +360,10 @@ public class GrantRevokeKycSuite extends HapiSuite {
                 .given(
                         // Create an ECDSA key
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS * 5000L),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
                         uploadInitCode(GRANT_REVOKE_KYC_CONTRACT),
                         contractCreate(GRANT_REVOKE_KYC_CONTRACT),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS * 5000L))
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS))
                 .when(withOpContext((spec, opLog) -> {
                     final var ecdsaKey = spec.registry()
                             .getKey(SECP_256K1_SOURCE_KEY)
@@ -425,10 +425,10 @@ public class GrantRevokeKycSuite extends HapiSuite {
                 .given(
                         // Create an ECDSA key
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS * 5000L),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
                         uploadInitCode(GRANT_REVOKE_KYC_CONTRACT),
                         contractCreate(GRANT_REVOKE_KYC_CONTRACT),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS * 5000L))
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS))
                 .when(withOpContext((spec, opLog) -> {
                     final var ecdsaKey = spec.registry()
                             .getKey(SECP_256K1_SOURCE_KEY)

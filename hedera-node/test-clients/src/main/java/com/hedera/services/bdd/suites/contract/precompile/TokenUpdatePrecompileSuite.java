@@ -341,8 +341,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(freezeKey),
                         newKeyNamed(newFreezeKey),
-                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS * 5000L),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS * 5000L))
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS))
                 .when(withOpContext((spec, opLog) -> {
                     final var ecdsaKey = spec.registry()
                             .getKey(SECP_256K1_SOURCE_KEY)
@@ -391,8 +391,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(freezeKey),
                         newKeyNamed(newFreezeKey),
-                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS * 5000L),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS * 5000L))
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS))
                 .when(withOpContext((spec, opLog) -> {
                     final var ecdsaKey = spec.registry()
                             .getKey(SECP_256K1_SOURCE_KEY)
