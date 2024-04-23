@@ -74,9 +74,10 @@ import java.time.Duration;
  * @param platformPublisher                        configuration for the platform publisher scheduler
  * @param consensusEventStream                     configuration for the consensus event stream scheduler
  * @param roundDurabilityBuffer                    configuration for the round durability buffer scheduler
- * @param signedStateSentinel                               configuration for the signed state sentinel scheduler
- * @param signedStateSentinelHeartbeatPeriod
- * /
+ * @param signedStateSentinel                      configuration for the signed state sentinel scheduler
+ * @param signedStateSentinelHeartbeatPeriod       the frequency that heartbeats should be sent to the signed state
+ *                                                 sentinel
+ */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "1.0") double defaultPoolMultiplier,
