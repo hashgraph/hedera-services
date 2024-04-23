@@ -23,11 +23,12 @@ pcli diagram \
     -s 'SelfEventSigner:non-validated events:🍎' \
     -s 'Mystery Input:mystery data:❔' \
     -s 'stateSigner:signature transactions:🖋️' \
-    -s 'issNotificationSplitter:Iss Notification:💥' \
+    -s 'issNotificationSplitter:IssNotification:💥' \
     -s 'toNotification:state written notification:📦' \
     -s 'latestCompleteStateNotifier:complete state notification:💢' \
     -s 'OrphanBufferSplitter:preconsensus signatures:🔰' \
     -s 'RunningEventHashOverride:hash override:💨' \
+    -s 'toStateWrittenToDiskAction:PlatformStatusAction:💾' \
     -g 'Event Validation:InternalEventValidator,EventDeduplicator,EventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
     -g 'Orphan Buffer:OrphanBuffer,OrphanBufferSplitter' \

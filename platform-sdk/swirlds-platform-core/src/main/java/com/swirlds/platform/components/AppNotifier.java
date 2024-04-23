@@ -75,6 +75,6 @@ public interface AppNotifier {
      *
      * @param notification the notification
      */
-    @InputWireLabel("Iss Notification")
+    @InputWireLabel("IssNotification")
     void sendIssNotification(@NonNull final IssNotification notification);
 }
