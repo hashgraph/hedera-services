@@ -3,7 +3,13 @@
 ## Purpose
 
 The essence of HIP-904 is introducing a missing functionality in the Hedera ecosystem that enables airdrop transactions. 
-Airdrops are frequently used operation in the web3 ecosystem and a lot of blockchain, dapp or DAO developers incentivise users to explore and use their products through it. Early adopters are ofter awarded with the so called airdrops which are native tokens for the system and a dedicated amount of them are distributed in airdrops. Hedera could benefit from introducing this functionality and this is something longed for from the whole community.
+
+Airdrops are frequently used operation in the web3 ecosystem and a lot of blockchains,
+dapps, or DAO developers incentivize users to explore and use their products with
+this process. Early adopters are often rewarded with so-called airdrops which are
+tokens for the system and a dedicated amount of them are distributed in such airdrops.
+Hedera will benefit from introducing this functionality and this is something long
+requested by the community.
 
 The main operation, which would allow airdrops to be sent is the `TokenAirdropTransaction`.
 Using it, an airdrop sender would be able to send airdrop tokens to a specific receiver, no matter if the receiver is associated with the token or not.
@@ -59,7 +65,7 @@ Create new transaction type as defined in the HIP:
  * pending airdrop.
  *
  * Any airdrop that completes immediately SHALL be irreversible. Any airdrop that results in a
- * "Pending Airdrop" MAY be canceled via a `cancelAirdrop` transaction.<
+ * "Pending Airdrop" MAY be canceled via a `cancelAirdrop` transaction.
  *
  * All transfer fees (including custom fees and royalties), as well as the rent cost for the
  * first auto-renewal period for any automatic-association slot occupied by the airdropped
@@ -119,7 +125,7 @@ Add new RPC to `TokenService` :
 
 ### Fee types
 
-The airdrop transaction would include several types of fees, a different set of them would be applicable, based on the conditions the airdrop is performed to. The list of fees is:
+The airdrop transaction will include several types of fees, a different set of them will be applicable, based on the characteristics of the airdrop. The list of fees is:
 
 - Airdrop fee covering the operation itself
 - Association fee covering a pre-paid fee for associating the token being airdropped to the receiver, in case there is a missing relationship between the two
@@ -128,7 +134,7 @@ The airdrop transaction would include several types of fees, a different set of 
 - Auto-renewal fees covering a pre-paid period for a full auto-renewal cycle
 - Fee covering auto-creation/lazy-creation of accounts, if we airdrop to an alias address of non-existing account
 
-Note that for all these fees, a given sender, which is the actual token owner, could be covered by a different payer, which is willing to pay. However, in case the receiver has not claimed an airdrop for a more than a full auto-renew cycle, the sender (token owner) would be required to continue paying future rents and they cannot be covered by a separate payer.
+Note that for all these fees, a given sender, which is the actual token owner, could be covered by a different payer, which is willing to pay. However, in case the receiver has not claimed an airdrop for a more than a full auto-renew cycle, the sender (token owner) would be required to continue paying future rents.
 
 An update into the `feeSchedule` file would be needed to specify the addition of the new fee values for the airdrop transaction type itself.
 
@@ -138,47 +144,39 @@ Since a given sender/token owner could be the payer of the airdrop transaction o
 
 If the sender of the airdrop is also the payer of this transaction, we would need only their key to be present in the transaction context.
 
-If the airdrop transaction fees from the list above are covered by a separate payer, then both the keys of the airdrop sender and the payer should be present in the context. That is needed, so that the sender authorizes giving an airdrop from their own balance.
+If the airdrop transaction fees from the list above are covered by a separate payer, then the signatures of both the airdrop sender and the payer must be present in the context. This is so, because the sender is required to authorize sending the airdrop tokens from their balance.
 
 ### Service updates
 
 - Update `TokenServiceDefinition` class to include the new RPC method definition for sending airdrops
 - Implement new `TokenAirdropHandler` class which should be invoked when the gRPC server handles `TokenAirdropTransaction` transactions. The class should be responsible for:
     - Verify that the pending airdrops list contains between 1 and 10 entries, inclusive
-    - Verify that the pending airdrops list does not have any duplicate entries
     - Pre-handle:
         - The transaction must be signed by the sender for each entry in the `token_transfers` list
         - In the case where the airdrop fees are covered by a separate payer, the transaction must include also the payer’s signature
     - Handle:
         - Any additional validation depending on config or state i.e. semantics checks
-        - Check that the airdrop sender account is a valid account. That is:
-          - an existing account, which was not deleted or expired
-          - a non-existing account, pointed by an alias of `evm_address` or public `ECDSA key`
+        - Check that the airdrop sender account is a valid account. That is an existing account, which is not deleted or expired.
         - Check that the token being airdropped, does not contain a custom fee, which needs to be covered by the recipient. This includes `fractionalFees` with `net_of_transfers=false` and `royaltyFees`, including `fallbackRoyaltyFees`.
         - Such transactions should be reverted and rejected.
         - The business logic for sending pending airdrops
             - Check the association status and the existence of the recipient:
-
-              - It is an existing one and has `max_auto_associations` set to -1 and is not associated to the token →
-                the token is auto associated and is directly transferred to the recipient and a `TokenTransferList` is added to the `TransactionRecord`, as well as a new `TokenAssociation` entry in the `automatic_token_associations`
-
-              - It is an existing one and has `max_auto_associations`, which is a positive number and there are free auto association slots and the recipient is not associated to the token →
-                the token is auto associated and is directly transferred to the recipient and a `TokenTransferList` is added to the `TransactionRecord`, as well as a new `TokenAssociation` entry in the `automatic_token_associations`
-
-              - It is an existing one and has `max_auto_associations`, which is a positive number but there are no free auto association slots and the recipient is not associated to the token →
-                the token transfer is interpreted as a pending and a `TokenPendingAirdrop` entry is added to the `TransactionRecord`
-
-              - It is an existing one and has `max_auto_associations` set to 0 and the recipient is not associated to the token →
-                the token transfer is interpreted as a pending and a `TokenPendingAirdrop` entry is added to the `TransactionRecord`
-
-              - It is an existing one and is associated to the token →
-                the airdrop is handled as a regular crypto transfer and a `TokenTransferList` is added to the `TransactionRecord`
-
-              - It’s not existing and the AccountID is a public `ECDSA` key →
-                the airdrop would first auto-create a new account with `maxAutoAssociations` field of -1 and directly transfer the token being airdropped to it. This would include a `TokenTransferList` and the alias of the newly created account in the `TransactionRecord`
-
-              - It’s not existing and the AccountID is an `evm_address` →
-                the airdrop would first lazily-create a new account with `maxAutoAssociations` field of -1 and directly transfer the token being airdropped to it. This would include a `TokenTransferList` and the alias of the newly created account in the `TransactionRecord`
+              - It is an existing one and has `max_auto_associations` set to -1 and is not associated to the token →<br/>
+                Тhe token is auto associated and is directly transferred to the recipient and a `TokenTransferList` is added to the `TransactionRecord`, as well as a new `TokenAssociation` entry in the `automatic_token_associations`
+              - It is an existing one and has `max_auto_associations`, which is a positive number and there are free auto association slots and the recipient is not associated to the token →<br/>
+                Тhe token is auto associated and is directly transferred to the recipient and a `TokenTransferList` is added to the `TransactionRecord`, as well as a new `TokenAssociation` entry in the `automatic_token_associations`
+              - It is an existing one and has `max_auto_associations`, which is a positive number but there are no free auto association slots and the recipient is not associated to the token →<br/>
+                Тhe token transfer is interpreted as a pending and a `TokenPendingAirdrop` entry is added to the `TransactionRecord`. In addition, the airdrop `PendingAirdropId`/`PendingAirdropValue` entry is added to the `PendingAirdrop` VirtualMap in state
+              - It is an existing one and has `max_auto_associations` set to 0 and the recipient is not associated to the token →<br/>
+                Тhe token transfer is interpreted as a pending and a `TokenPendingAirdrop` entry is added to the `TransactionRecord`. In addition, the airdrop `PendingAirdropId`/`PendingAirdropValue` entry is added to the `PendingAirdrop` VirtualMap in state
+              - It is an existing one and is associated to the token →<br/>
+                Тhe airdrop is handled as a regular crypto transfer and a `TokenTransferList` is added to the `TransactionRecord`
+              - It’s not existing and the AccountID is a public `ECDSA` key →<br/>
+                Тhe airdrop would first auto-create a new account with `maxAutoAssociations` field of -1 and directly transfer the token being airdropped to it. This would include a `TokenTransferList` and the alias of the newly created account in the `TransactionRecord`
+              - It’s not existing and the AccountID is a public `ED25519` key →<br/>
+                Тhe airdrop would first auto-create a new account with `maxAutoAssociations` field of -1 and directly transfer the token being airdropped to it. This would include a `TokenTransferList` and the alias of the newly created account in the `TransactionRecord`
+              - It’s not existing and the AccountID is an `evm_address` →<br/>
+                Тhe airdrop would first lazily-create a new account with `maxAutoAssociations` field of -1 and directly transfer the token being airdropped to it. This would include a `TokenTransferList` and the alias of the newly created account in the `TransactionRecord`
     - Fee calculation logic
         - assess all required fees for the airdrop from the payer of the transaction. This includes:
             - airdrop fee (assessed always)
@@ -199,7 +197,6 @@ If the airdrop transaction fees from the list above are covered by a separate pa
 * Verify that an airdrop with a token and a missing recipient pointed by its public `ECDSA key alias`, works correctly by auto-creating the recipient with `maxAutoAssociations=-1` and the token is directly transferred to it
 * Verify that an airdrop with a token and a missing recipient pointed by its `evm_address` alias, works correctly by lazy-creating the recipient with `maxAutoAssociations=-1` and the token is directly transferred to it
 * Verify that an airdrop with a missing TokenID fails
-* Verify that an airdrop with a missing recipient pointed by an `ED25519 key alias` fails
 * Verify that an airdrop with an NFT and non-existing serial number fails
 * Verify that an airdrop with wrong input data (e.g. negative amount, negative serial number or missing mandatory field) fails
 * Verify that an airdrop with a missing signature of the sender fails
