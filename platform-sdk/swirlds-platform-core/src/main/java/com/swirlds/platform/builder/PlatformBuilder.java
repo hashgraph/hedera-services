@@ -488,7 +488,6 @@ public final class PlatformBuilder {
             // the old type and start writing the new type.
             initialPcesFiles = PcesFileReader.readFilesFromDisk(
                     platformContext,
-                    recycleBin,
                     databaseDirectory,
                     initialState.get().getRound(),
                     preconsensusEventStreamConfig.permitGaps(),
