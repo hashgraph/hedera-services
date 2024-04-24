@@ -95,9 +95,7 @@ public class BodyIdClearingStrategy extends IdClearingStrategy<TxnModification> 
             entry("proto.ConsensusUpdateTopicTransactionBody.topicID", ExpectedResponse.atIngest(INVALID_TOPIC_ID)),
             entry("proto.ConsensusUpdateTopicTransactionBody.autoRenewAccount", ExpectedResponse.atConsensus(SUCCESS)),
             entry("proto.ConsensusDeleteTopicTransactionBody.topicID", ExpectedResponse.atIngest(INVALID_TOPIC_ID)),
-            entry(
-                    "proto.ConsensusSubmitMessageTransactionBody.topicID",
-                    ExpectedResponse.atIngest(INVALID_TOPIC_ID)),
+            entry("proto.ConsensusSubmitMessageTransactionBody.topicID", ExpectedResponse.atIngest(INVALID_TOPIC_ID)),
             entry(
                     "proto.TokenCreateTransactionBody.treasury",
                     ExpectedResponse.atIngest(INVALID_TREASURY_ACCOUNT_FOR_TOKEN)),
