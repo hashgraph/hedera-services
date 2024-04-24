@@ -334,7 +334,15 @@ public class HandleWorkflow {
         final var feeAccumulator = createFeeAccumulator(stack, configuration, recordBuilder);
 
         final var tokenServiceContext = new TokenContextImpl(
-                configuration, storeMetricsService, stack, recordListBuilder, blockRecordManager, isFirstTransaction);
+                configuration,
+                state,
+                storeMetricsService,
+                stack,
+                recordListBuilder,
+                blockRecordManager,
+                isFirstTransaction);
+        // Do any one-time work for the first transaction after genesis;
+        // overhead for all following transactions is effectively zero
         genesisRecordsTimeHook.process(tokenServiceContext);
         try {
             // If this is the first user transaction after midnight, then handle staking updates prior to handling the
