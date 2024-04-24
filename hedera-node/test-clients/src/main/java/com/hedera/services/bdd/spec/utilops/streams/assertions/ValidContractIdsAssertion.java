@@ -122,7 +122,7 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
     }
 
     private boolean isValidId(long shard, long realm, long num) {
-        return shard == 0L && realm == 0L && num >= 1;
+        return shard == 0L && realm == 0L && num >= 1 && num < Integer.MAX_VALUE;
     }
 
     private boolean isValidOrFailedBytecodeCreationId(long shard, long realm, long num) {

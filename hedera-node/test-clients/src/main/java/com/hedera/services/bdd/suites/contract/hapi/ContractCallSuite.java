@@ -16,43 +16,6 @@
 
 package com.hedera.services.bdd.suites.contract.hapi;
 
-import com.esaulpaugh.headlong.abi.ABIType;
-import com.esaulpaugh.headlong.abi.Address;
-import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TupleType;
-import com.esaulpaugh.headlong.abi.TypeFactory;
-import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.common.utility.CommonUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Tag;
-
-import java.math.BigInteger;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.IntStream;
-import java.util.stream.LongStream;
-
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
@@ -142,6 +105,42 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.esaulpaugh.headlong.abi.ABIType;
+import com.esaulpaugh.headlong.abi.Address;
+import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TupleType;
+import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
+import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
+import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.utility.CommonUtils;
+import java.math.BigInteger;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
@@ -266,7 +265,7 @@ public class ContractCallSuite extends HapiSuite {
                 hollowCreationFailsCleanly(),
                 repeatedCreate2FailsWithInterpretableActionSidecars(),
                 callStaticCallToLargeAddress(),
-                callToNonExtantEvmAddressUsesWhat());
+                callToNonExtantEvmAddressUsesTargetedAddress());
     }
 
     @HapiTest
@@ -2536,7 +2535,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec callToNonExtantLongZeroAddressUsesWhat() {
+    final HapiSpec callToNonExtantLongZeroAddressUsesTargetedAddress() {
         final var contract = "LowLevelCall";
         final var nonExtantMirrorAddress = asHeadlongAddress("0xE8D4A50FFF");
         return defaultHapiSpec("callToNonExtantContractAddressUsesWhat")
@@ -2550,7 +2549,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec callToNonExtantEvmAddressUsesWhat() {
+    final HapiSpec callToNonExtantEvmAddressUsesTargetedAddress() {
         final var contract = "LowLevelCall";
         final var nonExtantEvmAddress = asHeadlongAddress(TxnUtils.randomUtf8Bytes(20));
         return onlyDefaultHapiSpec("callToNonExtantEvmAddressUsesWhat")
