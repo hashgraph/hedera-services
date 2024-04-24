@@ -112,7 +112,11 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
         final SttTransactionPool sttTransactionPool = transactionPoolSupplier.get();
         if (sttTransactionPool != null) {
             event.forEachTransaction(transaction -> {
-                final TransactionSignature transactionSignature = sttTransactionPool.expandSignatures(transaction);
+                if (transaction.isSystem()) {
+                    return;
+                }
+                final TransactionSignature transactionSignature =
+                        sttTransactionPool.expandSignatures(transaction.getApplicationPayload());
                 if (transactionSignature != null) {
                     transaction.setMetadata(transactionSignature);
                     CryptographyHolder.get().verifyAsync(List.of(transactionSignature));
@@ -131,6 +135,9 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
     }
 
     private void handleTransaction(final ConsensusTransaction trans) {
+        if (trans.isSystem()) {
+            return;
+        }
         final TransactionSignature s = trans.getMetadata();
 
         if (s != null && validateSignature(s, trans) && s.getSignatureStatus() != VerificationStatus.VALID) {
@@ -138,7 +145,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
                     EXCEPTION.getMarker(),
                     "Invalid Transaction Signature [ transactionId = {}, status = {}, signatureType = {},"
                             + " publicKey = {}, signature = {}, data = {} ]",
-                    TransactionCodec.txId(trans.getContents()),
+                    TransactionCodec.txId(trans.getApplicationPayload()),
                     s.getSignatureStatus(),
                     s.getSignatureType(),
                     hex(Arrays.copyOfRange(
@@ -153,7 +160,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
                             s.getContentsDirect(), s.getMessageOffset(), s.getMessageOffset() + s.getMessageLength())));
         }
 
-        runningSum += TransactionCodec.txId(trans.getContents());
+        runningSum += TransactionCodec.txId(trans.getApplicationPayload());
 
         maybeDelay();
     }
