@@ -17,6 +17,7 @@
 package com.swirlds.platform.system.transaction;
 
 import com.hedera.hapi.platform.event.EventPayload;
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
