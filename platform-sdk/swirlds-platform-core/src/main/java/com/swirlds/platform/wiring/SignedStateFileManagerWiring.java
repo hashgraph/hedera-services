@@ -27,6 +27,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateSavingResult;
+import com.swirlds.platform.system.status.actions.PlatformStatusAction;
 import com.swirlds.platform.system.status.actions.StateWrittenToDiskAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -47,7 +48,7 @@ public record SignedStateFileManagerWiring(
         @NonNull InputWire<StateDumpRequest> dumpStateToDisk,
         @NonNull OutputWire<StateSavingResult> stateSavingResultOutputWire,
         @NonNull OutputWire<Long> oldestMinimumGenerationOnDiskOutputWire,
-        @NonNull OutputWire<StateWrittenToDiskAction> stateWrittenToDiskOutputWire,
+        @NonNull OutputWire<PlatformStatusAction> stateWrittenToDiskOutputWire,
         @NonNull OutputWire<StateWriteToDiskCompleteNotification> stateWrittenToDiskNotificationOutput) {
     /**
      * Create a new instance of this wiring
