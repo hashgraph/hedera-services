@@ -34,7 +34,7 @@ import java.nio.file.attribute.FileAttribute;
  * @deprecated use the {@link com.swirlds.common.io.filesystem.FileSystemManager} provided
  * by {@link com.swirlds.common.context.PlatformContext} instead
  */
-@Deprecated(forRemoval = true)
+@Deprecated
 public final class LegacyTemporaryFileBuilder {
 
     private LegacyTemporaryFileBuilder() {}
@@ -88,7 +88,7 @@ public final class LegacyTemporaryFileBuilder {
      * @return a new temporary file
      * @deprecated use {@link com.swirlds.common.io.filesystem.FileSystemManager#resolveNewTemp(String)} instead.
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated
     public static synchronized Path buildTemporaryFile() throws IOException {
         return buildTemporaryFile(null);
     }
@@ -103,7 +103,7 @@ public final class LegacyTemporaryFileBuilder {
      * @return a new temporary file
      * @deprecated use {@link com.swirlds.common.io.filesystem.FileSystemManager#resolveNewTemp(String)} instead.
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated
     public static synchronized Path buildTemporaryFile(final String postfix) throws IOException {
         final String fileName = nextFileId + (postfix == null ? "" : ("-" + postfix));
         nextFileId++;
@@ -125,7 +125,7 @@ public final class LegacyTemporaryFileBuilder {
      * @deprecated use {@link com.swirlds.common.io.filesystem.FileSystemManager#resolveNewTemp(String)} instead
      * and then create a directory using {@link Files#createDirectory(Path, FileAttribute[])}
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated
     public static synchronized Path buildTemporaryDirectory() throws IOException {
         return buildTemporaryDirectory(null);
     }
@@ -142,7 +142,7 @@ public final class LegacyTemporaryFileBuilder {
      * @deprecated use {@link com.swirlds.common.io.filesystem.FileSystemManager#resolveNewTemp(String)} instead
      * and then create a directory using {@link Files#createDirectory(Path, FileAttribute[])}
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated
     public static synchronized Path buildTemporaryDirectory(final String postfix) throws IOException {
         final Path directory = buildTemporaryFile(postfix);
         if (!exists(directory)) {
