@@ -16,12 +16,12 @@
 
 package com.hedera.services.bdd.spec.utilops.streams.assertions;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class ValidContractIdsAssertion implements RecordStreamAssertion {
     @Override
@@ -55,6 +55,7 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
 
     private void validateActionIds(@NonNull final TransactionSidecarRecord sidecar) {
         final var actions = sidecar.getActions().getContractActionsList();
+        System.out.println(actions);
         for (final var action : actions) {
             if (action.hasCallingAccount()) {
                 assertValid(action.getCallingAccount(), "action#callingAccount", sidecar);
@@ -67,6 +68,9 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
             } else if (action.hasRecipientContract()) {
                 assertValid(action.getRecipientContract(), "action#recipientContract", sidecar, this::isValidId);
             }
+
+            final var isMissingRecipient = !action.hasRecipientAccount() && !action.hasRecipientContract() && !action.hasTargetedAddress();
+            assertFalse(isMissingRecipient, "action is missing recipient (account, contract, or targetedAddress)");
 
             final var isMissingResult = !action.hasOutput() && !action.hasError() && !action.hasRevertReason();
             assertFalse(isMissingResult, "action is missing result (output, error, or revertReason)");
