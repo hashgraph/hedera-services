@@ -20,6 +20,7 @@ import static java.lang.annotation.ElementType.RECORD_COMPONENT;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
@@ -27,6 +28,7 @@ import java.lang.annotation.Target;
  * Annotation that can be used to annotate properties for a config data object. This annotation is syntactic sugar for
  * when {@link ConfigProperty} is used to set the default value without overriding the name of the property.
  */
+@Documented
 @Retention(RUNTIME)
 @Target(RECORD_COMPONENT)
 public @interface DefaultValue {

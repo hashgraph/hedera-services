@@ -19,6 +19,7 @@ package com.swirlds.config.api;
 import static java.lang.annotation.ElementType.RECORD_COMPONENT;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
@@ -39,6 +40,7 @@ import java.lang.annotation.Target;
  * For the {@code port} the default value {@code "8080"} is defined and will be used if no value is specified by the
  * config.
  */
+@Documented
 @Retention(RUNTIME)
 @Target(RECORD_COMPONENT)
 public @interface ConfigProperty {
