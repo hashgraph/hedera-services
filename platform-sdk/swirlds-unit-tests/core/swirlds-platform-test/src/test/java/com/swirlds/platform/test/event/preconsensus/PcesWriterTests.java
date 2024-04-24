@@ -50,6 +50,7 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
+import com.swirlds.platform.event.preconsensus.DefaultPcesWriter;
 import com.swirlds.platform.event.preconsensus.PcesConfig_;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
@@ -66,7 +67,6 @@ import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
-import com.swirlds.platform.wiring.DoneStreamingPcesTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -308,7 +308,7 @@ class PcesWriterTests {
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
-        final PcesWriter writer = new PcesWriter(platformContext, fileManager);
+        final DefaultPcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
         final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
         final List<GossipEvent> events = new LinkedList<>();
@@ -316,7 +316,7 @@ class PcesWriterTests {
             events.add(generator.generateEventWithoutIndex().getBaseEvent());
         }
 
-        writer.beginStreamingNewEvents(new DoneStreamingPcesTrigger());
+        writer.beginStreamingNewEvents();
 
         final Collection<GossipEvent> rejectedEvents = new HashSet<>();
 
@@ -374,7 +374,7 @@ class PcesWriterTests {
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
-        final PcesWriter writer = new PcesWriter(platformContext, fileManager);
+        final DefaultPcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
         final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
         // We will add this event at the very end, it should be ancient by then
@@ -385,7 +385,7 @@ class PcesWriterTests {
             events.add(generator.generateEventWithoutIndex().getBaseEvent());
         }
 
-        writer.beginStreamingNewEvents(new DoneStreamingPcesTrigger());
+        writer.beginStreamingNewEvents();
 
         final Collection<GossipEvent> rejectedEvents = new HashSet<>();
 
@@ -462,7 +462,7 @@ class PcesWriterTests {
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
-        final PcesWriter writer = new PcesWriter(platformContext, fileManager);
+        final DefaultPcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
         final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
         final List<GossipEvent> events = new LinkedList<>();
@@ -470,7 +470,7 @@ class PcesWriterTests {
             events.add(generator.generateEventWithoutIndex().getBaseEvent());
         }
 
-        writer.beginStreamingNewEvents(new DoneStreamingPcesTrigger());
+        writer.beginStreamingNewEvents();
 
         for (final GossipEvent event : events) {
             sequencer.assignStreamSequenceNumber(event);
@@ -506,7 +506,7 @@ class PcesWriterTests {
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
-        final PcesWriter writer = new PcesWriter(platformContext, fileManager);
+        final DefaultPcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
         final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
         final List<GossipEvent> events = new LinkedList<>();
@@ -552,7 +552,7 @@ class PcesWriterTests {
             final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
             final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
-            final PcesWriter writer = new PcesWriter(platformContext, fileManager);
+            final DefaultPcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
             final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
             final List<GossipEvent> eventsBeforeDiscontinuity = new LinkedList<>();
@@ -566,7 +566,7 @@ class PcesWriterTests {
                 }
             }
 
-            writer.beginStreamingNewEvents(new DoneStreamingPcesTrigger());
+            writer.beginStreamingNewEvents();
 
             final Collection<GossipEvent> rejectedEvents = new HashSet<>();
 
@@ -595,7 +595,7 @@ class PcesWriterTests {
                 }
             }
 
-            passValueToDurabilityNexus(writer.registerDiscontinuity(100), latestDurableSequenceNumber);
+            passValueToDurabilityNexus(writer.registerDiscontinuity(100L), latestDurableSequenceNumber);
             eventsBeforeDiscontinuity.forEach(
                     event -> assertTrue(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber()));
 
@@ -674,7 +674,7 @@ class PcesWriterTests {
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
-        final PcesWriter writer = new PcesWriter(platformContext, fileManager);
+        final DefaultPcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
         final AtomicLong latestDurableSequenceNumber = new AtomicLong(-1);
 
         final List<GossipEvent> events = new LinkedList<>();
@@ -682,7 +682,7 @@ class PcesWriterTests {
             events.add(generator.generateEventWithoutIndex().getBaseEvent());
         }
 
-        writer.beginStreamingNewEvents(new DoneStreamingPcesTrigger());
+        writer.beginStreamingNewEvents();
 
         final Set<GossipEvent> rejectedEvents = new HashSet<>();
 
@@ -758,9 +758,9 @@ class PcesWriterTests {
         final PlatformContext platformContext = buildContext(ancientMode);
         final PcesFileManager fileManager =
                 new PcesFileManager(platformContext, new PcesFileTracker(ancientMode), selfId, 0);
-        final PcesWriter writer = new PcesWriter(platformContext, fileManager);
+        final PcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
 
-        writer.beginStreamingNewEvents(new DoneStreamingPcesTrigger());
+        writer.beginStreamingNewEvents();
 
         final List<GossipEvent> events = new ArrayList<>();
         for (long i = 0; i < 9; i++) {
@@ -769,7 +769,7 @@ class PcesWriterTests {
             events.add(event);
         }
 
-        assertNull(writer.submitFlushRequest(1), "No event has been written to flush");
+        assertNull(writer.submitFlushRequest(1L), "No event has been written to flush");
         assertEquals(
                 1,
                 writer.writeEvent(events.get(1)),
@@ -779,20 +779,20 @@ class PcesWriterTests {
                 "Writing an event with sequence number not requested to flush should not flush");
         assertEquals(
                 2,
-                writer.submitFlushRequest(2),
+                writer.submitFlushRequest(2L),
                 "Requesting a flush for a sequence number already written should flush immediately");
-        assertNull(writer.submitFlushRequest(4), "No event has been written to flush");
+        assertNull(writer.submitFlushRequest(4L), "No event has been written to flush");
         assertNull(
                 writer.writeEvent(events.get(3)),
                 "Pending flush request for a later sequence number shouldn't cause a flush");
         assertNull(
-                writer.submitFlushRequest(5), "New flush request for a later sequence number shouldn't cause a flush");
+                writer.submitFlushRequest(5L), "New flush request for a later sequence number shouldn't cause a flush");
         assertEquals(
                 5,
                 writer.writeEvent(events.get(5)),
                 "Intermediate flushes of a lower sequence number shouldn't hinder a later flush request");
-        assertNull(writer.submitFlushRequest(6), "No event has been written to flush");
-        assertNull(writer.submitFlushRequest(8), "No event has been written to flush");
+        assertNull(writer.submitFlushRequest(6L), "No event has been written to flush");
+        assertNull(writer.submitFlushRequest(8L), "No event has been written to flush");
         assertEquals(
                 7,
                 writer.writeEvent(events.get(7)),
