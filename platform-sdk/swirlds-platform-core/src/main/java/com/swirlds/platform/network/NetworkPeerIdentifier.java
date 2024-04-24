@@ -26,9 +26,9 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import javax.security.auth.x500.X500Principal;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,7 +54,7 @@ public class NetworkPeerIdentifier {
      * @param platformContext the platform context
      * @param peers           list of peers
      */
-    public NetworkPeerIdentifier(@NonNull final PlatformContext platformContext, @NonNull final List<PeerInfo> peers) {
+    public NetworkPeerIdentifier(@NonNull final PlatformContext platformContext, @NonNull final Set<PeerInfo> peers) {
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(peers);
         noPeerFoundLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(5));

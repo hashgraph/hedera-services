@@ -30,6 +30,7 @@ import java.net.Socket;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -109,8 +110,8 @@ class SocketFactoryTest extends ConnectivityTestBase {
         final NodeId node2 = addressBook.getNodeId(nodeIndexes.get(1));
         final KeysAndCerts keysAndCerts1 = keysAndCerts.get(node1);
         final KeysAndCerts keysAndCerts2 = keysAndCerts.get(node2);
-        final List<PeerInfo> node1Peers = Utilities.createPeerInfoList(addressBook, node1);
-        final List<PeerInfo> node2Peers = Utilities.createPeerInfoList(addressBook, node2);
+        final Set<PeerInfo> node1Peers = Utilities.createPeerInfoList(addressBook, node1);
+        final Set<PeerInfo> node2Peers = Utilities.createPeerInfoList(addressBook, node2);
 
         testSocketsBoth(
                 NetworkUtils.createSocketFactory(node1, node1Peers, keysAndCerts1, TLS_NO_IP_TOS_CONFIG),

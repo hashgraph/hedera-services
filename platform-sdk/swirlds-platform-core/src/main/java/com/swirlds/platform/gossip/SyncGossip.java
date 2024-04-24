@@ -89,6 +89,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
@@ -189,8 +190,9 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
 
-        topology = new StaticTopology(random, addressBook, selfId, basicConfig.numConnections());
-        final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
+        final Set<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
+
+        topology = new StaticTopology(random, peers, selfId, basicConfig.numConnections());
         final NetworkPeerIdentifier peerIdentifier = new NetworkPeerIdentifier(platformContext, peers);
         final SocketFactory socketFactory =
                 NetworkUtils.createSocketFactory(selfId, peers, keysAndCerts, platformContext.getConfiguration());

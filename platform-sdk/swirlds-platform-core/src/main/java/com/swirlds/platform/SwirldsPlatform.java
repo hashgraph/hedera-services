@@ -565,6 +565,10 @@ public class SwirldsPlatform implements Platform {
                     }
                 };
 
+        if (!currentAddressBook.contains(selfId)) {
+            throw new IllegalArgumentException("Address book does not contain selfId");
+        }
+
         gossip = new SyncGossip(
                 platformContext,
                 blocks.randomBuilder().buildNonCryptographicRandom(),

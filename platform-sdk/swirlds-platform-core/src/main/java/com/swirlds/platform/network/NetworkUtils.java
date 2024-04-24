@@ -35,8 +35,8 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import javax.net.ssl.SSLException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -132,14 +132,14 @@ public final class NetworkUtils {
      * NOTE: This method is a stepping stone to decoupling the networking from the platform.
      *
      * @param selfId        the ID of the node
-     * @param peers         the list of peers
+     * @param peers         the set of peers
      * @param keysAndCerts  the keys and certificates to use for the TLS connections
      * @param configuration the configuration of the network
      * @return the created {@link SocketFactory}
      */
     public static @NonNull SocketFactory createSocketFactory(
             @NonNull final NodeId selfId,
-            @NonNull final List<PeerInfo> peers,
+            @NonNull final Set<PeerInfo> peers,
             @NonNull final KeysAndCerts keysAndCerts,
             @NonNull final Configuration configuration) {
         Objects.requireNonNull(selfId);

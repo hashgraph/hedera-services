@@ -24,8 +24,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Creates, binds and connects server and client sockets
@@ -134,5 +134,5 @@ public interface SocketFactory {
      *
      * @param peers the updated list of peers
      */
-    void reload(@NonNull final List<PeerInfo> peers);
+    void reload(@NonNull final Set<PeerInfo> peers);
 }
