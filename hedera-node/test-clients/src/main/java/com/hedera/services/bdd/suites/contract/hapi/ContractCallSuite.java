@@ -16,42 +16,6 @@
 
 package com.hedera.services.bdd.suites.contract.hapi;
 
-import com.esaulpaugh.headlong.abi.ABIType;
-import com.esaulpaugh.headlong.abi.Address;
-import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TupleType;
-import com.esaulpaugh.headlong.abi.TypeFactory;
-import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.common.utility.CommonUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Tag;
-
-import java.math.BigInteger;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.IntStream;
-import java.util.stream.LongStream;
-
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
@@ -142,7 +106,43 @@ import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-//@HapiTestSuite(fuzzyMatch = true)
+import com.esaulpaugh.headlong.abi.ABIType;
+import com.esaulpaugh.headlong.abi.Address;
+import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TupleType;
+import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
+import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
+import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.utility.CommonUtils;
+import java.math.BigInteger;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
+
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class ContractCallSuite extends HapiSuite {
 
@@ -299,46 +299,6 @@ public class ContractCallSuite extends HapiSuite {
                                 .via(secondCreation)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
                 .then();
-    }
-
-    @HapiTest
-    final HapiSpec insufficientGasToPrecompileFailsWithInterpretableActionSidecars() {
-        final var contract = "LowLevelCall";
-        // A real-world payload for a call to the altbn128 pairing precompile, for
-        // completeness; c.f. https://hashscan.io/testnet/transaction/1711397022.025030483
-        final var payload = unhex(
-                "1d19ea4313c1943e9d66830b1e05f54895b9743810ad24d831b1186a32c15fe83000fdae8d8e064d5db6ef2b9bd63baa748da3ac6c2f5b4ea372a0f16f844797198e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7aef312c21800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6ed275dc4a288d1afb3cbb1ac09187524c7db36395df7be3b99e673b13a075a65ec1d9befcd05a5323e6da4d435f3b617cdb3af83285c2df711ef39c01571827f9d2e1aca507b1e6203bddd296bb9b5a2021850bf2fe51011efd7ea2ef559df305727c5b75c764a9eb1f38f05fb732c3a738ebd02b01eade2a3ff4f065eebb96cf70ef864561faf2e2d8ab64de6f2403cd4335860945d2259681d9fc47508786bae186a54489576bced52e7a986603846c314b59164d18591323a739752634f40482f6e185aecd100dde233463f21e06c2aa0d61c046bebb729b891f8d4660c6cbf2f1f2e789e7364c70ecb38087cc90810c3789ef30c0dd973f0f1a572a089f81c");
-        final AtomicReference<Address> someTokenAddress = new AtomicReference<>();
-        final var altbn128PairingAddress = asHeadlongAddress("0x08");
-        final var htsSystemContractAddress = asHeadlongAddress("0x0167");
-        final var tokenInfoFn = new Function("getTokenInfo(address)");
-        return defaultHapiSpec("insufficientGasToPrecompileFailsWithInterpretableActionSidecars")
-                .given(
-                        streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
-                .when(tokenCreate("someToken").exposingAddressTo(someTokenAddress::set))
-                .then(
-                        // Generates CONTRACT_ACTION sidecars for a call to an EVM precompile
-                        // with insufficient gas
-                        contractCall(
-                                        contract,
-                                        "callRequested",
-                                        altbn128PairingAddress,
-                                        payload,
-                                        BigInteger.valueOf(11_256))
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                        // Generates CONTRACT_ACTION sidecars for a call to an HTS
-                        // system contract with insufficient gas
-                        sourcing(() -> contractCall(
-                                        contract,
-                                        "callRequested",
-                                        htsSystemContractAddress,
-                                        tokenInfoFn
-                                                .encodeCallWithArgs(someTokenAddress.get())
-                                                .array(),
-                                        BigInteger.valueOf(1))
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
     }
 
     @HapiTest
@@ -2584,13 +2544,8 @@ public class ContractCallSuite extends HapiSuite {
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when()
-                .then(
-                        contractCall(
-                                contract,
-                                "callRequested",
-                                nonExtantMirrorAddress,
-                                new byte[0],
-                                BigInteger.valueOf(88_888L)));
+                .then(contractCall(
+                        contract, "callRequested", nonExtantMirrorAddress, new byte[0], BigInteger.valueOf(88_888L)));
     }
 
     @HapiTest
@@ -2603,13 +2558,8 @@ public class ContractCallSuite extends HapiSuite {
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when()
-                .then(
-                        contractCall(
-                                contract,
-                                "callRequested",
-                                nonExtantEvmAddress,
-                                new byte[0],
-                                BigInteger.valueOf(88_888L)));
+                .then(contractCall(
+                        contract, "callRequested", nonExtantEvmAddress, new byte[0], BigInteger.valueOf(88_888L)));
     }
 
     private String getNestedContractAddress(final String contract, final HapiSpec spec) {

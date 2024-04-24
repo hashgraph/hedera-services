@@ -16,12 +16,12 @@
 
 package com.hedera.services.bdd.spec.utilops.streams.assertions;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class ValidContractIdsAssertion implements RecordStreamAssertion {
     @Override
@@ -69,7 +69,8 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
                 assertValid(action.getRecipientContract(), "action#recipientContract", sidecar, this::isValidId);
             }
 
-            final var isMissingRecipient = !action.hasRecipientAccount() && !action.hasRecipientContract() && !action.hasTargetedAddress();
+            final var isMissingRecipient =
+                    !action.hasRecipientAccount() && !action.hasRecipientContract() && !action.hasTargetedAddress();
             assertFalse(isMissingRecipient, "action is missing recipient (account, contract, or targetedAddress)");
 
             final var isMissingResult = !action.hasOutput() && !action.hasError() && !action.hasRevertReason();
