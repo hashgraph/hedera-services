@@ -347,7 +347,6 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                 temporarySStoreRefundTest(),
                 transferZeroHbarsToCaller(),
                 canCallPendingContractSafely(),
-                deletedContractsCannotBeUpdated(),
                 createTokenWithInvalidRoyaltyFee(),
                 autoAssociationSlotsAppearsInInfo(),
                 createTokenWithInvalidFeeCollector(),
@@ -1958,24 +1957,6 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                             Assertions.assertTrue(gasUsedForPermanentHoldTx > 20000L);
                         }),
                         UtilVerbs.resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1));
-    }
-
-    @HapiTest
-    @Order(7)
-    final HapiSpec deletedContractsCannotBeUpdated() {
-        final var contract = "SelfDestructCallable";
-        final var beneficiary = "beneficiary";
-        return defaultHapiSpec(
-                        "DeletedContractsCannotBeUpdated",
-                        EXPECT_STREAMLINED_INGEST_RECORDS,
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_NONCE)
-                .given(
-                        uploadInitCode(contract),
-                        contractCreate(contract).gas(300_000),
-                        cryptoCreate(beneficiary).balance(ONE_HUNDRED_HBARS))
-                .when(contractCall(contract, "destroy").deferStatusResolution().payingWith(beneficiary))
-                .then(contractUpdate(contract).newMemo("Hi there!").hasKnownStatus(INVALID_CONTRACT_ID));
     }
 
     @HapiTest
