@@ -32,6 +32,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
@@ -52,11 +53,13 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -65,6 +68,9 @@ public class EndOfStakingPeriodUpdaterTest {
 
     private EndOfStakingPeriodUpdater subject;
     private NodeStakeUpdateRecordBuilder nodeStakeUpdateRecordBuilder;
+
+    @Mock
+    private ReadableStakingInfoStore iterableStakingInfoStore;
 
     @BeforeEach
     void setup() {
@@ -203,6 +209,7 @@ public class EndOfStakingPeriodUpdaterTest {
         given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(stakingRewardsStore);
         given(context.addUncheckedPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class))
                 .willReturn(nodeStakeUpdateRecordBuilder);
+        given(context.knownNodeIds()).willReturn(Set.of(NODE_NUM_1.number(), NODE_NUM_2.number(), NODE_NUM_3.number()));
 
         // Assert preconditions
         Assertions.assertThat(STAKING_INFO_1.weight()).isZero();
@@ -272,6 +279,7 @@ public class EndOfStakingPeriodUpdaterTest {
         given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(stakingRewardsStore);
         given(context.addUncheckedPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class))
                 .willReturn(nodeStakeUpdateRecordBuilder);
+        given(context.knownNodeIds()).willReturn(Set.of(NODE_NUM_1.number(), NODE_NUM_2.number(), NODE_NUM_3.number()));
 
         // Assert preconditions
         Assertions.assertThat(STAKING_INFO_1.weight()).isZero();

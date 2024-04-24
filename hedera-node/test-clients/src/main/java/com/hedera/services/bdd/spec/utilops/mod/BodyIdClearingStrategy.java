@@ -75,7 +75,7 @@ public class BodyIdClearingStrategy extends IdClearingStrategy<TxnModification> 
                     ExpectedResponse.atIngest(ACCOUNT_ID_DOES_NOT_EXIST)),
             entry("proto.ContractCreateTransactionBody.fileID", ExpectedResponse.atConsensus(INVALID_FILE_ID)),
             entry("proto.ContractCreateTransactionBody.auto_renew_account_id", ExpectedResponse.atConsensus(SUCCESS)),
-            entry("proto.ContractUpdateTransactionBody.contractID", ExpectedResponse.atConsensus(INVALID_CONTRACT_ID)),
+            entry("proto.ContractUpdateTransactionBody.contractID", ExpectedResponse.atIngest(INVALID_CONTRACT_ID)),
             entry("proto.ContractUpdateTransactionBody.auto_renew_account_id", ExpectedResponse.atConsensus(SUCCESS)),
             entry("proto.ContractUpdateTransactionBody.staked_account_id", ExpectedResponse.atConsensus(SUCCESS)),
             entry("proto.FileAppendTransactionBody.fileID", ExpectedResponse.atIngest(INVALID_FILE_ID)),
@@ -92,7 +92,7 @@ public class BodyIdClearingStrategy extends IdClearingStrategy<TxnModification> 
                     "proto.ContractDeleteTransactionBody.transferContractID",
                     ExpectedResponse.atConsensus(OBTAINER_REQUIRED)),
             entry("proto.ConsensusCreateTopicTransactionBody.autoRenewAccount", ExpectedResponse.atConsensus(SUCCESS)),
-            entry("proto.ConsensusUpdateTopicTransactionBody.topicID", ExpectedResponse.atConsensus(INVALID_TOPIC_ID)),
+            entry("proto.ConsensusUpdateTopicTransactionBody.topicID", ExpectedResponse.atIngest(INVALID_TOPIC_ID)),
             entry("proto.ConsensusUpdateTopicTransactionBody.autoRenewAccount", ExpectedResponse.atConsensus(SUCCESS)),
             entry("proto.ConsensusDeleteTopicTransactionBody.topicID", ExpectedResponse.atConsensus(INVALID_TOPIC_ID)),
             entry(

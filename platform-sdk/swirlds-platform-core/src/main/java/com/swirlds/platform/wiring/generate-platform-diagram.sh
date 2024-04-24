@@ -9,14 +9,14 @@ SCRIPT_PATH="$(dirname "$(readlink -f "$0")")"
 # Add the flag "--less-mystery" to add back labels for mystery input wires (noisy diagram warning)
 
 pcli diagram \
-    -l 'applicationTransactionPrehandler:futures:consensusRoundHandler' \
+    -l 'TransactionPrehandler:futures:consensusRoundHandler' \
     -l 'gossip:get events:shadowgraph' \
     -l 'EventCreationManager:get transactions:transactionPool' \
     -l 'RunningEventHasher:future hash:consensusRoundHandler' \
     -l 'ConsensusEventStream:future hash:consensusRoundHandler' \
     -s 'eventWindowManager:event window:🌀' \
     -s 'heartbeat:heartbeat:❤️' \
-    -s 'applicationTransactionPrehandler:futures:🔮' \
+    -s 'TransactionPrehandler:futures:🔮' \
     -s 'pcesReplayer:done streaming pces:✅' \
     -s 'OrphanBufferSplitter:events to gossip:📬' \
     -s 'getKeystoneEventSequenceNumber:flush request:🚽' \
@@ -37,13 +37,12 @@ pcli diagram \
     -g 'State File Management:State File Manager,📦,📀' \
     -g 'State Signature Collector:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions,latestCompleteStateNotifier' \
     -g 'State Signature Collection:State Signature Collector,latestCompleteStateNexus,💢' \
-    -g 'Preconsensus Event Stream:PcesSequencer,pcesWriter' \
+    -g 'Preconsensus Event Stream:PcesSequencer,PcesWriter' \
     -g 'Event Creation:EventCreationManager,transactionPool,SelfEventSigner,🍎' \
     -g 'Gossip:gossip,shadowgraph,InOrderLinker' \
     -g 'ISS Detector:issDetector,issNotificationSplitter,issHandler,statusManager_submitCatastrophicFailure' \
     -g 'Heartbeat:heartbeat,❤️' \
     -g 'PCES Replay:pcesReplayer,✅' \
-    -g 'Transaction Prehandling:applicationTransactionPrehandler,🔮' \
     -g 'Consensus Round Handler:consensusRoundHandler,postHandler_stateAndRoundReserver,getState,savedStateController' \
     -g 'State Hasher:stateHasher,postHasher_stateAndRoundReserver,postHasher_getConsensusRound,postHasher_stateReserver' \
     -g 'Consensus:Consensus Engine,🚽,🌀' \
