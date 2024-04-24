@@ -174,6 +174,25 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
+    @DisplayName("Account Id with valid header is needed during validate")
+    void validatesQueryIfInvalidAccountHeader() throws Throwable {
+        final var state =
+                MapReadableKVState.<AccountID, Account>builder(ACCOUNTS).build();
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(state);
+        final var store = new ReadableAccountStoreImpl(readableStates);
+        final AccountID invalidRealmAccountId =
+                AccountID.newBuilder().accountNum(5).realmNum(-1L).build();
+
+        final var query = createGetAccountBalanceQueryWithInvalidHeader(invalidRealmAccountId.accountNumOrThrow());
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableAccountStore.class)).thenReturn(store);
+
+        assertThatThrownBy(() -> subject.validate(context))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(ResponseCodeEnum.INVALID_ACCOUNT_ID));
+    }
+
+    @Test
     @DisplayName("Contract Id is needed during validate")
     void validatesQueryIfInvalidContract() throws Throwable {
         final var state =
@@ -445,6 +464,15 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         final var data = CryptoGetAccountBalanceQuery.newBuilder()
                 .accountID(AccountID.newBuilder().accountNum(accountId).build())
                 .header(QueryHeader.newBuilder().build())
+                .build();
+
+        return Query.newBuilder().cryptogetAccountBalance(data).build();
+    }
+
+    private Query createGetAccountBalanceQueryWithInvalidHeader(final long accountId) {
+        final var data = CryptoGetAccountBalanceQuery.newBuilder()
+                .accountID(AccountID.newBuilder().accountNum(accountId).build())
+                .header((QueryHeader) null)
                 .build();
 
         return Query.newBuilder().cryptogetAccountBalance(data).build();
