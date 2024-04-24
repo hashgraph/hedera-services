@@ -28,6 +28,7 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator.asAccountId;
+import static java.util.Collections.nCopies;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -62,8 +63,11 @@ import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.AliasUtils;
+import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
+import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.codec.NetworkingStakingTranslator;
+import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -76,11 +80,13 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
@@ -104,6 +110,7 @@ public class InitialModServiceTokenSchema extends Schema {
     // These need to be big so databases are created at right scale. If they are too small then the on disk hash map
     // buckets will be too full which results in very poor performance. Have chosen 10 billion as should give us
     // plenty of runway.
+    private static final long MAX_STAKING_INFOS = 1_000_000L;
     private static final long MAX_TOKENS = 1_000_000_000L;
     private static final long MAX_ACCOUNTS = 1_000_000_000L;
     private static final long MAX_TOKEN_RELS = 1_000_000_000L;
@@ -157,7 +164,8 @@ public class InitialModServiceTokenSchema extends Schema {
                 StateDefinition.onDisk(ALIASES_KEY, ProtoBytes.PROTOBUF, AccountID.PROTOBUF, MAX_ACCOUNTS),
                 StateDefinition.onDisk(NFTS_KEY, NftID.PROTOBUF, Nft.PROTOBUF, MAX_MINTABLE_NFTS),
                 StateDefinition.onDisk(TOKEN_RELS_KEY, EntityIDPair.PROTOBUF, TokenRelation.PROTOBUF, MAX_TOKEN_RELS),
-                StateDefinition.inMemory(STAKING_INFO_KEY, EntityNumber.PROTOBUF, StakingNodeInfo.PROTOBUF),
+                StateDefinition.onDisk(
+                        STAKING_INFO_KEY, EntityNumber.PROTOBUF, StakingNodeInfo.PROTOBUF, MAX_STAKING_INFOS),
                 StateDefinition.singleton(STAKING_NETWORK_REWARDS_KEY, NetworkStakingRewards.PROTOBUF));
     }
 
@@ -184,8 +192,43 @@ public class InitialModServiceTokenSchema extends Schema {
         this.mnc = mnc;
     }
 
+    /**
+     * Updates in-state staking info to match the address book.
+     * <ol>
+     *     <li>For any node with staking info in state that is no longer in the address book,
+     *     marks it deleted and sets its weight to zero.</li>
+     *     <li>For any node in the address book that is not in state,
+     *     initializes its staking info.</li>
+     *     <li>Ensures all max stake values reflect the current address book size.</li>
+     * </ol>
+     *
+     * @param ctx {@link MigrationContext} for this schema restart operation
+     */
     @Override
-    public void restart(@NonNull MigrationContext ctx) {}
+    public void restart(@NonNull MigrationContext ctx) {
+        final var networkInfo = ctx.networkInfo();
+        final var newStakingStore = new WritableStakingInfoStore(ctx.newStates());
+        // We need to validate and mark any node that are removed during upgrade as deleted.
+        // Since restart is called in the schema after an upgrade, and we don't want to depend on
+        // schema version change, validate all the nodeIds from the addressBook in state and mark
+        // them as deleted if they are not yet deleted in staking info.
+        if (!ctx.previousStates().isEmpty()) {
+            final var oldStakingStore = new ReadableStakingInfoStoreImpl(ctx.previousStates());
+            oldStakingStore.getAll().stream().sorted().forEach(nodeId -> {
+                final var stakingInfo = requireNonNull(oldStakingStore.get(nodeId));
+                if (!networkInfo.containsNode(nodeId) && !stakingInfo.deleted()) {
+                    newStakingStore.put(
+                            nodeId,
+                            stakingInfo.copyBuilder().weight(0).deleted(true).build());
+                    log.info("Marked node{} as deleted since it has been removed from the address book", nodeId);
+                }
+            });
+        }
+        // Validate if any new nodes are added in addressBook and not in staking info.
+        // If so, add them to staking info/ with weight 0. Also update maxStake and
+        // minStake for the new nodes.
+        completeUpdateFromNewAddressBook(newStakingStore, networkInfo.addressBook(), ctx.configuration());
+    }
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
@@ -534,6 +577,7 @@ public class InitialModServiceTokenSchema extends Schema {
     /**
      * Get the total balance of all accounts. Since we cannot iterate over the accounts in VirtualMap,
      * we have to do this manually.
+     *
      * @param accounts The accounts map
      * @param hederaConfig The Hedera configuration
      * @return The total balance of all accounts
@@ -599,5 +643,36 @@ public class InitialModServiceTokenSchema extends Schema {
                 .stakingRewardsActivated(true)
                 .build();
         networkRewardsState.put(networkRewards);
+    }
+
+    private void completeUpdateFromNewAddressBook(
+            @NonNull final WritableStakingInfoStore store,
+            @NonNull final List<NodeInfo> nodeInfos,
+            @NonNull final Configuration config) {
+        final var numberOfNodesInAddressBook = nodeInfos.size();
+        final long maxStakePerNode =
+                config.getConfigData(LedgerConfig.class).totalTinyBarFloat() / numberOfNodesInAddressBook;
+        final var numRewardHistoryStoredPeriods =
+                config.getConfigData(StakingConfig.class).rewardHistoryNumStoredPeriods();
+        for (final var nodeId : nodeInfos) {
+            final var stakingInfo = store.get(nodeId.nodeId());
+            if (stakingInfo != null) {
+                if (stakingInfo.maxStake() != maxStakePerNode) {
+                    store.put(
+                            nodeId.nodeId(),
+                            stakingInfo.copyBuilder().maxStake(maxStakePerNode).build());
+                }
+            } else {
+                final var newNodeStakingInfo = StakingNodeInfo.newBuilder()
+                        .nodeNumber(nodeId.nodeId())
+                        .maxStake(maxStakePerNode)
+                        .minStake(0L)
+                        .rewardSumHistory(
+                                nCopies(numRewardHistoryStoredPeriods + 1, 0L).toArray(Long[]::new))
+                        .weight(0)
+                        .build();
+                store.put(nodeId.nodeId(), newNodeStakingInfo);
+            }
+        }
     }
 }
