@@ -14,7 +14,7 @@ We need to add a new functionality that would make it possible for an airdrop re
 
 ## Architecture
 
-The implementation related to the new `TokenClaimAirdrop` transaction will be gated behind a feature flag.
+The implementation related to the new `TokenClaimAirdrop` transaction will be gated behind a `tokens.airdrops.claim.enabled` feature flag.
 
 ### HAPI updates
 
