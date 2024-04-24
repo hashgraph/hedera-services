@@ -122,7 +122,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return allOf(negativeCases());
+        return allOf(negativeCases(), positiveCases());
     }
 
     List<HapiSpec> negativeCases() {
@@ -130,6 +130,10 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                 updateTokenWithInvalidKeyValues(),
                 updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey(),
                 getTokenKeyForNonFungibleNegative());
+    }
+
+    List<HapiSpec> positiveCases() {
+        return List.of(tokenUpdateSingleFieldCases());
     }
 
     @HapiTest

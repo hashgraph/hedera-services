@@ -664,7 +664,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                         .hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES));
     }
 
-    // TODO: To be consistent with the mono behaviour we shouldn't change the memo when we provide empty memo value.
+    // To be consistent with the mono behaviour we shouldn't change the memo when we provide empty memo value.
     // We should think of a method/function to reset the memo value.
     public HapiSpec tokenUpdateCanClearMemo() {
         final var token = "token";
