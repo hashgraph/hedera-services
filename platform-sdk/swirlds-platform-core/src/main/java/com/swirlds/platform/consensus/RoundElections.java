@@ -80,7 +80,10 @@ public class RoundElections {
      * @param witness the witness being added
      */
     public void addWitness(@NonNull final EventImpl witness) {
-        logger.info(CONSENSUS_VOTING.getMarker(), "Adding witness for election {}", witness::toShortString);
+        logger.info(
+                CONSENSUS_VOTING.getMarker(),
+                "Adding witness for election {}",
+                witness.getBaseEvent().getDescriptor());
         numUnknownFame.increment();
         elections.add(new CandidateWitness(witness, numUnknownFame, elections.size()));
     }

@@ -19,7 +19,8 @@ module com.swirlds.base {
             com.swirlds.config.extensions.test.fixtures,
             com.swirlds.logging,
             com.swirlds.logging.test.fixtures,
-            com.swirlds.common;
+            com.swirlds.common,
+            com.swirlds.platform.base.example;
     exports com.swirlds.base.internal.observe to
             com.swirlds.base.test.fixtures,
             com.swirlds.common,

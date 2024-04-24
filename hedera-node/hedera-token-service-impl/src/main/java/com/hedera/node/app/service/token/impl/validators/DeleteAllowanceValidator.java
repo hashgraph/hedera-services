@@ -106,7 +106,8 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
         }
         for (final var allowance : nftAllowances) {
             final var ownerId = allowance.ownerOrElse(AccountID.DEFAULT);
-            final var tokenId = allowance.tokenIdOrElse(TokenID.DEFAULT);
+            // pureChecks() ensures that tokenId is not null
+            final var tokenId = allowance.tokenIdOrThrow();
             final var serialNums = allowance.serialNumbers();
 
             // Paused tokens are OK here, so we only check for existence and deletion

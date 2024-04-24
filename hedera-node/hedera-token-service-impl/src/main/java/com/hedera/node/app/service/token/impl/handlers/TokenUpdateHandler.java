@@ -182,9 +182,9 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
      * Transfer tokens from old treasury to new treasury if the token is fungible. If the token is non-fungible,
      * transfer the ownership of the NFTs from old treasury to new treasury
      *
-     * @param oldTreasury   old treasury account
-     * @param newTreasury   new treasury account
-     * @param token         token
+     * @param oldTreasury old treasury account
+     * @param newTreasury new treasury account
+     * @param token token
      * @param tokenRelStore token relationship store
      * @param accountStore  account store
      */
@@ -217,8 +217,8 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     }
 
     /**
-     * Transfer fungible tokens from old treasury to new treasury. NOTE: This updates account's numOfPositiveBalances
-     * and puts to modifications on state.
+     * Transfer fungible tokens from old treasury to new treasury.
+     * NOTE: This updates account's numOfPositiveBalances and puts to modifications on state.
      *
      * @param fromTreasuryRel old treasury relationship
      * @param toTreasuryRel   new treasury relationship
@@ -240,8 +240,8 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     }
 
     /**
-     * Change the ownership of the NFTs from old treasury to new treasury. NOTE: This updates account's numOwnedNfts and
-     * tokenRelation's balance and puts to modifications on state.
+     * Change the ownership of the NFTs from old treasury to new treasury.
+     * NOTE: This updates account's numOwnedNfts and tokenRelation's balance and puts to modifications on state.
      *
      * @param fromTreasuryRel old treasury relationship
      * @param toTreasuryRel   new treasury relationship
@@ -297,7 +297,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     /**
      * Build a Token based on the given token update transaction body.
      *
-     * @param token          token to be updated
+     * @param token token to be updated
      * @param resolvedExpiry resolved expiry
      * @param op             token update transaction body
      * @return updated token builder
@@ -316,11 +316,11 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     }
 
     /**
-     * Updates token name, token symbol, token metadata, token memo and token treasury if they are present in the token
-     * update transaction body.
+     * Updates token name, token symbol, token metadata, token memo
+     * and token treasury if they are present in the token update transaction body.
      *
-     * @param op            token update transaction body
-     * @param builder       token builder
+     * @param op token update transaction body
+     * @param builder token builder
      * @param originalToken original token
      */
     private void updateTokenAttributes(
@@ -345,7 +345,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     /**
      * Updates expiry fields of the token if they are present in the token update transaction body.
      *
-     * @param op             token update transaction body
+     * @param op token update transaction body
      * @param resolvedExpiry resolved expiry
      * @param builder        token builder
      */
@@ -363,10 +363,11 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     }
 
     /**
-     * Updates keys of the token if they are present in the token update transaction body. All keys can be updates only
-     * if they had already existed on the token. These keys can't be updated if they were not added during creation.
+     * Updates keys of the token if they are present in the token update transaction body.
+     * All keys can be updates only if they had already existed on the token.
+     * These keys can't be updated if they were not added during creation.
      *
-     * @param op            token update transaction body
+     * @param op token update transaction body
      * @param originalToken original token
      * @param builder       token builder
      */
@@ -490,9 +491,10 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     }
 
     /**
-     * If there is a change in treasury account, update the treasury titles of the old and new treasury accounts. NOTE :
-     * This updated the numberTreasuryTitles on old and new treasury accounts. And also updates new treasury
-     * relationship to not be frozen
+     * If there is a change in treasury account, update the treasury titles of the old and
+     * new treasury accounts.
+     * NOTE : This updated the numberTreasuryTitles on old and new treasury accounts.
+     * And also updates new treasury relationship to not be frozen
      *
      * @param existingTreasuryAccount existing treasury account
      * @param newTreasuryAccount      new treasury account

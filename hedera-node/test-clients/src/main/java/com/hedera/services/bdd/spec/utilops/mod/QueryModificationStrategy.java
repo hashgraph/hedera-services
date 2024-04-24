@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.wiring;
+package com.hedera.services.bdd.spec.utilops.mod;
 
-/**
- * Trigger to indicate that the platform is done streaming events from the PCES
- */
-public class DoneStreamingPcesTrigger {}
+public interface QueryModificationStrategy extends ModificationStrategy<QueryModification> {}
