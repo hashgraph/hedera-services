@@ -23,7 +23,7 @@ In order to implement [HIP-904](https://hips.hedera.com/hip/hip-904) we need to 
 
 ## Architecture
 
-The implementation related to the new `maxAutoAssociations` behaviour will be gated behind a `tokens.airdrops.maxAutoAssociations.enabled` feature flag.
+The implementation related to the new `maxAutoAssociations` behaviour will be gated behind a `tokens.airdrops.unlimitedMaxAutoAssociations.enabled` feature flag.
 
 ### CryptoCreate
 
