@@ -112,10 +112,10 @@ public class ContractHTSSuite extends HapiSuite {
     List<HapiSpec> negativeSpecs() {
         return List.of(
                 nonZeroTransfersFail(),
-                transferTokensNegativeCasesFail(),
-                transferTokenNegativeCasesFail(),
-                transferNFTsNegativeCasesFail(),
-                transferNFTNegativeCasesFail());
+                shouldFailWhenTransferringTokensWithInvalidParametersAndConditions(),
+                shouldFailOnInvalidTokenTransferParametersAndConditions(),
+                shouldFailWhenTransferringMultipleNFTsWithInvalidParametersAndConditions(),
+                shouldFailOnInvalidTokenTransferParametersAndConditions());
     }
 
     List<HapiSpec> positiveSpecs() {
@@ -186,7 +186,7 @@ public class ContractHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferTokensNegativeCasesFail() {
+    final HapiSpec shouldFailWhenTransferringTokensWithInvalidParametersAndConditions() {
         final var TXN_WITH_EMPTY_AMOUNTS_ARRAY = "TXN_WITH_EMPTY_AMOUNTS_ARRAY";
         final var TXN_WITH_EMPTY_ACCOUNTS_ARRAY = "TXN_WITH_EMPTY_ACCOUNTS_ARRAY";
         final var TXN_WITH_NOT_LENGTH_MATCHING_ACCOUNTS_AND_AMOUNTS =
@@ -195,7 +195,7 @@ public class ContractHTSSuite extends HapiSuite {
         final var TXN_WITH_INVALID_TOKEN_ADDRESS = "TXN_WITH_INVALID_TOKEN_ADDRESS";
         final var TXN_WITH_AMOUNT_BIGGER_THAN_BALANCE = "TXN_WITH_AMOUNT_BIGGER_THAN_BALANCE";
 
-        return defaultHapiSpec("transferTokensNegativeCasesFail")
+        return defaultHapiSpec("shouldFailWhenTransferringTokensWithInvalidParametersAndConditions")
                 .given(
                         newKeyNamed(UNIVERSAL_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -322,14 +322,14 @@ public class ContractHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferTokenNegativeCasesFail() {
+    final HapiSpec shouldFailOnInvalidTokenTransferParametersAndConditions() {
         final var TXN_WITH_INVALID_TOKEN_ADDRESS = "TXN_WITH_INVALID_TOKEN_ADDRESS";
         final var TXN_WITH_INVALID_RECEIVER_ADDRESS = "TXN_WITH_INVALID_RECEIVER_ADDRESS";
         final var TXN_WITH_INVALID_SENDER_ADDRESS = "TXN_WITH_INVALID_SENDER_ADDRESS";
         final var TXN_WITH_NEGATIVE_AMOUNT = "TXN_WITH_NEGATIVE_AMOUNT";
         final var TXN_WITH_AMOUNT_BIGGER_THAN_BALANCE = "TXN_WITH_AMOUNT_BIGGER_THAN_BALANCE";
 
-        return defaultHapiSpec("transferTokenNegativeCasesFail")
+        return defaultHapiSpec("shouldFailOnInvalidTokenTransferParametersAndConditions")
                 .given(
                         newKeyNamed(UNIVERSAL_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -440,7 +440,7 @@ public class ContractHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferNFTsNegativeCasesFail() {
+    final HapiSpec shouldFailWhenTransferringMultipleNFTsWithInvalidParametersAndConditions() {
         final var TXN_WITH_INVALID_TOKEN_ADDRESS = "TXN_WITH_INVALID_TOKEN_ADDRESS";
         final var TXN_WITH_EMPTY_SENDER_ARRAY = "TXN_WITH_EMPTY_SENDER_ARRAY";
         final var TXN_WITH_EMPTY_RECEIVER_ARRAY = "TXN_WITH_EMPTY_RECEIVER_ARRAY";
@@ -449,7 +449,7 @@ public class ContractHTSSuite extends HapiSuite {
         final var TXN_WITH_INVALID_SERIALS = "TXN_WITH_INVALID_SERIALS";
         final var TXN_WITH_NOT_OWNED_NFT = "TXN_WITH_NOT_OWNED_NFT";
 
-        return defaultHapiSpec("transferNFTsNegativeCasesFail")
+        return defaultHapiSpec("shouldFailWhenTransferringMultipleNFTsWithInvalidParametersAndConditions")
                 .given(
                         newKeyNamed(UNIVERSAL_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -598,14 +598,14 @@ public class ContractHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferNFTNegativeCasesFail() {
+    final HapiSpec shouldFailOnInvalidNFTTransferParametersAndConditions() {
         final var TXN_WITH_INVALID_TOKEN_ADDRESS = "TXN_WITH_INVALID_TOKEN_ADDRESS";
         final var TXN_WITH_INVALID_RECEIVER_ADDRESS = "TXN_WITH_INVALID_RECEIVER_ADDRESS";
         final var TXN_WITH_INVALID_SENDER_ADDRESS = "TXN_WITH_INVALID_SENDER_ADDRESS";
         final var TXN_WITH_NEGATIVE_SERIAL = "TXN_WITH_NEGATIVE_SERIAL";
         final var TXN_ACCOUNT_DOES_NOT_OWN_NFT = "TXN_ACCOUNT_DOES_NOT_OWN_NFT";
 
-        return defaultHapiSpec("transferNFTNegativeCasesFail")
+        return defaultHapiSpec("shouldFailOnInvalidNFTTransferParametersAndConditions")
                 .given(
                         newKeyNamed(UNIVERSAL_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
