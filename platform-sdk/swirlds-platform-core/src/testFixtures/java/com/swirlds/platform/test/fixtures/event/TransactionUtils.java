@@ -19,11 +19,11 @@ package com.swirlds.platform.test.fixtures.event;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHashBytes;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
 
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
-import com.swirlds.proto.event.StateSignaturePayload;
 import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
