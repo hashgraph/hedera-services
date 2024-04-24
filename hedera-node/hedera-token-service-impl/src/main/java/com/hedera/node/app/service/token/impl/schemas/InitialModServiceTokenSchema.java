@@ -425,7 +425,14 @@ public class InitialModServiceTokenSchema extends Schema {
             log.info("BBM: starting tokens (both fungible and non-fungible)");
             var tokensToState = ctx.newStates().<TokenID, Token>get(TOKENS_KEY);
             MerkleMapLike.from(tFs).forEachNode((entityNum, merkleToken) -> {
-                var toToken = TokenStateTranslator.tokenFromMerkle(merkleToken);
+                var toToken = TokenStateTranslator.tokenFromMerkle(merkleToken)
+                        .copyBuilder()
+                        // KYC is never granted by default as that would defeat the purpose;
+                        // but for tokens without a KYC key, mono-service would leave this
+                        // as true for convenience. There's no reason to do that in mod-service,
+                        // so just set every migrated token to false.
+                        .accountsKycGrantedByDefault(false)
+                        .build();
                 tokensToState.put(
                         TokenID.newBuilder().tokenNum(entityNum.longValue()).build(), toToken);
             });
