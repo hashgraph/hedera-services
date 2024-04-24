@@ -29,7 +29,7 @@ import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionManager;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
-import com.swirlds.platform.network.topology.ConnectionFactory;
+import com.swirlds.platform.network.topology.ConnectionManagerFactory;
 import com.swirlds.platform.network.topology.StaticTopology;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
@@ -45,7 +45,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ConnectionFactoryTest {
+class ConnectionManagerFactoryTest {
     @Mock
     OutboundConnectionCreator connectionCreator;
 
@@ -57,7 +57,7 @@ class ConnectionFactoryTest {
                 new RandomAddressBookGenerator(r).setSize(numNodes).build();
         final NodeId selfId = addressBook.getNodeId(r.nextInt(numNodes));
         final StaticTopology topology = new StaticTopology(r, addressBook, selfId, numNeighbors);
-        final ConnectionFactory managers = new ConnectionFactory(topology, connectionCreator);
+        final ConnectionManagerFactory managers = new ConnectionManagerFactory(topology, connectionCreator);
         final List<NodeId> neighbors = topology.getNeighbors();
         final NodeId neighbor = neighbors.get(r.nextInt(neighbors.size()));
 
@@ -90,7 +90,7 @@ class ConnectionFactoryTest {
                 new RandomAddressBookGenerator(r).setSize(numNodes).build();
         final NodeId selfId = addressBook.getNodeId(r.nextInt(numNodes));
         final StaticTopology topology = new StaticTopology(r, addressBook, selfId, numNeighbors);
-        final ConnectionFactory managers = new ConnectionFactory(topology, connectionCreator);
+        final ConnectionManagerFactory managers = new ConnectionManagerFactory(topology, connectionCreator);
         final List<NodeId> neighbors = topology.getNeighbors();
         final NodeId neighbor = neighbors.get(r.nextInt(neighbors.size()));
 
@@ -121,12 +121,12 @@ class ConnectionFactoryTest {
                 new RandomAddressBookGenerator(r).setSize(numNodes).build();
         final NodeId selfId = addressBook.getNodeId(r.nextInt(numNodes));
         final StaticTopology topology = new StaticTopology(r, addressBook, selfId, numNeighbors);
-        final ConnectionFactory factory = new ConnectionFactory(topology, connectionCreator);
+        final ConnectionManagerFactory factory = new ConnectionManagerFactory(topology, connectionCreator);
 
         final NodeId testPeer = addressBook.getNodeId(4);
         final List<PeerInfo> peers =
                 List.of(new PeerInfo(testPeer, "localhost", "testHost1", Mockito.mock(Certificate.class)));
-        // keep a reference to the manager for the testPeer
+        // keep a reference to the manager for the testPeer. We don't know if it's an inbound or outbound
         final ConnectionManager manager5 = factory.getManager(testPeer, true) == null
                 ? factory.getManager(testPeer, false)
                 : factory.getManager(testPeer, true);
