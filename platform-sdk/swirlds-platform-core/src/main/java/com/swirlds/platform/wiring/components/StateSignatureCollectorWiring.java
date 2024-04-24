@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.wiring.components;
 
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.transformers.WireTransformer;
@@ -30,7 +31,6 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.SignedStateReserver;
-import com.swirlds.proto.event.StateSignaturePayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
