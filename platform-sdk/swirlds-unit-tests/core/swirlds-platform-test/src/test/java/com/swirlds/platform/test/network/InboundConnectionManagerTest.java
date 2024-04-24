@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.InboundConnectionManager;
 import java.util.ArrayList;
@@ -38,7 +39,7 @@ class InboundConnectionManagerTest {
         final int numThreads = 10;
         final int numConnections = 10;
 
-        final InboundConnectionManager lcs = new InboundConnectionManager();
+        final InboundConnectionManager lcs = new InboundConnectionManager(new NodeId(1));
         final Queue<FakeConnection> all = new ConcurrentLinkedQueue<>();
         final CountDownLatch allDone = new CountDownLatch(numThreads * numConnections);
         final List<Thread> threads = new ArrayList<>();

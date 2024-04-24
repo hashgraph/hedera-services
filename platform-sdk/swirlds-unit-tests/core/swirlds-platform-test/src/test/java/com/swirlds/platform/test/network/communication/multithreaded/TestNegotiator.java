@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.network.communication.multithreaded;
 
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionManager;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
@@ -35,7 +36,7 @@ class TestNegotiator {
     private volatile Exception thrown;
 
     public TestNegotiator(final Connection connection, final TestProtocol protocol) {
-        final ConnectionManager connectionManager = new ReturnOnceConnectionManager(connection);
+        final ConnectionManager connectionManager = new ReturnOnceConnectionManager(new NodeId(1), connection);
         // disconnect the connection after running the protocol once in order to stop the thread
         this.protocol = protocol.setRunProtocol(Connection::disconnect);
         negotiator = new ProtocolNegotiatorThread(

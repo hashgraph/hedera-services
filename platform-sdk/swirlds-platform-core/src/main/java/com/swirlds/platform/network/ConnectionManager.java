@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.network;
 
+import com.swirlds.common.platform.NodeId;
+
 /**
  * Manages a single topological connection, not a single {@link Connection}. This means that if the network topology
  * states that there should be a connection A->B, there will always be a single {@link ConnectionManager}. {@link
@@ -38,6 +40,13 @@ public interface ConnectionManager {
      * @return the connection managed by this instance. can be broken but should never be null
      */
     Connection getConnection();
+
+    /**
+     * Returns the id of the node that this connection manager is responsible for
+     *
+     * @return the id of the node that this connection manager is responsible for
+     */
+    NodeId getNodeId();
 
     /**
      * Provides a new connection to this instance initiated by the peer

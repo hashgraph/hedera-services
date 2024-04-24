@@ -18,10 +18,13 @@ package com.swirlds.platform.network;
 
 import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
 
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.locks.AutoClosableResourceLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.LockedResource;
 import com.swirlds.platform.network.connection.NotConnectedConnection;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.concurrent.locks.Condition;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,6 +45,17 @@ public class InboundConnectionManager implements ConnectionManager {
     private final AutoClosableResourceLock<Connection> lock = Locks.createResourceLock(currentConn);
     /** condition to wait on for a new connection */
     private final Condition newConnection = lock.newCondition();
+
+    private final NodeId nodeId;
+
+    /**
+     * Creates a new instance of the connection manager
+     *
+     * @param nodeId the id of the node that this connection manager is responsible for
+     */
+    public InboundConnectionManager(@NonNull final NodeId nodeId) {
+        this.nodeId = Objects.requireNonNull(nodeId);
+    }
 
     /**
      * {@inheritDoc}
@@ -64,6 +78,14 @@ public class InboundConnectionManager implements ConnectionManager {
     @Override
     public Connection getConnection() {
         return currentConn;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NodeId getNodeId() {
+        return nodeId;
     }
 
     /**

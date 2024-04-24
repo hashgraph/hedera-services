@@ -64,8 +64,8 @@ import com.swirlds.platform.network.protocol.ProtocolFactory;
 import com.swirlds.platform.network.protocol.ProtocolRunnable;
 import com.swirlds.platform.network.protocol.ReconnectProtocolFactory;
 import com.swirlds.platform.network.protocol.SyncProtocolFactory;
+import com.swirlds.platform.network.topology.ConnectionFactory;
 import com.swirlds.platform.network.topology.NetworkTopology;
-import com.swirlds.platform.network.topology.ConnectivityManager;
 import com.swirlds.platform.network.topology.StaticTopology;
 import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
 import com.swirlds.platform.reconnect.ReconnectController;
@@ -123,7 +123,7 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
     protected final NetworkTopology topology;
     protected final NetworkMetrics networkMetrics;
     protected final ReconnectHelper reconnectHelper;
-    protected final ConnectivityManager connectionManagers;
+    protected final ConnectionFactory connectionFactory;
     protected final FallenBehindManagerImpl fallenBehindManager;
     protected final SyncManagerImpl syncManager;
     protected final ReconnectThrottle reconnectThrottle;
@@ -197,13 +197,13 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         // create an instance that can create new outbound connections
         final OutboundConnectionCreator connectionCreator =
                 new OutboundConnectionCreator(platformContext, selfId, this, socketFactory, addressBook);
-        connectionManagers = new ConnectivityManager(topology, connectionCreator);
+        connectionFactory = new ConnectionFactory(topology, connectionCreator);
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
                 platformContext,
                 this,
                 peerIdentifier,
                 selfId,
-                connectionManagers::newConnection,
+                connectionFactory::newConnection,
                 platformContext.getTime());
         // allow other members to create connections to me
         final Address address = addressBook.getAddress(selfId);
@@ -378,7 +378,7 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
                     .setThreadName("SyncProtocolWith" + otherId)
                     .setHangingThreadPeriod(hangingThreadDuration)
                     .setWork(new ProtocolNegotiatorThread(
-                            connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
+                            connectionFactory.getManager(otherId, topology.shouldConnectTo(otherId)),
                             syncConfig.syncSleepAfterFailedNegotiation(),
                             handshakeProtocols,
                             new NegotiationProtocols(List.of(

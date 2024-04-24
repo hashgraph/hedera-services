@@ -30,16 +30,20 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * Pre-builds connection managers for the supplied topology, does not allow changes at runtime
  */
-public class ConnectivityManager {
-    private static final Logger logger = LogManager.getLogger(ConnectivityManager.class);
+public class ConnectionFactory {
+    private static final Logger logger = LogManager.getLogger(ConnectionFactory.class);
     private final NetworkTopology topology;
     private final Map<ConnectionMapping, ConnectionManager> connectionManagers;
+    private final OutboundConnectionCreator connectionCreator;
 
     /**
      * Create a new connectivity manager with the given topology and connection creator
@@ -47,29 +51,45 @@ public class ConnectivityManager {
      * @param topology          the network topology
      * @param connectionCreator the connection creator
      */
-    public ConnectivityManager(final NetworkTopology topology, final OutboundConnectionCreator connectionCreator) {
-        this.topology = topology;
+    public ConnectionFactory(
+            @NonNull final NetworkTopology topology, @NonNull final OutboundConnectionCreator connectionCreator) {
+        this.topology = Objects.requireNonNull(topology);
+        this.connectionCreator = Objects.requireNonNull(connectionCreator);
         // is thread safe because it never changes
-        connectionManagers = new HashMap<>();
+        this.connectionManagers = new HashMap<>();
         for (final NodeId neighbor : topology.getNeighbors()) {
-            if (topology.shouldConnectToMe(neighbor)) {
-                connectionManagers.put(new ConnectionMapping(neighbor, false), new InboundConnectionManager());
-            }
-            if (topology.shouldConnectTo(neighbor)) {
-                connectionManagers.put(
-                        new ConnectionMapping(neighbor, true),
-                        new OutboundConnectionManager(neighbor, connectionCreator));
-            }
+            createConnectionManager(neighbor);
         }
     }
 
     /**
+     * returns an updated list of connection managers based on the provided list of peers
+     * This is not expected to be a frequently travelled path, so locking is ok
      *
+     * @param peers the list of peers to update the connection managers with
      */
-    public List<ConnectionManager> updatePeers(@NonNull final List<PeerInfo> peers) {
-        // update the connection managers with the new peers
-        // return the list of connection managers that need to be updated
-        return null;
+    @NonNull
+    public synchronized List<ConnectionManager> updatePeers(@NonNull final List<PeerInfo> peers) {
+        // Get all nodeIds from the peers list
+        final Set<NodeId> peerNodeIds = peers.stream().map(PeerInfo::nodeId).collect(Collectors.toSet());
+
+        // Get all nodeIds from the connectionManagers map
+        final Set<NodeId> managerNodeIds =
+                connectionManagers.keySet().stream().map(ConnectionMapping::id).collect(Collectors.toSet());
+
+        // create managers for all nodeIds in peers list not in connectionManagers
+        final List<NodeId> managersToCreate = peerNodeIds.stream()
+                .filter(nodeId -> !managerNodeIds.contains(nodeId))
+                .toList();
+        managersToCreate.forEach(this::createConnectionManager);
+
+        // Remove managers for all nodeIds in connectionManagers not in peers list
+        final List<ConnectionMapping> managersToRemove = connectionManagers.keySet().stream()
+                .filter(connectionMapping -> !peerNodeIds.contains(connectionMapping.id()))
+                .toList();
+        managersToRemove.forEach(connectionManagers::remove);
+
+        return List.copyOf(connectionManagers.values());
     }
 
     public ConnectionManager getManager(final NodeId id, final boolean outbound) {
@@ -84,7 +104,7 @@ public class ConnectivityManager {
      * @param newConn
      * 		a new connection that has been established
      */
-    public void newConnection(final Connection newConn) throws InterruptedException {
+    public void newConnection(@NonNull final Connection newConn) throws InterruptedException {
         if (!topology.shouldConnectToMe(newConn.getOtherId())) {
             logger.error(EXCEPTION.getMarker(), "Unexpected new connection {}", newConn.getDescription());
             newConn.disconnect();
@@ -108,6 +128,21 @@ public class ConnectivityManager {
                     e);
             newConn.disconnect();
             throw e;
+        }
+    }
+
+    /**
+     * Create a new connection manager for the given neighbor
+     *
+     * @param neighbor the neighbor to create a connection manager for
+     */
+    private void createConnectionManager(@NonNull final NodeId neighbor) {
+        if (topology.shouldConnectToMe(neighbor)) {
+            connectionManagers.put(new ConnectionMapping(neighbor, false), new InboundConnectionManager(neighbor));
+        }
+        if (topology.shouldConnectTo(neighbor)) {
+            connectionManagers.put(
+                    new ConnectionMapping(neighbor, true), new OutboundConnectionManager(neighbor, connectionCreator));
         }
     }
 

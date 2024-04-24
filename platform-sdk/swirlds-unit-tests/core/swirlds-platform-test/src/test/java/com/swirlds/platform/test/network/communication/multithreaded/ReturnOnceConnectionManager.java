@@ -16,8 +16,11 @@
 
 package com.swirlds.platform.test.network.communication.multithreaded;
 
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionManager;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * A connection manager that returns a connection once after which it throws an interrupted exception every time
@@ -25,9 +28,11 @@ import com.swirlds.platform.network.ConnectionManager;
 public class ReturnOnceConnectionManager implements ConnectionManager {
     final Connection connection;
     private volatile boolean connectionReturned = false;
+    private final NodeId nodeId;
 
-    public ReturnOnceConnectionManager(final Connection connection) {
-        this.connection = connection;
+    public ReturnOnceConnectionManager(@NonNull final NodeId nodeId, @NonNull final Connection connection) {
+        this.nodeId = Objects.requireNonNull(nodeId);
+        this.connection = Objects.requireNonNull(connection);
     }
 
     @Override
@@ -42,6 +47,14 @@ public class ReturnOnceConnectionManager implements ConnectionManager {
     @Override
     public Connection getConnection() {
         throw new IllegalStateException("unsupported");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NodeId getNodeId() {
+        return nodeId;
     }
 
     @Override
