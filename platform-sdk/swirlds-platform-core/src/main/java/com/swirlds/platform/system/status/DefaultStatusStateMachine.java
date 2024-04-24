@@ -92,6 +92,7 @@ public class DefaultStatusStateMachine implements StatusStateMachine {
      */
     @Nullable
     private PlatformStatusLogic getNewLogic(@NonNull final PlatformStatusAction action) {
+        logger.error(EXCEPTION.getMarker(), "Processing action: {}", action.getClass().getName());
         Objects.requireNonNull(action);
 
         final Class<? extends PlatformStatusAction> actionClass = action.getClass();

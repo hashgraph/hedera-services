@@ -42,7 +42,7 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.status.PlatformStatusNexus;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.platform.wiring.components.StateAndRound;
@@ -87,7 +87,7 @@ public class ConsensusRoundHandler {
     /**
      * Enables submitting platform status actions.
      */
-    private final PlatformStatusNexus statusNexus;
+    private final StatusActionSubmitter statusActionSubmitter;
 
     private final SoftwareVersion softwareVersion;
 
@@ -111,20 +111,20 @@ public class ConsensusRoundHandler {
     /**
      * Constructor
      *
-     * @param platformContext    contains various platform utilities
-     * @param swirldStateManager the swirld state manager to send events to
-     * @param statusNexus        enables submitting of platform status actions
-     * @param softwareVersion    the current version of the software
+     * @param platformContext       contains various platform utilities
+     * @param swirldStateManager    the swirld state manager to send events to
+     * @param statusActionSubmitter enables submitting of platform status actions
+     * @param softwareVersion       the current version of the software
      */
     public ConsensusRoundHandler(
             @NonNull final PlatformContext platformContext,
             @NonNull final SwirldStateManager swirldStateManager,
-            @NonNull final PlatformStatusNexus statusNexus,
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final SoftwareVersion softwareVersion) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.swirldStateManager = Objects.requireNonNull(swirldStateManager);
-        this.statusNexus = Objects.requireNonNull(statusNexus);
+        this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
 
         this.roundsNonAncient = platformContext
@@ -184,7 +184,7 @@ public class ConsensusRoundHandler {
         }
 
         if (swirldStateManager.isInFreezePeriod(consensusRound.getConsensusTimestamp())) {
-            statusNexus.submitStatusAction(new FreezePeriodEnteredAction(consensusRound.getRoundNum()));
+            statusActionSubmitter.submitStatusAction(new FreezePeriodEnteredAction(consensusRound.getRoundNum()));
             freezeRoundReceived = true;
         }
 

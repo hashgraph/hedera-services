@@ -37,7 +37,7 @@ import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.status.PlatformStatusNexus;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
 import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.MethodOrderer;
@@ -89,7 +89,7 @@ class SyncManagerTest {
                             addressBook,
                             selfId,
                             connectionGraph,
-                            mock(PlatformStatusNexus.class),
+                            mock(StatusActionSubmitter.class),
                             () -> {},
                             reconnectConfig),
                     eventConfig);

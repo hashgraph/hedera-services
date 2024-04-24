@@ -456,14 +456,14 @@ public class SwirldsPlatform implements Platform {
                 currentAddressBook,
                 selfId,
                 new SwirldStateMetrics(platformContext.getMetrics()),
-                statusNexus,
+                platformWiring.getStatusActionSubmitter(),
                 initialState.getState(),
                 appVersion);
 
         final EventWindowManager eventWindowManager = new DefaultEventWindowManager();
 
-        final ConsensusRoundHandler consensusRoundHandler =
-                new ConsensusRoundHandler(platformContext, swirldStateManager, statusNexus, appVersion);
+        final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
+                platformContext, swirldStateManager, platformWiring.getStatusActionSubmitter(), appVersion);
 
         final LongSupplier intakeQueueSizeSupplier =
                 oldStyleIntakeQueue == null ? platformWiring.getIntakeQueueSizeSupplier() : oldStyleIntakeQueue::size;
@@ -507,7 +507,8 @@ public class SwirldsPlatform implements Platform {
                 savedStateController,
                 signedStateHasher,
                 appNotifier,
-                publisher);
+                publisher,
+                statusNexus);
 
         final Hash runningEventHash = initialState.getState().getPlatformState().getRunningEventHash() == null
                 ? platformContext.getCryptography().getNullHash()
@@ -568,6 +569,7 @@ public class SwirldsPlatform implements Platform {
                 swirldStateManager,
                 latestCompleteStateNexus,
                 syncMetrics,
+                platformWiring.getStatusActionSubmitter(),
                 statusNexus,
                 this::loadReconnectState,
                 this::clearAllPipelines,
@@ -779,7 +781,9 @@ public class SwirldsPlatform implements Platform {
 
             // kick off transition to RECONNECT_COMPLETE before beginning to save the reconnect state to disk
             // this guarantees that the platform status will be RECONNECT_COMPLETE before the state is saved
-            statusNexus.submitStatusAction(new ReconnectCompleteAction(signedState.getRound()));
+            platformWiring
+                    .getStatusActionSubmitter()
+                    .submitStatusAction(new ReconnectCompleteAction(signedState.getRound()));
             latestImmutableStateNexus.setState(signedState.reserve("set latest immutable to reconnect state"));
             savedStateController.reconnectStateReceived(
                     signedState.reserve("savedStateController.reconnectStateReceived"));
@@ -910,7 +914,7 @@ public class SwirldsPlatform implements Platform {
      * Replay preconsensus events.
      */
     private void replayPreconsensusEvents() {
-        statusNexus.submitStatusAction(new StartedReplayingEventsAction());
+        platformWiring.getStatusActionSubmitter().submitStatusAction(new StartedReplayingEventsAction());
 
         final boolean emergencyRecoveryNeeded = emergencyRecoveryManager.isEmergencyStateRequired();
 
@@ -935,8 +939,10 @@ public class SwirldsPlatform implements Platform {
         platformWiring.flushStateHasher();
         platformWiring.getIssDetectorWiring().endOfPcesReplay().put(NoInput.getInstance());
 
-        statusNexus.submitStatusAction(
-                new DoneReplayingEventsAction(Time.getCurrent().now()));
+        platformWiring
+                .getStatusActionSubmitter()
+                .submitStatusAction(
+                        new DoneReplayingEventsAction(Time.getCurrent().now()));
     }
 
     /**

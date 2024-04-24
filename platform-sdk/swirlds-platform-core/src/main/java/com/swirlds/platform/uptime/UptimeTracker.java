@@ -30,7 +30,7 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.status.PlatformStatusNexus;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.SelfEventReachedConsensusAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -61,28 +61,28 @@ public class UptimeTracker {
     /**
      * Enables submitting platform status actions.
      */
-    private final PlatformStatusNexus statusNexus;
+    private final StatusActionSubmitter statusActionSubmitter;
 
     /**
      * Construct a new uptime detector.
      *
-     * @param platformContext the platform context
-     * @param addressBook     the address book
-     * @param statusNexus     enables submitting platform status actions
-     * @param selfId          the ID of this node
-     * @param time            a source of time
+     * @param platformContext       the platform context
+     * @param addressBook           the address book
+     * @param statusActionSubmitter enables submitting platform status actions
+     * @param selfId                the ID of this node
+     * @param time                  a source of time
      */
     public UptimeTracker(
             @NonNull PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
-            @NonNull final PlatformStatusNexus statusNexus,
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final NodeId selfId,
             @NonNull final Time time) {
 
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
         this.time = Objects.requireNonNull(time);
         this.addressBook = Objects.requireNonNull(addressBook);
-        this.statusNexus = Objects.requireNonNull(statusNexus);
+        this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
         this.degradationThreshold = platformContext
                 .getConfiguration()
                 .getConfigData(UptimeConfig.class)
@@ -197,7 +197,7 @@ public class UptimeTracker {
                 lastSelfEventTime.set(lastSelfEventConsensusTimestamp);
 
                 // the action receives the wall clock time, NOT the consensus timestamp
-                statusNexus.submitStatusAction(new SelfEventReachedConsensusAction(time.now()));
+                statusActionSubmitter.submitStatusAction(new SelfEventReachedConsensusAction(time.now()));
             }
         }
     }

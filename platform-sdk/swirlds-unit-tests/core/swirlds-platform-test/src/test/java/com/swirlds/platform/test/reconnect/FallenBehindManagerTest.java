@@ -28,7 +28,7 @@ import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.status.PlatformStatusNexus;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,7 +51,7 @@ class FallenBehindManagerTest {
             addressBook,
             selfId,
             graph,
-            mock(PlatformStatusNexus.class),
+            mock(StatusActionSubmitter.class),
             fallenBehindNotification::incrementAndGet,
             config);
 

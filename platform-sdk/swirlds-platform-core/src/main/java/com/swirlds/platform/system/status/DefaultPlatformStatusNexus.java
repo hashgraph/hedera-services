@@ -19,7 +19,6 @@ package com.swirlds.platform.system.status;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.stats.StatConstructor;
-import com.swirlds.platform.system.status.actions.PlatformStatusAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -38,7 +37,7 @@ public class DefaultPlatformStatusNexus implements PlatformStatusNexus {
      * @param platformContext the platform context
      */
     public DefaultPlatformStatusNexus(@NonNull final PlatformContext platformContext) {
-        this.currentStatus = new AtomicReference<>(null);
+        this.currentStatus = new AtomicReference<>(PlatformStatus.STARTING_UP);
 
         platformContext
                 .getMetrics()
@@ -52,10 +51,6 @@ public class DefaultPlatformStatusNexus implements PlatformStatusNexus {
     @NonNull
     @Override
     public PlatformStatus getCurrentStatus() {
-        if (currentStatus.get() == null) {
-            throw new IllegalStateException("Platform status has not been set");
-        }
-
         return currentStatus.get();
     }
 
@@ -65,14 +60,5 @@ public class DefaultPlatformStatusNexus implements PlatformStatusNexus {
     @Override
     public void setCurrentStatus(@NonNull final PlatformStatus status) {
         currentStatus.set(status);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public PlatformStatusAction submitStatusAction(@NonNull final PlatformStatusAction action) {
-        return action;
     }
 }

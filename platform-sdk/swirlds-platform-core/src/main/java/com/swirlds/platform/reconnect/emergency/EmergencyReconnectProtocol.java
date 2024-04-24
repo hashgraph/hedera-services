@@ -35,7 +35,7 @@ import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.system.status.PlatformStatusNexus;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
@@ -66,10 +66,10 @@ public class EmergencyReconnectProtocol implements Protocol {
     /**
      * Enables submitting platform status actions
      */
-    private final PlatformStatusNexus statusNexus;
+    private final StatusActionSubmitter statusActionSubmitter;
 
     /**
-     * @param platformContext          the platform context
+     * @param  platformContext         the platform context
      * @param time                     provides wall clock time
      * @param threadManager            responsible for managing thread lifecycles
      * @param notificationEngine       the notification engine to use
@@ -80,7 +80,7 @@ public class EmergencyReconnectProtocol implements Protocol {
      * @param reconnectSocketTimeout   the socket timeout to use when executing a reconnect
      * @param reconnectMetrics         tracks reconnect metrics
      * @param reconnectController      controls reconnecting as a learner
-     * @param statusNexus              enables submitting platform status actions
+     * @param statusActionSubmitter    enables submitting platform status actions
      * @param configuration            the platform configuration
      */
     public EmergencyReconnectProtocol(
@@ -95,7 +95,7 @@ public class EmergencyReconnectProtocol implements Protocol {
             @NonNull final Duration reconnectSocketTimeout,
             @NonNull final ReconnectMetrics reconnectMetrics,
             @NonNull final ReconnectController reconnectController,
-            @NonNull final PlatformStatusNexus statusNexus,
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Configuration configuration) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
@@ -109,7 +109,7 @@ public class EmergencyReconnectProtocol implements Protocol {
         this.reconnectSocketTimeout = Objects.requireNonNull(reconnectSocketTimeout);
         this.reconnectMetrics = Objects.requireNonNull(reconnectMetrics);
         this.reconnectController = Objects.requireNonNull(reconnectController);
-        this.statusNexus = Objects.requireNonNull(statusNexus);
+        this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
         this.configuration = Objects.requireNonNull(configuration);
     }
 
@@ -190,7 +190,7 @@ public class EmergencyReconnectProtocol implements Protocol {
                             stateConfig,
                             emergencyRecoveryManager.getEmergencyRecoveryFile(),
                             reconnectController,
-                            statusNexus)
+                            statusActionSubmitter)
                     .execute(connection);
             if (!peerHasState) {
                 reconnectController.cancelLearnerPermit();

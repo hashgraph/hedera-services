@@ -48,7 +48,7 @@ import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.status.PlatformStatusNexus;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.platform.test.fixtures.event.EventImplTestUtils;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
@@ -132,10 +132,10 @@ class ConsensusRoundHandlerTests {
         final PlatformState platformState = mock(PlatformState.class);
         final SwirldStateManager swirldStateManager = mockSwirldStateManager(platformState);
 
-        final PlatformStatusNexus statusNexus = mock(PlatformStatusNexus.class);
+        final StatusActionSubmitter statusActionSubmitter = mock(StatusActionSubmitter.class);
 
         final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
-                platformContext, swirldStateManager, statusNexus, mock(SoftwareVersion.class));
+                platformContext, swirldStateManager, statusActionSubmitter, mock(SoftwareVersion.class));
 
         final EventImpl keystoneEvent = buildEvent();
         final List<EventImpl> events = List.of(buildEvent(), buildEvent(), buildEvent());
@@ -152,7 +152,7 @@ class ConsensusRoundHandlerTests {
 
         events.forEach(ConsensusRoundHandlerTests::assertEventReachedConsensus);
 
-        verify(statusNexus, never()).submitStatusAction(any(FreezePeriodEnteredAction.class));
+        verify(statusActionSubmitter, never()).submitStatusAction(any(FreezePeriodEnteredAction.class));
         verify(swirldStateManager).handleConsensusRound(consensusRound);
         verify(swirldStateManager, never()).savedStateInFreezePeriod();
         verify(platformState)
@@ -169,10 +169,10 @@ class ConsensusRoundHandlerTests {
         final SwirldStateManager swirldStateManager = mockSwirldStateManager(platformState);
         when(swirldStateManager.isInFreezePeriod(any())).thenReturn(true);
 
-        final PlatformStatusNexus statusNexus = mock(PlatformStatusNexus.class);
+        final StatusActionSubmitter statusActionSubmitter = mock(StatusActionSubmitter.class);
 
         final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
-                platformContext, swirldStateManager, statusNexus, mock(SoftwareVersion.class));
+                platformContext, swirldStateManager, statusActionSubmitter, mock(SoftwareVersion.class));
 
         final EventImpl keystoneEvent = buildEvent();
         final List<EventImpl> events = List.of(buildEvent(), buildEvent(), buildEvent());
@@ -189,7 +189,7 @@ class ConsensusRoundHandlerTests {
 
         events.forEach(ConsensusRoundHandlerTests::assertEventReachedConsensus);
 
-        verify(statusNexus).submitStatusAction(any(FreezePeriodEnteredAction.class));
+        verify(statusActionSubmitter).submitStatusAction(any(FreezePeriodEnteredAction.class));
         verify(swirldStateManager).handleConsensusRound(consensusRound);
         verify(swirldStateManager).savedStateInFreezePeriod();
         verify(platformState)
@@ -205,7 +205,7 @@ class ConsensusRoundHandlerTests {
 
         postFreezeEvents.forEach(ConsensusRoundHandlerTests::assertEventDidNotReachConsensus);
 
-        verify(statusNexus).submitStatusAction(any(FreezePeriodEnteredAction.class));
+        verify(statusActionSubmitter).submitStatusAction(any(FreezePeriodEnteredAction.class));
         verify(swirldStateManager).handleConsensusRound(consensusRound);
         verify(swirldStateManager).savedStateInFreezePeriod();
         verify(platformState)
@@ -227,7 +227,7 @@ class ConsensusRoundHandlerTests {
         when(swirldStateManager.getStateForSigning()).thenReturn(state);
 
         final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
-                platformContext, swirldStateManager, mock(PlatformStatusNexus.class), mock(SoftwareVersion.class));
+                platformContext, swirldStateManager, mock(StatusActionSubmitter.class), mock(SoftwareVersion.class));
 
         final EventImpl keystoneEvent = buildEvent();
         final List<EventImpl> events = List.of(buildEvent(), buildEvent(), buildEvent());

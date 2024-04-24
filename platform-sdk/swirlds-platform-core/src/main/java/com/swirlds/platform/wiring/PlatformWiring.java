@@ -20,6 +20,7 @@ import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformC
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration.NO_OP_CONFIGURATION;
 import static com.swirlds.common.wiring.wires.SolderType.INJECT;
 import static com.swirlds.common.wiring.wires.SolderType.OFFER;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.base.state.Startable;
@@ -91,6 +92,7 @@ import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusConfig;
 import com.swirlds.platform.system.status.PlatformStatusNexus;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.system.status.actions.PlatformStatusAction;
 import com.swirlds.platform.util.HashLogger;
@@ -576,9 +578,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         statusStateMachineWiring
                 .getOutputWire()
                 .solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::updatePlatformStatus));
-        platformStatusNexusWiring
-                .getOutputWire()
-                .solderTo(statusStateMachineWiring.getInputWire(StatusStateMachine::submitStatusAction));
 
         solderNotifier();
 
@@ -650,6 +649,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param signedStateHasher         the signed state hasher to bind
      * @param notifier                  the notifier to bind
      * @param platformPublisher         the platform publisher to bind
+     * @param platformStatusNexus       the platform status nexus to bind
      */
     public void bind(
             @NonNull final PlatformComponentBuilder builder,
@@ -670,7 +670,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final SavedStateController savedStateController,
             @NonNull final SignedStateHasher signedStateHasher,
             @NonNull final AppNotifier notifier,
-            @NonNull final PlatformPublisher platformPublisher) {
+            @NonNull final PlatformPublisher platformPublisher,
+            @NonNull final PlatformStatusNexus platformStatusNexus) {
 
         eventHasherWiring.bind(builder::buildEventHasher);
         internalEventValidatorWiring.bind(builder::buildInternalEventValidator);
@@ -708,6 +709,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         notifierWiring.bind(notifier);
         platformPublisherWiring.bind(platformPublisher);
         stateGarbageCollectorWiring.bind(builder::buildStateGarbageCollector);
+        statusStateMachineWiring.bind(builder::buildStatusStateMachine);
+        platformStatusNexusWiring.bind(platformStatusNexus);
     }
 
     /**
@@ -841,6 +844,13 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     public @NonNull IssDetectorWiring getIssDetectorWiring() {
         return issDetectorWiring;
+    }
+
+    @NonNull
+    public StatusActionSubmitter getStatusActionSubmitter() {
+        return action -> statusStateMachineWiring
+                .getInputWire(StatusStateMachine::submitStatusAction)
+                .put(action);
     }
 
     /**

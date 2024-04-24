@@ -56,6 +56,8 @@ import com.swirlds.platform.state.signed.SignedStateHasher;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
+import com.swirlds.platform.system.status.PlatformStatusNexus;
+import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.util.HashLogger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -90,6 +92,7 @@ class PlatformWiringTests {
                 .withConsensusEventStream(mock(ConsensusEventStream.class))
                 .withPcesSequencer(mock(PcesSequencer.class))
                 .withRoundDurabilityBuffer(mock(RoundDurabilityBuffer.class))
+                .withStatusStateMachine(mock(StatusStateMachine.class))
                 .withTransactionPrehandler(mock(TransactionPrehandler.class))
                 .withPcesWriter(mock(PcesWriter.class));
 
@@ -112,7 +115,8 @@ class PlatformWiringTests {
                 mock(SavedStateController.class),
                 mock(SignedStateHasher.class),
                 mock(AppNotifier.class),
-                mock(PlatformPublisher.class));
+                mock(PlatformPublisher.class),
+                mock(PlatformStatusNexus.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());
     }
