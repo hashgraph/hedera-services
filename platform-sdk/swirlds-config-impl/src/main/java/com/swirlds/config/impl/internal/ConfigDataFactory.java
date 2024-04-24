@@ -17,9 +17,9 @@
 package com.swirlds.config.impl.internal;
 
 import com.swirlds.config.api.ConfigData;
-import com.swirlds.config.api.ConfigDefault;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.DefaultValue;
 import com.swirlds.config.extensions.reflection.ConfigReflectionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -205,13 +205,13 @@ class ConfigDataFactory {
         Objects.requireNonNull(component, "component must not be null");
 
         final ConfigProperty configPropertyAnnotation = component.getAnnotation(ConfigProperty.class);
-        final ConfigDefault configDefaultAnnotation = component.getAnnotation(ConfigDefault.class);
-        verifyAtMostOneConfigAnnotation(component, configPropertyAnnotation, configDefaultAnnotation);
+        final DefaultValue defaultValueAnnotation = component.getAnnotation(DefaultValue.class);
+        verifyAtMostOneConfigAnnotation(component, configPropertyAnnotation, defaultValueAnnotation);
 
         if (configPropertyAnnotation != null && isDefaultDefined(configPropertyAnnotation.defaultValue())) {
             return Optional.of(configPropertyAnnotation.defaultValue());
-        } else if (configDefaultAnnotation != null && isDefaultDefined(configDefaultAnnotation.value())) {
-            return Optional.of(configDefaultAnnotation.value());
+        } else if (defaultValueAnnotation != null && isDefaultDefined(defaultValueAnnotation.value())) {
+            return Optional.of(defaultValueAnnotation.value());
         } else {
             return Optional.empty();
         }
@@ -221,13 +221,13 @@ class ConfigDataFactory {
         Objects.requireNonNull(component, "component must not be null");
 
         final ConfigProperty configPropertyAnnotation = component.getAnnotation(ConfigProperty.class);
-        final ConfigDefault configDefaultAnnotation = component.getAnnotation(ConfigDefault.class);
-        verifyAtMostOneConfigAnnotation(component, configPropertyAnnotation, configDefaultAnnotation);
+        final DefaultValue defaultValueAnnotation = component.getAnnotation(DefaultValue.class);
+        verifyAtMostOneConfigAnnotation(component, configPropertyAnnotation, defaultValueAnnotation);
 
         if (configPropertyAnnotation != null) {
             return isDefaultDefined(configPropertyAnnotation.defaultValue());
-        } else if (configDefaultAnnotation != null) {
-            return isDefaultDefined(configDefaultAnnotation.value());
+        } else if (defaultValueAnnotation != null) {
+            return isDefaultDefined(defaultValueAnnotation.value());
         } else {
             return false;
         }
@@ -248,15 +248,15 @@ class ConfigDataFactory {
      *
      * @param component                the record component to verify
      * @param configPropertyAnnotation the config property annotation, null if not present
-     * @param configDefaultAnnotation  the config default annotation, null if not present
+     * @param defaultValueAnnotation  the config default annotation, null if not present
      */
     private static void verifyAtMostOneConfigAnnotation(
             @NonNull final RecordComponent component,
             @Nullable final ConfigProperty configPropertyAnnotation,
-            @Nullable final ConfigDefault configDefaultAnnotation) {
-        if (configPropertyAnnotation != null && configDefaultAnnotation != null) {
+            @Nullable final DefaultValue defaultValueAnnotation) {
+        if (configPropertyAnnotation != null && defaultValueAnnotation != null) {
             throw new IllegalArgumentException(
-                    "Can not have both @ConfigProperty and @ConfigDefault annotations on the same record component: "
+                    "Can not have both @ConfigProperty and @DefaultValue annotations on the same record component: "
                             + component.getDeclaringRecord().getName() + "." + component.getName());
         }
     }

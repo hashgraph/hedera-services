@@ -29,7 +29,7 @@ import java.lang.annotation.Target;
  */
 @Retention(RUNTIME)
 @Target(RECORD_COMPONENT)
-public @interface ConfigDefault {
+public @interface DefaultValue {
 
     /**
      * This value is used to define default value of the property.
