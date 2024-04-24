@@ -671,7 +671,7 @@ public class HapiSpecRegistry {
         return get(name, AccountID.class);
     }
 
-    public AccountID aliasIdFor(String keyName) {
+    public AccountID keyAliasIdFor(String keyName) {
         final var key = get(keyName, Key.class);
         return AccountID.newBuilder().setAlias(key.toByteString()).build();
     }

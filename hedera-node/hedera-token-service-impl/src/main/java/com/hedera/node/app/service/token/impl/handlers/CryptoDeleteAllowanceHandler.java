@@ -20,11 +20,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.NFT_DELETE_ALLOWANCE_SIZE;
 import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.isValidOwner;
 import static com.hedera.node.app.service.token.impl.validators.ApproveAllowanceValidator.getEffectiveOwner;
+import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Collections.emptyList;
@@ -76,6 +78,7 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
         final var allowances = op.nftAllowancesOrThrow();
         validateTruePreCheck(!allowances.isEmpty(), EMPTY_ALLOWANCES);
         for (final var allowance : allowances) {
+            mustExist(allowance.tokenId(), INVALID_TOKEN_ID);
             validateTruePreCheck(!allowance.serialNumbers().isEmpty(), EMPTY_ALLOWANCES);
         }
     }
