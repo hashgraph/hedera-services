@@ -16,50 +16,27 @@
 
 package com.swirlds.platform.system.transaction;
 
-import static com.swirlds.platform.system.events.ConsensusData.NO_CONSENSUS;
-
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
 /**
  * A transaction that may or may not reach consensus.
  */
 public abstract non-sealed class ConsensusTransactionImpl implements ConsensusTransaction {
-
-    /**
-     * The consensus order of the event that contains this transaction, or -1 if consensus has not yet been reached.
-     * NOT serialized and not part of object equality or hash code
-     */
-    private long consensusOrder = NO_CONSENSUS;
-
     /**
      * The consensus timestamp of this transaction, or null if consensus has not yet been reached.
      * NOT serialized and not part of object equality or hash code
      */
     private Instant consensusTimestamp;
+    /** An optional metadata object set by the application */
+    private Object metadata;
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public long getConsensusOrder() {
-        return consensusOrder;
-    }
-
-    /**
-     * Sets the consensus order of this transaction
-     *
-     * @param consensusOrder
-     * 		the consensus order
-     */
-    public void setConsensusOrder(final long consensusOrder) {
-        this.consensusOrder = consensusOrder;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Instant getConsensusTimestamp() {
+    public @Nullable Instant getConsensusTimestamp() {
         return consensusTimestamp;
     }
 
@@ -69,7 +46,23 @@ public abstract non-sealed class ConsensusTransactionImpl implements ConsensusTr
      * @param consensusTimestamp
      * 		the consensus timestamp
      */
-    public void setConsensusTimestamp(final Instant consensusTimestamp) {
+    public void setConsensusTimestamp(@NonNull final Instant consensusTimestamp) {
         this.consensusTimestamp = consensusTimestamp;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public <T> @Nullable T getMetadata() {
+        return (T) metadata;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public <T> void setMetadata(@Nullable final T metadata) {
+        this.metadata = metadata;
     }
 }

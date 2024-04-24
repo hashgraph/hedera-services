@@ -131,7 +131,10 @@ public final class TokenPauseSpecs extends HapiSuite {
                 .when(tokenCreate(PRIMARY), tokenCreate(SECONDARY).adminKey(ADMIN_KEY))
                 .then(
                         tokenUpdate(PRIMARY).pauseKey(PAUSE_KEY).hasKnownStatus(TOKEN_IS_IMMUTABLE),
-                        tokenUpdate(SECONDARY).pauseKey(PAUSE_KEY).hasKnownStatus(TOKEN_HAS_NO_PAUSE_KEY));
+                        tokenUpdate(SECONDARY)
+                                .pauseKey(PAUSE_KEY)
+                                .signedByPayerAnd(ADMIN_KEY)
+                                .hasKnownStatus(TOKEN_HAS_NO_PAUSE_KEY));
     }
 
     @HapiTest
@@ -293,7 +296,10 @@ public final class TokenPauseSpecs extends HapiSuite {
                                 .withCustom(fixedHbarFee(100, TOKEN_TREASURY))
                                 .hasKnownStatus(TOKEN_IS_PAUSED),
                         wipeTokenAccount(uniqueToken, firstUser, List.of(1L)).hasKnownStatus(TOKEN_IS_PAUSED),
-                        tokenUpdate(uniqueToken).name("newName").hasKnownStatus(TOKEN_IS_PAUSED),
+                        tokenUpdate(uniqueToken)
+                                .name("newName")
+                                .signedByPayerAnd(ADMIN_KEY)
+                                .hasKnownStatus(TOKEN_IS_PAUSED),
                         tokenDelete(uniqueToken).hasKnownStatus(TOKEN_IS_PAUSED),
                         cryptoTransfer(
                                         moving(100, otherToken).between(TOKEN_TREASURY, thirdUser),
@@ -373,7 +379,10 @@ public final class TokenPauseSpecs extends HapiSuite {
                                 .withCustom(fixedHbarFee(100, TOKEN_TREASURY))
                                 .hasKnownStatus(TOKEN_IS_PAUSED),
                         wipeTokenAccount(token, firstUser, 10).hasKnownStatus(TOKEN_IS_PAUSED),
-                        tokenUpdate(token).name("newName").hasKnownStatus(TOKEN_IS_PAUSED),
+                        tokenUpdate(token)
+                                .name("newName")
+                                .signedByPayerAnd(ADMIN_KEY)
+                                .hasKnownStatus(TOKEN_IS_PAUSED),
                         tokenDelete(token).hasKnownStatus(TOKEN_IS_PAUSED),
                         cryptoTransfer(
                                         moving(100, otherToken).between(TOKEN_TREASURY, thirdUser),

@@ -146,7 +146,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         newKeyNamed(THRESHOLD_KEY).shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, WIPE_CONTRACT))),
-                        tokenUpdate(VANILLA_TOKEN).wipeKey(THRESHOLD_KEY),
+                        tokenUpdate(VANILLA_TOKEN).wipeKey(THRESHOLD_KEY).signedByPayerAnd(WIPE_KEY),
                         cryptoUpdate(ADMIN_ACCOUNT).key(THRESHOLD_KEY),
                         contractCall(
                                         WIPE_CONTRACT,
@@ -270,7 +270,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                                     .gas(GAS_TO_OFFER)
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                             newKeyNamed(THRESHOLD_KEY).shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, WIPE_CONTRACT))),
-                            tokenUpdate(VANILLA_TOKEN).wipeKey(THRESHOLD_KEY),
+                            tokenUpdate(VANILLA_TOKEN).wipeKey(THRESHOLD_KEY).signedByPayerAnd(WIPE_KEY),
                             cryptoUpdate(ADMIN_ACCOUNT).key(THRESHOLD_KEY),
                             contractCall(
                                             WIPE_CONTRACT,

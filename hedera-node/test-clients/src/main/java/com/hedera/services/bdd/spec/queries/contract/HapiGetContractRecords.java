@@ -109,7 +109,7 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getContractRecordsQuery(spec, payment, false);
+        Query query = maybeModified(getContractRecordsQuery(spec, payment, false), spec);
         response = spec.clients().getScSvcStub(targetNodeFor(spec), useTls).getTxRecordByContractID(query);
         List<TransactionRecord> records =
                 response.getContractGetRecordsResponse().getRecordsList();

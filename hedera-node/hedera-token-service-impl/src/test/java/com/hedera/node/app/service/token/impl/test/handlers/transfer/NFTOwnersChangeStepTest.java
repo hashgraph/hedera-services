@@ -91,8 +91,8 @@ class NFTOwnersChangeStepTest extends StepsBase {
         assertThat(nextNftBefore.hasOwnerPreviousNftId()).isTrue();
         assertThat(nextNftBefore.hasOwnerNextNftId()).isFalse();
 
-        final var senderAccount = writableAccountStore.get(ownerId);
-        final var receiverAccount = writableAccountStore.get(receiver);
+        final var senderAccount = writableAccountStore.getAliasedAccountById(ownerId);
+        final var receiverAccount = writableAccountStore.getAliasedAccountById(receiver);
 
         final var numNftsOwnedBySender = senderAccount.numberOwnedNfts();
         assertThat(numNftsOwnedBySender).isEqualTo(2);
@@ -126,8 +126,8 @@ class NFTOwnersChangeStepTest extends StepsBase {
         assertThat(nextNft.hasOwnerNextNftId()).isFalse();
 
         // see numPositiveBalances and numOwnedNfts change
-        final var senderAccountAfter = writableAccountStore.get(ownerId);
-        final var receiverAccountAfter = writableAccountStore.get(receiver);
+        final var senderAccountAfter = writableAccountStore.getAliasedAccountById(ownerId);
+        final var receiverAccountAfter = writableAccountStore.getAliasedAccountById(receiver);
 
         final var numNftsOwnedBySenderAfter = senderAccountAfter.numberOwnedNfts();
         assertThat(numNftsOwnedBySenderAfter).isEqualTo(numNftsOwnedBySender - 1);
@@ -173,8 +173,8 @@ class NFTOwnersChangeStepTest extends StepsBase {
         final var nft = writableNftStore.get(nftIdSl1);
         assertThat(nft.ownerId()).isEqualTo(ownerId);
 
-        final var senderAccount = writableAccountStore.get(ownerId);
-        final var receiverAccount = writableAccountStore.get(receiver);
+        final var senderAccount = writableAccountStore.getAliasedAccountById(ownerId);
+        final var receiverAccount = writableAccountStore.getAliasedAccountById(receiver);
 
         final var numNftsOwnedBySender = senderAccount.numberOwnedNfts();
         assertThat(numNftsOwnedBySender).isEqualTo(2);
@@ -199,8 +199,8 @@ class NFTOwnersChangeStepTest extends StepsBase {
         assertThat(nftChanged.ownerId()).isEqualTo(receiver);
 
         // see numPositiveBalances and numOwnedNfts change
-        final var senderAccountAfter = writableAccountStore.get(ownerId);
-        final var receiverAccountAfter = writableAccountStore.get(receiver);
+        final var senderAccountAfter = writableAccountStore.getAliasedAccountById(ownerId);
+        final var receiverAccountAfter = writableAccountStore.getAliasedAccountById(receiver);
 
         final var numNftsOwnedBySenderAfter = senderAccountAfter.numberOwnedNfts();
         assertThat(numNftsOwnedBySenderAfter).isEqualTo(numNftsOwnedBySender - 1);

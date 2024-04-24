@@ -19,10 +19,13 @@ package com.swirlds.platform.state.signed;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
+import com.swirlds.platform.wiring.components.StateAndRound;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -51,7 +54,8 @@ class StateGarbageCollectorTests {
                         .setDeleteOnBackgroundThread(true)
                         .build();
                 unreleasedStates.add(signedState.reserve("hold local copy of state"));
-                garbageCollector.registerState(signedState.reserve("send state to garbage collector"));
+                garbageCollector.registerState(new StateAndRound(
+                        signedState.reserve("send state to garbage collector"), mock(ConsensusRound.class)));
             }
 
             // Randomly release some of the states.

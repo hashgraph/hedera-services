@@ -16,10 +16,11 @@
 
 package com.swirlds.platform.system.transaction;
 
-import com.swirlds.common.crypto.SignatureType;
+import com.hedera.hapi.platform.event.EventPayload;
+import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.io.SerializableWithKnownLength;
-import java.util.List;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.locks.ReadWriteLock;
 
 /**
@@ -40,8 +41,17 @@ public sealed interface Transaction extends SerializableWithKnownLength permits 
      * behaviors.
      *
      * @return a direct reference to the transaction content/payload
+     * @deprecated this method will be removed once the migration to protobuf is complete. Use {@link #getPayload()} instead
      */
+    @Deprecated
     byte[] getContents();
+
+    /**
+     * Returns the payload as a PBJ record
+     * @return the payload
+     */
+    @NonNull
+    OneOf<EventPayload.PayloadOneOfType> getPayload();
 
     /**
      * Get the size of the transaction
@@ -57,22 +67,6 @@ public sealed interface Transaction extends SerializableWithKnownLength permits 
      * 		transaction
      */
     boolean isSystem();
-
-    /**
-     * Returns the byte located at {@code index} position from the transaction content/payload.
-     *
-     * This method is thread-safe and guaranteed to be atomic in nature.
-     *
-     * @param index
-     * 		the index of the byte to be returned
-     * @return the byte located at {@code index} position
-     * @throws IllegalArgumentException
-     * 		if the underlying transaction content is null or a zero-length array
-     * @throws ArrayIndexOutOfBoundsException
-     * 		if the {@code index} parameter is less than zero or greater than the
-     * 		maximum length of the contents
-     */
-    byte getContents(final int index);
 
     /**
      * Returns the custom metadata object set via {@link #setMetadata(Object)}.
@@ -93,159 +87,4 @@ public sealed interface Transaction extends SerializableWithKnownLength permits 
      * 		the object to attach
      */
     <T> void setMetadata(T metadata);
-
-    /**
-     * Returns a {@link List} of {@link TransactionSignature} objects associated with this transaction. This method
-     * returns a shallow copy of the original list. This method can return an unmodifiable list.
-     *
-     * This method is thread-safe and guaranteed to be atomic in nature.
-     *
-     * @return a shallow copy of the original signature list
-     */
-    List<TransactionSignature> getSignatures();
-
-    /**
-     * Efficiently extracts and adds a new signature to this transaction bypassing the need to make copies of the
-     * underlying byte arrays.
-     *
-     * @param signatureOffset
-     * 		the offset in the transaction payload where the signature begins
-     * @param signatureLength
-     * 		the length in bytes of the signature
-     * @param publicKeyOffset
-     * 		the offset in the transaction payload where the public key begins
-     * @param publicKeyLength
-     * 		the length in bytes of the public key
-     * @param messageOffset
-     * 		the offset in the transaction payload where the message begins
-     * @param messageLength
-     * 		the length of the message in bytes
-     * @throws IllegalArgumentException
-     * 		if any of the provided offsets or lengths falls outside the array bounds
-     * @throws IllegalArgumentException
-     * 		if the internal payload of this transaction is null or a zero length array
-     */
-    void extractSignature(
-            final int signatureOffset,
-            final int signatureLength,
-            final int publicKeyOffset,
-            final int publicKeyLength,
-            final int messageOffset,
-            final int messageLength);
-
-    /**
-     * Efficiently extracts and adds a new signature of given signature type to this transaction bypassing the need to
-     * make copies of the underlying byte arrays.
-     *
-     * @param signatureOffset
-     * 		the offset in the transaction payload where the signature begins
-     * @param signatureLength
-     * 		the length in bytes of the signature
-     * @param publicKeyOffset
-     * 		the offset in the transaction payload where the public key begins
-     * @param publicKeyLength
-     * 		the length in bytes of the public key
-     * @param messageOffset
-     * 		the offset in the transaction payload where the message begins
-     * @param messageLength
-     * 		the length of the message in bytes
-     * @param sigType
-     * 		signature type
-     * @throws IllegalArgumentException
-     * 		if any of the provided offsets or lengths falls outside the array bounds
-     * @throws IllegalArgumentException
-     * 		if the internal payload of this transaction is null or a zero length array
-     */
-    void extractSignature(
-            final int signatureOffset,
-            final int signatureLength,
-            final int publicKeyOffset,
-            final int publicKeyLength,
-            final int messageOffset,
-            final int messageLength,
-            final SignatureType sigType);
-
-    /**
-     * Efficiently extracts and adds a new signature to this transaction bypassing the need to make copies of the
-     * underlying byte arrays. If the optional expanded public key is provided then the public key offset and length are
-     * indices into this array instead of the transaction payload.
-     *
-     * @param signatureOffset
-     * 		the offset in the transaction payload where the signature begins
-     * @param signatureLength
-     * 		the length in bytes of the signature
-     * @param expandedPublicKey
-     * 		an optional expanded form of the public key
-     * @param publicKeyOffset
-     * 		the offset where the public key begins
-     * @param publicKeyLength
-     * 		the length in bytes of the public key
-     * @param messageOffset
-     * 		the offset in the transaction payload where the message begins
-     * @param messageLength
-     * 		the length of the message in bytes
-     * @throws IllegalArgumentException
-     * 		if any of the provided offsets or lengths falls outside the array bounds
-     * @throws IllegalArgumentException
-     * 		if the internal payload of this transaction is null or a zero length array
-     */
-    void extractSignature(
-            final int signatureOffset,
-            final int signatureLength,
-            final byte[] expandedPublicKey,
-            final int publicKeyOffset,
-            final int publicKeyLength,
-            final int messageOffset,
-            final int messageLength);
-
-    /**
-     * Adds a new {@link TransactionSignature} to this transaction.
-     *
-     * This method is thread-safe and guaranteed to be atomic in nature.
-     *
-     * @param signature
-     * 		the signature to be added
-     * @throws IllegalArgumentException
-     * 		if the {@code signature} parameter is null
-     */
-    void add(final TransactionSignature signature);
-
-    /**
-     * Adds a list of new {@link TransactionSignature} objects to this transaction.
-     *
-     * This method is thread-safe and guaranteed to be atomic in nature.
-     *
-     * @param signatures
-     * 		the list of signatures to be added
-     */
-    void addAll(final TransactionSignature... signatures);
-
-    /**
-     * Removes a {@link TransactionSignature} from this transaction.
-     *
-     * This method is thread-safe and guaranteed to be atomic in nature.
-     *
-     * @param signature
-     * 		the signature to be removed
-     * @return {@code true} if the underlying list was modified; {@code false} otherwise
-     */
-    boolean remove(final TransactionSignature signature);
-
-    /**
-     * Removes a list of {@link TransactionSignature} objects from this transaction.
-     *
-     * This method is thread-safe and guaranteed to be atomic in nature.
-     *
-     * @param signatures
-     * 		the list of signatures to be removed
-     * @return {@code true} if the underlying list was modified; {@code false} otherwise
-     */
-    boolean removeAll(final TransactionSignature... signatures);
-
-    /**
-     * Removes all signatures from this transaction.
-     *
-     * This method is thread-safe and guaranteed to be atomic in nature.
-     */
-    void clearSignatures();
 }

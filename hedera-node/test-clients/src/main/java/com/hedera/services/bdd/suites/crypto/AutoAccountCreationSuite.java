@@ -82,6 +82,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -214,7 +215,32 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 transferFungibleToEVMAddressAlias(),
                 transferNonFungibleToEVMAddressAlias(),
                 transferHbarsToECDSAKey(),
-                cannotAutoCreateWithTxnToLongZero());
+                cannotAutoCreateWithTxnToLongZero(),
+                aliasedPayerDoesntWork());
+    }
+
+    @HapiTest
+    private HapiSpec aliasedPayerDoesntWork() {
+        final AtomicReference<AccountID> aliasId = new AtomicReference<>();
+        return defaultHapiSpec("aliasedPayerDoesntWork")
+                .given(
+                        newKeyNamed(ALIAS),
+                        newKeyNamed(ALIAS_2),
+                        cryptoCreate(PAYER_4).balance(INITIAL_BALANCE * ONE_HBAR))
+                .when(
+                        cryptoTransfer(tinyBarsFromToWithAlias(PAYER_4, ALIAS, 2 * ONE_HUNDRED_HBARS))
+                                .via(TRANSFER_TXN),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
+                        getAliasedAccountInfo(ALIAS)
+                                .has(accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0, 0)))
+                .then(
+                        // pay with aliased id
+                        cryptoTransfer(tinyBarsFromToWithAlias(ALIAS, ALIAS_2, ONE_HUNDRED_HBARS))
+                                .payingWithAliased(ALIAS)
+                                .hasPrecheck(PAYER_ACCOUNT_NOT_FOUND),
+                        // pay with regular accountID
+                        cryptoTransfer(tinyBarsFromToWithAlias(ALIAS, ALIAS_2, ONE_HUNDRED_HBARS))
+                                .payingWith(ALIAS));
     }
 
     @HapiTest

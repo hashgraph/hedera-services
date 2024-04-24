@@ -16,16 +16,20 @@
 
 package com.swirlds.platform.test.components;
 
-import static com.swirlds.platform.test.components.TransactionHandlingTestUtils.newDummyEvent;
 import static com.swirlds.platform.test.components.TransactionHandlingTestUtils.newDummyRound;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.test.fixtures.DummySystemTransaction;
+import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.components.transaction.system.SystemTransactionExtractionUtils;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -36,27 +40,32 @@ class SystemTransactionExtractionUtilsTests {
     @Test
     @DisplayName("Handle event")
     void testHandleEvent() {
-        final List<ScopedSystemTransaction<DummySystemTransaction>> transactions = new ArrayList<>();
-        assertNull(SystemTransactionExtractionUtils.extractFromEvent(newDummyEvent(0), DummySystemTransaction.class));
-        transactions.addAll(
-                SystemTransactionExtractionUtils.extractFromEvent(newDummyEvent(1), DummySystemTransaction.class));
-        transactions.addAll(
-                SystemTransactionExtractionUtils.extractFromEvent(newDummyEvent(2), DummySystemTransaction.class));
+        final Random r = RandomUtils.getRandomPrintSeed();
+        final List<ScopedSystemTransaction<StateSignaturePayload>> transactions = new ArrayList<>();
+        assertNull(SystemTransactionExtractionUtils.extractFromEvent(
+                new TestingEventBuilder(r).setSystemTransactionCount(0).build(), StateSignaturePayload.class));
+        transactions.addAll(Objects.requireNonNull(SystemTransactionExtractionUtils.extractFromEvent(
+                new TestingEventBuilder(r).setSystemTransactionCount(1).build(), StateSignaturePayload.class)));
+        transactions.addAll(Objects.requireNonNull(SystemTransactionExtractionUtils.extractFromEvent(
+                new TestingEventBuilder(r).setSystemTransactionCount(2).build(), StateSignaturePayload.class)));
 
+        transactions.forEach(t -> assertTrue(StateSignaturePayload.class.isInstance(t.transaction())));
         assertEquals(3, transactions.size(), "incorrect number of transactions returned");
     }
 
     @Test
     @DisplayName("Handle round")
     void testHandleRound() {
-        final List<ScopedSystemTransaction<DummySystemTransaction>> transactions = new ArrayList<>();
+        final Random r = RandomUtils.getRandomPrintSeed();
+        final List<ScopedSystemTransaction<StateSignaturePayload>> transactions = new ArrayList<>();
         assertNull(
-                SystemTransactionExtractionUtils.extractFromRound(newDummyRound(0, 0), DummySystemTransaction.class));
+                SystemTransactionExtractionUtils.extractFromRound(newDummyRound(r, 0, 0), StateSignaturePayload.class));
         transactions.addAll(
-                SystemTransactionExtractionUtils.extractFromRound(newDummyRound(1, 1), DummySystemTransaction.class));
+                SystemTransactionExtractionUtils.extractFromRound(newDummyRound(r, 1, 1), StateSignaturePayload.class));
         transactions.addAll(
-                SystemTransactionExtractionUtils.extractFromRound(newDummyRound(2, 2), DummySystemTransaction.class));
+                SystemTransactionExtractionUtils.extractFromRound(newDummyRound(r, 2, 2), StateSignaturePayload.class));
 
+        transactions.forEach(t -> assertTrue(StateSignaturePayload.class.isInstance(t.transaction())));
         assertEquals(5, transactions.size(), "incorrect number of transactions returned");
     }
 }

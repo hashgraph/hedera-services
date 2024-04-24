@@ -17,7 +17,6 @@
 package com.swirlds.platform.gossip.shadowgraph;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.internal.EventImpl;
 
 /**
@@ -158,6 +157,6 @@ public class ShadowEvent {
      */
     @Override
     public String toString() {
-        return EventStrings.toMediumString(getEvent());
+        return getEvent().toString();
     }
 }

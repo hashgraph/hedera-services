@@ -18,20 +18,17 @@ package com.swirlds.platform;
 
 import static com.swirlds.platform.consensus.ConsensusConstants.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 import static com.swirlds.platform.test.fixtures.event.EventImplTestUtils.createEventImpl;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.SwirldTransaction;
-import com.swirlds.platform.system.transaction.SystemTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
+import com.swirlds.platform.test.fixtures.event.TransactionUtils;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -52,51 +49,6 @@ public class EventImplTests {
     }
 
     @Test
-    @DisplayName("findSystemTransactions() no system transactions")
-    void testNoSystemTransaction() {
-        final SwirldTransaction[] transactions = TransactionUtils.incrementingSwirldTransactions(100);
-
-        final EventImpl event =
-                createEventImpl(new TestingEventBuilder(random).setTransactions(transactions), null, null);
-
-        assertDoesNotThrow(
-                event::systemTransactionIterator, "Getting the system transaction iterator should never throw.");
-        assertFalse(
-                event.systemTransactionIterator().hasNext(), "System transaction iterator should not have any items.");
-        assertEquals(
-                transactions.length,
-                event.getNumAppTransactions(),
-                "The number of application transactions is incorrect.");
-    }
-
-    @Test
-    @DisplayName("findSystemTransactions() no transactions")
-    void testTransaction() {
-        final EventImpl event = createEventImpl(new TestingEventBuilder(random).setAppTransactionCount(0), null, null);
-
-        assertDoesNotThrow(
-                event::systemTransactionIterator, "Getting the system transaction iterator should never throw.");
-        assertFalse(
-                event.systemTransactionIterator().hasNext(), "System transaction iterator should not have any items.");
-        assertEquals(0, event.getNumAppTransactions(), "There should be no application transactions.");
-    }
-
-    @Test
-    @DisplayName("findSystemTransactions() find correct indices in ascending order")
-    void testFindSystemTransactions() {
-        final TransactionData data = mixedTransactions();
-
-        final EventImpl event =
-                createEventImpl(new TestingEventBuilder(random).setTransactions(data.transactions()), null, null);
-
-        verifySystemIterator(data, event);
-        assertEquals(
-                data.transactions.length - data.systemIndices.size(),
-                event.getNumAppTransactions(),
-                "The number of application transactions is incorrect.");
-    }
-
-    @Test
     @DisplayName("consensusTransactionIterator() does not iterate system transactions")
     void testConsensusTransactionIterator() {
         final TransactionData data = mixedTransactions();
@@ -111,7 +63,6 @@ public class EventImplTests {
         }
 
         verifyTransactionIterator(data, transactionSet);
-        verifySystemIterator(data, event);
         assertEquals(
                 data.transactions.length - data.systemIndices.size(),
                 event.getNumAppTransactions(),
@@ -134,7 +85,6 @@ public class EventImplTests {
         }
 
         verifyTransactionIterator(data, transactionSet);
-        verifySystemIterator(data, event);
         assertEquals(
                 data.transactions.length - data.systemIndices.size(),
                 event.getNumAppTransactions(),
@@ -175,39 +125,6 @@ public class EventImplTests {
         return new TransactionData(mixedTransactions, systemIndices);
     }
 
-    private void verifySystemIterator(final TransactionData data, final EventImpl event) {
-        if (data.systemIndices.isEmpty()) {
-            assertFalse(event.systemTransactionIterator().hasNext());
-            return;
-        }
-
-        final Iterator<Integer> expectedIndexIt = data.systemIndices.iterator();
-        final Iterator<SystemTransaction> actualSysTransIt = event.systemTransactionIterator();
-
-        while (expectedIndexIt.hasNext() && actualSysTransIt.hasNext()) {
-
-            final Integer expectedSysTransIndex = expectedIndexIt.next();
-            final ConsensusTransaction expectedSysTrans = data.transactions[expectedSysTransIndex];
-            final SystemTransaction actualSysTrans = actualSysTransIt.next();
-
-            assertEquals(
-                    expectedSysTrans,
-                    actualSysTrans,
-                    String.format(
-                            "Iterator transaction does not match expected value at index %d", expectedSysTransIndex));
-        }
-
-        if (expectedIndexIt.hasNext()) {
-            throw new IllegalStateException(String.format(
-                    "Event %s did not iterate over all expected system transactions.", event.toShortString()));
-        }
-
-        if (actualSysTransIt.hasNext()) {
-            throw new IllegalStateException(String.format(
-                    "Event %s iterates over more than the expected system transactions.", event.toShortString()));
-        }
-    }
-
     @Test
     @DisplayName("consensusReached() propagates consensus data to all transactions")
     void testConsensusReached() {
@@ -228,7 +145,6 @@ public class EventImplTests {
         event.consensusReached();
 
         for (int i = 0; i < mixedTransactions.length; i++) {
-            assertEquals(3L, mixedTransactions[i].getConsensusOrder(), "Consensus order does not match.");
             final Instant transConsTime = eventConsTime.plusNanos(i * MIN_TRANS_TIMESTAMP_INCR_NANOS);
             assertEquals(
                     transConsTime,

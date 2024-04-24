@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.schedule;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -26,6 +27,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
@@ -41,9 +43,16 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreateFunctionless;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.ALIAS;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.INITIAL_BALANCE;
+import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ADMIN;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.BASIC_XFER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.CONTINUE;
@@ -74,6 +83,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -130,7 +140,44 @@ public class ScheduleCreateSpecs extends HapiSuite {
                 worksAsExpectedWithDefaultScheduleId(),
                 infoIncludesTxnIdFromCreationReceipt(),
                 suiteCleanup(),
-                validateSignersInInfo()));
+                validateSignersInInfo(),
+                aliasNotAllowedAsPayer()));
+    }
+
+    @HapiTest
+    private HapiSpec aliasNotAllowedAsPayer() {
+        return defaultHapiSpec("BodyAndPayerCreation")
+                .given(
+                        newKeyNamed(ALIAS),
+                        cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR),
+                        cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, 2 * ONE_HUNDRED_HBARS)),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
+                        getAliasedAccountInfo(ALIAS)
+                                .has(accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0, 0)))
+                .when(
+                        scheduleCreate(
+                                        ONLY_BODY_AND_PAYER,
+                                        cryptoTransfer(tinyBarsFromTo(PAYER, GENESIS, 1))
+                                                .memo("SURPRISE!!!"))
+                                .recordingScheduledTxn()
+                                // prevent multiple runs of this test causing duplicates
+                                .withEntityMemo("" + new SecureRandom().nextLong())
+                                .designatingPayer(PAYER)
+                                .payingWithAliased(PAYER)
+                                .hasPrecheck(PAYER_ACCOUNT_NOT_FOUND),
+                        scheduleCreate(
+                                        ONLY_BODY_AND_PAYER,
+                                        cryptoTransfer(tinyBarsFromTo(PAYER, GENESIS, 1))
+                                                .memo("SURPRISE!!!"))
+                                .recordingScheduledTxn()
+                                // prevent multiple runs of this test causing duplicates
+                                .withEntityMemo("" + new SecureRandom().nextLong())
+                                .designatingPayer(PAYER)
+                                .payingWith(PAYER))
+                .then(getScheduleInfo(ONLY_BODY_AND_PAYER)
+                        .hasScheduleId(ONLY_BODY_AND_PAYER)
+                        .hasPayerAccountID(PAYER)
+                        .hasRecordedScheduledTxn());
     }
 
     @HapiTest
@@ -203,6 +250,17 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .hasScheduleId(ONLY_BODY_AND_MEMO)
                         .hasEntityMemo("sample memo")
                         .hasRecordedScheduledTxn());
+    }
+
+    @HapiTest
+    final HapiSpec idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(cryptoCreate(PAYER))
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> scheduleCreate(
+                                ONLY_BODY_AND_PAYER, cryptoTransfer(tinyBarsFromTo(PAYER, GENESIS, 1)))
+                        .withEntityMemo("" + new SecureRandom().nextLong())
+                        .designatingPayer(PAYER)));
     }
 
     @HapiTest

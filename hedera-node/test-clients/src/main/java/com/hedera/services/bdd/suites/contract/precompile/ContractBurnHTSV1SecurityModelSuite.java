@@ -267,7 +267,7 @@ public class ContractBurnHTSV1SecurityModelSuite extends HapiSuite {
                                                 changingFungibleBalances().including(TOKEN, TOKEN_TREASURY, -1))
                                         .newTotalSupply(49)),
                         newKeyNamed(CONTRACT_KEY).shape(DELEGATE_CONTRACT.signedWith(THE_BURN_CONTRACT)),
-                        tokenUpdate(TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(MULTI_KEY),
                         contractCall(THE_BURN_CONTRACT, "burnToken", BigInteger.ONE, new long[0])
                                 .via("burn with contract key")
                                 .gas(GAS_TO_OFFER),
@@ -382,7 +382,7 @@ public class ContractBurnHTSV1SecurityModelSuite extends HapiSuite {
                                 spec,
                                 newKeyNamed(CONTRACT_KEY)
                                         .shape(revisedKey.signedWith(sigs(ON, innerContract, outerContract))),
-                                tokenUpdate(TOKEN).supplyKey(CONTRACT_KEY),
+                                tokenUpdate(TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(MULTI_KEY),
                                 contractCall(
                                                 outerContract,
                                                 BURN_AFTER_NESTED_MINT_TX,

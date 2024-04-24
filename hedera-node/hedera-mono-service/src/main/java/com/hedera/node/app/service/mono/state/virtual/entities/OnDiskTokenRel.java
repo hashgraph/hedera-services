@@ -30,7 +30,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public class OnDiskTokenRel implements VirtualValue, HederaTokenRel {
@@ -98,18 +97,8 @@ public class OnDiskTokenRel implements VirtualValue, HederaTokenRel {
         return copy;
     }
 
-    @Deprecated
-    public void serialize(final ByteBuffer to) {
-        serializeTo(to::put, to::putLong);
-    }
-
     public void serialize(final WritableSequentialData out) {
         serializeTo(out::writeByte, out::writeLong);
-    }
-
-    @Deprecated
-    public void deserialize(final ByteBuffer from, final int version) {
-        deserializeFrom(from::get, from::getLong);
     }
 
     public void deserialize(final ReadableSequentialData in) {

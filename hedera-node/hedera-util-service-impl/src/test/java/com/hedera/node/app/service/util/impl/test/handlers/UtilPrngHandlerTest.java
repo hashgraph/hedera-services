@@ -88,21 +88,19 @@ class UtilPrngHandlerTest {
     }
 
     @Test
-    void preHandleValidatesRange() {
+    void pureChecksValidatesRange() {
         final var body = TransactionBody.newBuilder()
                 .utilPrng(UtilPrngTransactionBody.newBuilder())
                 .build();
-        given(preHandleContext.body()).willReturn(body);
-        assertThatCode(() -> subject.preHandle(preHandleContext)).doesNotThrowAnyException();
+        assertThatCode(() -> subject.pureChecks(body)).doesNotThrowAnyException();
     }
 
     @Test
     void rejectsInvalidRange() {
         givenTxnWithRange(-10000);
-        given(preHandleContext.body())
-                .willReturn(TransactionBody.newBuilder().utilPrng(txn).build());
+        final var body = TransactionBody.newBuilder().utilPrng(txn).build();
 
-        assertThatThrownBy(() -> subject.preHandle(preHandleContext))
+        assertThatThrownBy(() -> subject.pureChecks(body))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_PRNG_RANGE));
     }
@@ -110,23 +108,19 @@ class UtilPrngHandlerTest {
     @Test
     void acceptsPositiveAndZeroRange() {
         givenTxnWithRange(10000);
-        given(preHandleContext.body())
-                .willReturn(TransactionBody.newBuilder().utilPrng(txn).build());
-        assertThatCode(() -> subject.preHandle(preHandleContext)).doesNotThrowAnyException();
+        final var body = TransactionBody.newBuilder().utilPrng(txn).build();
+        assertThatCode(() -> subject.pureChecks(body)).doesNotThrowAnyException();
 
         givenTxnWithRange(0);
-        given(preHandleContext.body())
-                .willReturn(TransactionBody.newBuilder().utilPrng(txn).build());
-        assertThatCode(() -> subject.preHandle(preHandleContext)).doesNotThrowAnyException();
+        assertThatCode(() -> subject.pureChecks(body)).doesNotThrowAnyException();
     }
 
     @Test
     void acceptsNoRange() {
         givenTxnWithoutRange();
-        given(preHandleContext.body())
-                .willReturn(TransactionBody.newBuilder().utilPrng(txn).build());
+        final var body = TransactionBody.newBuilder().utilPrng(txn).build();
 
-        assertThatCode(() -> subject.preHandle(preHandleContext)).doesNotThrowAnyException();
+        assertThatCode(() -> subject.pureChecks(body)).doesNotThrowAnyException();
     }
 
     @Test
@@ -247,10 +241,9 @@ class UtilPrngHandlerTest {
     @Test
     void anyNegativeValueThrowsInPrecheck() {
         givenTxnWithRange(Integer.MIN_VALUE);
-        given(preHandleContext.body())
-                .willReturn(TransactionBody.newBuilder().utilPrng(txn).build());
+        final var body = TransactionBody.newBuilder().utilPrng(txn).build();
 
-        assertThatThrownBy(() -> subject.preHandle(preHandleContext))
+        assertThatThrownBy(() -> subject.pureChecks(body))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_PRNG_RANGE));
     }

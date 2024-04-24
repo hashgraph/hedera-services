@@ -44,6 +44,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ADMIN;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.BASIC_XFER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.DEFAULT_TX_EXPIRY;
@@ -59,6 +61,7 @@ import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SHARED_KEY;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SOMEBODY;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TOKEN_A;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TWO_SIG_XFER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.VALID_SCHEDULED_TXN;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WHITELIST_DEFAULT;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WHITELIST_MINIMUM;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.withAndWithoutLongTermEnabled;
@@ -123,6 +126,19 @@ public class ScheduleSignSpecs extends HapiSuite {
                 triggersUponAdditionalNeededSig(),
                 triggersUponFinishingPayerSig(),
                 suiteCleanup()));
+    }
+
+    @HapiTest
+    final HapiSpec idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed(ADMIN),
+                        cryptoCreate(SENDER),
+                        scheduleCreate(VALID_SCHEDULED_TXN, cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1)))
+                                .adminKey(ADMIN))
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> scheduleSign(VALID_SCHEDULED_TXN)
+                        .alsoSigningWith(SENDER)));
     }
 
     @HapiTest
@@ -590,7 +606,7 @@ public class ScheduleSignSpecs extends HapiSuite {
                         newKeyNamed("newMint"),
                         tokenCreate(TOKEN_A).adminKey(ADMIN).supplyKey("mint"),
                         scheduleCreate("tokenMintScheduled", txnBody))
-                .when(tokenUpdate(TOKEN_A).supplyKey("newMint"))
+                .when(tokenUpdate(TOKEN_A).supplyKey("newMint").signedByPayerAnd(ADMIN))
                 .then(
                         scheduleSign("tokenMintScheduled")
                                 .alsoSigningWith("mint")

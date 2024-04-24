@@ -17,31 +17,29 @@
 package com.swirlds.platform.event;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.serializeGossipEvent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusConstants;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.deduplication.StandardEventDeduplicator;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventConstants;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -75,33 +73,27 @@ class EventDeduplicatorTests {
     }
 
     /**
-     * Mock a gossip event
+     * Create a test gossip event
      *
-     * @param hash       the hash of the event
      * @param creatorId  the creator of the event
      * @param generation the generation of the event
-     * @param signature  the signature of the event
+     * @param birthRound the birth round of the event
      * @return the mocked gossip event
      */
     private GossipEvent createGossipEvent(
-            @NonNull final Hash hash,
-            @NonNull final NodeId creatorId,
-            final long generation,
-            final long birthRound,
-            @NonNull final byte[] signature) {
+            @NonNull final NodeId creatorId, final long generation, final long birthRound) {
 
-        final EventDescriptor descriptor = new EventDescriptor(hash, creatorId, generation, birthRound);
+        final GossipEvent selfParent = new TestingEventBuilder(random)
+                .setCreatorId(creatorId)
+                .setBirthRound(birthRound - 1)
+                .build();
 
-        final BaseEventUnhashedData unhashedData = mock(BaseEventUnhashedData.class);
-        when(unhashedData.getSignature()).thenReturn(signature);
-
-        final GossipEvent event = mock(GossipEvent.class);
-        when(event.getDescriptor()).thenReturn(descriptor);
-        when(event.getGeneration()).thenReturn(generation);
-        when(event.getUnhashedData()).thenReturn(unhashedData);
-        when(event.getAncientIndicator(any()))
-                .thenAnswer(
-                        args -> args.getArguments()[0] == AncientMode.BIRTH_ROUND_THRESHOLD ? birthRound : generation);
+        final GossipEvent event = new TestingEventBuilder(random)
+                .setCreatorId(creatorId)
+                .setBirthRound(birthRound)
+                .setSelfParent(selfParent)
+                .overrideSelfParentGeneration(generation - 1)
+                .build();
 
         return event;
     }
@@ -111,7 +103,7 @@ class EventDeduplicatorTests {
             final long minimumGenerationNonAncient,
             final long minimumRoundNonAncient,
             @NonNull final AncientMode ancientMode,
-            @NonNull final Set<GossipEvent> emittedEvents) {
+            @NonNull final Set<ByteBuffer> emittedEvents) {
         if (event != null) {
             if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
                 assertFalse(
@@ -120,7 +112,7 @@ class EventDeduplicatorTests {
             } else {
                 assertFalse(event.getGeneration() < minimumGenerationNonAncient, "Ancient events shouldn't be emitted");
             }
-            assertTrue(emittedEvents.add(event), "Event was emitted twice");
+            assertTrue(emittedEvents.add(ByteBuffer.wrap(serializeGossipEvent(event))), "Event was emitted twice");
         }
     }
 
@@ -135,7 +127,8 @@ class EventDeduplicatorTests {
         long minimumRoundNonAncient = ConsensusConstants.ROUND_FIRST;
 
         // events that have been emitted from the deduplicator
-        final Set<GossipEvent> emittedEvents = new HashSet<>();
+        // contents of the set are the serialized events
+        final Set<ByteBuffer> emittedEvents = new HashSet<>();
 
         // events that have been submitted to the deduplicator
         final List<GossipEvent> submittedEvents = new ArrayList<>();
@@ -165,7 +158,6 @@ class EventDeduplicatorTests {
         for (int i = 0; i < TEST_EVENT_COUNT; i++) {
             if (submittedEvents.isEmpty() || random.nextBoolean()) {
                 // submit a brand new event half the time
-                final Hash eventHash = randomHash(random);
                 final NodeId creatorId = new NodeId(random.nextInt(NODE_ID_COUNT));
                 final long eventGeneration = Math.max(0, minimumGenerationNonAncient + random.nextInt(-1, 10));
                 final long eventBirthRound =
@@ -181,12 +173,7 @@ class EventDeduplicatorTests {
                     }
                 }
 
-                final GossipEvent newEvent = createGossipEvent(
-                        eventHash,
-                        creatorId,
-                        eventGeneration,
-                        eventBirthRound,
-                        randomSignature(random).getSignatureBytes());
+                final GossipEvent newEvent = createGossipEvent(creatorId, eventGeneration, eventBirthRound);
 
                 validateEmittedEvent(
                         deduplicator.handleEvent(newEvent),
@@ -209,12 +196,11 @@ class EventDeduplicatorTests {
             } else {
                 // submit a duplicate event with a different signature 25% of the time
                 final GossipEvent duplicateEvent = submittedEvents.get(random.nextInt(submittedEvents.size()));
-                final GossipEvent eventWithDisparateSignature = createGossipEvent(
-                        duplicateEvent.getDescriptor().getHash(),
-                        duplicateEvent.getDescriptor().getCreator(),
-                        duplicateEvent.getDescriptor().getGeneration(),
-                        duplicateEvent.getDescriptor().getBirthRound(),
-                        randomSignature(random).getSignatureBytes());
+
+                // randomize the signature
+                // this modifies the event in place (since we don't have a copy constructor), but that doesn't matter
+                ByteBuffer.wrap(duplicateEvent.getUnhashedData().getSignature())
+                        .put(randomSignatureBytes(random).toByteArray());
 
                 if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
                     if (duplicateEvent.getDescriptor().getBirthRound() < minimumRoundNonAncient) {
@@ -227,7 +213,7 @@ class EventDeduplicatorTests {
                 }
 
                 validateEmittedEvent(
-                        deduplicator.handleEvent(eventWithDisparateSignature),
+                        deduplicator.handleEvent(duplicateEvent),
                         minimumGenerationNonAncient,
                         minimumRoundNonAncient,
                         ancientMode,
@@ -238,13 +224,13 @@ class EventDeduplicatorTests {
                 minimumGenerationNonAncient++;
                 minimumRoundNonAncient++;
                 if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-                    deduplicator.setNonAncientEventWindow(new NonAncientEventWindow(
+                    deduplicator.setEventWindow(new EventWindow(
                             ConsensusConstants.ROUND_FIRST,
                             minimumRoundNonAncient,
                             ConsensusConstants.ROUND_FIRST /* ignored in this context */,
                             AncientMode.BIRTH_ROUND_THRESHOLD));
                 } else {
-                    deduplicator.setNonAncientEventWindow(new NonAncientEventWindow(
+                    deduplicator.setEventWindow(new EventWindow(
                             ConsensusConstants.ROUND_FIRST,
                             minimumGenerationNonAncient,
                             ConsensusConstants.ROUND_FIRST /* ignored in this context */,
