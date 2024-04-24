@@ -92,6 +92,7 @@ class PlatformWiringTests {
                 .withPcesSequencer(mock(PcesSequencer.class))
                 .withRoundDurabilityBuffer(mock(RoundDurabilityBuffer.class))
                 .withTransactionPrehandler(mock(TransactionPrehandler.class))
+                .withPcesWriter(mock(PcesWriter.class))
                 .withSignedStateSentinel(mock(SignedStateSentinel.class));
 
         wiring.bind(
@@ -99,7 +100,6 @@ class PlatformWiringTests {
                 mock(SignedStateFileManager.class),
                 mock(StateSigner.class),
                 mock(PcesReplayer.class),
-                mock(PcesWriter.class),
                 mock(Shadowgraph.class),
                 mock(StateSignatureCollector.class),
                 mock(EventWindowManager.class),
