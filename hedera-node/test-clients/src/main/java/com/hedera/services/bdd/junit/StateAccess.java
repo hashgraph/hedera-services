@@ -64,9 +64,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * The StateAccess class provides utility methods for accessing and processing the state of a Hedera network.
- * It includes methods for reading account information from signed state files, finding Swirlds directories,
- * reading account states from multiple nodes
+ * The StateAccess class provides utility methods for accessing and processing the state of a Hedera network. It
+ * includes methods for reading account information from signed state files, finding Swirlds directories, reading
+ * account states from multiple nodes
  *
  * <p>Example usage:</p>
  * <pre>{@code
@@ -77,7 +77,8 @@ import org.apache.logging.log4j.Logger;
  * Set<BBMHederaAccount> allAccounts = StateAccess.readAccountsFromNodesState(nodeCount);
  * }</pre>
  *
- * <p>Note: This class assumes a specific directory structure and file naming convention for the signed state files.</p>
+ * <p>Note: This class assumes a specific directory structure and file naming convention for the signed state
+ * files.</p>
  */
 public class StateAccess {
     static final Logger log = LogManager.getLogger(StateAccess.class);
@@ -121,7 +122,8 @@ public class StateAccess {
                         hederaState.getChild(hederaState.findNodeIndex(TokenService.NAME, ACCOUNTS_KEY));
                 dumpableAccounts.addAll(Arrays.asList(gatherAccounts(accountsMap)));
             } catch (IOException e) {
-                log.info("Error reading state file");
+                log.error("Error reading state file");
+                throw new IllegalArgumentException("Error reading state file ");
             }
         }
 
