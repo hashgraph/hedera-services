@@ -26,7 +26,7 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.wiring.DoneStreamingPcesTrigger;
+import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -140,7 +140,7 @@ public class PcesReplayer {
      * @return a trigger object indicating when the replay is complete
      */
     @NonNull
-    public DoneStreamingPcesTrigger replayPces(@NonNull final IOIterator<GossipEvent> eventIterator) {
+    public NoInput replayPces(@NonNull final IOIterator<GossipEvent> eventIterator) {
         Objects.requireNonNull(eventIterator);
 
         final Instant start = time.now();
@@ -178,6 +178,6 @@ public class PcesReplayer {
 
         logReplayInfo(timestampBeforeReplay, roundBeforeReplay, eventCount, transactionCount, elapsedTime);
 
-        return new DoneStreamingPcesTrigger();
+        return NoInput.getInstance();
     }
 }
