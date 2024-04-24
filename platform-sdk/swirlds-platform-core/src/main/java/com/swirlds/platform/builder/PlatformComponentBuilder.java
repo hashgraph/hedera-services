@@ -42,7 +42,10 @@ import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
+import com.swirlds.platform.event.preconsensus.DefaultPcesWriter;
+import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
+import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.preconsensus.durability.DefaultRoundDurabilityBuffer;
 import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
 import com.swirlds.platform.event.runninghash.DefaultRunningEventHasher;
@@ -66,6 +69,8 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.util.MetricsDocUtils;
 import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Objects;
 
 /**
@@ -104,6 +109,7 @@ public class PlatformComponentBuilder {
     private PcesSequencer pcesSequencer;
     private RoundDurabilityBuffer roundDurabilityBuffer;
     private TransactionPrehandler transactionPrehandler;
+    private PcesWriter pcesWriter;
     private Gossip gossip;
 
     /**
@@ -650,6 +656,47 @@ public class PlatformComponentBuilder {
     }
 
     /**
+     * Provide a PCES writer in place of the platform's default PCES writer.
+     *
+     * @param pcesWriter the PCES writer to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withPcesWriter(@NonNull final PcesWriter pcesWriter) {
+        throwIfAlreadyUsed();
+        if (this.pcesWriter != null) {
+            throw new IllegalStateException("PCES writer has already been set");
+        }
+        this.pcesWriter = Objects.requireNonNull(pcesWriter);
+        return this;
+    }
+
+    /**
+     * Build the PCES writer if it has not yet been built. If one has been provided via
+     * {@link #withPcesWriter(PcesWriter)}, that writer will be used. If this method is called more than once, only the
+     * first call will build the PCES writer. Otherwise, the default writer will be created and returned.
+     *
+     * @return the PCES writer
+     */
+    @NonNull
+    public PcesWriter buildPcesWriter() {
+        if (pcesWriter == null) {
+            try {
+                final PcesFileManager preconsensusEventFileManager = new PcesFileManager(
+                        blocks.platformContext(),
+                        blocks.initialPcesFiles(),
+                        blocks.selfId(),
+                        blocks.initialState().get().getRound());
+                pcesWriter = new DefaultPcesWriter(blocks.platformContext(), preconsensusEventFileManager);
+
+            } catch (final IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        return pcesWriter;
+    }
+
+    /**
      * Provide a gossip in place of the platform's default gossip.
      *
      * @param gossip the gossip to use
@@ -675,7 +722,6 @@ public class PlatformComponentBuilder {
     @NonNull
     public Gossip buildGossip() {
         if (gossip == null) {
-
             gossip = new SyncGossip(
                     blocks.platformContext(),
                     blocks.randomBuilder().buildNonCryptographicRandom(),

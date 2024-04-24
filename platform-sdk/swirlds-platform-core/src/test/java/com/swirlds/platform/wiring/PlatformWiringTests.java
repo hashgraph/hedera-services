@@ -21,9 +21,6 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.wires.input.BindableInputWire;
-import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.builder.PlatformBuildingBlocks;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
@@ -32,8 +29,6 @@ import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
-import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.hashing.EventHasher;
@@ -60,8 +55,6 @@ import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.util.HashLogger;
-import com.swirlds.platform.wiring.components.Gossip;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -94,37 +87,27 @@ class PlatformWiringTests {
                 .withConsensusEventStream(mock(ConsensusEventStream.class))
                 .withPcesSequencer(mock(PcesSequencer.class))
                 .withRoundDurabilityBuffer(mock(RoundDurabilityBuffer.class))
-                .withTransactionPrehandler(mock(TransactionPrehandler.class));
+                .withTransactionPrehandler(mock(TransactionPrehandler.class))
+                .withPcesWriter(mock(PcesWriter.class));
 
         // Gossip is a special case, it's not like other components.
         // Currently we just have a facade between gossip and the wiring framework.
         // In the future when gossip is refactored to operate within the wiring
         // framework like other components, such things will not be needed.
-        componentBuilder.withGossip(new Gossip() {
-            @Override
-            public void bind(
-                    @NonNull final WiringModel model,
-                    @NonNull final BindableInputWire<GossipEvent, Void> eventInput,
-                    @NonNull final BindableInputWire<EventWindow, Void> eventWindowInput,
-                    @NonNull final StandardOutputWire<GossipEvent> eventOutput,
-                    @NonNull final BindableInputWire<NoInput, Void> startInput,
-                    @NonNull final BindableInputWire<NoInput, Void> stopInput,
-                    @NonNull final BindableInputWire<NoInput, Void> clearInput) {
-
-                eventInput.bindConsumer(event -> {});
-                eventWindowInput.bindConsumer(eventWindow -> {});
-                startInput.bindConsumer(noInput -> {});
-                stopInput.bindConsumer(noInput -> {});
-                clearInput.bindConsumer(noInput -> {});
-            }
-        });
+        componentBuilder.withGossip(
+                (model, eventInput, eventWindowInput, eventOutput, startInput, stopInput, clearInput) -> {
+                    eventInput.bindConsumer(event -> {});
+                    eventWindowInput.bindConsumer(eventWindow -> {});
+                    startInput.bindConsumer(noInput -> {});
+                    stopInput.bindConsumer(noInput -> {});
+                    clearInput.bindConsumer(noInput -> {});
+                });
 
         wiring.bind(
                 componentBuilder,
                 mock(SignedStateFileManager.class),
                 mock(StateSigner.class),
                 mock(PcesReplayer.class),
-                mock(PcesWriter.class),
                 mock(StateSignatureCollector.class),
                 mock(EventWindowManager.class),
                 mock(ConsensusRoundHandler.class),

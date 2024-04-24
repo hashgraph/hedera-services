@@ -23,6 +23,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.state.SwirldStateManager;
@@ -75,6 +76,7 @@ import java.util.function.Supplier;
  *                                               debugging). Return value may be null (implementation detail of
  *                                               underlying data source), this indirection can be removed once states
  *                                               are passed within the wiring framework
+ * @param initialPcesFiles                       the initial set of PCES files present when the node starts
  * @param notificationEngine                     for sending notifications to the application (legacy pattern)
  * @param firstPlatform                          if this is the first platform being built (there is static setup that
  *                                               needs to be done, long term plan is to stop using static variables)
@@ -109,6 +111,7 @@ public record PlatformBuildingBlocks(
         @NonNull AtomicReference<LongSupplier> intakeQueueSizeSupplierSupplier,
         @NonNull AtomicReference<Predicate<Instant>> isInFreezePeriodReference,
         @NonNull AtomicReference<Function<String, ReservedSignedState>> latestImmutableStateProviderReference,
+        @NonNull PcesFileTracker initialPcesFiles,
         @NonNull NotificationEngine notificationEngine,
         @NonNull AtomicReference<StatusActionSubmitter> statusActionSubmitterReference,
         @NonNull SwirldStateManager swirldStateManager,
