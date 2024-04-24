@@ -52,6 +52,7 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
+import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.createHollowAccountFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
@@ -63,7 +64,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
@@ -74,7 +74,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransferList;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -251,7 +250,6 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                     final var op2 = tokenAssociate("test", VANILLA_TOKEN)
                             .payingWith(SECP_256K1_SOURCE_KEY)
                             .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
-                            .hasKnownStatus(SUCCESS)
                             .via(TRANSFER_TXN_2);
                     final var op3 = getAliasedAccountInfo(evmAddress)
                             .has(accountWith().key(SECP_256K1_SOURCE_KEY).noAlias());
@@ -982,36 +980,5 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
         final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
         return getAliasedAccountInfo(evmAddress)
                 .has(accountWith().hasEmptyKey().evmAddress(evmAddress).noAlias());
-    }
-
-    private HapiSpecOperation[] createHollowAccountFrom(@NonNull final String key) {
-        return new HapiSpecOperation[] {
-            cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
-            cryptoCreate(CRYPTO_TRANSFER_RECEIVER).balance(INITIAL_BALANCE * ONE_HBAR),
-            withOpContext((spec, opLog) -> {
-                final var ecdsaKey =
-                        spec.registry().getKey(key).getECDSASecp256K1().toByteArray();
-                final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
-                final var op = cryptoTransfer(tinyBarsFromTo(LAZY_CREATE_SPONSOR, evmAddress, ONE_HUNDRED_HBARS))
-                        .hasKnownStatus(SUCCESS)
-                        .via(TRANSFER_TXN);
-                final var op2 = getAliasedAccountInfo(evmAddress)
-                        .has(accountWith()
-                                .hasEmptyKey()
-                                .expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)
-                                .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                .receiverSigReq(false)
-                                .memo(LAZY_MEMO));
-                final HapiGetTxnRecord hapiGetTxnRecord =
-                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged();
-                allRunFor(spec, op, op2, hapiGetTxnRecord);
-
-                final AccountID newAccountID = hapiGetTxnRecord
-                        .getFirstNonStakingChildRecord()
-                        .getReceipt()
-                        .getAccountID();
-                spec.registry().saveAccountId(key, newAccountID);
-            })
-        };
     }
 }

@@ -204,8 +204,8 @@ public class SyncValidator {
                 final BaseEventHashedData actualHashedData = actual.getHashedData();
                 final BaseEventUnhashedData actualUnhashedData = actual.getUnhashedData();
 
-                if (expected.getBaseEventHashedData().equals(actualHashedData)
-                        && expected.getBaseEventUnhashedData().equals(actualUnhashedData)) {
+                if (expected.getHashedData().equals(actualHashedData)
+                        && expected.getUnhashedData().equals(actualUnhashedData)) {
                     foundMatch = true;
                     break;
                 }

@@ -23,9 +23,13 @@ The following modules belong to the scope of Platform Base:
 - swirlds-base (`com.swirlds.base`)
 - swirlds-config-api (`com.swirlds.config.api`)
 - swirlds-logging (`com.swirlds.logging`)
+- swirlds-metrics-api (`com.swirlds.metrics.api`)
 - swirlds-common (`com.swirlds.common`)
 - swirlds-config-impl (`com.swirlds.config.impl`)
 - swirlds-config-benchmark (`com.swirlds.config.impl`)
+- swirlds-config-extensions (`com.swirlds.config.extensions`)
+- swirlds-config-processor (`com.swirlds.config.processor`)
+- swirlds-logging-log4j-appender (`com.swirlds.logging.log4j.appender`)
 
 Additional modules will follow in future since we plan to split swirlds-common into multiple modules.
 
@@ -45,4 +49,5 @@ The documentation is provided as markdown files that can be found here:
 - [Configuration](./configuration/configuration.md)
 - [Context](./context/context.md)
 - [Metrics](./metrics/metrics.md)
+- [Base executor](./base-executor/base-executor.md)
 - [Test Support](./test-support/test-support.md)
