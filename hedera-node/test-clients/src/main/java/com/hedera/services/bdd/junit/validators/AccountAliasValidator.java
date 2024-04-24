@@ -60,6 +60,11 @@ public class AccountAliasValidator implements RecordStreamValidator {
      */
     @Override
     public void validateAccountAliases(Set<BBMHederaAccount> accountsFromState, List<RecordWithSidecars> records) {
+        if (records.isEmpty()) {
+            log.info("RecordStream is empty");
+            throw new IllegalArgumentException("RecordStream is empty");
+        }
+
         if (accountsFromState.isEmpty()) {
             log.info("No accounts were read from state skipping account alias validation");
             return;

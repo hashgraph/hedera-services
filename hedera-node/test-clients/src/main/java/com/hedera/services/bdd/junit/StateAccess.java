@@ -83,7 +83,7 @@ import org.apache.logging.log4j.Logger;
 public class StateAccess {
     static final Logger log = LogManager.getLogger(StateAccess.class);
 
-    private static final String mainDirectory = "com.hedera.services.ServicesMain";
+    private static final String MAIN_DIRECTORY = "com.hedera.services.ServicesMain";
     private static final String SIGNED_STATE_FILE_PATH = "build/hapi-test/node%d/data/saved";
 
     /**
@@ -99,7 +99,7 @@ public class StateAccess {
         String swirldsName = findSwirldsDirectory(nodeId);
 
         final List<SavedStateInfo> savedStates =
-                state.getSavedStateFiles(mainDirectory, new NodeId(nodeId), swirldsName);
+                state.getSavedStateFiles(MAIN_DIRECTORY, new NodeId(nodeId), swirldsName);
 
         PlatformContext platformContext;
         try {
@@ -122,8 +122,7 @@ public class StateAccess {
                         hederaState.getChild(hederaState.findNodeIndex(TokenService.NAME, ACCOUNTS_KEY));
                 dumpableAccounts.addAll(Arrays.asList(gatherAccounts(accountsMap)));
             } catch (IOException e) {
-                log.error("Error reading state file");
-                throw new IllegalArgumentException("Error reading state file ");
+                log.info("Error reading state file");
             }
         }
 
@@ -167,7 +166,7 @@ public class StateAccess {
      */
     private static String findSwirldsDirectory(int nodeId) {
         Path directory = FileUtils.getAbsolutePath(
-                Paths.get(String.format(SIGNED_STATE_FILE_PATH, nodeId) + "/" + mainDirectory + "/" + nodeId));
+                Paths.get(String.format(SIGNED_STATE_FILE_PATH, nodeId) + "/" + MAIN_DIRECTORY + "/" + nodeId));
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(directory)) {
             for (Path path : stream) {
