@@ -402,8 +402,8 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             context.requireKeyOrThrow(op.autoRenewAccountOrThrow(), INVALID_AUTORENEW_ACCOUNT);
         }
 
-        // if we remove the admin key or any of the low priority keys, we should allow
-        // only the admin key to sign.
+        // if we remove the admin key or any of the low priority keys,
+        // we require the admin key to sign.
         if (containsKeyRemoval(op)) {
             validateTruePreCheck(originalToken.hasAdminKey(), INVALID_SIGNATURE);
             context.requireKey(originalToken.adminKey());
@@ -420,22 +420,12 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                 if (lowPriorityKeys.isEmpty()) {
                     requiredKey = originalToken.adminKey();
                 } else {
-                    final Key lowPriorityKeyList = Key.newBuilder()
-                            .keyList(KeyList.newBuilder().keys(lowPriorityKeys).build())
-                            .build();
+                    final Key lowPriorityKeyList = generateKeyListKey(lowPriorityKeys);
                     final List<Key> keysRequired = List.of(lowPriorityKeyList, originalToken.adminKey());
                     // with this we will require either admin key signature or all low priority keys signatures
-                    // (we can update several low priority keys with one TokenUpdate, so we will require all of these
-                    // keys
-                    // to sign)
-                    requiredKey = Key.newBuilder()
-                            .thresholdKey(ThresholdKey.newBuilder()
-                                    .keys(KeyList.newBuilder()
-                                            .keys(keysRequired)
-                                            .build())
-                                    .threshold(1)
-                                    .build())
-                            .build();
+                    // (we can update several low priority keys with one TokenUpdate,
+                    // so we will require all of these keys to sign)
+                    requiredKey = generateThresholdKey(keysRequired, 1);
                 }
 
                 context.requireKey(requiredKey);
@@ -446,9 +436,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             }
         } else {
             lowPriorityKeys = getAllRequiredLowPrioritySigners(originalToken, op);
-            final Key lowPriorityKeyList = Key.newBuilder()
-                    .keyList(KeyList.newBuilder().keys(lowPriorityKeys).build())
-                    .build();
+            final Key lowPriorityKeyList = generateKeyListKey(lowPriorityKeys);
             context.requireKey(lowPriorityKeyList);
         }
     }
@@ -481,13 +469,39 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     /**
      * Check if TokenUpdateOp tries to remove some of the token keys
      */
-    private static boolean containsKeyRemoval(@NonNull final TokenUpdateTransactionBody op) {
+    private boolean containsKeyRemoval(@NonNull final TokenUpdateTransactionBody op) {
         for (final var tokenKey : TOKEN_KEYS) {
             if (tokenKey.containsKeyRemoval(op)) {
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * Helper method to generate Threshold type of Key
+     */
+    private Key generateThresholdKey(@NonNull final List<Key> keysRequired, int threshold) {
+        return Key.newBuilder()
+                .thresholdKey(ThresholdKey.newBuilder()
+                        .keys(generateKeyList(keysRequired))
+                        .threshold(threshold)
+                        .build())
+                .build();
+    }
+
+    /**
+     * Helper method to generate KeyList type of Key
+     */
+    private Key generateKeyListKey(@NonNull final List<Key> keysRequired) {
+        return Key.newBuilder().keyList(generateKeyList(keysRequired)).build();
+    }
+
+    /**
+     * Helper method to generate KeyList
+     */
+    private KeyList generateKeyList(@NonNull final List<Key> keysRequired) {
+        return KeyList.newBuilder().keys(keysRequired).build();
     }
 
     /**
