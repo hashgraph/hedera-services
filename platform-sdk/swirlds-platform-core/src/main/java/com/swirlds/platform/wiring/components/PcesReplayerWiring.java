@@ -24,7 +24,7 @@ import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
-import com.swirlds.platform.wiring.DoneStreamingPcesTrigger;
+import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -37,7 +37,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public record PcesReplayerWiring(
         @NonNull InputWire<IOIterator<GossipEvent>> pcesIteratorInputWire,
-        @NonNull OutputWire<DoneStreamingPcesTrigger> doneStreamingPcesOutputWire,
+        @NonNull OutputWire<NoInput> doneStreamingPcesOutputWire,
         @NonNull StandardOutputWire<GossipEvent> eventOutput) {
 
     /**
@@ -47,7 +47,7 @@ public record PcesReplayerWiring(
      * @return the new wiring instance
      */
     @NonNull
-    public static PcesReplayerWiring create(@NonNull final TaskScheduler<DoneStreamingPcesTrigger> taskScheduler) {
+    public static PcesReplayerWiring create(@NonNull final TaskScheduler<NoInput> taskScheduler) {
         return new PcesReplayerWiring(
                 taskScheduler.buildInputWire("event files to replay"),
                 taskScheduler.getOutputWire(),
@@ -60,7 +60,6 @@ public record PcesReplayerWiring(
      * @param pcesReplayer the replayer to bind
      */
     public void bind(@NonNull final PcesReplayer pcesReplayer) {
-        ((BindableInputWire<IOIterator<GossipEvent>, DoneStreamingPcesTrigger>) pcesIteratorInputWire)
-                .bind(pcesReplayer::replayPces);
+        ((BindableInputWire<IOIterator<GossipEvent>, NoInput>) pcesIteratorInputWire).bind(pcesReplayer::replayPces);
     }
 }
