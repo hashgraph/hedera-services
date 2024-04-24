@@ -30,7 +30,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -239,13 +238,18 @@ public class TransactionChecker {
         }
         if (!txBody.hasTransactionID()) {
             throw new PreCheckException(INVALID_TRANSACTION_ID);
+        } else {
+            final var txnId = txBody.transactionIDOrThrow();
+            if (!txnId.hasAccountID()) {
+                throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND);
+            }
         }
         return checkParsed(new TransactionInfo(tx, txBody, signatureMap, bodyBytes, functionality));
     }
 
     public TransactionInfo checkParsed(@NonNull final TransactionInfo txInfo) throws PreCheckException {
         try {
-            checkPrefixMismatch(txInfo.signatureMap().sigPairOrElse(emptyList()));
+            checkPrefixMismatch(txInfo.signatureMap().sigPair());
             checkTransactionBody(txInfo.txBody());
             return txInfo;
         } catch (PreCheckException e) {

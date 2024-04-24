@@ -18,7 +18,7 @@ package com.swirlds.platform.test.fixtures.event;
 
 import static com.swirlds.platform.system.events.EventConstants.BIRTH_ROUND_UNDEFINED;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -120,6 +120,20 @@ public class TestingEventBuilder {
      * Only relevant if the other parent is set.
      */
     private Long otherParentGenerationOverride;
+
+    /**
+     * Overrides the birth round of the configured self parent.
+     * <p>
+     * Only relevant if the self parent is set.
+     */
+    private Long selfParentBirthRoundOverride;
+
+    /**
+     * Overrides the birth round of the configured other parent.
+     * <p>
+     * Only relevant if the other parent is set.
+     */
+    private Long otherParentBirthRoundOverride;
 
     /**
      * The birth round of the event.
@@ -309,6 +323,32 @@ public class TestingEventBuilder {
     }
 
     /**
+     * Override the birth round of the configured self parent.
+     * <p>
+     * Only relevant if the self parent is set.
+     *
+     * @param birthRound the birth round to override with
+     * @return this instance
+     */
+    public @NonNull TestingEventBuilder overrideSelfParentBirthRound(final long birthRound) {
+        this.selfParentBirthRoundOverride = birthRound;
+        return this;
+    }
+
+    /**
+     * Override the birth round of the configured other parent.
+     * <p>
+     * Only relevant if the other parent is set.
+     *
+     * @param birthRound the birth round to override with
+     * @return this instance
+     */
+    public @NonNull TestingEventBuilder overrideOtherParentBirthRound(final long birthRound) {
+        this.otherParentBirthRoundOverride = birthRound;
+        return this;
+    }
+
+    /**
      * Set the birth round of an event.
      * <p>
      * If not set, defaults to the maximum of the birth rounds of the self and other parents, plus a random number
@@ -353,11 +393,11 @@ public class TestingEventBuilder {
         }
 
         for (int i = appTransactionCount; i < appTransactionCount + systemTransactionCount; ++i) {
-            generatedTransactions[i] = new StateSignatureTransaction(
-                    random.nextLong(0, Long.MAX_VALUE),
-                    RandomUtils.randomSignatureBytes(random),
-                    RandomUtils.randomHashBytes(random),
-                    Bytes.EMPTY);
+            generatedTransactions[i] = new StateSignatureTransaction(StateSignaturePayload.newBuilder()
+                    .round(random.nextLong(0, Long.MAX_VALUE))
+                    .signature(RandomUtils.randomSignatureBytes(random))
+                    .hash(RandomUtils.randomHashBytes(random))
+                    .build());
         }
 
         return generatedTransactions;
@@ -366,28 +406,35 @@ public class TestingEventBuilder {
     /**
      * Create an event descriptor from a parent event.
      *
-     * @param parent the parent event
+     * @param parent             the parent event
+     * @param generationOverride the generation to override with, or null if no override is necessary
+     * @param birthRoundOverride the birth round to override with, or null if no override is necessary
      * @return the parent event descriptor
      */
     @Nullable
     private EventDescriptor createDescriptorFromParent(
-            @Nullable final GossipEvent parent, @Nullable final Long generationOverride) {
+            @Nullable final GossipEvent parent,
+            @Nullable final Long generationOverride,
+            @Nullable final Long birthRoundOverride) {
 
         if (parent == null) {
             if (generationOverride != null) {
                 throw new IllegalArgumentException("Cannot override generation on a parent that doesn't exist");
             }
 
+            if (birthRoundOverride != null) {
+                throw new IllegalArgumentException("Cannot override birth round on a parent that doesn't exist");
+            }
+
             return null;
         }
 
         final long generation = generationOverride == null ? parent.getGeneration() : generationOverride;
+        final long birthRound =
+                birthRoundOverride == null ? parent.getHashedData().getBirthRound() : birthRoundOverride;
 
         return new EventDescriptor(
-                parent.getHashedData().getHash(),
-                parent.getHashedData().getCreatorId(),
-                generation,
-                parent.getHashedData().getBirthRound());
+                parent.getHashedData().getHash(), parent.getHashedData().getCreatorId(), generation, birthRound);
     }
 
     /**
@@ -409,9 +456,9 @@ public class TestingEventBuilder {
         }
 
         final EventDescriptor selfParentDescriptor =
-                createDescriptorFromParent(selfParent, selfParentGenerationOverride);
+                createDescriptorFromParent(selfParent, selfParentGenerationOverride, selfParentBirthRoundOverride);
         final EventDescriptor otherParentDescriptor =
-                createDescriptorFromParent(otherParent, otherParentGenerationOverride);
+                createDescriptorFromParent(otherParent, otherParentGenerationOverride, otherParentBirthRoundOverride);
 
         if (this.birthRound == null) {
             final long maxParentBirthRound = Math.max(
@@ -455,16 +502,8 @@ public class TestingEventBuilder {
         final byte[] signature = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(signature);
 
-        final NodeId otherParentCreatorId;
-        if (otherParent == null) {
-            otherParentCreatorId = null;
-        } else {
-            otherParentCreatorId = otherParent.getHashedData().getCreatorId();
-        }
-
-        final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(otherParentCreatorId, signature);
+        final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(signature);
         final GossipEvent gossipEvent = new GossipEvent(hashedData, unhashedData);
-        gossipEvent.buildDescriptor();
 
         return gossipEvent;
     }

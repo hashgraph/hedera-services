@@ -28,7 +28,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 public class VirtualBlobKey implements VirtualKey {
     public static final int CURRENT_VERSION = 1;
@@ -81,12 +80,6 @@ public class VirtualBlobKey implements VirtualKey {
         out.writeInt(entityNumCode);
     }
 
-    @Deprecated
-    void serialize(final ByteBuffer buffer) {
-        buffer.put((byte) type.ordinal());
-        buffer.putInt(entityNumCode);
-    }
-
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         type = BLOB_TYPES[0xff & in.readByte()];
@@ -96,12 +89,6 @@ public class VirtualBlobKey implements VirtualKey {
     void deserialize(final ReadableSequentialData in) {
         type = BLOB_TYPES[0xff & in.readByte()];
         entityNumCode = in.readInt();
-    }
-
-    @Deprecated
-    void deserialize(final ByteBuffer buffer) {
-        type = BLOB_TYPES[0xff & buffer.get()];
-        entityNumCode = buffer.getInt();
     }
 
     @Override
@@ -158,10 +145,5 @@ public class VirtualBlobKey implements VirtualKey {
      */
     boolean equalsTo(final BufferedData buffer) {
         return (type.ordinal() == (0xff & buffer.readByte())) && (entityNumCode == buffer.readInt());
-    }
-
-    @Deprecated
-    boolean equalsTo(final ByteBuffer buffer, final int version) {
-        return (type.ordinal() == (0xff & buffer.get())) && (entityNumCode == buffer.getInt());
     }
 }

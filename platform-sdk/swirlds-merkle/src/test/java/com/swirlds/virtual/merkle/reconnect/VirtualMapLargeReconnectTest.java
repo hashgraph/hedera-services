@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
@@ -44,8 +43,6 @@ class VirtualMapLargeReconnectTest extends VirtualMapReconnectTestBase {
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-003"), @Tag("VMAP-003.14")})
     @Tag(TIME_CONSUMING)
     @DisplayName("Permutations of very large trees reconnecting")
-    // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11507
-    @Disabled
     void largeTeacherLargerLearnerPermutations(int teacherStart, int teacherEnd, int learnerStart, int learnerEnd) {
 
         for (int i = teacherStart; i < teacherEnd; i++) {
@@ -64,8 +61,6 @@ class VirtualMapLargeReconnectTest extends VirtualMapReconnectTestBase {
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-005"), @Tag("VMAP-006")})
     @Tag(TIME_CONSUMING)
     @DisplayName("Reconnect aborts 3 times before success")
-    // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11507
-    @Disabled
     void multipleAbortedReconnectsCanSucceed(int teacherStart, int teacherEnd, int learnerStart, int learnerEnd) {
         for (int i = teacherStart; i < teacherEnd; i++) {
             teacherMap.put(new TestKey(i), new TestValue(i));
@@ -82,6 +77,7 @@ class VirtualMapLargeReconnectTest extends VirtualMapReconnectTestBase {
     }
 
     @Test
+    @Tag(TIME_CONSUMING)
     void reconnectBench() {
         final long N = 1_000_000;
         final long U = 10_000;

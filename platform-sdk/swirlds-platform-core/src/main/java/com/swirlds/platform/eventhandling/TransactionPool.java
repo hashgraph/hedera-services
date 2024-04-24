@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.eventhandling;
 
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
@@ -23,7 +24,6 @@ import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
-import com.swirlds.platform.system.transaction.SystemTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedList;
@@ -208,11 +208,12 @@ public class TransactionPool implements TransactionSupplier, Clearable {
     }
 
     /**
+     * This method takes a StateSignaturePayload protobuf record as an argument and submits it to the pool.
      * Same as {@link #submitTransaction(ConsensusTransactionImpl, boolean)} but with priority set to true.
      * This method has no return since system transactions are never rejected.
      */
-    public synchronized void submitSystemTransaction(@NonNull final SystemTransaction transaction) {
-        submitTransaction(transaction, true);
+    public synchronized void submitPayload(@NonNull final StateSignaturePayload transaction) {
+        submitTransaction(new StateSignatureTransaction(transaction), true);
     }
 
     /**

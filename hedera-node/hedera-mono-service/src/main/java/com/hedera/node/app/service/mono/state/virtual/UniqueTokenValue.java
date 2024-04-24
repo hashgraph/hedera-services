@@ -34,7 +34,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -227,11 +226,6 @@ public class UniqueTokenValue implements VirtualValue {
         deserializeFrom(in::readByte, in::readLong, in::readBytes);
     }
 
-    @Deprecated
-    void deserialize(final ByteBuffer byteBuffer, final int version) {
-        deserializeFrom(byteBuffer::get, byteBuffer::getLong, byteBuffer::get);
-    }
-
     @Override
     public void serialize(final SerializableDataOutputStream output) throws IOException {
         serializeTo(output::writeByte, output::writeLong, (data, len) -> output.write(data, 0, len));
@@ -239,11 +233,6 @@ public class UniqueTokenValue implements VirtualValue {
 
     void serialize(final WritableSequentialData out) {
         serializeTo(out::writeByte, out::writeLong, (data, len) -> out.writeBytes(data, 0, len));
-    }
-
-    @Deprecated
-    void serialize(final ByteBuffer byteBuffer) {
-        serializeTo(byteBuffer::put, byteBuffer::putLong, (data, len) -> byteBuffer.put(data, 0, len));
     }
 
     @Override

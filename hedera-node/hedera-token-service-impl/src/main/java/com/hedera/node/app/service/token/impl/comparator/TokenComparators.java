@@ -38,6 +38,8 @@ public final class TokenComparators {
     public static final Comparator<TokenID> TOKEN_ID_COMPARATOR = Comparator.comparingLong(TokenID::tokenNum);
     public static final Comparator<TokenTransferList> TOKEN_TRANSFER_LIST_COMPARATOR =
             (o1, o2) -> Objects.compare(o1.token(), o2.token(), TOKEN_ID_COMPARATOR);
-    public static final Comparator<NftTransfer> NFT_TRANSFER_COMPARATOR =
-            Comparator.comparing(NftTransfer::serialNumber);
+    public static final Comparator<NftTransfer> NFT_TRANSFER_COMPARATOR = Comparator.comparing(
+                    NftTransfer::senderAccountID, ACCOUNT_ID_COMPARATOR)
+            .thenComparing(NftTransfer::receiverAccountID, ACCOUNT_ID_COMPARATOR)
+            .thenComparing(NftTransfer::serialNumber);
 }

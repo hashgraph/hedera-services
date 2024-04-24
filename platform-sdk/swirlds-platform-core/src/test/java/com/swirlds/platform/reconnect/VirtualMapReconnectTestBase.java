@@ -32,7 +32,6 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualMap;
@@ -83,8 +82,12 @@ public abstract class VirtualMapReconnectTestBase {
     protected BrokenBuilder teacherBuilder;
     protected BrokenBuilder learnerBuilder;
 
-    protected final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-    protected final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
+    protected final ReconnectConfig reconnectConfig = new TestConfigBuilder()
+            // This is lower than the default, helps test that is supposed to fail to finish faster.
+            .withValue(ReconnectConfig_.ASYNC_STREAM_TIMEOUT, "5s")
+            .withValue(ReconnectConfig_.MAX_ACK_DELAY, "1000ms")
+            .getOrCreateConfig()
+            .getConfigData(ReconnectConfig.class);
 
     protected abstract VirtualDataSourceBuilder<TestKey, TestValue> createBuilder() throws IOException;
 
@@ -115,13 +118,6 @@ public abstract class VirtualMapReconnectTestBase {
         registry.registerConstructable(new ClassConstructorPair(TestKey.class, TestKey::new));
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
         registry.registerConstructable(new ClassConstructorPair(BrokenBuilder.class, BrokenBuilder::new));
-
-        new TestConfigBuilder()
-                .withValue(ReconnectConfig_.ACTIVE, "true")
-                // This is lower than the default, helps test that is supposed to fail to finish faster.
-                .withValue(ReconnectConfig_.ASYNC_STREAM_TIMEOUT, "5000ms")
-                .withValue(ReconnectConfig_.MAX_ACK_DELAY, "1000ms")
-                .getOrCreateConfig();
     }
 
     protected MerkleInternal createTreeForMap(VirtualMap<TestKey, TestValue> map) {

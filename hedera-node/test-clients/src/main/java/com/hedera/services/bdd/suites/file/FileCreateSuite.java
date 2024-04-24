@@ -33,7 +33,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -101,6 +103,15 @@ public class FileCreateSuite extends HapiSuite {
                 .then(fileCreate("test")
                         .lifetime(defaultMaxLifetime + 12_345L)
                         .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE));
+    }
+
+    @HapiTest
+    public HapiSpec idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given()
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> fileCreate("file")
+                        .contents("ABC")));
     }
 
     @HapiTest

@@ -28,7 +28,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenSupplyType;
@@ -75,9 +74,9 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
         final var txn = context.body();
         final var op = txn.cryptoApproveAllowanceOrThrow();
 
-        final var cryptoAllowances = op.cryptoAllowancesOrElse(emptyList());
-        final var tokenAllowances = op.tokenAllowancesOrElse(emptyList());
-        final var nftAllowances = op.nftAllowancesOrElse(emptyList());
+        final var cryptoAllowances = op.cryptoAllowances();
+        final var tokenAllowances = op.tokenAllowances();
+        final var nftAllowances = op.nftAllowances();
 
         // feature flag for allowances. FUTURE: Will probably be moved to some other place in app in the future.
         validateTrue(hederaConfig.allowancesIsEnabled(), NOT_SUPPORTED);
@@ -129,6 +128,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
         for (final var allowance : tokenAllowances) {
             final var owner = allowance.owner();
             final var spender = allowance.spenderOrThrow();
+            // pureChecks() ensures that tokenId is not null
             final var token = tokenStore.get(allowance.tokenIdOrThrow());
             // check if token exists
             validateTrue(token != null, INVALID_TOKEN_ID);
@@ -169,6 +169,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
         for (final var allowance : nftAllowancesList) {
             final var owner = allowance.owner();
             final var spender = allowance.spenderOrThrow();
+            // pureChecks() ensures that tokenId is not null
             final var tokenId = allowance.tokenIdOrThrow();
             final var serialNums = allowance.serialNumbers();
 
@@ -200,9 +201,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
                         .spenderId(allowance.delegatingSpender())
                         .build();
                 validateTrue(
-                        effectiveOwner
-                                .approveForAllNftAllowancesOrElse(emptyList())
-                                .contains(approveForAllKey),
+                        effectiveOwner.approveForAllNftAllowances().contains(approveForAllKey),
                         DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL);
             }
 

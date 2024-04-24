@@ -1,3 +1,5 @@
+[⇧ Platform Base](../base.md)
+
 ## Hedera Logging API
 
 > [!WARNING]  

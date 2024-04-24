@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -30,6 +31,7 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.NFT_ALLOWANCE_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.TOKEN_ALLOWANCE_SIZE;
 import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.isValidOwner;
 import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.validateAllowanceLimit;
+import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.validation.Validations.validateNullableAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -98,9 +100,9 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         // The transaction must have at least one type of allowance. There is also an upper limit to the allowed number
         // of allowances in a single transaction, but that check requires the config, and is thus not a pure check.
         // So we will check that later in handle.
-        final var cryptoAllowances = op.cryptoAllowancesOrElse(emptyList());
-        final var tokenAllowances = op.tokenAllowancesOrElse(emptyList());
-        final var nftAllowances = op.nftAllowancesOrElse(emptyList());
+        final var cryptoAllowances = op.cryptoAllowances();
+        final var tokenAllowances = op.tokenAllowances();
+        final var nftAllowances = op.nftAllowances();
         final var totalAllowancesSize = cryptoAllowances.size() + tokenAllowances.size() + nftAllowances.size();
         validateTruePreCheck(totalAllowancesSize != 0, EMPTY_ALLOWANCES);
 
@@ -116,11 +118,13 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             validateNullableAccountID(allowance.owner());
             validateTruePreCheck(allowance.amount() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
             validateAccountID(allowance.spender(), INVALID_ALLOWANCE_SPENDER_ID);
+            mustExist(allowance.tokenId(), INVALID_TOKEN_ID);
         }
 
         for (final var allowance : nftAllowances) {
             validateNullableAccountID(allowance.owner());
             validateAccountID(allowance.spender(), INVALID_ALLOWANCE_SPENDER_ID);
+            mustExist(allowance.tokenId(), INVALID_TOKEN_ID);
         }
     }
 
@@ -134,7 +138,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         // If the allowance owner is not the payer, then the transaction must have been signed by the owner. Note, if
         // the owner is missing, then the owner is assumed to be the payer. This is true for crypto allowances and
         // for token allowances.
-        for (final var allowance : op.cryptoAllowancesOrElse(emptyList())) {
+        for (final var allowance : op.cryptoAllowances()) {
             final var owner = allowance.owner();
             if (owner != null && !owner.equals(payerId)) {
                 context.requireKeyOrThrow(owner, INVALID_ALLOWANCE_OWNER_ID);
@@ -142,7 +146,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         }
 
         // Fungible token allowances are the same as basic crypto approvals and allowances
-        for (final var allowance : op.tokenAllowancesOrElse(emptyList())) {
+        for (final var allowance : op.tokenAllowances()) {
             final var owner = allowance.owner();
             // (TEMPORARY) Remove after diff testing is complete
             if (owner != null && owner.hasAlias()) {
@@ -154,7 +158,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         }
 
         // NFT allowances are a little more complicated because they have delegating spenders and approvedForAll.
-        for (final var allowance : op.nftAllowancesOrElse(emptyList())) {
+        for (final var allowance : op.nftAllowances()) {
             // Only the owner can grant approvedForAll, so if approvedForAll is true, then the owner must sign.
             // If approvedForAll is false, and if there is a delegating spender, then they must sign. Otherwise,
             // the owner must sign.
@@ -221,9 +225,9 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         requireNonNull(accountStore);
 
         final var op = context.body().cryptoApproveAllowanceOrThrow();
-        final var cryptoAllowances = op.cryptoAllowancesOrElse(emptyList());
-        final var tokenAllowances = op.tokenAllowancesOrElse(emptyList());
-        final var nftAllowances = op.nftAllowancesOrElse(emptyList());
+        final var cryptoAllowances = op.cryptoAllowances();
+        final var tokenAllowances = op.tokenAllowances();
+        final var nftAllowances = op.nftAllowances();
 
         final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
         final var tokenStore = context.writableStore(WritableTokenStore.class);
@@ -259,7 +263,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             final var owner = allowance.owner();
             final var spender = allowance.spenderOrThrow();
             final var effectiveOwner = getEffectiveOwnerAccount(owner, payerId, accountStore);
-            final var mutableAllowances = new ArrayList<>(effectiveOwner.cryptoAllowancesOrElse(emptyList()));
+            final var mutableAllowances = new ArrayList<>(effectiveOwner.cryptoAllowances());
 
             final var amount = allowance.amount();
 
@@ -325,7 +329,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             final var spender = allowance.spenderOrThrow();
 
             final var effectiveOwner = getEffectiveOwnerAccount(owner, payerId, accountStore);
-            final var mutableTokenAllowances = new ArrayList<>(effectiveOwner.tokenAllowancesOrElse(emptyList()));
+            final var mutableTokenAllowances = new ArrayList<>(effectiveOwner.tokenAllowances());
 
             updateTokenAllowance(mutableTokenAllowances, amount, spender, tokenId);
             final var copy = effectiveOwner
@@ -397,8 +401,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             final var spender = allowance.spenderOrThrow();
 
             final var effectiveOwner = getEffectiveOwnerAccount(owner, payerId, accountStore);
-            final var mutableNftAllowances =
-                    new ArrayList<>(effectiveOwner.approveForAllNftAllowancesOrElse(emptyList()));
+            final var mutableNftAllowances = new ArrayList<>(effectiveOwner.approveForAllNftAllowances());
 
             if (allowance.hasApprovedForAll()) {
                 final var approveForAllAllowance = AccountApprovalForAllAllowance.newBuilder()
@@ -550,10 +553,10 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
      * @return the total bytes used in transaction
      */
     private int bytesUsedInTxn(final CryptoApproveAllowanceTransactionBody op) {
-        return op.cryptoAllowancesOrElse(emptyList()).size() * CRYPTO_ALLOWANCE_SIZE
-                + op.tokenAllowancesOrElse(emptyList()).size() * TOKEN_ALLOWANCE_SIZE
-                + op.nftAllowancesOrElse(emptyList()).size() * NFT_ALLOWANCE_SIZE
-                + countSerials(op.nftAllowancesOrElse(emptyList())) * LONG_SIZE;
+        return op.cryptoAllowances().size() * CRYPTO_ALLOWANCE_SIZE
+                + op.tokenAllowances().size() * TOKEN_ALLOWANCE_SIZE
+                + op.nftAllowances().size() * NFT_ALLOWANCE_SIZE
+                + countSerials(op.nftAllowances()) * LONG_SIZE;
     }
 
     /**
@@ -564,15 +567,12 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
      * @return the new bytes that will be added to state
      */
     private long getNewBytes(final CryptoApproveAllowanceTransactionBody op, final Account account) {
-        final long newCryptoKeys = getChangedCryptoKeys(
-                op.cryptoAllowancesOrElse(emptyList()),
-                account == null ? emptyList() : account.cryptoAllowancesOrElse(emptyList()));
-        final long newTokenKeys = getChangedTokenKeys(
-                op.tokenAllowancesOrElse(emptyList()),
-                account == null ? emptyList() : account.tokenAllowancesOrElse(emptyList()));
+        final long newCryptoKeys =
+                getChangedCryptoKeys(op.cryptoAllowances(), account == null ? emptyList() : account.cryptoAllowances());
+        final long newTokenKeys =
+                getChangedTokenKeys(op.tokenAllowances(), account == null ? emptyList() : account.tokenAllowances());
         final long newApproveForAllNfts = getChangedNftKeys(
-                op.nftAllowancesOrElse(emptyList()),
-                account == null ? emptyList() : account.approveForAllNftAllowancesOrElse(emptyList()));
+                op.nftAllowances(), account == null ? emptyList() : account.approveForAllNftAllowances());
 
         return newCryptoKeys * CRYPTO_ALLOWANCE_SIZE
                 + newTokenKeys * TOKEN_ALLOWANCE_SIZE

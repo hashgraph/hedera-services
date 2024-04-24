@@ -37,7 +37,9 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
@@ -50,6 +52,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -105,7 +108,23 @@ public class ContractUpdateSuite extends HapiSuite {
                 eip1014AddressAlwaysHasPriority(),
                 immutableContractKeyFormIsStandard(),
                 updateAutoRenewAccountWorks(),
-                updateStakingFieldsWorks());
+                updateStakingFieldsWorks(),
+                cannotUpdateMaxAutomaticAssociations());
+    }
+
+    @HapiTest
+    public HapiSpec idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed("adminKey"),
+                        cryptoCreate("a"),
+                        cryptoCreate("b"),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT).autoRenewAccountId("a").stakedAccountId("b"))
+                .when()
+                .then(submitModified(
+                        withSuccessivelyVariedBodyIds(),
+                        () -> contractUpdate(CONTRACT).newAutoRenewAccount("b").newStakedAccountId("a")));
     }
 
     @HapiTest
@@ -455,6 +474,17 @@ public class ContractUpdateSuite extends HapiSuite {
                             .hasBytecode(spec.registry().getBytes("initialBytecode"));
                     allRunFor(spec, op);
                 }));
+    }
+
+    @HapiTest
+    private HapiSpec cannotUpdateMaxAutomaticAssociations() {
+        return defaultHapiSpec("cannotUpdateMaxAutomaticAssociations")
+                .given(
+                        newKeyNamed(ADMIN_KEY),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT).adminKey(ADMIN_KEY))
+                .when()
+                .then(contractUpdate(CONTRACT).newMaxAutomaticAssociations(20).hasKnownStatus(NOT_SUPPORTED));
     }
 
     @Override

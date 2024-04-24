@@ -135,7 +135,7 @@ public class ConfigProviderImpl extends ConfigProviderBase {
         try {
             final var configurationList =
                     ServicesConfigurationList.PROTOBUF.parseStrict(propertyFileContent.toReadableSequentialData());
-            final var configSource = new SettingsConfigSource(configurationList.nameValueOrThrow(), 101);
+            final var configSource = new SettingsConfigSource(configurationList.nameValue(), 101);
             builder.withSource(configSource);
         } catch (ParseException | NullPointerException e) {
             // Ignore. This method may be called with a partial file during regular execution.

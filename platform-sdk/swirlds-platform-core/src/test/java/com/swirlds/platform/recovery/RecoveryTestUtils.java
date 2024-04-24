@@ -20,20 +20,22 @@ import static com.swirlds.base.units.UnitConstants.SECONDS_TO_NANOSECONDS;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.platform.event.stream.DefaultEventStreamManager;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.event.stream.DefaultConsensusEventStream;
+import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.ObjectStreamIterator;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -73,11 +75,10 @@ public final class RecoveryTestUtils {
     private RecoveryTestUtils() {}
 
     /**
-     * Generate a random event. Fields inside event are filled mostly with random nonsense data,
-     * and a little realistic data (i.e. the event's round).
+     * Generate a random event. Fields inside event are filled mostly with random nonsense data, and a little realistic
+     * data (i.e. the event's round).
      *
-     * @param random
-     * 		a source of randomness
+     * @param random a source of randomness
      * @return an event
      */
     public static EventImpl generateRandomEvent(
@@ -108,7 +109,7 @@ public final class RecoveryTestUtils {
                 transactions);
 
         final BaseEventUnhashedData baseEventUnhashedData =
-                new BaseEventUnhashedData(otherId, randomSignature(random).getSignatureBytes());
+                new BaseEventUnhashedData(randomSignature(random).getSignatureBytes());
 
         final ConsensusData consensusData = new ConsensusData();
         consensusData.setConsensusTimestamp(now);
@@ -125,16 +126,11 @@ public final class RecoveryTestUtils {
     /**
      * Generate a list of random events.
      *
-     * @param random
-     * 		a source of randomness
-     * @param firstRound
-     * 		the round of the first event
-     * @param timeToSimulate
-     * 		the length of time that should be simulated
-     * @param roundsPerSecond
-     * 		the number of rounds per second
-     * @param evensPerRound
-     * 		the number of events in each round
+     * @param random          a source of randomness
+     * @param firstRound      the round of the first event
+     * @param timeToSimulate  the length of time that should be simulated
+     * @param roundsPerSecond the number of rounds per second
+     * @param evensPerRound   the number of events in each round
      * @return a list of events
      */
     public static List<EventImpl> generateRandomEvents(
@@ -179,31 +175,27 @@ public final class RecoveryTestUtils {
     /**
      * Write a list of events to event stream files.
      *
-     * @param random
-     * 		a source of randomness (for generating signatures)
-     * @param destination
-     * 		the directory where the files should be written
-     * @param secondsPerFile
-     * 		the number of seconds of data in each file
-     * @param events
-     * 		a list of events to be written
+     * @param random         a source of randomness (for generating signatures)
+     * @param destination    the directory where the files should be written
+     * @param secondsPerFile the number of seconds of data in each file
+     * @param events         a list of events to be written
      */
     public static void writeRandomEventStream(
             final Random random, final Path destination, final int secondsPerFile, final List<EventImpl> events)
             throws NoSuchAlgorithmException, IOException {
 
-        final DefaultEventStreamManager eventStreamManager = new DefaultEventStreamManager(
-                TestPlatformContextBuilder.create().build(),
-                Time.getCurrent(),
-                getStaticThreadManager(),
-                new NodeId(0L),
-                x -> randomSignature(random),
-                "test",
-                true,
-                destination.toString(),
-                secondsPerFile,
-                Integer.MAX_VALUE,
-                x -> false);
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(EventConfig_.ENABLE_EVENT_STREAMING, true)
+                .withValue(EventConfig_.EVENTS_LOG_DIR, destination.toString())
+                .withValue(EventConfig_.EVENT_INTAKE_QUEUE_SIZE, Integer.MAX_VALUE)
+                .withValue(EventConfig_.EVENTS_LOG_PERIOD, secondsPerFile)
+                .getOrCreateConfig();
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
+
+        final DefaultConsensusEventStream eventStreamManager = new DefaultConsensusEventStream(
+                platformContext, new NodeId(0L), x -> randomSignature(random), "test", x -> false);
 
         // The event stream writer has flaky asynchronous behavior,
         // so we need to be extra careful when waiting for it to finish.
@@ -293,11 +285,9 @@ public final class RecoveryTestUtils {
     /**
      * Remove the second half of a file. Updates the file on disk.
      *
-     * @param file
-     * 		the file to truncate
-     * @param truncateOnObjectBoundary
-     * 		if true then truncate the file on an exact object boundary,
-     * 		if false then truncate the file somewhere that isn't an object boundary
+     * @param file                     the file to truncate
+     * @param truncateOnObjectBoundary if true then truncate the file on an exact object boundary, if false then
+     *                                 truncate the file somewhere that isn't an object boundary
      * @return the number of valid objects in the truncated file
      */
     public static int truncateFile(final Path file, boolean truncateOnObjectBoundary) throws IOException {

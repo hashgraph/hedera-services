@@ -19,6 +19,7 @@ package com.swirlds.platform.event;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHashBytes;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
 
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -75,9 +76,7 @@ public abstract class DetGenerateUtils {
     }
 
     public static BaseEventUnhashedData generateBaseEventUnhashedData(final Random random) {
-        return new BaseEventUnhashedData(
-                null, // the other node id is no longer stored here.
-                generateRandomByteArray(random, DEFAULT_SIGNATURE_SIZE)); // signature
+        return new BaseEventUnhashedData(generateRandomByteArray(random, DEFAULT_SIGNATURE_SIZE));
     }
 
     public static ConsensusData generateConsensusEventData(final Random random) {
@@ -119,7 +118,11 @@ public abstract class DetGenerateUtils {
             if (system) {
                 final Bytes signature = randomSignatureBytes(random);
                 final Bytes hash = randomHashBytes(random);
-                list.add(new StateSignatureTransaction(random.nextLong(), signature, hash, Bytes.EMPTY));
+                list.add(new StateSignatureTransaction(StateSignaturePayload.newBuilder()
+                        .round(random.nextLong())
+                        .signature(signature)
+                        .hash(hash)
+                        .build()));
             } else {
                 list.add(new SwirldTransaction(bytes));
             }
