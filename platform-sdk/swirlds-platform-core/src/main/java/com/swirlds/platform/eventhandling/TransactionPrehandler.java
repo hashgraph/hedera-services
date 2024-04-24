@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.eventhandling;
 
+import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -28,5 +29,6 @@ public interface TransactionPrehandler {
      *
      * @param event the event to prehandle
      */
+    @InputWireLabel("GossipEvent")
     void prehandleApplicationTransactions(@NonNull GossipEvent event);
 }

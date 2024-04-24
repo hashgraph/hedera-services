@@ -23,12 +23,12 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.stats.AverageTimeStat;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,7 +41,7 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
     /**
      * A source to get the latest immutable state
      */
-    private final SignedStateNexus latestImmutableStateNexus;
+    private final Supplier<ReservedSignedState> latestStateSupplier;
 
     /**
      * Average time spent in to prehandle each individual transaction (in microseconds)
@@ -53,13 +53,15 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
     /**
      * Constructs a new TransactionPrehandler
      *
-     * @param platformContext           the platform context
-     * @param latestImmutableStateNexus the latest immutable state nexus
+     * @param platformContext     the platform context
+     * @param latestStateSupplier provides access to the latest immutable state, may return null (implementation detail
+     *                            of locking mechanism within the supplier)
      */
     public DefaultTransactionPrehandler(
-            @NonNull final PlatformContext platformContext, @NonNull final SignedStateNexus latestImmutableStateNexus) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final Supplier<ReservedSignedState> latestStateSupplier) {
         this.time = platformContext.getTime();
-        this.latestImmutableStateNexus = Objects.requireNonNull(latestImmutableStateNexus);
+        this.latestStateSupplier = Objects.requireNonNull(latestStateSupplier);
 
         preHandleTime = new AverageTimeStat(
                 platformContext.getMetrics(),
@@ -82,19 +84,16 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
 
         ReservedSignedState latestImmutableState = null;
         try {
-            latestImmutableState = latestImmutableStateNexus.getState("transaction prehandle");
+            latestImmutableState = latestStateSupplier.get();
             while (latestImmutableState == null) {
-                latestImmutableState = latestImmutableStateNexus.getState("transaction prehandle");
+                latestImmutableState = latestStateSupplier.get();
             }
 
             try {
                 latestImmutableState.get().getSwirldState().preHandle(eventImpl);
             } catch (final Throwable t) {
                 logger.error(
-                        EXCEPTION.getMarker(),
-                        "error invoking SwirldState.preHandle() for event {}",
-                        eventImpl.toMediumString(),
-                        t);
+                        EXCEPTION.getMarker(), "error invoking SwirldState.preHandle() for event {}", eventImpl, t);
             }
         } finally {
             event.signalPrehandleCompletion();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,6 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.report;
+package com.hedera.services.bdd.spec.utilops.mod;
 
-import com.swirlds.common.crypto.Hash;
-
-/**
- * The running hash of the event stream at the end of a round
- *
- * @param round
- * 		the round in question
- * @param runningHash
- * 		the hash
- */
-public record RoundRunningHash(long round, Hash runningHash) {}
+public interface QueryModificationStrategy extends ModificationStrategy<QueryModification> {}

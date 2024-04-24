@@ -22,7 +22,6 @@ import com.swirlds.common.threading.futures.StandardFuture;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -33,6 +32,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /** A consensus round with events and all other relevant data. */
 public class ConsensusRound implements Round {
@@ -245,9 +245,13 @@ public class ConsensusRound implements Round {
 
     @Override
     public String toString() {
+        final String eventStrings = consensusEvents.stream()
+                .map(event -> event.getBaseEvent().getDescriptor().toString())
+                .collect(Collectors.joining(","));
+
         return new ToStringBuilder(this)
                 .append("round", snapshot.round())
-                .append("consensus events", EventUtils.toShortStrings(consensusEvents))
+                .append("consensus events", eventStrings)
                 .toString();
     }
 }

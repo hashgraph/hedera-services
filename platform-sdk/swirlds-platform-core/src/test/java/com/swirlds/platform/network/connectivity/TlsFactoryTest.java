@@ -25,11 +25,13 @@ import com.swirlds.platform.crypto.AddressBookAndCerts;
 import com.swirlds.platform.crypto.CryptoArgsProvider;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.network.NetworkUtils;
+import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Assertions;
@@ -48,10 +50,8 @@ class TlsFactoryTest extends ConnectivityTestBase {
     private static Socket clientSocketB;
     private static ServerSocket serverSocket;
     private static Thread serverThread;
-    private static AddressBook updatedAddressBook;
-    private static NodeId nodeA;
     private final AtomicBoolean closeSeverConnection = new AtomicBoolean(false);
-
+    List<PeerInfo> peersA;
     /**
      * Set up the test by creating the address book, keys and certs, and the socket factories for nodes A and B. The
      * base case is that the client socket of a node B can connect to the server socket of another node A. Subsequent
@@ -66,14 +66,16 @@ class TlsFactoryTest extends ConnectivityTestBase {
         assertTrue(addressBook.getSize() > 1, "Address book must contain at least 2 nodes");
 
         // choose 2 nodes to test connections
-        nodeA = addressBook.getNodeId(0);
+        final NodeId nodeA = addressBook.getNodeId(0);
         final NodeId nodeB = addressBook.getNodeId(1);
 
+        peersA = Utilities.createPeerInfoList(addressBook, nodeA);
+        final List<PeerInfo> peersB = Utilities.createPeerInfoList(addressBook, nodeB);
+
         // create their socket factories
-        socketFactoryA =
-                NetworkUtils.createSocketFactory(nodeA, addressBook, keysAndCerts.get(nodeA), TLS_NO_IP_TOS_CONFIG);
+        socketFactoryA = NetworkUtils.createSocketFactory(nodeA, peersA, keysAndCerts.get(nodeA), TLS_NO_IP_TOS_CONFIG);
         final SocketFactory socketFactoryB =
-                NetworkUtils.createSocketFactory(nodeB, addressBook, keysAndCerts.get(nodeB), TLS_NO_IP_TOS_CONFIG);
+                NetworkUtils.createSocketFactory(nodeB, peersB, keysAndCerts.get(nodeB), TLS_NO_IP_TOS_CONFIG);
 
         // test that B can talk to A - A(serverSocket) -> B(clientSocket1)
         serverSocket = socketFactoryA.createServerSocket(PORT);
@@ -84,18 +86,20 @@ class TlsFactoryTest extends ConnectivityTestBase {
         Assertions.assertFalse(serverSocket.isClosed());
 
         // create a new address book with keys and new set of nodes
-        final AddressBookAndCerts updatdAddressBookAndCerts = CryptoArgsProvider.loadAddressBookWithKeys(6);
-        updatedAddressBook = updatdAddressBookAndCerts.addressBook();
+        final AddressBookAndCerts updatedAddressBookAndCerts = CryptoArgsProvider.loadAddressBookWithKeys(6);
+        final AddressBook updatedAddressBook = updatedAddressBookAndCerts.addressBook();
         final Address address = addressBook.getAddress(nodeA).copySetNodeId(updatedAddressBook.getNextNodeId());
-        updatedAddressBook.add(address); // ensure original node is in new
-        final Map<NodeId, KeysAndCerts> updatedKeysAndCerts = updatdAddressBookAndCerts.nodeIdKeysAndCertsMap();
+        updatedAddressBook.add(address); // ensure node A is in new addressBook
+        final Map<NodeId, KeysAndCerts> updatedKeysAndCerts = updatedAddressBookAndCerts.nodeIdKeysAndCertsMap();
         assertTrue(updatedAddressBook.getSize() > 1, "Address book must contain at least 2 nodes");
 
+        peersA = Utilities.createPeerInfoList(updatedAddressBook, nodeA); // Peers of A as in updated addressBook
+
         // pick a node for the 3rd connection C.
-        final NodeId node3 = updatedAddressBook.getNodeId(4);
-        final KeysAndCerts keysAndCerts3 = updatedKeysAndCerts.get(node3);
+        final NodeId nodeC = updatedAddressBook.getNodeId(4);
+        final List<PeerInfo> peersC = Utilities.createPeerInfoList(updatedAddressBook, nodeC);
         socketFactoryC =
-                NetworkUtils.createSocketFactory(node3, updatedAddressBook, keysAndCerts3, TLS_NO_IP_TOS_CONFIG);
+                NetworkUtils.createSocketFactory(nodeC, peersC, updatedKeysAndCerts.get(nodeC), TLS_NO_IP_TOS_CONFIG);
     }
 
     /**
@@ -107,7 +111,7 @@ class TlsFactoryTest extends ConnectivityTestBase {
         // we expect that C can't talk to A yet, as C's certificate is not yet in A's trust store
         assertThrows(IOException.class, () -> socketFactoryC.createClientSocket(STRING_IP, PORT));
         // re-initialize SSLContext for A using a new peer list which contains C
-        socketFactoryA.reload(Utilities.createPeerInfoList(updatedAddressBook, nodeA));
+        socketFactoryA.reload(peersA);
         // now, we expect that C can talk to A
         final Socket clientSocketC = socketFactoryC.createClientSocket(STRING_IP, PORT);
         testSocket(serverThread, clientSocketC);

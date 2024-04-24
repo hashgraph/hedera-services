@@ -404,8 +404,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         initJudges.judgeFound(event);
         logger.info(
                 STARTUP.getMarker(),
-                "Found init judge {}, num remaining: {}",
-                event::toShortString,
+                "Found init judge %s, num remaining: {}"
+                        .formatted(event.getBaseEvent().getDescriptor()),
                 initJudges::numMissingJudges);
         if (initJudges.allJudgesFound()) {
             // we now have the last of the missing judges, so find every known event that is an
@@ -651,6 +651,9 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         final List<EventImpl> judges = roundElections.findAllJudges();
         final long decidedRoundNumber = rounds.getElectionRoundNumber();
 
+        // Check for no judges or super majority conditions.
+        checkJudges(judges, decidedRoundNumber);
+
         // update the round and generation values since fame has been decided for a new round
         rounds.currentElectionDecided();
 
@@ -690,9 +693,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         final long nonExpiredThreshold = ancientMode.selectIndicator(
                 getMinRoundGeneration(),
                 Math.max(previousRoundNonExpired, decidedRoundNumber - config.roundsExpired() + 1));
-
-        // Check for no judges or super majority conditions.
-        checkJudges(judges, decidedRoundNumber);
 
         return new ConsensusRound(
                 addressBook,
