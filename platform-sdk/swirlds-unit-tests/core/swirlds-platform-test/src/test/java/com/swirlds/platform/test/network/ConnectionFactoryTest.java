@@ -124,26 +124,18 @@ class ConnectionFactoryTest {
         final ConnectionFactory factory = new ConnectionFactory(topology, connectionCreator);
 
         final NodeId testPeer = addressBook.getNodeId(4);
-        final List<PeerInfo> peers = List.of(
-                new PeerInfo(testPeer, "localhost", "testHost1", Mockito.mock(Certificate.class)));
-        //keep a reference to the manager for the testPeer
-        final ConnectionManager manager5 =
-                factory.getManager(testPeer, true) == null ? factory.getManager(testPeer, false)
-                        : factory.getManager(testPeer, true);
+        final List<PeerInfo> peers =
+                List.of(new PeerInfo(testPeer, "localhost", "testHost1", Mockito.mock(Certificate.class)));
+        // keep a reference to the manager for the testPeer
+        final ConnectionManager manager5 = factory.getManager(testPeer, true) == null
+                ? factory.getManager(testPeer, false)
+                : factory.getManager(testPeer, true);
         final List<ConnectionManager> updatedManagers = factory.updatePeers(peers);
 
         assertNotNull(updatedManagers);
         assertEquals(1, updatedManagers.size());
         // The manager should have been unchanged for this existing peer
         assertEquals(updatedManagers.getFirst(), manager5);
-    }
-
-    private static List<PeerInfo> peerInfos() {
-        return List.of(
-                new PeerInfo(new NodeId(15), "localhost", "testHost1", Mockito.mock(Certificate.class)),
-                new PeerInfo(new NodeId(16), "localhost", "testHost1", Mockito.mock(Certificate.class)),
-                new PeerInfo(new NodeId(17), "localhost", "testHost1", Mockito.mock(Certificate.class)),
-                new PeerInfo(new NodeId(18), "localhost", "testHost1", Mockito.mock(Certificate.class)));
     }
 
     private static List<Arguments> topologicalVariations() {
