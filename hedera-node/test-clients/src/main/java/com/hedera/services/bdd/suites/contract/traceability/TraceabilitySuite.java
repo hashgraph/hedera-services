@@ -2002,10 +2002,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @HapiTest
     @Order(7)
     final HapiSpec traceabilityE2EScenario6() {
-        return defaultHapiSpec(
-                        "traceabilityE2EScenario6",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("traceabilityE2EScenario6", FULLY_NONDETERMINISTIC)
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.TWO, BigInteger.valueOf(3), BigInteger.valueOf(4))
