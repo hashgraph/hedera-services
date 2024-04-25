@@ -117,6 +117,10 @@ public class EventImpl extends EventMetadata
         this(gossipEvent, new ConsensusData(), selfParent, otherParent);
     }
 
+    public EventImpl(final GossipEvent gossipEvent) {
+        this(gossipEvent, new ConsensusData(), null, null);
+    }
+
     public EventImpl(
             final BaseEventHashedData baseEventHashedData,
             final BaseEventUnhashedData baseEventUnhashedData,
@@ -134,7 +138,7 @@ public class EventImpl extends EventMetadata
         super(selfParent, otherParent);
         Objects.requireNonNull(baseEvent, "baseEvent");
         Objects.requireNonNull(baseEvent.getHashedData(), "baseEventDataHashed");
-        Objects.requireNonNull(baseEvent.getUnhashedData(), "baseEventDataNotHashed");
+        Objects.requireNonNull(baseEvent.getSignature(), "signature");
         Objects.requireNonNull(consensusData, "consensusData");
 
         this.baseEvent = baseEvent;
@@ -143,6 +147,10 @@ public class EventImpl extends EventMetadata
         setDefaultValues();
 
         findSystemTransactions();
+    }
+
+    public EventImpl(final DetailedConsensusEvent detailedConsensusEvent) {
+        buildFromConsensusEvent(detailedConsensusEvent);
     }
 
     /**
@@ -235,7 +243,7 @@ public class EventImpl extends EventMetadata
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         DetailedConsensusEvent.serialize(
-                out, baseEvent.getHashedData(), baseEvent.getUnhashedData(), consensusData);
+                out, baseEvent.getHashedData(), baseEvent.getSignature(), consensusData);
     }
 
     /**
@@ -366,13 +374,6 @@ public class EventImpl extends EventMetadata
     }
 
     /**
-     * @return The part of a base event which is not hashed
-     */
-    public BaseEventUnhashedData getUnhashedData() {
-        return baseEvent.getUnhashedData();
-    }
-
-    /**
      * @return Consensus data calculated for an event
      */
     public ConsensusData getConsensusData() {
@@ -431,7 +432,7 @@ public class EventImpl extends EventMetadata
     //////////////////////////////////////////
 
     public byte[] getSignature() {
-        return baseEvent.getUnhashedData().getSignature();
+        return baseEvent.getSignature();
     }
 
     //////////////////////////////////////////

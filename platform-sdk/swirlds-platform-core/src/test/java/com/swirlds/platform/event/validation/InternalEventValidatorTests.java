@@ -119,7 +119,7 @@ class InternalEventValidatorTests {
 
         final GossipEvent event = mock(GossipEvent.class);
         when(event.getHashedData()).thenReturn(hashedData);
-        when(event.getUnhashedData()).thenReturn(unhashedData);
+        when(event.getSignature()).thenReturn(new byte[0]);
         when(event.getGeneration()).thenReturn(self.getGeneration());
         when(event.getDescriptor()).thenReturn(self);
 
@@ -147,10 +147,10 @@ class InternalEventValidatorTests {
     }
 
     @Test
-    @DisplayName("An event with null unhashed data is invalid")
-    void nullUnhashedData() {
+    @DisplayName("An event with null signature is invalid")
+    void nullSignatureData() {
         final GossipEvent event = generateGoodEvent(random, 1111);
-        when(event.getUnhashedData()).thenReturn(null);
+        when(event.getSignature()).thenReturn(null);
 
         assertNull(multinodeValidator.validateEvent(event));
         assertNull(singleNodeValidator.validateEvent(event));

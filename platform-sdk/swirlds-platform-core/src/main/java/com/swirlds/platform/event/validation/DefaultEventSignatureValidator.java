@@ -198,7 +198,7 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
 
         final boolean isSignatureValid = signatureVerifier.verifySignature(
                 event.getHashedData().getHash().getValue(),
-                event.getUnhashedData().getSignature(),
+                event.getSignature(),
                 publicKey);
 
         if (!isSignatureValid) {
@@ -206,7 +206,7 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
                     EXCEPTION.getMarker(),
                     "Event failed signature check. Event: {}, Signature: {}, Hash: {}",
                     event,
-                    CommonUtils.hex(event.getUnhashedData().getSignature()),
+                    CommonUtils.hex(event.getSignature()),
                     event.getHashedData().getHash());
         }
 

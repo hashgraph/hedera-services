@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.fixtures.event;
 
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
@@ -33,6 +34,10 @@ public class IndexedEvent extends EventImpl {
     private static final long CLASS_ID = 0x284d35dc6f9265d0L;
 
     public IndexedEvent() {}
+
+    public IndexedEvent(final GossipEvent gossipEvent) {
+        super(gossipEvent);
+    }
 
     public IndexedEvent(
             final BaseEventHashedData baseEventHashedData,

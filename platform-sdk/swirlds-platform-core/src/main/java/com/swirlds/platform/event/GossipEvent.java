@@ -18,6 +18,7 @@ package com.swirlds.platform.event;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -49,7 +50,8 @@ public class GossipEvent implements SelfSerializable {
     }
 
     private BaseEventHashedData hashedData;
-    private BaseEventUnhashedData unhashedData;
+    /** creator's signature for this event */
+    private byte[] signature;
     private Instant timeReceived;
 
     /**
@@ -85,7 +87,7 @@ public class GossipEvent implements SelfSerializable {
      */
     public GossipEvent(final BaseEventHashedData hashedData, final BaseEventUnhashedData unhashedData) {
         this.hashedData = hashedData;
-        this.unhashedData = unhashedData;
+        this.signature =unhashedData.getSignature();
         this.timeReceived = Instant.now();
         this.senderId = null;
     }
@@ -120,7 +122,7 @@ public class GossipEvent implements SelfSerializable {
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeSerializable(hashedData, false);
-        out.writeByteArray(unhashedData.getSignature());
+        out.writeByteArray(signature);
     }
 
     /**
@@ -129,8 +131,7 @@ public class GossipEvent implements SelfSerializable {
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         hashedData = in.readSerializable(false, BaseEventHashedData::new);
-        final byte[] signature = in.readByteArray(MAX_SIG_LENGTH);
-        unhashedData = new BaseEventUnhashedData(signature);
+        this.signature = in.readByteArray(MAX_SIG_LENGTH);
         timeReceived = Instant.now();
     }
 
@@ -142,10 +143,10 @@ public class GossipEvent implements SelfSerializable {
     }
 
     /**
-     * Get the unhashed data for the event.
+     * @return the signature for the event
      */
-    public BaseEventUnhashedData getUnhashedData() {
-        return unhashedData;
+    public byte[] getSignature() {
+        return signature;
     }
 
     /**

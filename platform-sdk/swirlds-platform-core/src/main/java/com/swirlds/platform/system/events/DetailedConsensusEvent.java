@@ -73,15 +73,11 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
     public static void serialize(
             final SerializableDataOutputStream out,
             final BaseEventHashedData baseEventHashedData,
-            final BaseEventUnhashedData baseEventUnhashedData,
+            final byte[] signature,
             final ConsensusData consensusData)
             throws IOException {
         out.writeSerializable(baseEventHashedData, false);
-        if (baseEventHashedData.getVersion() < ClassVersion.BIRTH_ROUND) {
-            out.writeSerializable(baseEventUnhashedData, false);
-        } else {
-            out.writeByteArray(baseEventUnhashedData.getSignature());
-        }
+        out.writeByteArray(signature);
         out.writeSerializable(consensusData, false);
     }
 
@@ -90,7 +86,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        serialize(out, baseEventHashedData, baseEventUnhashedData, consensusData);
+        serialize(out, baseEventHashedData, baseEventUnhashedData.getSignature(), consensusData);
     }
 
     /**
