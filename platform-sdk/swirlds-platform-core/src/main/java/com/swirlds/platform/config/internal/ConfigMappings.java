@@ -73,10 +73,6 @@ public final class ConfigMappings {
             new ConfigMapping("socket.deadlockCheckPeriod", "deadlockCheckPeriod"),
             new ConfigMapping("jvmPauseDetectorSleepMs", "jVMPauseDetectorSleepMs"),
             new ConfigMapping("jvmPauseReportMs", "jVMPauseReportMs"),
-            new ConfigMapping("thread.threadPrioritySync", "threadPrioritySync"),
-            new ConfigMapping("thread.threadPriorityNonSync", "threadPriorityNonSync"),
-            new ConfigMapping("thread.threadDumpPeriodMs", "threadDumpPeriodMs"),
-            new ConfigMapping("thread.threadDumpLogDir", "threadDumpLogDir"),
             new ConfigMapping("reconnect.asyncOutputStreamFlush", "reconnect.asyncOutputStreamFlushMilliseconds"),
             new ConfigMapping("reconnect.maxAckDelay", "reconnect.maxAckDelayMilliseconds"));
 
