@@ -95,6 +95,9 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         final var rewardsPaid = rewardsPayer.payRewardsIfPending(
                 rewardReceivers, writableStore, stakingRewardsStore, stakingInfoStore, consensusNow, recordBuilder);
 
+        // Decrease staking reward account balance by rewardPaid amount
+        decreaseStakeRewardAccountBalance(rewardsPaid, stakingRewardAccountId, writableStore);
+
         if (!context.isScheduleDispatch()) {
             // We only manage stake metadata once, at the end of a transaction; but to do
             // this correctly, we need to include information about any rewards paid during
@@ -107,10 +110,15 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             // Adjust stakes for nodes and account's staking metadata
             adjustStakeMetadata(
                     writableStore, stakingInfoStore, stakingRewardsStore, consensusNow, rewardsPaid, rewardReceivers);
+
+            // Don't double-report prepaid rewards in the parent record
+            if (!prePaidRewards.isEmpty()) {
+                for (AccountID accountID : prePaidRewards.keySet()) {
+                    rewardsPaid.remove(accountID);
+                }
+            }
         }
 
-        // Decrease staking reward account balance by rewardPaid amount
-        decreaseStakeRewardAccountBalance(rewardsPaid, stakingRewardAccountId, writableStore);
         return rewardsPaid;
     }
 

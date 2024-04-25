@@ -21,6 +21,7 @@ application.mainClass.set("com.swirlds.demo.consistency.ConsistencyTestingToolMa
 mainModuleInfo { annotationProcessor("com.swirlds.config.processor") }
 
 testModuleInfo {
+    requires("com.hedera.node.hapi")
     requires("org.junit.jupiter.api")
     requires("org.mockito")
 }

@@ -20,10 +20,10 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomHashBytes;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
-import com.swirlds.proto.event.StateSignaturePayload;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

@@ -43,7 +43,10 @@ import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
+import com.swirlds.platform.event.preconsensus.DefaultPcesWriter;
+import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
+import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.preconsensus.durability.DefaultRoundDurabilityBuffer;
 import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
 import com.swirlds.platform.event.runninghash.DefaultRunningEventHasher;
@@ -56,13 +59,19 @@ import com.swirlds.platform.event.validation.DefaultEventSignatureValidator;
 import com.swirlds.platform.event.validation.DefaultInternalEventValidator;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
+import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.state.signed.DefaultSignedStateSentinel;
 import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.util.MetricsDocUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Objects;
 
 /**
@@ -99,8 +108,11 @@ public class PlatformComponentBuilder {
     private InOrderLinker inOrderLinker;
     private ConsensusEngine consensusEngine;
     private ConsensusEventStream consensusEventStream;
+    private SignedStateSentinel signedStateSentinel;
     private PcesSequencer pcesSequencer;
     private RoundDurabilityBuffer roundDurabilityBuffer;
+    private TransactionPrehandler transactionPrehandler;
+    private PcesWriter pcesWriter;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -647,5 +659,113 @@ public class PlatformComponentBuilder {
             roundDurabilityBuffer = new DefaultRoundDurabilityBuffer(blocks.platformContext());
         }
         return roundDurabilityBuffer;
+    }
+
+    /**
+     * Provide a signed state sentinel in place of the platform's default signed state sentinel.
+     *
+     * @param signedStateSentinel the signed state sentinel to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withSignedStateSentinel(@NonNull final SignedStateSentinel signedStateSentinel) {
+        throwIfAlreadyUsed();
+        if (this.signedStateSentinel != null) {
+            throw new IllegalStateException("Signed state sentinel has already been set");
+        }
+        this.signedStateSentinel = Objects.requireNonNull(signedStateSentinel);
+        return this;
+    }
+
+    /**
+     * Build the signed state sentinel if it has not yet been built. If one has been provided via
+     * {@link #withSignedStateSentinel(SignedStateSentinel)}, that sentinel will be used. If this method is called more
+     * than once, only the first call will build the signed state sentinel. Otherwise, the default sentinel will be
+     * created and returned.
+     *
+     * @return the signed state sentinel
+     */
+    @NonNull
+    public SignedStateSentinel buildSignedStateSentinel() {
+        if (signedStateSentinel == null) {
+            signedStateSentinel = new DefaultSignedStateSentinel(blocks.platformContext());
+        }
+        return signedStateSentinel;
+    }
+
+    /**
+     * Provide a transaction prehandler in place of the platform's default transaction prehandler.
+     *
+     * @param transactionPrehandler the transaction prehandler to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withTransactionPrehandler(
+            @NonNull final TransactionPrehandler transactionPrehandler) {
+        throwIfAlreadyUsed();
+        if (this.transactionPrehandler != null) {
+            throw new IllegalStateException("Transaction prehandler has already been set");
+        }
+        this.transactionPrehandler = Objects.requireNonNull(transactionPrehandler);
+        return this;
+    }
+
+    /**
+     * Build the transaction prehandler if it has not yet been built. If one has been provided via
+     * {@link #withTransactionPrehandler(TransactionPrehandler)}, that transaction prehandler will be used. If this
+     * method is called more than once, only the first call will build the transaction prehandler. Otherwise, the
+     * default transaction prehandler will be created and returned.
+     *
+     * @return the transaction prehandler
+     */
+    @NonNull
+    public TransactionPrehandler buildTransactionPrehandler() {
+        if (transactionPrehandler == null) {
+            transactionPrehandler = new DefaultTransactionPrehandler(
+                    blocks.platformContext(),
+                    () -> blocks.latestImmutableStateProviderReference().get().apply("transaction prehandle"));
+        }
+        return transactionPrehandler;
+    }
+
+    /**
+     * Provide a PCES writer in place of the platform's default PCES writer.
+     *
+     * @param pcesWriter the PCES writer to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withPcesWriter(@NonNull final PcesWriter pcesWriter) {
+        throwIfAlreadyUsed();
+        if (this.pcesWriter != null) {
+            throw new IllegalStateException("PCES writer has already been set");
+        }
+        this.pcesWriter = Objects.requireNonNull(pcesWriter);
+        return this;
+    }
+
+    /**
+     * Build the PCES writer if it has not yet been built. If one has been provided via
+     * {@link #withPcesWriter(PcesWriter)}, that writer will be used. If this method is called more than once, only the
+     * first call will build the PCES writer. Otherwise, the default writer will be created and returned.
+     *
+     * @return the PCES writer
+     */
+    @NonNull
+    public PcesWriter buildPcesWriter() {
+        if (pcesWriter == null) {
+            try {
+                final PcesFileManager preconsensusEventFileManager = new PcesFileManager(
+                        blocks.platformContext(),
+                        blocks.initialPcesFiles(),
+                        blocks.selfId(),
+                        blocks.initialState().get().getRound());
+                pcesWriter = new DefaultPcesWriter(blocks.platformContext(), preconsensusEventFileManager);
+
+            } catch (final IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        return pcesWriter;
     }
 }

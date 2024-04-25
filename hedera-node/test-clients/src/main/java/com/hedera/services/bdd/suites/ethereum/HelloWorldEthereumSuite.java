@@ -49,7 +49,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
@@ -263,7 +265,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                                         .logs(inOrder())
                                                         .senderId(spec.registry()
                                                                 .getAccountID(spec.registry()
-                                                                        .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .keyAliasIdFor(SECP_256K1_SOURCE_KEY)
                                                                         .getAlias()
                                                                         .toStringUtf8())))
                                                 .ethereumHash(ByteString.copyFrom(
@@ -305,7 +307,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                                                         List.of(eventSignatureOf("Info(uint256)")))))
                                                         .senderId(spec.registry()
                                                                 .getAccountID(spec.registry()
-                                                                        .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .keyAliasIdFor(SECP_256K1_SOURCE_KEY)
                                                                         .getAlias()
                                                                         .toStringUtf8())))
                                                 .ethereumHash(ByteString.copyFrom(
@@ -372,7 +374,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                                         .logs(inOrder())
                                                         .senderId(spec.registry()
                                                                 .getAccountID(spec.registry()
-                                                                        .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .keyAliasIdFor(SECP_256K1_SOURCE_KEY)
                                                                         .getAlias()
                                                                         .toStringUtf8()))
                                                         .create1EvmAddress(
@@ -406,10 +408,32 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .gasLimit(1_000_000L)
                         .hasKnownStatus(INSUFFICIENT_TX_FEE)
                         .via("insufficientTxFeeTxn"))
-                .then(getTxnRecord("insufficientTxFeeTxn")
-                        .andAllChildRecords()
-                        .logged()
-                        .hasChildRecordCount(0));
+                .then(getTxnRecord("insufficientTxFeeTxn").andAllChildRecords().hasNonStakingChildRecordCount(0));
+    }
+
+    @HapiTest
+    HapiSpec idVariantsTreatedAsExpected() {
+        final var contractAdminKey = "contractAdminKey";
+        return defaultHapiSpec(
+                        "idVariantsTreatedAsExpected",
+                        NONDETERMINISTIC_ETHEREUM_DATA,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
+                        newKeyNamed(contractAdminKey),
+                        uploadInitCode(TOKEN_CREATE_CONTRACT))
+                .when()
+                .then(submitModified(
+                        withSuccessivelyVariedBodyIds(), () -> ethereumContractCreate(TOKEN_CREATE_CONTRACT)
+                                .type(EthTxData.EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .nonce(0)
+                                .maxGasAllowance(ONE_HUNDRED_HBARS)
+                                .gasLimit(1_000_000L)));
     }
 
     @HapiTest
@@ -445,7 +469,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                                         .logs(inOrder())
                                                         .senderId(spec.registry()
                                                                 .getAccountID(spec.registry()
-                                                                        .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .keyAliasIdFor(SECP_256K1_SOURCE_KEY)
                                                                         .getAlias()
                                                                         .toStringUtf8()))
                                                         .create1EvmAddress(
@@ -500,7 +524,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                                         .logs(inOrder())
                                                         .senderId(spec.registry()
                                                                 .getAccountID(spec.registry()
-                                                                        .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .keyAliasIdFor(SECP_256K1_SOURCE_KEY)
                                                                         .getAlias()
                                                                         .toStringUtf8()))
                                                         .create1EvmAddress(
