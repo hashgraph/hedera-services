@@ -64,7 +64,19 @@ public class HederaDelegateCallOperation extends DelegateCallOperation {
 
     @Override
     public OperationResult execute(MessageFrame frame, EVM evm) {
+
+        // FUTURE(#12991): The one-argument method `AbstractCallOperation.cost()` is deprecated, the
+        //  preferred overload adds an `accountIsWarm` parameter.  This method needs to be updated
+        //  to include a proper inspection of whether the account is warm or not.  Currently
+        //  supplying the constant `ACCOUNT_IS_WARM` because that's what the deprecated one-argument
+        //  method does.
+
+        final boolean ACCOUNT_IS_WARM = true;
         return HederaEvmOperationsUtil.addressCheckExecution(
-                frame, () -> to(frame), () -> cost(frame), () -> super.execute(frame, evm), addressValidator);
+                frame,
+                () -> to(frame),
+                () -> cost(frame, ACCOUNT_IS_WARM),
+                () -> super.execute(frame, evm),
+                addressValidator);
     }
 }
