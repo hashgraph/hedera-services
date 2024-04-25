@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.token;
+package com.hedera.services.bdd.suites.token.hip540;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -47,6 +47,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -55,8 +56,8 @@ import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
 @Tag(TOKEN)
-public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(Hip540ChangeOrRemoveKeysSuite.class);
+public class Hip540Suite extends HapiSuite {
+    private static final Logger log = LogManager.getLogger(Hip540Suite.class);
     private static final String tokenName = "token";
     private static final String adminKey = "adminKey";
     private static final String wipeKey = "wipeKey";
@@ -78,7 +79,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
     private static final String civilian = "civilian";
 
     public static void main(String... args) {
-        new Hip540ChangeOrRemoveKeysSuite().runSuiteSync();
+        new Hip540Suite().runSuiteSync();
     }
 
     @Override
@@ -118,6 +119,16 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                 failUpdateAllKeysToValidWhenKeysDoesNotExistInitially(),
                 failUpdateAdminKeyAndLowPriorityWhenSomeSignatureIsMissing(),
                 failUpdateTokenHasNoAdminKeyInitiallyAndTryToRemoveLowPriorityKey());
+    }
+
+    @HapiTest
+    public final HapiSpec allScenariosAsExpected() {
+        return defaultHapiSpec("allScenariosAsExpected")
+                .given()
+                .when()
+                .then(TestScenarios.SCENARIOS.stream()
+                        .map(Hip540TestScenario::asOperation)
+                        .toArray(HapiSpecOperation[]::new));
     }
 
     @HapiTest

@@ -16,6 +16,14 @@
 
 package com.hedera.node.app.service.token.impl.util;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FREEZE_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KYC_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_METADATA_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAUSE_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SUPPLY_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_WIPE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
@@ -31,8 +39,10 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
-public enum TokenKeys {
+public enum TokenKey {
     ADMIN_KEY {
         @Override
         public boolean isPresentInUpdate(TokenUpdateTransactionBody update) {
@@ -60,8 +70,13 @@ public enum TokenKeys {
         }
 
         @Override
-        ResponseCodeEnum tokenHasNoKeyStatus() {
+        public ResponseCodeEnum tokenHasNoKeyStatus() {
             return TOKEN_HAS_NO_ADMIN_KEY;
+        }
+
+        @Override
+        public ResponseCodeEnum invalidKeyStatus() {
+            return INVALID_ADMIN_KEY;
         }
     },
 
@@ -92,8 +107,13 @@ public enum TokenKeys {
         }
 
         @Override
-        ResponseCodeEnum tokenHasNoKeyStatus() {
+        public ResponseCodeEnum tokenHasNoKeyStatus() {
             return TOKEN_HAS_NO_WIPE_KEY;
+        }
+
+        @Override
+        public ResponseCodeEnum invalidKeyStatus() {
+            return INVALID_WIPE_KEY;
         }
     },
 
@@ -124,8 +144,13 @@ public enum TokenKeys {
         }
 
         @Override
-        ResponseCodeEnum tokenHasNoKeyStatus() {
+        public ResponseCodeEnum tokenHasNoKeyStatus() {
             return TOKEN_HAS_NO_KYC_KEY;
+        }
+
+        @Override
+        public ResponseCodeEnum invalidKeyStatus() {
+            return INVALID_KYC_KEY;
         }
     },
 
@@ -156,8 +181,13 @@ public enum TokenKeys {
         }
 
         @Override
-        ResponseCodeEnum tokenHasNoKeyStatus() {
+        public ResponseCodeEnum tokenHasNoKeyStatus() {
             return TOKEN_HAS_NO_SUPPLY_KEY;
+        }
+
+        @Override
+        public ResponseCodeEnum invalidKeyStatus() {
+            return INVALID_SUPPLY_KEY;
         }
     },
 
@@ -188,8 +218,13 @@ public enum TokenKeys {
         }
 
         @Override
-        ResponseCodeEnum tokenHasNoKeyStatus() {
+        public ResponseCodeEnum tokenHasNoKeyStatus() {
             return TOKEN_HAS_NO_FREEZE_KEY;
+        }
+
+        @Override
+        public ResponseCodeEnum invalidKeyStatus() {
+            return INVALID_FREEZE_KEY;
         }
     },
 
@@ -220,8 +255,13 @@ public enum TokenKeys {
         }
 
         @Override
-        ResponseCodeEnum tokenHasNoKeyStatus() {
+        public ResponseCodeEnum tokenHasNoKeyStatus() {
             return TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
+        }
+
+        @Override
+        public ResponseCodeEnum invalidKeyStatus() {
+            return INVALID_CUSTOM_FEE_SCHEDULE_KEY;
         }
     },
 
@@ -252,12 +292,22 @@ public enum TokenKeys {
         }
 
         @Override
-        ResponseCodeEnum tokenHasNoKeyStatus() {
+        public ResponseCodeEnum tokenHasNoKeyStatus() {
             return TOKEN_HAS_NO_PAUSE_KEY;
+        }
+
+        @Override
+        public ResponseCodeEnum invalidKeyStatus() {
+            return INVALID_PAUSE_KEY;
         }
     },
 
     METADATA_KEY {
+        @Override
+        public ResponseCodeEnum invalidKeyStatus() {
+            return INVALID_METADATA_KEY;
+        }
+
         @Override
         public boolean isPresentInUpdate(TokenUpdateTransactionBody update) {
             return update.hasMetadataKey();
@@ -284,7 +334,7 @@ public enum TokenKeys {
         }
 
         @Override
-        ResponseCodeEnum tokenHasNoKeyStatus() {
+        public ResponseCodeEnum tokenHasNoKeyStatus() {
             return TOKEN_HAS_NO_METADATA_KEY;
         }
     };
@@ -297,25 +347,30 @@ public enum TokenKeys {
 
     public abstract Key getFromUpdate(TokenUpdateTransactionBody update);
 
-    public abstract Key getFromToken(Token originalToken);
+    public abstract @Nullable Key getFromToken(Token originalToken);
 
-    abstract ResponseCodeEnum tokenHasNoKeyStatus();
+    public abstract ResponseCodeEnum tokenHasNoKeyStatus();
 
-    private static Key getNewKeyValue(Key newKey) {
-        return isKeyRemoval(newKey) ? null : newKey;
-    }
+    public abstract ResponseCodeEnum invalidKeyStatus();
 
-    public boolean containsKeyRemoval(TokenUpdateTransactionBody update) {
+    public boolean containsKeyRemoval(@NonNull final TokenUpdateTransactionBody update) {
         if (isPresentInUpdate(update)) {
             return isKeyRemoval(getFromUpdate(update));
         }
         return false;
     }
 
-    public void updateKey(TokenUpdateTransactionBody update, Token originalToken, final Token.Builder builder) {
+    public void updateKey(
+            @NonNull final TokenUpdateTransactionBody update,
+            @NonNull final Token originalToken,
+            @NonNull final Token.Builder builder) {
         if (isPresentInUpdate(update)) {
             validateTrue(isPresentInitially(originalToken), tokenHasNoKeyStatus());
             setOn(builder, update);
         }
+    }
+
+    private static Key getNewKeyValue(Key newKey) {
+        return isKeyRemoval(newKey) ? null : newKey;
     }
 }

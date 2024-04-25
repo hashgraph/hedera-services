@@ -53,8 +53,7 @@ public class TokenUpdateValidator {
             @NonNull final HandleContext context, @NonNull final TokenUpdateTransactionBody op) {
         final var readableAccountStore = context.readableStore(ReadableAccountStore.class);
         final var tokenStore = context.readableStore(ReadableTokenStore.class);
-        final var tokenId = op.tokenOrThrow();
-        final var token = getIfUsable(tokenId, tokenStore);
+        final var token = getIfUsable(op.tokenOrThrow(), tokenStore);
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         // If the token has an empty admin key it can't be updated for any other fields other than low priority keys or
         // expiry

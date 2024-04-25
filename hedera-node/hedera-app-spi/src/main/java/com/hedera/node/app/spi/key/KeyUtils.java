@@ -47,10 +47,6 @@ public class KeyUtils {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    public static boolean isEmptyAndNotImmutable(@Nullable final Key pbjKey) {
-        return isEmptyInternal(pbjKey, true);
-    }
-
     /**
      * Checks if the given key is empty.
      * For a KeyList type checks if the list is empty.
