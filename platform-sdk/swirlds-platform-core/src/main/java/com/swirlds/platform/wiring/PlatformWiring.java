@@ -94,7 +94,6 @@ import com.swirlds.platform.system.status.PlatformStatusConfig;
 import com.swirlds.platform.system.status.PlatformStatusNexus;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.StatusStateMachine;
-import com.swirlds.platform.system.status.actions.PlatformStatusAction;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
@@ -174,7 +173,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final boolean publishSnapshotOverrides;
     private final ComponentWiring<RunningEventHasher, Void> runningEventHasherWiring;
     private final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring;
-    private final ComponentWiring<PlatformStatusNexus, PlatformStatusAction> statusNexusWiring;
+    private final ComponentWiring<PlatformStatusNexus, Void> statusNexusWiring;
 
     /**
      * Constructor.
