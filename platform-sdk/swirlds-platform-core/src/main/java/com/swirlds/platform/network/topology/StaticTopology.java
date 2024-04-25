@@ -20,7 +20,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.RandomGraph;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
@@ -74,11 +73,7 @@ public class StaticTopology implements NetworkTopology {
      */
     @Override
     public List<NodeId> getNeighbors(final Predicate<NodeId> filter) {
-        final List<NodeId> peers = peerNodes.stream().toList();
-        return Arrays.stream(connectionGraph.getNeighbors(selfIndex))
-                .mapToObj(peers::get)
-                .filter(filter)
-                .toList();
+        return peerNodes;
     }
 
     /**
@@ -86,7 +81,8 @@ public class StaticTopology implements NetworkTopology {
      */
     @Override
     public boolean shouldConnectToMe(final NodeId nodeId) {
-        return isNeighbor(nodeId) && peerNodes.indexOf(nodeId) < selfIndex;
+        final int nodeIndex = getNodeIndex(nodeId);
+        return isNeighbor(nodeId) && nodeIndex < selfIndex;
     }
 
     /**
@@ -99,7 +95,7 @@ public class StaticTopology implements NetworkTopology {
         if (!peerNodes.contains(nodeId)) {
             return false;
         }
-        final int nodeIndex = peerNodes.indexOf(nodeId);
+        final int nodeIndex = getNodeIndex(nodeId);
         return connectionGraph.isAdjacent(selfIndex, nodeIndex);
     }
 
@@ -108,7 +104,8 @@ public class StaticTopology implements NetworkTopology {
      */
     @Override
     public boolean shouldConnectTo(final NodeId nodeId) {
-        return isNeighbor(nodeId) && peerNodes.indexOf(nodeId) > selfIndex;
+        final int nodeIndex = getNodeIndex(nodeId);
+        return isNeighbor(nodeId) && nodeIndex > selfIndex;
     }
 
     /**
@@ -117,5 +114,15 @@ public class StaticTopology implements NetworkTopology {
     @Override
     public RandomGraph getConnectionGraph() {
         return connectionGraph;
+    }
+
+    /**
+     * Returns the index of the given node in the peer list, which must not be the self index
+     *
+     * @param nodeId the node ID
+     * @return the index of the node in the peer list
+     */
+    private int getNodeIndex(@NonNull final NodeId nodeId) {
+        return selfIndex == peerNodes.indexOf(nodeId) ? peerNodes.indexOf(nodeId) + 1 : peerNodes.indexOf(nodeId);
     }
 }
