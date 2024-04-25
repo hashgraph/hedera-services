@@ -80,7 +80,6 @@ import javax.inject.Singleton;
 public class TokenUpdateHandler extends BaseTokenHandler implements TransactionHandler {
     private final TokenUpdateValidator tokenUpdateValidator;
     private static final Set<TokenKeys> TOKEN_KEYS = EnumSet.allOf(TokenKeys.class);
-    private static final Set<TokenKeys> NON_ADMIN_TOKEN_KEYS = EnumSet.complementOf(EnumSet.of(TokenKeys.ADMIN_KEY));
 
     @Inject
     public TokenUpdateHandler(@NonNull final TokenUpdateValidator tokenUpdateValidator) {
