@@ -24,7 +24,7 @@ Using it, an airdrop sender would be able to send airdrop tokens to a specific r
 
 ## Architecture
 
-The implementation related to the new `TokenAirdropTransaction` transaction will be gated behind a feature flag.
+The implementation related to the new `TokenAirdropTransaction` transaction will be gated behind a feature flag called `tokens.airdrops.enabled`.
 
 ### HAPI updates
 
