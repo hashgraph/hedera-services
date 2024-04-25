@@ -22,8 +22,6 @@ import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.LockedResource;
 import com.swirlds.platform.network.connection.NotConnectedConnection;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 
 /**
  * Manages a connection that is initiated by this node. If the connection in use is broken, it will try to establish a
@@ -37,10 +35,9 @@ public class OutboundConnectionManager implements ConnectionManager {
     /** locks the connection managed by this instance */
     private final AutoClosableResourceLock<Connection> lock = Locks.createResourceLock(currentConn);
 
-    public OutboundConnectionManager(
-            @NonNull final NodeId peerId, @NonNull final OutboundConnectionCreator connectionCreator) {
-        this.peerId = Objects.requireNonNull(peerId);
-        this.connectionCreator = Objects.requireNonNull(connectionCreator);
+    public OutboundConnectionManager(final NodeId peerId, final OutboundConnectionCreator connectionCreator) {
+        this.peerId = peerId;
+        this.connectionCreator = connectionCreator;
     }
 
     /**

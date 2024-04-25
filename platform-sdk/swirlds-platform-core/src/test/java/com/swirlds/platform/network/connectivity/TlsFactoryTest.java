@@ -31,8 +31,8 @@ import com.swirlds.platform.system.address.AddressBook;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +51,7 @@ class TlsFactoryTest extends ConnectivityTestBase {
     private static ServerSocket serverSocket;
     private static Thread serverThread;
     private final AtomicBoolean closeSeverConnection = new AtomicBoolean(false);
-    Set<PeerInfo> peersA;
+    List<PeerInfo> peersA;
     /**
      * Set up the test by creating the address book, keys and certs, and the socket factories for nodes A and B. The
      * base case is that the client socket of a node B can connect to the server socket of another node A. Subsequent
@@ -70,7 +70,7 @@ class TlsFactoryTest extends ConnectivityTestBase {
         final NodeId nodeB = addressBook.getNodeId(1);
 
         peersA = Utilities.createPeerInfoList(addressBook, nodeA);
-        final Set<PeerInfo> peersB = Utilities.createPeerInfoList(addressBook, nodeB);
+        final List<PeerInfo> peersB = Utilities.createPeerInfoList(addressBook, nodeB);
 
         // create their socket factories
         socketFactoryA = NetworkUtils.createSocketFactory(nodeA, peersA, keysAndCerts.get(nodeA), TLS_NO_IP_TOS_CONFIG);
@@ -97,7 +97,7 @@ class TlsFactoryTest extends ConnectivityTestBase {
 
         // pick a node for the 3rd connection C.
         final NodeId nodeC = updatedAddressBook.getNodeId(4);
-        final Set<PeerInfo> peersC = Utilities.createPeerInfoList(updatedAddressBook, nodeC);
+        final List<PeerInfo> peersC = Utilities.createPeerInfoList(updatedAddressBook, nodeC);
         socketFactoryC =
                 NetworkUtils.createSocketFactory(nodeC, peersC, updatedKeysAndCerts.get(nodeC), TLS_NO_IP_TOS_CONFIG);
     }

@@ -29,11 +29,9 @@ import java.net.SocketException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -372,7 +370,7 @@ public final class Utilities {
      * 		our ID
      * @return a list of PeerInfo
      */
-    public static @NonNull Set<PeerInfo> createPeerInfoList(
+    public static @NonNull List<PeerInfo> createPeerInfoList(
             @NonNull final AddressBook addressBook, @NonNull final NodeId selfId) {
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(selfId);
@@ -384,6 +382,6 @@ public final class Utilities {
                         address.getSelfName(),
                         Objects.requireNonNull(address.getHostnameExternal()),
                         Objects.requireNonNull(address.getSigCert())))
-                .collect(Collectors.toUnmodifiableSet());
+                .toList();
     }
 }

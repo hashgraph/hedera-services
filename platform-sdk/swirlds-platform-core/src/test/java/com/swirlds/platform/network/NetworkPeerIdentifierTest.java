@@ -43,6 +43,7 @@ import java.security.cert.Certificate;
 import java.security.cert.PKIXParameters;
 import java.security.cert.TrustAnchor;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -54,7 +55,7 @@ import org.junit.jupiter.api.Test;
 
 class NetworkPeerIdentifierTest {
     final PlatformContext platformContext = mock(PlatformContext.class);
-    Set<PeerInfo> peers = null;
+    List<PeerInfo> peerInfoList = null;
     PublicStores publicStores = null;
 
     @BeforeEach
@@ -72,7 +73,7 @@ class NetworkPeerIdentifierTest {
         });
         publicStores = PublicStores.fromAllPublic(publicKeys, names.stream().toList());
 
-        peers = new HashSet<>();
+        peerInfoList = new ArrayList<>();
         final Random random = new Random();
         names.forEach(name -> {
             final int id = random.nextInt(names.size());
@@ -87,7 +88,7 @@ class NetworkPeerIdentifierTest {
             } catch (final KeyLoadingException e) {
                 throw new RuntimeException(e);
             }
-            peers.add(peer);
+            peerInfoList.add(peer);
         });
     }
 
@@ -100,7 +101,7 @@ class NetworkPeerIdentifierTest {
     void testExtractPeerInfoWorksForMainnet() throws KeyStoreException, InvalidAlgorithmParameterException {
         final PKIXParameters params = new PKIXParameters(publicStores.agrTrustStore());
         final Set<TrustAnchor> trustAnchors = params.getTrustAnchors();
-        final NetworkPeerIdentifier peerIdentifier = new NetworkPeerIdentifier(platformContext, peers);
+        final NetworkPeerIdentifier peerIdentifier = new NetworkPeerIdentifier(platformContext, peerInfoList);
         final Set<PeerInfo> matches = new HashSet<>();
 
         final Certificate[] certificates =
@@ -112,7 +113,7 @@ class NetworkPeerIdentifierTest {
             matches.add(matchedPeer);
         }
         // ensure we matched exactly the set of nodes in the original peer list
-        Assertions.assertEquals(matches, new HashSet<>(peers));
+        Assertions.assertEquals(matches, new HashSet<>(peerInfoList));
     }
 
     /**
@@ -120,7 +121,7 @@ class NetworkPeerIdentifierTest {
      */
     @Test
     void testReturnsIntendedPeerForMainnet() throws KeyStoreException {
-        final NetworkPeerIdentifier peerIdentifier = new NetworkPeerIdentifier(platformContext, peers);
+        final NetworkPeerIdentifier peerIdentifier = new NetworkPeerIdentifier(platformContext, peerInfoList);
         // pick a node's agreement certificate, node20
         final Certificate certUnderTest = publicStores.agrTrustStore().getCertificate("a-node20");
 
@@ -151,7 +152,7 @@ class NetworkPeerIdentifierTest {
         final Certificate[] certificates = new Certificate[] {rsaCert};
 
         final PeerInfo matchedPeer =
-                new NetworkPeerIdentifier(platformContext, peers).identifyTlsPeer(certificates);
+                new NetworkPeerIdentifier(platformContext, peerInfoList).identifyTlsPeer(certificates);
         Assertions.assertNull(matchedPeer);
     }
 }

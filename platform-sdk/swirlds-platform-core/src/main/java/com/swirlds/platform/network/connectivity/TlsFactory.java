@@ -35,8 +35,8 @@ import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
@@ -69,7 +69,7 @@ public class TlsFactory implements SocketFactory {
     public TlsFactory(
             @NonNull final Certificate agrCert,
             @NonNull final PrivateKey agrKey,
-            @NonNull final Set<PeerInfo> peers,
+            @NonNull final List<PeerInfo> peers,
             @NonNull final SocketConfig socketConfig,
             @NonNull final CryptoConfig cryptoConfig)
             throws NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException,
@@ -133,7 +133,7 @@ public class TlsFactory implements SocketFactory {
      * {@inheritDoc}
      */
     @Override
-    public void reload(@NonNull final Set<PeerInfo> peers) {
+    public void reload(@NonNull final List<PeerInfo> peers) {
         try {
             // we just reset the list for now, until the work to calculate diffs is done
             // then, we will have two lists of peers to add and to remove

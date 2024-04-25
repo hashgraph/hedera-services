@@ -36,7 +36,6 @@ import java.net.Socket;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -69,8 +68,8 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
         final NodeId node2 = addressBook.getNodeId(nodeIndexes.get(1));
         final KeysAndCerts thisKeysAndCerts = keysAndCerts.get(node1);
         final KeysAndCerts OtherKeysAndCerts = keysAndCerts.get(node2);
-        final Set<PeerInfo> node1Peers = Utilities.createPeerInfoList(addressBook, node1);
-        final Set<PeerInfo> node2Peers = Utilities.createPeerInfoList(addressBook, node2);
+        final List<PeerInfo> node1Peers = Utilities.createPeerInfoList(addressBook, node1);
+        final List<PeerInfo> node2Peers = Utilities.createPeerInfoList(addressBook, node2);
         final NetworkPeerIdentifier identifier = new NetworkPeerIdentifier(platformContext, node1Peers);
 
         final SocketFactory socketFactory1 =
@@ -117,8 +116,8 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
         final KeysAndCerts keysAndCerts1 = keysAndCerts.get(node1);
         final KeysAndCerts keysAndCerts2 = keysAndCerts.get(node2);
 
-        final Set<PeerInfo> node1Peers = Utilities.createPeerInfoList(addressBook, node1);
-        final Set<PeerInfo> node2Peers = Utilities.createPeerInfoList(addressBook, node2);
+        final List<PeerInfo> node1Peers = Utilities.createPeerInfoList(addressBook, node1);
+        final List<PeerInfo> node2Peers = Utilities.createPeerInfoList(addressBook, node2);
         final NetworkPeerIdentifier identifier = new NetworkPeerIdentifier(platformContext, node1Peers);
 
         final SocketFactory s1 =
