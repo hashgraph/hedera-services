@@ -40,6 +40,7 @@ import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.token.TokenGetInfoQuery;
 import com.hedera.hapi.node.token.TokenGetInfoResponse;
 import com.hedera.hapi.node.token.TokenInfo;
 import com.hedera.hapi.node.transaction.Query;
@@ -206,14 +207,8 @@ public class TokenGetInfoHandler extends PaidQueryHandler {
     public Fees computeFees(@NonNull final QueryContext queryContext) {
         final var query = queryContext.query();
         final var tokenStore = queryContext.createStore(ReadableTokenStore.class);
-        if (!query.hasTokenGetInfo()) {
-            return Fees.FREE;
-        }
-        final var op = query.tokenGetInfo();
-        if (!op.hasToken()) {
-            return Fees.FREE;
-        }
-        final var tokenId = op.token();
+        final var op = query.tokenGetInfoOrElse(TokenGetInfoQuery.DEFAULT);
+        final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
         final var token = tokenStore.get(tokenId);
 
         return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetTokenInfoResourceUsage()

@@ -44,7 +44,7 @@ import com.hedera.node.app.service.token.impl.ReadableNftStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.TokenGetNftInfoHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
-import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -62,6 +62,9 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Mock(strictness = LENIENT)
     private QueryContext context;
+
+    @Mock
+    private FeeCalculator feeCalculator;
 
     private TokenGetNftInfoHandler subject;
 
@@ -243,22 +246,23 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void getComputedFeeIfMissingTokenGetNftInfo() {
+        given(context.createStore(ReadableNftStore.class)).willReturn(readableNftStore);
+        given(context.feeCalculator()).willReturn(feeCalculator);
         when(context.query()).thenReturn(Query.newBuilder().build());
 
-        final var response = subject.computeFees(context);
-        assertEquals(response, Fees.FREE);
+        assertThatCode(() -> subject.computeFees(context)).doesNotThrowAnyException();
     }
 
     @Test
     void getComputedFeeIfMissingNftID() {
         final var data = TokenGetNftInfoQuery.newBuilder().build();
-
         final var query = Query.newBuilder().tokenGetNftInfo(data).build();
 
+        given(context.createStore(ReadableNftStore.class)).willReturn(readableNftStore);
+        given(context.feeCalculator()).willReturn(feeCalculator);
         when(context.query()).thenReturn(query);
 
-        final var response = subject.computeFees(context);
-        assertEquals(response, Fees.FREE);
+        assertThatCode(() -> subject.computeFees(context)).doesNotThrowAnyException();
     }
 
     private void checkResponse(

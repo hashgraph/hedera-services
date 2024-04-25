@@ -23,7 +23,7 @@ import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
@@ -45,7 +45,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountRecordsHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
-import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -69,6 +69,9 @@ class CryptoGetAccountRecordsHandlerTest extends CryptoHandlerTestBase {
 
     @Mock(strictness = LENIENT)
     private RecordCache recordCache;
+
+    @Mock
+    private FeeCalculator feeCalculator;
 
     private CryptoGetAccountRecordsHandler subject;
 
@@ -300,22 +303,23 @@ class CryptoGetAccountRecordsHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void getComputedFeeIfMissingCryptoGetAccountRecords() {
+        given(context.createStore(ReadableAccountStore.class)).willReturn(readableStore);
+        given(context.feeCalculator()).willReturn(feeCalculator);
         when(context.query()).thenReturn(Query.newBuilder().build());
 
-        final var response = subject.computeFees(context);
-        assertEquals(response, Fees.FREE);
+        assertThatCode(() -> subject.computeFees(context)).doesNotThrowAnyException();
     }
 
     @Test
     void getComputedFeeIfMissingAccountID() {
         final var data = CryptoGetAccountRecordsQuery.newBuilder().build();
-
         final var query = Query.newBuilder().cryptoGetAccountRecords(data).build();
 
+        given(context.createStore(ReadableAccountStore.class)).willReturn(readableStore);
+        given(context.feeCalculator()).willReturn(feeCalculator);
         when(context.query()).thenReturn(query);
 
-        final var response = subject.computeFees(context);
-        assertEquals(response, Fees.FREE);
+        assertThatCode(() -> subject.computeFees(context)).doesNotThrowAnyException();
     }
 
     private ResponseHeader okResponseHeader() {

@@ -65,6 +65,9 @@ public final class GetFileInfoResourceUsage implements QueryResourceUsageEstimat
     }
 
     public FeeData usageGiven(final Query query, final File file) {
+        if (file == null) {
+            return FeeData.getDefaultInstance();
+        }
         final com.hederahashgraph.api.proto.java.File details = fromPbj(file);
         final var ctx = ExtantFileContext.newBuilder()
                 .setCurrentSize(details.getContents().toByteArray().length)

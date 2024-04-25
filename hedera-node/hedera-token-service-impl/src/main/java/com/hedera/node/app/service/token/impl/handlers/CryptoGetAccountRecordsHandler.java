@@ -29,6 +29,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.token.CryptoGetAccountRecordsQuery;
 import com.hedera.hapi.node.token.CryptoGetAccountRecordsResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
@@ -116,14 +117,8 @@ public class CryptoGetAccountRecordsHandler extends PaidQueryHandler {
     public Fees computeFees(@NonNull final QueryContext queryContext) {
         final var query = queryContext.query();
         final var accountStore = queryContext.createStore(ReadableAccountStore.class);
-        if (!query.hasCryptoGetAccountRecords()) {
-            return Fees.FREE;
-        }
-        final var op = query.cryptoGetAccountRecords();
-        if (!op.hasAccountID()) {
-            return Fees.FREE;
-        }
-        final var accountId = op.accountID();
+        final var op = query.cryptoGetAccountRecordsOrElse(CryptoGetAccountRecordsQuery.DEFAULT);
+        final var accountId = op.accountIDOrElse(AccountID.DEFAULT);
         final var account = accountStore.getAccountById(accountId);
 
         final var records = recordCache.getRecords(accountId);

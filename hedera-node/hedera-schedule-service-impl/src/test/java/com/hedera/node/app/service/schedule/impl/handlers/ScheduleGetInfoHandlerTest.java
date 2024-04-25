@@ -20,8 +20,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatNoException;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
@@ -62,6 +62,9 @@ import org.mockito.Mockito;
 class ScheduleGetInfoHandlerTest extends ScheduleHandlerTestBase {
     @Mock
     protected QueryContext mockQueryContext;
+
+    @Mock
+    private FeeCalculator feeCalculator;
 
     private ScheduleGetInfoHandler subject;
 
@@ -152,10 +155,10 @@ class ScheduleGetInfoHandlerTest extends ScheduleHandlerTestBase {
 
     @Test
     void getComputedFeeIfMissingScheduleGetInfo() {
+        given(mockQueryContext.feeCalculator()).willReturn(feeCalculator);
         when(mockQueryContext.query()).thenReturn(Query.newBuilder().build());
 
-        final var response = subject.computeFees(mockQueryContext);
-        assertEquals(response, Fees.FREE);
+        assertThatCode(() -> subject.computeFees(mockQueryContext)).doesNotThrowAnyException();
     }
 
     @NonNull

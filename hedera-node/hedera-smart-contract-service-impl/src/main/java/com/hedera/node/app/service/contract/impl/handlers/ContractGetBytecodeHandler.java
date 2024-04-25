@@ -40,6 +40,7 @@ import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -103,7 +104,7 @@ public class ContractGetBytecodeHandler extends PaidQueryHandler {
         final Bytes effectiveBytecode;
         final var query = context.query();
         if (!query.hasContractGetBytecode()) {
-            return Fees.FREE;
+            return context.feeCalculator().legacyCalculate(sigValueObj -> FeeData.getDefaultInstance());
         }
         final var contract = contractFrom(context);
         if (contract == null || contract.deleted()) {

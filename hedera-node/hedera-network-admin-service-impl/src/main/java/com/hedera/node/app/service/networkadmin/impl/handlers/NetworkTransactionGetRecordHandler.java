@@ -34,6 +34,7 @@ import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionGetRecordQuery;
@@ -158,20 +159,14 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
     @Override
     public Fees computeFees(@NonNull final QueryContext queryContext) {
         final RecordCache recordCache = queryContext.recordCache();
-        final var query = queryContext.query();
-        if (!query.hasTransactionGetRecord()) {
-            return Fees.FREE;
-        }
-        final TransactionGetRecordQuery op = query.transactionGetRecord();
+        final TransactionGetRecordQuery op =
+                queryContext.query().transactionGetRecordOrElse(TransactionGetRecordQuery.DEFAULT);
 
         // fees are the same for all records for a given response type,
         // so we calculate them once and multiply by the number of records found
 
         // calculate per-record fees
-        if (!op.hasHeader()) {
-            return Fees.FREE;
-        }
-        final ResponseType responseType = op.header().responseType();
+        final ResponseType responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         final int stateProofSize =
                 responseType == ResponseType.ANSWER_STATE_PROOF || responseType == ResponseType.COST_ANSWER_STATE_PROOF
                         ? STATE_PROOF_SIZE
@@ -189,10 +184,7 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
 
         int recordCount = 1;
         if (op.includeDuplicates() || op.includeChildRecords()) {
-            if (!op.hasTransactionID()) {
-                return Fees.FREE;
-            }
-            final var history = recordCache.getHistory(op.transactionID());
+            final var history = recordCache.getHistory(op.transactionIDOrElse(TransactionID.DEFAULT));
             if (history != null) {
                 recordCount += op.includeDuplicates() ? history.duplicateCount() : 0;
                 recordCount += op.includeChildRecords() ? history.childRecords().size() : 0;

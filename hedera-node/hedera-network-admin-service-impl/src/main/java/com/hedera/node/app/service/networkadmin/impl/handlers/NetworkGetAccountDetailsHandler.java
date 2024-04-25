@@ -319,10 +319,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
     public Fees computeFees(@NonNull final QueryContext queryContext) {
         final var query = queryContext.query();
         final var accountStore = queryContext.createStore(ReadableAccountStore.class);
-        if (!query.hasAccountDetails()) {
-            return Fees.FREE;
-        }
-        final var op = query.accountDetails();
+        final var op = query.accountDetailsOrElse(GetAccountDetailsQuery.DEFAULT);
         final var accountId = op.accountIdOrElse(AccountID.DEFAULT);
         final var account = accountStore.getAliasedAccountById(accountId);
 

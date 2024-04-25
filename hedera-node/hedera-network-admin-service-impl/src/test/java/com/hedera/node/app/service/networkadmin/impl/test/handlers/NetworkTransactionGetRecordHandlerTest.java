@@ -39,7 +39,7 @@ import com.hedera.hapi.node.transaction.TransactionGetRecordQuery;
 import com.hedera.hapi.node.transaction.TransactionGetRecordResponse;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkTransactionGetRecordHandler;
-import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
@@ -53,6 +53,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class NetworkTransactionGetRecordHandlerTest extends NetworkAdminHandlerTestBase {
     @Mock
     private QueryContext context;
+
+    @Mock
+    private FeeCalculator feeCalculator;
 
     private NetworkTransactionGetRecordHandler networkTransactionGetRecordHandler;
 
@@ -220,22 +223,23 @@ class NetworkTransactionGetRecordHandlerTest extends NetworkAdminHandlerTestBase
 
     @Test
     void getComputedFeeIfMissingNetworkTransactionGetRecord() {
+        given(context.feeCalculator()).willReturn(feeCalculator);
         when(context.query()).thenReturn(Query.newBuilder().build());
 
-        final var response = networkTransactionGetRecordHandler.computeFees(context);
-        assertEquals(response, Fees.FREE);
+        assertThatCode(() -> networkTransactionGetRecordHandler.computeFees(context))
+                .doesNotThrowAnyException();
     }
 
     @Test
     void getComputedFeeIfMissingHeader() {
         final var data = TransactionGetRecordQuery.newBuilder().build();
-
         final var query = Query.newBuilder().transactionGetRecord(data).build();
 
+        given(context.feeCalculator()).willReturn(feeCalculator);
         when(context.query()).thenReturn(query);
 
-        final var response = networkTransactionGetRecordHandler.computeFees(context);
-        assertEquals(response, Fees.FREE);
+        assertThatCode(() -> networkTransactionGetRecordHandler.computeFees(context))
+                .doesNotThrowAnyException();
     }
 
     @Test
@@ -244,13 +248,14 @@ class NetworkTransactionGetRecordHandlerTest extends NetworkAdminHandlerTestBase
                 .header(QueryHeader.newBuilder().build())
                 .includeDuplicates(true)
                 .build();
-
         final var query = Query.newBuilder().transactionGetRecord(data).build();
 
+        given(context.recordCache()).willReturn(cache);
+        given(context.feeCalculator()).willReturn(feeCalculator);
         when(context.query()).thenReturn(query);
 
-        final var response = networkTransactionGetRecordHandler.computeFees(context);
-        assertEquals(response, Fees.FREE);
+        assertThatCode(() -> networkTransactionGetRecordHandler.computeFees(context))
+                .doesNotThrowAnyException();
     }
 
     private TransactionRecord getExpectedRecord(TransactionID transactionID) {

@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
@@ -37,10 +36,11 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetBytecodeHandler;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -77,6 +77,9 @@ public class ContractGetBytecodeHandlerTest {
 
     @Mock
     private AccountID accountID;
+
+    @Mock
+    private FeeCalculator feeCalculator;
 
     private final ContractGetBytecodeHandler subject = new ContractGetBytecodeHandler();
 
@@ -156,9 +159,9 @@ public class ContractGetBytecodeHandlerTest {
 
     @Test
     void getComputedFeeIfMissingContractGetBytecode() {
+        given(context.feeCalculator()).willReturn(feeCalculator);
         when(context.query()).thenReturn(Query.newBuilder().build());
 
-        final var response = subject.computeFees(context);
-        assertEquals(response, Fees.FREE);
+        Assertions.assertThatCode(() -> subject.computeFees(context)).doesNotThrowAnyException();
     }
 }

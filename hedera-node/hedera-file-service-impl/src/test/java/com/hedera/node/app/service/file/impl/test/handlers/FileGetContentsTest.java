@@ -45,7 +45,7 @@ import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileGetContentsHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
-import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,6 +62,9 @@ class FileGetContentsTest extends FileTestBase {
 
     @Mock
     private FileFeeBuilder usageEstimator;
+
+    @Mock
+    private FeeCalculator feeCalculator;
 
     private FileGetContentsHandler subject;
 
@@ -190,22 +193,23 @@ class FileGetContentsTest extends FileTestBase {
 
     @Test
     void getComputedFeeIfMissingFileGetContents() {
+        given(context.createStore(ReadableFileStore.class)).willReturn(readableStore);
+        given(context.feeCalculator()).willReturn(feeCalculator);
         when(context.query()).thenReturn(Query.newBuilder().build());
 
-        final var response = subject.computeFees(context);
-        assertEquals(response, Fees.FREE);
+        assertThatCode(() -> subject.computeFees(context)).doesNotThrowAnyException();
     }
 
     @Test
     void getComputedFeeIfMissingFileID() {
         final var data = FileGetContentsQuery.newBuilder().build();
-
         final var query = Query.newBuilder().fileGetContents(data).build();
 
+        given(context.createStore(ReadableFileStore.class)).willReturn(readableStore);
+        given(context.feeCalculator()).willReturn(feeCalculator);
         when(context.query()).thenReturn(query);
 
-        final var response = subject.computeFees(context);
-        assertEquals(response, Fees.FREE);
+        assertThatCode(() -> subject.computeFees(context)).doesNotThrowAnyException();
     }
 
     private FileContents getExpectedContent() {

@@ -56,7 +56,8 @@ import com.hedera.node.app.service.networkadmin.impl.utils.NetworkAdminServiceUt
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
+import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.ArrayList;
@@ -72,6 +73,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
     @Mock
     private QueryContext context;
+
+    @Mock
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private ReadableAccountStoreImpl readableStore;
 
     private NetworkGetAccountDetailsHandler networkGetAccountDetailsHandler;
     private CryptoOpsUsage cryptoOpsUsage;
@@ -336,10 +343,12 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
 
     @Test
     void getComputedFeeIfMissingFileGetInfo() {
+        given(context.createStore(ReadableAccountStore.class)).willReturn(readableStore);
+        given(context.feeCalculator()).willReturn(feeCalculator);
         when(context.query()).thenReturn(Query.newBuilder().build());
 
-        final var response = networkGetAccountDetailsHandler.computeFees(context);
-        assertEquals(response, Fees.FREE);
+        assertThatCode(() -> networkGetAccountDetailsHandler.computeFees(context))
+                .doesNotThrowAnyException();
     }
 
     private AccountDetails getExpectedInfo(

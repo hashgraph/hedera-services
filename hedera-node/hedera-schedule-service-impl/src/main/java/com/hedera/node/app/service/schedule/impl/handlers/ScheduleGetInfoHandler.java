@@ -77,15 +77,9 @@ public class ScheduleGetInfoHandler extends PaidQueryHandler {
     @NonNull
     @Override
     public Fees computeFees(@NonNull final QueryContext context) {
-        final Schedule found;
-        try {
-            // Need to work out if this is correct, note we effectively (much) more than double total effort
-            // here just to calculate fees based on a single instance of that effort...
-            found = findSchedule(context);
-        } catch (Exception e) {
-            return Fees.FREE;
-        }
-
+        // Need to work out if this is correct, note we effectively (much) more than double total effort
+        // here just to calculate fees based on a single instance of that effort...
+        final Schedule found = findSchedule(context);
         if (found != null) {
             final LedgerConfig ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
             final ScheduleInfo.Builder builder = ScheduleInfo.newBuilder();
@@ -168,7 +162,7 @@ public class ScheduleGetInfoHandler extends PaidQueryHandler {
     private Schedule findSchedule(final QueryContext context) {
         final Query contextQuery = context.query();
         final ReadableScheduleStore queryStore = context.createStore(ReadableScheduleStore.class);
-        final ScheduleGetInfoQuery scheduleQuery = contextQuery.scheduleGetInfoOrThrow();
+        final ScheduleGetInfoQuery scheduleQuery = contextQuery.scheduleGetInfoOrElse(ScheduleGetInfoQuery.DEFAULT);
         final ScheduleID idToQuery = scheduleQuery.scheduleID();
         return idToQuery != null ? queryStore.get(idToQuery) : null;
     }

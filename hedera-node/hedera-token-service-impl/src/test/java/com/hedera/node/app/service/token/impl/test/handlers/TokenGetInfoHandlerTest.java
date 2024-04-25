@@ -53,7 +53,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.TokenGetInfoHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
-import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -70,6 +70,9 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Mock(strictness = LENIENT)
     private QueryContext context;
+
+    @Mock
+    private FeeCalculator feeCalculator;
 
     private TokenGetInfoHandler subject;
 
@@ -240,22 +243,23 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void getComputedFeeIfMissingTokenGetInfo() {
+        given(context.createStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+        given(context.feeCalculator()).willReturn(feeCalculator);
         when(context.query()).thenReturn(Query.newBuilder().build());
 
-        final var response = subject.computeFees(context);
-        assertEquals(response, Fees.FREE);
+        assertThatCode(() -> subject.computeFees(context)).doesNotThrowAnyException();
     }
 
     @Test
     void getComputedFeeIfMissingToken() {
         final var data = TokenGetInfoQuery.newBuilder().build();
-
         final var query = Query.newBuilder().tokenGetInfo(data).build();
 
+        given(context.createStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+        given(context.feeCalculator()).willReturn(feeCalculator);
         when(context.query()).thenReturn(query);
 
-        final var response = subject.computeFees(context);
-        assertEquals(response, Fees.FREE);
+        assertThatCode(() -> subject.computeFees(context)).doesNotThrowAnyException();
     }
 
     private void checkResponse(
