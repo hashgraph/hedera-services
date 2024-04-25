@@ -47,10 +47,10 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.node.state.primitives;
     exports com.hedera.hapi.node.state.throttles;
     exports com.hedera.hapi.node.state.congestion;
+    exports com.hedera.hapi.platform.event;
     exports com.hedera.services.stream.proto;
     exports com.hederahashgraph.api.proto.java;
     exports com.hederahashgraph.service.proto.java;
-    exports com.swirlds.proto.event;
 
     requires transitive com.google.common;
     requires transitive com.google.protobuf;

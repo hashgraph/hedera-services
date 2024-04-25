@@ -53,7 +53,7 @@ class RosterDiffGeneratorTests {
         final RosterDiffGenerator generator = new RosterDiffGenerator(platformContext);
 
         final AddressBook roster = new RandomAddressBookGenerator(random).build();
-        platformContext.getCryptography().digestSync(roster);
+        roster.setHash(platformContext.getCryptography().digestSync(roster));
 
         // First round added should yield a null diff
         assertNull(generator.generateDiff(new UpdatedRoster(0, roster)));
@@ -85,7 +85,7 @@ class RosterDiffGeneratorTests {
 
         AddressBook previousRoster =
                 new RandomAddressBookGenerator(random).setSize(8).build();
-        platformContext.getCryptography().digestSync(previousRoster);
+        previousRoster.setHash(platformContext.getCryptography().digestSync(previousRoster));
         assertNull(generator.generateDiff(new UpdatedRoster(0, previousRoster)));
 
         for (int round = 1; round < 1000; round++) {
@@ -160,7 +160,7 @@ class RosterDiffGeneratorTests {
                     membershipChanged || (modifiedNodeCount != 0 && modifyConsensusWeight);
             final boolean rosterIsIdentical = !membershipChanged && !consensusWeightChanged && modifiedNodeCount == 0;
 
-            platformContext.getCryptography().digestSync(newRoster);
+            newRoster.setHash(platformContext.getCryptography().digestSync(newRoster));
 
             final UpdatedRoster updatedRoster = new UpdatedRoster(round, newRoster);
             final RosterDiff diff = generator.generateDiff(updatedRoster);

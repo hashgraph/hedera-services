@@ -22,6 +22,7 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
 import static com.swirlds.common.test.fixtures.io.SerializationUtils.serializeDeserialize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -29,7 +30,6 @@ import com.swirlds.common.io.SerializableWithKnownLength;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
-import com.swirlds.proto.event.StateSignaturePayload;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Random;
