@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.spec.utilops.streams.assertions;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -55,7 +55,6 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
 
     private void validateActionIds(@NonNull final TransactionSidecarRecord sidecar) {
         final var actions = sidecar.getActions().getContractActionsList();
-        System.out.println(actions);
         for (final var action : actions) {
             if (action.hasCallingAccount()) {
                 assertValid(action.getCallingAccount(), "action#callingAccount", sidecar);
@@ -69,12 +68,12 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
                 assertValid(action.getRecipientContract(), "action#recipientContract", sidecar, this::isValidId);
             }
 
-            final var isMissingRecipient =
-                    !action.hasRecipientAccount() && !action.hasRecipientContract() && !action.hasTargetedAddress();
-            assertFalse(isMissingRecipient, "action is missing recipient (account, contract, or targetedAddress)");
+            final var recipientIsSet =
+                    (action.hasRecipientAccount() || action.hasRecipientContract() || action.hasTargetedAddress());
+            assertTrue(recipientIsSet, "action is missing recipient (account, contract, or targetedAddress)");
 
-            final var isMissingResult = !action.hasOutput() && !action.hasError() && !action.hasRevertReason();
-            assertFalse(isMissingResult, "action is missing result (output, error, or revertReason)");
+            final var resultIsSet = (action.hasOutput() || action.hasError() || action.hasRevertReason());
+            assertTrue(resultIsSet, "action is missing result (output, error, or revertReason)");
         }
     }
 
@@ -126,6 +125,6 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
     }
 
     private boolean isValidOrFailedBytecodeCreationId(long shard, long realm, long num) {
-        return shard == 0L && realm == 0L && num >= 0;
+        return shard == 0L && realm == 0L && num >= 0 && num < Integer.MAX_VALUE;
     }
 }

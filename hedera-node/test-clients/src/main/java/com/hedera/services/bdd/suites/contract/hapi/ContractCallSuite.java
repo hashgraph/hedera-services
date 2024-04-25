@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAdd
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -2538,7 +2537,7 @@ public class ContractCallSuite extends HapiSuite {
     final HapiSpec callToNonExtantLongZeroAddressUsesTargetedAddress() {
         final var contract = "LowLevelCall";
         final var nonExtantMirrorAddress = asHeadlongAddress("0xE8D4A50FFF");
-        return defaultHapiSpec("callToNonExtantContractAddressUsesWhat")
+        return defaultHapiSpec("callToNonExtantLongZeroAddressUsesTargetedAddress")
                 .given(
                         streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
                         uploadInitCode(contract),
@@ -2552,7 +2551,7 @@ public class ContractCallSuite extends HapiSuite {
     final HapiSpec callToNonExtantEvmAddressUsesTargetedAddress() {
         final var contract = "LowLevelCall";
         final var nonExtantEvmAddress = asHeadlongAddress(TxnUtils.randomUtf8Bytes(20));
-        return onlyDefaultHapiSpec("callToNonExtantEvmAddressUsesWhat")
+        return defaultHapiSpec("callToNonExtantEvmAddressUsesTargetedAddress")
                 .given(
                         streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
                         uploadInitCode(contract),
