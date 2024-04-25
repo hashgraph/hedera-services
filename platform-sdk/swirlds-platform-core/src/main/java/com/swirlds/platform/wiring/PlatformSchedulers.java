@@ -34,11 +34,9 @@ import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
-import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateHasher;
 import com.swirlds.platform.state.signed.StateSavingResult;
-import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.StateAndRound;
@@ -55,7 +53,6 @@ import java.util.List;
  * @param signedStateFileManagerScheduler           the scheduler for the signed state file manager
  * @param stateSignerScheduler                      the scheduler for the state signer
  * @param pcesReplayerScheduler                     the scheduler for the pces replayer
- * @param stateSignatureCollectorScheduler          the scheduler for the state signature collector
  * @param shadowgraphScheduler                      the scheduler for the shadowgraph
  * @param consensusRoundHandlerScheduler            the scheduler for the consensus round handler
  * @param runningHashUpdateScheduler                the scheduler for the running hash updater
@@ -71,7 +68,6 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
         @NonNull TaskScheduler<StateSignaturePayload> stateSignerScheduler,
         @NonNull TaskScheduler<NoInput> pcesReplayerScheduler,
-        @NonNull TaskScheduler<List<ReservedSignedState>> stateSignatureCollectorScheduler,
         @NonNull TaskScheduler<Void> shadowgraphScheduler,
         @NonNull TaskScheduler<StateAndRound> consensusRoundHandlerScheduler,
         @NonNull TaskScheduler<RunningEventHashOverride> runningHashUpdateScheduler,
@@ -132,14 +128,6 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("pcesReplayer")
                         .withType(TaskSchedulerType.DIRECT)
                         .withHyperlink(platformCoreHyperlink(PcesReplayer.class))
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("stateSignatureCollector")
-                        .withType(config.stateSignatureCollectorSchedulerType())
-                        .withUnhandledTaskCapacity(config.stateSignatureCollectorUnhandledCapacity())
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(StateSignatureCollector.class))
-                        .withFlushingEnabled(true)
                         .build()
                         .cast(),
                 model.schedulerBuilder("shadowgraph")
