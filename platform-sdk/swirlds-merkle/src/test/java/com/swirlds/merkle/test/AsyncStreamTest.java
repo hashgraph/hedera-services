@@ -67,8 +67,8 @@ class AsyncStreamTest {
             final StandardWorkGroup workGroup = new StandardWorkGroup(getStaticThreadManager(), "test", null);
 
             final int viewId = 11;
-            final AsyncInputStream in = new AsyncInputStream(streams.getTeacherInput(), workGroup, reconnectConfig);
-            in.registerView(viewId, SerializableLong::new);
+            final AsyncInputStream in = new AsyncInputStream(
+                    streams.getTeacherInput(), workGroup, vi -> new SerializableLong(), reconnectConfig);
 
             final AsyncOutputStream out = new AsyncOutputStream(streams.getLearnerOutput(), workGroup, reconnectConfig);
 
@@ -99,8 +99,8 @@ class AsyncStreamTest {
             final StandardWorkGroup workGroup = new StandardWorkGroup(getStaticThreadManager(), "test", null);
 
             final int viewId = 12;
-            final AsyncInputStream in = new AsyncInputStream(streams.getTeacherInput(), workGroup, reconnectConfig);
-            in.registerView(viewId, SerializableLong::new);
+            final AsyncInputStream in = new AsyncInputStream(
+                    streams.getTeacherInput(), workGroup, vi -> new SerializableLong(), reconnectConfig);
 
             final AsyncOutputStream out = new AsyncOutputStream(streams.getLearnerOutput(), workGroup, reconnectConfig);
 
@@ -222,9 +222,8 @@ class AsyncStreamTest {
 
         final BlockingInputStream blockingIn = new BlockingInputStream(new ByteArrayInputStream(data));
 
-        final AsyncInputStream in =
-                new AsyncInputStream(new SerializableDataInputStream(blockingIn), workGroup, reconnectConfig);
-        in.registerView(viewId, SerializableLong::new);
+        final AsyncInputStream in = new AsyncInputStream(
+                new SerializableDataInputStream(blockingIn), workGroup, vi -> new SerializableLong(), reconnectConfig);
         in.start();
 
         for (int i = 0; i < count; i++) {
@@ -291,9 +290,8 @@ class AsyncStreamTest {
                     new AsyncOutputStream(pairedStreams.getTeacherOutput(), workGroup, reconnectConfig);
 
             final int viewId = 15;
-            final AsyncInputStream learnerIn =
-                    new AsyncInputStream(pairedStreams.getLearnerInput(), workGroup, reconnectConfig);
-            learnerIn.registerView(viewId, ExplodingSelfSerializable::new);
+            final AsyncInputStream learnerIn = new AsyncInputStream(
+                    pairedStreams.getLearnerInput(), workGroup, vi -> new ExplodingSelfSerializable(), reconnectConfig);
 
             learnerIn.start();
             teacherOut.start();

@@ -28,6 +28,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public final class TeacherSubtree implements AutoCloseable {
 
     private final MerkleNode root;
+    private final int viewId;
     private final TeacherTreeView<?> view;
 
     /**
@@ -36,8 +37,8 @@ public final class TeacherSubtree implements AutoCloseable {
      * @param configuration the configuration
      * @param root          the root of the subtree
      */
-    public TeacherSubtree(@NonNull final Configuration configuration, final MerkleNode root) {
-        this(root, new TeacherPushMerkleTreeView(configuration, root));
+    public TeacherSubtree(@NonNull final Configuration configuration, final int viewId, final MerkleNode root) {
+        this(root, viewId, new TeacherPushMerkleTreeView(configuration, root));
     }
 
     /**
@@ -46,8 +47,9 @@ public final class TeacherSubtree implements AutoCloseable {
      * @param root the root of the subtree
      * @param view the view to be used by the subtree
      */
-    public TeacherSubtree(final MerkleNode root, final TeacherTreeView<?> view) {
+    public TeacherSubtree(final MerkleNode root, final int viewId, final TeacherTreeView<?> view) {
         this.root = root;
+        this.viewId = viewId;
         this.view = view;
 
         if (root != null) {
@@ -62,6 +64,10 @@ public final class TeacherSubtree implements AutoCloseable {
      */
     public MerkleNode getRoot() {
         return root;
+    }
+
+    public int getViewId() {
+        return viewId;
     }
 
     /**

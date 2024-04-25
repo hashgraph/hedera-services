@@ -21,6 +21,7 @@ import static com.swirlds.common.constructable.ClassIdFormatter.classIdString;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
@@ -68,22 +69,25 @@ public class LearnerPushMerkleTreeView implements LearnerTreeView<MerkleNode> {
             final int viewId,
             final AsyncInputStream in,
             final AsyncOutputStream out,
-            final Queue<MerkleNode> rootsToReceive,
+            final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
             final AtomicReference<MerkleNode> reconstructedRoot,
             final Consumer<Boolean> completeListener) {
-        in.registerView(viewId, () -> new Lesson<>(this));
-
         final LearnerPushTask<MerkleNode> learnerThread = new LearnerPushTask<>(
                 workGroup,
                 viewId,
                 in,
                 out,
-                rootsToReceive,
+                subtreeListener,
                 reconstructedRoot,
                 this,
                 learningSynchronizer,
                 completeListener);
         learnerThread.start();
+    }
+
+    @Override
+    public SelfSerializable createMessage() {
+        return new Lesson<>(this);
     }
 
     /**

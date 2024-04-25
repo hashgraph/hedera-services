@@ -17,16 +17,16 @@
 package com.swirlds.virtual.merkle.reconnect;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
-import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
+import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
-import java.util.Queue;
 import java.util.function.Consumer;
 
 /**
@@ -68,9 +68,15 @@ public class BrokenVirtualMapTeacherView implements TeacherTreeView<Long> {
             final StandardWorkGroup workGroup,
             final AsyncInputStream in,
             final AsyncOutputStream out,
-            final Queue<TeacherSubtree> subtrees,
+            final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
             final Consumer<Boolean> completeListener) {
-        baseView.startTeacherTasks(teachingSynchronizer, viewId, time, workGroup, in, out, subtrees, completeListener);
+        baseView.startTeacherTasks(
+                teachingSynchronizer, viewId, time, workGroup, in, out, subtreeListener, completeListener);
+    }
+
+    @Override
+    public SelfSerializable createMessage() {
+        return baseView.createMessage();
     }
 
     @Override

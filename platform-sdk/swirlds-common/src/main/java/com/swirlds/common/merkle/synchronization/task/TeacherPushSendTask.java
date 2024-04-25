@@ -33,8 +33,9 @@ import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Queue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -55,12 +56,11 @@ public class TeacherPushSendTask<T> {
      */
     private static final Lesson<?> UP_TO_DATE_LESSON = new Lesson<>(NODE_IS_UP_TO_DATE, null);
 
-    private final ReconnectConfig reconnectConfig;
     private final StandardWorkGroup workGroup;
     private final int viewId;
     private final AsyncInputStream in;
     private final AsyncOutputStream out;
-    private final Queue<TeacherSubtree> subtrees;
+    private final Consumer<CustomReconnectRoot<?, ?>> subtreeListener;
     private final TeacherTreeView<T> view;
 
     private final AtomicBoolean senderIsFinished;
@@ -76,8 +76,7 @@ public class TeacherPushSendTask<T> {
      * @param workGroup             the work group managing the reconnect
      * @param in                    the input stream
      * @param out                   the output stream, this object is responsible for closing this object when finished
-     * @param subtrees              a queue containing roots of subtrees to send, may have more roots added by this
-     *                              class
+     * @param subtreeListener       a listener to notify when custom reconnect roots are encountered
      * @param view                  an object that interfaces with the subtree
      * @param senderIsFinished      set to true when this thread has finished
      */
@@ -88,15 +87,14 @@ public class TeacherPushSendTask<T> {
             final StandardWorkGroup workGroup,
             final AsyncInputStream in,
             final AsyncOutputStream out,
-            final Queue<TeacherSubtree> subtrees,
+            final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
             final TeacherTreeView<T> view,
             final AtomicBoolean senderIsFinished) {
         this.viewId = viewId;
-        this.reconnectConfig = reconnectConfig;
         this.workGroup = workGroup;
         this.in = in;
         this.out = out;
-        this.subtrees = subtrees;
+        this.subtreeListener = subtreeListener;
         this.view = view;
         this.senderIsFinished = senderIsFinished;
 
@@ -133,9 +131,7 @@ public class TeacherPushSendTask<T> {
     private Lesson<T> buildCustomReconnectRootLesson(final T node) {
         final Lesson<T> lesson = new Lesson<>(CUSTOM_VIEW_ROOT, new CustomViewRootLesson(view.getClassId(node)));
         final CustomReconnectRoot<?, ?> subtreeRoot = (CustomReconnectRoot<?, ?>) view.getMerkleRoot(node);
-
-        subtrees.add(new TeacherSubtree(subtreeRoot, subtreeRoot.buildTeacherView(reconnectConfig)));
-
+        subtreeListener.accept(subtreeRoot);
         return lesson;
     }
 
@@ -210,6 +206,12 @@ public class TeacherPushSendTask<T> {
                 final T node = view.getNextNodeToHandle();
                 sendLesson(node);
             }
+            // All lessons have been scheduled to send. However, serializing them to the
+            // socket output stream is asynchronous. Let's wait for all currently scheduled
+            // messages to be serialized before claiming this task is complete
+            final CountDownLatch allMessagesSerialized = new CountDownLatch(1);
+            out.whenCurrentMessagesProcessed(allMessagesSerialized::countDown);
+            allMessagesSerialized.await();
         } catch (final InterruptedException ex) {
             logger.warn(RECONNECT.getMarker(), "teacher's sending thread interrupted");
             Thread.currentThread().interrupt();

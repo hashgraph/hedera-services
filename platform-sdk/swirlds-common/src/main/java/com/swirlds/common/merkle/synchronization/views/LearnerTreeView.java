@@ -18,6 +18,7 @@ package com.swirlds.common.merkle.synchronization.views;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
@@ -27,7 +28,6 @@ import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
-import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -50,7 +50,7 @@ public interface LearnerTreeView<T> extends LearnerExpectedLessonQueue<T>, Learn
      * @param workGroup the work group to run teaching task(s) in
      * @param in the input stream to read data from teacher
      * @param out the output stream to write data to teacher
-     * @param rootsToReceive if custom tree views are encountered, they must be added to this queue
+     * @param subtreeListener to notify if custom tree views are encountered
      * @param reconstructedRoot the root node of the reconnected tree must be set here
      */
     void startLearnerTasks(
@@ -59,7 +59,7 @@ public interface LearnerTreeView<T> extends LearnerExpectedLessonQueue<T>, Learn
             final int viewId,
             final AsyncInputStream in,
             final AsyncOutputStream out,
-            final Queue<MerkleNode> rootsToReceive,
+            final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
             final AtomicReference<MerkleNode> reconstructedRoot,
             final Consumer<Boolean> completeListener);
 
@@ -157,4 +157,12 @@ public interface LearnerTreeView<T> extends LearnerExpectedLessonQueue<T>, Learn
      * 		the node to release
      */
     void releaseNode(T node);
+
+    /**
+     * Create a new message object, which will then be used by {@link AsyncInputStream} to read data
+     * from the teacher from the socket input stream.
+     *
+     * @return a new message object used by this learner view to receive data from the teacher
+     */
+    SelfSerializable createMessage();
 }

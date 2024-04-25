@@ -19,6 +19,7 @@ package com.swirlds.common.merkle.synchronization.views;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
@@ -30,7 +31,6 @@ import com.swirlds.common.merkle.synchronization.task.NodeToSend;
 import com.swirlds.common.merkle.synchronization.task.QueryResponse;
 import com.swirlds.common.merkle.synchronization.task.TeacherPushReceiveTask;
 import com.swirlds.common.merkle.synchronization.task.TeacherPushSendTask;
-import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.config.api.Configuration;
@@ -83,14 +83,12 @@ public class TeacherPushMerkleTreeView implements TeacherTreeView<NodeToSend> {
             final StandardWorkGroup workGroup,
             final AsyncInputStream in,
             final AsyncOutputStream out,
-            final Queue<TeacherSubtree> subtrees,
+            final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
             final Consumer<Boolean> completeListener) {
-        in.registerView(viewId, QueryResponse::new);
-
         final AtomicBoolean senderIsFinished = new AtomicBoolean(false);
 
         final TeacherPushSendTask<NodeToSend> teacherPushSendTask = new TeacherPushSendTask<>(
-                viewId, time, reconnectConfig, workGroup, in, out, subtrees, this, senderIsFinished);
+                viewId, time, reconnectConfig, workGroup, in, out, subtreeListener, this, senderIsFinished);
         teacherPushSendTask.start();
         final TeacherPushReceiveTask<NodeToSend> teacherPushReceiveTask =
                 new TeacherPushReceiveTask<>(workGroup, viewId, in, this, senderIsFinished, completeListener);
@@ -103,6 +101,11 @@ public class TeacherPushMerkleTreeView implements TeacherTreeView<NodeToSend> {
     @Override
     public NodeToSend getRoot() {
         return root;
+    }
+
+    @Override
+    public SelfSerializable createMessage() {
+        return new QueryResponse();
     }
 
     /**

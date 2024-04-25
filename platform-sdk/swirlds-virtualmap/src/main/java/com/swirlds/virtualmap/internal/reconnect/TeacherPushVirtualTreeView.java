@@ -24,6 +24,7 @@ import static com.swirlds.virtualmap.internal.Path.getRightChildPath;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -32,8 +33,8 @@ import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.task.QueryResponse;
 import com.swirlds.common.merkle.synchronization.task.TeacherPushReceiveTask;
 import com.swirlds.common.merkle.synchronization.task.TeacherPushSendTask;
-import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
+import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -47,7 +48,6 @@ import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualPipeline;
 import java.io.IOException;
-import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -136,14 +136,12 @@ public final class TeacherPushVirtualTreeView<K extends VirtualKey, V extends Vi
             final StandardWorkGroup workGroup,
             final AsyncInputStream in,
             final AsyncOutputStream out,
-            final Queue<TeacherSubtree> subtrees,
+            final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
             final Consumer<Boolean> completeListener) {
-        in.registerView(viewId, QueryResponse::new);
-
         final AtomicBoolean senderIsFinished = new AtomicBoolean(false);
 
         final TeacherPushSendTask<Long> teacherSendTask = new TeacherPushSendTask<>(
-                viewId, time, reconnectConfig, workGroup, in, out, subtrees, this, senderIsFinished);
+                viewId, time, reconnectConfig, workGroup, in, out, subtreeListener, this, senderIsFinished);
         teacherSendTask.start();
         final TeacherPushReceiveTask<Long> teacherReceiveTask =
                 new TeacherPushReceiveTask<>(workGroup, viewId, in, this, senderIsFinished, completeListener);
@@ -156,6 +154,14 @@ public final class TeacherPushVirtualTreeView<K extends VirtualKey, V extends Vi
     @Override
     public void waitUntilReady() throws InterruptedException {
         ready.await();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public SelfSerializable createMessage() {
+        return new QueryResponse();
     }
 
     /**

@@ -56,46 +56,46 @@ public class ReconnectBench extends VirtualMapBaseBench {
 
     /** The probability of the teacher map having an extra node. */
     @Param({"0.05"})
-    public double teacherAddProbability;
+    public double teacherAddProbability = 0.05;
 
     /** The probability of the teacher map having removed a node, while the learner still having it. */
     @Param({"0.05"})
-    public double teacherRemoveProbability;
+    public double teacherRemoveProbability = 0.05;
 
     /**
      * The probability of the teacher map having a value under a key that differs
      * from the value under the same key in the learner map.
      */
     @Param({"0.05"})
-    public double teacherModifyProbability;
+    public double teacherModifyProbability = 0.05;
 
     /**
      * Emulated delay for sendAsync() calls in both Teaching- and Learning-Synchronizers,
      * or zero for no delay. This emulates slow disk I/O when reading data.
      */
     @Param({"0"})
-    public long delayStorageMicroseconds;
+    public long delayStorageMicroseconds = 0;
 
     /**
      * A percentage fuzz range for the delayStorageMicroseconds values,
      * e.g. 0.15 for a -15%..+15% range around the value.
      */
     @Param({"0.15"})
-    public double delayStorageFuzzRangePercent;
+    public double delayStorageFuzzRangePercent = 0.15;
 
     /**
      * Emulated delay for serializeMessage() calls in both Teaching- and Learning-Synchronizers,
      * or zero for no delay. This emulates slow network I/O when sending data.
      */
     @Param({"0"})
-    public long delayNetworkMicroseconds;
+    public long delayNetworkMicroseconds = 0;
 
     /**
      * A percentage fuzz range for the delayNetworkMicroseconds values,
      * e.g. 0.15 for a -15%..+15% range around the value.
      */
     @Param({"0.15"})
-    public double delayNetworkFuzzRangePercent;
+    public double delayNetworkFuzzRangePercent = 0.15;
 
     private List<VirtualMap<BenchmarkKey, BenchmarkValue>> teacherMaps;
     private List<VirtualMap<BenchmarkKey, BenchmarkValue>> learnerMaps;
@@ -147,10 +147,12 @@ public class ReconnectBench extends VirtualMapBaseBench {
             final AtomicReference<VirtualMap<BenchmarkKey, BenchmarkValue>> learnerRef =
                     new AtomicReference<>(createEmptyMap("learner" + mapIndex));
 
+            // Create some larger maps (100% size) and some smaller ones (40% size)
+            final long size = (mapIndex % 2 == 0) ? (long) numFiles * numRecords : (long) numFiles * numRecords * 2 / 5;
             new StateBuilder<>(BenchmarkKey::new, BenchmarkValue::new)
                     .buildState(
                             random,
-                            (long) numRecords * numFiles,
+                            size,
                             teacherAddProbability,
                             teacherRemoveProbability,
                             teacherModifyProbability,
@@ -212,6 +214,11 @@ public class ReconnectBench extends VirtualMapBaseBench {
     @TearDown(Level.Invocation)
     public void tearDownInvocation() throws Exception {
         try {
+            if (verify) {
+                if (!MerkleBenchmarkUtils.areTreesEqual(reconnectedTree, teacherTree)) {
+                    throw new IllegalStateException("Trees aren't equal after reconnect");
+                }
+            }
             for (final VirtualMap<BenchmarkKey, BenchmarkValue> learnerMap : learnerMaps) {
                 final VirtualRoot root = learnerMap.getRight();
                 if (!root.isHashed()) {
@@ -264,5 +271,18 @@ public class ReconnectBench extends VirtualMapBaseBench {
                 delayNetworkMicroseconds,
                 delayNetworkFuzzRangePercent,
                 configuration);
+    }
+
+    public static void main(String[] args) throws Exception {
+        ReconnectBench bench = new ReconnectBench();
+        bench.setup();
+        bench.setupBenchmark();
+        bench.beforeTest();
+        bench.setupInvocation();
+        bench.reconnect();
+        bench.tearDownInvocation();
+        bench.afterTest();
+        bench.destroyLocal();
+        bench.destroy();
     }
 }

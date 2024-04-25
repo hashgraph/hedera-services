@@ -29,6 +29,7 @@ import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
+import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
@@ -36,11 +37,11 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.SocketException;
-import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -79,6 +80,11 @@ public class TeachingSynchronizer {
      */
     private final Queue<TeacherSubtree> subtrees;
 
+    /**
+     * Subtree views, by view ID.
+     */
+    private final Map<Integer, TeacherTreeView<?>> views;
+
     private final Runnable breakConnection;
 
     /**
@@ -91,12 +97,18 @@ public class TeachingSynchronizer {
     private final Time time;
 
     /*
-     * During reconnect, all merkle sub-trees get unique IDs, which are used to dispatch
+     * During reconnect, all merkle subtrees get unique IDs, which are used to dispatch
      * messages to correct teacher/learner tree views, when multiple sub-trees are synced
      * in parallel. This generator is used to generate these IDs, and a similar one exists
      * on the learner side.
      */
     private final AtomicInteger viewIdGen = new AtomicInteger(0);
+
+    /**
+     * Number of subtrees being synchronized. May not be greater than {@link ReconnectConfig#maxParallelSubtrees()}
+     * Once this number reaches zero, synchronization is complete.
+     */
+    private final AtomicInteger viewsInProgress = new AtomicInteger(0);
 
     /**
      * Create a new teaching synchronizer.
@@ -126,8 +138,12 @@ public class TeachingSynchronizer {
         inputStream = Objects.requireNonNull(in, "in must not be null");
         outputStream = Objects.requireNonNull(out, "out must not be null");
 
+        views = new ConcurrentHashMap<>();
+        final int viewId = viewIdGen.getAndIncrement();
         subtrees = new LinkedList<>();
-        subtrees.add(new TeacherSubtree(configuration, root));
+        final TeacherSubtree rootSubtree = new TeacherSubtree(configuration, viewId, root);
+        views.put(viewId, rootSubtree.getView());
+        subtrees.add(rootSubtree);
 
         this.breakConnection = breakConnection;
         this.reconnectConfig = Objects.requireNonNull(reconnectConfig, "reconnectConfig must not be null");
@@ -137,25 +153,6 @@ public class TeachingSynchronizer {
      * Perform synchronization in the role of the teacher.
      */
     public void synchronize() throws InterruptedException {
-        try {
-            while (!subtrees.isEmpty()) {
-                final List<TeacherSubtree> toSync = new ArrayList<>();
-                int count = 0;
-                while (!subtrees.isEmpty() && (count < reconnectConfig.maxParallelSubtrees())) {
-                    toSync.add(subtrees.remove());
-                    count++;
-                }
-                sendTreesInParallel(toSync);
-            }
-        } finally {
-            // If we crash, make sure to clean up any remaining subtrees.
-            for (final TeacherSubtree subtree : subtrees) {
-                subtree.close();
-            }
-        }
-    }
-
-    private void sendTreesInParallel(final List<TeacherSubtree> toSend) throws InterruptedException {
         final AtomicReference<Throwable> firstReconnectException = new AtomicReference<>();
         final Function<Throwable, Boolean> reconnectExceptionListener = ex -> {
             Throwable cause = ex;
@@ -178,49 +175,102 @@ public class TeachingSynchronizer {
         final StandardWorkGroup workGroup =
                 new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection, reconnectExceptionListener);
 
-        final AsyncInputStream in = new AsyncInputStream(inputStream, workGroup, reconnectConfig);
+        final AsyncInputStream in = new AsyncInputStream(inputStream, workGroup, this::createMessage, reconnectConfig);
+        in.start();
         final AsyncOutputStream out = buildOutputStream(workGroup, outputStream);
-        // Async output can be started right away. Its internal queues for every view are initialized
-        // in sendAsync(). Async input is different, views are explicitly registered in it using
-        // registerView() method. This is why it is started below, after all tasks are created
         out.start();
 
-        final AtomicInteger running = new AtomicInteger(toSend.size());
-        for (final TeacherSubtree subtree : toSend) {
-            final MerkleNode root = subtree.getRoot();
-            final String route = root == null ? "[]" : root.getRoute().toString();
-            final TeacherTreeView<?> view = subtree.getView();
-            view.waitUntilReady();
-            logger.info(RECONNECT.getMarker(), "Sending tree rooted with route {}", route);
-            final int viewId = viewIdGen.getAndIncrement();
-            view.startTeacherTasks(this, viewId, time, workGroup, in, out, subtrees, success -> {
-                if (success) {
-                    logger.info(RECONNECT.getMarker(), "Finished sending tree with route {}", route);
-                } else {
-                    logger.error(RECONNECT.getMarker(), "Failed to send tree with route {}", route);
-                }
-                if (running.decrementAndGet() == 0) {
-                    in.close();
-                    out.close();
-                }
-            });
+        final boolean rootScheduled = synchronizeNextSubtree(workGroup, in, out);
+        assert rootScheduled;
+
+        InterruptedException interruptException = null;
+        try {
+            workGroup.waitForTermination();
+        } catch (final InterruptedException e) { // NOSONAR: Exception is rethrown below after cleanup.
+            interruptException = e;
+            logger.warn(RECONNECT.getMarker(), "interrupted while waiting for work group termination");
+        } finally {
+            // If we crash, make sure to clean up any remaining subtrees.
+            for (final TeacherSubtree subtree : subtrees) {
+                subtree.close();
+            }
         }
 
-        // All views have registered themselves in async input. It can now accept messages from the
-        // underlying input stream and put them to the right view's queues. It's time to start it
-        in.start();
-
-        workGroup.waitForTermination();
-
-        // Tree views can only be closed after async streams are finished. If a view is closed first,
-        // requests to serialize/deserialize a node issued on the async threads may fail
-        toSend.forEach(TeacherSubtree::close);
-
-        if (workGroup.hasExceptions()) {
+        if ((interruptException != null) || workGroup.hasExceptions()) {
             in.abort();
+            if (interruptException != null) {
+                throw interruptException;
+            }
             throw new MerkleSynchronizationException(
                     "Synchronization failed with exceptions", firstReconnectException.get());
         }
+    }
+
+    private SelfSerializable createMessage(final int viewId) {
+        final TeacherTreeView<?> view = views.get(viewId);
+        if (view == null) {
+            throw new MerkleSynchronizationException("Can't create message, unknown view: " + viewId);
+        }
+        return view.createMessage();
+    }
+
+    private void newSubtreeEncountered(final CustomReconnectRoot<?, ?> root) {
+        final int viewId = viewIdGen.getAndIncrement();
+        final TeacherTreeView<?> view = root.buildTeacherView(reconnectConfig);
+        views.put(viewId, view);
+        subtrees.add(new TeacherSubtree(root, viewId, view));
+    }
+
+    private synchronized boolean synchronizeNextSubtree(
+            final StandardWorkGroup workGroup, final AsyncInputStream in, final AsyncOutputStream out) {
+        if (viewsInProgress.incrementAndGet() > reconnectConfig.maxParallelSubtrees()) {
+            // Max number of views is already being synchronized
+            viewsInProgress.decrementAndGet();
+            return false;
+        }
+
+        final TeacherSubtree subtree = subtrees.poll(); // NOSONAR: the subtree is closed later
+        if (subtree == null) {
+            // Nothing to sync yet
+            viewsInProgress.decrementAndGet();
+            return false;
+        }
+
+        final MerkleNode root = subtree.getRoot();
+        final String route = root == null ? "[]" : root.getRoute().toString();
+        final TeacherTreeView<?> view = subtree.getView();
+        try {
+            view.waitUntilReady();
+        } catch (final InterruptedException e) {
+            logger.error("Interrupted while waiting for a view to become ready, {}", view);
+            throw new MerkleSynchronizationException("Interrupted while waiting for a view to become ready");
+        }
+        logger.info(RECONNECT.getMarker(), "Sending tree rooted with route {}", route);
+        final int viewId = subtree.getViewId();
+        view.startTeacherTasks(this, viewId, time, workGroup, in, out, this::newSubtreeEncountered, success -> {
+            if (success) {
+                logger.info(RECONNECT.getMarker(), "Finished sending tree with route {}", route);
+            } else {
+                logger.error(RECONNECT.getMarker(), "Failed to send tree with route {}", route);
+            }
+
+            // By this time, all view's messages should have been fully processed, including those in
+            // the async output stream queue, so the subtree can be closed
+            subtree.close();
+
+            viewsInProgress.decrementAndGet();
+            boolean nextViewScheduled = synchronizeNextSubtree(workGroup, in, out);
+            while (nextViewScheduled) {
+                nextViewScheduled = synchronizeNextSubtree(workGroup, in, out);
+            }
+
+            // Check if this was the last subtree to sync
+            if (viewsInProgress.get() == 0) {
+                in.close();
+                out.close();
+            }
+        });
+        return true;
     }
 
     /**

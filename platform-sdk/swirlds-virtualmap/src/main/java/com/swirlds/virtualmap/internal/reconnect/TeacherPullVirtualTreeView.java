@@ -21,12 +21,13 @@ import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
-import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
+import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -39,7 +40,6 @@ import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualPipeline;
 import java.io.IOException;
-import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
@@ -118,16 +118,16 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
             final StandardWorkGroup workGroup,
             final AsyncInputStream in,
             final AsyncOutputStream out,
-            final Queue<TeacherSubtree> subtrees,
+            final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
             final Consumer<Boolean> completeListener) {
-        in.registerView(viewId, PullVirtualTreeRequest::new);
         final TeacherPullVirtualTreeReceiveTask teacherReceiveTask = new TeacherPullVirtualTreeReceiveTask(
                 viewId, time, reconnectConfig, workGroup, in, out, this, completeListener);
         teacherReceiveTask.exec();
     }
 
-    public VirtualStateAccessor getReconnectState() {
-        return reconnectState;
+    @Override
+    public SelfSerializable createMessage() {
+        return new PullVirtualTreeRequest();
     }
 
     public boolean isLeaf(final long path) {

@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -85,7 +85,7 @@ public class AsyncInputStream implements AutoCloseable {
 
     private final AtomicBoolean alive = new AtomicBoolean(true);
 
-    private final Map<Integer, Supplier<SelfSerializable>> messageFactories;
+    private final Function<Integer, SelfSerializable> messagesFactory;
 
     private final StandardWorkGroup workGroup;
 
@@ -99,18 +99,19 @@ public class AsyncInputStream implements AutoCloseable {
     public AsyncInputStream(
             @NonNull final SerializableDataInputStream inputStream,
             @NonNull final StandardWorkGroup workGroup,
+            @NonNull final Function<Integer, SelfSerializable> messagesFactory,
             @NonNull final ReconnectConfig config) {
         Objects.requireNonNull(config, "config must not be null");
 
         this.reconnectConfig = config;
         this.inputStream = Objects.requireNonNull(inputStream, "inputStream must not be null");
         this.workGroup = Objects.requireNonNull(workGroup, "workGroup must not be null");
+        this.messagesFactory = Objects.requireNonNull(messagesFactory, "Messages factory must not be null");
         this.pollTimeout = config.asyncStreamTimeout();
         this.anticipatedMessages = new AtomicInteger(0);
         this.finishedLatch = new CountDownLatch(1);
 
         this.viewMessages = new ConcurrentHashMap<>();
-        this.messageFactories = new ConcurrentHashMap<>();
     }
 
     /**
@@ -118,13 +119,6 @@ public class AsyncInputStream implements AutoCloseable {
      */
     public void start() {
         workGroup.execute(THREAD_NAME, this::run);
-    }
-
-    public void registerView(final int viewId, final Supplier<SelfSerializable> messageFactory) {
-        assert !messageFactories.containsKey(viewId);
-        messageFactories.put(viewId, messageFactory);
-        assert !viewMessages.containsKey(viewId);
-        viewMessages.put(viewId, new ArrayBlockingQueue<>(reconnectConfig.asyncStreamBufferSize()));
     }
 
     /**
@@ -137,24 +131,21 @@ public class AsyncInputStream implements AutoCloseable {
             while (alive.get() && !Thread.currentThread().isInterrupted()) {
                 final int previous =
                         anticipatedMessages.getAndUpdate((final int value) -> value == 0 ? 0 : (value - 1));
-
                 if (previous == 0) {
                     Thread.onSpinWait();
                     continue;
                 }
 
                 final int viewId = inputStream.readInt();
-                final Supplier<SelfSerializable> messageFactory = messageFactories.get(viewId);
-                if (messageFactory == null) {
-                    throw new MerkleSynchronizationException("Unknown view ID: " + viewId);
+                message = messagesFactory.apply(viewId);
+                if (message == null) {
+                    throw new MerkleSynchronizationException(
+                            "Cannot deserialize a message, unknown view ID: " + viewId);
                 }
-                message = messageFactory.get();
                 message.deserialize(inputStream, message.getVersion());
 
-                final BlockingQueue<SelfSerializable> viewQueue = viewMessages.get(viewId);
-                if (viewQueue == null) {
-                    throw new MerkleSynchronizationException("Unknown view ID: " + viewId);
-                }
+                final BlockingQueue<SelfSerializable> viewQueue = viewMessages.computeIfAbsent(
+                        viewId, id -> new ArrayBlockingQueue<>(reconnectConfig.asyncStreamBufferSize()));
                 final boolean accepted = viewQueue.offer(message, pollTimeout.toMillis(), MILLISECONDS);
                 if (!accepted) {
                     throw new MerkleSynchronizationException(
@@ -162,11 +153,12 @@ public class AsyncInputStream implements AutoCloseable {
                 }
             }
         } catch (final IOException e) {
-            throw new MerkleSynchronizationException(
-                    String.format(
+            final String exceptionMessage = message == null
+                    ? "Failed to deserialize a message"
+                    : String.format(
                             "Failed to deserialize object with class ID %d(0x%08X) (%s)",
-                            message.getClassId(), message.getClassId(), message.getClass()),
-                    e);
+                            message.getClassId(), message.getClassId(), message.getClass());
+            throw new MerkleSynchronizationException(exceptionMessage, e);
         } catch (final InterruptedException e) {
             logger.warn(RECONNECT.getMarker(), "AsyncInputStream interrupted");
             Thread.currentThread().interrupt();
@@ -188,10 +180,8 @@ public class AsyncInputStream implements AutoCloseable {
      */
     @SuppressWarnings("unchecked")
     public <T extends SelfSerializable> T readAnticipatedMessage(final int viewId) throws InterruptedException {
-        final BlockingQueue<SelfSerializable> viewQueue = viewMessages.get(viewId);
-        if (viewQueue == null) {
-            throw new MerkleSynchronizationException("Unknown view ID: " + viewId);
-        }
+        final BlockingQueue<SelfSerializable> viewQueue = viewMessages.computeIfAbsent(
+                viewId, id -> new ArrayBlockingQueue<>(reconnectConfig.asyncStreamBufferSize()));
         final SelfSerializable data = viewQueue.poll(pollTimeout.toMillis(), MILLISECONDS);
         if (data == null) {
             try {

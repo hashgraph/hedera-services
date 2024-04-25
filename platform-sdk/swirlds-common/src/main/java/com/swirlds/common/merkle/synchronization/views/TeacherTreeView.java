@@ -17,15 +17,14 @@
 package com.swirlds.common.merkle.synchronization.views;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
-import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
-import java.util.Queue;
 import java.util.function.Consumer;
 
 /**
@@ -48,7 +47,7 @@ public interface TeacherTreeView<T>
      * @param workGroup the work group to run teaching task(s) in
      * @param in the input stream to read data from learner
      * @param out the output stream to write data to learner
-     * @param subtrees if custom tree views are encountered, they must be added to this queue
+     * @param subtreeListener a listener to notify when custom tree views are encountered
      */
     void startTeacherTasks(
             final TeachingSynchronizer teachingSynchronizer,
@@ -57,7 +56,7 @@ public interface TeacherTreeView<T>
             final StandardWorkGroup workGroup,
             final AsyncInputStream in,
             final AsyncOutputStream out,
-            final Queue<TeacherSubtree> subtrees,
+            final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
             final Consumer<Boolean> completeListener);
 
     /**
@@ -131,4 +130,12 @@ public interface TeacherTreeView<T>
         // By default, a view is considered "ready" after constructed.
         // If that is not the case for a view implementation, override this method.
     }
+
+    /**
+     * Create a new message object, which will then be used by {@link AsyncInputStream} to read
+     * data from the learner from the socket input stream.
+     *
+     * @return a new message object used by this teacher view to receive data from the learner
+     */
+    SelfSerializable createMessage();
 }

@@ -177,6 +177,7 @@ public class StandardWorkGroup {
             }
             if (!exceptionHandled) {
                 logger.error(EXCEPTION.getMarker(), "Work Group Exception [ groupName = {} ]", groupName, ex);
+                ex.printStackTrace(System.err);
             }
 
             hasExceptions = true;

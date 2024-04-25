@@ -23,6 +23,7 @@ import static com.swirlds.virtualmap.internal.Path.isLeft;
 
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
@@ -32,6 +33,7 @@ import com.swirlds.common.merkle.synchronization.task.ExpectedLesson;
 import com.swirlds.common.merkle.synchronization.task.LearnerPushTask;
 import com.swirlds.common.merkle.synchronization.task.Lesson;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
+import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.virtualmap.VirtualKey;
@@ -42,7 +44,6 @@ import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import java.io.IOException;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -139,21 +140,25 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
             final int viewId,
             final AsyncInputStream in,
             final AsyncOutputStream out,
-            final Queue<MerkleNode> rootsToReceive,
+            final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
             final AtomicReference<MerkleNode> reconstructedRoot,
             final Consumer<Boolean> completeListener) {
-        in.registerView(viewId, () -> new Lesson<>(this));
         final LearnerPushTask<Long> learnerThread = new LearnerPushTask<>(
                 workGroup,
                 viewId,
                 in,
                 out,
-                rootsToReceive,
+                subtreeListener,
                 reconstructedRoot,
                 this,
                 learningSynchronizer,
                 completeListener);
         learnerThread.start();
+    }
+
+    @Override
+    public SelfSerializable createMessage() {
+        return new Lesson<>(this);
     }
 
     /**

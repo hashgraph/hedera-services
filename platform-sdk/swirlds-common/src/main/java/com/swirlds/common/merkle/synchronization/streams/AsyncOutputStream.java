@@ -158,12 +158,23 @@ public class AsyncOutputStream implements AutoCloseable {
      * Send a message asynchronously. Messages are guaranteed to be delivered in the order sent.
      */
     public void sendAsync(final int viewId, final SelfSerializable message) throws InterruptedException {
+        sendAsync(new QueueItem(viewId, message));
+    }
+
+    /**
+     * Schedule to run a given runnable, when all messages currently scheduled in this async
+     * stream are serialized into the underlying output stream.
+     */
+    public void whenCurrentMessagesProcessed(final Runnable run) throws InterruptedException {
+        sendAsync(new QueueItem(run));
+    }
+
+    private void sendAsync(final QueueItem item) throws InterruptedException {
         if (!isAlive()) {
             throw new MerkleSynchronizationException("Messages can not be sent after close has been called.");
         }
 
-        final boolean success =
-                streamQueue.offer(new QueueItem(viewId, message), timeout.toMillis(), TimeUnit.MILLISECONDS);
+        final boolean success = streamQueue.offer(item, timeout.toMillis(), TimeUnit.MILLISECONDS);
         if (!success) {
             try {
                 outputStream.close();
@@ -194,15 +205,20 @@ public class AsyncOutputStream implements AutoCloseable {
             final List<QueueItem> localQueue = new ArrayList<>(size);
             streamQueue.drainTo(localQueue, size);
             for (final QueueItem item : localQueue) {
-                final int viewId = item.viewId();
-                final SelfSerializable message = item.message();
-                try {
-                    outputStream.writeInt(viewId);
-                    serializeMessage(message);
-                } catch (final IOException e) {
-                    throw new MerkleSynchronizationException(e);
+                if (item.toNotify() != null) {
+                    assert item.message() == null;
+                    item.toNotify().run();
+                } else {
+                    final int viewId = item.viewId();
+                    final SelfSerializable message = item.message();
+                    try {
+                        outputStream.writeInt(viewId);
+                        serializeMessage(message);
+                    } catch (final IOException e) {
+                        throw new MerkleSynchronizationException(e);
+                    }
+                    bufferedMessageCount += 1;
                 }
-                bufferedMessageCount += 1;
             }
             return true;
         }
@@ -237,5 +253,13 @@ public class AsyncOutputStream implements AutoCloseable {
         }
     }
 
-    private final record QueueItem(int viewId, SelfSerializable message) {}
+    private final record QueueItem(int viewId, SelfSerializable message, Runnable toNotify) {
+        public QueueItem(int viewId, SelfSerializable message) {
+            this(viewId, message, null);
+        }
+
+        public QueueItem(Runnable toNotify) {
+            this(-1, null, toNotify);
+        }
+    }
 }

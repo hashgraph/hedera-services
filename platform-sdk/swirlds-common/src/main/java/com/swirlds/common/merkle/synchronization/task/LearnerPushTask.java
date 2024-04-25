@@ -31,7 +31,6 @@ import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.common.utility.ThresholdLimitingHandler;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
@@ -57,7 +56,7 @@ public class LearnerPushTask<T> {
     private final LearnerTreeView<T> view;
     private final ReconnectNodeCount nodeCount;
 
-    private final Queue<MerkleNode> rootsToReceive;
+    private final Consumer<CustomReconnectRoot<?, ?>> subtreeListener;
 
     private final ThresholdLimitingHandler<Throwable> exceptionRateLimiter = new ThresholdLimitingHandler<>(1);
 
@@ -72,8 +71,8 @@ public class LearnerPushTask<T> {
      * 		the input stream, this object is responsible for closing the stream when finished
      * @param out
      * 		the output stream, this object is responsible for closing the stream when finished
-     * @param rootsToReceive
-     * 		a queue of subtree roots to synchronize
+     * @param subtreeListener
+     * 		a listener to notify if custom tree views are encountered
      * @param root
      * 		a reference which will eventually hold the root of this subtree
      * @param view
@@ -86,7 +85,7 @@ public class LearnerPushTask<T> {
             final int viewId,
             final AsyncInputStream in,
             final AsyncOutputStream out,
-            final Queue<MerkleNode> rootsToReceive,
+            final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
             final AtomicReference<MerkleNode> root,
             final LearnerTreeView<T> view,
             final ReconnectNodeCount nodeCount,
@@ -95,7 +94,7 @@ public class LearnerPushTask<T> {
         this.viewId = viewId;
         this.in = in;
         this.out = out;
-        this.rootsToReceive = rootsToReceive;
+        this.subtreeListener = subtreeListener;
         this.root = root;
         this.view = view;
         this.nodeCount = nodeCount;
@@ -132,7 +131,7 @@ public class LearnerPushTask<T> {
             customRoot.setupWithNoData();
         }
 
-        rootsToReceive.add(customRoot);
+        subtreeListener.accept(customRoot);
         return view.convertMerkleRootToViewType(customRoot);
     }
 
