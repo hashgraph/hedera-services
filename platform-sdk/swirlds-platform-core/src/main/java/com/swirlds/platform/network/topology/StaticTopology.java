@@ -81,7 +81,7 @@ public class StaticTopology implements NetworkTopology {
      */
     @Override
     public boolean shouldConnectToMe(final NodeId nodeId) {
-        final int nodeIndex = getNodeIndex(nodeId);
+        final int nodeIndex = getIndexOfNodeId(nodeId);
         return isNeighbor(nodeId) && nodeIndex < selfIndex;
     }
 
@@ -95,7 +95,7 @@ public class StaticTopology implements NetworkTopology {
         if (!peerNodes.contains(nodeId)) {
             return false;
         }
-        final int nodeIndex = getNodeIndex(nodeId);
+        final int nodeIndex = getIndexOfNodeId(nodeId);
         return connectionGraph.isAdjacent(selfIndex, nodeIndex);
     }
 
@@ -104,7 +104,7 @@ public class StaticTopology implements NetworkTopology {
      */
     @Override
     public boolean shouldConnectTo(final NodeId nodeId) {
-        final int nodeIndex = getNodeIndex(nodeId);
+        final int nodeIndex = getIndexOfNodeId(nodeId);
         return isNeighbor(nodeId) && nodeIndex > selfIndex;
     }
 
@@ -122,7 +122,8 @@ public class StaticTopology implements NetworkTopology {
      * @param nodeId the node ID
      * @return the index of the node in the peer list
      */
-    private int getNodeIndex(@NonNull final NodeId nodeId) {
-        return selfIndex == peerNodes.indexOf(nodeId) ? peerNodes.indexOf(nodeId) + 1 : peerNodes.indexOf(nodeId);
+    private int getIndexOfNodeId(@NonNull final NodeId nodeId) {
+        final int index = peerNodes.indexOf(nodeId);
+        return selfIndex == index ? index + 1 : index;
     }
 }
