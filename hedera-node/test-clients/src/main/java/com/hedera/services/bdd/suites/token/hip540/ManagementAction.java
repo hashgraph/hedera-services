@@ -16,6 +16,9 @@
 
 package com.hedera.services.bdd.suites.token.hip540;
 
+/**
+ * Enumerates the possible non-admin key management actions in a HIP-540 test scenario.
+ */
 public enum ManagementAction {
     ADD,
     REMOVE,

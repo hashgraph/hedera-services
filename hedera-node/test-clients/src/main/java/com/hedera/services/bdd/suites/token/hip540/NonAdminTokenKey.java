@@ -33,6 +33,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_W
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
+/**
+ * Enumerates the possible non-admin token keys in a HIP-540 test scenario.
+ */
 public enum NonAdminTokenKey {
     WIPE_KEY {
         @Override

@@ -39,13 +39,17 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class TestScenarios {
-    public static final List<Hip540TestScenario> SCENARIOS = new ArrayList<>();
+public class Hip540TestScenarios {
+    private Hip540TestScenarios() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
+
+    public static final List<Hip540TestScenario> ALL_HIP_540_SCENARIOS = new ArrayList<>();
 
     static {
         Arrays.stream(NonAdminTokenKey.values())
-                .flatMap(TestScenarios::allScenariosFor)
-                .forEach(SCENARIOS::add);
+                .flatMap(Hip540TestScenarios::allScenariosFor)
+                .forEach(ALL_HIP_540_SCENARIOS::add);
     }
 
     private static Stream<Hip540TestScenario> allScenariosFor(@NonNull final NonAdminTokenKey targetKey) {

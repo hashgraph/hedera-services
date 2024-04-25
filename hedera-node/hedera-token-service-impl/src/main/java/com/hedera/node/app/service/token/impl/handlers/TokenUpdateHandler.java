@@ -69,8 +69,6 @@ import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -80,7 +78,6 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenUpdateHandler extends BaseTokenHandler implements TransactionHandler {
     private final TokenUpdateValidator tokenUpdateValidator;
-    private static final Set<TokenKey> TOKEN_KEYS = EnumSet.allOf(TokenKey.class);
 
     @Inject
     public TokenUpdateHandler(@NonNull final TokenUpdateValidator tokenUpdateValidator) {
@@ -92,6 +89,11 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         requireNonNull(txn);
         final var op = txn.tokenUpdateOrThrow();
         validateTruePreCheck(op.hasToken(), INVALID_TOKEN_ID);
+        // IMPORTANT: No matter the TokenKeyValidation mode, we always require keys to
+        // be structurally valid. Putting structurally invalid keys into ledger state
+        // makes no sense, and could create problems for mirror nodes and block explorers.
+        // That is, using NO_VALIDATION only lets a user set a new key without its signature;
+        // and thus use a low-entropy key that proves a role function has been "disabled"
         for (final var tokenKey : TOKEN_KEYS) {
             if (tokenKey.isPresentInUpdate(op)) {
                 final var key = tokenKey.getFromUpdate(op);
@@ -400,7 +402,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         if (containsKeyRemoval(op)) {
             requireAdmin(context, originalToken);
         }
-        if (updatesTokenProperty(op)) {
+        if (updatesAdminOnlyNonKeyTokenProperty(op)) {
             requireAdmin(context, originalToken);
         }
         for (final var tokenKey : NON_ADMIN_TOKEN_KEYS) {

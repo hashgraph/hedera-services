@@ -48,7 +48,7 @@ public class Hip540Suite extends HapiSuite {
         return defaultHapiSpec("allScenariosAsExpected")
                 .given()
                 .when()
-                .then(TestScenarios.SCENARIOS.stream()
+                .then(Hip540TestScenarios.ALL_HIP_540_SCENARIOS.stream()
                         .map(Hip540TestScenario::asOperation)
                         .toArray(HapiSpecOperation[]::new));
     }

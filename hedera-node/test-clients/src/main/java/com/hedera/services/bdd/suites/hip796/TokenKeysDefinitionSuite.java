@@ -48,8 +48,8 @@ import org.apache.logging.log4j.Logger;
  * A suite for user stories Keys-1 through Keys-4 from HIP-796.
  */
 // @HapiTestSuite
-public class TokenKeyDefinitionSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(TokenKeyDefinitionSuite.class);
+public class TokenKeysDefinitionSuite extends HapiSuite {
+    private static final Logger log = LogManager.getLogger(TokenKeysDefinitionSuite.class);
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {

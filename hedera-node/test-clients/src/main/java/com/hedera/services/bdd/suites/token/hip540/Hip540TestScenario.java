@@ -43,6 +43,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Characterizes a test scenario for HIP-540.
+ *
+ * @param targetKey which key is being managed
+ * @param adminKeyState the state of the admin key
+ * @param targetKeyState the state of the target key
+ * @param action the management action to take
+ * @param keyValidation whether to apply key validation
+ * @param authorizingSignatures which signatures to use
+ * @param expectedResponse the expected outcome
+ */
 public record Hip540TestScenario(
         @NonNull NonAdminTokenKey targetKey,
         @NonNull KeyState adminKeyState,
