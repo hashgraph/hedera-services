@@ -25,6 +25,7 @@ import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
+import com.swirlds.platform.event.stale.StaleEventDetector;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
@@ -64,6 +65,7 @@ public class PlatformCoordinator {
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
     private final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring;
     private final StateHasherWiring stateHasherWiring;
+    private final ComponentWiring<StaleEventDetector, List<GossipEvent>> staleEventDetectorWiring;
 
     /**
      * Constructor
@@ -97,7 +99,8 @@ public class PlatformCoordinator {
             @NonNull final StateSignatureCollectorWiring stateSignatureCollectorWiring,
             @NonNull final ConsensusRoundHandlerWiring consensusRoundHandlerWiring,
             @NonNull final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring,
-            @NonNull final StateHasherWiring stateHasherWiring) {
+            @NonNull final StateHasherWiring stateHasherWiring,
+            @NonNull final ComponentWiring<StaleEventDetector, List<GossipEvent>> staleEventDetectorWiring) {
 
         this.hashingObjectCounter = Objects.requireNonNull(hashingObjectCounter);
         this.internalEventValidatorWiring = Objects.requireNonNull(internalEventValidatorWiring);
@@ -113,6 +116,7 @@ public class PlatformCoordinator {
         this.consensusRoundHandlerWiring = Objects.requireNonNull(consensusRoundHandlerWiring);
         this.roundDurabilityBufferWiring = Objects.requireNonNull(roundDurabilityBufferWiring);
         this.stateHasherWiring = Objects.requireNonNull(stateHasherWiring);
+        this.staleEventDetectorWiring = Objects.requireNonNull(staleEventDetectorWiring);
     }
 
     /**
@@ -159,6 +163,7 @@ public class PlatformCoordinator {
         consensusEngineWiring.flush();
         eventCreationManagerWiring.startSquelching();
         eventCreationManagerWiring.flush();
+        staleEventDetectorWiring.startSquelching();
 
         // Also squelch the consensus round handler. It isn't strictly necessary to do this to prevent dataflow through
         // the system, but it prevents the consensus round handler from wasting time handling rounds that don't need to
@@ -173,12 +178,14 @@ public class PlatformCoordinator {
         stateSignatureCollectorWiring.flush();
         roundDurabilityBufferWiring.flush();
         consensusRoundHandlerWiring.flushRunnable().run();
+        staleEventDetectorWiring.flush();
 
         // Phase 3: stop squelching
         // Once everything has been flushed out of the system, it's safe to stop squelching.
         consensusEngineWiring.stopSquelching();
         eventCreationManagerWiring.stopSquelching();
         consensusRoundHandlerWiring.stopSquelchingRunnable().run();
+        staleEventDetectorWiring.stopSquelching();
 
         // Phase 4: clear
         // Data is no longer moving through the system. Clear all the internal data structures in the wiring objects.
@@ -188,5 +195,6 @@ public class PlatformCoordinator {
         stateSignatureCollectorWiring.getClearInput().inject(NoInput.getInstance());
         eventCreationManagerWiring.getInputWire(EventCreationManager::clear).inject(NoInput.getInstance());
         roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::clear).inject(NoInput.getInstance());
+        staleEventDetectorWiring.getInputWire(StaleEventDetector::clear).inject(NoInput.getInstance());
     }
 }

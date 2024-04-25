@@ -53,6 +53,7 @@ import com.swirlds.platform.event.runninghash.DefaultRunningEventHasher;
 import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.DefaultSelfEventSigner;
 import com.swirlds.platform.event.signing.SelfEventSigner;
+import com.swirlds.platform.event.stale.StaleEventDetector;
 import com.swirlds.platform.event.stream.ConsensusEventStream;
 import com.swirlds.platform.event.stream.DefaultConsensusEventStream;
 import com.swirlds.platform.event.validation.DefaultEventSignatureValidator;
@@ -110,6 +111,7 @@ public class PlatformComponentBuilder {
     private RoundDurabilityBuffer roundDurabilityBuffer;
     private TransactionPrehandler transactionPrehandler;
     private PcesWriter pcesWriter;
+    private StaleEventDetector staleEventDetector;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -732,5 +734,37 @@ public class PlatformComponentBuilder {
             }
         }
         return pcesWriter;
+    }
+
+    /**
+     * Provide a stale event detector in place of the platform's default stale event detector.
+     *
+     * @param staleEventDetector the stale event detector to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withStaleEventDetector(@NonNull final StaleEventDetector staleEventDetector) {
+        throwIfAlreadyUsed();
+        if (this.staleEventDetector != null) {
+            throw new IllegalStateException("Stale event detector has already been set");
+        }
+        this.staleEventDetector = Objects.requireNonNull(staleEventDetector);
+        return this;
+    }
+
+    /**
+     * Build the stale event detector if it has not yet been built. If one has been provided via
+     * {@link #withStaleEventDetector(StaleEventDetector)}, that detector will be used. If this method is called more
+     * than once, only the first call will build the stale event detector. Otherwise, the default detector will be
+     * created and returned.
+     *
+     * @return the stale event detector
+     */
+    @NonNull
+    public StaleEventDetector buildStaleEventDetector() {
+        if (staleEventDetector == null) {
+            throw new IllegalStateException("Stale event detector must be provided");
+        }
+        return staleEventDetector;
     }
 }

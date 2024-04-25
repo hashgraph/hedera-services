@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event.linking;
 
+import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.common.context.PlatformContext;
@@ -23,7 +24,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.metrics.StaleMetrics;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -35,12 +35,17 @@ import java.time.Instant;
  */
 public class ConsensusLinker extends AbstractInOrderLinker {
 
+    // TODO encapsulate these
     private final LongAccumulator missingParentAccumulator;
     private final LongAccumulator generationMismatchAccumulator;
     private final LongAccumulator birthRoundMismatchAccumulator;
     private final LongAccumulator timeCreatedMismatchAccumulator;
 
-    private final StaleMetrics staleMetrics;
+    private static final LongAccumulator.Config STALE_EVENTS_CONFIG = new LongAccumulator.Config(
+                    INTERNAL_CATEGORY, "staleEvents")
+            .withAccumulator(Long::sum)
+            .withDescription("number of stale events");
+    private final LongAccumulator staleEventCount;
 
     /**
      * Constructor
@@ -74,7 +79,7 @@ public class ConsensusLinker extends AbstractInOrderLinker {
                                 .withDescription(
                                         "Parent child relationships where child time created wasn't strictly after parent time created"));
 
-        staleMetrics = new StaleMetrics(platformContext, selfId);
+        staleEventCount = platformContext.getMetrics().getOrCreate(STALE_EVENTS_CONFIG);
     }
 
     /**
@@ -83,7 +88,7 @@ public class ConsensusLinker extends AbstractInOrderLinker {
     @Override
     protected void eventHasBecomeAncient(@NonNull final EventImpl event) {
         if (!event.isConsensus()) {
-            staleMetrics.staleEvent(event);
+            staleEventCount.update(1);
         }
         event.clear();
     }

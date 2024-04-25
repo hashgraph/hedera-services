@@ -64,6 +64,7 @@ import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
 import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.SelfEventSigner;
+import com.swirlds.platform.event.stale.StaleEventDetector;
 import com.swirlds.platform.event.stream.ConsensusEventStream;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
@@ -169,6 +170,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final boolean publishPreconsensusEvents;
     private final boolean publishSnapshotOverrides;
     private final ComponentWiring<RunningEventHasher, Void> runningEventHasherWiring;
+    private final ComponentWiring<StaleEventDetector, List<GossipEvent>> staleEventDetectorWiring;
 
     /**
      * Constructor.
@@ -330,6 +332,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         runningEventHasherWiring = new ComponentWiring<>(model, RunningEventHasher.class, config.runningEventHasher());
 
+        staleEventDetectorWiring = new ComponentWiring<>(model, StaleEventDetector.class, config.staleEventDetector());
+
         platformCoordinator = new PlatformCoordinator(
                 hashingObjectCounter,
                 internalEventValidatorWiring,
@@ -344,7 +348,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 stateSignatureCollectorWiring,
                 consensusRoundHandlerWiring,
                 roundDurabilityBufferWiring,
-                signedStateHasherWiring);
+                signedStateHasherWiring,
+                staleEventDetectorWiring);
 
         wire();
     }
@@ -447,6 +452,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         selfEventSignerWiring
                 .getOutputWire()
                 .solderTo(internalEventValidatorWiring.getInputWire(InternalEventValidator::validateEvent), INJECT);
+        selfEventSignerWiring
+                .getOutputWire()
+                .solderTo(staleEventDetectorWiring.getInputWire(StaleEventDetector::addSelfEvent));
         splitOrphanBufferOutput.solderTo(applicationTransactionPrehandlerWiring.getInputWire(
                 TransactionPrehandler::prehandleApplicationTransactions));
         splitOrphanBufferOutput.solderTo(stateSignatureCollectorWiring.preConsensusEventInput());
@@ -474,6 +482,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .solderTo(pcesWriterWiring.getInputWire(PcesWriter::submitFlushRequest));
 
         final OutputWire<ConsensusRound> consensusRoundOutputWire = consensusEngineWiring.getSplitOutput();
+
+        consensusRoundOutputWire.solderTo(staleEventDetectorWiring.getInputWire(StaleEventDetector::addConsensusRound));
 
         // The request to flush the keystone event for a round must be sent to the PCES writer before the consensus
         // round is passed to the round handler. This prevents a deadlock scenario where the consensus round
@@ -582,6 +592,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         inOrderLinkerWiring.getInputWire(InOrderLinker::clear);
         roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::clear);
         pcesWriterWiring.getInputWire(PcesWriter::registerDiscontinuity);
+        staleEventDetectorWiring.getInputWire(StaleEventDetector::setInitialEventWindow);
+        staleEventDetectorWiring.getInputWire(StaleEventDetector::clear);
     }
 
     /**
@@ -698,6 +710,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         notifierWiring.bind(notifier);
         platformPublisherWiring.bind(platformPublisher);
         stateGarbageCollectorWiring.bind(builder::buildStateGarbageCollector);
+        staleEventDetectorWiring.bind(builder::buildStaleEventDetector);
     }
 
     /**
@@ -842,6 +855,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         // Future work: this method can merge with consensusSnapshotOverride
         eventWindowManagerWiring
                 .getInputWire(EventWindowManager::updateEventWindow)
+                .inject(eventWindow);
+
+        staleEventDetectorWiring
+                .getInputWire(StaleEventDetector::setInitialEventWindow)
                 .inject(eventWindow);
 
         // Since there is asynchronous access to the shadowgraph, it's important to ensure that
