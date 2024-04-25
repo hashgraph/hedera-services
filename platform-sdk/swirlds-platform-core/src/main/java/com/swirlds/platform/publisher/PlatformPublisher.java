@@ -49,6 +49,5 @@ public interface PlatformPublisher {
      *
      * @param event the event to publish
      */
-    @InputWireLabel("stale events")
     void publishStaleEvent(@NonNull final GossipEvent event);
 }

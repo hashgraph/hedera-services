@@ -30,7 +30,7 @@ pcli diagram \
     -s 'OrphanBufferSplitter:preconsensus signatures:🔰' \
     -s 'RunningEventHashOverride:hash override:💨' \
     -s 'TransactionResubmitterSplitter:submit transaction:♻️' \
-    -s 'StaleEventDetectorSplitter:stale events:⚰️' \
+    -s 'StaleEventDetectorSplitter:publishStaleEvent:⚰️' \
     -g 'Event Validation:InternalEventValidator,EventDeduplicator,EventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
     -g 'Orphan Buffer:OrphanBuffer,OrphanBufferSplitter' \
