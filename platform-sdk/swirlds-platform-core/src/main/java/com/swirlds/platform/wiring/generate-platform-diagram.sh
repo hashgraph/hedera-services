@@ -53,6 +53,7 @@ pcli diagram \
     -g 'Round Durability Buffer:RoundDurabilityBuffer,RoundDurabilityBufferSplitter' \
     -g 'Stale Event Detector:StaleEventDetector,StaleEventDetectorSplitter' \
     -g 'Transaction Resubmitter:TransactionResubmitter,TransactionResubmitterSplitter' \
+    -g 'Stale Events:Stale Event Detector,Transaction Resubmitter,⚰️,♻️' \
     -c 'Orphan Buffer' \
     -c 'Consensus Engine' \
     -c 'State Signature Collector' \
