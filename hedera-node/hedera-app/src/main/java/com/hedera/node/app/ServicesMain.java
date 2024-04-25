@@ -17,7 +17,6 @@
 package com.hedera.node.app;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuilder.buildPlatformContext;
@@ -37,6 +36,8 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
+import com.swirlds.logging.api.Logger;
+import com.swirlds.logging.api.Loggers;
 import com.swirlds.platform.CommandLineArgs;
 import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.legacy.ConfigurationException;
@@ -51,8 +52,7 @@ import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Set;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
 
 /**
  * Main entry point.
@@ -62,7 +62,7 @@ import org.apache.logging.log4j.Logger;
  * {@link Hedera} is used; otherwise, {@link MonoServicesMain} is used.
  */
 public class ServicesMain implements SwirldMain {
-    private static final Logger logger = LogManager.getLogger(ServicesMain.class);
+    private static final Logger logger = Loggers.getLogger(ServicesMain.class);
 
     /**
      * The {@link SwirldMain} to actually use, depending on whether workflows are enabled.
@@ -135,8 +135,8 @@ public class ServicesMain implements SwirldMain {
 
         // Only allow 1 node to be specified by the command line arguments.
         if (commandLineArgs.localNodesToStart().size() > 1) {
-            logger.error(
-                    EXCEPTION.getMarker(),
+            logger.withMarker("EXCEPTION").error(
+
                     "Multiple nodes were supplied via the command line. Only one node can be started per java process.");
             exitSystem(NODE_ADDRESS_MISMATCH);
         }
@@ -186,8 +186,7 @@ public class ServicesMain implements SwirldMain {
         requireNonNull(localNodesToStart);
         // If no node is specified on the command line and detection by AB IP address is ambiguous, exit.
         if (nodesToRun.size() > 1 && localNodesToStart.isEmpty()) {
-            logger.error(
-                    EXCEPTION.getMarker(),
+            logger.withMarker("EXCEPTION").error(
                     "Multiple nodes are configured to run. Only one node can be started per java process.");
             exitSystem(NODE_ADDRESS_MISMATCH);
             throw new ConfigurationException(
@@ -199,8 +198,7 @@ public class ServicesMain implements SwirldMain {
 
         // If a node is specified on the command line but does not have a matching local IP address in the AB, exit.
         if (nodesToRun.size() > 1 && !nodesToRun.contains(requestedNodeId)) {
-            logger.error(
-                    EXCEPTION.getMarker(),
+            logger.withMarker("EXCEPTION").error(
                     "The requested node id {} is not configured to run. Please check the address book.",
                     requestedNodeId);
             exitSystem(NODE_ADDRESS_MISMATCH);
@@ -226,7 +224,7 @@ public class ServicesMain implements SwirldMain {
                     LegacyConfigPropertiesLoader.loadConfigFile(FileUtils.getAbsolutePath(addressBookPath));
             return props.getAddressBook();
         } catch (final Exception e) {
-            logger.error(EXCEPTION.getMarker(), "Error loading address book", e);
+            logger.withMarker("EXCEPTION").error("Error loading address book", e);
             exitSystem(CONFIGURATION_ERROR);
             throw e;
         }
