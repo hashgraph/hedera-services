@@ -98,7 +98,7 @@ public class EndOfStakingPeriodUpdater {
         final WritableNetworkStakingRewardsStore stakingRewardsStore =
                 context.writableStore(WritableNetworkStakingRewardsStore.class);
 
-        final var nodeIds = stakingInfoStore.getAll();
+        final var nodeIds = context.knownNodeIds();
         final var totalStakedRewardStart = stakingRewardsStore.totalStakeRewardStart();
         final var rewardRate = perHbarRewardRateForEndingPeriod(
                 totalStakedRewardStart, accountStore, stakingRewardsStore, stakingConfig);

@@ -18,7 +18,7 @@ package com.swirlds.platform.test.fixtures.event;
 
 import static com.swirlds.platform.system.events.EventConstants.BIRTH_ROUND_UNDEFINED;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -393,11 +393,11 @@ public class TestingEventBuilder {
         }
 
         for (int i = appTransactionCount; i < appTransactionCount + systemTransactionCount; ++i) {
-            generatedTransactions[i] = new StateSignatureTransaction(
-                    random.nextLong(0, Long.MAX_VALUE),
-                    RandomUtils.randomSignatureBytes(random),
-                    RandomUtils.randomHashBytes(random),
-                    Bytes.EMPTY);
+            generatedTransactions[i] = new StateSignatureTransaction(StateSignaturePayload.newBuilder()
+                    .round(random.nextLong(0, Long.MAX_VALUE))
+                    .signature(RandomUtils.randomSignatureBytes(random))
+                    .hash(RandomUtils.randomHashBytes(random))
+                    .build());
         }
 
         return generatedTransactions;

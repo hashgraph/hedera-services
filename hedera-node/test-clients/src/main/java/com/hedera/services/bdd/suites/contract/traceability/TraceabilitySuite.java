@@ -71,7 +71,6 @@ import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSu
 import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.encodeFunctionCall;
 import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.encodeTuple;
 import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.formattedAssertionValue;
-import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.getInitcode;
 import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.hexedSolidityAddressToHeadlongAddress;
 import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.uint256ReturnWithValue;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.PARTY;
@@ -106,16 +105,11 @@ import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.spec.verification.traceability.ExpectedSidecar;
 import com.hedera.services.bdd.suites.SidecarAwareHapiSuite;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction;
-import com.hedera.services.stream.proto.ContractBytecode;
-import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -163,7 +157,6 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     private static final String AUTO_ACCOUNT_TXN = "autoAccount";
     private static final String CHAIN_ID_PROPERTY = "contracts.chainId";
     private static final String LAZY_CREATE_PROPERTY = "lazyCreation.enabled";
-    private static final String RUNTIME_CODE = "runtimeBytecode";
     public static final String SIDECARS_PROP = "contracts.sidecars";
 
     public static void main(final String... args) {
@@ -4216,8 +4209,9 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                     .setContractNum(parentId.getContractNum() + 1L)
                                     .build();
                             mirrorLiteralId.set("0.0." + childId.getContractNum());
-                            final var topLevelCallTxnRecord =
-                                    getTxnRecord(CREATE_2_TXN).andAllChildRecords();
+                            final var topLevelCallTxnRecord = getTxnRecord(CREATE_2_TXN)
+                                    .andAllChildRecords()
+                                    .logged();
                             final var hapiGetContractBytecode = getContractBytecode(mirrorLiteralId.get())
                                     .exposingBytecodeTo(bytecodeFromMirror::set);
                             allRunFor(
@@ -5050,7 +5044,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                 .via(creation),
                         getTxnRecord(creation)
                                 .andAllChildRecords()
-                                .exposingCreationsTo(l -> hollowCreationAddress.set(l.get(0))),
+                                .exposingCreationsTo(l -> hollowCreationAddress.set(l.getFirst())),
                         // save the id of the hollow account
                         sourcing(() -> getAccountInfo(hollowCreationAddress.get())
                                 .logged()
@@ -5162,117 +5156,5 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @Override
     protected Logger getResultsLogger() {
         return log;
-    }
-
-    private CustomSpecAssert expectContractBytecodeSidecarFor(
-            final String contractCreateTxn,
-            final String contractName,
-            final String binFileName,
-            final Object... constructorArgs) {
-        return withOpContext((spec, opLog) -> {
-            final var txnRecord = getTxnRecord(contractCreateTxn);
-            final var contractBytecode = getContractBytecode(contractName).saveResultTo(RUNTIME_CODE);
-            allRunFor(spec, txnRecord, contractBytecode);
-            final var consensusTimestamp = txnRecord.getResponseRecord().getConsensusTimestamp();
-            final var initCode = getInitcode(binFileName, constructorArgs);
-            addExpectedSidecar(new ExpectedSidecar(
-                    spec.getName(),
-                    TransactionSidecarRecord.newBuilder()
-                            .setConsensusTimestamp(consensusTimestamp)
-                            .setBytecode(ContractBytecode.newBuilder()
-                                    .setContractId(txnRecord
-                                            .getResponseRecord()
-                                            .getContractCreateResult()
-                                            .getContractID())
-                                    .setInitcode(initCode)
-                                    .setRuntimeBytecode(
-                                            ByteString.copyFrom(spec.registry().getBytes(RUNTIME_CODE)))
-                                    .build())
-                            .build()));
-        });
-    }
-
-    private CustomSpecAssert expectFailedContractBytecodeSidecarFor(
-            final String contractCreateTxn, final String binFileName, final Object... constructorArgs) {
-        return withOpContext((spec, opLog) -> {
-            final var txnRecord = getTxnRecord(contractCreateTxn);
-            allRunFor(spec, txnRecord);
-            final var consensusTimestamp = txnRecord.getResponseRecord().getConsensusTimestamp();
-            final var initCode = getInitcode(binFileName, constructorArgs);
-            addExpectedSidecar(new ExpectedSidecar(
-                    spec.getName(),
-                    TransactionSidecarRecord.newBuilder()
-                            .setConsensusTimestamp(consensusTimestamp)
-                            .setBytecode(ContractBytecode.newBuilder()
-                                    .setInitcode(initCode)
-                                    .build())
-                            .build()));
-        });
-    }
-
-    private CustomSpecAssert expectContractBytecodeWithMinimalFieldsSidecarFor(
-            final String contractCreateTxn, final String contractName) {
-        return withOpContext((spec, opLog) -> {
-            final var txnRecord = getTxnRecord(contractCreateTxn).andAllChildRecords();
-            final var contractBytecode = getContractBytecode(contractName).saveResultTo(RUNTIME_CODE);
-            allRunFor(spec, txnRecord, contractBytecode);
-            final var consensusTimestamp =
-                    txnRecord.getFirstNonStakingChildRecord().getConsensusTimestamp();
-            addExpectedSidecar(new ExpectedSidecar(
-                    spec.getName(),
-                    TransactionSidecarRecord.newBuilder()
-                            .setConsensusTimestamp(consensusTimestamp)
-                            .setBytecode(ContractBytecode.newBuilder()
-                                    .setContractId(txnRecord
-                                            .getResponseRecord()
-                                            .getContractCreateResult()
-                                            .getContractID())
-                                    .setRuntimeBytecode(
-                                            ByteString.copyFrom(spec.registry().getBytes(RUNTIME_CODE)))
-                                    .build())
-                            .build()));
-        });
-    }
-
-    private CustomSpecAssert expectContractBytecode(final String contractCreateTxn, final String contractName) {
-        return withOpContext((spec, opLog) -> {
-            final var txnRecord = getTxnRecord(contractCreateTxn);
-            final var contractBytecode = getContractBytecode(contractName).saveResultTo(RUNTIME_CODE);
-            allRunFor(spec, txnRecord, contractBytecode);
-            final var consensusTimestamp = txnRecord.getResponseRecord().getConsensusTimestamp();
-            addExpectedSidecar(new ExpectedSidecar(
-                    spec.getName(),
-                    TransactionSidecarRecord.newBuilder()
-                            .setConsensusTimestamp(consensusTimestamp)
-                            .setBytecode(ContractBytecode.newBuilder()
-                                    .setContractId(txnRecord
-                                            .getResponseRecord()
-                                            .getContractCreateResult()
-                                            .getContractID())
-                                    .setRuntimeBytecode(
-                                            ByteString.copyFrom(spec.registry().getBytes(RUNTIME_CODE)))
-                                    .build())
-                            .build()));
-        });
-    }
-
-    private void expectContractBytecode(
-            final String specName,
-            final Timestamp timestamp,
-            final ContractID contractID,
-            final ByteString initCode,
-            final ByteString runtimeCode) {
-        addExpectedSidecar(new ExpectedSidecar(
-                specName,
-                TransactionSidecarRecord.newBuilder()
-                        .setConsensusTimestamp(timestamp)
-                        .setBytecode(ContractBytecode.newBuilder()
-                                // recipient should be the original hollow account
-                                // id as a contract
-                                .setContractId(contractID)
-                                .setInitcode(initCode)
-                                .setRuntimeBytecode(runtimeCode)
-                                .build())
-                        .build()));
     }
 }

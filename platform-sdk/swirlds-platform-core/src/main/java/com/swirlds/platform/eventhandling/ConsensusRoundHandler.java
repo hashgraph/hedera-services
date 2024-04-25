@@ -25,17 +25,14 @@ import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.IDLE
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.SETTING_EVENT_CONSENSUS_DATA;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.UPDATING_PLATFORM_STATE;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.UPDATING_PLATFORM_STATE_RUNNING_HASH;
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.WAITING_FOR_EVENT_DURABILITY;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.WAITING_FOR_PREHANDLE;
 
-import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.RoundHandlingMetrics;
@@ -95,11 +92,6 @@ public class ConsensusRoundHandler {
     private final SoftwareVersion softwareVersion;
 
     /**
-     * A method that blocks until an event becomes durable.
-     */
-    private final CheckedConsumer<GossipEvent, InterruptedException> waitForEventDurability;
-
-    /**
      * The number of non-ancient rounds.
      */
     private final int roundsNonAncient;
@@ -112,24 +104,26 @@ public class ConsensusRoundHandler {
     private boolean writeLegacyRunningEventHash;
 
     /**
+     * If true then wait for application transactions to be prehandled before handling the consensus round.
+     */
+    private final boolean waitForPrehandle;
+
+    /**
      * Constructor
      *
-     * @param platformContext        contains various platform utilities
-     * @param swirldStateManager     the swirld state manager to send events to
-     * @param waitForEventDurability a method that blocks until an event becomes durable
-     * @param statusActionSubmitter  enables submitting of platform status actions
-     * @param softwareVersion        the current version of the software
+     * @param platformContext       contains various platform utilities
+     * @param swirldStateManager    the swirld state manager to send events to
+     * @param statusActionSubmitter enables submitting of platform status actions
+     * @param softwareVersion       the current version of the software
      */
     public ConsensusRoundHandler(
             @NonNull final PlatformContext platformContext,
             @NonNull final SwirldStateManager swirldStateManager,
-            @NonNull final CheckedConsumer<GossipEvent, InterruptedException> waitForEventDurability,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final SoftwareVersion softwareVersion) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.swirldStateManager = Objects.requireNonNull(swirldStateManager);
-        this.waitForEventDurability = Objects.requireNonNull(waitForEventDurability);
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
 
@@ -141,13 +135,14 @@ public class ConsensusRoundHandler {
 
         previousRoundLegacyRunningEventHash = platformContext.getCryptography().getNullHash();
 
+        final PlatformSchedulersConfig schedulersConfig =
+                platformContext.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
+
         // If the CES is using a no-op scheduler then the legacy running event hash won't be computed.
-        writeLegacyRunningEventHash = platformContext
-                        .getConfiguration()
-                        .getConfigData(PlatformSchedulersConfig.class)
-                        .consensusEventStream()
-                        .type()
-                != TaskSchedulerType.NO_OP;
+        writeLegacyRunningEventHash = schedulersConfig.consensusEventStream().type() != TaskSchedulerType.NO_OP;
+
+        // If the application transaction prehandler is a no-op then we don't need to wait for it.
+        waitForPrehandle = schedulersConfig.applicationTransactionPrehandler().type() != TaskSchedulerType.NO_OP;
     }
 
     /**
@@ -196,9 +191,6 @@ public class ConsensusRoundHandler {
         handlerMetrics.recordConsensusTime(consensusRound.getConsensusTimestamp());
 
         try {
-            handlerMetrics.setPhase(WAITING_FOR_EVENT_DURABILITY);
-            waitForEventDurability.accept(consensusRound.getKeystoneEvent().getBaseEvent());
-
             handlerMetrics.setPhase(SETTING_EVENT_CONSENSUS_DATA);
             for (final EventImpl event : consensusRound.getConsensusEvents()) {
                 event.consensusReached();
@@ -209,8 +201,11 @@ public class ConsensusRoundHandler {
             // state is passed into the application handle method, and should contain the data for the current round
             updatePlatformState(consensusRound);
 
-            handlerMetrics.setPhase(WAITING_FOR_PREHANDLE);
-            consensusRound.forEach(event -> ((EventImpl) event).getBaseEvent().awaitPrehandleCompletion());
+            if (waitForPrehandle) {
+                handlerMetrics.setPhase(WAITING_FOR_PREHANDLE);
+                consensusRound.forEach(
+                        event -> ((EventImpl) event).getBaseEvent().awaitPrehandleCompletion());
+            }
 
             handlerMetrics.setPhase(HANDLING_CONSENSUS_ROUND);
             swirldStateManager.handleConsensusRound(consensusRound);
