@@ -122,7 +122,8 @@ public class StateAccess {
                         hederaState.getChild(hederaState.findNodeIndex(TokenService.NAME, ACCOUNTS_KEY));
                 dumpableAccounts.addAll(Arrays.asList(gatherAccounts(accountsMap)));
             } catch (IOException e) {
-                log.info("Error reading state file");
+                log.error("Error reading state file");
+                throw new IllegalArgumentException("Error reading state file ");
             }
         }
 
