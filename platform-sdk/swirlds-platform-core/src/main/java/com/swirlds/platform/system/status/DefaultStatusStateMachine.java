@@ -24,7 +24,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.logging.legacy.payload.PlatformStatusPayload;
-import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.platform.system.status.actions.EmergencyReconnectStartedAction;
@@ -43,7 +42,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
-import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -167,22 +165,6 @@ public class DefaultStatusStateMachine implements StatusStateMachine {
         currentStatusStartTime = time.now();
 
         return newStatus;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Nullable
-    @Override
-    public PlatformStatus issOccurred(@NonNull final IssNotification issNotification) {
-        if (Set.of(IssNotification.IssType.SELF_ISS, IssNotification.IssType.CATASTROPHIC_ISS)
-                .contains(issNotification.getIssType())) {
-
-            return submitStatusAction(new CatastrophicFailureAction());
-        }
-
-        // don't change status for other types of ISS
-        return null;
     }
 
     /**

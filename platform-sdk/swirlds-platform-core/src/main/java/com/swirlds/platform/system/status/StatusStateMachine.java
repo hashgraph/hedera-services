@@ -17,7 +17,6 @@
 package com.swirlds.platform.system.status;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.status.actions.PlatformStatusAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -36,19 +35,6 @@ public interface StatusStateMachine {
     @Nullable
     @InputWireLabel("PlatformStatusAction")
     PlatformStatus submitStatusAction(@NonNull final PlatformStatusAction action);
-
-    /**
-     * Process an ISS notification
-     * <p>
-     * This method will conditionally call {@link #submitStatusAction(PlatformStatusAction)}, depending on the
-     * type of ISS.
-     *
-     * @param issNotification the ISS notification
-     * @return the new status after processing the ISS, or null if the status did not change
-     */
-    @Nullable
-    @InputWireLabel("IssNotification")
-    PlatformStatus issOccurred(@NonNull final IssNotification issNotification);
 
     /**
      * Inform the state machine that time has elapsed

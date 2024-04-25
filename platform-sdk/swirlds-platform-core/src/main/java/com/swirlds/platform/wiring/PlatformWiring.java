@@ -567,8 +567,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         issDetectorWiring.issNotificationOutput().solderTo(issHandlerWiring.issNotificationInput());
         issDetectorWiring
-                .issNotificationOutput()
-                .solderTo(statusStateMachineWiring.getInputWire(StatusStateMachine::issOccurred));
+                .statusActionOutput()
+                .solderTo(statusStateMachineWiring.getInputWire(StatusStateMachine::submitStatusAction));
 
         stateSignatureCollectorWiring
                 .getCompleteStatesOutput()
