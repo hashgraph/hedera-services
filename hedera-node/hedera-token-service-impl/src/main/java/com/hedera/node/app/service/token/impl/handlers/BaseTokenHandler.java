@@ -53,13 +53,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class BaseTokenHandler {
     private static final Logger log = LogManager.getLogger(BaseTokenHandler.class);
-    private static final Set<TokenKeys> TOKEN_KEYS = EnumSet.allOf(TokenKeys.class);
+    private static final Set<TokenKeys> NON_ADMIN_TOKEN_KEYS = EnumSet.complementOf(EnumSet.of(TokenKeys.ADMIN_KEY));
     /**
      * Mints fungible tokens. This method is called in both token create and mint.
      * @param token the new or existing token to mint
@@ -447,11 +446,8 @@ public class BaseTokenHandler {
      * Check if a given token already has some of the low priority keys
      */
     public static boolean hasAlreadySomeNonAdminKeys(@NonNull final Token token) {
-        // here we want to remove the admin key case because we need only low priority keys
-        final var nonAdminKeys =
-                TOKEN_KEYS.stream().filter(key -> key != TokenKeys.ADMIN_KEY).collect(Collectors.toSet());
-        for (final var tokenKey : nonAdminKeys) {
-            if (tokenKey.isPresentInitially(token)) {
+        for (final var nonAdminKey : NON_ADMIN_TOKEN_KEYS) {
+            if (nonAdminKey.isPresentInitially(token)) {
                 return true;
             }
         }

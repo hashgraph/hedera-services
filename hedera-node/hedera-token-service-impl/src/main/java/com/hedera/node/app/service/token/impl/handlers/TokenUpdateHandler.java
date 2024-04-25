@@ -70,7 +70,6 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -81,6 +80,7 @@ import javax.inject.Singleton;
 public class TokenUpdateHandler extends BaseTokenHandler implements TransactionHandler {
     private final TokenUpdateValidator tokenUpdateValidator;
     private static final Set<TokenKeys> TOKEN_KEYS = EnumSet.allOf(TokenKeys.class);
+    private static final Set<TokenKeys> NON_ADMIN_TOKEN_KEYS = EnumSet.complementOf(EnumSet.of(TokenKeys.ADMIN_KEY));
 
     @Inject
     public TokenUpdateHandler(@NonNull final TokenUpdateValidator tokenUpdateValidator) {
@@ -444,13 +444,10 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     private List<Key> getAllRequiredLowPrioritySigners(
             @NonNull final Token originalToken, @NonNull final TokenUpdateTransactionBody op) {
         List<Key> lowPriorityKeys = new ArrayList<>();
-        // here we want to remove the admin key case because we need only low priority keys
-        final var nonAdminKeys =
-                TOKEN_KEYS.stream().filter(key -> key != TokenKeys.ADMIN_KEY).collect(Collectors.toSet());
 
-        for (final var tokenKey : nonAdminKeys) {
-            if (tokenKey.isPresentInUpdate(op)) {
-                final Key presentKey = tokenKey.getFromToken(originalToken);
+        for (final var nonAdminKey : NON_ADMIN_TOKEN_KEYS) {
+            if (nonAdminKey.isPresentInUpdate(op)) {
+                final Key presentKey = nonAdminKey.getFromToken(originalToken);
                 if (presentKey != null) {
                     lowPriorityKeys.add(presentKey);
                 }
