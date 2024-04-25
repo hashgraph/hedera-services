@@ -40,7 +40,7 @@ public interface StatusStateMachine {
     /**
      * Process an ISS notification
      * <p>
-     * This method will only conditionally call {@link #submitStatusAction(PlatformStatusAction)}, depending on the
+     * This method will conditionally call {@link #submitStatusAction(PlatformStatusAction)}, depending on the
      * type of ISS.
      *
      * @param issNotification the ISS notification

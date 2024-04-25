@@ -166,8 +166,6 @@ public class DefaultStatusStateMachine implements StatusStateMachine {
         final PlatformStatus newStatus = currentStatusLogic.getStatus();
         currentStatusStartTime = time.now();
 
-        // TODO: don't forget to re-add the notification engine consumer thing that was here
-
         return newStatus;
     }
 

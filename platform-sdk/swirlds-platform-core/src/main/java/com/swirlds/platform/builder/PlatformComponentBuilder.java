@@ -671,9 +671,8 @@ public class PlatformComponentBuilder {
     /**
      * Build the status state machine if it has not yet been built. If one has been provided via
      * {@link #withStatusStateMachine(StatusStateMachine)}, that state machine will be used. If this method is called
-     * more
-     * than once, only the first call will build the status state machine. Otherwise, the default state machine will be
-     * created and returned.
+     * more than once, only the first call will build the status state machine. Otherwise, the default state machine
+     * will be created and returned.
      *
      * @return the status state machine
      */

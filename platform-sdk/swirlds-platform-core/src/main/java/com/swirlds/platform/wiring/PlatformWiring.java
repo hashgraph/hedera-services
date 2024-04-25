@@ -172,7 +172,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final boolean publishSnapshotOverrides;
     private final ComponentWiring<RunningEventHasher, Void> runningEventHasherWiring;
     private final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring;
-    private final ComponentWiring<PlatformStatusNexus, PlatformStatusAction> platformStatusNexusWiring;
+    private final ComponentWiring<PlatformStatusNexus, PlatformStatusAction> statusNexusWiring;
 
     /**
      * Constructor.
@@ -333,8 +333,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 new ComponentWiring<>(model, StateGarbageCollector.class, config.stateGarbageCollector());
         runningEventHasherWiring = new ComponentWiring<>(model, RunningEventHasher.class, config.runningEventHasher());
         statusStateMachineWiring = new ComponentWiring<>(model, StatusStateMachine.class, config.statusStateMachine());
-        platformStatusNexusWiring =
-                new ComponentWiring<>(model, PlatformStatusNexus.class, config.platformStatusNexus());
+        statusNexusWiring = new ComponentWiring<>(model, PlatformStatusNexus.class, config.platformStatusNexus());
 
         platformCoordinator = new PlatformCoordinator(
                 hashingObjectCounter,
@@ -573,7 +572,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         statusStateMachineWiring
                 .getOutputWire()
-                .solderTo(platformStatusNexusWiring.getInputWire(PlatformStatusNexus::setCurrentStatus));
+                .solderTo(statusNexusWiring.getInputWire(PlatformStatusNexus::setCurrentStatus));
         statusStateMachineWiring
                 .getOutputWire()
                 .solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::updatePlatformStatus));
@@ -709,7 +708,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         platformPublisherWiring.bind(platformPublisher);
         stateGarbageCollectorWiring.bind(builder::buildStateGarbageCollector);
         statusStateMachineWiring.bind(builder::buildStatusStateMachine);
-        platformStatusNexusWiring.bind(platformStatusNexus);
+        statusNexusWiring.bind(platformStatusNexus);
     }
 
     /**
@@ -845,6 +844,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         return issDetectorWiring;
     }
 
+    /**
+     * Get the status action submitter.
+     *
+     * @return the status action submitter
+     */
     @NonNull
     public StatusActionSubmitter getStatusActionSubmitter() {
         return action -> statusStateMachineWiring
