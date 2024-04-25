@@ -86,14 +86,17 @@ import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateHasher;
+import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
-import com.swirlds.platform.system.state.notifications.IssNotification;
-import com.swirlds.platform.system.status.PlatformStatusManager;
-import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
+import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.platform.system.status.PlatformStatusConfig;
+import com.swirlds.platform.system.status.PlatformStatusNexus;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
+import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
@@ -113,7 +116,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.LongSupplier;
 import org.apache.logging.log4j.LogManager;
@@ -168,7 +170,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final ComponentWiring<BirthRoundMigrationShim, GossipEvent> birthRoundMigrationShimWiring;
     private final ComponentWiring<AppNotifier, Void> notifierWiring;
     private final ComponentWiring<StateGarbageCollector, Void> stateGarbageCollectorWiring;
-
+    private final ComponentWiring<SignedStateSentinel, Void> signedStateSentinelWiring;
     private final ComponentWiring<PlatformPublisher, Void> platformPublisherWiring;
     private final boolean publishPreconsensusEvents;
     private final boolean publishSnapshotOverrides;
@@ -177,6 +179,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final ComponentWiring<StaleEventDetector, List<GossipEvent>> staleEventDetectorWiring;
     private final ComponentWiring<TransactionResubmitter, List<ConsensusTransactionImpl>> transactionResubmitterWiring;
     private final ComponentWiring<TransactionPool, Void> transactionPoolWiring;
+    private final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring;
+    private final ComponentWiring<PlatformStatusNexus, Void> statusNexusWiring;
 
     /**
      * Constructor.
@@ -332,8 +336,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         stateGarbageCollectorWiring =
                 new ComponentWiring<>(model, StateGarbageCollector.class, config.stateGarbageCollector());
-
+        signedStateSentinelWiring =
+                new ComponentWiring<>(model, SignedStateSentinel.class, config.signedStateSentinel());
         runningEventHasherWiring = new ComponentWiring<>(model, RunningEventHasher.class, config.runningEventHasher());
+        statusStateMachineWiring = new ComponentWiring<>(model, StatusStateMachine.class, config.statusStateMachine());
+        statusNexusWiring = new ComponentWiring<>(model, PlatformStatusNexus.class, config.platformStatusNexus());
 
         staleEventDetectorWiring = new ComponentWiring<>(model, StaleEventDetector.class, config.staleEventDetector());
         transactionResubmitterWiring =
@@ -404,6 +411,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         issDetectorWiring
                 .issNotificationOutput()
                 .solderTo(notifierWiring.getInputWire(AppNotifier::sendIssNotification));
+        statusStateMachineWiring
+                .getOutputWire()
+                .solderTo(notifierWiring.getInputWire(AppNotifier::sendPlatformStatusChangeNotification));
     }
 
     /**
@@ -452,6 +462,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .creationAttemptRate();
         model.buildHeartbeatWire(eventCreationHeartbeatFrequency)
                 .solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::maybeCreateEvent));
+        model.buildHeartbeatWire(platformContext
+                        .getConfiguration()
+                        .getConfigData(PlatformStatusConfig.class)
+                        .statusStateMachineHeartbeatPeriod())
+                .solderTo(statusStateMachineWiring.getInputWire(StatusStateMachine::heartbeat), OFFER);
 
         eventCreationManagerWiring
                 .getOutputWire()
@@ -541,6 +556,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .solderTo(stateGarbageCollectorWiring.getInputWire(StateGarbageCollector::registerState));
         model.buildHeartbeatWire(config.stateGarbageCollectorHeartbeatPeriod())
                 .solderTo(stateGarbageCollectorWiring.getInputWire(StateGarbageCollector::heartbeat), OFFER);
+        model.buildHeartbeatWire(config.signedStateSentinelHeartbeatPeriod())
+                .solderTo(signedStateSentinelWiring.getInputWire(SignedStateSentinel::checkSignedStates), OFFER);
 
         signedStateHasherWiring.stateOutput().solderTo(hashLoggerWiring.hashLoggerInputWire());
         signedStateHasherWiring.stateOutput().solderTo(stateSignerWiring.signState());
@@ -568,6 +585,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         signedStateFileManagerWiring
                 .oldestMinimumGenerationOnDiskOutputWire()
                 .solderTo(pcesWriterWiring.getInputWire(PcesWriter::setMinimumAncientIdentifierToStore), INJECT);
+        signedStateFileManagerWiring
+                .stateWrittenToDiskOutputWire()
+                .solderTo(statusStateMachineWiring.getInputWire(StatusStateMachine::submitStatusAction));
 
         runningEventHashOverrideWiring
                 .runningHashUpdateOutput()
@@ -580,11 +600,21 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .solderTo(runningEventHasherWiring.getInputWire(RunningEventHasher::overrideRunningEventHash));
 
         issDetectorWiring.issNotificationOutput().solderTo(issHandlerWiring.issNotificationInput());
+        issDetectorWiring
+                .statusActionOutput()
+                .solderTo(statusStateMachineWiring.getInputWire(StatusStateMachine::submitStatusAction));
 
         stateSignatureCollectorWiring
                 .getCompleteStatesOutput()
                 .solderTo(latestCompleteStateNotifierWiring.getInputWire(
                         LatestCompleteStateNotifier::latestCompleteStateHandler));
+
+        statusStateMachineWiring
+                .getOutputWire()
+                .solderTo(statusNexusWiring.getInputWire(PlatformStatusNexus::setCurrentStatus));
+        statusStateMachineWiring
+                .getOutputWire()
+                .solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::updatePlatformStatus));
 
         solderNotifier();
 
@@ -623,33 +653,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
-     * Wire components that adhere to the framework to components that don't
-     * <p>
-     * Future work: as more components are moved to the framework, this method should shrink, and eventually be
-     * removed.
-     *
-     * @param statusManager the status manager to wire
-     */
-    public void wireExternalComponents(@NonNull final PlatformStatusManager statusManager) {
-
-        signedStateFileManagerWiring
-                .stateWrittenToDiskOutputWire()
-                .solderTo(
-                        "statusManager_submitStateWritten",
-                        "state written to disk notification",
-                        statusManager::submitStatusAction);
-
-        issDetectorWiring
-                .issNotificationOutput()
-                .solderTo("statusManager_submitCatastrophicFailure", "ISS notification", n -> {
-                    if (Set.of(IssNotification.IssType.SELF_ISS, IssNotification.IssType.CATASTROPHIC_ISS)
-                            .contains(n.getIssType())) {
-                        statusManager.submitStatusAction(new CatastrophicFailureAction());
-                    }
-                });
-    }
-
-    /**
      * Bind components to the wiring.
      *
      * @param builder                   builds platform components that need to be bound to wires
@@ -672,6 +675,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param signedStateHasher         the signed state hasher to bind
      * @param notifier                  the notifier to bind
      * @param platformPublisher         the platform publisher to bind
+     * @param platformStatusNexus       the platform status nexus to bind
      */
     public void bind(
             @NonNull final PlatformComponentBuilder builder,
@@ -692,7 +696,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final SavedStateController savedStateController,
             @NonNull final SignedStateHasher signedStateHasher,
             @NonNull final AppNotifier notifier,
-            @NonNull final PlatformPublisher platformPublisher) {
+            @NonNull final PlatformPublisher platformPublisher,
+            @NonNull final PlatformStatusNexus platformStatusNexus) {
 
         eventHasherWiring.bind(builder::buildEventHasher);
         internalEventValidatorWiring.bind(builder::buildInternalEventValidator);
@@ -730,6 +735,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         notifierWiring.bind(notifier);
         platformPublisherWiring.bind(platformPublisher);
         stateGarbageCollectorWiring.bind(builder::buildStateGarbageCollector);
+        statusStateMachineWiring.bind(builder::buildStatusStateMachine);
+        statusNexusWiring.bind(platformStatusNexus);
+        signedStateSentinelWiring.bind(builder::buildSignedStateSentinel);
         staleEventDetectorWiring.bind(builder::buildStaleEventDetector);
         transactionResubmitterWiring.bind(builder::buildTransactionResubmitter);
         transactionPoolWiring.bind(builder::buildTransactionPool);
@@ -866,6 +874,18 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     public @NonNull IssDetectorWiring getIssDetectorWiring() {
         return issDetectorWiring;
+    }
+
+    /**
+     * Get the status action submitter.
+     *
+     * @return the status action submitter
+     */
+    @NonNull
+    public StatusActionSubmitter getStatusActionSubmitter() {
+        return action -> statusStateMachineWiring
+                .getInputWire(StatusStateMachine::submitStatusAction)
+                .put(action);
     }
 
     /**

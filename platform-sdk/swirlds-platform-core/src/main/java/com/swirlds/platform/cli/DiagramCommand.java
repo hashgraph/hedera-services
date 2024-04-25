@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.cli;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-
 import com.swirlds.base.time.Time;
 import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
@@ -26,7 +24,6 @@ import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.wiring.model.diagram.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.diagram.ModelGroup;
 import com.swirlds.common.wiring.model.diagram.ModelManualLink;
@@ -34,7 +31,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.builder.ApplicationCallbacks;
 import com.swirlds.platform.config.DefaultConfiguration;
-import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.util.VirtualTerminal;
 import com.swirlds.platform.wiring.PlatformWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -126,10 +122,6 @@ public final class DiagramCommand extends AbstractCommand {
         final ApplicationCallbacks callbacks = new ApplicationCallbacks(x -> {}, x -> {}, x -> {});
 
         final PlatformWiring platformWiring = new PlatformWiring(platformContext, callbacks);
-
-        final ThreadManager threadManager = getStaticThreadManager();
-        platformWiring.wireExternalComponents(
-                new PlatformStatusManager(platformContext, platformContext.getTime(), threadManager, a -> {}));
 
         final String diagramString = platformWiring
                 .getModel()

@@ -72,6 +72,10 @@ import java.time.Duration;
  * @param platformPublisher                        configuration for the platform publisher scheduler
  * @param consensusEventStream                     configuration for the consensus event stream scheduler
  * @param roundDurabilityBuffer                    configuration for the round durability buffer scheduler
+ * @param signedStateSentinel                      configuration for the signed state sentinel scheduler
+ * @param signedStateSentinelHeartbeatPeriod       the frequency that heartbeats should be sent to the signed state
+ * @param statusStateMachine                       configuration for the status state machine scheduler
+ * @param platformStatusNexus                      configuration for the status nexus scheduler
  * @param staleEventDetector                       configuration for the stale event detector scheduler
  * @param transactionResubmitter                   configuration for the transaction resubmitter scheduler
  * @param transactionPool                          configuration for the transaction pool scheduler
@@ -125,11 +129,17 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(60) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration stateGarbageCollector,
         @ConfigProperty(defaultValue = "200ms") Duration stateGarbageCollectorHeartbeatPeriod,
+        @ConfigProperty(defaultValue = "SEQUENTIAL UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration signedStateSentinel,
+        @ConfigProperty(defaultValue = "10s") Duration signedStateSentinelHeartbeatPeriod,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration platformPublisher,
         @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration consensusEventStream,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(5) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration roundDurabilityBuffer,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration statusStateMachine,
+        @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration platformStatusNexus,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration staleEventDetector,
         @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration transactionResubmitter,

@@ -26,11 +26,18 @@ import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.creation.rules.AggregateEventCreationRules;
+import com.swirlds.platform.event.creation.rules.BackpressureRule;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
+import com.swirlds.platform.event.creation.rules.MaximumRateRule;
+import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
+import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
+import java.util.function.LongSupplier;
 
 /**
  * Default implementation of the {@link EventCreationManager}.
@@ -52,20 +59,28 @@ public class DefaultEventCreationManager implements EventCreationManager {
      */
     private final PhaseTimer<EventCreationStatus> phase;
 
+    private PlatformStatus platformStatus;
+
     /**
      * Constructor.
      *
-     * @param platformContext    the platform context
-     * @param creator            creates events
-     * @param eventCreationRules rules for deciding when it is permitted to create events
+     * @param platformContext      the platform context
+     * @param transactionPool      provides transactions to be added to new events
+     * @param eventIntakeQueueSize supplies the size of the event intake queue
+     * @param creator              creates events
      */
     public DefaultEventCreationManager(
             @NonNull final PlatformContext platformContext,
-            @NonNull final EventCreator creator,
-            @NonNull final EventCreationRule eventCreationRules) {
+            @NonNull final TransactionPoolNexus transactionPool,
+            @NonNull final LongSupplier eventIntakeQueueSize,
+            @NonNull final EventCreator creator) {
 
         this.creator = Objects.requireNonNull(creator);
-        this.eventCreationRules = Objects.requireNonNull(eventCreationRules);
+
+        this.eventCreationRules = AggregateEventCreationRules.of(
+                new MaximumRateRule(platformContext),
+                new BackpressureRule(platformContext, eventIntakeQueueSize),
+                new PlatformStatusRule(this::getPlatformStatus, transactionPool));
 
         phase = new PhaseTimerBuilder<>(
                         platformContext, platformContext.getTime(), "platform", EventCreationStatus.class)
@@ -125,5 +140,23 @@ public class DefaultEventCreationManager implements EventCreationManager {
     public void clear() {
         creator.clear();
         phase.activatePhase(IDLE);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void updatePlatformStatus(@NonNull final PlatformStatus platformStatus) {
+        this.platformStatus = Objects.requireNonNull(platformStatus);
+    }
+
+    /**
+     * Get the current platform status.
+     *
+     * @return the current platform status
+     */
+    @NonNull
+    private PlatformStatus getPlatformStatus() {
+        return platformStatus;
     }
 }
