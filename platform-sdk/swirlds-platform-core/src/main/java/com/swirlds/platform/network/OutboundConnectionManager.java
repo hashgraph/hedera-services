@@ -49,7 +49,7 @@ public class OutboundConnectionManager implements ConnectionManager {
     @Override
     public Connection waitForConnection() {
         try (final LockedResource<Connection> resource = lock.lock()) {
-            while (!resource.getResource().connected()) {
+            while (!Objects.requireNonNull(resource.getResource()).connected()) {
                 resource.getResource().disconnect();
                 resource.setResource(connectionCreator.createConnection(peerId));
             }
