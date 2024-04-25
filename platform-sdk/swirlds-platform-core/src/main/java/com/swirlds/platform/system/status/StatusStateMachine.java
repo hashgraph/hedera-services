@@ -57,6 +57,5 @@ public interface StatusStateMachine {
      * @return the new status after processing the time update, or null if the status did not change
      */
     @Nullable
-    @InputWireLabel("heartbeat")
-    PlatformStatus timeElapsed(@NonNull final Instant time);
+    PlatformStatus heartbeat(@NonNull final Instant time);
 }

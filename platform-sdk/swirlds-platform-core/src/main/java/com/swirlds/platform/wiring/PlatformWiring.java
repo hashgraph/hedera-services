@@ -455,7 +455,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                         .getConfiguration()
                         .getConfigData(PlatformStatusConfig.class)
                         .statusStateMachineHeartbeatPeriod())
-                .solderTo(statusStateMachineWiring.getInputWire(StatusStateMachine::timeElapsed), OFFER);
+                .solderTo(statusStateMachineWiring.getInputWire(StatusStateMachine::heartbeat), OFFER);
 
         eventCreationManagerWiring
                 .getOutputWire()

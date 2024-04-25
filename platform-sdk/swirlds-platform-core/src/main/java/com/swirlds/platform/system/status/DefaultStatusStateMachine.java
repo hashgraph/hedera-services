@@ -74,7 +74,7 @@ public class DefaultStatusStateMachine implements StatusStateMachine {
      * @param context the platform context
      */
     public DefaultStatusStateMachine(@NonNull final PlatformContext context) {
-        this.time = Objects.requireNonNull(context.getTime());
+        this.time = context.getTime();
         this.currentStatusLogic =
                 new StartingUpStatusLogic(context.getConfiguration().getConfigData(PlatformStatusConfig.class));
         this.currentStatusStartTime = time.now();
@@ -190,7 +190,7 @@ public class DefaultStatusStateMachine implements StatusStateMachine {
      */
     @Nullable
     @Override
-    public PlatformStatus timeElapsed(@NonNull final Instant time) {
+    public PlatformStatus heartbeat(@NonNull final Instant time) {
         return submitStatusAction(new TimeElapsedAction(time));
     }
 }
