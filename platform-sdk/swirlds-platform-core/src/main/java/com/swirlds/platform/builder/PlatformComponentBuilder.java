@@ -53,6 +53,7 @@ import com.swirlds.platform.event.runninghash.DefaultRunningEventHasher;
 import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.DefaultSelfEventSigner;
 import com.swirlds.platform.event.signing.SelfEventSigner;
+import com.swirlds.platform.event.stale.DefaultStaleEventDetector;
 import com.swirlds.platform.event.stale.StaleEventDetector;
 import com.swirlds.platform.event.stream.ConsensusEventStream;
 import com.swirlds.platform.event.stream.DefaultConsensusEventStream;
@@ -763,7 +764,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public StaleEventDetector buildStaleEventDetector() {
         if (staleEventDetector == null) {
-            throw new IllegalStateException("Stale event detector must be provided");
+            staleEventDetector = new DefaultStaleEventDetector(blocks.platformContext(), blocks.selfId());
         }
         return staleEventDetector;
     }

@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event.stale;
 
+import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -35,6 +36,7 @@ public interface StaleEventDetector {
      * @param event the self event to add
      * @return a list of self events that have gone stale
      */
+    @InputWireLabel("self events")
     @NonNull
     List<GossipEvent> addSelfEvent(@NonNull GossipEvent event);
 
@@ -44,6 +46,7 @@ public interface StaleEventDetector {
      * @param consensusRound a round that has just reached consensus
      * @return a list of self events that have gone stale
      */
+    @InputWireLabel("rounds")
     @NonNull
     List<GossipEvent> addConsensusRound(@NonNull ConsensusRound consensusRound);
 
