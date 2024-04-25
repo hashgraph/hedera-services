@@ -58,6 +58,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 public final class AntlrUtils {
 
     public static final String JAVADOC_PARAM = "param";
+    public static final String ANNOTATION_VALUE_PROPERTY_NAME = "value";
 
     private AntlrUtils() {}
 
@@ -192,7 +193,7 @@ public final class AntlrUtils {
     @NonNull
     public static Optional<String> getAnnotationValue(
             @NonNull final AnnotationContext annotationContext, @NonNull final String identifier) {
-        if ("value".equals(identifier)) {
+        if (ANNOTATION_VALUE_PROPERTY_NAME.equals(identifier)) {
             final ElementValueContext elementValueContext = annotationContext.elementValue();
             if (elementValueContext != null) {
                 return Optional.of(elementValueContext.getText()).map(text -> {

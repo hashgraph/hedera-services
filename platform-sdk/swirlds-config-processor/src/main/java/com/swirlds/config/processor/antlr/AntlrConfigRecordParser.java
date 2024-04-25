@@ -36,6 +36,17 @@ import org.antlr.v4.runtime.tree.ParseTree;
 
 public final class AntlrConfigRecordParser {
 
+    /**
+     * Property name for:
+     * {@link ConfigProperty#defaultValue()}
+     */
+    private static final String DEFAULT_VALUE = "defaultValue";
+    /**
+     * Property name for:
+     * {@link ConfigProperty#value()}}
+     */
+    private static final String VALUE = "value";
+
     private static boolean isAnnotatedWith(
             @NonNull final RecordDeclarationContext ctx,
             @NonNull String packageName,
@@ -84,34 +95,41 @@ public final class AntlrConfigRecordParser {
     }
 
     @NonNull
-    private static ConfigDataPropertyDefinition createPropertyDefinition(
+    private static ConfigDataPropertyDefinition createDefinitionFromConfigProperty(
             @NonNull final RecordComponentContext ctx,
             @NonNull final String configPropertyNamePrefix,
             @NonNull final String packageName,
             @NonNull final List<String> imports,
-            @NonNull final Map<String, String> javadocParams,
-            @NonNull final Class<? extends Annotation> annotation,
-            @NonNull final String annotationNameProperty,
-            @NonNull final String annotationDefaultNameProperty,
-            @NonNull final String defaultValueIfPropertyIsNotSet) {
+            @NonNull final Map<String, String> javadocParams) {
         final String componentName = ctx.identifier().getText();
-        final String configPropertyNameSuffix = getAnnotationPropertyOrElse(
-                ctx, packageName, imports, annotation, annotationNameProperty, componentName);
-        final String name = createPropertyName(configPropertyNamePrefix, configPropertyNameSuffix);
-        final String defaultValue = getAnnotationPropertyOrElse(
-                ctx, packageName, imports, annotation, annotationDefaultNameProperty, defaultValueIfPropertyIsNotSet);
-        final String type = Optional.ofNullable(ctx.typeType().classOrInterfaceType())
-                .map(RuleContext::getText)
-                .map(typeText -> imports.stream()
-                        .filter(importText -> importText.endsWith(typeText))
-                        .findAny()
-                        .orElse(typeText))
-                .map(AntlrConfigRecordParser::getTypeForJavaLang)
-                .orElseGet(() -> ctx.typeType().primitiveType().getText());
-        final String description =
-                Optional.ofNullable(javadocParams.get(componentName)).orElse("");
+        String name = "not-yet-known";
+        try {
+            final String configPropertyNameSuffix =
+                    getAnnotationPropertyOrElse(ctx, packageName, imports, ConfigProperty.class, VALUE, componentName);
+            name = createPropertyName(configPropertyNamePrefix, configPropertyNameSuffix);
+            final String defaultValue = getAnnotationPropertyOrElse(
+                    ctx,
+                    packageName,
+                    imports,
+                    ConfigProperty.class,
+                    DEFAULT_VALUE,
+                    ConfigProperty.UNDEFINED_DEFAULT_VALUE);
+            final String type = Optional.ofNullable(ctx.typeType().classOrInterfaceType())
+                    .map(RuleContext::getText)
+                    .map(typeText -> imports.stream()
+                            .filter(importText -> importText.endsWith(typeText))
+                            .findAny()
+                            .orElse(typeText))
+                    .map(AntlrConfigRecordParser::getTypeForJavaLang)
+                    .orElseGet(() -> ctx.typeType().primitiveType().getText());
+            final String description =
+                    Optional.ofNullable(javadocParams.get(componentName)).orElse("");
 
-        return new ConfigDataPropertyDefinition(componentName, name, type, defaultValue, description);
+            return new ConfigDataPropertyDefinition(componentName, name, type, defaultValue, description);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(ConfigProperty.class.getTypeName() + " is not correctly defined for "
+                    + componentName + " property");
+        }
     }
 
     @NonNull
@@ -151,11 +169,9 @@ public final class AntlrConfigRecordParser {
             @NonNull final List<String> imports) {
         final String recordName = recordContext.identifier().getText();
 
-        final Class<ConfigData> configDataAnnotation = ConfigData.class;
-        final Class<ConfigProperty> configPropertyAnnotation = ConfigProperty.class;
         try {
             final String configPropertyNamePrefix =
-                    getAnnotationValue(recordContext, packageName, imports, configDataAnnotation);
+                    getAnnotationValue(recordContext, packageName, imports, ConfigData.class);
             final Map<String, String> javadocParams = unitContext.children.stream()
                     .filter(AntlrUtils::isJavaDocNode)
                     .map(ParseTree::getText)
@@ -167,26 +183,13 @@ public final class AntlrConfigRecordParser {
                     .orElse(Map.of());
             final Set<ConfigDataPropertyDefinition> propertyDefinitions =
                     recordContext.recordHeader().recordComponentList().recordComponent().stream()
-                            .map(c -> createPropertyDefinition(
-                                    c,
-                                    configPropertyNamePrefix,
-                                    packageName,
-                                    imports,
-                                    javadocParams,
-                                    configPropertyAnnotation,
-                                    "value",
-                                    "defaultValue",
-                                    ConfigProperty.UNDEFINED_DEFAULT_VALUE))
+                            .map(c -> createDefinitionFromConfigProperty(
+                                    c, configPropertyNamePrefix, packageName, imports, javadocParams))
                             .collect(Collectors.toSet());
             return new ConfigDataRecordDefinition(
                     packageName, recordName, configPropertyNamePrefix, propertyDefinitions);
         } catch (Exception e) {
-            throw new IllegalArgumentException(
-                    "Could not process " + packageName + "."
-                            + recordName + " check that: " + configDataAnnotation.getTypeName()
-                            + " and all: " + configPropertyAnnotation.getTypeName()
-                            + " annotations are correctly defined for the type",
-                    e);
+            throw new IllegalArgumentException("Could not process " + packageName + "." + recordName, e);
         }
     }
 

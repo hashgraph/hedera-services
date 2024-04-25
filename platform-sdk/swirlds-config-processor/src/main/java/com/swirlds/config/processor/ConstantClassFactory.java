@@ -19,6 +19,7 @@ package com.swirlds.config.processor;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
+import com.swirlds.config.api.ConfigProperty;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.Writer;
@@ -33,6 +34,12 @@ import javax.tools.JavaFileObject;
  * Its methods should be accessed statically, and it should not be instantiated.
  */
 public final class ConstantClassFactory {
+
+    /**
+     * Property name of:
+     * {@link ConfigProperty#defaultValue()}
+     */
+    public static final String DEFAULT_VALUE = "defaultValue";
 
     /**
      * private constructor to prevent instantiation
@@ -90,7 +97,8 @@ public final class ConstantClassFactory {
                         "Error processing record:"
                                 + configDataRecordDefinition.simpleClassName() + " field:"
                                 + propertyDefinition.fieldName() + " annotation value:\"" + propertyDefinition.name()
-                                + "\" cannot be used as a valid constant. Check if should be a defaultValue instead.",
+                                + "\" cannot be used as a valid constant name. Check if should be a " + DEFAULT_VALUE
+                                + " instead.",
                         e);
             }
         });

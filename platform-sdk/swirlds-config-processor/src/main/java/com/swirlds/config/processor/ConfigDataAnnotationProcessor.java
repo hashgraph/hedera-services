@@ -104,9 +104,9 @@ public final class ConfigDataAnnotationProcessor extends AbstractProcessor {
                 final JavaFileObject constantsSourceFile =
                         getConstantSourceFile(packageName, simpleClassName, typeElement);
                 log("generating config constants file: " + constantsSourceFile.getName());
-                ConstantClassFactory.doWork(recordDefinitions.get(0), constantsSourceFile);
+                ConstantClassFactory.doWork(recordDefinitions.getFirst(), constantsSourceFile);
                 log("generating config doc file: " + configDocumentationFile.getFileName());
-                DocumentationFactory.doWork(recordDefinitions.get(0), configDocumentationFile);
+                DocumentationFactory.doWork(recordDefinitions.getFirst(), configDocumentationFile);
             }
         } catch (final Exception e) {
             throw new RuntimeException("Error handling " + typeElement, e);
