@@ -18,6 +18,8 @@ package com.hedera.services.bdd.suites.token.hip540;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hedera.services.bdd.suites.token.hip540.Hip540TestScenarios.ALL_HIP_540_SCENARIOS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -48,9 +50,9 @@ public class Hip540Suite extends HapiSuite {
         return defaultHapiSpec("allScenariosAsExpected")
                 .given()
                 .when()
-                .then(Hip540TestScenarios.ALL_HIP_540_SCENARIOS.stream()
+                .then(inParallel(ALL_HIP_540_SCENARIOS.stream()
                         .map(Hip540TestScenario::asOperation)
-                        .toArray(HapiSpecOperation[]::new));
+                        .toArray(HapiSpecOperation[]::new)));
     }
 
     @Override
