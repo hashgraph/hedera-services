@@ -38,7 +38,7 @@ public class RandomTransferToSigner extends RandomTransfer {
 
     public RandomTransferToSigner(
             RegistrySourcedNameProvider<AccountID> accounts, String signer, ResponseCodeEnum[] outcomes) {
-        super(accounts);
+        super(accounts, outcomes);
         this.signer = signer;
         this.outcomes = outcomes;
     }
