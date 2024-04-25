@@ -1696,7 +1696,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @HapiTest
     @Order(6)
     final HapiSpec traceabilityE2EScenario5() {
-        return defaultHapiSpec("traceabilityE2EScenario5", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec("traceabilityE2EScenario5", FULLY_NONDETERMINISTIC)
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
@@ -2338,7 +2338,10 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @HapiTest
     @Order(8)
     final HapiSpec traceabilityE2EScenario7() {
-        return defaultHapiSpec("traceabilityE2EScenario7", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec(
+                        "traceabilityE2EScenario7",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(TRACEABILITY_CALLCODE),
                         contractCreate(TRACEABILITY_CALLCODE, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
@@ -2729,7 +2732,10 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @HapiTest
     @Order(9)
     final HapiSpec traceabilityE2EScenario8() {
-        return defaultHapiSpec("traceabilityE2EScenario8", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec(
+                        "traceabilityE2EScenario8",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(TRACEABILITY_CALLCODE),
                         contractCreate(TRACEABILITY_CALLCODE, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
@@ -3081,8 +3087,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @HapiTest
     @Order(10)
     final HapiSpec traceabilityE2EScenario9() {
-        return defaultHapiSpec(
-                        "traceabilityE2EScenario9", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
+        return defaultHapiSpec("traceabilityE2EScenario9", FULLY_NONDETERMINISTIC)
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
@@ -3389,7 +3394,10 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @HapiTest
     @Order(11)
     final HapiSpec traceabilityE2EScenario10() {
-        return defaultHapiSpec("traceabilityE2EScenario10", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec(
+                        "traceabilityE2EScenario10",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.TWO, BigInteger.valueOf(3), BigInteger.valueOf(4))
@@ -4285,10 +4293,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
         final String PRECOMPILE_CALLER = "PrecompileCaller";
         final String txn = "payTxn";
         final String toHash = "toHash";
-        return defaultHapiSpec(
-                        "traceabilityE2EScenario16",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("traceabilityE2EScenario16", FULLY_NONDETERMINISTIC)
                 .given(
                         tokenCreate("goodToken")
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -4522,7 +4527,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @HapiTest
     @Order(21)
     final HapiSpec traceabilityE2EScenario20() {
-        return defaultHapiSpec("traceabilityE2EScenario20", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("traceabilityE2EScenario20", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(uploadInitCode(REVERTING_CONTRACT))
                 .when(contractCreate(REVERTING_CONTRACT, BigInteger.valueOf(6))
                         .via(FIRST_CREATE_TXN)
@@ -4548,10 +4553,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @HapiTest
     @Order(22)
     final HapiSpec traceabilityE2EScenario21() {
-        return defaultHapiSpec(
-                        "traceabilityE2EScenario21",
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        HIGHLY_NON_DETERMINISTIC_FEES)
+        return defaultHapiSpec("traceabilityE2EScenario21", FULLY_NONDETERMINISTIC)
                 .given(
                         uploadInitCode(REVERTING_CONTRACT),
                         contractCreate(REVERTING_CONTRACT, BigInteger.valueOf(6))
