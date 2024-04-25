@@ -18,7 +18,9 @@ package com.swirlds.platform.event.stale;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 
 /**
  * A simple utility responsible for resubmitting stale transactions.
@@ -29,7 +31,9 @@ public interface TransactionResubmitter {
      * Resubmit transactions that have gone stale.
      *
      * @param event the event that has gone stale
+     * @return a list of transactions that should be resubmitted
      */
     @InputWireLabel("stale events")
-    void resubmitStaleTransactions(@NonNull GossipEvent event);
+    @NonNull
+    List<ConsensusTransactionImpl> resubmitStaleTransactions(@NonNull GossipEvent event);
 }

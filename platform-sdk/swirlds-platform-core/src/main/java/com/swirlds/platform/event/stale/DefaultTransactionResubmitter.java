@@ -17,10 +17,10 @@
 package com.swirlds.platform.event.stale;
 
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A default implementation of {@link TransactionResubmitter}.
@@ -29,26 +29,22 @@ public class DefaultTransactionResubmitter implements TransactionResubmitter {
 
     // TODO unit test
 
-    private final TransactionPool transactionPool;
-
     /**
      * Constructor.
-     *
-     * @param transactionPool the transaction pool
      */
-    public DefaultTransactionResubmitter(@NonNull final TransactionPool transactionPool) {
-        this.transactionPool = Objects.requireNonNull(transactionPool);
-    }
+    public DefaultTransactionResubmitter() {}
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void resubmitStaleTransactions(@NonNull final GossipEvent event) {
+    public List<ConsensusTransactionImpl> resubmitStaleTransactions(@NonNull final GossipEvent event) {
+        final List<ConsensusTransactionImpl> transactionsToResubmit = new ArrayList<>();
         for (final ConsensusTransactionImpl transaction : event.getHashedData().getTransactions()) {
             if (transaction.isSystem()) {
-                transactionPool.submitTransaction(transaction, true);
+                transactionsToResubmit.add(transaction);
             }
         }
+        return transactionsToResubmit;
     }
 }

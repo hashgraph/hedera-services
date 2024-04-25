@@ -800,7 +800,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public TransactionResubmitter buildTransactionResubmitter() {
         if (transactionResubmitter == null) {
-            transactionResubmitter = new DefaultTransactionResubmitter(blocks.transactionPool());
+            transactionResubmitter = new DefaultTransactionResubmitter();
         }
         return transactionResubmitter;
     }

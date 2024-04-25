@@ -93,6 +93,7 @@ import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
@@ -172,7 +173,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final boolean publishSnapshotOverrides;
     private final ComponentWiring<RunningEventHasher, Void> runningEventHasherWiring;
     private final ComponentWiring<StaleEventDetector, List<GossipEvent>> staleEventDetectorWiring;
-    private final ComponentWiring<TransactionResubmitter, Void> transactionResubmitterWiring;
+    private final ComponentWiring<TransactionResubmitter, List<ConsensusTransactionImpl>> transactionResubmitterWiring;
 
     /**
      * Constructor.
@@ -624,9 +625,15 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                         "state written to disk notification",
                         statusManager::submitStatusAction);
 
+        // TODO this needs to be a proper component!
         stateSignerWiring
                 .stateSignature()
                 .solderTo("transactionPool", "signature transactions", transactionPool::submitPayload);
+
+        final OutputWire<ConsensusTransactionImpl> splitTransactionResubmitterOutput =
+                transactionResubmitterWiring.getSplitOutput();
+        splitTransactionResubmitterOutput.solderTo(
+                "transactionPool2", "transactions", t -> transactionPool.submitTransaction(t, true));
 
         issDetectorWiring
                 .issNotificationOutput()

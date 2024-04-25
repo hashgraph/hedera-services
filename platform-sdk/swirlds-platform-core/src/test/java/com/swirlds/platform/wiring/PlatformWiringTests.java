@@ -41,6 +41,7 @@ import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
 import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.SelfEventSigner;
 import com.swirlds.platform.event.stale.DefaultStaleEventDetector;
+import com.swirlds.platform.event.stale.TransactionResubmitter;
 import com.swirlds.platform.event.stream.ConsensusEventStream;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
@@ -93,7 +94,8 @@ class PlatformWiringTests {
                 .withRoundDurabilityBuffer(mock(RoundDurabilityBuffer.class))
                 .withTransactionPrehandler(mock(TransactionPrehandler.class))
                 .withPcesWriter(mock(PcesWriter.class))
-                .withStaleEventDetector(mock(DefaultStaleEventDetector.class));
+                .withStaleEventDetector(mock(DefaultStaleEventDetector.class))
+                .withTransactionResubmitter(mock(TransactionResubmitter.class));
 
         wiring.bind(
                 componentBuilder,
