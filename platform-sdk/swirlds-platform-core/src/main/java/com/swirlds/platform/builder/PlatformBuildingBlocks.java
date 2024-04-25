@@ -19,9 +19,7 @@ package com.swirlds.platform.builder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
-import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.pool.TransactionPoolNexus;
@@ -31,10 +29,8 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.util.RandomBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
@@ -53,12 +49,7 @@ import java.util.function.Predicate;
  * @param appVersion                            the current version of the running application
  * @param initialState                          the initial state of the platform
  * @param emergencyRecoveryManager              used in emergency recovery.
- * @param preconsensusEventConsumer             the consumer for preconsensus events, null if publishing this data has
- *                                              not been enabled
- * @param snapshotOverrideConsumer              the consumer for snapshot overrides, null if publishing this data has
- *                                              not been enabled
- * @param staleEventConsumer                    the consumer for stale events, null if publishing this data has not been
- *                                              enabled
+ * @param applicationCallbacks                  the callbacks that the platform will call when certain events happen
  * @param intakeEventCounter                    counts events that have been received by gossip but not yet inserted
  *                                              into gossip event storage, per peer
  * @param randomBuilder                         a builder for creating random number generators
@@ -88,9 +79,7 @@ public record PlatformBuildingBlocks(
         @NonNull SoftwareVersion appVersion,
         @NonNull ReservedSignedState initialState,
         @NonNull EmergencyRecoveryManager emergencyRecoveryManager,
-        @Nullable Consumer<GossipEvent> preconsensusEventConsumer,
-        @Nullable Consumer<ConsensusSnapshot> snapshotOverrideConsumer,
-        @Nullable Consumer<GossipEvent> staleEventConsumer,
+        @NonNull ApplicationCallbacks applicationCallbacks,
         @NonNull IntakeEventCounter intakeEventCounter,
         @NonNull RandomBuilder randomBuilder,
         @NonNull TransactionPoolNexus transactionPoolNexus,

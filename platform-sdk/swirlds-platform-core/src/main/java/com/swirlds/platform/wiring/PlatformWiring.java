@@ -40,6 +40,7 @@ import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.StateSigner;
+import com.swirlds.platform.builder.ApplicationCallbacks;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.components.AppNotifier;
 import com.swirlds.platform.components.EventWindowManager;
@@ -171,6 +172,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final ComponentWiring<PlatformPublisher, Void> platformPublisherWiring;
     private final boolean publishPreconsensusEvents;
     private final boolean publishSnapshotOverrides;
+    private final boolean publishStaleEvents;
     private final ComponentWiring<RunningEventHasher, Void> runningEventHasherWiring;
     private final ComponentWiring<StaleEventDetector, List<GossipEvent>> staleEventDetectorWiring;
     private final ComponentWiring<TransactionResubmitter, List<ConsensusTransactionImpl>> transactionResubmitterWiring;
@@ -179,16 +181,12 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     /**
      * Constructor.
      *
-     * @param platformContext           the platform context
-     * @param publishPreconsensusEvents whether to publish preconsensus events (i.e. if a handler is registered). Extra
-     *                                  things need to be wired together if we are publishing preconsensus events.
-     * @param publishSnapshotOverrides  whether to publish snapshot overrides. Extra things need to be wired together if
-     *                                  we are publishing snapshot overrides.
+     * @param platformContext      the platform context
+     * @param applicationCallbacks the application callbacks (some wires are only created if the application wants a
+     *                             callback for something)
      */
     public PlatformWiring(
-            @NonNull final PlatformContext platformContext,
-            final boolean publishPreconsensusEvents,
-            final boolean publishSnapshotOverrides) {
+            @NonNull final PlatformContext platformContext, @NonNull final ApplicationCallbacks applicationCallbacks) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
 
@@ -320,11 +318,12 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                         .build()
                         .cast());
 
-        this.publishPreconsensusEvents = publishPreconsensusEvents;
-        this.publishSnapshotOverrides = publishSnapshotOverrides;
+        this.publishPreconsensusEvents = applicationCallbacks.preconsensusEventConsumer() != null;
+        this.publishSnapshotOverrides = applicationCallbacks.snapshotOverrideConsumer() != null;
+        this.publishStaleEvents = applicationCallbacks.staleEventConsumer() != null;
 
         final TaskSchedulerConfiguration publisherConfiguration;
-        if (publishPreconsensusEvents || publishSnapshotOverrides) {
+        if (publishPreconsensusEvents || publishSnapshotOverrides || publishStaleEvents) {
             publisherConfiguration = config.platformPublisher();
         } else {
             publisherConfiguration = NO_OP_CONFIGURATION;
@@ -471,6 +470,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 transactionResubmitterWiring.getSplitOutput();
         splitTransactionResubmitterOutput.solderTo(
                 transactionPoolWiring.getInputWire(TransactionPool::submitSystemTransaction));
+
+        if (publishStaleEvents) {
+            splitStaleEventDetectorOutput.solderTo(
+                    platformPublisherWiring.getInputWire(PlatformPublisher::publishStaleEvent));
+        }
 
         splitOrphanBufferOutput.solderTo(applicationTransactionPrehandlerWiring.getInputWire(
                 TransactionPrehandler::prehandleApplicationTransactions));
@@ -624,7 +628,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * Future work: as more components are moved to the framework, this method should shrink, and eventually be
      * removed.
      *
-     * @param statusManager   the status manager to wire
+     * @param statusManager the status manager to wire
      */
     public void wireExternalComponents(@NonNull final PlatformStatusManager statusManager) {
 

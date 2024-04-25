@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.event.stale;
 
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 
 import com.swirlds.common.context.PlatformContext;
@@ -30,22 +29,16 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.function.ToLongFunction;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Detects when a self event becomes stale. Note that this detection may not observe a self event go stale if the node
  * needs to reconnect or restart.
  */
 public class DefaultStaleEventDetector implements StaleEventDetector {
-
-    private static final Logger logger = LogManager.getLogger(DefaultStaleEventDetector.class);
 
     /**
      * The ID of this node.
@@ -63,11 +56,6 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
     private EventWindow currentEventWindow;
 
     /**
-     * A consumer used to pass stale events to the application. May be null.
-     */
-    private final Consumer<GossipEvent> staleEventConsumer;
-
-    /**
      * Metrics for the stale event detector.
      */
     private final StaleEventDetectorMetrics metrics;
@@ -77,15 +65,10 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
      *
      * @param platformContext    the platform context
      * @param selfId             the ID of this node
-     * @param staleEventConsumer a consumer used to pass stale events to the application. May be null.
      */
-    public DefaultStaleEventDetector(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final NodeId selfId,
-            @Nullable Consumer<GossipEvent> staleEventConsumer) {
+    public DefaultStaleEventDetector(@NonNull final PlatformContext platformContext, @NonNull final NodeId selfId) {
 
         this.selfId = Objects.requireNonNull(selfId);
-        this.staleEventConsumer = staleEventConsumer;
 
         final AncientMode ancientMode = platformContext
                 .getConfiguration()
@@ -169,14 +152,6 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
      * @param event the stale event
      */
     private void handleStaleEvent(@NonNull final GossipEvent event) {
-        if (staleEventConsumer != null) {
-            try {
-                staleEventConsumer.accept(event);
-            } catch (final Throwable t) {
-                // Guard against failures in application code.
-                logger.error(EXCEPTION.getMarker(), "Error handling stale event", t);
-            }
-        }
         metrics.reportStaleEvent(event);
     }
 }

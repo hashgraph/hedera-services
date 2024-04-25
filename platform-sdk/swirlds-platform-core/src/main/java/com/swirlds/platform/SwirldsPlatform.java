@@ -67,7 +67,6 @@ import com.swirlds.platform.components.appcomm.DefaultLatestCompleteStateNotifie
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.TransactionConfig;
-import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
@@ -326,10 +325,7 @@ public class SwirldsPlatform implements Platform {
             emergencyState.setState(initialState.reserve("emergency state nexus"));
         }
 
-        final Consumer<GossipEvent> preconsensusEventConsumer = blocks.preconsensusEventConsumer();
-        final Consumer<ConsensusSnapshot> snapshotOverrideConsumer = blocks.snapshotOverrideConsumer();
-        platformWiring = thingsToStart.add(new PlatformWiring(
-                platformContext, preconsensusEventConsumer != null, snapshotOverrideConsumer != null));
+        platformWiring = thingsToStart.add(new PlatformWiring(platformContext, blocks.applicationCallbacks()));
 
         final Consumer<PlatformStatus> statusChangeConsumer = s -> {
             blocks.currentPlatformStatus().set(s);
@@ -499,8 +495,7 @@ public class SwirldsPlatform implements Platform {
 
         final AppNotifier appNotifier = new DefaultAppNotifier(notificationEngine);
 
-        final PlatformPublisher publisher =
-                new DefaultPlatformPublisher(preconsensusEventConsumer, snapshotOverrideConsumer);
+        final PlatformPublisher publisher = new DefaultPlatformPublisher(blocks.applicationCallbacks());
 
         platformWiring.bind(
                 builder,

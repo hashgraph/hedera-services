@@ -22,6 +22,7 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.StateSigner;
+import com.swirlds.platform.builder.ApplicationCallbacks;
 import com.swirlds.platform.builder.PlatformBuildingBlocks;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.components.AppNotifier;
@@ -72,7 +73,9 @@ class PlatformWiringTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final PlatformWiring wiring = new PlatformWiring(platformContext, true, true);
+        final ApplicationCallbacks applicationCallbacks = new ApplicationCallbacks(x -> {}, x -> {}, x -> {});
+
+        final PlatformWiring wiring = new PlatformWiring(platformContext, applicationCallbacks);
 
         final PlatformComponentBuilder componentBuilder =
                 new PlatformComponentBuilder(mock(PlatformBuildingBlocks.class));

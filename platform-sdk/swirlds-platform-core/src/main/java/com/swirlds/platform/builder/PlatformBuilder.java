@@ -523,6 +523,9 @@ public final class PlatformBuilder {
             throw new UncheckedIOException(e);
         }
 
+        final ApplicationCallbacks callbacks =
+                new ApplicationCallbacks(preconsensusEventConsumer, snapshotOverrideConsumer, staleEventConsumer);
+
         final PlatformBuildingBlocks buildingBlocks = new PlatformBuildingBlocks(
                 platformContext,
                 keysAndCerts.get(selfId),
@@ -533,9 +536,7 @@ public final class PlatformBuilder {
                 softwareVersion,
                 initialState,
                 emergencyRecoveryManager,
-                preconsensusEventConsumer,
-                snapshotOverrideConsumer,
-                staleEventConsumer,
+                callbacks,
                 intakeEventCounter,
                 new RandomBuilder(),
                 new TransactionPoolNexus(platformContext),

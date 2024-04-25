@@ -43,4 +43,12 @@ public interface PlatformPublisher {
      */
     @InputWireLabel("ConsensusSnapshot")
     void publishSnapshotOverride(@NonNull final ConsensusSnapshot snapshot);
+
+    /**
+     * Publish a stale event.
+     *
+     * @param event the event to publish
+     */
+    @InputWireLabel("stale events")
+    void publishStaleEvent(@NonNull final GossipEvent event);
 }
