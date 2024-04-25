@@ -20,7 +20,7 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.crypto.RunningHashable;
-import com.swirlds.common.io.OptionalSelfSerializable;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.system.events.BaseEventHashedData.ClassVersion;
@@ -32,7 +32,7 @@ import java.util.Objects;
  * information.
  */
 public class DetailedConsensusEvent extends AbstractSerializableHashable
-        implements OptionalSelfSerializable<EventSerializationOptions>, RunningHashable {
+        implements SelfSerializable, RunningHashable {
 
     public static final long CLASS_ID = 0xe250a9fbdcc4b1baL;
     public static final int CLASS_VERSION = 1;
@@ -70,23 +70,13 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
         this.consensusData = consensusData;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final SerializableDataOutputStream out, final EventSerializationOptions option)
-            throws IOException {
-        serialize(out, baseEventHashedData, baseEventUnhashedData, consensusData, option);
-    }
-
     public static void serialize(
             final SerializableDataOutputStream out,
             final BaseEventHashedData baseEventHashedData,
             final BaseEventUnhashedData baseEventUnhashedData,
-            final ConsensusData consensusData,
-            final EventSerializationOptions option)
+            final ConsensusData consensusData)
             throws IOException {
-        out.writeOptionalSerializable(baseEventHashedData, false, option);
+        out.writeSerializable(baseEventHashedData, false);
         if (baseEventHashedData.getVersion() < ClassVersion.BIRTH_ROUND) {
             out.writeSerializable(baseEventUnhashedData, false);
         } else {
@@ -100,7 +90,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        serialize(out, baseEventHashedData, baseEventUnhashedData, consensusData, EventSerializationOptions.FULL);
+        serialize(out, baseEventHashedData, baseEventUnhashedData, consensusData);
     }
 
     /**

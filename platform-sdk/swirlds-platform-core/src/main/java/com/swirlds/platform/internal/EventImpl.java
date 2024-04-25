@@ -21,7 +21,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.crypto.RunningHashable;
 import com.swirlds.common.crypto.SerializableHashable;
-import com.swirlds.common.io.OptionalSelfSerializable;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
@@ -35,7 +35,6 @@ import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
-import com.swirlds.platform.system.events.EventSerializationOptions;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -59,7 +58,7 @@ public class EventImpl extends EventMetadata
         implements Comparable<EventImpl>,
                 ConsensusEvent,
                 SerializableHashable,
-                OptionalSelfSerializable<EventSerializationOptions>,
+                SelfSerializable,
                 RunningHashable,
                 StreamAligned,
                 Timestamped {
@@ -235,17 +234,8 @@ public class EventImpl extends EventMetadata
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        serialize(out, EventSerializationOptions.FULL);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final SerializableDataOutputStream out, final EventSerializationOptions option)
-            throws IOException {
         DetailedConsensusEvent.serialize(
-                out, baseEvent.getHashedData(), baseEvent.getUnhashedData(), consensusData, option);
+                out, baseEvent.getHashedData(), baseEvent.getUnhashedData(), consensusData);
     }
 
     /**

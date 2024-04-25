@@ -40,8 +40,6 @@ public class GossipEvent implements SelfSerializable {
     private static final int MAX_SIG_LENGTH = 384;
 
     private static final class ClassVersion {
-        public static final int ORIGINAL = 1;
-        public static final int REMOVED_ROUND = 2;
         /**
          * Event serialization changes
          *
@@ -50,7 +48,6 @@ public class GossipEvent implements SelfSerializable {
         public static final int BIRTH_ROUND = 3;
     }
 
-    private int serializedVersion = ClassVersion.BIRTH_ROUND;
     private BaseEventHashedData hashedData;
     private BaseEventUnhashedData unhashedData;
     private Instant timeReceived;
@@ -122,13 +119,8 @@ public class GossipEvent implements SelfSerializable {
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        if (serializedVersion < ClassVersion.BIRTH_ROUND) {
-            out.writeSerializable(hashedData, false);
-            out.writeSerializable(unhashedData, false);
-        } else {
-            out.writeSerializable(hashedData, false);
-            out.writeByteArray(unhashedData.getSignature());
-        }
+        out.writeSerializable(hashedData, false);
+        out.writeByteArray(unhashedData.getSignature());
     }
 
     /**
@@ -136,15 +128,9 @@ public class GossipEvent implements SelfSerializable {
      */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        serializedVersion = version;
-        if (version < ClassVersion.BIRTH_ROUND) {
-            hashedData = in.readSerializable(false, BaseEventHashedData::new);
-            unhashedData = in.readSerializable(false, BaseEventUnhashedData::new);
-        } else {
-            hashedData = in.readSerializable(false, BaseEventHashedData::new);
-            final byte[] signature = in.readByteArray(MAX_SIG_LENGTH);
-            unhashedData = new BaseEventUnhashedData(signature);
-        }
+        hashedData = in.readSerializable(false, BaseEventHashedData::new);
+        final byte[] signature = in.readByteArray(MAX_SIG_LENGTH);
+        unhashedData = new BaseEventUnhashedData(signature);
         timeReceived = Instant.now();
     }
 
@@ -244,12 +230,12 @@ public class GossipEvent implements SelfSerializable {
      */
     @Override
     public int getVersion() {
-        return serializedVersion;
+        return ClassVersion.BIRTH_ROUND;
     }
 
     @Override
     public int getMinimumSupportedVersion() {
-        return ClassVersion.REMOVED_ROUND;
+        return ClassVersion.BIRTH_ROUND;
     }
 
     /**
