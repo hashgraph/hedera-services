@@ -17,3 +17,8 @@
 plugins { id("com.hedera.hashgraph.application") }
 
 application.mainClass.set("com.swirlds.demo.migration.MigrationTestingToolMain")
+
+testModuleInfo {
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
+}
