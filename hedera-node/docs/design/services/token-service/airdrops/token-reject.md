@@ -19,7 +19,7 @@ Token reject transaction can be performed only for tokens which are part of the 
 
 ## Architecture
 
-The implementation related to the new `TokenReject` transaction will be gated behind a feature flag.
+The implementation related to the new `TokenReject` transaction will be gated behind a `tokens.reject.enabled` feature flag.
 
 ### HAPI updates
 
