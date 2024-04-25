@@ -770,7 +770,8 @@ public class PlatformComponentBuilder {
     @NonNull
     public StaleEventDetector buildStaleEventDetector() {
         if (staleEventDetector == null) {
-            staleEventDetector = new DefaultStaleEventDetector(blocks.platformContext(), blocks.selfId());
+            staleEventDetector = new DefaultStaleEventDetector(
+                    blocks.platformContext(), blocks.selfId(), blocks.staleEventConsumer());
         }
         return staleEventDetector;
     }

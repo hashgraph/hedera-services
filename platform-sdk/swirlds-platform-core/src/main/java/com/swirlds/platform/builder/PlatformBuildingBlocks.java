@@ -57,6 +57,8 @@ import java.util.function.Predicate;
  *                                              not been enabled
  * @param snapshotOverrideConsumer              the consumer for snapshot overrides, null if publishing this data has
  *                                              not been enabled
+ * @param staleEventConsumer                    the consumer for stale events, null if publishing this data has not been
+ *                                              enabled
  * @param intakeEventCounter                    counts events that have been received by gossip but not yet inserted
  *                                              into gossip event storage, per peer
  * @param randomBuilder                         a builder for creating random number generators
@@ -88,6 +90,7 @@ public record PlatformBuildingBlocks(
         @NonNull EmergencyRecoveryManager emergencyRecoveryManager,
         @Nullable Consumer<GossipEvent> preconsensusEventConsumer,
         @Nullable Consumer<ConsensusSnapshot> snapshotOverrideConsumer,
+        @Nullable Consumer<GossipEvent> staleEventConsumer,
         @NonNull IntakeEventCounter intakeEventCounter,
         @NonNull RandomBuilder randomBuilder,
         @NonNull TransactionPoolNexus transactionPoolNexus,

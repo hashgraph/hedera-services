@@ -115,6 +115,7 @@ public final class PlatformBuilder {
 
     private Consumer<GossipEvent> preconsensusEventConsumer;
     private Consumer<ConsensusSnapshot> snapshotOverrideConsumer;
+    private Consumer<GossipEvent> staleEventConsumer;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -308,6 +309,22 @@ public final class PlatformBuilder {
             @NonNull final Consumer<ConsensusSnapshot> snapshotOverrideConsumer) {
         throwIfAlreadyUsed();
         this.snapshotOverrideConsumer = Objects.requireNonNull(snapshotOverrideConsumer);
+        return this;
+    }
+
+    /**
+     * Register a callback that is called when a stale self event is detected (i.e. an event that will never reach
+     * consensus). Depending on the use case, it may be a good idea to resubmit the transactions in the stale event.
+     * <p>
+     * Stale event detection is guaranteed to catch all stale self events as long as the node remains online. However,
+     * if the node restarts or reconnects, any event that went stale "in the gap" may not be detected.
+     *
+     * @param staleEventConsumer the callback to register
+     * @return this
+     */
+    public PlatformBuilder withStaleEventCallback(@NonNull final Consumer<GossipEvent> staleEventConsumer) {
+        throwIfAlreadyUsed();
+        this.staleEventConsumer = Objects.requireNonNull(staleEventConsumer);
         return this;
     }
 
@@ -518,6 +535,7 @@ public final class PlatformBuilder {
                 emergencyRecoveryManager,
                 preconsensusEventConsumer,
                 snapshotOverrideConsumer,
+                staleEventConsumer,
                 intakeEventCounter,
                 new RandomBuilder(),
                 new TransactionPoolNexus(platformContext),
