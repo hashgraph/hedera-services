@@ -116,6 +116,14 @@ An update into the `feeSchedule` file would be needed to specify that.
         - Custom fees are not applied and no tokens are deducted from the sender balance
         - Token dissociate fees are not applied
 
+### Token allowances
+An owner can provide a token allowance for non-fungible and fungible tokens. The owner is the account that owns the tokens and grants the allowance to the spender. The spender is the account that spends tokens authorized by the owner from the owners account.
+
+If `TokenReject` is executed on the owner of a token allowance, then the allowance for that token should be canceled.
+
+If `TokenReject` is executed on the spender of a token allowance, then the allowance should not be affected. It's the responsibility of the owner to clean up any unnecessary allowances (or continue to pay rent for them).
+That would mean that after performing `TokenReject` on a spender account, then the spender can still perform `TokenAirdrop` for a given allowance even though the token was rejected.
+
 ## Acceptance Tests
 
 All of the expected behaviour described below should be present only if the new `TokenReject` feature flag is enabled. No custom fees should be assessed and the tokens should not be dissociated from the account after token reject is performed.
@@ -128,6 +136,9 @@ All of the expected behaviour described below should be present only if the new 
 - Given account with some fungible token in its balance that is paused when `TokenReject` for the same token is performed then the `TokenReject` should succeed
 - Given account with some NFT in its balance that is frozen when `TokenReject` for the same NFT is performed then the `TokenReject` should succeed and any other NFTs from the same collection should be left in the account
 - Given account with some NFT in its balance that is paused when `TokenReject` for the same NFT is performed then the `TokenReject` should succeed and any other NFTs from the same collection should be left in the account
+- Given token allowance from owner to sender account when `TokenReject` for the same token is performed on the owner account then the token allowance should be canceled
+- Given token allowance from owner to sender account when `TokenReject` for the same token is performed on the sender account then the token allowance should not be affected
+- Given token allowance from owner to sender account when `TokenReject` for the same token is performed on the sender account then the sender account should be able to perform `TokenAirdrop` for the same token within the existing allowance
 - Given `TokenReject` reject transaction that does not have the signature of the sender/owner of a given token then the `TokenReject` should fail
 - Given account with no fungible token in its balance when `TokenReject` for the same fungible token is performed then the `TokenReject` should fail
 - Given account with no NFT in its balance when `TokenReject` for the same NFT is performed then the `TokenReject` should fail
