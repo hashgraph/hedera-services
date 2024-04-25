@@ -137,7 +137,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         // We allow existing treasuries to have any nft balances left over, but the new treasury should
         // not have any balances left over. Transfer all balances for the current token to new treasury
         if (op.hasTreasury()) {
-            final var existingTreasury = token.treasuryAccountId();
+            final var existingTreasury = token.treasuryAccountIdOrThrow();
             final var newTreasury = op.treasuryOrThrow();
             final var newTreasuryAccount = getIfUsable(
                     newTreasury, accountStore, context.expiryValidator(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
@@ -189,7 +189,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             final Token token,
             final WritableTokenRelationStore tokenRelStore,
             final WritableAccountStore accountStore) {
-        final var tokenId = token.tokenId();
+        final var tokenId = token.tokenIdOrThrow();
         // Validate both accounts are not frozen and have the right keys
         final var oldTreasuryRel = getIfUsable(oldTreasury, tokenId, tokenRelStore);
         final var newTreasuryRel = getIfUsable(newTreasury, tokenId, tokenRelStore);
@@ -221,14 +221,14 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
      * @param accountStore account store
      */
     private void transferFungibleTokensToTreasury(
-            final TokenRelation fromTreasuryRel,
-            final TokenRelation toTreasuryRel,
+            @NonNull final TokenRelation fromTreasuryRel,
+            @NonNull final TokenRelation toTreasuryRel,
             final WritableTokenRelationStore tokenRelStore,
             final WritableAccountStore accountStore) {
         final var adjustment = fromTreasuryRel.balance();
 
-        final var fromTreasury = accountStore.getAccountById(fromTreasuryRel.accountId());
-        final var toTreasury = accountStore.getAccountById(toTreasuryRel.accountId());
+        final var fromTreasury = requireNonNull(accountStore.getAccountById(fromTreasuryRel.accountIdOrThrow()));
+        final var toTreasury = requireNonNull(accountStore.getAccountById(toTreasuryRel.accountIdOrThrow()));
 
         adjustBalance(fromTreasuryRel, fromTreasury, -adjustment, tokenRelStore, accountStore);
         adjustBalance(toTreasuryRel, toTreasury, adjustment, tokenRelStore, accountStore);
