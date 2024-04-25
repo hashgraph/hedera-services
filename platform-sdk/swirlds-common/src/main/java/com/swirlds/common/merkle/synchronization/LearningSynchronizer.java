@@ -213,7 +213,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
             return false;
         };
         final StandardWorkGroup workGroup =
-                new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection, reconnectExceptionListener);
+                createStandardWorkGroup(threadManager, breakConnection, reconnectExceptionListener);
 
         final AsyncInputStream in = new AsyncInputStream(inputStream, workGroup, this::createMessage, reconnectConfig);
         in.start();
@@ -393,6 +393,13 @@ public class LearningSynchronizer implements ReconnectNodeCount {
      */
     public MerkleNode getRoot() {
         return newRoot.get();
+    }
+
+    protected StandardWorkGroup createStandardWorkGroup(
+            ThreadManager threadManager,
+            Runnable breakConnection,
+            Function<Throwable, Boolean> reconnectExceptionListener) {
+        return new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection, reconnectExceptionListener);
     }
 
     /**

@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.spec;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.stream.Collectors.toList;
@@ -41,6 +42,7 @@ import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.stats.OpObs;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
+import com.hedera.services.bdd.spec.utilops.mod.BodyMutation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -108,6 +110,9 @@ public abstract class HapiSpecOperation {
     @Nullable
     protected HapiSpecSetup.TxnProtoStructure explicitProtoStructure = null;
 
+    @Nullable
+    protected BodyMutation bodyMutation = null;
+
     protected boolean asTxnWithSignedTxnBytesAndSigMap = false;
     protected boolean asTxnWithSignedTxnBytesAndBodyBytes = false;
 
@@ -135,6 +140,7 @@ public abstract class HapiSpecOperation {
     protected Optional<Supplier<AccountID>> nodeSupplier = Optional.empty();
     protected OptionalDouble usdFee = OptionalDouble.empty();
     protected Optional<Integer> retryLimits = Optional.empty();
+    protected boolean payingWithAlias = false;
 
     @Nullable
     protected UnknownFieldLocation unknownFieldLocation = null;
@@ -256,11 +262,11 @@ public abstract class HapiSpecOperation {
                 return Optional.empty();
             }
             if (verboseLoggingOn) {
-                String message = MessageFormat.format("{0}{1} failed - {2}", spec.logPrefix(), this, t);
-                log.warn(message);
+                String message = MessageFormat.format("{0}{1} failed", spec.logPrefix(), this);
+                log.warn(message, t);
             } else if (!loggingOff) {
                 String message = MessageFormat.format("{0}{1} failed - {2}!", spec.logPrefix(), this, t.getMessage());
-                log.warn(message);
+                log.warn(message, t);
             }
             return Optional.of(t);
         }
@@ -297,7 +303,15 @@ public abstract class HapiSpecOperation {
                 builder.clearTransactionID();
             } else {
                 payer.ifPresent(payerId -> {
-                    final var id = TxnUtils.asId(payerId, spec);
+                    AccountID id;
+                    if (payingWithAlias) {
+                        final var key = spec.registry().getKey(payerId);
+                        final var lookedUpKey = key.toByteString();
+                        id = asIdWithAlias(lookedUpKey);
+                    } else {
+                        id = TxnUtils.asId(payerId, spec);
+                    }
+
                     final TransactionID txnId = builder.getTransactionID().toBuilder()
                             .setAccountID(id)
                             .build();
@@ -355,7 +369,7 @@ public abstract class HapiSpecOperation {
 
         setKeyControlOverrides(spec);
         final List<Key> keys = signersToUseFor(spec);
-        final Transaction.Builder builder = spec.txns().getReadyToSign(netDef);
+        final Transaction.Builder builder = spec.txns().getReadyToSign(netDef, spec, bodyMutation);
         final Transaction provisional = getSigned(spec, builder, keys);
         if (fee.isPresent()) {
             txn = provisional;
@@ -365,7 +379,7 @@ public abstract class HapiSpecOperation {
             final int numPayerKeys = hardcodedNumPayerKeys.orElse(spec.keys().controlledKeyCount(payerKey, overrides));
             final long customFee = feeFor(spec, provisional, numPayerKeys);
             netDef = netDef.andThen(b -> b.setTransactionFee(customFee));
-            txn = getSigned(spec, spec.txns().getReadyToSign(netDef), keys);
+            txn = getSigned(spec, spec.txns().getReadyToSign(netDef, spec, bodyMutation), keys);
         }
 
         return finalizedTxnFromTxnWithBodyBytesAndSigMap(txn);

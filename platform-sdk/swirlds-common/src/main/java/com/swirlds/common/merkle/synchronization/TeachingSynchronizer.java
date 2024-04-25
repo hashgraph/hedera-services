@@ -154,8 +154,7 @@ public class TeachingSynchronizer {
      */
     public void synchronize() throws InterruptedException {
         final AtomicReference<Throwable> firstReconnectException = new AtomicReference<>();
-        final Function<Throwable, Boolean> reconnectExceptionListener = ex -> {
-            Throwable cause = ex;
+        final Function<Throwable, Boolean> reconnectExceptionListener = cause -> {
             while (cause != null) {
                 if (cause instanceof SocketException socketEx) {
                     if (socketEx.getMessage().equalsIgnoreCase("Connection reset by peer")) {
@@ -167,13 +166,13 @@ public class TeachingSynchronizer {
                 }
                 cause = cause.getCause();
             }
-            firstReconnectException.compareAndSet(null, ex);
+            firstReconnectException.compareAndSet(null, cause);
             // Let StandardWorkGroup log it as an error using the EXCEPTION marker
             return false;
         };
         // A future improvement might be to reuse threads between subtrees.
         final StandardWorkGroup workGroup =
-                new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection, reconnectExceptionListener);
+                createStandardWorkGroup(threadManager, breakConnection, reconnectExceptionListener);
 
         final AsyncInputStream in = new AsyncInputStream(inputStream, workGroup, this::createMessage, reconnectConfig);
         in.start();
@@ -271,6 +270,11 @@ public class TeachingSynchronizer {
             }
         });
         return true;
+    }
+
+    protected StandardWorkGroup createStandardWorkGroup(
+            ThreadManager threadManager, Runnable breakConnection, Function<Throwable, Boolean> exceptionListener) {
+        return new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection, exceptionListener);
     }
 
     /**

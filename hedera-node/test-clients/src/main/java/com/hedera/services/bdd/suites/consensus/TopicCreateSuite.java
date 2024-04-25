@@ -24,7 +24,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY_RECEIVABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
@@ -118,6 +120,17 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
+    public HapiSpec idVariantsTreatedAsExpected() {
+        final var autoRenewAccount = "autoRenewAccount";
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(cryptoCreate(autoRenewAccount), newKeyNamed("adminKey"))
+                .when()
+                .then(submitModified(
+                        withSuccessivelyVariedBodyIds(),
+                        () -> createTopic("topic").adminKeyName("adminKey").autoRenewAccountId(autoRenewAccount)));
+    }
+
+    @HapiTest
     final HapiSpec autoRenewPeriodIsValidated() {
         final var tooShortAutoRenewPeriod = "tooShortAutoRenewPeriod";
         final var tooLongAutoRenewPeriod = "tooLongAutoRenewPeriod";
@@ -152,12 +165,13 @@ public class TopicCreateSuite extends HapiSuite {
         return defaultHapiSpec("SigningRequirementsEnforced")
                 .given(
                         newKeyNamed("adminKey"),
+                        newKeyNamed("contractAdminKey"),
                         newKeyNamed("submitKey"),
                         newKeyNamed("wrongKey"),
                         cryptoCreate("payer").balance(PAYER_BALANCE),
                         cryptoCreate("autoRenewAccount"),
                         // This will have an admin key
-                        createDefaultContract(contractWithAdminKey),
+                        createDefaultContract(contractWithAdminKey).adminKey("contractAdminKey"),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         // And this won't
                         contractCreate(PAY_RECEIVABLE_CONTRACT).omitAdminKey())

@@ -31,6 +31,7 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.spec.fees;
     exports com.hedera.services.bdd.spec.verification.traceability;
     exports com.hedera.services.bdd.spec.assertions;
+    exports com.hedera.services.bdd.spec.assertions.matchers;
 
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
@@ -66,6 +67,7 @@ module com.hedera.node.test.clients {
     requires grpc.netty;
     requires grpc.stub;
     requires io.netty.handler;
+    requires java.desktop;
     requires java.net.http;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j.core;

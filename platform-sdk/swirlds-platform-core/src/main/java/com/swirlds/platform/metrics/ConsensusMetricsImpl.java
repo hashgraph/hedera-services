@@ -40,6 +40,11 @@ import java.util.Objects;
  */
 public class ConsensusMetricsImpl implements ConsensusMetrics {
 
+    private static final RunningAverageMetric.Config AVG_JUDGES_WEIGHT_CONFIG = new RunningAverageMetric.Config(
+                    PLATFORM_CATEGORY, "judgesWeight")
+            .withDescription("weight of judges of rounds")
+            .withFormat(FORMAT_10_3);
+    private final RunningAverageMetric avgJudgesWeight;
     private static final RunningAverageMetric.Config AVG_FIRST_EVENT_IN_ROUND_RECEIVED_TIME_CONFIG =
             new RunningAverageMetric.Config(PLATFORM_CATEGORY, "secR2nR")
                     .withDescription("time from first event received in one round, to first event received in the "
@@ -137,6 +142,7 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
         Objects.requireNonNull(metrics, "metrics must not be null");
 
+        avgJudgesWeight = metrics.getOrCreate(AVG_JUDGES_WEIGHT_CONFIG);
         avgFirstEventInRoundReceivedTime = metrics.getOrCreate(AVG_FIRST_EVENT_IN_ROUND_RECEIVED_TIME_CONFIG);
         numCoinRounds = metrics.getOrCreate(NUM_COIN_ROUNDS_CONFIG);
         avgReceivedFamousTime = metrics.getOrCreate(AVG_RECEIVED_FAMOUS_TIME_CONFIG);
@@ -256,6 +262,14 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
     @Override
     public double getAvgOtherReceivedTimestamp() {
         return avgOtherReceivedTimestamp.get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void judgeWeights(long weight) {
+        avgJudgesWeight.update(weight);
     }
 
     @Override

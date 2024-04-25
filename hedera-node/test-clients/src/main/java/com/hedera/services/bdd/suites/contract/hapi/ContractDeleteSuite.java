@@ -45,6 +45,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
@@ -116,6 +118,24 @@ public class ContractDeleteSuite extends HapiSuite {
                 cannotDeleteOrSelfDestructContractWithNonZeroBalance(),
                 cannotSendValueToTokenAccount(),
                 cannotUseMoreThanChildContractLimit());
+    }
+
+    @HapiTest
+    public HapiSpec idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed("adminKey"),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT),
+                        cryptoCreate("transferAccount"))
+                .when(
+                        contractCreate("a").bytecode(CONTRACT).adminKey("adminKey"),
+                        contractCreate("b").bytecode(CONTRACT).adminKey("adminKey"))
+                .then(
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> contractDelete("a")
+                                .transferAccount("transferAccount")),
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> contractDelete("b")
+                                .transferContract(CONTRACT)));
     }
 
     @HapiTest
@@ -230,13 +250,15 @@ public class ContractDeleteSuite extends HapiSuite {
                 .when(
                         contractDelete(selfDestructCallable + "1").hasKnownStatus(ACCOUNT_IS_TREASURY),
                         tokenAssociate(selfDestructCallable + "2", someToken),
-                        tokenUpdate(someToken).treasury(selfDestructCallable + "2"),
+                        tokenUpdate(someToken)
+                                .treasury(selfDestructCallable + "2")
+                                .signedByPayerAnd(multiKey, selfDestructCallable + "2"),
                         contractDelete(selfDestructCallable + "1"),
                         contractCall(selfDestructCallable + "2", CONTRACT_DESTROY)
                                 .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)
                                 .payingWith(beneficiary),
                         tokenAssociate(escapeRoute, someToken),
-                        tokenUpdate(someToken).treasury(escapeRoute))
+                        tokenUpdate(someToken).treasury(escapeRoute).signedByPayerAnd(multiKey, escapeRoute))
                 .then(contractCall(selfDestructCallable + "2", CONTRACT_DESTROY).payingWith(beneficiary));
     }
 

@@ -159,7 +159,7 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) {
-        Query query = getTokenNftInfoQuery(spec, payment, false);
+        Query query = maybeModified(getTokenNftInfoQuery(spec, payment, false), spec);
         response = spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getTokenNftInfo(query);
         if (verboseLoggingOn) {
             String message = String.format(

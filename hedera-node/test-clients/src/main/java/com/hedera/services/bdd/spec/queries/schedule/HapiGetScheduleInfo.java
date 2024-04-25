@@ -246,7 +246,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getScheduleInfoQuery(spec, payment, false);
+        Query query = maybeModified(getScheduleInfoQuery(spec, payment, false), spec);
         response =
                 spec.clients().getScheduleSvcStub(targetNodeFor(spec), useTls).getScheduleInfo(query);
         if (verboseLoggingOn) {

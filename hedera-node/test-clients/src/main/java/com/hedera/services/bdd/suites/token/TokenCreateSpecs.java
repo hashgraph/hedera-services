@@ -18,7 +18,10 @@ package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocation.*;
+import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocation.OP_BODY;
+import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocation.SIGNED_TRANSACTION;
+import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocation.TRANSACTION;
+import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocation.TRANSACTION_BODY;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairs;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
@@ -49,14 +52,48 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemProperty;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TOKEN_NAMES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MAX_SUPPLY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -153,6 +190,62 @@ public class TokenCreateSpecs extends HapiSuite {
                 /* HIP-23 */
                 validateNewTokenAssociations(),
                 missingTreasurySignatureFails());
+    }
+
+    @HapiTest
+    public HapiSpec getInfoIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("getInfoIdVariantsTreatedAsExpected")
+                .given(tokenCreate("something"))
+                .when()
+                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getTokenInfo("something")));
+    }
+
+    @HapiTest
+    public HapiSpec idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed("supplyKey"),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate("autoRenewAccount"),
+                        cryptoCreate("feeCollector"),
+                        tokenCreate("feeToken"),
+                        tokenAssociate("feeCollector", "feeToken"))
+                .when()
+                .then(
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> tokenCreate("fungibleToken")
+                                .treasury(TOKEN_TREASURY)
+                                .autoRenewAccount("autoRenewAccount")
+                                .withCustom(fixedHbarFee(1L, "feeCollector"))
+                                .withCustom(fixedHtsFee(1L, "feeToken", "feeCollector"))
+                                .withCustom(fractionalFee(1L, 100L, 1L, OptionalLong.of(5L), "feeCollector"))
+                                .signedBy(DEFAULT_PAYER, TOKEN_TREASURY, "feeCollector", "autoRenewAccount")),
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> tokenCreate("nonFungibleToken")
+                                .treasury(TOKEN_TREASURY)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .supplyKey("supplyKey")
+                                .autoRenewAccount("autoRenewAccount")
+                                .withCustom(royaltyFeeWithFallback(
+                                        1L, 10L, fixedHbarFeeInheritingRoyaltyCollector(123L), "feeCollector"))
+                                .signedBy(DEFAULT_PAYER, TOKEN_TREASURY, "autoRenewAccount")));
+    }
+
+    @HapiTest
+    public HapiSpec canHandleInvalidTokenCreateTransactions() {
+        final String alice = "ALICE";
+        return defaultHapiSpec("canHandleInvalidTokenCreateTransactions")
+                .given(cryptoCreate(alice))
+                .when()
+                .then(
+                        tokenCreate(null).hasKnownStatus(MISSING_TOKEN_NAME),
+                        tokenCreate(A_TOKEN)
+                                .treasury(alice)
+                                .signedBy(DEFAULT_PAYER)
+                                .hasKnownStatus(INVALID_SIGNATURE),
+                        tokenCreate(A_TOKEN)
+                                .treasury(alice)
+                                .signedBy(DEFAULT_PAYER, alice)
+                                .hasKnownStatus(SUCCESS));
     }
 
     /**

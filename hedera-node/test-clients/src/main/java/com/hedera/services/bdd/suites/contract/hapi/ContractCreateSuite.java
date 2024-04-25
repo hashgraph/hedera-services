@@ -51,6 +51,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.explicitContrac
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.explicitEthereumTransaction;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
@@ -58,7 +59,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
@@ -125,6 +128,14 @@ public class ContractCreateSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
 
+    // The following constants are referenced from -
+    // https://github.com/Arachnid/deterministic-deployment-proxy?tab=readme-ov-file#deployment-transaction
+    private static final String DEPLOYMENT_SIGNER = "3fab184622dc19b6109349b94811493bf2a45362";
+    private static final String DEPLOYMENT_TRANSACTION =
+            "f8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222";
+    private static final String EXPECTED_DEPLOYER_ADDRESS = "4e59b44847b379578588920ca78fbf26c0b4956c";
+    private static final String DEPLOYER = "DeployerContract";
+
     public static void main(String... args) {
         new ContractCreateSuite().runSuiteAsync();
     }
@@ -132,6 +143,7 @@ public class ContractCreateSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
+                createDeterministicDeployer(),
                 createEmptyConstructor(),
                 insufficientPayerBalanceUponCreation(),
                 rejectsInvalidMemo(),
@@ -160,6 +172,26 @@ public class ContractCreateSuite extends HapiSuite {
     @Override
     public boolean canRunConcurrent() {
         return true;
+    }
+
+    @HapiTest
+    final HapiSpec createDeterministicDeployer() {
+        final var creatorAddress = ByteString.copyFrom(CommonUtils.unhex(DEPLOYMENT_SIGNER));
+        final var transaction = ByteString.copyFrom(CommonUtils.unhex(DEPLOYMENT_TRANSACTION));
+        final var systemFileId = FileID.newBuilder().setFileNum(159).build();
+
+        return defaultHapiSpec("createDeterministicDeployer")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(PAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoTransfer(tinyBarsFromTo(PAYER, creatorAddress, ONE_HUNDRED_HBARS)))
+                .when(explicitEthereumTransaction(DEPLOYER, (spec, b) -> b.setCallData(systemFileId)
+                                .setEthereumData(transaction))
+                        .payingWith(PAYER))
+                .then(getContractInfo(DEPLOYER)
+                        .has(contractWith().addressOrAlias(EXPECTED_DEPLOYER_ADDRESS))
+                        .logged());
     }
 
     @HapiTest
@@ -673,6 +705,20 @@ public class ContractCreateSuite extends HapiSuite {
                             getAccountInfo(contractControlled).has(accountWith().key(contractIdKey));
                     allRunFor(spec, keyCheck);
                 }));
+    }
+
+    @HapiTest
+    public HapiSpec idVariantsTreatedAsExpected() {
+        final var autoRenewAccount = "autoRenewAccount";
+        final var creationNumber = new AtomicLong();
+        final var contract = "CreateTrivial";
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(uploadInitCode(contract), cryptoCreate(autoRenewAccount).balance(ONE_HUNDRED_HBARS))
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> contractCreate(
+                                "contract" + creationNumber.getAndIncrement())
+                        .bytecode(contract)
+                        .autoRenewAccountId(autoRenewAccount)));
     }
 
     @HapiTest

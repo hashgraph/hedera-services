@@ -21,23 +21,57 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMet
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 
 import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.components.consensus.ConsensusEngine;
+import com.swirlds.platform.components.consensus.DefaultConsensusEngine;
 import com.swirlds.platform.crypto.CryptoStatic;
+import com.swirlds.platform.crypto.PlatformSigner;
+import com.swirlds.platform.event.creation.DefaultEventCreationManager;
+import com.swirlds.platform.event.creation.EventCreationManager;
+import com.swirlds.platform.event.creation.EventCreator;
+import com.swirlds.platform.event.creation.rules.AggregateEventCreationRules;
+import com.swirlds.platform.event.creation.rules.BackpressureRule;
+import com.swirlds.platform.event.creation.rules.EventCreationRule;
+import com.swirlds.platform.event.creation.rules.MaximumRateRule;
+import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
+import com.swirlds.platform.event.creation.tipset.TipsetEventCreator;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.deduplication.StandardEventDeduplicator;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
+import com.swirlds.platform.event.linking.GossipLinker;
+import com.swirlds.platform.event.linking.InOrderLinker;
+import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
+import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
+import com.swirlds.platform.event.preconsensus.DefaultPcesWriter;
+import com.swirlds.platform.event.preconsensus.PcesFileManager;
+import com.swirlds.platform.event.preconsensus.PcesSequencer;
+import com.swirlds.platform.event.preconsensus.PcesWriter;
+import com.swirlds.platform.event.preconsensus.durability.DefaultRoundDurabilityBuffer;
+import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
+import com.swirlds.platform.event.runninghash.DefaultRunningEventHasher;
+import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.DefaultSelfEventSigner;
 import com.swirlds.platform.event.signing.SelfEventSigner;
+import com.swirlds.platform.event.stream.ConsensusEventStream;
+import com.swirlds.platform.event.stream.DefaultConsensusEventStream;
 import com.swirlds.platform.event.validation.DefaultEventSignatureValidator;
 import com.swirlds.platform.event.validation.DefaultInternalEventValidator;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
+import com.swirlds.platform.eventhandling.TransactionPrehandler;
+import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.state.signed.DefaultSignedStateSentinel;
 import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.util.MetricsDocUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Objects;
 
 /**
@@ -55,6 +89,7 @@ import java.util.Objects;
  *     <li>A component should use {@link com.swirlds.common.wiring.component.ComponentWiring ComponentWiring} to define
  *         wiring API.</li>
  *     <li>The order in which components are constructed should not matter.</li>
+ *     <li>A component must not be a static singleton or use static stateful variables in any way.</li>
  * </ul>
  */
 public class PlatformComponentBuilder {
@@ -67,6 +102,17 @@ public class PlatformComponentBuilder {
     private EventSignatureValidator eventSignatureValidator;
     private SelfEventSigner selfEventSigner;
     private StateGarbageCollector stateGarbageCollector;
+    private OrphanBuffer orphanBuffer;
+    private RunningEventHasher runningEventHasher;
+    private EventCreationManager eventCreationManager;
+    private InOrderLinker inOrderLinker;
+    private ConsensusEngine consensusEngine;
+    private ConsensusEventStream consensusEventStream;
+    private SignedStateSentinel signedStateSentinel;
+    private PcesSequencer pcesSequencer;
+    private RoundDurabilityBuffer roundDurabilityBuffer;
+    private TransactionPrehandler transactionPrehandler;
+    private PcesWriter pcesWriter;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -331,5 +377,395 @@ public class PlatformComponentBuilder {
             selfEventSigner = new DefaultSelfEventSigner(blocks.keysAndCerts());
         }
         return selfEventSigner;
+    }
+
+    /**
+     * Build the orphan buffer if it has not yet been built. If one has been provided via
+     * {@link #withOrphanBuffer(OrphanBuffer)}, that orphan buffer will be used. If this method is called more than
+     * once, only the first call will build the orphan buffer. Otherwise, the default orphan buffer will be created and
+     * returned.
+     *
+     * @return the orphan buffer
+     */
+    @NonNull
+    public OrphanBuffer buildOrphanBuffer() {
+        if (orphanBuffer == null) {
+            orphanBuffer = new DefaultOrphanBuffer(blocks.platformContext(), blocks.intakeEventCounter());
+        }
+        return orphanBuffer;
+    }
+
+    /**
+     * Provide an orphan buffer in place of the platform's default orphan buffer.
+     *
+     * @param orphanBuffer the orphan buffer to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withOrphanBuffer(@NonNull final OrphanBuffer orphanBuffer) {
+        throwIfAlreadyUsed();
+        if (this.orphanBuffer != null) {
+            throw new IllegalStateException("Orphan buffer has already been set");
+        }
+        this.orphanBuffer = Objects.requireNonNull(orphanBuffer);
+
+        return this;
+    }
+
+    /**
+     * Provide a running event hasher in place of the platform's default running event hasher.
+     *
+     * @param runningEventHasher the running event hasher to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withRunningEventHasher(@NonNull final RunningEventHasher runningEventHasher) {
+        throwIfAlreadyUsed();
+        if (this.runningEventHasher != null) {
+            throw new IllegalStateException("Running event hasher has already been set");
+        }
+        this.runningEventHasher = Objects.requireNonNull(runningEventHasher);
+        return this;
+    }
+
+    /**
+     * Build the running event hasher if it has not yet been built. If one has been provided via
+     * {@link #withRunningEventHasher(RunningEventHasher)}, that hasher will be used. If this method is called more than
+     * once, only the first call will build the running event hasher. Otherwise, the default hasher will be created and
+     * returned.
+     *
+     * @return the running event hasher
+     */
+    @NonNull
+    public RunningEventHasher buildRunningEventHasher() {
+        if (runningEventHasher == null) {
+            runningEventHasher = new DefaultRunningEventHasher();
+        }
+        return runningEventHasher;
+    }
+
+    /**
+     * Provide an event creation manager in place of the platform's default event creation manager.
+     *
+     * @param eventCreationManager the event creation manager to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withEventCreationManager(@NonNull final EventCreationManager eventCreationManager) {
+        throwIfAlreadyUsed();
+        if (this.eventCreationManager != null) {
+            throw new IllegalStateException("Event creation manager has already been set");
+        }
+        this.eventCreationManager = Objects.requireNonNull(eventCreationManager);
+        return this;
+    }
+
+    /**
+     * Build the event creation manager if it has not yet been built. If one has been provided via
+     * {@link #withEventCreationManager(EventCreationManager)}, that manager will be used. If this method is called more
+     * than once, only the first call will build the event creation manager. Otherwise, the default manager will be
+     * created and returned.
+     *
+     * @return the event creation manager
+     */
+    @NonNull
+    public EventCreationManager buildEventCreationManager() {
+        if (eventCreationManager == null) {
+            final EventCreator eventCreator = new TipsetEventCreator(
+                    blocks.platformContext(),
+                    blocks.randomBuilder().buildNonCryptographicRandom(),
+                    data -> new PlatformSigner(blocks.keysAndCerts()).sign(data),
+                    blocks.initialState().get().getState().getPlatformState().getAddressBook(),
+                    blocks.selfId(),
+                    blocks.appVersion(),
+                    blocks.transactionPool());
+
+            final EventCreationRule eventCreationRules = AggregateEventCreationRules.of(
+                    new MaximumRateRule(blocks.platformContext()),
+                    new BackpressureRule(
+                            blocks.platformContext(),
+                            () -> blocks.intakeQueueSizeSupplierSupplier().get().getAsLong()),
+                    new PlatformStatusRule(() -> blocks.currentPlatformStatus().get(), blocks.transactionPool()));
+
+            eventCreationManager =
+                    new DefaultEventCreationManager(blocks.platformContext(), eventCreator, eventCreationRules);
+        }
+        return eventCreationManager;
+    }
+
+    /**
+     * Build the in-order linker if it has not yet been built. If one has been provided via
+     * {@link #withInOrderLinker(InOrderLinker)}, that in-order linker will be used. If this method is called more than
+     * once, only the first call will build the in-order linker. Otherwise, the default in-order linker will be created
+     * and returned.
+     *
+     * @return the in-order linker
+     */
+    @NonNull
+    public InOrderLinker buildInOrderLinker() {
+        if (inOrderLinker == null) {
+            inOrderLinker = new GossipLinker(blocks.platformContext(), blocks.intakeEventCounter());
+        }
+        return inOrderLinker;
+    }
+
+    /**
+     * Provide an in-order linker in place of the platform's default in-order linker.
+     *
+     * @param inOrderLinker the in-order linker to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withInOrderLinker(@NonNull final InOrderLinker inOrderLinker) {
+        throwIfAlreadyUsed();
+        if (this.inOrderLinker != null) {
+            throw new IllegalStateException("In-order linker has already been set");
+        }
+        this.inOrderLinker = Objects.requireNonNull(inOrderLinker);
+
+        return this;
+    }
+
+    /**
+     * Provide a consensus engine in place of the platform's default consensus engine.
+     *
+     * @param consensusEngine the consensus engine to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withConsensusEngine(@NonNull final ConsensusEngine consensusEngine) {
+        throwIfAlreadyUsed();
+        if (this.consensusEngine != null) {
+            throw new IllegalStateException("Consensus engine has already been set");
+        }
+        this.consensusEngine = Objects.requireNonNull(consensusEngine);
+        return this;
+    }
+
+    /**
+     * Build the consensus engine if it has not yet been built. If one has been provided via
+     * {@link #withConsensusEngine(ConsensusEngine)}, that engine will be used. If this method is called more than once,
+     * only the first call will build the consensus engine. Otherwise, the default engine will be created and returned.
+     *
+     * @return the consensus engine
+     */
+    @NonNull
+    public ConsensusEngine buildConsensusEngine() {
+        if (consensusEngine == null) {
+            consensusEngine = new DefaultConsensusEngine(
+                    blocks.platformContext(), blocks.initialState().get().getAddressBook(), blocks.selfId());
+        }
+        return consensusEngine;
+    }
+
+    /**
+     * Provide a consensus event stream in place of the platform's default consensus event stream.
+     *
+     * @param consensusEventStream the consensus event stream to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withConsensusEventStream(@NonNull final ConsensusEventStream consensusEventStream) {
+        throwIfAlreadyUsed();
+        if (this.consensusEventStream != null) {
+            throw new IllegalStateException("Consensus event stream has already been set");
+        }
+        this.consensusEventStream = Objects.requireNonNull(consensusEventStream);
+        return this;
+    }
+
+    /**
+     * Build the consensus event stream if it has not yet been built. If one has been provided via
+     * {@link #withConsensusEventStream(ConsensusEventStream)}, that stream will be used. If this method is called more
+     * than once, only the first call will build the consensus event stream. Otherwise, the default stream will be
+     * created and returned.
+     *
+     * @return the consensus event stream
+     */
+    @NonNull
+    public ConsensusEventStream buildConsensusEventStream() {
+        if (consensusEventStream == null) {
+            consensusEventStream = new DefaultConsensusEventStream(
+                    blocks.platformContext(),
+                    blocks.selfId(),
+                    (byte[] data) -> new PlatformSigner(blocks.keysAndCerts()).sign(data),
+                    "" + blocks.selfId().id(),
+                    (EventImpl event) -> event.isLastInRoundReceived()
+                            && blocks.isInFreezePeriodReference().get().test(event.getConsensusTimestamp()));
+        }
+        return consensusEventStream;
+    }
+
+    /**
+     * Provide a PCES sequencer in place of the platform's default PCES sequencer.
+     *
+     * @param pcesSequencer the PCES sequencer to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withPcesSequencer(@NonNull final PcesSequencer pcesSequencer) {
+        throwIfAlreadyUsed();
+        if (this.pcesSequencer != null) {
+            throw new IllegalStateException("PCES sequencer has already been set");
+        }
+        this.pcesSequencer = Objects.requireNonNull(pcesSequencer);
+        return this;
+    }
+
+    /**
+     * Build the PCES sequencer if it has not yet been built. If one has been provided via
+     * {@link #withPcesSequencer(PcesSequencer)}, that sequencer will be used. If this method is called more than once,
+     * only the first call will build the PCES sequencer. Otherwise, the default sequencer will be created and
+     * returned.
+     *
+     * @return the PCES sequencer
+     */
+    @NonNull
+    public PcesSequencer buildPcesSequencer() {
+        if (pcesSequencer == null) {
+            pcesSequencer = new DefaultPcesSequencer();
+        }
+        return pcesSequencer;
+    }
+
+    /**
+     * Provide a round durability buffer in place of the platform's default round durability buffer.
+     *
+     * @param roundDurabilityBuffer the RoundDurabilityBuffer to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withRoundDurabilityBuffer(
+            @NonNull final RoundDurabilityBuffer roundDurabilityBuffer) {
+        throwIfAlreadyUsed();
+        if (this.roundDurabilityBuffer != null) {
+            throw new IllegalStateException("RoundDurabilityBuffer has already been set");
+        }
+        this.roundDurabilityBuffer = Objects.requireNonNull(roundDurabilityBuffer);
+        return this;
+    }
+
+    /**
+     * Build the round durability buffer if it has not yet been built. If one has been provided via
+     * {@link #withRoundDurabilityBuffer(RoundDurabilityBuffer)}, that round durability buffer will be used. If this
+     * method is called more than once, only the first call will build the round durability buffer. Otherwise, the
+     * default round durability buffer will be created and returned.
+     *
+     * @return the RoundDurabilityBuffer
+     */
+    @NonNull
+    public RoundDurabilityBuffer buildRoundDurabilityBuffer() {
+        if (roundDurabilityBuffer == null) {
+            roundDurabilityBuffer = new DefaultRoundDurabilityBuffer(blocks.platformContext());
+        }
+        return roundDurabilityBuffer;
+    }
+
+    /**
+     * Provide a signed state sentinel in place of the platform's default signed state sentinel.
+     *
+     * @param signedStateSentinel the signed state sentinel to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withSignedStateSentinel(@NonNull final SignedStateSentinel signedStateSentinel) {
+        throwIfAlreadyUsed();
+        if (this.signedStateSentinel != null) {
+            throw new IllegalStateException("Signed state sentinel has already been set");
+        }
+        this.signedStateSentinel = Objects.requireNonNull(signedStateSentinel);
+        return this;
+    }
+
+    /**
+     * Build the signed state sentinel if it has not yet been built. If one has been provided via
+     * {@link #withSignedStateSentinel(SignedStateSentinel)}, that sentinel will be used. If this method is called more
+     * than once, only the first call will build the signed state sentinel. Otherwise, the default sentinel will be
+     * created and returned.
+     *
+     * @return the signed state sentinel
+     */
+    @NonNull
+    public SignedStateSentinel buildSignedStateSentinel() {
+        if (signedStateSentinel == null) {
+            signedStateSentinel = new DefaultSignedStateSentinel(blocks.platformContext());
+        }
+        return signedStateSentinel;
+    }
+
+    /**
+     * Provide a transaction prehandler in place of the platform's default transaction prehandler.
+     *
+     * @param transactionPrehandler the transaction prehandler to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withTransactionPrehandler(
+            @NonNull final TransactionPrehandler transactionPrehandler) {
+        throwIfAlreadyUsed();
+        if (this.transactionPrehandler != null) {
+            throw new IllegalStateException("Transaction prehandler has already been set");
+        }
+        this.transactionPrehandler = Objects.requireNonNull(transactionPrehandler);
+        return this;
+    }
+
+    /**
+     * Build the transaction prehandler if it has not yet been built. If one has been provided via
+     * {@link #withTransactionPrehandler(TransactionPrehandler)}, that transaction prehandler will be used. If this
+     * method is called more than once, only the first call will build the transaction prehandler. Otherwise, the
+     * default transaction prehandler will be created and returned.
+     *
+     * @return the transaction prehandler
+     */
+    @NonNull
+    public TransactionPrehandler buildTransactionPrehandler() {
+        if (transactionPrehandler == null) {
+            transactionPrehandler = new DefaultTransactionPrehandler(
+                    blocks.platformContext(),
+                    () -> blocks.latestImmutableStateProviderReference().get().apply("transaction prehandle"));
+        }
+        return transactionPrehandler;
+    }
+
+    /**
+     * Provide a PCES writer in place of the platform's default PCES writer.
+     *
+     * @param pcesWriter the PCES writer to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withPcesWriter(@NonNull final PcesWriter pcesWriter) {
+        throwIfAlreadyUsed();
+        if (this.pcesWriter != null) {
+            throw new IllegalStateException("PCES writer has already been set");
+        }
+        this.pcesWriter = Objects.requireNonNull(pcesWriter);
+        return this;
+    }
+
+    /**
+     * Build the PCES writer if it has not yet been built. If one has been provided via
+     * {@link #withPcesWriter(PcesWriter)}, that writer will be used. If this method is called more than once, only the
+     * first call will build the PCES writer. Otherwise, the default writer will be created and returned.
+     *
+     * @return the PCES writer
+     */
+    @NonNull
+    public PcesWriter buildPcesWriter() {
+        if (pcesWriter == null) {
+            try {
+                final PcesFileManager preconsensusEventFileManager = new PcesFileManager(
+                        blocks.platformContext(),
+                        blocks.initialPcesFiles(),
+                        blocks.selfId(),
+                        blocks.initialState().get().getRound());
+                pcesWriter = new DefaultPcesWriter(blocks.platformContext(), preconsensusEventFileManager);
+
+            } catch (final IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        return pcesWriter;
     }
 }

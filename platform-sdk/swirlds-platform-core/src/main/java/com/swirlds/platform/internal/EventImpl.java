@@ -27,31 +27,25 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.common.stream.Timestamped;
-import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.EventMetadata;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.events.BaseEvent;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.ConsensusData;
+import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.system.events.EventSerializationOptions;
-import com.swirlds.platform.system.events.PlatformEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.SystemTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.platform.util.iterator.SkippingIterator;
-import com.swirlds.platform.util.iterator.TypedIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
@@ -62,9 +56,8 @@ import java.util.TreeSet;
  */
 @ConstructableIgnored
 public class EventImpl extends EventMetadata
-        implements BaseEvent,
-                Comparable<EventImpl>,
-                PlatformEvent,
+        implements Comparable<EventImpl>,
+                ConsensusEvent,
                 SerializableHashable,
                 OptionalSelfSerializable<EventSerializationOptions>,
                 RunningHashable,
@@ -96,9 +89,6 @@ public class EventImpl extends EventMetadata
      * highest.
      */
     private Set<Integer> systemTransactionIndices;
-
-    /** A list of references to the system transactions in the array of all transactions */
-    private List<SystemTransaction> systemTransactions;
 
     /** The number of application transactions in this round */
     private int numAppTransactions = 0;
@@ -306,22 +296,18 @@ public class EventImpl extends EventMetadata
         final ConsensusTransactionImpl[] transactions = getTransactions();
         if (transactions == null || transactions.length == 0) {
             systemTransactionIndices = Collections.emptySet();
-            systemTransactions = Collections.emptyList();
             return;
         }
 
         final Set<Integer> indices = new TreeSet<>();
-        final List<SystemTransaction> sysTrans = new ArrayList<>();
         for (int i = 0; i < transactions.length; i++) {
             if (transactions[i].isSystem()) {
                 indices.add(i);
-                sysTrans.add((SystemTransaction) getTransactions()[i]);
             } else {
                 numAppTransactions++;
             }
         }
         this.systemTransactionIndices = Collections.unmodifiableSet(indices);
-        this.systemTransactions = Collections.unmodifiableList(sysTrans);
     }
 
     /**
@@ -331,16 +317,6 @@ public class EventImpl extends EventMetadata
      */
     public int getNumAppTransactions() {
         return numAppTransactions;
-    }
-
-    /**
-     * An iterator over all system transactions in this event.
-     *
-     * @return system transaction iterator
-     */
-    public Iterator<SystemTransaction> systemTransactionIterator() {
-        // FUTURE WORK: remove this once ConsensusSystemTransactionManager is removed
-        return new TypedIterator<>(systemTransactions.iterator());
     }
 
     /**
@@ -356,7 +332,6 @@ public class EventImpl extends EventMetadata
         for (int i = 0; i < transactions.length; i++) {
             final Instant transConsTime = getConsensusTimestamp().plusNanos(i * MIN_TRANS_TIMESTAMP_INCR_NANOS);
             transactions[i].setConsensusTimestamp(transConsTime);
-            transactions[i].setConsensusOrder(getConsensusOrder());
         }
     }
 
@@ -396,25 +371,15 @@ public class EventImpl extends EventMetadata
     /**
      * @return The hashed part of a base event
      */
-    public BaseEventHashedData getBaseEventHashedData() {
+    public BaseEventHashedData getHashedData() {
         return baseEvent.getHashedData();
     }
 
     /**
      * @return The part of a base event which is not hashed
      */
-    public BaseEventUnhashedData getBaseEventUnhashedData() {
-        return baseEvent.getUnhashedData();
-    }
-
-    @Override
-    public BaseEventHashedData getHashedData() {
-        return getBaseEventHashedData();
-    }
-
-    @Override
     public BaseEventUnhashedData getUnhashedData() {
-        return getBaseEventUnhashedData();
+        return baseEvent.getUnhashedData();
     }
 
     /**
@@ -515,20 +480,29 @@ public class EventImpl extends EventMetadata
     //	Event interface methods
     //////////////////////////////////////////
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Get the consensus timestamp of this event
+     *
+     * @return the consensus timestamp of this event
+     */
     public Instant getConsensusTimestamp() {
         return consensusData.getConsensusTimestamp();
     }
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Get the generation of this event
+     *
+     * @return the generation of this event
+     */
     public long getGeneration() {
         return baseEvent.getHashedData().getGeneration();
     }
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Get the birth round of this event
+     *
+     * @return the birth round of this event
+     */
     public long getBirthRound() {
         return baseEvent.getHashedData().getBirthRound();
     }
@@ -552,9 +526,10 @@ public class EventImpl extends EventMetadata
     }
 
     /**
-     * {@inheritDoc}
+     * Get the round received of this event
+     *
+     * @return the round received of this event
      */
-    @Override
     public long getRoundReceived() {
         return consensusData.getRoundReceived();
     }
@@ -576,27 +551,9 @@ public class EventImpl extends EventMetadata
         return getTransactions() == null || getTransactions().length == 0;
     }
 
-    //
-    // String methods
-    //
-
-    /**
-     * @see EventStrings#toShortString(EventImpl)
-     */
-    public String toShortString() {
-        return EventStrings.toShortString(this);
-    }
-
-    /**
-     * @see EventStrings#toMediumString(EventImpl)
-     */
-    public String toMediumString() {
-        return EventStrings.toMediumString(this);
-    }
-
     @Override
     public String toString() {
-        return toMediumString();
+        return baseEvent.toString();
     }
 
     //

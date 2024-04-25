@@ -23,6 +23,8 @@ import static com.swirlds.platform.consensus.ConsensusConstants.FIRST_CONSENSUS_
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
+import com.swirlds.common.utility.throttle.RateLimitedLogger;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.consensus.AncestorSearch;
 import com.swirlds.platform.consensus.CandidateWitness;
 import com.swirlds.platform.consensus.ConsensusConstants;
@@ -42,8 +44,10 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.util.MarkerFileWriter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -141,6 +145,11 @@ import org.apache.logging.log4j.Logger;
  */
 public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus {
 
+    public static final String COIN_ROUND_MARKER_FILE = "consensus-coin-round";
+    public static final String NO_SUPER_MAJORITY_MARKER_FILE = "consensus-no-super-majority";
+    public static final String NO_JUDGES_MARKER_FILE = "consensus-no-judges";
+    public static final String CONSENSUS_EXCEPTION_MARKER_FILE = "consensus-exception";
+
     private static final Logger logger = LogManager.getLogger(ConsensusImpl.class);
     /** the only address book currently, until address book changes are implemented */
     private final AddressBook addressBook;
@@ -188,6 +197,15 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      */
     private AncientMode ancientMode;
 
+    /** The marker file writer */
+    private MarkerFileWriter markerFileWriter;
+    /** The rate limited logger for rounds without a super majority of weight on judges */
+    private RateLimitedLogger noSuperMajorityLogger;
+    /** The rate limited logger for rounds with no judge */
+    private RateLimitedLogger noJudgeLogger;
+    /** The rate limited logger for coin rounds */
+    private RateLimitedLogger coinRoundLogger;
+
     /**
      * Constructs an empty object (no events) to keep track of elections and calculate consensus.
      *
@@ -200,6 +218,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             @NonNull final ConsensusMetrics consensusMetrics,
             @NonNull final AddressBook addressBook) {
         super(platformContext);
+        this.markerFileWriter = new MarkerFileWriter(platformContext);
         this.consensusMetrics = consensusMetrics;
 
         // until we implement address book changes, we will just use the use this address book
@@ -210,6 +229,9 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
+        this.noSuperMajorityLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(1));
+        this.noJudgeLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(1));
+        this.coinRoundLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(1));
     }
 
     /**
@@ -256,19 +278,24 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     @NonNull
     @Override
     public List<ConsensusRound> addEvent(@NonNull final EventImpl event) {
-        recentEvents.add(event);
-        final List<ConsensusRound> rounds = new ArrayList<>();
-        // set its round to undefined so that it gets calculated
-        event.setRoundCreated(ConsensusConstants.ROUND_UNDEFINED);
-        checkInitJudges(event);
-        ConsensusRound consensusRound = calculateAndVote(event);
+        try {
+            recentEvents.add(event);
+            final List<ConsensusRound> rounds = new ArrayList<>();
+            // set its round to undefined so that it gets calculated
+            event.setRoundCreated(ConsensusConstants.ROUND_UNDEFINED);
+            checkInitJudges(event);
+            ConsensusRound consensusRound = calculateAndVote(event);
 
-        while (consensusRound != null) {
-            rounds.add(consensusRound);
+            while (consensusRound != null) {
+                rounds.add(consensusRound);
 
-            consensusRound = recalculateAndVote();
+                consensusRound = recalculateAndVote();
+            }
+            return rounds;
+        } catch (final Exception e) {
+            markerFileWriter.writeMarkerFile(CONSENSUS_EXCEPTION_MARKER_FILE);
+            throw e;
         }
-        return rounds;
     }
 
     /**
@@ -383,8 +410,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         initJudges.judgeFound(event);
         logger.info(
                 STARTUP.getMarker(),
-                "Found init judge {}, num remaining: {}",
-                event::toShortString,
+                "Found init judge %s, num remaining: {}"
+                        .formatted(event.getBaseEvent().getDescriptor()),
                 initJudges::numMissingJudges);
         if (initJudges.allJudgesFound()) {
             // we now have the last of the missing judges, so find every known event that is an
@@ -461,6 +488,12 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                         candidateWitness,
                         "coin-" + (countingVote.isSupermajority() ? "counting" : "sig"),
                         diff);
+                markerFileWriter.writeMarkerFile(COIN_ROUND_MARKER_FILE);
+                coinRoundLogger.error(
+                        LogMarker.ERROR.getMarker(),
+                        "Coin round {}, voting witness: {}",
+                        roundElections.getRound(),
+                        votingWitness);
                 continue;
             }
 
@@ -624,6 +657,9 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         final List<EventImpl> judges = roundElections.findAllJudges();
         final long decidedRoundNumber = rounds.getElectionRoundNumber();
 
+        // Check for no judges or super majority conditions.
+        checkJudges(judges, decidedRoundNumber);
+
         // update the round and generation values since fame has been decided for a new round
         rounds.currentElectionDecided();
 
@@ -676,6 +712,33 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                         rounds.getMinimumJudgeInfoList(),
                         numConsensus,
                         lastConsensusTime));
+    }
+
+    /**
+     * Check if there are no judges or if there is no super majority of weight on judges.
+     *
+     * @param judges             the judges for this round
+     * @param decidedRoundNumber the round number of the decided round
+     */
+    private void checkJudges(@NonNull final List<EventImpl> judges, final long decidedRoundNumber) {
+        final long judgeWeights = judges.stream()
+                .mapToLong(event -> getWeight(event.getCreatorId()))
+                .sum();
+        consensusMetrics.judgeWeights(judgeWeights);
+        if (judges.isEmpty()) {
+            markerFileWriter.writeMarkerFile(NO_JUDGES_MARKER_FILE);
+            noJudgeLogger.error(LogMarker.ERROR.getMarker(), "no judges in round = {}", decidedRoundNumber);
+        } else {
+            if (!Threshold.SUPER_MAJORITY.isSatisfiedBy(judgeWeights, addressBook.getTotalWeight())) {
+                markerFileWriter.writeMarkerFile(NO_SUPER_MAJORITY_MARKER_FILE);
+                noSuperMajorityLogger.error(
+                        LogMarker.ERROR.getMarker(),
+                        "less than a super majority of weight on judges.  round = {}, judgesWeight = {}, percentage = {}",
+                        decidedRoundNumber,
+                        judgeWeights,
+                        (double) judgeWeights / addressBook.getTotalWeight());
+            }
+        }
     }
 
     /**

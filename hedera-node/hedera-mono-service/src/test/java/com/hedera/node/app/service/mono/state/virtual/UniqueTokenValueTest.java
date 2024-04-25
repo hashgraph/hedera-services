@@ -26,13 +26,13 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -74,24 +74,24 @@ class UniqueTokenValueTest {
     }
 
     @Test
-    void deserializeByteBuffer_withMetadata_returnsCorrespondingData() throws IOException {
-        final ByteBuffer byteBuffer = ByteBuffer.wrap(new byte[1024]);
+    void deserializeByteBuffer_withMetadata_returnsCorrespondingData() {
+        final BufferedData byteBuffer = BufferedData.wrap(new byte[1024]);
         example1.serialize(byteBuffer);
-        byteBuffer.rewind();
+        byteBuffer.reset();
 
-        final UniqueTokenValue value = new UniqueTokenValue();
-        value.deserialize(byteBuffer, UniqueTokenValue.CURRENT_VERSION);
+        final UniqueTokenValueSerializer serializer = new UniqueTokenValueSerializer();
+        final UniqueTokenValue value = serializer.deserialize(byteBuffer);
         assertSameAsExample1(value);
     }
 
     @Test
-    void deserializeByteBuffer_withNoMetadata_returnsCorrespondingData() throws IOException {
-        final ByteBuffer byteBuffer = ByteBuffer.wrap(new byte[1024]);
+    void deserializeByteBuffer_withNoMetadata_returnsCorrespondingData() {
+        final BufferedData byteBuffer = BufferedData.wrap(new byte[1024]);
         example2.serialize(byteBuffer);
-        byteBuffer.rewind();
+        byteBuffer.reset();
 
-        final UniqueTokenValue value = new UniqueTokenValue();
-        value.deserialize(byteBuffer, UniqueTokenValue.CURRENT_VERSION);
+        final UniqueTokenValueSerializer serializer = new UniqueTokenValueSerializer();
+        final UniqueTokenValue value = serializer.deserialize(byteBuffer);
         assertSameAsExample2(value);
     }
 
@@ -136,8 +136,8 @@ class UniqueTokenValueTest {
 
         final byte[] sdata1 = new byte[1024];
         final byte[] sdata2 = new byte[1024];
-        value1.serialize(ByteBuffer.wrap(sdata1));
-        value2.serialize(ByteBuffer.wrap(sdata2));
+        value1.serialize(BufferedData.wrap(sdata1));
+        value2.serialize(BufferedData.wrap(sdata2));
 
         // These should serialize to the same size.
         assertThat(sdata1).isEqualTo(sdata2);
@@ -187,8 +187,8 @@ class UniqueTokenValueTest {
 
         final UniqueTokenValue value1 = new UniqueTokenValue();
         final UniqueTokenValue value2 = new UniqueTokenValue();
-        // Deserialize with bytebuffer
-        value1.deserialize(ByteBuffer.wrap(data1), 1);
+        // Deserialize with buffereddata
+        value1.deserialize(BufferedData.wrap(data1));
 
         // Deserialize with datastream
         final ByteArrayInputStream stream = new ByteArrayInputStream(data1);
@@ -203,7 +203,7 @@ class UniqueTokenValueTest {
 
     @Test
     void copiedResults_parentReleased_copyStillSame() throws IOException {
-        final ByteBuffer encodedEmpty = ByteBuffer.wrap(new byte[128]);
+        final BufferedData encodedEmpty = BufferedData.wrap(new byte[128]);
         new UniqueTokenValue().serialize(encodedEmpty);
 
         final UniqueTokenValue src =
@@ -226,7 +226,7 @@ class UniqueTokenValueTest {
 
     @Test
     void asReadOnly_mutableObject_shouldMakeItImmutable() throws IOException {
-        final ByteBuffer encodedEmpty = ByteBuffer.wrap(new byte[128]);
+        final BufferedData encodedEmpty = BufferedData.wrap(new byte[128]);
         new UniqueTokenValue().serialize(encodedEmpty);
 
         final UniqueTokenValue src =
@@ -238,7 +238,7 @@ class UniqueTokenValueTest {
         assertThat(src.isImmutable()).isFalse();
 
         // Mutate parent to make sure copy isn't modified.
-        src.deserialize(encodedEmpty, UniqueTokenValue.CURRENT_VERSION);
+        src.deserialize(encodedEmpty);
 
         assertThat(readOnlyCopy.isImmutable()).isTrue();
         assertThat(readOnlyCopy.getOwnerAccountNum()).isEqualTo(1234L);
@@ -259,16 +259,14 @@ class UniqueTokenValueTest {
 
     @Test
     void deserializing_whenObjectImmutable_shouldThrowException() throws IOException {
-        final ByteBuffer encodedEmpty = ByteBuffer.wrap(new byte[128]);
+        final BufferedData encodedEmpty = BufferedData.wrap(new byte[128]);
         new UniqueTokenValue().serialize(encodedEmpty);
 
         final UniqueTokenValue src =
                 new UniqueTokenValue(1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
 
         final UniqueTokenValue readOnlyCopy = (UniqueTokenValue) src.asReadOnly();
-        assertThrows(
-                MutabilityException.class,
-                () -> readOnlyCopy.deserialize(encodedEmpty, UniqueTokenValue.CURRENT_VERSION));
+        assertThrows(MutabilityException.class, () -> readOnlyCopy.deserialize(encodedEmpty));
     }
 
     @Test

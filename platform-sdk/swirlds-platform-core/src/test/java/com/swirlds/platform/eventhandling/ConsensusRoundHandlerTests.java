@@ -16,7 +16,13 @@
 
 package com.swirlds.platform.eventhandling;
 
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -27,28 +33,31 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.consensus.EventWindow;
+import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.platform.test.fixtures.event.EventImplTestUtils;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -62,7 +71,7 @@ class ConsensusRoundHandlerTests {
 
     @BeforeEach
     void setUp() {
-        random = RandomUtils.getRandomPrintSeed();
+        random = getRandomPrintSeed();
         time = new FakeTime();
     }
 
@@ -103,18 +112,16 @@ class ConsensusRoundHandlerTests {
 
     private static void assertEventReachedConsensus(@NonNull final EventImpl event) {
         assertTrue(event.getTransactions().length > 0, "event should have transactions");
-        event.consensusTransactionIterator().forEachRemaining(transaction -> {
-            assertNotNull(transaction.getConsensusTimestamp(), "transaction should have a consensus timestamp");
-            assertNotEquals(-1, transaction.getConsensusOrder(), "transaction should have a consensus order");
-        });
+        event.consensusTransactionIterator()
+                .forEachRemaining(transaction -> assertNotNull(
+                        transaction.getConsensusTimestamp(), "transaction should have a consensus timestamp"));
     }
 
     private static void assertEventDidNotReachConsensus(@NonNull final EventImpl event) {
         assertTrue(event.getTransactions().length > 0, "event should have transactions");
-        event.consensusTransactionIterator().forEachRemaining(transaction -> {
-            assertNull(transaction.getConsensusTimestamp(), "transaction should not have a consensus timestamp");
-            assertEquals(-1, transaction.getConsensusOrder(), "transaction should not have a consensus order");
-        });
+        event.consensusTransactionIterator()
+                .forEachRemaining(transaction -> assertNull(
+                        transaction.getConsensusTimestamp(), "transaction should not have a consensus timestamp"));
     }
 
     @Test
@@ -125,15 +132,10 @@ class ConsensusRoundHandlerTests {
         final PlatformState platformState = mock(PlatformState.class);
         final SwirldStateManager swirldStateManager = mockSwirldStateManager(platformState);
 
-        final CheckedConsumer<GossipEvent, InterruptedException> waitForEventDurability = mock(CheckedConsumer.class);
         final StatusActionSubmitter statusActionSubmitter = mock(StatusActionSubmitter.class);
 
         final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
-                platformContext,
-                swirldStateManager,
-                waitForEventDurability,
-                statusActionSubmitter,
-                mock(SoftwareVersion.class));
+                platformContext, swirldStateManager, statusActionSubmitter, mock(SoftwareVersion.class));
 
         final EventImpl keystoneEvent = buildEvent();
         final List<EventImpl> events = List.of(buildEvent(), buildEvent(), buildEvent());
@@ -151,11 +153,10 @@ class ConsensusRoundHandlerTests {
         events.forEach(ConsensusRoundHandlerTests::assertEventReachedConsensus);
 
         verify(statusActionSubmitter, never()).submitStatusAction(any(FreezePeriodEnteredAction.class));
-        verify(waitForEventDurability).accept(keystoneEvent.getBaseEvent());
         verify(swirldStateManager).handleConsensusRound(consensusRound);
         verify(swirldStateManager, never()).savedStateInFreezePeriod();
         verify(platformState)
-                .setRunningEventHash(
+                .setLegacyRunningEventHash(
                         events.getLast().getRunningHash().getFutureHash().getAndRethrow());
     }
 
@@ -168,15 +169,10 @@ class ConsensusRoundHandlerTests {
         final SwirldStateManager swirldStateManager = mockSwirldStateManager(platformState);
         when(swirldStateManager.isInFreezePeriod(any())).thenReturn(true);
 
-        final CheckedConsumer<GossipEvent, InterruptedException> waitForEventDurability = mock(CheckedConsumer.class);
         final StatusActionSubmitter statusActionSubmitter = mock(StatusActionSubmitter.class);
 
         final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
-                platformContext,
-                swirldStateManager,
-                waitForEventDurability,
-                statusActionSubmitter,
-                mock(SoftwareVersion.class));
+                platformContext, swirldStateManager, statusActionSubmitter, mock(SoftwareVersion.class));
 
         final EventImpl keystoneEvent = buildEvent();
         final List<EventImpl> events = List.of(buildEvent(), buildEvent(), buildEvent());
@@ -194,11 +190,10 @@ class ConsensusRoundHandlerTests {
         events.forEach(ConsensusRoundHandlerTests::assertEventReachedConsensus);
 
         verify(statusActionSubmitter).submitStatusAction(any(FreezePeriodEnteredAction.class));
-        verify(waitForEventDurability).accept(keystoneEvent.getBaseEvent());
         verify(swirldStateManager).handleConsensusRound(consensusRound);
         verify(swirldStateManager).savedStateInFreezePeriod();
         verify(platformState)
-                .setRunningEventHash(
+                .setLegacyRunningEventHash(
                         events.getLast().getRunningHash().getFutureHash().getAndRethrow());
 
         final List<EventImpl> postFreezeEvents = List.of(buildEvent(), buildEvent(), buildEvent());
@@ -211,11 +206,62 @@ class ConsensusRoundHandlerTests {
         postFreezeEvents.forEach(ConsensusRoundHandlerTests::assertEventDidNotReachConsensus);
 
         verify(statusActionSubmitter).submitStatusAction(any(FreezePeriodEnteredAction.class));
-        verify(waitForEventDurability).accept(keystoneEvent.getBaseEvent());
         verify(swirldStateManager).handleConsensusRound(consensusRound);
         verify(swirldStateManager).savedStateInFreezePeriod();
         verify(platformState)
-                .setRunningEventHash(
+                .setLegacyRunningEventHash(
                         events.getLast().getRunningHash().getFutureHash().getAndRethrow());
+    }
+
+    @Test
+    void runningEventHashInserted() throws InterruptedException {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final State state = new State();
+        final PlatformState platformState = new PlatformState();
+        state.setPlatformState(platformState);
+
+        final SwirldStateManager swirldStateManager = mock(SwirldStateManager.class);
+        when(swirldStateManager.getConsensusState()).thenReturn(state);
+        when(swirldStateManager.getStateForSigning()).thenReturn(state);
+
+        final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
+                platformContext, swirldStateManager, mock(StatusActionSubmitter.class), mock(SoftwareVersion.class));
+
+        final EventImpl keystoneEvent = buildEvent();
+        final List<EventImpl> events = List.of(buildEvent(), buildEvent(), buildEvent());
+
+        final ConsensusSnapshot consensusSnapshot = mock(ConsensusSnapshot.class);
+        when(consensusSnapshot.consensusTimestamp()).thenReturn(randomInstant(random));
+
+        final ConsensusRound consensusRound = new ConsensusRound(
+                mock(AddressBook.class),
+                events,
+                keystoneEvent,
+                mock(Generations.class),
+                mock(EventWindow.class),
+                consensusSnapshot);
+
+        // Call handle on a background thread. We expect the thread to block until the running event hash has been set.
+        final AtomicBoolean completed = new AtomicBoolean(false);
+        final Thread thread = new Thread(() -> {
+            consensusRoundHandler.handleConsensusRound(consensusRound);
+            completed.set(true);
+        });
+        thread.start();
+
+        // The thread should become blocked. Sleep for a little while to make sure it doesn't try to do things
+        // before the running event hash is set.
+        MILLISECONDS.sleep(200);
+        assertFalse(completed.get());
+
+        final Hash runningHash = randomHash(random);
+        consensusRound.setRunningEventHash(runningHash);
+
+        assertEventuallyTrue(completed::get, Duration.ofSeconds(1), "handling should have completed");
+        assertEquals(runningHash, platformState.getRunningEventHash());
+
+        thread.join();
     }
 }
