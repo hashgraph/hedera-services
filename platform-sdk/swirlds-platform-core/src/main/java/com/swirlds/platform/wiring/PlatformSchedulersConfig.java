@@ -128,4 +128,5 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(5) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration roundDurabilityBuffer,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC")
-                TaskSchedulerConfiguration staleEventDetector) {}
+                TaskSchedulerConfiguration staleEventDetector,
+        @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration transactionResubmitter) {}

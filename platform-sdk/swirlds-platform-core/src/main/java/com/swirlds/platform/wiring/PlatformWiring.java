@@ -65,6 +65,7 @@ import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
 import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.SelfEventSigner;
 import com.swirlds.platform.event.stale.StaleEventDetector;
+import com.swirlds.platform.event.stale.TransactionResubmitter;
 import com.swirlds.platform.event.stream.ConsensusEventStream;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
@@ -171,6 +172,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final boolean publishSnapshotOverrides;
     private final ComponentWiring<RunningEventHasher, Void> runningEventHasherWiring;
     private final ComponentWiring<StaleEventDetector, List<GossipEvent>> staleEventDetectorWiring;
+    private final ComponentWiring<TransactionResubmitter, Void> transactionResubmitterWiring;
 
     /**
      * Constructor.
@@ -333,6 +335,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         runningEventHasherWiring = new ComponentWiring<>(model, RunningEventHasher.class, config.runningEventHasher());
 
         staleEventDetectorWiring = new ComponentWiring<>(model, StaleEventDetector.class, config.staleEventDetector());
+        transactionResubmitterWiring =
+                new ComponentWiring<>(model, TransactionResubmitter.class, config.transactionResubmitter());
 
         platformCoordinator = new PlatformCoordinator(
                 hashingObjectCounter,
@@ -455,6 +459,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         selfEventSignerWiring
                 .getOutputWire()
                 .solderTo(staleEventDetectorWiring.getInputWire(StaleEventDetector::addSelfEvent));
+
+        final OutputWire<GossipEvent> splitStaleEventDetectorOutput = staleEventDetectorWiring.getSplitOutput();
+        splitStaleEventDetectorOutput.solderTo(
+                transactionResubmitterWiring.getInputWire(TransactionResubmitter::resubmitStaleTransactions));
+
         splitOrphanBufferOutput.solderTo(applicationTransactionPrehandlerWiring.getInputWire(
                 TransactionPrehandler::prehandleApplicationTransactions));
         splitOrphanBufferOutput.solderTo(stateSignatureCollectorWiring.preConsensusEventInput());
@@ -711,6 +720,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         platformPublisherWiring.bind(platformPublisher);
         stateGarbageCollectorWiring.bind(builder::buildStateGarbageCollector);
         staleEventDetectorWiring.bind(builder::buildStaleEventDetector);
+        transactionResubmitterWiring.bind(builder::buildTransactionResubmitter);
     }
 
     /**

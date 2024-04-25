@@ -49,6 +49,7 @@ pcli diagram \
     -g 'State Verification:stateSigner,hashLogger,ISS Detector,🖋️,💥' \
     -g 'Transaction Handling:Consensus Round Handler,latestImmutableStateNexus' \
     -g 'Round Durability Buffer:RoundDurabilityBuffer,RoundDurabilityBufferSplitter' \
+    -g 'Stale Event Detector:StaleEventDetector,StaleEventDetectorSplitter' \
     -c 'Orphan Buffer' \
     -c 'Consensus Engine' \
     -c 'State Signature Collector' \
@@ -58,4 +59,5 @@ pcli diagram \
     -c 'ISS Detector' \
     -c 'Round Durability Buffer' \
     -c 'Wait For Crash Durability' \
+    -c 'Stale Event Detector' \
     -o "${SCRIPT_PATH}/../../../../../../../../docs/core/wiring-diagram.svg"
