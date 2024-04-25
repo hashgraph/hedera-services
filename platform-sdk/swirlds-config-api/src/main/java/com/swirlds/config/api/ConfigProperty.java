@@ -72,4 +72,5 @@ public @interface ConfigProperty {
      * @return the default value or {@link ConfigProperty#UNDEFINED_DEFAULT_VALUE}
      */
     String defaultValue() default UNDEFINED_DEFAULT_VALUE;
+
 }

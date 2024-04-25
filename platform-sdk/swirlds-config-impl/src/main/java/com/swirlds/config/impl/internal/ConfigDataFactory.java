@@ -19,7 +19,7 @@ package com.swirlds.config.impl.internal;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.Default;
+import com.swirlds.config.api.DefaultValue;
 import com.swirlds.config.extensions.reflection.ConfigReflectionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -28,6 +28,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.RecordComponent;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -115,71 +116,36 @@ class ConfigDataFactory {
         }
     }
 
-    private static boolean isGenericType(@NonNull final RecordComponent component, @NonNull final Class<?> type) {
-        Objects.requireNonNull(component, "component must not be null");
-        Objects.requireNonNull(type, "type must not be null");
-        final ParameterizedType stringSetType = (ParameterizedType) component.getGenericType();
-        return Objects.equals(type, stringSetType.getRawType());
-    }
-
-    private static <T> Class<T> getGenericSetType(@NonNull final RecordComponent component) {
-        if (!isGenericType(component, Set.class)) {
-            throw new IllegalArgumentException("Only Set interface is supported");
-        }
-        return (Class<T>)
-                ConfigReflectionUtils.getSingleGenericTypeArgument((ParameterizedType) component.getGenericType());
-    }
-
-    @SuppressWarnings("unchecked")
-    @NonNull
-    private static <T> Class<T> getGenericListType(@NonNull final RecordComponent component) {
-        Objects.requireNonNull(component, "component must not be null");
-        if (!isGenericType(component, List.class)) {
-            throw new IllegalArgumentException("Only List interface is supported");
-        }
-        final Class<T> cls = (Class<T>)
-                ConfigReflectionUtils.getSingleGenericTypeArgument((ParameterizedType) component.getGenericType());
-        if (cls == null) {
-            throw new IllegalArgumentException("No generic class found!");
-        }
-        return cls;
-    }
-
     @Nullable
     private <T> Set<T> getDefaultValueSet(@NonNull final RecordComponent component) {
         Objects.requireNonNull(component, "component must not be null");
-        final Class<?> type = getGenericSetType(component);
-        final String rawValue = getRawValue(component);
-        if (Objects.equals(ConfigProperty.NULL_DEFAULT_VALUE, rawValue)) {
-            return null;
-        }
-        return (Set<T>) ConfigListUtils.createList(rawValue).stream()
-                .map(value -> converterService.convert(value, type))
+        final Class<T> type = getGenericSetType(component);
+        return getRawDefaultValue(component)
+                .map(ConfigListUtils::createList).stream()
+                .flatMap(Collection::stream)
+                .map(v -> converterService.convert(v, type))
                 .collect(Collectors.toSet());
+    }
+
+    @Nullable
+    private <T> List<T> getDefaultValues(@NonNull final RecordComponent component) {
+        Objects.requireNonNull(component, "component must not be null");
+        final Class<T> type = getGenericListType(component);
+        return getRawDefaultValue(component)
+                .map(ConfigListUtils::createList).stream()
+                .flatMap(Collection::stream)
+                .map(v -> converterService.convert(v, type))
+                .toList();
     }
 
     @SuppressWarnings("unchecked")
     @Nullable
-    private <T> List<T> getDefaultValues(@NonNull final RecordComponent component) {
+    private <T> T getDefaultValue(@NonNull final RecordComponent component) {
         Objects.requireNonNull(component, "component must not be null");
-        final Class<?> type = getGenericListType(component);
-        final String rawValue = getRawValue(component);
-        if (Objects.equals(ConfigProperty.NULL_DEFAULT_VALUE, rawValue)) {
-            return null;
-        }
-        return (List<T>) ConfigListUtils.createList(rawValue).stream()
-                .map(value -> converterService.convert(value, type))
-                .toList();
+        final String rawValue = getRawDefaultValue(component).orElse(null);
+        return (T) converterService.convert(rawValue, component.getType());
     }
 
-    @NonNull
-    private String getRawValue(@NonNull final RecordComponent component) {
-        final Optional<String> rawDefaultValue = getRawDefaultValue(component);
-        if (rawDefaultValue.isEmpty()) {
-            throw new IllegalArgumentException("Default value not defined for parameter");
-        }
-        return rawDefaultValue.get();
-    }
 
     @NonNull
     private static <T extends Record> String getNamePrefix(@NonNull final Class<T> type) {
@@ -189,15 +155,35 @@ class ConfigDataFactory {
                 .orElse("");
     }
 
-    @SuppressWarnings("unchecked")
-    @Nullable
-    private <T> T getDefaultValue(@NonNull final RecordComponent component) {
+    private static void requireContainerType(@NonNull final RecordComponent component, @NonNull final Class<?> type) {
         Objects.requireNonNull(component, "component must not be null");
-        final String rawValue = getRawValue(component);
-        if (Objects.equals(ConfigProperty.NULL_DEFAULT_VALUE, rawValue)) {
-            return null;
+        Objects.requireNonNull(type, "type must not be null");
+        final ParameterizedType stringSetType = (ParameterizedType) component.getGenericType();
+        if (!Objects.equals(type, stringSetType.getRawType())) {
+            throw new IllegalArgumentException("Only " + type.getTypeName()+" is supported");
         }
-        return (T) converterService.convert(rawValue, component.getType());
+    }
+
+    @SuppressWarnings("unchecked")
+    @NonNull
+    private static <T> Class<T> getGenericListType(@NonNull final RecordComponent component) {
+        Objects.requireNonNull(component, "component must not be null");
+        requireContainerType(component, List.class);
+
+        final Class<T> cls = (Class<T>)
+                ConfigReflectionUtils.getSingleGenericTypeArgument((ParameterizedType) component.getGenericType());
+        if (cls == null) {
+            throw new IllegalArgumentException("No generic class found!");
+        }
+        return cls;
+    }
+
+    @SuppressWarnings("unchecked")
+    @NonNull
+    private static <T> Class<T> getGenericSetType(@NonNull final RecordComponent component) {
+        requireContainerType(component, Set.class);
+        return (Class<T>)
+                ConfigReflectionUtils.getSingleGenericTypeArgument((ParameterizedType) component.getGenericType());
     }
 
     @NonNull
@@ -205,15 +191,16 @@ class ConfigDataFactory {
         Objects.requireNonNull(component, "component must not be null");
 
         final ConfigProperty configPropertyAnnotation = component.getAnnotation(ConfigProperty.class);
-        final Default defaultAnnotation = component.getAnnotation(Default.class);
+        final DefaultValue defaultAnnotation = component.getAnnotation(DefaultValue.class);
         verifyAtMostOneConfigAnnotation(component, configPropertyAnnotation, defaultAnnotation);
 
         if (configPropertyAnnotation != null && isDefaultDefined(configPropertyAnnotation.defaultValue())) {
-            return Optional.of(configPropertyAnnotation.defaultValue());
-        } else if (defaultAnnotation != null && isDefaultDefined(defaultAnnotation.value())) {
-            return Optional.of(defaultAnnotation.value());
+            return Optional.of(configPropertyAnnotation.defaultValue())
+                    .map(v -> v.equals(ConfigProperty.NULL_DEFAULT_VALUE) ? null : v);
+        } else if (defaultAnnotation != null) {
+            return Optional.ofNullable(defaultAnnotation.value());
         } else {
-            return Optional.empty();
+            throw new IllegalArgumentException("Default value not defined for parameter");
         }
     }
 
@@ -221,15 +208,13 @@ class ConfigDataFactory {
         Objects.requireNonNull(component, "component must not be null");
 
         final ConfigProperty configPropertyAnnotation = component.getAnnotation(ConfigProperty.class);
-        final Default defaultAnnotation = component.getAnnotation(Default.class);
+        final DefaultValue defaultAnnotation = component.getAnnotation(DefaultValue.class);
         verifyAtMostOneConfigAnnotation(component, configPropertyAnnotation, defaultAnnotation);
 
         if (configPropertyAnnotation != null) {
             return isDefaultDefined(configPropertyAnnotation.defaultValue());
-        } else if (defaultAnnotation != null) {
-            return isDefaultDefined(defaultAnnotation.value());
-        } else {
-            return false;
+        } else{
+            return defaultAnnotation != null;
         }
     }
 
@@ -248,12 +233,12 @@ class ConfigDataFactory {
      *
      * @param component                the record component to verify
      * @param configPropertyAnnotation the config property annotation, null if not present
-     * @param defaultAnnotation  the config default annotation, null if not present
+     * @param defaultAnnotation        the config default annotation, null if not present
      */
     private static void verifyAtMostOneConfigAnnotation(
             @NonNull final RecordComponent component,
             @Nullable final ConfigProperty configPropertyAnnotation,
-            @Nullable final Default defaultAnnotation) {
+            @Nullable final DefaultValue defaultAnnotation) {
         if (configPropertyAnnotation != null && defaultAnnotation != null) {
             throw new IllegalArgumentException(
                     "Can not have both @ConfigProperty and @Default annotations on the same record component: "

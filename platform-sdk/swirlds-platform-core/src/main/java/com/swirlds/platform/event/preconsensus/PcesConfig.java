@@ -16,8 +16,9 @@
 
 package com.swirlds.platform.event.preconsensus;
 
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.config.api.ConfigData;
-import com.swirlds.config.api.Default;
+import com.swirlds.config.api.DefaultValue;
 import com.swirlds.config.api.validation.annotation.Min;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -68,7 +69,7 @@ import java.time.Duration;
  *                                             Both. Use this with caution.
  * @param databaseDirectory                    the directory where preconsensus events will be stored, relative to
  *                                             {@link
- *                                             com.swirlds.common.config.StateCommonConfig#savedStateDirectory()}.
+ *                                             StateCommonConfig#savedStateDirectory()}.
  * @param replayQueueSize                      the size of the queue used for holding preconsensus events that are
  *                                             waiting to be replayed
  * @param replayHashPoolSize                   the number of threads used for hashing events during replay
@@ -86,20 +87,21 @@ import java.time.Duration;
  */
 @ConfigData("event.preconsensus")
 public record PcesConfig(
-        @Default("1000") int writeQueueCapacity,
-        @Default("1h") Duration minimumRetentionPeriod,
-        @Default("10") int preferredFileSizeMegabytes,
-        @Default("50") int bootstrapSpan,
-        @Default("5") int spanUtilizationRunningAverageLength,
-        @Min(1) @Default("10") double bootstrapSpanOverlapFactor,
-        @Min(1) @Default("1.2") double spanOverlapFactor,
-        @Default("5") int minimumSpan,
-        @Default("false") boolean permitGaps,
-        @Default("preconsensus-events") Path databaseDirectory,
-        @Default("1024") int replayQueueSize,
-        @Default("8") int replayHashPoolSize,
-        @Default("true") boolean copyRecentStreamToStateSnapshots,
-        @Default("true") boolean compactLastFileOnStartup,
-        @Default("false") boolean forceIgnorePcesSignatures,
-        @Default("1m") Duration roundDurabilityBufferHeartbeatPeriod,
-        @Default("1m") Duration suspiciousRoundDurabilityDuration) {}
+        @DefaultValue("1000") int writeQueueCapacity,
+        @DefaultValue("1h") Duration minimumRetentionPeriod,
+        @DefaultValue("10") int preferredFileSizeMegabytes,
+        @DefaultValue("50") int bootstrapSpan,
+        @DefaultValue("5") int spanUtilizationRunningAverageLength,
+        @Min(1) @DefaultValue("10") double bootstrapSpanOverlapFactor,
+        @Min(1) @DefaultValue("1.2") double spanOverlapFactor,
+        @DefaultValue("5") int minimumSpan,
+        @DefaultValue("false") boolean permitGaps,
+        @DefaultValue("preconsensus-events") Path databaseDirectory,
+        @DefaultValue("1024") int replayQueueSize,
+        @DefaultValue("8") int replayHashPoolSize,
+        @DefaultValue("true") boolean copyRecentStreamToStateSnapshots,
+        @DefaultValue("true") boolean compactLastFileOnStartup,
+        @DefaultValue("false") boolean forceIgnorePcesSignatures,
+        @DefaultValue("1m") Duration roundDurabilityBufferHeartbeatPeriod,
+        @DefaultValue("1m") Duration suspiciousRoundDurabilityDuration,
+        @DefaultValue("") String value ) {}

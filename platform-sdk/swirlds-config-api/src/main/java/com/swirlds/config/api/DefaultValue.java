@@ -20,6 +20,7 @@ import static java.lang.annotation.ElementType.RECORD_COMPONENT;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -31,13 +32,15 @@ import java.lang.annotation.Target;
 @Documented
 @Retention(RUNTIME)
 @Target(RECORD_COMPONENT)
-public @interface Default {
+public @interface DefaultValue {
+
+    String NULL_DEFAULT_VALUE = "com.swirlds.config.value.nullValue#1f9@-32jk-klPQ-#m4r-!p8t";
 
     /**
      * This value is used to define default value of the property.
      *
      * @return the default value
      */
-    @NonNull
-    String value() default ConfigProperty.UNDEFINED_DEFAULT_VALUE;
+    @Nullable
+    String value() default NULL_DEFAULT_VALUE;
 }
