@@ -31,6 +31,7 @@ import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.pool.TransactionPool;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.ShadowgraphWiring;
@@ -66,6 +67,7 @@ public class PlatformCoordinator {
     private final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring;
     private final StateHasherWiring stateHasherWiring;
     private final ComponentWiring<StaleEventDetector, List<GossipEvent>> staleEventDetectorWiring;
+    private final ComponentWiring<TransactionPool, Void> transactionPoolWiring;
 
     /**
      * Constructor
@@ -84,6 +86,8 @@ public class PlatformCoordinator {
      * @param consensusRoundHandlerWiring            the consensus round handler wiring
      * @param roundDurabilityBufferWiring            the round durability buffer wiring
      * @param stateHasherWiring                      the state hasher wiring
+     * @param staleEventDetectorWiring               the stale event detector wiring
+     * @param transactionPoolWiring                  the transaction pool wiring
      */
     public PlatformCoordinator(
             @NonNull final ObjectCounter hashingObjectCounter,
@@ -100,7 +104,8 @@ public class PlatformCoordinator {
             @NonNull final ConsensusRoundHandlerWiring consensusRoundHandlerWiring,
             @NonNull final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring,
             @NonNull final StateHasherWiring stateHasherWiring,
-            @NonNull final ComponentWiring<StaleEventDetector, List<GossipEvent>> staleEventDetectorWiring) {
+            @NonNull final ComponentWiring<StaleEventDetector, List<GossipEvent>> staleEventDetectorWiring,
+            @NonNull final ComponentWiring<TransactionPool, Void> transactionPoolWiring) {
 
         this.hashingObjectCounter = Objects.requireNonNull(hashingObjectCounter);
         this.internalEventValidatorWiring = Objects.requireNonNull(internalEventValidatorWiring);
@@ -117,6 +122,7 @@ public class PlatformCoordinator {
         this.roundDurabilityBufferWiring = Objects.requireNonNull(roundDurabilityBufferWiring);
         this.stateHasherWiring = Objects.requireNonNull(stateHasherWiring);
         this.staleEventDetectorWiring = Objects.requireNonNull(staleEventDetectorWiring);
+        this.transactionPoolWiring = Objects.requireNonNull(transactionPoolWiring);
     }
 
     /**
@@ -196,5 +202,6 @@ public class PlatformCoordinator {
         eventCreationManagerWiring.getInputWire(EventCreationManager::clear).inject(NoInput.getInstance());
         roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::clear).inject(NoInput.getInstance());
         staleEventDetectorWiring.getInputWire(StaleEventDetector::clear).inject(NoInput.getInstance());
+        transactionPoolWiring.getInputWire(TransactionPool::clear).inject(NoInput.getInstance());
     }
 }

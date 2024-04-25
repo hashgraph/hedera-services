@@ -66,6 +66,8 @@ import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.pool.DefaultTransactionPool;
+import com.swirlds.platform.pool.TransactionPool;
 import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
@@ -116,6 +118,7 @@ public class PlatformComponentBuilder {
     private PcesWriter pcesWriter;
     private StaleEventDetector staleEventDetector;
     private TransactionResubmitter transactionResubmitter;
+    private TransactionPool transactionPool;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -481,14 +484,14 @@ public class PlatformComponentBuilder {
                     blocks.initialState().get().getState().getPlatformState().getAddressBook(),
                     blocks.selfId(),
                     blocks.appVersion(),
-                    blocks.transactionPool());
+                    blocks.transactionPoolNexus());
 
             final EventCreationRule eventCreationRules = AggregateEventCreationRules.of(
                     new MaximumRateRule(blocks.platformContext()),
                     new BackpressureRule(
                             blocks.platformContext(),
                             () -> blocks.intakeQueueSizeSupplierSupplier().get().getAsLong()),
-                    new PlatformStatusRule(() -> blocks.currentPlatformStatus().get(), blocks.transactionPool()));
+                    new PlatformStatusRule(() -> blocks.currentPlatformStatus().get(), blocks.transactionPoolNexus()));
 
             eventCreationManager =
                     new DefaultEventCreationManager(blocks.platformContext(), eventCreator, eventCreationRules);
@@ -803,5 +806,36 @@ public class PlatformComponentBuilder {
             transactionResubmitter = new DefaultTransactionResubmitter();
         }
         return transactionResubmitter;
+    }
+
+    /**
+     * Provide a transaction pool in place of the platform's default transaction pool.
+     *
+     * @param transactionPool the transaction pool to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withTransactionPool(@NonNull final TransactionPool transactionPool) {
+        throwIfAlreadyUsed();
+        if (this.transactionPool != null) {
+            throw new IllegalStateException("Transaction pool has already been set");
+        }
+        this.transactionPool = Objects.requireNonNull(transactionPool);
+        return this;
+    }
+
+    /**
+     * Build the transaction pool if it has not yet been built. If one has been provided via
+     * {@link #withTransactionPool(TransactionPool)}, that pool will be used. If this method is called more than once,
+     * only the first call will build the transaction pool. Otherwise, the default pool will be created and returned.
+     *
+     * @return the transaction pool
+     */
+    @NonNull
+    public TransactionPool buildTransactionPool() {
+        if (transactionPool == null) {
+            transactionPool = new DefaultTransactionPool(blocks.transactionPoolNexus());
+        }
+        return transactionPool;
     }
 }

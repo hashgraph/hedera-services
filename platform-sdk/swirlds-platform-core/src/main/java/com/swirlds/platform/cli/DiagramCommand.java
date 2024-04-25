@@ -33,7 +33,6 @@ import com.swirlds.common.wiring.model.diagram.ModelManualLink;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
-import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.util.VirtualTerminal;
 import com.swirlds.platform.wiring.PlatformWiring;
@@ -127,8 +126,7 @@ public final class DiagramCommand extends AbstractCommand {
 
         final ThreadManager threadManager = getStaticThreadManager();
         platformWiring.wireExternalComponents(
-                new PlatformStatusManager(platformContext, platformContext.getTime(), threadManager, a -> {}),
-                new TransactionPool(platformContext));
+                new PlatformStatusManager(platformContext, platformContext.getTime(), threadManager, a -> {}));
 
         final String diagramString = platformWiring
                 .getModel()

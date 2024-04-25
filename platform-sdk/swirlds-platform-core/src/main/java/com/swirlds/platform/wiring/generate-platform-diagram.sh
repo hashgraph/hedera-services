@@ -11,7 +11,7 @@ SCRIPT_PATH="$(dirname "$(readlink -f "$0")")"
 pcli diagram \
     -l 'TransactionPrehandler:futures:consensusRoundHandler' \
     -l 'gossip:get events:shadowgraph' \
-    -l 'EventCreationManager:get transactions:transactionPool' \
+    -l 'EventCreationManager:get transactions:TransactionPool' \
     -l 'RunningEventHasher:future hash:consensusRoundHandler' \
     -l 'ConsensusEventStream:future hash:consensusRoundHandler' \
     -s 'eventWindowManager:event window:🌀' \
@@ -23,12 +23,13 @@ pcli diagram \
     -s 'extractOldestMinimumGenerationOnDisk:minimum identifier to store:📀' \
     -s 'SelfEventSigner:non-validated events:🍎' \
     -s 'Mystery Input:mystery data:❔' \
-    -s 'stateSigner:signature transactions:🖋️' \
+    -s 'stateSigner:submit transaction:🖋️' \
     -s 'issNotificationSplitter:Iss Notification:💥' \
     -s 'toNotification:state written notification:📦' \
     -s 'latestCompleteStateNotifier:complete state notification:💢' \
     -s 'OrphanBufferSplitter:preconsensus signatures:🔰' \
     -s 'RunningEventHashOverride:hash override:💨' \
+    -s 'TransactionResubmitterSplitter:submit transaction:♻️' \
     -g 'Event Validation:InternalEventValidator,EventDeduplicator,EventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
     -g 'Orphan Buffer:OrphanBuffer,OrphanBufferSplitter' \
@@ -38,7 +39,7 @@ pcli diagram \
     -g 'State Signature Collector:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions,latestCompleteStateNotifier' \
     -g 'State Signature Collection:State Signature Collector,latestCompleteStateNexus,💢' \
     -g 'Preconsensus Event Stream:PcesSequencer,PcesWriter' \
-    -g 'Event Creation:EventCreationManager,transactionPool,SelfEventSigner,🍎' \
+    -g 'Event Creation:EventCreationManager,TransactionPool,SelfEventSigner,🍎' \
     -g 'Gossip:gossip,shadowgraph,InOrderLinker' \
     -g 'ISS Detector:issDetector,issNotificationSplitter,issHandler,statusManager_submitCatastrophicFailure' \
     -g 'Heartbeat:heartbeat,❤️' \

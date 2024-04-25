@@ -23,8 +23,8 @@ import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
-import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -60,7 +60,7 @@ import java.util.function.Predicate;
  * @param intakeEventCounter                    counts events that have been received by gossip but not yet inserted
  *                                              into gossip event storage, per peer
  * @param randomBuilder                         a builder for creating random number generators
- * @param transactionPool                       provides transactions to be added to new events
+ * @param transactionPoolNexus                  provides transactions to be added to new events
  * @param currentPlatformStatus                 holds the current status of the platform, should be removed once the
  *                                              platform status manager is operated within the wiring framework
  * @param intakeQueueSizeSupplierSupplier       supplies a method which supplies the size of the intake queue. This hack
@@ -90,7 +90,7 @@ public record PlatformBuildingBlocks(
         @Nullable Consumer<ConsensusSnapshot> snapshotOverrideConsumer,
         @NonNull IntakeEventCounter intakeEventCounter,
         @NonNull RandomBuilder randomBuilder,
-        @NonNull TransactionPool transactionPool,
+        @NonNull TransactionPoolNexus transactionPoolNexus,
         @NonNull AtomicReference<PlatformStatus> currentPlatformStatus,
         @NonNull AtomicReference<LongSupplier> intakeQueueSizeSupplierSupplier,
         @NonNull AtomicReference<Predicate<Instant>> isInFreezePeriodReference,

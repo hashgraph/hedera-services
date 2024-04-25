@@ -116,6 +116,7 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.event.orphan;
     exports com.swirlds.platform.publisher;
     exports com.swirlds.platform.components.consensus;
+    exports com.swirlds.platform.pool;
 
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.cli;

@@ -72,6 +72,9 @@ import java.time.Duration;
  * @param platformPublisher                        configuration for the platform publisher scheduler
  * @param consensusEventStream                     configuration for the consensus event stream scheduler
  * @param roundDurabilityBuffer                    configuration for the round durability buffer scheduler
+ * @param staleEventDetector                       configuration for the stale event detector scheduler
+ * @param transactionResubmitter                   configuration for the transaction resubmitter scheduler
+ * @param transactionPool                          configuration for the transaction pool scheduler
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -129,4 +132,5 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration roundDurabilityBuffer,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration staleEventDetector,
-        @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration transactionResubmitter) {}
+        @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration transactionResubmitter,
+        @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration transactionPool) {}

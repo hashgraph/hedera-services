@@ -80,7 +80,6 @@ import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.EventConfig;
-import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
@@ -90,6 +89,7 @@ import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.metrics.TransactionMetrics;
+import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.publisher.DefaultPlatformPublisher;
 import com.swirlds.platform.publisher.PlatformPublisher;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
@@ -484,7 +484,7 @@ public class SwirldsPlatform implements Platform {
         blocks.intakeQueueSizeSupplierSupplier().set(intakeQueueSizeSupplier);
         blocks.isInFreezePeriodReference().set(swirldStateManager::isInFreezePeriod);
 
-        platformWiring.wireExternalComponents(platformStatusManager, blocks.transactionPool());
+        platformWiring.wireExternalComponents(platformStatusManager);
 
         final IssHandler issHandler =
                 new IssHandler(stateConfig, this::haltRequested, SystemExitUtils::handleFatalError, issScratchpad);
@@ -544,11 +544,11 @@ public class SwirldsPlatform implements Platform {
             platformWiring.getPcesMinimumGenerationToStoreInput().inject(minimumGenerationNonAncientForOldestState);
         }
 
-        final TransactionPool transactionPool = blocks.transactionPool();
+        final TransactionPoolNexus transactionPoolNexus = blocks.transactionPoolNexus();
         transactionSubmitter = new SwirldTransactionSubmitter(
                 platformStatusManager::getCurrentStatus,
                 transactionConfig,
-                transaction -> transactionPool.submitTransaction(transaction, false),
+                transaction -> transactionPoolNexus.submitTransaction(transaction, false),
                 new TransactionMetrics(metrics));
 
         final boolean startedFromGenesis = initialState.isGenesisState();
@@ -630,10 +630,7 @@ public class SwirldsPlatform implements Platform {
 
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
-                List.of(
-                        Pair.of(platformWiring, "platformWiring"),
-                        Pair.of(shadowGraph, "shadowGraph"),
-                        Pair.of(transactionPool, "transactionPool")));
+                List.of(Pair.of(platformWiring, "platformWiring"), Pair.of(shadowGraph, "shadowGraph")));
 
         blocks.latestImmutableStateProviderReference().set(latestImmutableStateNexus::getState);
     }

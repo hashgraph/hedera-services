@@ -72,11 +72,11 @@ import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.EventConfig;
-import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.pool.TransactionPool;
 import com.swirlds.platform.publisher.PlatformPublisher;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
@@ -174,6 +174,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final ComponentWiring<RunningEventHasher, Void> runningEventHasherWiring;
     private final ComponentWiring<StaleEventDetector, List<GossipEvent>> staleEventDetectorWiring;
     private final ComponentWiring<TransactionResubmitter, List<ConsensusTransactionImpl>> transactionResubmitterWiring;
+    private final ComponentWiring<TransactionPool, Void> transactionPoolWiring;
 
     /**
      * Constructor.
@@ -338,6 +339,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         staleEventDetectorWiring = new ComponentWiring<>(model, StaleEventDetector.class, config.staleEventDetector());
         transactionResubmitterWiring =
                 new ComponentWiring<>(model, TransactionResubmitter.class, config.transactionResubmitter());
+        transactionPoolWiring = new ComponentWiring<>(model, TransactionPool.class, config.transactionPool());
 
         platformCoordinator = new PlatformCoordinator(
                 hashingObjectCounter,
@@ -354,7 +356,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 consensusRoundHandlerWiring,
                 roundDurabilityBufferWiring,
                 signedStateHasherWiring,
-                staleEventDetectorWiring);
+                staleEventDetectorWiring,
+                transactionPoolWiring);
 
         wire();
     }
@@ -464,6 +467,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         final OutputWire<GossipEvent> splitStaleEventDetectorOutput = staleEventDetectorWiring.getSplitOutput();
         splitStaleEventDetectorOutput.solderTo(
                 transactionResubmitterWiring.getInputWire(TransactionResubmitter::resubmitStaleTransactions));
+        final OutputWire<ConsensusTransactionImpl> splitTransactionResubmitterOutput =
+                transactionResubmitterWiring.getSplitOutput();
+        splitTransactionResubmitterOutput.solderTo(
+                transactionPoolWiring.getInputWire(TransactionPool::submitSystemTransaction));
 
         splitOrphanBufferOutput.solderTo(applicationTransactionPrehandlerWiring.getInputWire(
                 TransactionPrehandler::prehandleApplicationTransactions));
@@ -535,6 +542,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         signedStateHasherWiring.stateOutput().solderTo(stateSignerWiring.signState());
         signedStateHasherWiring.stateAndRoundOutput().solderTo(issDetectorWiring.stateAndRoundInput());
 
+        stateSignerWiring
+                .stateSignature()
+                .solderTo(transactionPoolWiring.getInputWire(TransactionPool::submitSystemTransaction));
+
         // FUTURE WORK: combine these two methods into a single input method, which accepts a StateAndRound object
         signedStateHasherWiring.stateOutput().solderTo(stateSignatureCollectorWiring.getReservedStateInput());
         signedStateHasherWiring.roundOutput().solderTo(stateSignatureCollectorWiring.getConsensusRoundInput());
@@ -604,6 +615,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesWriterWiring.getInputWire(PcesWriter::registerDiscontinuity);
         staleEventDetectorWiring.getInputWire(StaleEventDetector::setInitialEventWindow);
         staleEventDetectorWiring.getInputWire(StaleEventDetector::clear);
+        transactionPoolWiring.getInputWire(TransactionPool::clear);
     }
 
     /**
@@ -613,10 +625,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * removed.
      *
      * @param statusManager   the status manager to wire
-     * @param transactionPool the transaction pool to wire
      */
-    public void wireExternalComponents(
-            @NonNull final PlatformStatusManager statusManager, @NonNull final TransactionPool transactionPool) {
+    public void wireExternalComponents(@NonNull final PlatformStatusManager statusManager) {
 
         signedStateFileManagerWiring
                 .stateWrittenToDiskOutputWire()
@@ -624,16 +634,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                         "statusManager_submitStateWritten",
                         "state written to disk notification",
                         statusManager::submitStatusAction);
-
-        // TODO this needs to be a proper component!
-        stateSignerWiring
-                .stateSignature()
-                .solderTo("transactionPool", "signature transactions", transactionPool::submitPayload);
-
-        final OutputWire<ConsensusTransactionImpl> splitTransactionResubmitterOutput =
-                transactionResubmitterWiring.getSplitOutput();
-        splitTransactionResubmitterOutput.solderTo(
-                "transactionPool2", "transactions", t -> transactionPool.submitTransaction(t, true));
 
         issDetectorWiring
                 .issNotificationOutput()
@@ -728,6 +728,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         stateGarbageCollectorWiring.bind(builder::buildStateGarbageCollector);
         staleEventDetectorWiring.bind(builder::buildStaleEventDetector);
         transactionResubmitterWiring.bind(builder::buildTransactionResubmitter);
+        transactionPoolWiring.bind(builder::buildTransactionPool);
     }
 
     /**
