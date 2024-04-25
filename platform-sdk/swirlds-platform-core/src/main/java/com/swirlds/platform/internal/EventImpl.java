@@ -120,6 +120,10 @@ public class EventImpl extends EventMetadata
         findSystemTransactions();
     }
 
+    /**
+     * Create an instance based on the given {@link DetailedConsensusEvent}
+     * @param detailedConsensusEvent the detailed consensus event to build from
+     */
     public EventImpl(final DetailedConsensusEvent detailedConsensusEvent) {
         buildFromConsensusEvent(detailedConsensusEvent);
     }
