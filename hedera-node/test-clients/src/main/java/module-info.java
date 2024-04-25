@@ -73,7 +73,6 @@ module com.hedera.node.test.clients {
     requires org.apache.logging.log4j.core;
     requires org.bouncycastle.provider;
     requires org.hyperledger.besu.datatypes;
-    requires org.hyperledger.besu.evm;
     requires org.hyperledger.besu.internal.crypto;
     requires org.json;
     requires org.opentest4j;
