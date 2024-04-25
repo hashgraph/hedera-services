@@ -212,8 +212,12 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
      */
     private void applyTransactionToState(final @NonNull ConsensusTransaction transaction) {
         Objects.requireNonNull(transaction);
+        if (transaction.isSystem()) {
+            return;
+        }
 
-        final long transactionContents = byteArrayToLong(transaction.getContents(), 0);
+        final long transactionContents =
+                byteArrayToLong(transaction.getApplicationPayload().toByteArray(), 0);
 
         if (!transactionsAwaitingPostHandle.remove(transactionContents)) {
             logger.error(EXCEPTION.getMarker(), "Transaction {} was not prehandled.", transactionContents);
@@ -228,7 +232,11 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
     @Override
     public void preHandle(@NonNull final Event event) {
         event.forEachTransaction(transaction -> {
-            final long transactionContents = byteArrayToLong(transaction.getContents(), 0);
+            if (transaction.isSystem()) {
+                return;
+            }
+            final long transactionContents =
+                    byteArrayToLong(transaction.getApplicationPayload().toByteArray(), 0);
 
             if (!transactionsAwaitingPostHandle.add(transactionContents)) {
                 logger.error(

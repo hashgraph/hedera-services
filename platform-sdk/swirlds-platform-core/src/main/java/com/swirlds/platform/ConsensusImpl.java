@@ -148,6 +148,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     public static final String COIN_ROUND_MARKER_FILE = "consensus-coin-round";
     public static final String NO_SUPER_MAJORITY_MARKER_FILE = "consensus-no-super-majority";
     public static final String NO_JUDGES_MARKER_FILE = "consensus-no-judges";
+    public static final String CONSENSUS_EXCEPTION_MARKER_FILE = "consensus-exception";
 
     private static final Logger logger = LogManager.getLogger(ConsensusImpl.class);
     /** the only address book currently, until address book changes are implemented */
@@ -277,19 +278,24 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     @NonNull
     @Override
     public List<ConsensusRound> addEvent(@NonNull final EventImpl event) {
-        recentEvents.add(event);
-        final List<ConsensusRound> rounds = new ArrayList<>();
-        // set its round to undefined so that it gets calculated
-        event.setRoundCreated(ConsensusConstants.ROUND_UNDEFINED);
-        checkInitJudges(event);
-        ConsensusRound consensusRound = calculateAndVote(event);
+        try {
+            recentEvents.add(event);
+            final List<ConsensusRound> rounds = new ArrayList<>();
+            // set its round to undefined so that it gets calculated
+            event.setRoundCreated(ConsensusConstants.ROUND_UNDEFINED);
+            checkInitJudges(event);
+            ConsensusRound consensusRound = calculateAndVote(event);
 
-        while (consensusRound != null) {
-            rounds.add(consensusRound);
+            while (consensusRound != null) {
+                rounds.add(consensusRound);
 
-            consensusRound = recalculateAndVote();
+                consensusRound = recalculateAndVote();
+            }
+            return rounds;
+        } catch (final Exception e) {
+            markerFileWriter.writeMarkerFile(CONSENSUS_EXCEPTION_MARKER_FILE);
+            throw e;
         }
-        return rounds;
     }
 
     /**

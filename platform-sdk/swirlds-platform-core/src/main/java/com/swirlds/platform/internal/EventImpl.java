@@ -33,9 +33,9 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.ConsensusData;
+import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.system.events.EventSerializationOptions;
-import com.swirlds.platform.system.events.PlatformEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -57,7 +57,7 @@ import java.util.TreeSet;
 @ConstructableIgnored
 public class EventImpl extends EventMetadata
         implements Comparable<EventImpl>,
-                PlatformEvent,
+                ConsensusEvent,
                 SerializableHashable,
                 OptionalSelfSerializable<EventSerializationOptions>,
                 RunningHashable,
@@ -480,20 +480,29 @@ public class EventImpl extends EventMetadata
     //	Event interface methods
     //////////////////////////////////////////
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Get the consensus timestamp of this event
+     *
+     * @return the consensus timestamp of this event
+     */
     public Instant getConsensusTimestamp() {
         return consensusData.getConsensusTimestamp();
     }
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Get the generation of this event
+     *
+     * @return the generation of this event
+     */
     public long getGeneration() {
         return baseEvent.getHashedData().getGeneration();
     }
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Get the birth round of this event
+     *
+     * @return the birth round of this event
+     */
     public long getBirthRound() {
         return baseEvent.getHashedData().getBirthRound();
     }
@@ -517,9 +526,10 @@ public class EventImpl extends EventMetadata
     }
 
     /**
-     * {@inheritDoc}
+     * Get the round received of this event
+     *
+     * @return the round received of this event
      */
-    @Override
     public long getRoundReceived() {
         return consensusData.getRoundReceived();
     }
