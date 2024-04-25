@@ -53,7 +53,6 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.util.TokenKeys;
 import com.hedera.node.app.service.token.impl.validators.TokenUpdateValidator;
 import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -67,9 +66,7 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -79,7 +76,6 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenUpdateHandler extends BaseTokenHandler implements TransactionHandler {
     private final TokenUpdateValidator tokenUpdateValidator;
-    private static final Set<TokenKeys> TOKEN_KEYS = EnumSet.allOf(TokenKeys.class);
 
     @Inject
     public TokenUpdateHandler(@NonNull final TokenUpdateValidator tokenUpdateValidator) {

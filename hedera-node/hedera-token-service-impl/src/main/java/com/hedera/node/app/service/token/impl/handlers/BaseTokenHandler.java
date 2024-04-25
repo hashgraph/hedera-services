@@ -58,7 +58,8 @@ import org.apache.logging.log4j.Logger;
 
 public class BaseTokenHandler {
     private static final Logger log = LogManager.getLogger(BaseTokenHandler.class);
-    public static final Set<TokenKeys> NON_ADMIN_TOKEN_KEYS = EnumSet.complementOf(EnumSet.of(TokenKeys.ADMIN_KEY));
+    protected static final Set<TokenKeys> TOKEN_KEYS = EnumSet.allOf(TokenKeys.class);
+    protected static final Set<TokenKeys> NON_ADMIN_TOKEN_KEYS = EnumSet.complementOf(EnumSet.of(TokenKeys.ADMIN_KEY));
 
     /**
      * Mints fungible tokens. This method is called in both token create and mint.
