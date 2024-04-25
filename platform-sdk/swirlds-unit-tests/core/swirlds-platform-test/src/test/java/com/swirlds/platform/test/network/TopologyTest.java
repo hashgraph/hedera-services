@@ -22,6 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.Utilities;
+import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticTopology;
@@ -124,7 +126,11 @@ class TopologyTest {
             final NodeId outOfBoundsId = addressBook.getNextNodeId();
             final NodeId thisNodeId = addressBook.getNodeId(thisNode);
             final Random random = getRandomPrintSeed();
-            final NetworkTopology topology = new StaticTopology(random, addressBook, thisNodeId, numNeighbors);
+
+            final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, thisNodeId);
+
+            final NetworkTopology topology =
+                    new StaticTopology(random, peers, addressBook.getIndexOfNodeId(thisNodeId), numNeighbors);
             final List<NodeId> neighbors = topology.getNeighbors();
             final List<NodeId> expected = IntStream.range(0, numNodes)
                     .mapToObj(addressBook::getNodeId)
