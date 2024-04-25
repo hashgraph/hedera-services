@@ -141,11 +141,10 @@ class EventSignatureValidatorTests {
     @Test
     @DisplayName("Events with higher version than the app should always fail validation")
     void irreconcilableVersions() {
-        final GossipEvent event =
-                new TestingEventBuilder(random)
-                        .setCreatorId(currentNodeAddress.getNodeId())
-                        .setSoftwareVersion(new BasicSoftwareVersion(3))
-                        .build();
+        final GossipEvent event = new TestingEventBuilder(random)
+                .setCreatorId(currentNodeAddress.getNodeId())
+                .setSoftwareVersion(new BasicSoftwareVersion(3))
+                .build();
 
         assertNull(validatorWithTrueVerifier.validateSignature(event));
         assertEquals(1, exitedIntakePipelineCount.get());
@@ -157,8 +156,7 @@ class EventSignatureValidatorTests {
         final EventSignatureValidator signatureValidator = new DefaultEventSignatureValidator(
                 platformContext, trueVerifier, defaultVersion, null, currentAddressBook, intakeEventCounter);
 
-        final GossipEvent event =
-        new TestingEventBuilder(random)
+        final GossipEvent event = new TestingEventBuilder(random)
                 .setCreatorId(previousNodeAddress.getNodeId())
                 .setSoftwareVersion(new BasicSoftwareVersion(3))
                 .build();
@@ -171,8 +169,7 @@ class EventSignatureValidatorTests {
     @DisplayName("Node is missing from the applicable address book")
     void applicableAddressBookMissingNode() {
         // this creator isn't in the current address book, so verification will fail
-        final GossipEvent event =
-        new TestingEventBuilder(random)
+        final GossipEvent event = new TestingEventBuilder(random)
                 .setCreatorId(previousNodeAddress.getNodeId())
                 .setSoftwareVersion(defaultVersion)
                 .build();
@@ -189,8 +186,7 @@ class EventSignatureValidatorTests {
 
         currentAddressBook.add(nodeAddress);
 
-        final GossipEvent event =
-        new TestingEventBuilder(random)
+        final GossipEvent event = new TestingEventBuilder(random)
                 .setCreatorId(nodeId)
                 .setSoftwareVersion(defaultVersion)
                 .build();
@@ -203,8 +199,7 @@ class EventSignatureValidatorTests {
     @DisplayName("Event passes validation if the signature verifies")
     void validSignature() {
         // both the event and the app have the same version, so the currentAddressBook will be selected
-        final GossipEvent event1 =
-        new TestingEventBuilder(random)
+        final GossipEvent event1 = new TestingEventBuilder(random)
                 .setCreatorId(currentNodeAddress.getNodeId())
                 .setSoftwareVersion(defaultVersion)
                 .build();
@@ -213,8 +208,7 @@ class EventSignatureValidatorTests {
         assertEquals(0, exitedIntakePipelineCount.get());
 
         // event2 is from a previous version, so the previous address book will be selected
-        final GossipEvent event2 =
-        new TestingEventBuilder(random)
+        final GossipEvent event2 = new TestingEventBuilder(random)
                 .setCreatorId(previousNodeAddress.getNodeId())
                 .setSoftwareVersion(new BasicSoftwareVersion(1))
                 .build();
@@ -226,8 +220,7 @@ class EventSignatureValidatorTests {
     @Test
     @DisplayName("Event fails validation if the signature does not verify")
     void verificationFails() {
-        final GossipEvent event =
-        new TestingEventBuilder(random)
+        final GossipEvent event = new TestingEventBuilder(random)
                 .setCreatorId(currentNodeAddress.getNodeId())
                 .setSoftwareVersion(defaultVersion)
                 .build();
@@ -258,17 +251,15 @@ class EventSignatureValidatorTests {
                 currentAddressBook,
                 intakeEventCounter);
 
+        //        when(hData.getGeneration()).thenReturn(EventConstants.FIRST_GENERATION);
+        //        when(event.getAncientIndicator(any())).thenAnswer(invocation -> {
+        //            final AncientMode mode = invocation.getArgument(0);
+        //            return mode == AncientMode.GENERATION_THRESHOLD
+        //                    ? EventConstants.FIRST_GENERATION
+        //                    : EventConstants.MINIMUM_ROUND_CREATED;
+        //        });
 
-//        when(hData.getGeneration()).thenReturn(EventConstants.FIRST_GENERATION);
-//        when(event.getAncientIndicator(any())).thenAnswer(invocation -> {
-//            final AncientMode mode = invocation.getArgument(0);
-//            return mode == AncientMode.GENERATION_THRESHOLD
-//                    ? EventConstants.FIRST_GENERATION
-//                    : EventConstants.MINIMUM_ROUND_CREATED;
-//        });
-
-        final GossipEvent event =
-                new TestingEventBuilder(random)
+        final GossipEvent event = new TestingEventBuilder(random)
                 .setCreatorId(currentNodeAddress.getNodeId())
                 .setBirthRound(EventConstants.MINIMUM_ROUND_CREATED)
                 .setSoftwareVersion(defaultVersion)

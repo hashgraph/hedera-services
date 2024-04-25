@@ -31,8 +31,7 @@ import java.util.Objects;
  * An event that may or may not have reached consensus. If it has reached consensus, provides detailed consensus
  * information.
  */
-public class DetailedConsensusEvent extends AbstractSerializableHashable
-        implements SelfSerializable, RunningHashable {
+public class DetailedConsensusEvent extends AbstractSerializableHashable implements SelfSerializable, RunningHashable {
 
     public static final long CLASS_ID = 0xe250a9fbdcc4b1baL;
     public static final int CLASS_VERSION = 1;
@@ -62,9 +61,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
      * 		the consensus data for this event
      */
     public DetailedConsensusEvent(
-            final BaseEventHashedData baseEventHashedData,
-            final byte[] signature,
-            final ConsensusData consensusData) {
+            final BaseEventHashedData baseEventHashedData, final byte[] signature, final ConsensusData consensusData) {
         this.baseEventHashedData = baseEventHashedData;
         this.signature = signature;
         this.consensusData = consensusData;

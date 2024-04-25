@@ -254,8 +254,7 @@ class RunningEventHasherTests {
 
         final List<EventImpl> eventsB = new ArrayList<>(events);
         final EventImpl originalEvent = events.get(0);
-        final EventImpl modifiedEvent =
-                new EventImpl(originalEvent.getBaseEvent());
+        final EventImpl modifiedEvent = new EventImpl(originalEvent.getBaseEvent());
         final Instant modifiedTimestamp =
                 originalEvent.getConsensusData().getConsensusTimestamp().plusSeconds(1);
         modifiedEvent.setConsensusTimestamp(modifiedTimestamp);
@@ -301,8 +300,7 @@ class RunningEventHasherTests {
 
         final List<EventImpl> eventsB = new ArrayList<>(events);
         final EventImpl originalEvent = events.get(0);
-        final EventImpl modifiedEvent =
-                new EventImpl(originalEvent.getBaseEvent());
+        final EventImpl modifiedEvent = new EventImpl(originalEvent.getBaseEvent());
         final Instant modifiedTimestamp =
                 originalEvent.getConsensusData().getConsensusTimestamp().plusNanos(1);
         modifiedEvent.setConsensusTimestamp(modifiedTimestamp);

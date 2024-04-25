@@ -108,7 +108,7 @@ public final class RecoveryTestUtils {
                 now,
                 transactions);
 
-        final byte[] signature  = randomSignature(random).getSignatureBytes();
+        final byte[] signature = randomSignature(random).getSignatureBytes();
 
         final ConsensusData consensusData = new ConsensusData();
         consensusData.setConsensusTimestamp(now);
@@ -116,7 +116,8 @@ public final class RecoveryTestUtils {
         consensusData.setConsensusOrder(random.nextLong());
         consensusData.setLastInRoundReceived(lastInRound);
 
-        final EventImpl event = new EventImpl(new GossipEvent(baseEventHashedData, signature), consensusData, null, null);
+        final EventImpl event =
+                new EventImpl(new GossipEvent(baseEventHashedData, signature), consensusData, null, null);
         event.setRoundCreated(random.nextLong());
         event.setStale(random.nextBoolean());
         return event;

@@ -50,6 +50,7 @@ public class GossipEvent implements SelfSerializable {
     private BaseEventHashedData hashedData;
     /** creator's signature for this event */
     private byte[] signature;
+
     private Instant timeReceived;
 
     /**
@@ -85,7 +86,7 @@ public class GossipEvent implements SelfSerializable {
      */
     public GossipEvent(final BaseEventHashedData hashedData, final byte[] signature) {
         this.hashedData = hashedData;
-        this.signature =signature;
+        this.signature = signature;
         this.timeReceived = Instant.now();
         this.senderId = null;
     }

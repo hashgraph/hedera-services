@@ -76,6 +76,7 @@ public class DetailedConsensusEventTest {
         Randotron random = Randotron.create(68651684861L);
         BaseEventHashedData hashedData = DetGenerateUtils.generateBaseEventHashedData(random);
         ConsensusData consensusData = DetGenerateUtils.generateConsensusEventData(random);
-        return new DetailedConsensusEvent(hashedData, generateRandomByteArray(random, SignatureType.RSA.signatureLength()), consensusData);
+        return new DetailedConsensusEvent(
+                hashedData, generateRandomByteArray(random, SignatureType.RSA.signatureLength()), consensusData);
     }
 }
