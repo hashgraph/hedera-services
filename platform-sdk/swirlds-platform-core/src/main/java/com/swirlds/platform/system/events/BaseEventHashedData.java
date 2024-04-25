@@ -48,8 +48,7 @@ import java.util.Set;
  * <p>
  * A base event is a set of data describing an event at the point when it is created, before it is added to the
  * hashgraph and before its consensus can be determined. Some of this data is used to create a hash of an event and some
- * data is additional and does not affect the hash. This data is split into 2 classes: {@link BaseEventHashedData} and
- * {@link BaseEventUnhashedData}.
+ * data is additional and does not affect the hash.
  */
 public class BaseEventHashedData extends AbstractSerializableHashable implements SelfSerializable {
     public static final int TO_STRING_BYTE_ARRAY_LENGTH = 5;

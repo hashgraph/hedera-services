@@ -94,8 +94,7 @@ class EventStreamSingleFileIteratorTest {
                 assertSame(event, peekObject, "invalid peek behavior");
 
                 // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
+                final EventImpl e = new EventImpl(event);
                 assertEventsAreEqual(e, events.get(eventIndex));
                 eventIndex++;
             }
@@ -139,8 +138,7 @@ class EventStreamSingleFileIteratorTest {
                 assertSame(event, peekObject, "invalid peek behavior");
 
                 // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
+                final EventImpl e = new EventImpl(event);
                 assertEquals(e, events.get(eventIndex), "event should match input event");
                 eventIndex++;
             }
@@ -186,8 +184,7 @@ class EventStreamSingleFileIteratorTest {
                 assertSame(event, peekObject, "invalid peek behavior");
 
                 // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
+                final EventImpl e = new EventImpl(event);
                 assertEventsAreEqual(e, events.get(eventIndex));
                 eventIndex++;
             }
@@ -239,8 +236,7 @@ class EventStreamSingleFileIteratorTest {
                 assertSame(event, peekObject, "invalid peek behavior");
 
                 // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
+                final EventImpl e = new EventImpl(event);
                 assertEventsAreEqual(e, events.get(eventIndex));
                 eventIndex++;
             }

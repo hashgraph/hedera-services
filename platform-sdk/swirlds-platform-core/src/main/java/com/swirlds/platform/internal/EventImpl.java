@@ -31,7 +31,6 @@ import com.swirlds.platform.event.EventMetadata;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
@@ -94,40 +93,12 @@ public class EventImpl extends EventMetadata
 
     public EventImpl() {}
 
-    public EventImpl(final BaseEventHashedData baseEventHashedData, final BaseEventUnhashedData baseEventUnhashedData) {
-        this(baseEventHashedData, baseEventUnhashedData, new ConsensusData(), null, null);
-    }
-
-    public EventImpl(
-            final BaseEventHashedData baseEventHashedData,
-            final BaseEventUnhashedData baseEventUnhashedData,
-            final ConsensusData consensusData) {
-        this(baseEventHashedData, baseEventUnhashedData, consensusData, null, null);
-    }
-
-    public EventImpl(
-            final BaseEventHashedData baseEventHashedData,
-            final BaseEventUnhashedData baseEventUnhashedData,
-            final EventImpl selfParent,
-            final EventImpl otherParent) {
-        this(baseEventHashedData, baseEventUnhashedData, new ConsensusData(), selfParent, otherParent);
-    }
-
     public EventImpl(final GossipEvent gossipEvent, final EventImpl selfParent, final EventImpl otherParent) {
         this(gossipEvent, new ConsensusData(), selfParent, otherParent);
     }
 
     public EventImpl(final GossipEvent gossipEvent) {
         this(gossipEvent, new ConsensusData(), null, null);
-    }
-
-    public EventImpl(
-            final BaseEventHashedData baseEventHashedData,
-            final BaseEventUnhashedData baseEventUnhashedData,
-            final ConsensusData consensusData,
-            final EventImpl selfParent,
-            final EventImpl otherParent) {
-        this(new GossipEvent(baseEventHashedData, baseEventUnhashedData), consensusData, selfParent, otherParent);
     }
 
     public EventImpl(
@@ -262,7 +233,7 @@ public class EventImpl extends EventMetadata
      * @param consensusEvent the consensus event to build from
      */
     void buildFromConsensusEvent(final DetailedConsensusEvent consensusEvent) {
-        baseEvent = new GossipEvent(consensusEvent.getBaseEventHashedData(), consensusEvent.getBaseEventUnhashedData());
+        baseEvent = new GossipEvent(consensusEvent.getBaseEventHashedData(), consensusEvent.getSignature());
         consensusData = consensusEvent.getConsensusData();
         // clears metadata in case there is any
         super.clear();

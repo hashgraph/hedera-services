@@ -39,7 +39,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -114,8 +113,6 @@ class InternalEventValidatorTests {
         // FUTURE WORK: Extend to support multiple other parents.
         when(hashedData.getOtherParents())
                 .thenReturn(otherParent == null ? Collections.EMPTY_LIST : Collections.singletonList(otherParent));
-
-        final BaseEventUnhashedData unhashedData = mock(BaseEventUnhashedData.class);
 
         final GossipEvent event = mock(GossipEvent.class);
         when(event.getHashedData()).thenReturn(hashedData);

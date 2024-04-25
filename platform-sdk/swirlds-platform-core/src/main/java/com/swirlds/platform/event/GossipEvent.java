@@ -18,13 +18,11 @@ package com.swirlds.platform.event;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -83,11 +81,11 @@ public class GossipEvent implements SelfSerializable {
 
     /**
      * @param hashedData   the hashed data for the event
-     * @param unhashedData the unhashed data for the event
+     * @param signature the signature for the event
      */
-    public GossipEvent(final BaseEventHashedData hashedData, final BaseEventUnhashedData unhashedData) {
+    public GossipEvent(final BaseEventHashedData hashedData, final byte[] signature) {
         this.hashedData = hashedData;
-        this.signature =unhashedData.getSignature();
+        this.signature =signature;
         this.timeReceived = Instant.now();
         this.senderId = null;
     }
