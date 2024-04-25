@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.event.linking;
 
-import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.common.context.PlatformContext;
@@ -35,17 +34,10 @@ import java.time.Instant;
  */
 public class ConsensusLinker extends AbstractInOrderLinker {
 
-    // TODO encapsulate these
     private final LongAccumulator missingParentAccumulator;
     private final LongAccumulator generationMismatchAccumulator;
     private final LongAccumulator birthRoundMismatchAccumulator;
     private final LongAccumulator timeCreatedMismatchAccumulator;
-
-    private static final LongAccumulator.Config STALE_EVENTS_CONFIG = new LongAccumulator.Config(
-                    INTERNAL_CATEGORY, "staleEvents")
-            .withAccumulator(Long::sum)
-            .withDescription("number of stale events");
-    private final LongAccumulator staleEventCount;
 
     /**
      * Constructor
@@ -78,8 +70,6 @@ public class ConsensusLinker extends AbstractInOrderLinker {
                         new LongAccumulator.Config(PLATFORM_CATEGORY, "timeCreatedMismatch")
                                 .withDescription(
                                         "Parent child relationships where child time created wasn't strictly after parent time created"));
-
-        staleEventCount = platformContext.getMetrics().getOrCreate(STALE_EVENTS_CONFIG);
     }
 
     /**
@@ -87,9 +77,6 @@ public class ConsensusLinker extends AbstractInOrderLinker {
      */
     @Override
     protected void eventHasBecomeAncient(@NonNull final EventImpl event) {
-        if (!event.isConsensus()) {
-            staleEventCount.update(1);
-        }
         event.clear();
     }
 

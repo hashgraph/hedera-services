@@ -16,13 +16,11 @@
 
 package com.swirlds.platform.event.stale;
 
-import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
-import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
@@ -57,13 +55,7 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
      */
     private EventWindow currentEventWindow;
 
-    // TODO encapsulate maybe
-    // TODO add metrics for transactions that went stale
-    private static final LongAccumulator.Config STALE_SELF_EVENTS_CONFIG = new LongAccumulator.Config(
-                    INTERNAL_CATEGORY, "staleSelfEvents")
-            .withAccumulator(Long::sum)
-            .withDescription("number of stale self events");
-    private final LongAccumulator staleSelfEventCount;
+    private final StaleEventDetectorMetrics metrics;
 
     /**
      * Constructor.
@@ -86,9 +78,9 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
             getAncientIdentifier = EventDescriptor::getGeneration;
         }
 
-        this.selfEvents = new StandardSequenceMap<>(0, 1024, true, getAncientIdentifier);
+        selfEvents = new StandardSequenceMap<>(0, 1024, true, getAncientIdentifier);
 
-        staleSelfEventCount = platformContext.getMetrics().getOrCreate(STALE_SELF_EVENTS_CONFIG);
+        metrics = new StaleEventDetectorMetrics(platformContext);
     }
 
     /**
@@ -103,7 +95,7 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
 
         if (currentEventWindow.isAncient(event)) {
             // Although unlikely, it is plausible for an event to go stale before it is added to the detector.
-            staleSelfEventCount.update(1);
+            metrics.reportStaleEvent(event);
             return List.of(event);
         }
 
@@ -127,8 +119,8 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
         currentEventWindow = consensusRound.getEventWindow();
         selfEvents.shiftWindow(currentEventWindow.getAncientThreshold(), (descriptor, event) -> staleEvents.add(event));
 
-        if (!staleEvents.isEmpty()) {
-            staleSelfEventCount.update(staleEvents.size());
+        for (final GossipEvent event : staleEvents) {
+            metrics.reportStaleEvent(event);
         }
 
         return staleEvents;
