@@ -40,6 +40,7 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.SynthCreationCustomizer;
@@ -62,6 +63,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.math.BigInteger;
@@ -75,6 +77,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class EthereumTransitionLogicTest {
+    private static final long TINYBAR_GAS_PRICE = 100L;
+
     @Mock
     private EthTxSigs ethTxSigs;
 
@@ -126,6 +130,9 @@ class EthereumTransitionLogicTest {
     @Mock
     private RationalizedSigMeta rationalizedSigMeta;
 
+    @Mock
+    private LivePricesSource livePricesSource;
+
     private EthereumTransitionLogic subject;
 
     @BeforeEach
@@ -141,7 +148,8 @@ class EthereumTransitionLogicTest {
                 dynamicProperties,
                 aliasManager,
                 accountsLedger,
-                spanMapManager);
+                spanMapManager,
+                livePricesSource);
     }
 
     @Test
@@ -239,7 +247,9 @@ class EthereumTransitionLogicTest {
     }
 
     private void givenOfferedPrice() {
-        given(ethTxData.getMaxGasAsBigInteger()).willReturn(BigInteger.valueOf(offeredGasPrice));
+        given(livePricesSource.currentGasPrice(txnCtx.consensusTime(), HederaFunctionality.EthereumTransaction))
+                .willReturn(TINYBAR_GAS_PRICE);
+        given(ethTxData.getMaxGasAsBigInteger(TINYBAR_GAS_PRICE)).willReturn(BigInteger.valueOf(offeredGasPrice));
     }
 
     @Test
