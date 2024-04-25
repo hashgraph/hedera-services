@@ -34,6 +34,8 @@ import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.hedera.node.app.state.merkle.singleton.ValueLeaf;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.fcqueue.FCQueue;
+import com.swirlds.logging.api.Logger;
+import com.swirlds.logging.api.Loggers;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -48,8 +50,6 @@ import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * A logger for state changes. This records a separate log file for all input state read and output state changes from
@@ -60,7 +60,7 @@ import org.apache.logging.log4j.Logger;
  */
 public final class TransactionStateLogger {
     /** The logger we are using for Transaction State log */
-    private static final Logger logger = LogManager.getLogger(TransactionStateLogger.class);
+    private static final Logger logger = Loggers.getLogger(TransactionStateLogger.class);
 
     /**
      * Log the start of a round if it contains any non-system transactions.
@@ -216,7 +216,7 @@ public final class TransactionStateLogger {
                     .append(transactionRecord.evmAddress() == null ? "null" : transactionRecord.evmAddress())
                     .append(" entropy: ")
                     .append(transactionRecord.entropy() == null ? "null" : transactionRecord.entropy());
-            logger.debug(sb);
+            logger.debug(sb.toString());
         }
     }
 
