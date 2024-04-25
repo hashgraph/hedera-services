@@ -155,6 +155,8 @@ public class GossipWiring {
 
     /**
      * Get the input wire to clear the gossip state.
+     *
+     * @return the input wire to clear the gossip state
      */
     @NonNull
     public InputWire<NoInput> getClearInput() {

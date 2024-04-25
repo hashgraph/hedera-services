@@ -28,7 +28,6 @@ import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
-import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
@@ -146,6 +145,8 @@ public class SyncGossip implements ConnectionTracker, Gossip {
      */
     private QueueThread<GossipEvent> oldStyleIntakeQueue;
 
+    private final ThreadManager threadManager;
+
     /**
      * Builds the gossip engine, depending on which flavor is requested in the configuration.
      *
@@ -184,6 +185,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.currentPlatformStatus = Objects.requireNonNull(currentPlatformStatus);
+        this.threadManager = Objects.requireNonNull(threadManager);
 
         inOrderLinker = new GossipLinker(platformContext, intakeEventCounter);
         shadowgraph = new Shadowgraph(platformContext, addressBook, intakeEventCounter);
@@ -264,7 +266,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 new ReconnectLearnerThrottle(platformContext.getTime(), selfId, reconnectConfig),
                 state -> {
                     loadReconnectState.accept(state);
-                    resetFallenBehind();
+                    syncManager.resetFallenBehind();
                 },
                 new ReconnectLearnerFactory(
                         platformContext,
@@ -418,13 +420,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
     }
 
     /**
-     * This method is called when the node has finished a reconnect
-     */
-    private void resetFallenBehind() {
-        syncManager.resetFallenBehind();
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -507,7 +502,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 .useOldStyleIntakeQueue();
 
         if (useOldStyleIntakeQueue) {
-            oldStyleIntakeQueue = new QueueThreadConfiguration<GossipEvent>(AdHocThreadManager.getStaticThreadManager())
+            oldStyleIntakeQueue = new QueueThreadConfiguration<GossipEvent>(threadManager)
                     .setCapacity(10_000)
                     .setThreadName("old_style_intake_queue")
                     .setComponent("platform")

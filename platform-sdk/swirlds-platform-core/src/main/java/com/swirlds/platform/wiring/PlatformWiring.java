@@ -691,14 +691,14 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * Start gossiping.
      */
     public void startGossip() {
-        gossipWiring.getStartInput().put(NoInput.getInstance());
+        gossipWiring.getStartInput().inject(NoInput.getInstance());
     }
 
     /**
      * Stop gossiping (permanently).
      */
     public void stopGossip() {
-        gossipWiring.getStopInput().put(NoInput.getInstance());
+        gossipWiring.getStopInput().inject(NoInput.getInstance());
     }
 
     /**

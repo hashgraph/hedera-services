@@ -32,14 +32,13 @@ public interface Gossip {
     /**
      * Bind the input wires to the gossip implementation.
      *
-     * @param model                          the wiring model for this node
-     * @param eventInput                     the input wire for events, events sent here should be gossiped to the
-     *                                       network
-     * @param eventWindowInput               the input wire for the current event window
-     * @param eventOutput                    the output wire for events received from peers during gossip
-     * @param startInput                     used to tell gossip to start
-     * @param stopInput                      used to tell gossip to stop
-     * @param clearInput                     used to tell gossip to clear its internal state
+     * @param model            the wiring model for this node
+     * @param eventInput       the input wire for events, events sent here should be gossiped to the network
+     * @param eventWindowInput the input wire for the current event window
+     * @param eventOutput      the output wire for events received from peers during gossip
+     * @param startInput       used to tell gossip to start
+     * @param stopInput        used to tell gossip to stop
+     * @param clearInput       used to tell gossip to clear its internal state
      */
     void bind(
             @NonNull WiringModel model,

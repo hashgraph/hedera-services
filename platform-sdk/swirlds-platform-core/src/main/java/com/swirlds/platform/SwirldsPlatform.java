@@ -323,8 +323,6 @@ public class SwirldsPlatform implements Platform {
 
         RuntimeMetrics.setup(metrics);
 
-        final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
-
         keysAndCerts = blocks.keysAndCerts();
 
         EventCounter.registerEventCounterMetrics(metrics);
@@ -506,7 +504,8 @@ public class SwirldsPlatform implements Platform {
 
             savedStateController.registerSignedStateFromDisk(initialState);
 
-            loadStateIntoConsensus(initialState);
+            platformWiring.consensusSnapshotOverride(Objects.requireNonNull(
+                    initialState.getState().getPlatformState().getSnapshot()));
 
             // We only load non-ancient events during start up, so the initial expired threshold will be
             // equal to the ancient threshold when the system first starts. Over time as we get more events,
@@ -628,18 +627,6 @@ public class SwirldsPlatform implements Platform {
     }
 
     /**
-     * Loads the signed state data into consensus
-     *
-     * @param signedState the state to get the data from
-     */
-    private void loadStateIntoConsensus(@NonNull final SignedState signedState) {
-        Objects.requireNonNull(signedState);
-
-        platformWiring.consensusSnapshotOverride(
-                Objects.requireNonNull(signedState.getState().getPlatformState().getSnapshot()));
-    }
-
-    /**
      * Used to load the state received from the sender.
      *
      * @param signedState the signed state that was received from the sender
@@ -692,7 +679,8 @@ public class SwirldsPlatform implements Platform {
             platformWiring
                     .getSignatureCollectorStateInput()
                     .put(signedState.reserve("loading reconnect state into sig collector"));
-            loadStateIntoConsensus(signedState);
+            platformWiring.consensusSnapshotOverride(Objects.requireNonNull(
+                    signedState.getState().getPlatformState().getSnapshot()));
 
             platformWiring
                     .getAddressBookUpdateInput()
