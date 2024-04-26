@@ -398,6 +398,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         }
         if (op.hasAdminKey()) {
             requireAdmin(context, originalToken);
+            context.requireKey(op.adminKeyOrThrow());
         }
         if (containsKeyRemoval(op)) {
             requireAdmin(context, originalToken);
@@ -440,8 +441,8 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         mustExist(maybeRoleKey, roleKey.tokenHasNoKeyStatus());
         if (token.hasAdminKey()) {
             context.requireKey(oneOf(
-                    token.adminKeyOrThrow(),
-                    replacementKey == null ? maybeRoleKey : allOf(maybeRoleKey, replacementKey)));
+                    replacementKey == null ? maybeRoleKey : allOf(maybeRoleKey, replacementKey),
+                    token.adminKeyOrThrow()));
         } else {
             context.requireKey(maybeRoleKey);
             if (replacementKey != null) {
