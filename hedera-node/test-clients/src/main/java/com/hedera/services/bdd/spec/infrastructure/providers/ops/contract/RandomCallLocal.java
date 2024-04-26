@@ -34,9 +34,12 @@ public class RandomCallLocal implements OpProvider {
 
     private final ResponseCodeEnum[] permissibleCostAnswerPrechecks = standardPrechecksAnd(CONTRACT_DELETED);
     private final ResponseCodeEnum[] permissibleAnswerOnlyPrechecks = standardPrechecksAnd(CONTRACT_DELETED);
+    private final ResponseCodeEnum[] customOutcomes;
 
-    public RandomCallLocal(EntityNameProvider<ActionableContractCallLocal> localCalls) {
+    public RandomCallLocal(
+            EntityNameProvider<ActionableContractCallLocal> localCalls, ResponseCodeEnum[] customOutcomes) {
         this.localCalls = localCalls;
+        this.customOutcomes = customOutcomes;
     }
 
     @Override
@@ -53,7 +56,7 @@ public class RandomCallLocal implements OpProvider {
 
         HapiContractCallLocal op = QueryVerbs.contractCallLocalFrom(localCall.get())
                 .hasCostAnswerPrecheckFrom(permissibleCostAnswerPrechecks)
-                .hasAnswerOnlyPrecheckFrom(permissibleAnswerOnlyPrechecks);
+                .hasAnswerOnlyPrecheckFrom(plus(permissibleAnswerOnlyPrechecks, customOutcomes));
 
         return Optional.of(op);
     }

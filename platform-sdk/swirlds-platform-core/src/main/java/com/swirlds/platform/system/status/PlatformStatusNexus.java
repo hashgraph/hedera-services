@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,26 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.report;
+package com.swirlds.platform.system.status;
 
-import com.swirlds.common.crypto.Hash;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * The running hash of the event stream at the end of a round
- *
- * @param round
- * 		the round in question
- * @param runningHash
- * 		the hash
+ * A nexus for holding the current platform status, and providing thread-safe access to it.
  */
-public record RoundRunningHash(long round, Hash runningHash) {}
+public interface PlatformStatusNexus {
+    /**
+     * Get the current status
+     *
+     * @return the current status
+     */
+    @NonNull
+    PlatformStatus getCurrentStatus();
+
+    /**
+     * Set a new status
+     *
+     * @param status the new status
+     */
+    void setCurrentStatus(@NonNull final PlatformStatus status);
+}
