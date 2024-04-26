@@ -131,6 +131,7 @@ public class TeacherPullVirtualTreeReceiveTask {
                     logger.info(RECONNECT.getMarker(), "Teacher receiver is complete as requested by the learner");
                     break;
                 }
+                in.anticipateMessage();
                 requestCounter++;
                 final long path = request.getPath();
                 final Hash learnerHash = request.getHash();
@@ -150,7 +151,6 @@ public class TeacherPullVirtualTreeReceiveTask {
                 // All real work is done in the async output thread. This call just registers a response
                 // and returns immediately
                 out.sendAsync(viewId, response);
-                in.anticipateMessage();
             }
             final long end = System.currentTimeMillis();
             final double requestRate = (end == start) ? 0.0 : (double) requestCounter / (end - start);

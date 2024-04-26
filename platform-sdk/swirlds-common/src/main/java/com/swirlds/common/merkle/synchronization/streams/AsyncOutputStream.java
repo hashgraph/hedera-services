@@ -253,7 +253,7 @@ public class AsyncOutputStream implements AutoCloseable {
         }
     }
 
-    private final record QueueItem(int viewId, SelfSerializable message, Runnable toNotify) {
+    private record QueueItem(int viewId, SelfSerializable message, Runnable toNotify) {
         public QueueItem(int viewId, SelfSerializable message) {
             this(viewId, message, null);
         }

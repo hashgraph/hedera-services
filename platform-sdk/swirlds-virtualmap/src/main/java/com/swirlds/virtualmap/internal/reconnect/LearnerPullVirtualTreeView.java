@@ -215,6 +215,7 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
             }
             if (!isClean) {
                 final VirtualLeafRecord<K, V> leaf = response.getLeafData();
+                assert leaf != null;
                 assert path == leaf.getPath();
                 nodeRemover.newLeafNode(path, leaf.getKey());
                 root.handleReconnectLeaf(leaf); // may block if hashing is slower than ingest
