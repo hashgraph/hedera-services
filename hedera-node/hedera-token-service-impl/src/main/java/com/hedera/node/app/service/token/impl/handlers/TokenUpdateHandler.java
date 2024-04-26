@@ -80,6 +80,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenUpdateHandler extends BaseTokenHandler implements TransactionHandler {
+    private static final AccountID ZERO_ACCOUNT_ID =
+            AccountID.newBuilder().accountNum(0L).build();
     private final TokenUpdateValidator tokenUpdateValidator;
 
     @Inject
@@ -114,7 +116,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         }
         // If the transactionID is missing we have contract call,
         // so we need to verify that the provided treasury is not a zero account.
-        if (op.hasTreasury() && checkForZeroAccountIfContractCall(context.body().hasTransactionID(), op)) {
+        if (op.hasTreasury() && canBeZeroAccountIfHapiCall(context.body().hasTransactionID(), op)) {
             context.requireKeyOrThrow(op.treasuryOrThrow(), INVALID_ACCOUNT_ID);
         }
         if (op.hasAdminKey()) {
@@ -169,7 +171,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         // We allow existing treasuries to have any nft balances left over, but the new treasury should
         // not have any balances left over. Transfer all balances for the current token to new treasury
         // Also check if the treasury is not a zero account if the transaction is a contract call
-        if (op.hasTreasury() && checkForZeroAccountIfContractCall(txn.hasTransactionID(), op)) {
+        if (op.hasTreasury() && canBeZeroAccountIfHapiCall(txn.hasTransactionID(), op)) {
             final var existingTreasury = token.treasuryAccountId();
             final var newTreasury = op.treasuryOrThrow();
             final var newTreasuryAccount = getIfUsable(
@@ -366,7 +368,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         // that if the transaction is a contract call the treasury shouldn't be a zero account
         // and that the provided treasury account is different from the current one
         if (op.hasTreasury()
-                && checkForZeroAccountIfContractCall(isHapiCall, op)
+                && canBeZeroAccountIfHapiCall(isHapiCall, op)
                 && !op.treasuryOrThrow().equals(originalToken.treasuryAccountId())) {
             builder.treasuryAccountId(op.treasuryOrThrow());
         }
@@ -498,11 +500,11 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                 .usageGiven(fromPbj(body), sigValueObj, token));
     }
 
-    private boolean checkForZeroAccountIfContractCall(boolean isContractCall, TokenUpdateTransactionBody op) {
-        return isContractCall || !isZeroAccount(op.treasury());
+    private boolean canBeZeroAccountIfHapiCall(final boolean isHapiCall, final TokenUpdateTransactionBody op) {
+        return isHapiCall || !isZeroAccount(op.treasury());
     }
 
-    private boolean isZeroAccount(@NonNull AccountID accountID) {
-        return accountID.equals(AccountID.newBuilder().accountNum(0L).build());
+    private boolean isZeroAccount(@NonNull final AccountID accountID) {
+        return accountID.equals(ZERO_ACCOUNT_ID);
     }
 }
