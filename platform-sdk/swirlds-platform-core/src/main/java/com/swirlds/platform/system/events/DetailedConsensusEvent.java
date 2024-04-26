@@ -25,6 +25,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -159,7 +160,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
         }
         final DetailedConsensusEvent that = (DetailedConsensusEvent) other;
         return Objects.equals(baseEventHashedData, that.baseEventHashedData)
-                && Objects.equals(signature, that.signature)
+                && Arrays.equals(signature, that.signature)
                 && Objects.equals(consensusData, that.consensusData);
     }
 

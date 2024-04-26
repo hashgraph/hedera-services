@@ -251,14 +251,6 @@ class EventSignatureValidatorTests {
                 currentAddressBook,
                 intakeEventCounter);
 
-        //        when(hData.getGeneration()).thenReturn(EventConstants.FIRST_GENERATION);
-        //        when(event.getAncientIndicator(any())).thenAnswer(invocation -> {
-        //            final AncientMode mode = invocation.getArgument(0);
-        //            return mode == AncientMode.GENERATION_THRESHOLD
-        //                    ? EventConstants.FIRST_GENERATION
-        //                    : EventConstants.MINIMUM_ROUND_CREATED;
-        //        });
-
         final GossipEvent event = new TestingEventBuilder(random)
                 .setCreatorId(currentNodeAddress.getNodeId())
                 .setBirthRound(EventConstants.MINIMUM_ROUND_CREATED)
