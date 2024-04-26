@@ -75,6 +75,7 @@ public class LeakyEthereumTestsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(LeakyEthereumTestsSuite.class);
 
     private static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
+    private static final String ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS = "contracts.evm.allowCallsToNonContractAccounts";
     private static final String DYNAMIC_EVM_PROPERTY = "contracts.evm.version.dynamic";
     private static final String EVM_VERSION_050 = "v0.50";
 
@@ -199,6 +200,7 @@ public class LeakyEthereumTestsSuite extends HapiSuite {
                 .given(
                         overriding(DYNAMIC_EVM_PROPERTY, "true"),
                         overriding(EVM_VERSION_PROPERTY, EVM_VERSION_050),
+                        overriding(ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS, "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(SUPPLY_KEY),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
