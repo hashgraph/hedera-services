@@ -87,17 +87,15 @@ public class BodyIdClearingStrategy extends IdClearingStrategy<TxnModification> 
             entry("proto.ContractDeleteTransactionBody.contractID", ExpectedResponse.atIngest(INVALID_CONTRACT_ID)),
             entry(
                     "proto.ContractDeleteTransactionBody.transferAccountID",
-                    ExpectedResponse.atConsensus(OBTAINER_REQUIRED)),
+                    ExpectedResponse.atIngest(OBTAINER_REQUIRED)),
             entry(
                     "proto.ContractDeleteTransactionBody.transferContractID",
-                    ExpectedResponse.atConsensus(OBTAINER_REQUIRED)),
+                    ExpectedResponse.atIngest(OBTAINER_REQUIRED)),
             entry("proto.ConsensusCreateTopicTransactionBody.autoRenewAccount", ExpectedResponse.atConsensus(SUCCESS)),
             entry("proto.ConsensusUpdateTopicTransactionBody.topicID", ExpectedResponse.atIngest(INVALID_TOPIC_ID)),
             entry("proto.ConsensusUpdateTopicTransactionBody.autoRenewAccount", ExpectedResponse.atConsensus(SUCCESS)),
-            entry("proto.ConsensusDeleteTopicTransactionBody.topicID", ExpectedResponse.atConsensus(INVALID_TOPIC_ID)),
-            entry(
-                    "proto.ConsensusSubmitMessageTransactionBody.topicID",
-                    ExpectedResponse.atConsensus(INVALID_TOPIC_ID)),
+            entry("proto.ConsensusDeleteTopicTransactionBody.topicID", ExpectedResponse.atIngest(INVALID_TOPIC_ID)),
+            entry("proto.ConsensusSubmitMessageTransactionBody.topicID", ExpectedResponse.atIngest(INVALID_TOPIC_ID)),
             entry(
                     "proto.TokenCreateTransactionBody.treasury",
                     ExpectedResponse.atIngest(INVALID_TREASURY_ACCOUNT_FOR_TOKEN)),

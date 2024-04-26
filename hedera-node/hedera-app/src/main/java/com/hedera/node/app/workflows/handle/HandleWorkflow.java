@@ -655,12 +655,24 @@ public class HandleWorkflow {
         }
 
         throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
-        transactionFinalizer.finalizeParentRecord(
-                payer,
-                tokenServiceContext,
-                functionality,
-                extraRewardReceivers(txBody, functionality, recordBuilder),
-                prePaidRewards);
+        try {
+            transactionFinalizer.finalizeParentRecord(
+                    payer,
+                    tokenServiceContext,
+                    functionality,
+                    extraRewardReceivers(txBody, functionality, recordBuilder),
+                    prePaidRewards);
+        } catch (final Exception e) {
+            logger.error(
+                    "Possibly CATASTROPHIC error: failed to finalize parent record for transaction {}",
+                    transactionInfo.transactionID(),
+                    e);
+
+            // Undo any changes made to the state
+            final var userTransactionRecordBuilder = recordListBuilder.userTransactionRecordBuilder();
+            userTransactionRecordBuilder.nullOutSideEffectFields();
+            rollback(true, ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);
+        }
 
         // Commit all state changes
         stack.commitFullStack();
