@@ -321,6 +321,7 @@ public final class PlatformBuilder {
      * @param staleEventConsumer the callback to register
      * @return this
      */
+    @NonNull
     public PlatformBuilder withStaleEventCallback(@NonNull final Consumer<GossipEvent> staleEventConsumer) {
         throwIfAlreadyUsed();
         this.staleEventConsumer = Objects.requireNonNull(staleEventConsumer);

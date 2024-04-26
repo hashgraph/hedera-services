@@ -24,9 +24,10 @@ import java.util.function.Consumer;
 /**
  * A collection of callbacks that the application can provide to the platform to be notified of certain events.
  *
- * @param preconsensusEventConsumer a consumer that will be called when a preconsensus event is created
- * @param snapshotOverrideConsumer  a consumer that will be called when a consensus snapshot is created
- * @param staleEventConsumer        a consumer that will be called when a stale event is detected
+ * @param preconsensusEventConsumer a consumer that will be called on preconsensus events in topological order
+ * @param snapshotOverrideConsumer  a consumer that will be called when the current consensus snapshot is overridden
+ *                                  (i.e. at reconnect/restart boundaries)
+ * @param staleEventConsumer        a consumer that will be called when a stale self event is detected
  */
 public record ApplicationCallbacks(
         @Nullable Consumer<GossipEvent> preconsensusEventConsumer,
