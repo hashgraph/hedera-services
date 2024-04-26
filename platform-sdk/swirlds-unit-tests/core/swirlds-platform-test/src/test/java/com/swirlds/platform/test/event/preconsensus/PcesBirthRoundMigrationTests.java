@@ -30,12 +30,11 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.common.io.config.RecycleBinConfig_;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.io.utility.RecycleBinImpl;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.config.api.Configuration;
@@ -232,23 +231,25 @@ class PcesBirthRoundMigrationTests {
         final DiscontinuityType discontinuityType = DiscontinuityType.values()[discontinuity];
 
         final Configuration configuration = new TestConfigBuilder()
-                .withValue(RecycleBinConfig_.RECYCLE_BIN_PATH, recycleBinPath)
                 .withValue(PcesConfig_.DATABASE_DIRECTORY, pcesPath)
                 .getOrCreateConfig();
-        TemporaryFileBuilder.overrideTemporaryFileLocation(temporaryFilePath);
+        LegacyTemporaryFileBuilder.overrideTemporaryFileLocation(temporaryFilePath);
 
         final FakeTime time = new FakeTime();
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withTime(time)
                 .withConfiguration(configuration)
+                .withTestFileSystemManager(
+                        testDirectory,
+                        (m, t) -> new RecycleBinImpl(
+                                m,
+                                AdHocThreadManager.getStaticThreadManager(),
+                                time,
+                                recycleBinPath,
+                                TestRecycleBin.MAXIMUM_FILE_AGE,
+                                TestRecycleBin.MINIMUM_PERIOD))
                 .build();
-        final RecycleBin recycleBin = new RecycleBinImpl(
-                configuration,
-                platformContext.getMetrics(),
-                AdHocThreadManager.getStaticThreadManager(),
-                platformContext.getTime(),
-                new NodeId(0));
 
         final PcesFilesWritten filesWritten = generateLegacyPcesFiles(random, discontinuityType);
 
@@ -260,7 +261,7 @@ class PcesBirthRoundMigrationTests {
         final long migrationRound = random.nextLong(100, 1000);
 
         PcesBirthRoundMigration.migratePcesToBirthRoundMode(
-                platformContext, recycleBin, new NodeId(0), migrationRound, middleGeneration);
+                platformContext, new NodeId(0), migrationRound, middleGeneration);
 
         // We should not find any generation based PCES files in the database directory.
         assertTrue(findPcesFiles(pcesPath, GENERATION_THRESHOLD).isEmpty());
@@ -312,7 +313,7 @@ class PcesBirthRoundMigrationTests {
         }
 
         PcesBirthRoundMigration.migratePcesToBirthRoundMode(
-                platformContext, recycleBin, new NodeId(0), migrationRound, middleGeneration);
+                platformContext, new NodeId(0), migrationRound, middleGeneration);
 
         final Set<Path> allFilesAfterSecondMigration = new HashSet<>();
         try (final Stream<Path> stream = Files.walk(testDirectory)) {
@@ -325,27 +326,28 @@ class PcesBirthRoundMigrationTests {
     @Test
     void genesisWithBirthRoundsTest() throws IOException {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue(RecycleBinConfig_.RECYCLE_BIN_PATH, recycleBinPath)
                 .withValue(PcesConfig_.DATABASE_DIRECTORY, pcesPath)
                 .getOrCreateConfig();
-        TemporaryFileBuilder.overrideTemporaryFileLocation(temporaryFilePath);
+        LegacyTemporaryFileBuilder.overrideTemporaryFileLocation(temporaryFilePath);
 
         final FakeTime time = new FakeTime();
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withTime(time)
                 .withConfiguration(configuration)
+                .withTestFileSystemManager(
+                        testDirectory,
+                        (m, t) -> new RecycleBinImpl(
+                                m,
+                                AdHocThreadManager.getStaticThreadManager(),
+                                time,
+                                recycleBinPath,
+                                TestRecycleBin.MAXIMUM_FILE_AGE,
+                                TestRecycleBin.MINIMUM_PERIOD))
                 .build();
-        final RecycleBin recycleBin = new RecycleBinImpl(
-                configuration,
-                platformContext.getMetrics(),
-                AdHocThreadManager.getStaticThreadManager(),
-                platformContext.getTime(),
-                new NodeId(0));
 
         // should not throw
-        PcesBirthRoundMigration.migratePcesToBirthRoundMode(
-                platformContext, recycleBin, new NodeId(0), ROUND_FIRST, -1);
+        PcesBirthRoundMigration.migratePcesToBirthRoundMode(platformContext, new NodeId(0), ROUND_FIRST, -1);
     }
 
     @Test
@@ -353,23 +355,24 @@ class PcesBirthRoundMigrationTests {
         final Random random = getRandomPrintSeed();
 
         final Configuration configuration = new TestConfigBuilder()
-                .withValue(RecycleBinConfig_.RECYCLE_BIN_PATH, recycleBinPath)
                 .withValue(PcesConfig_.DATABASE_DIRECTORY, pcesPath)
                 .getOrCreateConfig();
-        TemporaryFileBuilder.overrideTemporaryFileLocation(temporaryFilePath);
 
         final FakeTime time = new FakeTime();
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withTime(time)
                 .withConfiguration(configuration)
+                .withTestFileSystemManager(
+                        testDirectory,
+                        (m, t) -> new RecycleBinImpl(
+                                m,
+                                AdHocThreadManager.getStaticThreadManager(),
+                                time,
+                                recycleBinPath,
+                                TestRecycleBin.MAXIMUM_FILE_AGE,
+                                TestRecycleBin.MINIMUM_PERIOD))
                 .build();
-        final RecycleBin recycleBin = new RecycleBinImpl(
-                configuration,
-                platformContext.getMetrics(),
-                AdHocThreadManager.getStaticThreadManager(),
-                platformContext.getTime(),
-                new NodeId(0));
 
         final PcesFilesWritten filesWritten = generateLegacyPcesFiles(random, DiscontinuityType.NONE);
 
@@ -381,7 +384,7 @@ class PcesBirthRoundMigrationTests {
         final long migrationRound = random.nextLong(1, 1000);
 
         PcesBirthRoundMigration.migratePcesToBirthRoundMode(
-                platformContext, recycleBin, new NodeId(0), migrationRound, middleGeneration);
+                platformContext, new NodeId(0), migrationRound, middleGeneration);
 
         // Some funny business: copy the original files back into the PCES database directory.
         // This simulates a crash in the middle of the migration process after we have created
@@ -401,7 +404,7 @@ class PcesBirthRoundMigrationTests {
 
         // Run migration again.
         PcesBirthRoundMigration.migratePcesToBirthRoundMode(
-                platformContext, recycleBin, new NodeId(0), migrationRound, middleGeneration);
+                platformContext, new NodeId(0), migrationRound, middleGeneration);
 
         // We should not find any generation based PCES files in the database directory.
         assertTrue(findPcesFiles(pcesPath, GENERATION_THRESHOLD).isEmpty());
@@ -454,7 +457,7 @@ class PcesBirthRoundMigrationTests {
         }
 
         PcesBirthRoundMigration.migratePcesToBirthRoundMode(
-                platformContext, recycleBin, new NodeId(0), migrationRound, middleGeneration);
+                platformContext, new NodeId(0), migrationRound, middleGeneration);
 
         final Set<Path> allFilesAfterSecondMigration = new HashSet<>();
         try (final Stream<Path> stream = Files.walk(testDirectory)) {
