@@ -199,7 +199,8 @@ public class Hip540TestScenarios {
     /**
      * Even with an admin key, we are still <b>not</b> able to:
      * <ol>
-     *     <li>Add any key that does already exist.</li>
+     *     <li>Add any key that does not already exist.</li>
+     *     <li>Remove a key that does not already exist.</li>
      * </ol>
      *
      * @param targetKey the target key to test
