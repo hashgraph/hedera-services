@@ -27,8 +27,6 @@ import java.util.List;
  */
 public class DefaultTransactionResubmitter implements TransactionResubmitter {
 
-    // TODO unit test
-
     /**
      * Constructor.
      */
