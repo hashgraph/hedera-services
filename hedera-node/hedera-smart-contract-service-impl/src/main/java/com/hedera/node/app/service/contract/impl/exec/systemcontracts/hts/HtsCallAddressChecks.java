@@ -37,7 +37,7 @@ public class HtsCallAddressChecks {
      * @return true if the frame's parent is a delegate call
      */
     public boolean hasParentDelegateCall(@NonNull final MessageFrame frame) {
-        return isDelegateCall(parentOf(frame));
+        return isDelegateCall(frame) && isDelegateCall(parentOf(frame));
     }
 
     private MessageFrame parentOf(@NonNull final MessageFrame frame) {

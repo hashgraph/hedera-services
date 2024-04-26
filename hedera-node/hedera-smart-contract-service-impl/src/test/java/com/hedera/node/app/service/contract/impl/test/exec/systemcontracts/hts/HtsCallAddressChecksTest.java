@@ -45,6 +45,7 @@ class HtsCallAddressChecksTest {
     void detectsParentDelegateCall() {
         givenParentFrame();
         given(frame.getMessageFrameStack()).willReturn(stack);
+        given(frame.getRecipientAddress()).willReturn(TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(parentFrame.getContractAddress()).willReturn(TestHelpers.EIP_1014_ADDRESS);
         given(parentFrame.getRecipientAddress()).willReturn(TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS);
         assertTrue(subject.hasParentDelegateCall(frame));
