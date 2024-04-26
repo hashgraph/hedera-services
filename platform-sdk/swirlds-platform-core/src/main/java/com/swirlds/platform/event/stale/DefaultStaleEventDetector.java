@@ -135,6 +135,7 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
     @Override
     public void setInitialEventWindow(@NonNull final EventWindow initialEventWindow) {
         this.currentEventWindow = Objects.requireNonNull(initialEventWindow);
+        selfEvents.shiftWindow(currentEventWindow.getAncientThreshold());
     }
 
     /**
