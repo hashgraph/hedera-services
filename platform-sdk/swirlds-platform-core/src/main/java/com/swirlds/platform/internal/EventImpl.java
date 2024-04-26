@@ -97,7 +97,7 @@ public class EventImpl extends EventMetadata
         this(gossipEvent, new ConsensusData(), selfParent, otherParent);
     }
 
-    public EventImpl(final GossipEvent gossipEvent) {
+    public EventImpl(@NonNull final GossipEvent gossipEvent) {
         this(gossipEvent, new ConsensusData(), null, null);
     }
 
