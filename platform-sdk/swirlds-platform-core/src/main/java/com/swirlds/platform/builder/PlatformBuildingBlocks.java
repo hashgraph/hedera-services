@@ -28,7 +28,6 @@ import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.util.RandomBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -61,8 +60,6 @@ import java.util.function.Predicate;
  *                                              into gossip event storage, per peer
  * @param randomBuilder                         a builder for creating random number generators
  * @param transactionPool                       provides transactions to be added to new events
- * @param currentPlatformStatus                 holds the current status of the platform, should be removed once the
- *                                              platform status manager is operated within the wiring framework
  * @param intakeQueueSizeSupplierSupplier       supplies a method which supplies the size of the intake queue. This hack
  *                                              is required due to the lack of a platform health monitor.
  * @param isInFreezePeriodReference             a reference to a predicate that determines if a timestamp is in the
@@ -91,7 +88,6 @@ public record PlatformBuildingBlocks(
         @NonNull IntakeEventCounter intakeEventCounter,
         @NonNull RandomBuilder randomBuilder,
         @NonNull TransactionPool transactionPool,
-        @NonNull AtomicReference<PlatformStatus> currentPlatformStatus,
         @NonNull AtomicReference<LongSupplier> intakeQueueSizeSupplierSupplier,
         @NonNull AtomicReference<Predicate<Instant>> isInFreezePeriodReference,
         @NonNull AtomicReference<Function<String, ReservedSignedState>> latestImmutableStateProviderReference,

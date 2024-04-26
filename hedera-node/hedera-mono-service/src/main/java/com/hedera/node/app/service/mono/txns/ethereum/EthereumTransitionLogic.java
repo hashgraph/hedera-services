@@ -35,6 +35,7 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
@@ -52,6 +53,7 @@ import com.hedera.node.app.service.mono.txns.span.SpanMapManager;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.math.BigInteger;
@@ -82,6 +84,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
     private final ContractCallTransitionLogic contractCallTransitionLogic;
     private final ContractCreateTransitionLogic contractCreateTransitionLogic;
     private final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
+    private final LivePricesSource livePricesSource;
 
     @Inject
     public EthereumTransitionLogic(
@@ -95,7 +98,8 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
             final GlobalDynamicProperties dynamicProperties,
             final AliasManager aliasManager,
             final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger,
-            final SpanMapManager spanMapManager) {
+            final SpanMapManager spanMapManager,
+            final LivePricesSource livePricesSource) {
         this.txnCtx = txnCtx;
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.creationCustomizer = creationCustomizer;
@@ -107,6 +111,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
         this.accountsLedger = accountsLedger;
         this.dynamicProperties = dynamicProperties;
         this.spanMapManager = spanMapManager;
+        this.livePricesSource = livePricesSource;
     }
 
     @Override
@@ -121,7 +126,8 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
                 INVALID_ETHEREUM_TRANSACTION);
         final var relayerId = Id.fromGrpcAccount(accessor.getPayer());
         final var maxGasAllowance = accessor.getTxn().getEthereumTransaction().getMaxGasAllowance();
-        final var userOfferedGasPrice = ethTxData.getMaxGasAsBigInteger();
+        final var userOfferedGasPrice = ethTxData.getMaxGasAsBigInteger(
+                livePricesSource.currentGasPrice(txnCtx.consensusTime(), HederaFunctionality.EthereumTransaction));
 
         // Revoke the relayer's key for Ethereum operations
         txnCtx.swirldsTxnAccessor().getSigMeta().revokeCryptoSigsFrom(txnCtx.activePayerKey());
