@@ -6,6 +6,8 @@ As part of [HIP-904](https://hips.hedera.com/hip/hip-904), we would like to have
 
 This would mean transferring the token (the whole amount if fungible) or the NFT (concrete serial number from a unique token type) back to its treasury account, without assessing custom fees. Using token reject an account could get rid of potential “ransom” tokens which have very expensive custom fees and only pay for the cheaper token reject operation.
 
+An added advantage for token reject is that we can transfer back tokens to the treasury even if they are paused or frozen (which is not the case with regular crypto transfer).
+
 Token reject transaction can be performed only for tokens which are part of the persistent state of the account. No tokens from the pending state that is introduced with HIP-904 could be rejected. This remains only a right for the owner, who can cancel a pending airdrop.
 
 ## Goals
