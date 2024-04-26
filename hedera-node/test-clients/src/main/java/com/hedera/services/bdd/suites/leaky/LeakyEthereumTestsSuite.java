@@ -76,7 +76,7 @@ public class LeakyEthereumTestsSuite extends HapiSuite {
     private static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
     private static final String ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS = "contracts.evm.allowCallsToNonContractAccounts";
     private static final String DYNAMIC_EVM_PROPERTY = "contracts.evm.version.dynamic";
-    private static final String EVM_VERSION_050 = "v0.50";
+    private static final String EVM_VERSION_046 = "v0.46";
 
     public static void main(String... args) {
         new LeakyEthereumTestsSuite().runSuiteAsync();
@@ -195,10 +195,10 @@ public class LeakyEthereumTestsSuite extends HapiSuite {
         final var HTS_SYSTEM_CONTRACT_ADDRESS = "0000000000000000000000000000000000000167";
 
         return propertyPreservingHapiSpec("callHtsSystemContractTest")
-                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY, ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS)
                 .given(
                         overriding(DYNAMIC_EVM_PROPERTY, "true"),
-                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_050),
+                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_046),
                         overriding(ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS, "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(SUPPLY_KEY),
