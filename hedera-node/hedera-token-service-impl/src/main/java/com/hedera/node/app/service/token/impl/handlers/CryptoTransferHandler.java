@@ -173,13 +173,14 @@ public class CryptoTransferHandler implements TransactionHandler {
                     if (treasuryID != null) accountStore.warm(treasuryID);
                     final List<NftTransfer> nftTransfers = tokenTransferList.nftTransfersOrThrow();
                     for (final NftTransfer nftTransfer : nftTransfers) {
-                        warmNftTransfer(accountStore, nftStore, tokenRelationStore, tokenID, nftTransfer);
+                        warmNftTransfer(accountStore, tokenStore, nftStore, tokenRelationStore, tokenID, nftTransfer);
                     }
                 });
     }
 
     private void warmNftTransfer(
             @NonNull final ReadableAccountStore accountStore,
+            @NonNull final ReadableTokenStore tokenStore,
             @NonNull final ReadableNftStore nftStore,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final TokenID tokenID,
@@ -197,7 +198,10 @@ public class CryptoTransferHandler implements TransactionHandler {
         nftTransfer.ifReceiverAccountID(receiverAccountID -> {
             final Account receiver = accountStore.getAliasedAccountById(receiverAccountID);
             if (receiver != null) {
-                receiver.ifHeadTokenId(headTokenID -> tokenRelationStore.warm(receiverAccountID, headTokenID));
+                receiver.ifHeadTokenId(headTokenID -> {
+                    tokenRelationStore.warm(receiverAccountID, headTokenID);
+                    tokenStore.warm(headTokenID);
+                });
                 receiver.ifHeadNftId(nftStore::warm);
             }
             tokenRelationStore.warm(receiverAccountID, tokenID);
