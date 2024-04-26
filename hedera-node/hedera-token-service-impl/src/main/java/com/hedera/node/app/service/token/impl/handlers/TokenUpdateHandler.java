@@ -438,7 +438,8 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             @Nullable final Key replacementKey)
             throws PreCheckException {
         final var maybeRoleKey = roleKey.getFromToken(token);
-        mustExist(maybeRoleKey, roleKey.tokenHasNoKeyStatus());
+        // Prioritize TOKEN_IS_IMMUTABLE for completely immutable tokens
+        mustExist(maybeRoleKey, token.hasAdminKey() ? roleKey.tokenHasNoKeyStatus() : TOKEN_IS_IMMUTABLE);
         if (token.hasAdminKey()) {
             context.requireKey(oneOf(
                     replacementKey == null ? maybeRoleKey : allOf(maybeRoleKey, replacementKey),
