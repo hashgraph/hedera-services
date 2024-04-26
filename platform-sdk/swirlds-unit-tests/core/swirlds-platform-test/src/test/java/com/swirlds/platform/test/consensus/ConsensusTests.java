@@ -44,6 +44,10 @@ class ConsensusTests extends PlatformTest {
      */
     private final int NUM_ITER = 1;
 
+    private boolean ignoreNoSuperMajorityMarkerFile = false;
+    private boolean ignoreNoJudgesMarkerFile = false;
+    private boolean ignoreCoinRoundMarkerFile = false;
+
     @BeforeAll
     public static void initConfig() {
         new TestConfigBuilder().getOrCreateConfig();
@@ -51,9 +55,16 @@ class ConsensusTests extends PlatformTest {
 
     @AfterEach
     void checkForMarkerFiles() {
-        assertMarkerFile(ConsensusImpl.NO_SUPER_MAJORITY_MARKER_FILE, false);
-        assertMarkerFile(ConsensusImpl.COIN_ROUND_MARKER_FILE, false);
-        assertMarkerFile(ConsensusImpl.NO_JUDGES_MARKER_FILE, false);
+        if (!ignoreNoSuperMajorityMarkerFile) {
+            assertMarkerFile(ConsensusImpl.NO_SUPER_MAJORITY_MARKER_FILE, false);
+        }
+        if (!ignoreNoJudgesMarkerFile) {
+            assertMarkerFile(ConsensusImpl.NO_JUDGES_MARKER_FILE, false);
+        }
+        if (!ignoreCoinRoundMarkerFile) {
+            assertMarkerFile(ConsensusImpl.COIN_ROUND_MARKER_FILE, false);
+        }
+        assertMarkerFile(ConsensusImpl.CONSENSUS_EXCEPTION_MARKER_FILE, false);
     }
 
     /**
@@ -131,6 +142,10 @@ class ConsensusTests extends PlatformTest {
                 .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
+        // Some forking tests make too many forkers.  When there is  > 1/3 nodes forking, both no super majority and
+        // possibly no judges can result. This is expected, so ignore the marker file generated for these tests.
+        ignoreNoSuperMajorityMarkerFile = true;
+        ignoreNoJudgesMarkerFile = true;
     }
 
     @ParameterizedTest

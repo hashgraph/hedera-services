@@ -17,7 +17,6 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.components.state.output;
     exports com.swirlds.platform.config;
     exports com.swirlds.platform.config.legacy;
-    exports com.swirlds.platform.event.report;
     exports com.swirlds.platform.gui.hashgraph;
     exports com.swirlds.platform.gui.hashgraph.internal;
     exports com.swirlds.platform.network.connection;
@@ -125,6 +124,7 @@ module com.swirlds.platform.core {
     requires transitive com.swirlds.metrics.api;
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;
+    requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
     requires transitive info.picocli;
     requires transitive org.apache.logging.log4j;

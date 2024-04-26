@@ -26,6 +26,7 @@ package com.swirlds.demo.crypto;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -42,7 +43,6 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -201,8 +201,7 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
     @Override
     public void handleConsensusRound(final Round round, final PlatformState swirldDualState) {
         throwIfImmutable();
-        round.forEachEventTransaction(
-                (event, transaction) -> handleTransaction(event.getCreatorId(), true, transaction));
+        round.forEachEventTransaction((event, transaction) -> handleTransaction(event.getCreatorId(), transaction));
     }
 
     /**
@@ -227,21 +226,22 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
      * {ASK,s,p} = ask to sell 1 share of stock s at p cents (where 1 &lt;= p &lt;= 127)
      * </pre>
      */
-    private void handleTransaction(
-            @NonNull final NodeId id, final boolean isConsensus, @Nullable final Transaction transaction) {
+    private void handleTransaction(@NonNull final NodeId id, @NonNull final Transaction transaction) {
         Objects.requireNonNull(id, "id must not be null");
-        if (transaction == null || transaction.getContents().length == 0) {
+        Objects.requireNonNull(transaction, "transaction must not be null");
+        if (transaction.isSystem()) {
             return;
         }
-        if (transaction.getContents()[0] == TransType.slow.ordinal()
-                || transaction.getContents()[0] == TransType.fast.ordinal()) {
+        final Bytes contents = transaction.getApplicationPayload();
+        if (contents.length() < 3) {
             return;
-        } else if (!isConsensus || transaction.getContents().length < 3) {
-            return; // ignore any bid/ask that doesn't have consensus yet
         }
-        final int askBid = transaction.getContents()[0];
-        final int tradeStock = transaction.getContents()[1];
-        int tradePrice = transaction.getContents()[2];
+        if (contents.getByte(0) == TransType.slow.ordinal() || contents.getByte(0) == TransType.fast.ordinal()) {
+            return;
+        }
+        final int askBid = contents.getByte(0);
+        final int tradeStock = contents.getByte(1);
+        int tradePrice = contents.getByte(2);
 
         if (tradePrice < 1 || tradePrice > 127) {
             return; // all asks and bids must be in the range 1 to 127

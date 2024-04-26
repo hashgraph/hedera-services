@@ -33,7 +33,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -72,6 +74,7 @@ public class SubmitMessageSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
+                pureCheckFails(),
                 topicIdIsValidated(),
                 messageIsValidated(),
                 messageSubmissionSimple(),
@@ -81,6 +84,26 @@ public class SubmitMessageSuite extends HapiSuite {
                 messageSubmissionOverSize(),
                 messageSubmissionCorrectlyUpdatesRunningHash(),
                 feeAsExpected());
+    }
+
+    @HapiTest
+    final HapiSpec pureCheckFails() {
+        return defaultHapiSpec("testTopic")
+                .given(cryptoCreate("nonTopicId"))
+                .when()
+                .then(
+                        submitMessageTo(spec -> asTopicId(spec.registry().getAccountID("nonTopicId")))
+                                .hasPrecheck(INVALID_TOPIC_ID),
+                        submitMessageTo((String) null).hasPrecheck(INVALID_TOPIC_ID));
+    }
+
+    @HapiTest
+    public HapiSpec idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(createTopic("testTopic"))
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> submitMessageTo("testTopic")
+                        .message("HI")));
     }
 
     @HapiTest
@@ -107,11 +130,11 @@ public class SubmitMessageSuite extends HapiSuite {
                         submitMessageTo("testTopic")
                                 .clearMessage()
                                 .hasRetryPrecheckFrom(BUSY)
-                                .hasKnownStatus(INVALID_TOPIC_MESSAGE),
+                                .hasPrecheck(INVALID_TOPIC_MESSAGE),
                         submitMessageTo("testTopic")
                                 .message("")
                                 .hasRetryPrecheckFrom(BUSY)
-                                .hasKnownStatus(INVALID_TOPIC_MESSAGE));
+                                .hasPrecheck(INVALID_TOPIC_MESSAGE));
     }
 
     @HapiTest
