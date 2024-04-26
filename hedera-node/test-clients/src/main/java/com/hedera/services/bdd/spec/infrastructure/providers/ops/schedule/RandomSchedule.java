@@ -36,15 +36,16 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class RandomSchedule implements OpProvider {
-    protected final AtomicInteger opNo = new AtomicInteger();
-    protected final RegistrySourcedNameProvider<ScheduleID> schedules;
-    protected final EntityNameProvider<AccountID> accounts;
+    private final AtomicInteger opNo = new AtomicInteger();
+    private final RegistrySourcedNameProvider<ScheduleID> schedules;
+    private final EntityNameProvider<AccountID> accounts;
+
     public final ResponseCodeEnum[] permissibleOutcomes =
             standardOutcomesAnd(UNRESOLVABLE_REQUIRED_SIGNERS, IDENTICAL_SCHEDULE_ALREADY_CREATED);
 
     public static final int DEFAULT_CEILING_NUM = 100;
-    protected int ceilingNum = DEFAULT_CEILING_NUM;
-    protected static final String ADMIN_KEY = DEFAULT_PAYER;
+    private int ceilingNum = DEFAULT_CEILING_NUM;
+    static final String ADMIN_KEY = DEFAULT_PAYER;
 
     public RandomSchedule(RegistrySourcedNameProvider<ScheduleID> schedules, EntityNameProvider<AccountID> accounts) {
         this.schedules = schedules;

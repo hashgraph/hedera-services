@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.sync;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.system.events.PlatformEvent;
+import com.swirlds.platform.internal.EventImpl;
 
 /**
  * Utility types to define equality of events, sets of shadow events and hashes.
@@ -34,7 +34,7 @@ public final class EventEquality {
     /**
      * Equality of two events by hash. If the events are both null, they are considered equal.
      */
-    static boolean identicalHashes(final PlatformEvent a, final PlatformEvent b) {
+    static boolean identicalHashes(final EventImpl a, final EventImpl b) {
         return (a == null && b == null) || a.getBaseHash().equals(b.getBaseHash());
     }
 

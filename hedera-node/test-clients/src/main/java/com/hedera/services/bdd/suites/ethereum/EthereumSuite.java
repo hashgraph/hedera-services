@@ -266,7 +266,7 @@ public class EthereumSuite extends HapiSuite {
                                                         .logs(inOrder())
                                                         .senderId(spec.registry()
                                                                 .getAccountID(spec.registry()
-                                                                        .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .keyAliasIdFor(SECP_256K1_SOURCE_KEY)
                                                                         .getAlias()
                                                                         .toStringUtf8())))
                                                 .ethereumHash(ByteString.copyFrom(
@@ -599,7 +599,7 @@ public class EthereumSuite extends HapiSuite {
                                                         .logs(inOrder())
                                                         .senderId(spec.registry()
                                                                 .getAccountID(spec.registry()
-                                                                        .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .keyAliasIdFor(SECP_256K1_SOURCE_KEY)
                                                                         .getAlias()
                                                                         .toStringUtf8())))
                                                 .ethereumHash(ByteString.copyFrom(
@@ -700,7 +700,7 @@ public class EthereumSuite extends HapiSuite {
                                                                         eventSignatureOf("Info(address,address)")))))
                                                         .senderId(spec.registry()
                                                                 .getAccountID(spec.registry()
-                                                                        .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .keyAliasIdFor(SECP_256K1_SOURCE_KEY)
                                                                         .getAlias()
                                                                         .toStringUtf8())))
                                                 .ethereumHash(ByteString.copyFrom(
@@ -914,7 +914,7 @@ public class EthereumSuite extends HapiSuite {
                                                         .logs(inOrder())
                                                         .senderId(spec.registry()
                                                                 .getAccountID(spec.registry()
-                                                                        .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .keyAliasIdFor(SECP_256K1_SOURCE_KEY)
                                                                         .getAlias()
                                                                         .toStringUtf8())))
                                                 .ethereumHash(ByteString.copyFrom(

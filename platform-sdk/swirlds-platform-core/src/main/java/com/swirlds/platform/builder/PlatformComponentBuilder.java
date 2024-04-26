@@ -28,11 +28,6 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.creation.DefaultEventCreationManager;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.creation.EventCreator;
-import com.swirlds.platform.event.creation.rules.AggregateEventCreationRules;
-import com.swirlds.platform.event.creation.rules.BackpressureRule;
-import com.swirlds.platform.event.creation.rules.EventCreationRule;
-import com.swirlds.platform.event.creation.rules.MaximumRateRule;
-import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
 import com.swirlds.platform.event.creation.tipset.TipsetEventCreator;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.deduplication.StandardEventDeduplicator;
@@ -62,10 +57,14 @@ import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.state.signed.DefaultSignedStateSentinel;
 import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.status.DefaultStatusStateMachine;
+import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.util.MetricsDocUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -106,8 +105,10 @@ public class PlatformComponentBuilder {
     private InOrderLinker inOrderLinker;
     private ConsensusEngine consensusEngine;
     private ConsensusEventStream consensusEventStream;
+    private SignedStateSentinel signedStateSentinel;
     private PcesSequencer pcesSequencer;
     private RoundDurabilityBuffer roundDurabilityBuffer;
+    private StatusStateMachine statusStateMachine;
     private TransactionPrehandler transactionPrehandler;
     private PcesWriter pcesWriter;
 
@@ -477,15 +478,11 @@ public class PlatformComponentBuilder {
                     blocks.appVersion(),
                     blocks.transactionPool());
 
-            final EventCreationRule eventCreationRules = AggregateEventCreationRules.of(
-                    new MaximumRateRule(blocks.platformContext()),
-                    new BackpressureRule(
-                            blocks.platformContext(),
-                            () -> blocks.intakeQueueSizeSupplierSupplier().get().getAsLong()),
-                    new PlatformStatusRule(() -> blocks.currentPlatformStatus().get(), blocks.transactionPool()));
-
-            eventCreationManager =
-                    new DefaultEventCreationManager(blocks.platformContext(), eventCreator, eventCreationRules);
+            eventCreationManager = new DefaultEventCreationManager(
+                    blocks.platformContext(),
+                    blocks.transactionPool(),
+                    blocks.intakeQueueSizeSupplierSupplier().get(),
+                    eventCreator);
         }
         return eventCreationManager;
     }
@@ -656,6 +653,70 @@ public class PlatformComponentBuilder {
             roundDurabilityBuffer = new DefaultRoundDurabilityBuffer(blocks.platformContext());
         }
         return roundDurabilityBuffer;
+    }
+
+    /**
+     * Provide a status state machine in place of the platform's default status state machine.
+     *
+     * @param statusStateMachine the status state machine to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withStatusStateMachine(@NonNull final StatusStateMachine statusStateMachine) {
+        throwIfAlreadyUsed();
+        if (this.statusStateMachine != null) {
+            throw new IllegalStateException("Status state machine has already been set");
+        }
+        this.statusStateMachine = Objects.requireNonNull(statusStateMachine);
+        return this;
+    }
+
+    /**
+     * Build the status state machine if it has not yet been built. If one has been provided via
+     * {@link #withStatusStateMachine(StatusStateMachine)}, that state machine will be used. If this method is called
+     * more than once, only the first call will build the status state machine. Otherwise, the default state machine
+     * will be created and returned.
+     *
+     * @return the status state machine
+     */
+    @NonNull
+    public StatusStateMachine buildStatusStateMachine() {
+        if (statusStateMachine == null) {
+            statusStateMachine = new DefaultStatusStateMachine(blocks.platformContext());
+        }
+        return statusStateMachine;
+    }
+
+    /**
+     * Provide a signed state sentinel in place of the platform's default signed state sentinel.
+     *
+     * @param signedStateSentinel the signed state sentinel to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withSignedStateSentinel(@NonNull final SignedStateSentinel signedStateSentinel) {
+        throwIfAlreadyUsed();
+        if (this.signedStateSentinel != null) {
+            throw new IllegalStateException("Signed state sentinel has already been set");
+        }
+        this.signedStateSentinel = Objects.requireNonNull(signedStateSentinel);
+        return this;
+    }
+
+    /**
+     * Build the signed state sentinel if it has not yet been built. If one has been provided via
+     * {@link #withSignedStateSentinel(SignedStateSentinel)}, that sentinel will be used. If this method is called more
+     * than once, only the first call will build the signed state sentinel. Otherwise, the default sentinel will be
+     * created and returned.
+     *
+     * @return the signed state sentinel
+     */
+    @NonNull
+    public SignedStateSentinel buildSignedStateSentinel() {
+        if (signedStateSentinel == null) {
+            signedStateSentinel = new DefaultSignedStateSentinel(blocks.platformContext());
+        }
+        return signedStateSentinel;
     }
 
     /**
