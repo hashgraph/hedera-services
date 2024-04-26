@@ -93,7 +93,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         // be structurally valid. Putting structurally invalid keys into ledger state
         // makes no sense, and could create problems for mirror nodes and block explorers.
         // That is, using NO_VALIDATION only lets a user set a new key without its signature;
-        // and thus use a low-entropy key that proves a role function has been "disabled"
+        // and thus set a low-entropy key that proves a role function has been "disabled"
         for (final var tokenKey : TOKEN_KEYS) {
             if (tokenKey.isPresentInUpdate(op)) {
                 final var key = tokenKey.getFromUpdate(op);
