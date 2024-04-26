@@ -4263,8 +4263,11 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                             .setCallingContract(
                                                                     spec.registry()
                                                                             .getContractId(contract))
-                                                            .setGas(3870552)
-                                                            .setRecipientContract(childId)
+                                                            .setGas(3870609)
+                                                            .setTargetedAddress(
+                                                                    ByteString.fromHex(
+                                                                            String.valueOf(expectedCreate2Address)
+                                                                                    .substring(2)))
                                                             .setGasUsed(44936)
                                                             .setValue(tcValue)
                                                             .setOutput(EMPTY)
