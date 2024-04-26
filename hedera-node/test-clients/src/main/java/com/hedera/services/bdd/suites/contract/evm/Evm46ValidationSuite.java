@@ -58,6 +58,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.nonMirrorAddrWith;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.utils.contracts.ErrorMessageResult.errorMessageResult;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
+
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
@@ -65,9 +66,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
@@ -154,6 +155,8 @@ public class Evm46ValidationSuite extends HapiSuite {
                 directCallToNonExistingNonMirrorAddressResultsInSuccessfulNoOp(),
                 // EOA -calls-> ExistingCryptoAccount, expect noop success
                 directCallToExistingCryptoAccountResultsInSuccess(),
+                // EOA -calls-> SystemAccount, expect noop success
+                directCallToSystemAccountResultsInSuccessfulNoOp(),
                 // EOA -callsWValue-> ExistingCryptoAccount, expect successful transfer
                 directCallWithValueToExistingCryptoAccountResultsInSuccess(),
                 // EOA -calls-> Reverting, expect revert
@@ -309,17 +312,15 @@ public class Evm46ValidationSuite extends HapiSuite {
                         cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
                         contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(withOpContext((spec, op) -> {
-                    allRunFor(
-                            spec,
-                            balanceSnapshot("selfdestructTargetAccount", asAccountString(receiverId.get())),
-                            contractCall(
-                                            INTERNAL_CALLER_CONTRACT,
-                                            SELFDESTRUCT,
-                                            mirrorAddrWith(receiverId.get().getAccountNum()))
-                                    .gas(GAS_LIMIT_FOR_CALL * 4)
-                                    .via(INNER_TXN));
-                }))
+                .when(withOpContext((spec, op) -> allRunFor(
+                        spec,
+                        balanceSnapshot("selfdestructTargetAccount", asAccountString(receiverId.get())),
+                        contractCall(
+                                        INTERNAL_CALLER_CONTRACT,
+                                        SELFDESTRUCT,
+                                        mirrorAddrWith(receiverId.get().getAccountNum()))
+                                .gas(GAS_LIMIT_FOR_CALL * 4)
+                                .via(INNER_TXN))))
                 .then(getAccountBalance(RECEIVER)
                         .hasTinyBars(changeFromSnapshot("selfdestructTargetAccount", 100000000)));
     }
@@ -403,7 +404,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp() {
+    HapiSpec directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp() {
 
         return defaultHapiSpec("directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp")
                 .given(withOpContext((spec, ctxLog) -> spec.registry()
@@ -534,6 +535,29 @@ public class Evm46ValidationSuite extends HapiSuite {
                                         .status(SUCCESS)
                                         .contractCallResult(resultWith()
                                                 .gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))));
+    }
+
+    @HapiTest
+    HapiSpec directCallToSystemAccountResultsInSuccessfulNoOp() {
+        return defaultHapiSpec("directCallToSystemAccountResultsInSuccessfulNoOp")
+                .given(
+                        cryptoCreate("account").balance(ONE_HUNDRED_HBARS),
+                        withOpContext((spec, opLog) -> spec.registry()
+                                .saveContractId(
+                                        "contract",
+                                        asContractIdWithEvmAddress(ByteString.copyFrom(
+                                                unhex("0000000000000000000000000000000000000275"))))))
+                .when(withOpContext((spec, ctxLog) -> allRunFor(
+                        spec,
+                        contractCallWithFunctionAbi("contract", getABIFor(FUNCTION, NAME, ERC_721_ABI))
+                                .gas(GAS_LIMIT_FOR_CALL)
+                                .via("callToSystemAddress")
+                                .signingWith("account"))))
+                .then(getTxnRecord("callToSystemAddress")
+                        .hasPriority(recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(
+                                        resultWith().gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))));
     }
 
     @HapiTest
@@ -1411,18 +1435,9 @@ public class Evm46ValidationSuite extends HapiSuite {
                                                 CALL_EXTERNAL_FUNCTION,
                                                 mirrorAddrWith(targetId.get().getAccountNum()))
                                         .gas(GAS_LIMIT_FOR_CALL * 4)
-                                        .via(INNER_TXN))))
-                .then(
-                        withOpContext((spec, opLog) -> {
-                            final var lookup = getTxnRecord(INNER_TXN);
-                            allRunFor(spec, lookup);
-                            final var result = lookup.getResponseRecord()
-                                    .getContractCallResult()
-                                    .getContractCallResult();
-                            assertNotEquals(ByteString.copyFrom(new byte[32]), result);
-                        }),
-                        getAccountBalance(INTERNAL_CALLER_CONTRACT)
-                                .hasTinyBars(changeFromSnapshot("initialBalance", 0)));
+                                        .via(INNER_TXN)
+                                        .hasKnownStatus(SUCCESS))))
+                .then(getAccountBalance(INTERNAL_CALLER_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
     @HapiTest
@@ -1499,7 +1514,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalCallWithValueToSystemAccount564ResultsInSuccessNoopNoTransfer() {
+    HapiSpec internalCallWithValueToSystemAccount564ResultsInSuccessNoopNoTransfer() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(564L).build());
 

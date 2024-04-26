@@ -129,6 +129,16 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             if (alreadyHalted(frame)) {
                 return;
             }
+
+            handleNonExtantSystemAccount(frame, tracer);
+            return;
+        }
+
+        // Handle evm precompiles
+        final var evmPrecompile = precompiles.get(codeAddress);
+        if (evmPrecompile != null) {
+            doExecutePrecompile(evmPrecompile, frame, tracer);
+            return;
         }
 
         // Transfer value to the contract if required and possibly halt
@@ -137,13 +147,6 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             if (alreadyHalted(frame)) {
                 return;
             }
-        }
-
-        // Handle evm precompiles
-        final var evmPrecompile = precompiles.get(codeAddress);
-        if (evmPrecompile != null) {
-            doExecutePrecompile(evmPrecompile, frame, tracer);
-            return;
         }
 
         // For mono-service fidelity, we need to consider called contracts
@@ -160,6 +163,12 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
 
     public boolean isImplicitCreationEnabled(@NonNull Configuration config) {
         return featureFlags.isImplicitCreationEnabled(config);
+    }
+
+    private void handleNonExtantSystemAccount(
+            @NonNull final MessageFrame frame, @NonNull final OperationTracer tracer) {
+        final PrecompileContractResult result = PrecompileContractResult.success(Bytes.EMPTY);
+        finishPrecompileExecution(frame, result, PRECOMPILE, (ActionSidecarContentTracer) tracer);
     }
 
     private void doExecutePrecompile(
