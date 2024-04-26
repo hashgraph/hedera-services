@@ -27,7 +27,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.demo.virtualmerkle.map.account.AccountVirtualMapKey;
 import com.swirlds.demo.virtualmerkle.map.account.AccountVirtualMapValue;
@@ -162,7 +162,7 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
         // different file system than the file(s) used to deserialize the maps. In such case, builders will fail
         // to create hard file links when constructing new data sources. To fix it, let's override the default
         // temp location to the same file system as the files to load
-        TemporaryFileBuilder.overrideTemporaryFileLocation(classFolder.resolve("tmp"));
+        LegacyTemporaryFileBuilder.overrideTemporaryFileLocation(classFolder.resolve("tmp"));
 
         for (final Path roundFolder : roundsFolders) {
             // reset the default instance path to force creation of a new MerkleDB instance

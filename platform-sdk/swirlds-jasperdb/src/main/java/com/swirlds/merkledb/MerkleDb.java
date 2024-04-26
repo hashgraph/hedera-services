@@ -30,7 +30,7 @@ import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualKey;
@@ -121,7 +121,7 @@ public final class MerkleDb {
 
     /**
      * The base directory in which the database directory will be created. By default, a temporary
-     * location provided by {@link com.swirlds.common.io.utility.TemporaryFileBuilder}.
+     * location provided by {@link LegacyTemporaryFileBuilder}.
      */
     private final Path storageDir;
 
@@ -185,7 +185,7 @@ public final class MerkleDb {
         return defaultInstancePath.updateAndGet(p -> {
             if (p == null) {
                 try {
-                    p = TemporaryFileBuilder.buildTemporaryFile("merkledb");
+                    p = LegacyTemporaryFileBuilder.buildTemporaryFile("merkledb");
                 } catch (IOException z) {
                     throw new UncheckedIOException(z);
                 }
