@@ -98,7 +98,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             if (tokenKey.isPresentInUpdate(op)) {
                 final var key = tokenKey.getFromUpdate(op);
                 if (!isKeyRemoval(key)) {
-                    validateTruePreCheck(isValid(tokenKey.getFromUpdate(op)), tokenKey.invalidKeyStatus());
+                    validateTruePreCheck(isValid(key), tokenKey.invalidKeyStatus());
                 }
             }
         }
