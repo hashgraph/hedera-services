@@ -130,7 +130,7 @@ public class TlsFactory implements SocketFactory {
     }
 
     /**
-     * reloads the trust store with peers' certificates
+     * {@inheritDoc}
      */
     @Override
     public void reload(@NonNull final List<PeerInfo> peers) {

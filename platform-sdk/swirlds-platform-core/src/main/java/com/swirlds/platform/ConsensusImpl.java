@@ -148,6 +148,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     public static final String COIN_ROUND_MARKER_FILE = "consensus-coin-round";
     public static final String NO_SUPER_MAJORITY_MARKER_FILE = "consensus-no-super-majority";
     public static final String NO_JUDGES_MARKER_FILE = "consensus-no-judges";
+    public static final String CONSENSUS_EXCEPTION_MARKER_FILE = "consensus-exception";
 
     private static final Logger logger = LogManager.getLogger(ConsensusImpl.class);
     /** the only address book currently, until address book changes are implemented */
@@ -277,19 +278,24 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     @NonNull
     @Override
     public List<ConsensusRound> addEvent(@NonNull final EventImpl event) {
-        recentEvents.add(event);
-        final List<ConsensusRound> rounds = new ArrayList<>();
-        // set its round to undefined so that it gets calculated
-        event.setRoundCreated(ConsensusConstants.ROUND_UNDEFINED);
-        checkInitJudges(event);
-        ConsensusRound consensusRound = calculateAndVote(event);
+        try {
+            recentEvents.add(event);
+            final List<ConsensusRound> rounds = new ArrayList<>();
+            // set its round to undefined so that it gets calculated
+            event.setRoundCreated(ConsensusConstants.ROUND_UNDEFINED);
+            checkInitJudges(event);
+            ConsensusRound consensusRound = calculateAndVote(event);
 
-        while (consensusRound != null) {
-            rounds.add(consensusRound);
+            while (consensusRound != null) {
+                rounds.add(consensusRound);
 
-            consensusRound = recalculateAndVote();
+                consensusRound = recalculateAndVote();
+            }
+            return rounds;
+        } catch (final Exception e) {
+            markerFileWriter.writeMarkerFile(CONSENSUS_EXCEPTION_MARKER_FILE);
+            throw e;
         }
-        return rounds;
     }
 
     /**
@@ -404,8 +410,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         initJudges.judgeFound(event);
         logger.info(
                 STARTUP.getMarker(),
-                "Found init judge {}, num remaining: {}",
-                event::toShortString,
+                "Found init judge %s, num remaining: {}"
+                        .formatted(event.getBaseEvent().getDescriptor()),
                 initJudges::numMissingJudges);
         if (initJudges.allJudgesFound()) {
             // we now have the last of the missing judges, so find every known event that is an
@@ -651,6 +657,9 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         final List<EventImpl> judges = roundElections.findAllJudges();
         final long decidedRoundNumber = rounds.getElectionRoundNumber();
 
+        // Check for no judges or super majority conditions.
+        checkJudges(judges, decidedRoundNumber);
+
         // update the round and generation values since fame has been decided for a new round
         rounds.currentElectionDecided();
 
@@ -690,9 +699,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         final long nonExpiredThreshold = ancientMode.selectIndicator(
                 getMinRoundGeneration(),
                 Math.max(previousRoundNonExpired, decidedRoundNumber - config.roundsExpired() + 1));
-
-        // Check for no judges or super majority conditions.
-        checkJudges(judges, decidedRoundNumber);
 
         return new ConsensusRound(
                 addressBook,

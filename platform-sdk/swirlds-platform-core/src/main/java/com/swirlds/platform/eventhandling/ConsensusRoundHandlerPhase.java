@@ -25,11 +25,6 @@ public enum ConsensusRoundHandlerPhase {
      */
     IDLE,
     /**
-     * The handler is waiting for the keystone event of the round to become durable before applying the contained
-     * transactions to the state.
-     */
-    WAITING_FOR_EVENT_DURABILITY,
-    /**
      * The consensus fields of the events in a round are being populated.
      */
     SETTING_EVENT_CONSENSUS_DATA,

@@ -94,7 +94,7 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) {
-        Query query = getVersionInfoQuery(payment, false);
+        Query query = maybeModified(getVersionInfoQuery(payment, false), spec);
         response = spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls).getVersionInfo(query);
         var info = response.getNetworkGetVersionInfo();
         if (verboseLoggingOn) {

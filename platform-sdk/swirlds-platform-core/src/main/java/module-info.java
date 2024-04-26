@@ -17,7 +17,6 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.components.state.output;
     exports com.swirlds.platform.config;
     exports com.swirlds.platform.config.legacy;
-    exports com.swirlds.platform.event.report;
     exports com.swirlds.platform.gui.hashgraph;
     exports com.swirlds.platform.gui.hashgraph.internal;
     exports com.swirlds.platform.network.connection;
