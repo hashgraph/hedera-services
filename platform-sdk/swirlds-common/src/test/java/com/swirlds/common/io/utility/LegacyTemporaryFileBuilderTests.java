@@ -18,10 +18,10 @@ package com.swirlds.common.io.utility;
 
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectory;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
-import static com.swirlds.common.io.utility.TemporaryFileBuilder.buildTemporaryDirectory;
-import static com.swirlds.common.io.utility.TemporaryFileBuilder.buildTemporaryFile;
-import static com.swirlds.common.io.utility.TemporaryFileBuilder.getTemporaryFileLocation;
-import static com.swirlds.common.io.utility.TemporaryFileBuilder.overrideTemporaryFileLocation;
+import static com.swirlds.common.io.utility.LegacyTemporaryFileBuilder.buildTemporaryDirectory;
+import static com.swirlds.common.io.utility.LegacyTemporaryFileBuilder.buildTemporaryFile;
+import static com.swirlds.common.io.utility.LegacyTemporaryFileBuilder.getTemporaryFileLocation;
+import static com.swirlds.common.io.utility.LegacyTemporaryFileBuilder.overrideTemporaryFileLocation;
 import static java.nio.file.Files.exists;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -38,7 +38,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("TemporaryFileBuilder Tests")
-public class TemporaryFileBuilderTests {
+public class LegacyTemporaryFileBuilderTests {
 
     @Test
     @DisplayName("buildTemporaryDirectory() Test")

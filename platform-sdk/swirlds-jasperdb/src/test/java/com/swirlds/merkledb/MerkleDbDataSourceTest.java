@@ -37,7 +37,7 @@ import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.merkledb.serialize.KeyIndexType;
 import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
@@ -77,7 +77,7 @@ class MerkleDbDataSourceTest {
 
     @BeforeAll
     static void setup() throws Exception {
-        testDirectory = TemporaryFileBuilder.buildTemporaryFile("MerkleDbDataSourceTest");
+        testDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("MerkleDbDataSourceTest");
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.merkledb");
     }
 
