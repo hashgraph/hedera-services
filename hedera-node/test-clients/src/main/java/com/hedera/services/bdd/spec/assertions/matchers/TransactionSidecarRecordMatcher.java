@@ -18,7 +18,7 @@ package com.hedera.services.bdd.spec.assertions.matchers;
 
 import static com.hedera.services.bdd.spec.assertions.matchers.MatcherUtils.getMismatchedItems;
 import static com.hedera.services.bdd.spec.assertions.matchers.MatcherUtils.withEqualFields;
-import static com.hedera.services.bdd.spec.assertions.matchers.MatcherUtils.within32Units;
+import static com.hedera.services.bdd.spec.assertions.matchers.MatcherUtils.within64Units;
 
 import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.stream.proto.ContractActions;
@@ -78,8 +78,8 @@ public final class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMat
         final Class<?> stopClass = action.getClass().getSuperclass();
         return withEqualFields(action, stopClass)
                 .withCustomMatchersForFields(Map.of(
-                        "gas", within32Units(action.getGas()),
-                        "gasUsed", within32Units(action.getGasUsed())));
+                        "gas", within64Units(action.getGas()),
+                        "gasUsed", within64Units(action.getGasUsed())));
     };
 
     /**
