@@ -282,7 +282,7 @@ public class ActionStack {
         } else {
             try {
                 builder.recipientContract(contractIdWith(hederaIdNumOfContractIn(frame)));
-            } catch (NullPointerException e) {
+            } catch (NullPointerException ignore) {
                 builder.targetedAddress(tuweniToPbjBytes(frame.getContractAddress()));
             }
         }
