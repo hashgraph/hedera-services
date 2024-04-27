@@ -32,7 +32,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -67,7 +67,7 @@ class ScratchpadTests {
     void beforeEach() throws IOException {
         FileUtils.deleteDirectory(testDirectory);
         Files.createDirectories(testDirectory);
-        TemporaryFileBuilder.overrideTemporaryFileLocation(testDirectory.resolve("tmp"));
+        LegacyTemporaryFileBuilder.overrideTemporaryFileLocation(testDirectory.resolve("tmp"));
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(StateCommonConfig_.SAVED_STATE_DIRECTORY, testDirectory.toString())
                 .getOrCreateConfig();
