@@ -25,9 +25,10 @@ import static com.swirlds.logging.benchmark.config.Constants.MODE_ROLLING;
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.benchmark.config.Constants;
-import com.swirlds.logging.benchmark.config.LoggingBenchmarkConfig;
+import com.swirlds.logging.benchmark.config.LoggingBenchmarkConfigProvider;
 import com.swirlds.logging.benchmark.swirldslog.plain.SwirldsLogConfig;
 import com.swirlds.logging.benchmark.swirldslog.rolling.RollingSwirldsLogConfig;
+import com.swirlds.logging.benchmark.util.ConfigManagement;
 import com.swirlds.logging.benchmark.util.LogFiles;
 import java.util.Objects;
 import org.openjdk.jmh.annotations.Level;
@@ -50,7 +51,7 @@ public class SwirldsLogBaseBenchmark {
     protected Logger logger;
     protected LoggingSystem loggingSystem;
 
-    private LoggingBenchmarkConfig<LoggingSystem> config;
+    private LoggingBenchmarkConfigProvider<LoggingSystem> config;
 
     @Setup(Level.Trial)
     public void init() {
@@ -70,6 +71,8 @@ public class SwirldsLogBaseBenchmark {
     @TearDown(Level.Trial)
     public void tearDown() {
         loggingSystem.stopAndFinalize();
-        config.tearDown();
+        if (ConfigManagement.deleteOutputFolder()) {
+            LogFiles.tryDeleteDirAndContent();
+        }
     }
 }

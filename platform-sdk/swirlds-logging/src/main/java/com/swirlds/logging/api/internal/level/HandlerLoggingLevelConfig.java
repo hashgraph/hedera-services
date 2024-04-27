@@ -195,9 +195,7 @@ public class HandlerLoggingLevelConfig {
     }
 
     public boolean isEnabled(@NonNull final String name, @NonNull final Level level, @Nullable final Marker marker) {
-
         if (marker != null) {
-
             final List<String> allMarkerNames = marker.getAllMarkerNames();
             boolean isEnabled = false;
             boolean found = false;

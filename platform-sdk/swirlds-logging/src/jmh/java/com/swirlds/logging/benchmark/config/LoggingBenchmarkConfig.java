@@ -16,43 +16,19 @@
 
 package com.swirlds.logging.benchmark.config;
 
-import com.swirlds.logging.benchmark.util.ConfigManagement;
-import com.swirlds.logging.benchmark.util.LogFiles;
-import edu.umd.cs.findbugs.annotations.NonNull;
+public record LoggingBenchmarkConfig(AppenderType appenderType, boolean forwardToSwirldsLogging) {
 
-/**
- * An abstraction for logging benchmark configuration
- *
- * @param <T> the return type
- */
-public interface LoggingBenchmarkConfig<T> {
+    public LoggingBenchmarkConfig(AppenderType appenderType) {
+        this(appenderType, false);
+    }
 
-    /**
-     * Create an appender for File
-     * @param logFile
-     */
-    @NonNull
-    T configureFileLogging(final String logFile);
+    public static LoggingBenchmarkConfig createFromStrings(String appenderType, String fileRollingMode) {
+        return createFromStrings(appenderType, fileRollingMode, "false");
+    }
 
-    /**
-     * Create an appender for Console
-     */
-    @NonNull
-    T configureConsoleLogging();
-
-    /**
-     * Create an appender for Console + File
-     * @param logFile
-     */
-    @NonNull
-    T configureFileAndConsoleLogging(final String logFile);
-
-    /**
-     * Performs the necessary operations to clean after the benchmark is done
-     */
-    default void tearDown() {
-        if (ConfigManagement.deleteOutputFolder()) {
-            LogFiles.tryDeleteDirAndContent();
-        }
+    public static LoggingBenchmarkConfig createFromStrings(
+            String appenderType, String fileRollingMode, String forwardToSwirldsLogging) {
+        return new LoggingBenchmarkConfig(
+                AppenderType.fromString(appenderType, fileRollingMode), Boolean.parseBoolean(forwardToSwirldsLogging));
     }
 }
