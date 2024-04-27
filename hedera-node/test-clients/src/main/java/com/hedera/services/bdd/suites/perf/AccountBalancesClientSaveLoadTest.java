@@ -132,7 +132,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
                 .when(
                         sourcing(() -> runWithProvider(accountsCreate(settings))
                                 .lasting(() -> totalAccounts / settings.getTps() + 30, () -> TimeUnit.SECONDS)
-                                .totalOpsToSumbit(() -> totalAccounts)
+                                .totalOpsToSubmit(() -> totalAccounts)
                                 .maxOpsPerSec(settings::getTps)
                                 .maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)),
                         sleepFor(10L * SECOND),
@@ -140,7 +140,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
                                 .lasting(
                                         () -> totalTestTokens / ESTIMATED_TOKEN_CREATION_RATE + 10,
                                         () -> TimeUnit.SECONDS)
-                                .totalOpsToSumbit(() -> totalTestTokens)
+                                .totalOpsToSubmit(() -> totalTestTokens)
                                 .maxOpsPerSec(settings::getTps)
                                 .maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)),
                         sleepFor(10L * SECOND),

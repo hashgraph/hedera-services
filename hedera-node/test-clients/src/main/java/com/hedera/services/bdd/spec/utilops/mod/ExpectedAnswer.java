@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.spec.utilops.mod;
 
 import static java.util.Arrays.asList;
-import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -35,9 +34,9 @@ import java.util.Set;
  * @param answerOnlyStatus a failure status if just the ANSWER_ONLY query should fail
  */
 public record ExpectedAnswer(
-        @Nullable ResponseCodeEnum costAnswerStatus, @Nullable Set<ResponseCodeEnum> answerOnlyStatus) {
-    public static ExpectedAnswer onCostAnswer(@NonNull ResponseCodeEnum status) {
-        return new ExpectedAnswer(status, null);
+        @Nullable Set<ResponseCodeEnum> costAnswerStatus, @Nullable Set<ResponseCodeEnum> answerOnlyStatus) {
+    public static ExpectedAnswer onCostAnswer(@NonNull ResponseCodeEnum... statuses) {
+        return new ExpectedAnswer(EnumSet.copyOf(asList(statuses)), null);
     }
 
     public static ExpectedAnswer onAnswerOnly(@NonNull ResponseCodeEnum... statuses) {
@@ -46,9 +45,9 @@ public record ExpectedAnswer(
 
     public void customize(@NonNull final HapiQueryOp<?> op) {
         if (costAnswerStatus != null) {
-            op.hasCostAnswerPrecheck(costAnswerStatus);
-        } else {
-            requireNonNull(answerOnlyStatus);
+            op.hasCostAnswerPrecheckFrom(costAnswerStatus.toArray(ResponseCodeEnum[]::new));
+        }
+        if (answerOnlyStatus != null) {
             op.hasAnswerOnlyPrecheckFrom(answerOnlyStatus.toArray(ResponseCodeEnum[]::new));
         }
     }

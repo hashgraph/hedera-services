@@ -642,8 +642,14 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return self();
     }
 
-    public T payingWith(String name) {
+    public T payingWith(final String name) {
         payer = Optional.of(name);
+        if (signers.isPresent()) {
+            final List<Function<HapiSpec, Key>> payerAndSigners = new ArrayList<>();
+            payerAndSigners.add(spec -> spec.registry().getKey(name));
+            payerAndSigners.addAll(signers.get());
+            signers = Optional.of(payerAndSigners);
+        }
         return self();
     }
 

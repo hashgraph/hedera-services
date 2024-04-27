@@ -140,7 +140,7 @@ public class HapiGetExecTime extends HapiQueryOp<HapiGetExecTime> {
 
     @Override
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getExecTimesQuery(spec, payment, true);
+        Query query = maybeModified(getExecTimesQuery(spec, payment, true), spec);
         Response response =
                 spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls).getExecutionTime(query);
         return costFrom(response);

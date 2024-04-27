@@ -25,6 +25,7 @@ import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.QueryResourceUsageEstimator;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -64,7 +65,10 @@ public final class GetFileInfoResourceUsage implements QueryResourceUsageEstimat
         return fileOpsUsage.fileInfoUsage(query, ctx);
     }
 
-    public FeeData usageGiven(final Query query, final File file) {
+    public FeeData usageGiven(final Query query, @Nullable final File file) {
+        if (file == null) {
+            return FeeData.getDefaultInstance();
+        }
         final com.hederahashgraph.api.proto.java.File details = fromPbj(file);
         final var ctx = ExtantFileContext.newBuilder()
                 .setCurrentSize(details.getContents().toByteArray().length)

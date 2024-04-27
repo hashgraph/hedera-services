@@ -452,7 +452,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 
     @Override
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getTokenInfoQuery(spec, payment, true);
+        Query query = maybeModified(getTokenInfoQuery(spec, payment, true), spec);
         Response response =
                 spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getTokenInfo(query);
         return costFrom(response);
