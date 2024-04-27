@@ -18,7 +18,6 @@ package com.swirlds.platform.builder;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.doStaticSetup;
@@ -36,7 +35,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
@@ -419,9 +417,6 @@ public final class PlatformBuilder {
         // the AddressBook is not changed after this point, so we calculate the hash now
         platformContext.getCryptography().digestSync(configAddressBook);
 
-        final RecycleBinImpl recycleBin = rethrowIO(() -> new RecycleBinImpl(
-                configuration, platformContext.getMetrics(), getStaticThreadManager(), Time.getCurrent(), selfId));
-
         final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final EmergencyRecoveryManager emergencyRecoveryManager =
@@ -429,7 +424,6 @@ public final class PlatformBuilder {
 
         final ReservedSignedState initialState = getInitialState(
                 platformContext,
-                recycleBin,
                 softwareVersion,
                 genesisStateBuilder,
                 appName,
@@ -493,7 +487,6 @@ public final class PlatformBuilder {
             // the old type and start writing the new type.
             initialPcesFiles = PcesFileReader.readFilesFromDisk(
                     platformContext,
-                    recycleBin,
                     databaseDirectory,
                     initialState.get().getRound(),
                     preconsensusEventStreamConfig.permitGaps(),
@@ -508,7 +501,6 @@ public final class PlatformBuilder {
         final PlatformBuildingBlocks buildingBlocks = new PlatformBuildingBlocks(
                 platformContext,
                 keysAndCerts.get(selfId),
-                recycleBin,
                 selfId,
                 appName,
                 swirldName,
