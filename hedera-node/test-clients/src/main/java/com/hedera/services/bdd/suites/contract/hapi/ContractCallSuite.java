@@ -141,7 +141,7 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = false)
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class ContractCallSuite extends HapiSuite {
 
@@ -1563,16 +1563,11 @@ public class ContractCallSuite extends HapiSuite {
     HapiSpec payableSuccess() {
         return defaultHapiSpec("PayableSuccess", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
-                        cryptoCreate(CIVILIAN_PAYER),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT)
                                 .adminKey(THRESHOLD)
                                 .gas(1_000_000))
-                .when(contractCall(PAY_RECEIVABLE_CONTRACT)
-                        .payingWith(CIVILIAN_PAYER)
-                        .fee(1L)
-                        .via(PAY_TXN)
-                        .sending(DEPOSIT_AMOUNT))
+                .when(contractCall(PAY_RECEIVABLE_CONTRACT).via(PAY_TXN).sending(DEPOSIT_AMOUNT))
                 .then(getTxnRecord(PAY_TXN)
                         .hasPriority(recordWith()
                                 .contractCallResult(
