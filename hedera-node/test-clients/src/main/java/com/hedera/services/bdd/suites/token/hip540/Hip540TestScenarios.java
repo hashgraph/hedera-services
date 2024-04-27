@@ -39,11 +39,15 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Stream;
 
+/**
+ * A collection of all HIP-540 test scenarios.
+ */
 public class Hip540TestScenarios {
     private Hip540TestScenarios() {
         throw new UnsupportedOperationException("Utility Class");
     }
 
+    /** The list of all HIP-540 test scenarios. */
     public static final List<Hip540TestScenario> ALL_HIP_540_SCENARIOS = new ArrayList<>();
 
     static {
@@ -84,7 +88,8 @@ public class Hip540TestScenarios {
                         REPLACE,
                         FULL_VALIDATION,
                         EnumSet.of(EXTANT_NON_ADMIN, NEW_NON_ADMIN),
-                        ExpectedResponse.atConsensus(SUCCESS)),
+                        ExpectedResponse.atConsensus(SUCCESS),
+                        "noAdminKeyReplaceAUsableRoleKeyWithUsableKeyFullValidationSucceeds"),
                 new Hip540TestScenario(
                         targetKey,
                         MISSING,
@@ -92,7 +97,8 @@ public class Hip540TestScenarios {
                         REPLACE,
                         NO_VALIDATION,
                         EnumSet.of(EXTANT_NON_ADMIN),
-                        ExpectedResponse.atConsensus(SUCCESS)),
+                        ExpectedResponse.atConsensus(SUCCESS),
+                        "noAdminKeyReplaceAUsableRoleKeyWithUsableKeyNoValidationSucceeds"),
                 new Hip540TestScenario(
                         targetKey,
                         MISSING,
@@ -100,7 +106,8 @@ public class Hip540TestScenarios {
                         ZERO_OUT,
                         NO_VALIDATION,
                         EnumSet.of(EXTANT_NON_ADMIN),
-                        ExpectedResponse.atConsensus(SUCCESS))));
+                        ExpectedResponse.atConsensus(SUCCESS),
+                        "noAdminKeyZeroOutAUsableRoleKeyNoValidationSucceeds")));
     }
 
     /**
@@ -128,7 +135,8 @@ public class Hip540TestScenarios {
                         ManagementAction.REMOVE,
                         null,
                         EnumSet.of(EXTANT_NON_ADMIN),
-                        ExpectedResponse.atConsensus(TOKEN_IS_IMMUTABLE)),
+                        ExpectedResponse.atConsensus(TOKEN_IS_IMMUTABLE),
+                        "noAdminKeyRemoveAUsableRoleKeyFails"),
                 new Hip540TestScenario(
                         targetKey,
                         MISSING,
@@ -136,7 +144,8 @@ public class Hip540TestScenarios {
                         REPLACE,
                         FULL_VALIDATION,
                         EnumSet.of(NEW_NON_ADMIN),
-                        ExpectedResponse.atConsensus(INVALID_SIGNATURE)),
+                        ExpectedResponse.atConsensus(INVALID_SIGNATURE),
+                        "noAdminKeyReplaceAUsableRoleKeyFullValidationWithoutNewKeySignatureFails"),
                 new Hip540TestScenario(
                         targetKey,
                         MISSING,
@@ -144,7 +153,8 @@ public class Hip540TestScenarios {
                         ZERO_OUT,
                         FULL_VALIDATION,
                         EnumSet.of(EXTANT_NON_ADMIN),
-                        ExpectedResponse.atConsensus(INVALID_SIGNATURE)),
+                        ExpectedResponse.atConsensus(INVALID_SIGNATURE),
+                        "noAdminKeyZeroOutAUsableRoleKeyFullValidationFails"),
                 new Hip540TestScenario(
                         targetKey,
                         MISSING,
@@ -152,7 +162,8 @@ public class Hip540TestScenarios {
                         REPLACE_WITH_INVALID,
                         FULL_VALIDATION,
                         EnumSet.of(EXTANT_NON_ADMIN),
-                        ExpectedResponse.atIngest(targetKey.invalidKeyStatus()))));
+                        ExpectedResponse.atIngest(targetKey.invalidKeyStatus()),
+                        "noAdminKeyReplaceAUsableRoleKeyWithInvalidKeyFullValidationFails")));
     }
 
     /**
@@ -177,7 +188,8 @@ public class Hip540TestScenarios {
                         ManagementAction.REMOVE,
                         null,
                         EnumSet.of(EXTANT_ADMIN),
-                        ExpectedResponse.atConsensus(SUCCESS)),
+                        ExpectedResponse.atConsensus(SUCCESS),
+                        "withAdminKeyRemoveAUsableRoleKeySucceeds"),
                 new Hip540TestScenario(
                         targetKey,
                         USABLE,
@@ -185,7 +197,8 @@ public class Hip540TestScenarios {
                         REPLACE,
                         FULL_VALIDATION,
                         EnumSet.of(EXTANT_ADMIN),
-                        ExpectedResponse.atConsensus(SUCCESS)),
+                        ExpectedResponse.atConsensus(SUCCESS),
+                        "withAdminKeyReplaceAUsableRoleKeyFullValidationSucceeds"),
                 new Hip540TestScenario(
                         targetKey,
                         USABLE,
@@ -193,7 +206,8 @@ public class Hip540TestScenarios {
                         ZERO_OUT,
                         FULL_VALIDATION,
                         EnumSet.of(EXTANT_ADMIN),
-                        ExpectedResponse.atConsensus(SUCCESS))));
+                        ExpectedResponse.atConsensus(SUCCESS),
+                        "withAdminKeyZeroOutAUsableRoleKeyFullValidationSucceeds")));
     }
 
     /**
@@ -216,7 +230,8 @@ public class Hip540TestScenarios {
                         ManagementAction.ADD,
                         NO_VALIDATION,
                         EnumSet.of(EXTANT_ADMIN),
-                        ExpectedResponse.atConsensus(targetKey.tokenHasNoKeyStatus())),
+                        ExpectedResponse.atConsensus(targetKey.tokenHasNoKeyStatus()),
+                        "withAdminKeyAndMissingRoleKeyAddAUsableRoleKeyFails"),
                 new Hip540TestScenario(
                         targetKey,
                         USABLE,
@@ -224,6 +239,7 @@ public class Hip540TestScenarios {
                         ManagementAction.REMOVE,
                         null,
                         EnumSet.of(EXTANT_ADMIN),
-                        ExpectedResponse.atConsensus(targetKey.tokenHasNoKeyStatus()))));
+                        ExpectedResponse.atConsensus(targetKey.tokenHasNoKeyStatus()),
+                        "withAdminKeyAndMissingRoleKeyRemoveRoleKeyFails")));
     }
 }

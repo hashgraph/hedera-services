@@ -64,7 +64,8 @@ public record Hip540TestScenario(
         @Nullable TokenKeyValidation keyValidation,
         @NonNull Set<AuthorizingSignature> authorizingSignatures,
         @NonNull ExpectedResponse expectedResponse,
-        @NonNull String registryNameSalt) {
+        @NonNull String registryNameSalt,
+        @NonNull String testName) {
 
     public Hip540TestScenario(
             @NonNull NonAdminTokenKey targetKey,
@@ -73,7 +74,8 @@ public record Hip540TestScenario(
             @NonNull ManagementAction action,
             @Nullable TokenKeyValidation keyValidation,
             @NonNull Set<AuthorizingSignature> authorizingSignatures,
-            @NonNull ExpectedResponse expectedResponse) {
+            @NonNull ExpectedResponse expectedResponse,
+            @NonNull String testName) {
         this(
                 targetKey,
                 adminKeyState,
@@ -82,7 +84,8 @@ public record Hip540TestScenario(
                 keyValidation,
                 authorizingSignatures,
                 expectedResponse,
-                randomAlphaNumeric(5));
+                randomAlphaNumeric(5),
+                testName);
     }
 
     public Hip540TestScenario {
@@ -93,6 +96,7 @@ public record Hip540TestScenario(
         requireNonNull(authorizingSignatures);
         requireNonNull(expectedResponse);
         requireNonNull(registryNameSalt);
+        requireNonNull(testName);
     }
 
     private static final String ADMIN_KEY = "adminKey";
@@ -239,7 +243,8 @@ public record Hip540TestScenario(
 
     @Override
     public String toString() {
-        return "Hip540TestScenario{" + "\n  targetKey="
+        return "Hip540TestScenario {" + "\n testName="
+                + testName + ",\n  targetKey="
                 + targetKey + ",\n  adminKeyState="
                 + adminKeyState + ",\n  targetKeyState="
                 + targetKeyState + ",\n  action="
