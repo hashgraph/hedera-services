@@ -43,7 +43,14 @@ public class QueryModificationsOp extends UtilOp {
     public QueryModificationsOp(
             @NonNull final Supplier<HapiQueryOp<?>> queryOpSupplier,
             @NonNull final Function<Query, List<QueryModification>> modificationsFn) {
-        this.useCivilianPayer = true;
+        this(true, queryOpSupplier, modificationsFn);
+    }
+
+    public QueryModificationsOp(
+            final boolean useCivilianPayer,
+            @NonNull final Supplier<HapiQueryOp<?>> queryOpSupplier,
+            @NonNull final Function<Query, List<QueryModification>> modificationsFn) {
+        this.useCivilianPayer = useCivilianPayer;
         this.queryOpSupplier = queryOpSupplier;
         this.modificationsFn = modificationsFn;
     }

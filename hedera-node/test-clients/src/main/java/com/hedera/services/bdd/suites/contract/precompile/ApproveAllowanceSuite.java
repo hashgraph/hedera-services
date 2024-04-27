@@ -284,7 +284,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                 .then(
                         submitModified(withSuccessivelyVariedBodyIds(), () -> cryptoApproveAllowance()
                                 .addNftAllowance("delegatingOwner", "nonFungibleToken", OWNER, true, List.of())
-                                .signedBy(DEFAULT_PAYER, "delegatingOwner")),
+                                .signedByPayerAnd(DEFAULT_PAYER, "delegatingOwner")),
                         submitModified(withSuccessivelyVariedBodyIds(), () -> cryptoApproveAllowance()
                                 .addNftAllowance(OWNER, "nonFungibleToken", SPENDER, false, List.of(1L))
                                 .addTokenAllowance(OWNER, "fungibleToken", SPENDER, 1L)

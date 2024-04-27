@@ -118,6 +118,7 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -140,7 +141,7 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
+@HapiTestSuite(fuzzyMatch = false)
 @Tag(SMART_CONTRACT)
 public class ContractCallSuite extends HapiSuite {
 
@@ -262,7 +263,8 @@ public class ContractCallSuite extends HapiSuite {
                 callsToSystemEntityNumsAreTreatedAsPrecompileCalls(),
                 hollowCreationFailsCleanly(),
                 repeatedCreate2FailsWithInterpretableActionSidecars(),
-                callStaticCallToLargeAddress());
+                callStaticCallToLargeAddress(),
+                callToNonExtantEvmAddressUsesTargetedAddress());
     }
 
     @HapiTest
@@ -1561,11 +1563,16 @@ public class ContractCallSuite extends HapiSuite {
     HapiSpec payableSuccess() {
         return defaultHapiSpec("PayableSuccess", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
+                        cryptoCreate(CIVILIAN_PAYER),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT)
                                 .adminKey(THRESHOLD)
                                 .gas(1_000_000))
-                .when(contractCall(PAY_RECEIVABLE_CONTRACT).via(PAY_TXN).sending(DEPOSIT_AMOUNT))
+                .when(contractCall(PAY_RECEIVABLE_CONTRACT)
+                        .payingWith(CIVILIAN_PAYER)
+                        .fee(1L)
+                        .via(PAY_TXN)
+                        .sending(DEPOSIT_AMOUNT))
                 .then(getTxnRecord(PAY_TXN)
                         .hasPriority(recordWith()
                                 .contractCallResult(
@@ -2529,6 +2536,34 @@ public class ContractCallSuite extends HapiSuite {
                             callContractID.getContractNum() < 10000,
                             "Expected contract num < 10000 but got " + callContractID.getContractNum());
                 }));
+    }
+
+    @HapiTest
+    final HapiSpec callToNonExtantLongZeroAddressUsesTargetedAddress() {
+        final var contract = "LowLevelCall";
+        final var nonExtantMirrorAddress = asHeadlongAddress("0xE8D4A50FFF");
+        return defaultHapiSpec("callToNonExtantLongZeroAddressUsesTargetedAddress")
+                .given(
+                        streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when()
+                .then(contractCall(
+                        contract, "callRequested", nonExtantMirrorAddress, new byte[0], BigInteger.valueOf(88_888L)));
+    }
+
+    @HapiTest
+    final HapiSpec callToNonExtantEvmAddressUsesTargetedAddress() {
+        final var contract = "LowLevelCall";
+        final var nonExtantEvmAddress = asHeadlongAddress(TxnUtils.randomUtf8Bytes(20));
+        return defaultHapiSpec("callToNonExtantEvmAddressUsesTargetedAddress")
+                .given(
+                        streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when()
+                .then(contractCall(
+                        contract, "callRequested", nonExtantEvmAddress, new byte[0], BigInteger.valueOf(88_888L)));
     }
 
     private String getNestedContractAddress(final String contract, final HapiSpec spec) {

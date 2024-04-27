@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.suites.HapiSuite.THOUSAND_HBAR;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -59,7 +60,8 @@ public class SubmitModificationsOp extends UtilOp {
         final List<TxnModification> modifications = new ArrayList<>();
         allRunFor(
                 spec,
-                sourcing(() -> useCivilianPayer ? cryptoCreate(MODIFIED_CIVILIAN_PAYER) : noOp()),
+                sourcing(() ->
+                        useCivilianPayer ? cryptoCreate(MODIFIED_CIVILIAN_PAYER).balance(10 * THOUSAND_HBAR) : noOp()),
                 originalTransaction().withTxnTransform(txn -> {
                     modifications.addAll(modificationsFn.apply(txn));
                     return txn;
