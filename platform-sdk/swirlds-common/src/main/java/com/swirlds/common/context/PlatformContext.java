@@ -18,6 +18,7 @@ package com.swirlds.common.context;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -63,4 +64,12 @@ public interface PlatformContext {
      */
     @NonNull
     Time getTime();
+
+    /**
+     * Returns the {@link FileSystemManager} for this node
+     *
+     * @return the {@link FileSystemManager} for this node
+     */
+    @NonNull
+    FileSystemManager getFileSystemManager();
 }

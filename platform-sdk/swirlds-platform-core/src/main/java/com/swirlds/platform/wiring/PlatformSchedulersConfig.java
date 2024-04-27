@@ -72,6 +72,8 @@ import java.time.Duration;
  * @param platformPublisher                        configuration for the platform publisher scheduler
  * @param consensusEventStream                     configuration for the consensus event stream scheduler
  * @param roundDurabilityBuffer                    configuration for the round durability buffer scheduler
+ * @param statusStateMachine                       configuration for the status state machine scheduler
+ * @param platformStatusNexus                      configuration for the status nexus scheduler
  * @param signedStateSentinel                      configuration for the signed state sentinel scheduler
  * @param signedStateSentinelHeartbeatPeriod       the frequency that heartbeats should be sent to the signed state
  *                                                 sentinel
@@ -132,4 +134,7 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration platformPublisher,
         @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration consensusEventStream,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(5) FLUSHABLE UNHANDLED_TASK_METRIC")
-                TaskSchedulerConfiguration roundDurabilityBuffer) {}
+                TaskSchedulerConfiguration roundDurabilityBuffer,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration statusStateMachine,
+        @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration platformStatusNexus) {}
