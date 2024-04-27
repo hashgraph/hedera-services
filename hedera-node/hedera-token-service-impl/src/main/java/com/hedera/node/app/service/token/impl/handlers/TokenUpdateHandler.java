@@ -378,47 +378,49 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
      *
      * @param context pre handle context
      * @param op token update transaction body
-     * @param originalToken original token
+     * @param token original token
      */
     private void addRequiredSigners(
-            @NonNull PreHandleContext context,
-            @NonNull final TokenUpdateTransactionBody op,
-            @NonNull final Token originalToken)
+            @NonNull PreHandleContext context, @NonNull final TokenUpdateTransactionBody op, @NonNull final Token token)
             throws PreCheckException {
         if (op.hasMetadata()) {
-            requireAdminOrRole(context, originalToken, METADATA_KEY);
+            if (token.hasMetadataKey()) {
+                requireAdminOrRole(context, token, METADATA_KEY);
+            } else {
+                requireAdmin(context, token);
+            }
         }
         if (op.hasTreasury()) {
-            requireAdmin(context, originalToken);
+            requireAdmin(context, token);
             context.requireKeyOrThrow(op.treasuryOrThrow(), INVALID_ACCOUNT_ID);
         }
         if (op.hasAutoRenewAccount()) {
-            requireAdmin(context, originalToken);
+            requireAdmin(context, token);
             context.requireKeyOrThrow(op.autoRenewAccountOrThrow(), INVALID_AUTORENEW_ACCOUNT);
         }
         if (op.hasAdminKey()) {
-            requireAdmin(context, originalToken);
+            requireAdmin(context, token);
             context.requireKey(op.adminKeyOrThrow());
         }
         if (containsKeyRemoval(op)) {
-            requireAdmin(context, originalToken);
+            requireAdmin(context, token);
         }
         if (updatesAdminOnlyNonKeyTokenProperty(op)) {
-            requireAdmin(context, originalToken);
+            requireAdmin(context, token);
         }
         for (final var tokenKey : NON_ADMIN_TOKEN_KEYS) {
             if (tokenKey.isPresentInUpdate(op)) {
                 final var newRoleKey = tokenKey.getFromUpdate(op);
                 if (!isKeyRemoval(newRoleKey)) {
                     if (op.keyVerificationMode() == NO_VALIDATION) {
-                        requireAdminOrRole(context, originalToken, tokenKey);
+                        requireAdminOrRole(context, token, tokenKey);
                     } else {
                         // With "full" verification mode, our required key
                         // structure is a 1/2 threshold with components:
                         //   - Admin key
                         //   - A 2/2 list including the role key and its replacement key
                         final var key = tokenKey.getFromUpdate(op);
-                        requireAdminOrRole(context, originalToken, tokenKey, key);
+                        requireAdminOrRole(context, token, tokenKey, key);
                     }
                 }
             }
