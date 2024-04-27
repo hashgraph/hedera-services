@@ -374,7 +374,8 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     }
 
     /**
-     * Add all signature requirements for TokenUpdateTx note: those requirements drastically changed after HIP-540
+     * Add all signature requirements for TokenUpdateTx.
+     * Note: those requirements drastically changed after HIP-540
      *
      * @param context pre handle context
      * @param op token update transaction body
@@ -383,6 +384,10 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     private void addRequiredSigners(
             @NonNull PreHandleContext context, @NonNull final TokenUpdateTransactionBody op, @NonNull final Token token)
             throws PreCheckException {
+        // Since we de-duplicate all the keys in the PreHandleContext,
+        // we can safely add one key multiple times for the transaction to keep the logic simple.
+
+        // metadata can be updated with either admin key or metadata key
         if (op.hasMetadata()) {
             if (token.hasMetadataKey()) {
                 requireAdminOrRole(context, token, METADATA_KEY);
@@ -390,24 +395,33 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                 requireAdmin(context, token);
             }
         }
+        // updating treasury needs admin and new treasury key
         if (op.hasTreasury()) {
             requireAdmin(context, token);
             context.requireKeyOrThrow(op.treasuryOrThrow(), INVALID_ACCOUNT_ID);
         }
+        // updating auto-renew account needs admin key and the new auto-renewal account key
         if (op.hasAutoRenewAccount()) {
             requireAdmin(context, token);
             context.requireKeyOrThrow(op.autoRenewAccountOrThrow(), INVALID_AUTORENEW_ACCOUNT);
         }
+        // updating admin key needs the old admin key and the new admin key
         if (op.hasAdminKey()) {
             requireAdmin(context, token);
             context.requireKey(op.adminKeyOrThrow());
         }
+        // Any key removal requires admin key
         if (containsKeyRemoval(op)) {
             requireAdmin(context, token);
         }
+        // updating memo, name, symbol, auto-renew period needs admin key
         if (updatesAdminOnlyNonKeyTokenProperty(op)) {
             requireAdmin(context, token);
         }
+        // Any role key can be updated if the key is not empty of the token.
+        // Updating any non-admin keys with the key verification mode is NO_VALIDATION needs either
+        // admin key or the role key to sign.If the key verification mode is FULL_VALIDATION, then
+        // the new key also should sign the transaction.
         for (final var tokenKey : NON_ADMIN_TOKEN_KEYS) {
             if (tokenKey.isPresentInUpdate(op)) {
                 final var newRoleKey = tokenKey.getFromUpdate(op);
