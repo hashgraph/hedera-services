@@ -40,7 +40,8 @@ public class SwirldsLoggingConfigFactory {
     private static Configuration createConfiguration(@NonNull final LoggingBenchmarkConfig config) {
         com.swirlds.config.api.ConfigurationBuilder configurationBuilder =
                 com.swirlds.config.api.ConfigurationBuilder.create();
-        configurationBuilder = configurationBuilder.withValue("logging.level", "trace")
+        configurationBuilder = configurationBuilder
+                .withValue("logging.level", "trace")
                 .withConverter(new ConfigLevelConverter())
                 .withConverter(new MarkerStateConverter());
 
