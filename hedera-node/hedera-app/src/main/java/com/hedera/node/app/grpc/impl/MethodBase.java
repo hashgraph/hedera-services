@@ -116,7 +116,10 @@ public abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData
         // Fail-fast if the request is too large (Note that the request buffer is sized to allow exactly
         // 1 more byte than MAX_MESSAGE_SIZE, so we can detect this case).
         if (requestBuffer.length() > MAX_MESSAGE_SIZE) {
-            throw new RuntimeException("More than " + MAX_MESSAGE_SIZE + " received");
+            callsFailedCounter.increment();
+            final var exception = new RuntimeException("More than " + MAX_MESSAGE_SIZE + " received");
+            responseObserver.onError(exception);
+            return;
         }
 
         try {
