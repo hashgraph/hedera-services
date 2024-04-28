@@ -1618,13 +1618,15 @@ public class ContractCallSuite extends HapiSuite {
     HapiSpec insufficientFee() {
         final var contract = CREATE_TRIVIAL;
 
+        // FUTURE: Once we add the check again that compares the estimated gas with the maximum transaction fee,
+        // this test will need to be updated and expect INSUFFICIENT_TX_FEE.
         return defaultHapiSpec("InsufficientFee", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate("accountToPay"), uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(contractCall(contract, "create")
                         .fee(0L)
                         .payingWith("accountToPay")
-                        .hasPrecheck(INSUFFICIENT_TX_FEE));
+                        .hasPrecheck(OK));
     }
 
     @HapiTest
