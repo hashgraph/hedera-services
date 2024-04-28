@@ -75,8 +75,7 @@ public final class GetAccountRecordsResourceUsage implements QueryResourceUsageE
         if (account == null) {
             return FeeData.getDefaultInstance();
         }
-        final var records =
-                pbjRecords.stream().map(k -> PbjConverter.fromPbj(k)).toList();
+        final var records = pbjRecords.stream().map(PbjConverter::fromPbj).toList();
         return usageEstimator.getCryptoAccountRecordsQueryFeeMatrices(records, null);
     }
 
