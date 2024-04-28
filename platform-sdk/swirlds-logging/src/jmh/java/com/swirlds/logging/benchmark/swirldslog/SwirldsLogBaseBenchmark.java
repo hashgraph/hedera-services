@@ -25,12 +25,10 @@ import static com.swirlds.logging.benchmark.config.Constants.MODE_ROLLING;
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.benchmark.config.Constants;
+import com.swirlds.logging.benchmark.config.LoggingBenchmarkConfig;
 import com.swirlds.logging.benchmark.config.LoggingBenchmarkConfigProvider;
-import com.swirlds.logging.benchmark.swirldslog.plain.SwirldsLogConfig;
-import com.swirlds.logging.benchmark.swirldslog.rolling.RollingSwirldsLogConfig;
 import com.swirlds.logging.benchmark.util.ConfigManagement;
 import com.swirlds.logging.benchmark.util.LogFiles;
-import java.util.Objects;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
@@ -48,6 +46,9 @@ public class SwirldsLogBaseBenchmark {
     public String mode;
 
     private static final String LOGGER_NAME = Constants.SWIRLDS + "Benchmark";
+
+    private final SwirldsLoggingConfigFactory factory = new SwirldsLoggingConfigFactory();
+
     protected Logger logger;
     protected LoggingSystem loggingSystem;
 
@@ -55,16 +56,8 @@ public class SwirldsLogBaseBenchmark {
 
     @Setup(Level.Trial)
     public void init() {
-        config = Objects.equals(mode, MODE_NOT_ROLLING) ? new SwirldsLogConfig() : new RollingSwirldsLogConfig();
-
-        if (Objects.equals(loggingType, FILE_TYPE)) {
-            loggingSystem = config.configureFileLogging(LogFiles.provideLogFilePath(Constants.LOG4J2, FILE_TYPE, mode));
-        } else if (Objects.equals(loggingType, CONSOLE_TYPE)) {
-            loggingSystem = config.configureConsoleLogging();
-        } else if (Objects.equals(loggingType, CONSOLE_AND_FILE_TYPE)) {
-            loggingSystem = config.configureFileAndConsoleLogging(
-                    LogFiles.provideLogFilePath(Constants.LOG4J2, CONSOLE_AND_FILE_TYPE, mode));
-        }
+        final LoggingBenchmarkConfig config = LoggingBenchmarkConfig.createFromStrings(loggingType, mode);
+        loggingSystem = factory.createLoggingSystem(config);
         logger = loggingSystem.getLogger(LOGGER_NAME);
     }
 
