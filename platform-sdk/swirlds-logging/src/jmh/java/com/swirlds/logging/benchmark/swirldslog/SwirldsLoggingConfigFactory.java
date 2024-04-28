@@ -18,6 +18,8 @@ package com.swirlds.logging.benchmark.swirldslog;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.internal.LoggingSystem;
+import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
+import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.benchmark.config.AppenderType;
 import com.swirlds.logging.benchmark.config.Constants;
 import com.swirlds.logging.benchmark.config.LoggingBenchmarkConfig;
@@ -38,7 +40,9 @@ public class SwirldsLoggingConfigFactory {
     private static Configuration createConfiguration(@NonNull final LoggingBenchmarkConfig config) {
         com.swirlds.config.api.ConfigurationBuilder configurationBuilder =
                 com.swirlds.config.api.ConfigurationBuilder.create();
-        configurationBuilder = configurationBuilder.withValue("logging.level", "trace");
+        configurationBuilder = configurationBuilder.withValue("logging.level", "trace")
+                .withConverter(new ConfigLevelConverter())
+                .withConverter(new MarkerStateConverter());
 
         if (config.forwardToSwirldsLogging()) {
             configurationBuilder = configurationBuilder.withValue("logging.provider.log4j.enabled", "true");
