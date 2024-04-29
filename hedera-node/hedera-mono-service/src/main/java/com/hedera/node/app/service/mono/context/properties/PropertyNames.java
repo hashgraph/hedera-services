@@ -131,6 +131,7 @@ public class PropertyNames {
             "contracts.evm.allowCallsToNonContractAccounts";
     public static final String CONTRACTS_DYNAMIC_EVM_VERSION = "contracts.evm.version.dynamic";
     public static final String CONTRACTS_EVM_VERSION = "contracts.evm.version";
+    public static final String CONTRACT_UNLIMITED_AUTO_ASSOCIATIONS = "contracts.unlimitedAutoAssociations";
     public static final String FILES_MAX_NUM = "files.maxNumber";
     public static final String FILES_MAX_SIZE_KB = "files.maxSizeKb";
     public static final String HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB = "hedera.recordStream.sidecarMaxSizeMb";
