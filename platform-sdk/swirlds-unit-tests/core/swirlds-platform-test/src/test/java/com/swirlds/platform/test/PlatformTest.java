@@ -38,6 +38,8 @@ public abstract class PlatformTest {
 
     /**
      * Temporary directory provided by JUnit
+     * <p>
+     * Do not make this value static, otherwise all test methods will share the same temp directory.
      */
     @TempDir
     protected Path tempDir;
