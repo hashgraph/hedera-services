@@ -31,6 +31,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
@@ -94,14 +95,45 @@ class StartupStateUtilsTests {
     }
 
     @NonNull
-    private PlatformContext buildContext(final boolean deleteInvalidStateFiles) {
+    private PlatformContext buildContext(final boolean deleteInvalidStateFiles, @NonNull final RecycleBin recycleBin) {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(StateCommonConfig_.SAVED_STATE_DIRECTORY, testDirectory.toString())
                 .withValue(StateConfig_.DELETE_INVALID_STATE_FILES, deleteInvalidStateFiles)
                 .getOrCreateConfig();
 
+        // FUTURE WORK do this more elegantly when we have a better test implementation
+        final FileSystemManager fileSystemManager = new FileSystemManager() {
+            @NonNull
+            @Override
+            public Path resolve(@NonNull final Path relativePath) {
+                throw new UnsupportedOperationException();
+            }
+
+            @NonNull
+            @Override
+            public Path resolveNewTemp(@Nullable final String tag) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void recycle(@NonNull final Path path) throws IOException {
+                recycleBin.recycle(path);
+            }
+
+            @Override
+            public void start() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void stop() {
+                throw new UnsupportedOperationException();
+            }
+        };
+
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(configuration)
+                .withFileSystemManager((x, y) -> fileSystemManager)
                 .build();
 
         return platformContext;
@@ -146,7 +178,7 @@ class StartupStateUtilsTests {
     @Test
     @DisplayName("Genesis Test")
     void genesisTest() throws SignedStateLoadingException {
-        final PlatformContext platformContext = buildContext(false);
+        final PlatformContext platformContext = buildContext(false, TestRecycleBin.getInstance());
 
         final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext, selfId, mainClassName, swirldName, new BasicSoftwareVersion(1))
@@ -159,7 +191,7 @@ class StartupStateUtilsTests {
     @DisplayName("Normal Restart Test")
     void normalRestartTest() throws IOException, SignedStateLoadingException {
         final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext = buildContext(false);
+        final PlatformContext platformContext = buildContext(false, TestRecycleBin.getInstance());
 
         int stateCount = 5;
 
@@ -185,7 +217,7 @@ class StartupStateUtilsTests {
     @DisplayName("Corrupted State No Recycling Test")
     void corruptedStateNoRecyclingTest() throws IOException {
         final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext = buildContext(false);
+        final PlatformContext platformContext = buildContext(false, TestRecycleBin.getInstance());
 
         int stateCount = 5;
 
@@ -207,7 +239,19 @@ class StartupStateUtilsTests {
     void corruptedStateRecyclingPermittedTest(final int invalidStateCount)
             throws IOException, SignedStateLoadingException {
         final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext = buildContext(true);
+
+        final AtomicInteger recycleCount = new AtomicInteger(0);
+        final RecycleBin recycleBin = spy(TestRecycleBin.getInstance());
+        // increment recycle count every time recycleBin.recycle() is called
+        doAnswer(invocation -> {
+                    invocation.callRealMethod();
+                    recycleCount.incrementAndGet();
+                    return null;
+                })
+                .when(recycleBin)
+                .recycle(any());
+
+        final PlatformContext platformContext = buildContext(true, recycleBin);
 
         int stateCount = 5;
 
@@ -221,17 +265,6 @@ class StartupStateUtilsTests {
                 latestUncorruptedState = state;
             }
         }
-
-        final AtomicInteger recycleCount = new AtomicInteger(0);
-        final RecycleBin recycleBin = spy(TestRecycleBin.getInstance());
-        // increment recycle count every time recycleBin.recycle() is called
-        doAnswer(invocation -> {
-                    invocation.callRealMethod();
-                    recycleCount.incrementAndGet();
-                    return null;
-                })
-                .when(recycleBin)
-                .recycle(any());
 
         final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext, selfId, mainClassName, swirldName, new BasicSoftwareVersion(1))
