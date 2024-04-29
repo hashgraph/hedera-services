@@ -112,7 +112,6 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
     @Override
     public void start(@NonNull final MessageFrame frame, @NonNull final OperationTracer tracer) {
         final var codeAddress = frame.getContractAddress();
-        final var evmPrecompile = precompiles.get(codeAddress);
         // This must be done first as the system contract address range overlaps with system
         // accounts. Note that unlike EVM precompiles, we do allow sending value "to" Hedera
         // system contracts because they sometimes require fees greater than be reasonably
@@ -124,9 +123,10 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             return;
         }
 
+        final var evmPrecompile = precompiles.get(codeAddress);
         // Check to see if the code address is a system account and possibly halt
         if (addressChecks.isSystemAccount(codeAddress)) {
-            doHaltIfInvalidSystemCall(codeAddress, frame, tracer);
+            doHaltIfInvalidSystemCall(frame, tracer);
             if (alreadyHalted(frame)) {
                 return;
             }
@@ -262,9 +262,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
     }
 
     private void doHaltIfInvalidSystemCall(
-            @NonNull final Address codeAddress,
-            @NonNull final MessageFrame frame,
-            @NonNull final OperationTracer operationTracer) {
+            @NonNull final MessageFrame frame, @NonNull final OperationTracer operationTracer) {
         if (transfersValue(frame)) {
             doHalt(frame, INVALID_FEE_SUBMITTED, operationTracer);
         } else if (precompiles.get(codeAddress) == null) {
