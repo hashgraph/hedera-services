@@ -21,6 +21,7 @@ import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTIN
 import static com.swirlds.platform.system.status.PlatformStatus.BEHIND;
 import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
 import static com.swirlds.platform.system.status.PlatformStatus.RECONNECT_COMPLETE;
+import static com.swirlds.platform.util.BootstrapUtils.readSettingsDotTxt;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -29,9 +30,11 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.Hedera;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.builder.PlatformBuilder;
+import com.swirlds.platform.builder.PlatformContextBuilder;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.util.BootstrapUtils;
@@ -407,13 +410,6 @@ public class InProcessHapiTestNode implements HapiTestNode {
 
             hedera = new Hedera(cr);
 
-            final PlatformBuilder builder = PlatformBuilder.create(
-                    Hedera.APP_NAME,
-                    Hedera.SWIRLD_NAME,
-                    hedera.getSoftwareVersion(),
-                    hedera::newState,
-                    new NodeId(nodeId));
-
             final ConfigurationBuilder configBuilder = ConfigurationBuilder.create()
                     .withValue("paths.settingsUsedDir", path("."))
                     .withValue("paths.keysDirPath", path("data/keys"))
@@ -424,10 +420,21 @@ public class InProcessHapiTestNode implements HapiTestNode {
                     .withValue("state.savedStateDirectory", path("data/saved"))
                     .withValue("loadKeysFromPfxFiles", "false")
                     .withValue("grpc.port", Integer.toString(grpcPort));
+            readSettingsDotTxt(configBuilder, Path.of(path(DEFAULT_SETTINGS_FILE_NAME)));
 
-            builder.withConfigurationBuilder(configBuilder)
-                    .withSettingsPath(Path.of(path(DEFAULT_SETTINGS_FILE_NAME)))
-                    .withConfigPath(Path.of(path(DEFAULT_CONFIG_FILE_NAME)));
+            final PlatformContext platformContext = PlatformContextBuilder.create(new NodeId(nodeId))
+                    .withConfigurationBuilder(configBuilder)
+                    .build();
+
+            final PlatformBuilder builder = PlatformBuilder.create(
+                    platformContext,
+                    Hedera.APP_NAME,
+                    Hedera.SWIRLD_NAME,
+                    hedera.getSoftwareVersion(),
+                    hedera::newState,
+                    new NodeId(nodeId));
+
+            builder.withConfigPath(Path.of(path(DEFAULT_CONFIG_FILE_NAME)));
 
             final Platform platform = builder.build();
             hedera.init(platform, new NodeId(nodeId));

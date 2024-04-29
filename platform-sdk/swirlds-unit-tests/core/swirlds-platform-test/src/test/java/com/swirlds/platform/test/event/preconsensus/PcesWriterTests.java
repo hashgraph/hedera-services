@@ -37,6 +37,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.config.FileSystemManagerConfig_;
+import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
@@ -45,6 +46,7 @@ import com.swirlds.common.test.fixtures.TransactionGenerator;
 import com.swirlds.common.test.fixtures.io.FileManipulation;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.TransactionConfig_;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
@@ -272,8 +274,13 @@ class PcesWriterTests {
                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, ancientMode == BIRTH_ROUND_THRESHOLD)
                 .getOrCreateConfig();
 
+        final Metrics metrics = new NoOpMetrics();
         return new DefaultPlatformContext(
-                configuration, new NoOpMetrics(), CryptographyHolder.get(), new FakeTime(Duration.ofMillis(1)));
+                configuration,
+                metrics,
+                CryptographyHolder.get(),
+                new FakeTime(Duration.ofMillis(1)),
+                FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, metrics));
     }
 
     /**

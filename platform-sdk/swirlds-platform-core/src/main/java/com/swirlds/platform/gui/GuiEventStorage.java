@@ -23,8 +23,10 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.consensus.ConsensusConfig;
@@ -61,8 +63,13 @@ public class GuiEventStorage {
     public GuiEventStorage(@NonNull final Configuration configuration, @NonNull final AddressBook addressBook) {
 
         this.configuration = Objects.requireNonNull(configuration);
+        final Metrics metrics = new NoOpMetrics();
         final PlatformContext platformContext = new DefaultPlatformContext(
-                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
+                configuration,
+                metrics,
+                CryptographyHolder.get(),
+                Time.getCurrent(),
+                FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, metrics));
 
         this.consensus = new ConsensusImpl(platformContext, new NoOpConsensusMetrics(), addressBook);
         // Future work: birth round compatibility for GUI

@@ -59,6 +59,7 @@ import java.awt.Dimension;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
@@ -95,7 +96,7 @@ public final class BootstrapUtils {
      * @param settingsPath         the path to the settings.txt file
      * @throws IOException if there is a problem reading the configuration files
      */
-    public static void setupConfigBuilder(
+    public static void setupConfigBuilder( // TODO get rid of this
             @NonNull final ConfigurationBuilder configurationBuilder, @NonNull final Path settingsPath)
             throws IOException {
 
@@ -103,6 +104,25 @@ public final class BootstrapUtils {
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
 
         configurationBuilder.autoDiscoverExtensions().withSource(mappedSettingsConfigSource);
+    }
+
+    /**
+     * Load settings from a legacy settings.txt source.
+     *
+     * @param configurationBuilder the configuration builder
+     * @param settingsPath         the path to the settings.txt file (does not actually have to be named
+     *                             "settings.txt")
+     */
+    public static void readSettingsDotTxt(
+            @NonNull final ConfigurationBuilder configurationBuilder, @NonNull final Path settingsPath) {
+        try {
+            final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile(settingsPath);
+            final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
+
+            configurationBuilder.withSource(mappedSettingsConfigSource);
+        } catch (final IOException e) {
+            throw new UncheckedIOException("Failed to read settings.txt file", e);
+        }
     }
 
     /**

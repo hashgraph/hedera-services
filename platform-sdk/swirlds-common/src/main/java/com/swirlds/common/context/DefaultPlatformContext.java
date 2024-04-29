@@ -19,7 +19,6 @@ package com.swirlds.common.context;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.io.filesystem.FileSystemManager;
-import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -36,28 +35,6 @@ public final class DefaultPlatformContext implements PlatformContext {
     private final Cryptography cryptography;
     private final Time time;
     private final FileSystemManager fileSystemManager;
-
-    /**
-     * Constructor.
-     *
-     * @param configuration     the configuration
-     * @param metrics           the metrics
-     * @param cryptography      the cryptography
-     * @param time              the time
-     */
-    public DefaultPlatformContext(
-            @NonNull final Configuration configuration,
-            @NonNull final Metrics metrics,
-            @NonNull final Cryptography cryptography,
-            @NonNull final Time time) {
-
-        this(
-                configuration,
-                metrics,
-                cryptography,
-                time,
-                FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, metrics));
-    }
 
     /**
      * Constructor.
