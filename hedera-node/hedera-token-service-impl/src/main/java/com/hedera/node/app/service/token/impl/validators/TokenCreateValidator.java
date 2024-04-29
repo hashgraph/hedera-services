@@ -193,9 +193,9 @@ public class TokenCreateValidator {
             @NonNull final Token token,
             @NonNull final WritableTokenRelationStore tokenRelStore) {
         validateFalse(
-                entitiesConfig.limitTokenAssociations()
-                        && !contractsConfig.unlimitedAutoAssociations()
-                        && account.numberAssociations() + 1 > tokensConfig.maxPerAccount(),
+                (entitiesConfig.limitTokenAssociations()
+                                && account.numberAssociations() + 1 > tokensConfig.maxPerAccount())
+                        || !contractsConfig.unlimitedAutoAssociations(),
                 TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
         validateTrue(

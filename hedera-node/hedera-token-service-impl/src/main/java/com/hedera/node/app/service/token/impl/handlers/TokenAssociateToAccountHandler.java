@@ -196,8 +196,8 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
         final var tokenAssociationsLimited = entitiesConfig.limitTokenAssociations();
         final var maxTokensPerAccount = config.maxPerAccount();
         return !tokenAssociationsLimited
-                || (contractsConfig.unlimitedAutoAssociations()
-                        || (numAssociations + tokenIds.size() <= maxTokensPerAccount));
+                || ((numAssociations + tokenIds.size() <= maxTokensPerAccount)
+                        && contractsConfig.unlimitedAutoAssociations());
     }
 
     private record Validated(@NonNull Account account, @NonNull List<Token> tokens) {}
