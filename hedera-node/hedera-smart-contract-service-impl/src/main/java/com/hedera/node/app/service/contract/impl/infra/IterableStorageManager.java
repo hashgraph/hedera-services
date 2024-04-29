@@ -79,14 +79,17 @@ public class IterableStorageManager {
             if (access.isUpdate()) {
                 final var firstContractKey = contractFirstKeyOf(enhancement, contractAccesses.contractID());
 
+                // Only certain access types can change the head slot in a contract's storage linked list
                 final var newFirstContractKey =
                         switch (StorageAccessType.getAccessType(access)) {
                             case UNKNOWN, READ_ONLY, UPDATE -> firstContractKey;
+                                // We might be removing the current first slot
                             case REMOVAL -> removeAccessedValue(
                                     store,
                                     firstContractKey,
                                     contractAccesses.contractID(),
                                     tuweniToPbjBytes(access.key()));
+                                // We always insert the new slot at the head
                             case INSERTION -> insertAccessedValue(
                                     store,
                                     firstContractKey,
