@@ -2562,6 +2562,7 @@ public class ContractCallSuite extends HapiSuite {
                                 .signedBy(DEFAULT_PAYER, TOKEN_TREASURY))
                 .when()
                 .then(
+                        // Call transferToken() with insufficent gas
                         sourcing(() -> contractCall(
                                         contract,
                                         "callRequestedAndIgnoreFailure",
@@ -2576,6 +2577,7 @@ public class ContractCallSuite extends HapiSuite {
                                         BigInteger.valueOf(13_000L))
                                 .via("callTxn")),
                         childRecordsCheck("callTxn", SUCCESS, recordWith().status(INSUFFICIENT_GAS)),
+                        // Verify no token balances changed
                         getAccountDetails(TOKEN_TREASURY)
                                 .hasToken(relationshipWith(TOKEN).balance(initialSupply)),
                         getAccountDetails(CIVILIAN_PAYER).hasNoTokenRelationship(TOKEN));
