@@ -173,7 +173,9 @@ public class ContractUpdateHandler implements TransactionHandler {
                     REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
             validateFalse(newMax < contract.maxAutoAssociations(), EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
             validateFalse(
-                    entitiesConfig.limitTokenAssociations() && newMax > tokensConfig.maxPerAccount(),
+                    entitiesConfig.limitTokenAssociations()
+                            && !contractsConfig.unlimitedAutoAssociations()
+                            && newMax > tokensConfig.maxPerAccount(),
                     REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
 
             validateTrue(contractsConfig.allowAutoAssociations(), NOT_SUPPORTED);

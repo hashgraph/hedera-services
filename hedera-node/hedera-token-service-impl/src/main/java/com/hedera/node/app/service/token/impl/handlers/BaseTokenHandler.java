@@ -43,6 +43,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenKey;
+import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
@@ -319,6 +320,7 @@ public class BaseTokenHandler {
             @NonNull final Configuration config) {
         final var tokensConfig = config.getConfigData(TokensConfig.class);
         final var entitiesConfig = config.getConfigData(EntitiesConfig.class);
+        final var contractsConfig = config.getConfigData(ContractsConfig.class);
 
         final var accountId = account.accountIdOrThrow();
         final var tokenId = token.tokenIdOrThrow();
@@ -331,7 +333,9 @@ public class BaseTokenHandler {
         // Check is number of used associations is less than maxAutoAssociations
         final var numAssociations = account.numberAssociations();
         validateFalse(
-                entitiesConfig.limitTokenAssociations() && numAssociations >= tokensConfig.maxPerAccount(),
+                entitiesConfig.limitTokenAssociations()
+                        && !contractsConfig.unlimitedAutoAssociations()
+                        && numAssociations >= tokensConfig.maxPerAccount(),
                 TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
         final var maxAutoAssociations = account.maxAutoAssociations();

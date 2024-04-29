@@ -26,6 +26,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
@@ -92,13 +93,17 @@ public class CryptoCreateValidator {
      * @param entitiesConfig EntitiesConfig
      * @param tokensConfig TokensConfig
      * @return true the given number is greater than the max number of auto associations
+     * @param contractsConfig ContractsConfig
      */
     public boolean tooManyAutoAssociations(
             final int n,
             @NonNull final LedgerConfig ledgerConfig,
             @NonNull final EntitiesConfig entitiesConfig,
-            @NonNull final TokensConfig tokensConfig) {
+            @NonNull final TokensConfig tokensConfig,
+            @NonNull final ContractsConfig contractsConfig) {
         return n > ledgerConfig.maxAutoAssociations()
-                || (entitiesConfig.limitTokenAssociations() && n > tokensConfig.maxPerAccount());
+                || (entitiesConfig.limitTokenAssociations()
+                        && !contractsConfig.unlimitedAutoAssociations()
+                        && n > tokensConfig.maxPerAccount());
     }
 }

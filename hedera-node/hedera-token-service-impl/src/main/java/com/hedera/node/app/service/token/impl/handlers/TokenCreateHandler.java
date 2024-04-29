@@ -54,6 +54,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -195,12 +196,14 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
             final TokenCreateRecordBuilder recordBuilder) {
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
+        final var contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
 
         // This should exist as it is validated in validateSemantics
         final var treasury = accountStore.get(newToken.treasuryAccountId());
         // Validate if token relation can be created between treasury and new token
         // If this succeeds, create and link token relation.
-        tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, treasury, newToken, tokenRelStore);
+        tokenCreateValidator.validateAssociation(
+                entitiesConfig, tokensConfig, contractsConfig, treasury, newToken, tokenRelStore);
         createAndLinkTokenRels(treasury, List.of(newToken), accountStore, tokenRelStore);
         recordBuilder.addAutomaticTokenAssociation(asTokenAssociation(newToken.tokenId(), treasury.accountId()));
 
@@ -219,7 +222,8 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
 
             // Validate if token relation can be created between collector and new token
             // If this succeeds, create and link token relation.
-            tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, collector, newToken, tokenRelStore);
+            tokenCreateValidator.validateAssociation(
+                    entitiesConfig, tokensConfig, contractsConfig, collector, newToken, tokenRelStore);
             createAndLinkTokenRels(collector, List.of(newToken), accountStore, tokenRelStore);
             recordBuilder.addAutomaticTokenAssociation(asTokenAssociation(newToken.tokenId(), collector.accountId()));
         }
