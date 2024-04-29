@@ -148,7 +148,7 @@ fun includeAllProjects(containingFolder: String) {
 }
 
 // The HAPI API version to use for Protobuf sources.
-val hapiProtoVersion = "0.48.0"
+val hapiProtoVersion = "0.50.0"
 
 dependencyResolutionManagement {
     // Protobuf tool versions
@@ -157,6 +157,6 @@ dependencyResolutionManagement {
         version("grpc-proto", "1.45.1")
         version("hapi-proto", hapiProtoVersion)
 
-        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.8.5")
+        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.8.7")
     }
 }

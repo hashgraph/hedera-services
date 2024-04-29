@@ -26,18 +26,22 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.existingSystemAccounts;
 import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.nonExistingSystemAccounts;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
@@ -90,7 +94,9 @@ public class SelfDestructSuite extends HapiSuite {
                 selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed(EVM_VERSION_046),
                 selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed(EVM_VERSION_050),
                 testSelfDestructForSystemAccounts(EVM_VERSION_046),
-                testSelfDestructForSystemAccounts(EVM_VERSION_050));
+                testSelfDestructForSystemAccounts(EVM_VERSION_050),
+                deletedContractsCannotBeUpdated(EVM_VERSION_046),
+                deletedContractsCannotBeUpdated(EVM_VERSION_050));
     }
 
     @Override
@@ -239,6 +245,43 @@ public class SelfDestructSuite extends HapiSuite {
                         contractCreate(SELF_DESTRUCT_CALLABLE_CONTRACT).balance(ONE_HBAR))
                 .when()
                 .then(nonExistingAccountsOps);
+    }
+
+    @HapiTest
+    final HapiSpec deletedContractsCannotBeUpdated46() {
+        return deletedContractsCannotBeUpdated(EVM_VERSION_046);
+    }
+
+    @HapiTest
+    final HapiSpec deletedContractsCannotBeUpdated50() {
+        return deletedContractsCannotBeUpdated(EVM_VERSION_050);
+    }
+
+    final HapiSpec deletedContractsCannotBeUpdated(@NonNull final String evmVersion) {
+        final var contract = SELF_DESTRUCT_CALLABLE_CONTRACT;
+        final var beneficiary = BENEFICIARY;
+
+        final var expectedStatus =
+                switch (evmVersion) {
+                    case EVM_VERSION_046 -> INVALID_CONTRACT_ID;
+                    case EVM_VERSION_050 -> SUCCESS;
+                    default -> throw new IllegalArgumentException("unexpected evm version: " + evmVersion);
+                };
+
+        return propertyPreservingHapiSpec(
+                        "deletedContractsCannotBeUpdated" + evmVersion,
+                        EXPECT_STREAMLINED_INGEST_RECORDS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
+                .given(
+                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
+                        overriding(EVM_VERSION_PROPERTY, evmVersion),
+                        uploadInitCode(contract),
+                        contractCreate(contract).gas(300_000),
+                        cryptoCreate(beneficiary).balance(ONE_HUNDRED_HBARS))
+                .when(contractCall(contract, "destroy").deferStatusResolution().payingWith(beneficiary))
+                .then(contractUpdate(contract).newMemo("Hi there!").hasKnownStatus(expectedStatus));
     }
 
     private HapiSpecOperation[] createOpsArray(
