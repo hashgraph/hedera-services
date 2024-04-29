@@ -26,6 +26,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.common.wiring.transformers.RoutableData;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
@@ -45,6 +46,60 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class StaleEventDetectorTests {
+
+    /**
+     * Extract self events from a stream containing both self events and stale self events. Corresponds to data tagged
+     * with {@link StaleEventDetectorOutput#SELF_EVENT}.
+     */
+    private List<GossipEvent> getSelfEvents(@NonNull final List<RoutableData<StaleEventDetectorOutput>> data) {
+        final List<GossipEvent> output = new ArrayList<>();
+        for (final RoutableData<StaleEventDetectorOutput> datum : data) {
+            if (datum.address() == StaleEventDetectorOutput.SELF_EVENT) {
+                output.add((GossipEvent) datum.data());
+            }
+        }
+        return output;
+    }
+
+    /**
+     * Validate that the correct stale event was returned as part of the output.
+     *
+     * @param data      the output data
+     * @param selfEvent the self event that should have been returned
+     */
+    private void assertSelfEventReturned(
+            @NonNull final List<RoutableData<StaleEventDetectorOutput>> data, @NonNull final GossipEvent selfEvent) {
+
+        final List<GossipEvent> selfEvents = getSelfEvents(data);
+        assertEquals(1, selfEvents.size());
+        assertSame(selfEvent, selfEvents.getFirst());
+    }
+
+    /**
+     * Validate that no self events were returned as part of the output. (Not to be confused with "stale self events"
+     * events.) Essentially, we don't want to see data tagged with {@link StaleEventDetectorOutput#SELF_EVENT} unless we
+     * are adding a self event and want to see it pass through.
+     *
+     * @param data the output data
+     */
+    private void assertNoSelfEventReturned(@NonNull final List<RoutableData<StaleEventDetectorOutput>> data) {
+        final List<GossipEvent> selfEvents = getSelfEvents(data);
+        assertEquals(0, selfEvents.size());
+    }
+
+    /**
+     * Extract stale self events from a stream containing both self events and stale self events. Corresponds to data
+     * tagged with {@link StaleEventDetectorOutput#STALE_SELF_EVENT}.
+     */
+    private List<GossipEvent> getStaleSelfEvents(@NonNull final List<RoutableData<StaleEventDetectorOutput>> data) {
+        final List<GossipEvent> output = new ArrayList<>();
+        for (final RoutableData<StaleEventDetectorOutput> datum : data) {
+            if (datum.address() == StaleEventDetectorOutput.STALE_SELF_EVENT) {
+                output.add((GossipEvent) datum.data());
+            }
+        }
+        return output;
+    }
 
     @Test
     void throwIfInitialEventWindowNotSetTest() {
@@ -88,9 +143,15 @@ class StaleEventDetectorTests {
         detector.setInitialEventWindow(new EventWindow(
                 randotron.nextPositiveInt(), ancientThreshold, randotron.nextPositiveLong(), BIRTH_ROUND_THRESHOLD));
 
-        final List<GossipEvent> staleEvents = detector.addSelfEvent(event);
+        final List<RoutableData<StaleEventDetectorOutput>> output = detector.addSelfEvent(event);
+
+        final List<GossipEvent> gossipEvents = getSelfEvents(output);
+        final List<GossipEvent> staleEvents = getStaleSelfEvents(output);
+
         assertEquals(1, staleEvents.size());
         assertSame(event, staleEvents.getFirst());
+
+        assertSelfEventReturned(output, event);
     }
 
     /**
@@ -170,7 +231,9 @@ class StaleEventDetectorTests {
             }
 
             if (selfEvent) {
-                detectedStaleEvents.addAll(detector.addSelfEvent(event));
+                final List<RoutableData<StaleEventDetectorOutput>> output = detector.addSelfEvent(event);
+                detectedStaleEvents.addAll(getStaleSelfEvents(output));
+                assertSelfEventReturned(output, event);
             }
 
             // Once in a while, permit a round to "reach consensus"
@@ -180,7 +243,9 @@ class StaleEventDetectorTests {
                 final ConsensusRound consensusRound =
                         createConsensusRound(randotron, consensusEvents, currentAncientThreshold);
 
-                detectedStaleEvents.addAll(detector.addConsensusRound(consensusRound));
+                final List<RoutableData<StaleEventDetectorOutput>> output = detector.addConsensusRound(consensusRound);
+                detectedStaleEvents.addAll(getStaleSelfEvents(output));
+                assertNoSelfEventReturned(output);
                 consensusEvents.clear();
             }
         }
@@ -189,7 +254,9 @@ class StaleEventDetectorTests {
         // to flush out all events we expect to eventually become stale.
         currentAncientThreshold += randotron.nextLong(1_000, 10_000);
         final ConsensusRound consensusRound = createConsensusRound(randotron, consensusEvents, currentAncientThreshold);
-        detectedStaleEvents.addAll(detector.addConsensusRound(consensusRound));
+        final List<RoutableData<StaleEventDetectorOutput>> output = detector.addConsensusRound(consensusRound);
+        detectedStaleEvents.addAll(getStaleSelfEvents(output));
+        assertNoSelfEventReturned(output);
 
         assertEquals(expectedStaleEvents.size(), detectedStaleEvents.size());
     }
@@ -218,7 +285,9 @@ class StaleEventDetectorTests {
         detector.setInitialEventWindow(new EventWindow(
                 randotron.nextPositiveInt(), ancientThreshold1, randotron.nextPositiveLong(), BIRTH_ROUND_THRESHOLD));
 
-        assertEquals(0, detector.addSelfEvent(event1).size());
+        final List<RoutableData<StaleEventDetectorOutput>> output1 = detector.addSelfEvent(event1);
+        assertSelfEventReturned(output1, event1);
+        assertEquals(0, getStaleSelfEvents(output1).size());
 
         detector.clear();
 
@@ -238,11 +307,15 @@ class StaleEventDetectorTests {
                 .setBirthRound(eventBirthRound2)
                 .build();
 
-        assertEquals(0, detector.addSelfEvent(event2).size());
+        final List<RoutableData<StaleEventDetectorOutput>> output2 = detector.addSelfEvent(event2);
+        assertSelfEventReturned(output2, event2);
+        assertEquals(0, getStaleSelfEvents(output2).size());
 
         final long ancientThreshold3 = eventBirthRound2 + randotron.nextPositiveInt(10);
         final ConsensusRound consensusRound = createConsensusRound(randotron, List.of(), ancientThreshold3);
-        final List<GossipEvent> staleEvents = detector.addConsensusRound(consensusRound);
+        final List<RoutableData<StaleEventDetectorOutput>> output3 = detector.addConsensusRound(consensusRound);
+        assertNoSelfEventReturned(output3);
+        final List<GossipEvent> staleEvents = getStaleSelfEvents(output3);
         assertEquals(1, staleEvents.size());
         assertSame(event2, staleEvents.getFirst());
     }

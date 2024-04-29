@@ -17,6 +17,7 @@
 package com.swirlds.platform.event.stale;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
+import com.swirlds.common.wiring.transformers.RoutableData;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -32,23 +33,31 @@ public interface StaleEventDetector {
     /**
      * Add a newly created self event to the detector. If this event goes stale without this node restarting or
      * reconnecting, then the detector will observe the event go stale and take appropriate action.
+     * <p>
+     * Events added to this method "pass through" and are always returned as part of the output (even if stale).
      *
      * @param event the self event to add
-     * @return a list of self events that have gone stale
+     * @return a list of routable data, produces two output wires which can be split by a router. The first stream
+     * corresponds to the tag {@link StaleEventDetectorOutput#SELF_EVENT} and contains all self events added to this
+     * component. The second stream corresponds to the tag {@link StaleEventDetectorOutput#STALE_SELF_EVENT} and
+     * contains all self events that have gone stale.
      */
     @InputWireLabel("self events")
     @NonNull
-    List<GossipEvent> addSelfEvent(@NonNull GossipEvent event);
+    List<RoutableData<StaleEventDetectorOutput>> addSelfEvent(@NonNull GossipEvent event);
 
     /**
      * Add a round that has just reached consensus.
      *
      * @param consensusRound a round that has just reached consensus
-     * @return a list of self events that have gone stale
+     * @return a list of routable data, produces two output wires which can be split by a router. The first stream
+     * corresponds to the tag {@link StaleEventDetectorOutput#SELF_EVENT} and contains all self events added to this
+     * component. The second stream corresponds to the tag {@link StaleEventDetectorOutput#STALE_SELF_EVENT} and
+     * contains all self events that have gone stale.
      */
     @InputWireLabel("rounds")
     @NonNull
-    List<GossipEvent> addConsensusRound(@NonNull ConsensusRound consensusRound);
+    List<RoutableData<StaleEventDetectorOutput>> addConsensusRound(@NonNull ConsensusRound consensusRound);
 
     /**
      * Set the initial event window for the detector. Must be called after restart and reconnect.

@@ -21,7 +21,7 @@ pcli diagram \
     -s 'OrphanBufferSplitter:events to gossip:📬' \
     -s 'getKeystoneEventSequenceNumber:flush request:🚽' \
     -s 'extractOldestMinimumGenerationOnDisk:minimum identifier to store:📀' \
-    -s 'SelfEventSigner:non-validated events:🍎' \
+    -s 'StaleEventDetectorRouter:non-validated events:🍎' \
     -s 'Mystery Input:mystery data:❔' \
     -s 'stateSigner:submit transaction:🖋️' \
     -s 'stateSigner:signature transactions:🖋️' \
@@ -31,7 +31,7 @@ pcli diagram \
     -s 'OrphanBufferSplitter:preconsensus signatures:🔰' \
     -s 'RunningEventHashOverride:hash override:💨' \
     -s 'TransactionResubmitterSplitter:submit transaction:♻️' \
-    -s 'StaleEventDetectorSplitter:publishStaleEvent:⚰️' \
+    -s 'StaleEventDetectorRouter:publishStaleEvent:⚰️' \
     -s 'toStateWrittenToDiskAction:PlatformStatusAction:💾' \
     -s 'StatusStateMachine:PlatformStatus:🚦' \
     -g 'Event Validation:InternalEventValidator,EventDeduplicator,EventSignatureValidator' \
@@ -43,7 +43,7 @@ pcli diagram \
     -g 'State Signature Collector:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions,latestCompleteStateNotifier' \
     -g 'State Signature Collection:State Signature Collector,latestCompleteStateNexus,💢' \
     -g 'Preconsensus Event Stream:PcesSequencer,PcesWriter' \
-    -g 'Event Creation:EventCreationManager,TransactionPool,SelfEventSigner,🍎' \
+    -g 'Event Creation:EventCreationManager,TransactionPool,SelfEventSigner' \
     -g 'Gossip:gossip,shadowgraph,InOrderLinker' \
     -g 'ISS Detector:issDetector,issNotificationSplitter,issHandler,toStatusAction' \
     -g 'Heartbeat:heartbeat,❤️' \
@@ -54,9 +54,9 @@ pcli diagram \
     -g 'State Verification:stateSigner,hashLogger,ISS Detector,🖋️,💥,💀' \
     -g 'Transaction Handling:Consensus Round Handler,latestImmutableStateNexus' \
     -g 'Round Durability Buffer:RoundDurabilityBuffer,RoundDurabilityBufferSplitter' \
-    -g 'Stale Event Detector:StaleEventDetector,StaleEventDetectorSplitter' \
+    -g 'Stale Event Detector:StaleEventDetector,StaleEventDetectorSplitter,StaleEventDetectorRouter' \
     -g 'Transaction Resubmitter:TransactionResubmitter,TransactionResubmitterSplitter' \
-    -g 'Stale Events:Stale Event Detector,Transaction Resubmitter,⚰️,♻️' \
+    -g 'Stale Events:Stale Event Detector,Transaction Resubmitter,⚰️,♻️,🍎' \
     -c 'Orphan Buffer' \
     -c 'Consensus Engine' \
     -c 'State Signature Collector' \

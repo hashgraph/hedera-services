@@ -21,6 +21,7 @@ import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
+import com.swirlds.common.wiring.transformers.RoutableData;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
@@ -91,19 +92,25 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
      */
     @NonNull
     @Override
-    public List<GossipEvent> addSelfEvent(@NonNull final GossipEvent event) {
+    public List<RoutableData<StaleEventDetectorOutput>> addSelfEvent(@NonNull final GossipEvent event) {
         if (currentEventWindow == null) {
             throw new IllegalStateException("Event window must be set before adding self events");
         }
 
+        final RoutableData<StaleEventDetectorOutput> selfEvent =
+                new RoutableData<>(StaleEventDetectorOutput.SELF_EVENT, event);
+
         if (currentEventWindow.isAncient(event)) {
             // Although unlikely, it is plausible for an event to go stale before it is added to the detector.
             handleStaleEvent(event);
-            return List.of(event);
+
+            final RoutableData<StaleEventDetectorOutput> staleEvent =
+                    new RoutableData<>(StaleEventDetectorOutput.STALE_SELF_EVENT, event);
+            return List.of(selfEvent, staleEvent);
         }
 
         selfEvents.put(event.getDescriptor(), event);
-        return List.of();
+        return List.of(selfEvent);
     }
 
     /**
@@ -111,7 +118,8 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
      */
     @NonNull
     @Override
-    public List<GossipEvent> addConsensusRound(@NonNull final ConsensusRound consensusRound) {
+    public List<RoutableData<StaleEventDetectorOutput>> addConsensusRound(
+            @NonNull final ConsensusRound consensusRound) {
         for (final EventImpl event : consensusRound.getConsensusEvents()) {
             if (event.getCreatorId().equals(selfId)) {
                 selfEvents.remove(event.getBaseEvent().getDescriptor());
@@ -122,11 +130,13 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
         currentEventWindow = consensusRound.getEventWindow();
         selfEvents.shiftWindow(currentEventWindow.getAncientThreshold(), (descriptor, event) -> staleEvents.add(event));
 
+        final List<RoutableData<StaleEventDetectorOutput>> output = new ArrayList<>(staleEvents.size());
         for (final GossipEvent event : staleEvents) {
             handleStaleEvent(event);
+            output.add(new RoutableData<>(StaleEventDetectorOutput.STALE_SELF_EVENT, event));
         }
 
-        return staleEvents;
+        return output;
     }
 
     /**

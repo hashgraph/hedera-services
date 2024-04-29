@@ -21,6 +21,8 @@ import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfigu
 import static com.swirlds.common.wiring.wires.SolderType.INJECT;
 import static com.swirlds.common.wiring.wires.SolderType.OFFER;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+import static com.swirlds.platform.event.stale.StaleEventDetectorOutput.SELF_EVENT;
+import static com.swirlds.platform.event.stale.StaleEventDetectorOutput.STALE_SELF_EVENT;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
@@ -35,6 +37,7 @@ import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.transformers.RoutableData;
 import com.swirlds.common.wiring.transformers.WireTransformer;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
@@ -66,6 +69,7 @@ import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
 import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.SelfEventSigner;
 import com.swirlds.platform.event.stale.StaleEventDetector;
+import com.swirlds.platform.event.stale.StaleEventDetectorOutput;
 import com.swirlds.platform.event.stale.TransactionResubmitter;
 import com.swirlds.platform.event.stream.ConsensusEventStream;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
@@ -176,7 +180,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final boolean publishSnapshotOverrides;
     private final boolean publishStaleEvents;
     private final ComponentWiring<RunningEventHasher, Void> runningEventHasherWiring;
-    private final ComponentWiring<StaleEventDetector, List<GossipEvent>> staleEventDetectorWiring;
+    private final ComponentWiring<StaleEventDetector, List<RoutableData<StaleEventDetectorOutput>>>
+            staleEventDetectorWiring;
     private final ComponentWiring<TransactionResubmitter, List<ConsensusTransactionImpl>> transactionResubmitterWiring;
     private final ComponentWiring<TransactionPool, Void> transactionPoolWiring;
     private final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring;
@@ -473,13 +478,17 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .solderTo(selfEventSignerWiring.getInputWire(SelfEventSigner::signEvent));
         selfEventSignerWiring
                 .getOutputWire()
-                .solderTo(internalEventValidatorWiring.getInputWire(InternalEventValidator::validateEvent), INJECT);
-        selfEventSignerWiring
-                .getOutputWire()
                 .solderTo(staleEventDetectorWiring.getInputWire(StaleEventDetector::addSelfEvent));
 
-        final OutputWire<GossipEvent> splitStaleEventDetectorOutput = staleEventDetectorWiring.getSplitOutput();
-        splitStaleEventDetectorOutput.solderTo(
+        final OutputWire<GossipEvent> staleEventsFromStaleEventDetector =
+                staleEventDetectorWiring.getSplitAndRoutedOutput(STALE_SELF_EVENT);
+        final OutputWire<GossipEvent> selfEventsFromStaleEventDetector =
+                staleEventDetectorWiring.getSplitAndRoutedOutput(SELF_EVENT);
+
+        selfEventsFromStaleEventDetector.solderTo(
+                internalEventValidatorWiring.getInputWire(InternalEventValidator::validateEvent), INJECT);
+
+        staleEventsFromStaleEventDetector.solderTo(
                 transactionResubmitterWiring.getInputWire(TransactionResubmitter::resubmitStaleTransactions));
         final OutputWire<ConsensusTransactionImpl> splitTransactionResubmitterOutput =
                 transactionResubmitterWiring.getSplitOutput();
@@ -487,7 +496,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 transactionPoolWiring.getInputWire(TransactionPool::submitSystemTransaction));
 
         if (publishStaleEvents) {
-            splitStaleEventDetectorOutput.solderTo(
+            staleEventsFromStaleEventDetector.solderTo(
                     platformPublisherWiring.getInputWire(PlatformPublisher::publishStaleEvent));
         }
 
