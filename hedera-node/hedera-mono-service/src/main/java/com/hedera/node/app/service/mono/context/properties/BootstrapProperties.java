@@ -101,6 +101,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACT_UNLIMITED_AUTO_ASSOCIATIONS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
@@ -492,6 +493,7 @@ public final class BootstrapProperties implements PropertySource {
             CONTRACTS_EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS,
             CONTRACTS_EVM_VERSION,
             CONTRACTS_DYNAMIC_EVM_VERSION,
+            CONTRACT_UNLIMITED_AUTO_ASSOCIATIONS,
             EXPIRY_MIN_CYCLE_ENTRY_CAPACITY,
             EXPIRY_THROTTLE_RESOURCE,
             FILES_MAX_NUM,
@@ -805,6 +807,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(CONTRACTS_EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS, AS_BOOLEAN),
             entry(CONTRACTS_EVM_VERSION, AS_STRING),
             entry(CONTRACTS_DYNAMIC_EVM_VERSION, AS_BOOLEAN),
+            entry(CONTRACT_UNLIMITED_AUTO_ASSOCIATIONS, AS_BOOLEAN),
             entry(RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT, AS_INT),
             entry(RATES_MIDNIGHT_CHECK_INTERVAL, AS_LONG),
             entry(RECORDS_USE_CONSOLIDATED_FCQ, AS_BOOLEAN),
