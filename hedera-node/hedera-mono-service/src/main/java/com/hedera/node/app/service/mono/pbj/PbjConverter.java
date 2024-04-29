@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.pbj;
 
+import static com.hedera.hapi.node.base.ContractID.ContractOneOfType.UNSET;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.mono.Utils.asHederaKeyUnchecked;
 import static java.util.Objects.requireNonNull;

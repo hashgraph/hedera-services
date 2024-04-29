@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.fees.calculation.token.txns;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
+import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.hapi.fees.usage.EstimatorFactory;
@@ -72,7 +73,7 @@ public final class TokenAssociateResourceUsage extends AbstractTokenResourceUsag
      */
     public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final Account account) {
         if (account == null) {
-            return FeeData.getDefaultInstance();
+            return CONSTANT_FEE_DATA;
         } else {
             final var sigUsage =
                     new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
