@@ -358,11 +358,15 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(configuration.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
         when(configuration.getConfigData(EntitiesConfig.class)).thenReturn(entitiesConfig);
         when(configuration.getConfigData(TokensConfig.class)).thenReturn(tokensConfig);
+        when(configuration.getConfigData(ContractsConfig.class)).thenReturn(contractsConfig);
         when(ledgerConfig.maxAutoAssociations()).thenReturn(maxAutomaticTokenAssociations + 1);
         when(entitiesConfig.limitTokenAssociations()).thenReturn(true);
         when(tokensConfig.maxPerAccount()).thenReturn(maxAutomaticTokenAssociations - 1);
         when(context.configuration()).thenReturn(configuration);
+        when(contractsConfig.unlimitedAutoAssociations()).thenReturn(false);
 
+        when(contract.maxAutoAssociations()).thenReturn(maxAutomaticTokenAssociations - 1);
+        when(accountStore.getContractById(targetContract)).thenReturn(contract);
         when(contract.maxAutoAssociations()).thenReturn(maxAutomaticTokenAssociations - 1);
         when(accountStore.getContractById(targetContract)).thenReturn(contract);
         given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);

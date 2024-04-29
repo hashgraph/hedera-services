@@ -60,7 +60,8 @@ class CryptoCreateValidatorTest {
                 .withValue("cryptoCreateWithAlias.enabled", true)
                 .withValue("ledger.maxAutoAssociations", 5000)
                 .withValue("entities.limitTokenAssociations", false)
-                .withValue("tokens.maxPerAccount", 1000);
+                .withValue("tokens.maxPerAccount", 1000)
+                .withValue("contracts.unlimitedAutoAssociations", true);
     }
 
     //    @Test
@@ -133,5 +134,6 @@ class CryptoCreateValidatorTest {
         tokensConfig = configuration.getConfigData(TokensConfig.class);
         ledgerConfig = configuration.getConfigData(LedgerConfig.class);
         entitiesConfig = configuration.getConfigData(EntitiesConfig.class);
+        contractsConfig = configuration.getConfigData(ContractsConfig.class);
     }
 }
