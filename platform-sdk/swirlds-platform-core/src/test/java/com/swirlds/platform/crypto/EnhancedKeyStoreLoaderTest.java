@@ -18,6 +18,7 @@ package com.swirlds.platform.crypto;
 
 import static com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader.loadConfigFile;
 import static com.swirlds.platform.state.address.AddressBookNetworkUtils.isLocal;
+import static com.swirlds.platform.util.BootstrapUtils.readSettingsDotTxt;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -28,7 +29,6 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.resource.ResourceLoader;
-import com.swirlds.platform.util.BootstrapUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -191,11 +191,11 @@ class EnhancedKeyStoreLoaderTest {
      *
      * @param keyDirectory the key directory path to use.
      * @return a fully initialized configuration object with the key path overridden.
-     * @throws IOException if an I/O error occurs while loading the configuration file.
      */
-    private Configuration configure(final Path keyDirectory) throws IOException {
+    private Configuration configure(final Path keyDirectory) {
         final ConfigurationBuilder builder = ConfigurationBuilder.create();
-        BootstrapUtils.setupConfigBuilder(builder, testDataDirectory.resolve("settings.txt"));
+        readSettingsDotTxt(builder, testDataDirectory.resolve("settings.txt"));
+        builder.autoDiscoverExtensions();
 
         builder.withValue("paths.keysDirPath", keyDirectory.toAbsolutePath().toString());
 

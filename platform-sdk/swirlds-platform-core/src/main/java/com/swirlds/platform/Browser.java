@@ -57,7 +57,6 @@ import com.swirlds.platform.gui.model.InfoSwirld;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.SystemExitUtils;
-import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.GraphicsEnvironment;
 import java.nio.file.Path;
@@ -188,7 +187,8 @@ public class Browser {
             // Duplicating config here is ugly, but Browser is test only code now.
             // In the future we should clean it up, but it's not urgent to do so.
             final ConfigurationBuilder guiConfigBuilder = ConfigurationBuilder.create();
-            BootstrapUtils.setupConfigBuilder(guiConfigBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
+            readSettingsDotTxt(guiConfigBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
+            guiConfigBuilder.autoDiscoverExtensions();
             final Configuration guiConfig = guiConfigBuilder.build();
 
             guiEventStorage = new GuiEventStorage(guiConfig, appDefinition.getConfigAddressBook());

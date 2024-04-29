@@ -90,23 +90,6 @@ public final class BootstrapUtils {
     private BootstrapUtils() {}
 
     /**
-     * Load the configuration for the platform.
-     *
-     * @param configurationBuilder the configuration builder to setup
-     * @param settingsPath         the path to the settings.txt file
-     * @throws IOException if there is a problem reading the configuration files
-     */
-    public static void setupConfigBuilder( // TODO get rid of this
-            @NonNull final ConfigurationBuilder configurationBuilder, @NonNull final Path settingsPath)
-            throws IOException {
-
-        final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile(settingsPath);
-        final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
-
-        configurationBuilder.autoDiscoverExtensions().withSource(mappedSettingsConfigSource);
-    }
-
-    /**
      * Load settings from a legacy settings.txt source.
      *
      * @param configurationBuilder the configuration builder
