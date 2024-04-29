@@ -29,6 +29,7 @@ import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
 import com.swirlds.platform.system.state.notifications.IssListener;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
+import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -63,8 +64,9 @@ public record DefaultAppNotifier(@NonNull NotificationEngine notificationEngine)
      * {@inheritDoc}
      */
     @Override
-    public void sendPlatformStatusChangeNotification(@NonNull final PlatformStatusChangeNotification notification) {
-        notificationEngine.dispatch(PlatformStatusChangeListener.class, notification);
+    public void sendPlatformStatusChangeNotification(@NonNull final PlatformStatus newStatus) {
+        notificationEngine.dispatch(
+                PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newStatus));
     }
 
     /**

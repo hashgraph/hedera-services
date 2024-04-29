@@ -30,6 +30,7 @@ import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -73,6 +74,8 @@ public class ContractDeleteHandler implements TransactionHandler {
         // The contract ID must be present on the transaction
         final var contractID = op.contractID();
         mustExist(contractID, INVALID_CONTRACT_ID);
+
+        validateTruePreCheck(op.hasTransferAccountID() || op.hasTransferContractID(), OBTAINER_REQUIRED);
     }
 
     @Override
@@ -100,7 +103,6 @@ public class ContractDeleteHandler implements TransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         final var op = context.body().contractDeleteInstanceOrThrow();
-        validateTrue(op.hasTransferAccountID() || op.hasTransferContractID(), OBTAINER_REQUIRED);
         final var accountStore = context.readableStore(ReadableAccountStore.class);
         final var toBeDeleted = requireNonNull(accountStore.getContractById(op.contractIDOrThrow()));
         validateFalse(toBeDeleted.deleted(), CONTRACT_DELETED);
