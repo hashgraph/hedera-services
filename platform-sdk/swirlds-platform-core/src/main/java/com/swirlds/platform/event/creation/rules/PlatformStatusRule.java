@@ -36,8 +36,8 @@ public class PlatformStatusRule implements EventCreationRule {
     /**
      * Constructor.
      *
-     * @param platformStatusSupplier    provides the current platform status
-     * @param transactionPoolNexus           provides transactions to be added to new events
+     * @param platformStatusSupplier provides the current platform status
+     * @param transactionPoolNexus   provides transactions to be added to new events
      */
     public PlatformStatusRule(
             @NonNull final Supplier<PlatformStatus> platformStatusSupplier,

@@ -65,13 +65,13 @@ public class DefaultEventCreationManager implements EventCreationManager {
      * Constructor.
      *
      * @param platformContext      the platform context
-     * @param transactionPool      provides transactions to be added to new events
+     * @param transactionPoolNexus provides transactions to be added to new events
      * @param eventIntakeQueueSize supplies the size of the event intake queue
      * @param creator              creates events
      */
     public DefaultEventCreationManager(
             @NonNull final PlatformContext platformContext,
-            @NonNull final TransactionPoolNexus transactionPool,
+            @NonNull final TransactionPoolNexus transactionPoolNexus,
             @NonNull final LongSupplier eventIntakeQueueSize,
             @NonNull final EventCreator creator) {
 
@@ -80,7 +80,7 @@ public class DefaultEventCreationManager implements EventCreationManager {
         this.eventCreationRules = AggregateEventCreationRules.of(
                 new MaximumRateRule(platformContext),
                 new BackpressureRule(platformContext, eventIntakeQueueSize),
-                new PlatformStatusRule(this::getPlatformStatus, transactionPool));
+                new PlatformStatusRule(this::getPlatformStatus, transactionPoolNexus));
 
         phase = new PhaseTimerBuilder<>(
                         platformContext, platformContext.getTime(), "platform", EventCreationStatus.class)

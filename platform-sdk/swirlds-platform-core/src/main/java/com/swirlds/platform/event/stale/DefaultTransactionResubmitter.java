@@ -36,6 +36,7 @@ public class DefaultTransactionResubmitter implements TransactionResubmitter {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public List<ConsensusTransactionImpl> resubmitStaleTransactions(@NonNull final GossipEvent event) {
         final List<ConsensusTransactionImpl> transactionsToResubmit = new ArrayList<>();
         for (final ConsensusTransactionImpl transaction : event.getHashedData().getTransactions()) {

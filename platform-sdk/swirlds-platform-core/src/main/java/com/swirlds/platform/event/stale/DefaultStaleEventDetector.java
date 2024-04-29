@@ -63,8 +63,8 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
     /**
      * Constructor.
      *
-     * @param platformContext    the platform context
-     * @param selfId             the ID of this node
+     * @param platformContext the platform context
+     * @param selfId          the ID of this node
      */
     public DefaultStaleEventDetector(@NonNull final PlatformContext platformContext, @NonNull final NodeId selfId) {
 

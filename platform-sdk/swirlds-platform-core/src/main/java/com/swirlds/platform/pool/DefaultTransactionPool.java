@@ -33,7 +33,7 @@ public class DefaultTransactionPool implements TransactionPool {
      * @param transactionPoolNexus the transaction pool nexus
      */
     public DefaultTransactionPool(@NonNull final TransactionPoolNexus transactionPoolNexus) {
-        this.transactionPoolNexus = transactionPoolNexus;
+        this.transactionPoolNexus = Objects.requireNonNull(transactionPoolNexus);
     }
 
     /**

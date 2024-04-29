@@ -74,6 +74,7 @@ import java.time.Duration;
  * @param roundDurabilityBuffer                    configuration for the round durability buffer scheduler
  * @param signedStateSentinel                      configuration for the signed state sentinel scheduler
  * @param signedStateSentinelHeartbeatPeriod       the frequency that heartbeats should be sent to the signed state
+ *                                                 sentinel
  * @param statusStateMachine                       configuration for the status state machine scheduler
  * @param platformStatusNexus                      configuration for the status nexus scheduler
  * @param staleEventDetector                       configuration for the stale event detector scheduler

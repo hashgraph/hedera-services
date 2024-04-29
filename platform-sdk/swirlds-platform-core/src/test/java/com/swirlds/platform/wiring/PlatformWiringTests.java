@@ -49,6 +49,7 @@ import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
+import com.swirlds.platform.pool.TransactionPool;
 import com.swirlds.platform.publisher.PlatformPublisher;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
@@ -103,7 +104,8 @@ class PlatformWiringTests {
                 .withPcesWriter(mock(PcesWriter.class))
                 .withSignedStateSentinel(mock(SignedStateSentinel.class))
                 .withStaleEventDetector(mock(DefaultStaleEventDetector.class))
-                .withTransactionResubmitter(mock(TransactionResubmitter.class));
+                .withTransactionResubmitter(mock(TransactionResubmitter.class))
+                .withTransactionPool(mock(TransactionPool.class));
 
         wiring.bind(
                 componentBuilder,
