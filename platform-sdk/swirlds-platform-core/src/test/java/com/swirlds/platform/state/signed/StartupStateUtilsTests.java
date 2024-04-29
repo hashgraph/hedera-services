@@ -149,12 +149,7 @@ class StartupStateUtilsTests {
         final PlatformContext platformContext = buildContext(false);
 
         final SignedState loadedState = StartupStateUtils.loadStateFile(
-                        platformContext,
-                        TestRecycleBin.getInstance(),
-                        selfId,
-                        mainClassName,
-                        swirldName,
-                        new BasicSoftwareVersion(1))
+                        platformContext, selfId, mainClassName, swirldName, new BasicSoftwareVersion(1))
                 .getNullable();
 
         assertNull(loadedState);
@@ -176,12 +171,7 @@ class StartupStateUtilsTests {
         }
 
         final SignedState loadedState = StartupStateUtils.loadStateFile(
-                        platformContext,
-                        TestRecycleBin.getInstance(),
-                        selfId,
-                        mainClassName,
-                        swirldName,
-                        new BasicSoftwareVersion(1))
+                        platformContext, selfId, mainClassName, swirldName, new BasicSoftwareVersion(1))
                 .get();
 
         loadedState.getState().throwIfImmutable();
@@ -207,12 +197,7 @@ class StartupStateUtilsTests {
         }
 
         assertThrows(SignedStateLoadingException.class, () -> StartupStateUtils.loadStateFile(
-                        platformContext,
-                        TestRecycleBin.getInstance(),
-                        selfId,
-                        mainClassName,
-                        swirldName,
-                        new BasicSoftwareVersion(1))
+                        platformContext, selfId, mainClassName, swirldName, new BasicSoftwareVersion(1))
                 .get());
     }
 
@@ -249,7 +234,7 @@ class StartupStateUtilsTests {
                 .recycle(any());
 
         final SignedState loadedState = StartupStateUtils.loadStateFile(
-                        platformContext, recycleBin, selfId, mainClassName, swirldName, new BasicSoftwareVersion(1))
+                        platformContext, selfId, mainClassName, swirldName, new BasicSoftwareVersion(1))
                 .getNullable();
 
         if (latestUncorruptedState != null) {

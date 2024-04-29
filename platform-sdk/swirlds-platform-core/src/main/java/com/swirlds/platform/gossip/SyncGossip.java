@@ -95,7 +95,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -134,7 +133,20 @@ public class SyncGossip implements ConnectionTracker, Gossip {
     private final SyncManagerImpl syncManager;
     private final ReconnectThrottle reconnectThrottle;
     private final ReconnectMetrics reconnectMetrics;
-    private final AtomicReference<PlatformStatus> currentPlatformStatus;
+    //    protected final PlatformContext platformContext; TODO
+    //    protected final AddressBook addressBook;
+    //    protected final NodeId selfId;
+    //    protected final NetworkTopology topology;
+    //    protected final NetworkMetrics networkMetrics;
+    //    protected final ReconnectHelper reconnectHelper;
+    //    protected final StaticConnectionManagers connectionManagers;
+    //    protected final FallenBehindManagerImpl fallenBehindManager;
+    //    protected final SyncManagerImpl syncManager;
+    //    protected final ReconnectThrottle reconnectThrottle;
+    //    protected final ReconnectMetrics reconnectMetrics;
+
+    protected final StatusActionSubmitter statusActionSubmitter;
+    protected final Supplier<PlatformStatus> platformStatusSupplier;
 
     private final List<Startable> thingsToStart = new ArrayList<>();
 
@@ -160,7 +172,8 @@ public class SyncGossip implements ConnectionTracker, Gossip {
      * @param intakeQueueSizeSupplier       a supplier for the size of the event intake queue
      * @param swirldStateManager            manages the mutable state
      * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
-     * @param currentPlatformStatus         holds the current platform status
+     * @param statusActionSubmitter         submits status actions
+     * @param platformStatusSupplier        provides the current platform status
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      * @param intakeEventCounter            keeps track of the number of events in the intake pipeline from each peer
@@ -177,18 +190,21 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             @NonNull final LongSupplier intakeQueueSizeSupplier,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final Supplier<ReservedSignedState> latestCompleteState,
-            @NonNull final AtomicReference<PlatformStatus> currentPlatformStatus,
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
+            @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect,
-            @NonNull final IntakeEventCounter intakeEventCounter,
-            @NonNull final StatusActionSubmitter statusActionSubmitter) {
+            @NonNull final IntakeEventCounter intakeEventCounter) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
-        this.currentPlatformStatus = Objects.requireNonNull(currentPlatformStatus);
+
         this.threadManager = Objects.requireNonNull(threadManager);
 
         inOrderLinker = new GossipLinker(platformContext, intakeEventCounter);
         shadowgraph = new Shadowgraph(platformContext, addressBook, intakeEventCounter);
+
+        this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
+        this.platformStatusSupplier = Objects.requireNonNull(platformStatusSupplier);
 
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
 
@@ -317,6 +333,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 intakeQueueSizeSupplier,
                 latestCompleteState,
                 syncMetrics,
+                platformStatusSupplier,
                 hangingThreadDuration,
                 protocolConfig,
                 reconnectConfig,
@@ -333,10 +350,12 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             final LongSupplier intakeQueueSizeSupplier,
             final Supplier<ReservedSignedState> getLatestCompleteState,
             final SyncMetrics syncMetrics,
+            final Supplier<PlatformStatus> platformStatusSupplier,
             final Duration hangingThreadDuration,
             final ProtocolConfig protocolConfig,
             final ReconnectConfig reconnectConfig,
             final EventConfig eventConfig) {
+
         final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
                 syncShadowgraphSynchronizer,
@@ -346,7 +365,8 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 () -> intakeQueueSizeSupplier.getAsLong() >= eventConfig.eventIntakeQueueThrottleSize(),
                 Duration.ZERO,
                 syncMetrics,
-                currentPlatformStatus::get);
+                platformStatusSupplier);
+
         final ProtocolFactory reconnectProtocolFactory = new ReconnectProtocolFactory(
                 platformContext,
                 threadManager,
@@ -357,8 +377,9 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 reconnectController,
                 new DefaultSignedStateValidator(platformContext),
                 fallenBehindManager,
-                currentPlatformStatus::get,
+                platformStatusSupplier,
                 platformContext.getConfiguration());
+
         final ProtocolFactory heartbeatProtocolFactory = new HeartbeatProtocolFactory(
                 Duration.ofMillis(syncConfig.syncProtocolHeartbeatPeriod()), networkMetrics, platformContext.getTime());
         final VersionCompareHandshake versionCompareHandshake =

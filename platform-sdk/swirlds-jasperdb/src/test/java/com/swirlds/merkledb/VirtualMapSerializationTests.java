@@ -31,7 +31,7 @@ import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.route.MerkleRoute;
@@ -76,7 +76,7 @@ class VirtualMapSerializationTests {
             throws IOException {
         // The tests below create maps with identical names. They would conflict with each other in the default
         // MerkleDb instance, so let's use a new database location for every map
-        final Path defaultVirtualMapPath = TemporaryFileBuilder.buildTemporaryFile("merkledb-source");
+        final Path defaultVirtualMapPath = LegacyTemporaryFileBuilder.buildTemporaryFile("merkledb-source");
         MerkleDb.setDefaultPath(defaultVirtualMapPath);
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig =
                 new MerkleDbTableConfig<>(
@@ -243,7 +243,7 @@ class VirtualMapSerializationTests {
     private void testMapSerialization(final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> map)
             throws IOException {
 
-        final Path savedStateDirectory = TemporaryFileBuilder.buildTemporaryDirectory("saved-state");
+        final Path savedStateDirectory = LegacyTemporaryFileBuilder.buildTemporaryDirectory("saved-state");
 
         final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
         final MerkleDataOutputStream out = new MerkleDataOutputStream(byteOut);
@@ -259,7 +259,7 @@ class VirtualMapSerializationTests {
         assertTrue(filesInDirectory.size() > 0, "there should be a non-zero number of files created");
 
         // Change default MerkleDb path, so data sources are restored into a different DB instance
-        final Path restoredDbDirectory = TemporaryFileBuilder.buildTemporaryDirectory("merkledb-restored");
+        final Path restoredDbDirectory = LegacyTemporaryFileBuilder.buildTemporaryDirectory("merkledb-restored");
         MerkleDb.setDefaultPath(restoredDbDirectory);
 
         final MerkleDataInputStream in = new MerkleDataInputStream(new ByteArrayInputStream(byteOut.toByteArray()));

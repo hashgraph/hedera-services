@@ -23,7 +23,7 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.config.CryptoConfig;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -121,7 +121,7 @@ public abstract class BaseBench {
             benchDir = Files.createDirectories(Path.of(data).resolve(benchmarkName()));
         }
 
-        TemporaryFileBuilder.overrideTemporaryFileLocation(benchDir.resolve("tmp"));
+        LegacyTemporaryFileBuilder.overrideTemporaryFileLocation(benchDir.resolve("tmp"));
 
         try {
             final ConstructableRegistry registry = ConstructableRegistry.getInstance();

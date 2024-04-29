@@ -16,8 +16,7 @@
 
 package com.hedera.node.app.hapi.utils.ethereum;
 
-import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.FOUNDRY_DETERMINISTIC_DEPLOYER_GAS_PRICE_MULTIPLIER;
-import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.FOUNDRY_DETERMINISTIC_DEPLOYER_TRANSACTION;
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.DETERMINISTIC_DEPLOYER_TRANSACTION;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -81,6 +80,10 @@ class EthTxDataTest {
             "f8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222";
     // v = 27
 
+    private static final long TINYBAR_GAS_PRICE = 100L;
+
+    private static final int DETERMINISTIC_DEPLOYER_GAS_PRICE_MULTIPLIER = 100;
+
     @Test
     void detectsMissingCallData() {
         final var subject = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0));
@@ -111,9 +114,10 @@ class EthTxDataTest {
     @Test
     void effectiveOfferedGasPriceIsNominalWhenReasonable() {
         final var subject = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0));
-        final var nominal =
-                subject.getMaxGasAsBigInteger().divide(WEIBARS_TO_TINYBARS).longValueExact();
-        assertEquals(nominal, subject.effectiveOfferedGasPriceInTinybars());
+        final var nominal = subject.getMaxGasAsBigInteger(TINYBAR_GAS_PRICE)
+                .divide(WEIBARS_TO_TINYBARS)
+                .longValueExact();
+        assertEquals(nominal, subject.effectiveOfferedGasPriceInTinybars(TINYBAR_GAS_PRICE));
     }
 
     @Test
@@ -532,19 +536,20 @@ class EthTxDataTest {
                         oneByte,
                         oneByte,
                         oneByte);
-                assertTrue(testTransaction.getMaxGasAsBigInteger().compareTo(BigInteger.ZERO) > 0);
+                assertTrue(
+                        testTransaction.getMaxGasAsBigInteger(TINYBAR_GAS_PRICE).compareTo(BigInteger.ZERO) > 0);
             }
         }
     }
 
     @Test
-    void maxGasForFoundryDeterministicDeployerIsAsExpected() {
+    void maxGasForDeterministicDeployerIsAsExpected() {
         final var oneByte = new byte[] {1};
         // 45 tinybar as weibar
         final var smallGasPrice = Hex.decode("68c6171400");
         final var type = EthTransactionType.LEGACY_ETHEREUM;
         final EthTxData testTransaction = new EthTxData(
-                FOUNDRY_DETERMINISTIC_DEPLOYER_TRANSACTION,
+                DETERMINISTIC_DEPLOYER_TRANSACTION,
                 type,
                 oneByte,
                 1,
@@ -561,9 +566,9 @@ class EthTxDataTest {
                 oneByte,
                 oneByte);
         assertTrue(testTransaction
-                        .getMaxGasAsBigInteger()
+                        .getMaxGasAsBigInteger(TINYBAR_GAS_PRICE)
                         .compareTo(BigInteger.valueOf(45)
-                                .multiply(BigInteger.valueOf(FOUNDRY_DETERMINISTIC_DEPLOYER_GAS_PRICE_MULTIPLIER))
+                                .multiply(BigInteger.valueOf(DETERMINISTIC_DEPLOYER_GAS_PRICE_MULTIPLIER))
                                 .multiply(WEIBARS_TO_TINYBARS))
                 == 0);
     }

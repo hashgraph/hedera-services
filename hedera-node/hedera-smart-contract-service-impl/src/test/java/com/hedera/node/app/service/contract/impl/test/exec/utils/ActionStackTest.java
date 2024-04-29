@@ -59,12 +59,14 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionStack;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionsHelper;
+import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -93,6 +95,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ActionStackTest {
     @Mock
     private Account account;
+
+    @Mock
+    private HederaEvmAccount evmAccount;
 
     @Mock
     private Operation operation;
@@ -414,7 +419,7 @@ class ActionStackTest {
         final var gasUsed = REMAINING_GAS / 3;
         given(parentFrame.getRemainingGas()).willReturn(REMAINING_GAS - gasUsed);
         given(parentFrame.getOutputData()).willReturn(pbjToTuweniBytes(OUTPUT_DATA));
-        givenUnresolvableEvmAddress();
+        given(parentFrame.getWorldUpdater()).willReturn(worldUpdater);
 
         final var wrappedAction = new ActionWrapper(LAZY_CREATE_ACTION);
         allActions.add(wrappedAction);
@@ -426,7 +431,8 @@ class ActionStackTest {
         assertEquals(wrappedAction, allActions.get(0));
         final var finalAction = allActions.get(0).get();
         assertEquals(gasUsed, finalAction.gasUsed());
-        assertEquals(null, finalAction.recipientAccount());
+        assertNull(finalAction.recipientAccount());
+        assertEquals(tuweniToPbjBytes(EIP_1014_ADDRESS), finalAction.targetedAddress());
         assertTrue(actionsStack.isEmpty());
     }
 
@@ -474,7 +480,7 @@ class ActionStackTest {
 
     @Test
     void tracksTopLevelCreationAsExpected() {
-        givenResolvableEvmAddress();
+        givenPresentEvmAddress();
 
         given(parentFrame.getType()).willReturn(CONTRACT_CREATION);
         given(parentFrame.getOriginatorAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
@@ -504,7 +510,7 @@ class ActionStackTest {
 
     @Test
     void tracksTopLevelCallToEoaAsExpected() {
-        givenResolvableEvmAddress();
+        givenPresentEvmAddress();
 
         given(worldUpdater.get(EIP_1014_ADDRESS)).willReturn(account);
         given(parentFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
@@ -599,11 +605,15 @@ class ActionStackTest {
 
     private void givenResolvableEvmAddress() {
         given(parentFrame.getWorldUpdater()).willReturn(worldUpdater);
-        given(worldUpdater.getHederaContractId(EIP_1014_ADDRESS)).willReturn(CALLED_CONTRACT_ID);
+        given(worldUpdater.getHederaAccount(EIP_1014_ADDRESS)).willReturn(evmAccount);
+        given(evmAccount.hederaId())
+                .willReturn(AccountID.newBuilder()
+                        .accountNum(CALLED_CONTRACT_ID.contractNumOrThrow())
+                        .build());
     }
 
-    private void givenUnresolvableEvmAddress() {
+    private void givenPresentEvmAddress() {
         given(parentFrame.getWorldUpdater()).willReturn(worldUpdater);
-        given(worldUpdater.getHederaContractId(EIP_1014_ADDRESS)).willReturn(null);
+        given(worldUpdater.getHederaContractId(EIP_1014_ADDRESS)).willReturn(CALLED_CONTRACT_ID);
     }
 }

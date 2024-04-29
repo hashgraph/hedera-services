@@ -28,7 +28,7 @@ import com.swirlds.platform.reconnect.ReconnectProtocol;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
-import com.swirlds.platform.system.status.PlatformStatusGetter;
+import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Objects;
@@ -51,7 +51,7 @@ public class ReconnectProtocolFactory implements ProtocolFactory {
     /**
      * Provides the platform status.
      */
-    private final PlatformStatusGetter platformStatusGetter;
+    private final Supplier<PlatformStatus> platformStatusSupplier;
 
     private final Configuration configuration;
 
@@ -68,7 +68,7 @@ public class ReconnectProtocolFactory implements ProtocolFactory {
             @NonNull final ReconnectController reconnectController,
             @NonNull final SignedStateValidator validator,
             @NonNull final FallenBehindManager fallenBehindManager,
-            @NonNull final PlatformStatusGetter platformStatusGetter,
+            final Supplier<PlatformStatus> platformStatusSupplier,
             @NonNull final Configuration configuration) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
@@ -80,7 +80,7 @@ public class ReconnectProtocolFactory implements ProtocolFactory {
         this.reconnectController = Objects.requireNonNull(reconnectController);
         this.validator = Objects.requireNonNull(validator);
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
-        this.platformStatusGetter = Objects.requireNonNull(platformStatusGetter);
+        this.platformStatusSupplier = Objects.requireNonNull(platformStatusSupplier);
         this.configuration = Objects.requireNonNull(configuration);
         this.time = Objects.requireNonNull(platformContext.getTime());
     }
@@ -102,7 +102,7 @@ public class ReconnectProtocolFactory implements ProtocolFactory {
                 reconnectController,
                 validator,
                 fallenBehindManager,
-                platformStatusGetter,
+                platformStatusSupplier,
                 configuration,
                 time);
     }
