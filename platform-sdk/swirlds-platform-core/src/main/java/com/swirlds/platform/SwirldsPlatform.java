@@ -38,7 +38,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.notification.NotificationEngine;
@@ -288,14 +287,11 @@ public class SwirldsPlatform implements Platform {
         final SoftwareVersion appVersion = blocks.appVersion();
         modifyStateForBirthRoundMigration(initialState, ancientMode, appVersion);
 
-        final RecycleBin recycleBin = blocks.recycleBin();
-
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
             try {
                 // This method is a no-op if we have already completed birth round migration or if we are at genesis.
                 migratePcesToBirthRoundMode(
                         platformContext,
-                        recycleBin,
                         blocks.selfId(),
                         initialState.getRound(),
                         initialState.getState().getPlatformState().getLowestJudgeGenerationBeforeBirthRoundMode());
@@ -327,7 +323,7 @@ public class SwirldsPlatform implements Platform {
 
         platformWiring = thingsToStart.add(new PlatformWiring(platformContext, blocks.applicationCallbacks()));
 
-        thingsToStart.add(Objects.requireNonNull(recycleBin));
+        thingsToStart.add(platformContext.getFileSystemManager());
 
         metrics = platformContext.getMetrics();
 
@@ -353,13 +349,7 @@ public class SwirldsPlatform implements Platform {
 
         final String swirldName = blocks.swirldName();
         StartupStateUtils.doRecoveryCleanup(
-                platformContext,
-                recycleBin,
-                selfId,
-                swirldName,
-                actualMainClassName,
-                epochHash,
-                initialState.getRound());
+                platformContext, selfId, swirldName, actualMainClassName, epochHash, initialState.getRound());
 
         // Only validate preconsensus signature transactions if we are not recovering from an ISS.
         // ISS round == null means we haven't observed an ISS yet.

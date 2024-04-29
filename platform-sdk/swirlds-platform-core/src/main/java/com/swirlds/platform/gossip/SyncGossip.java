@@ -372,7 +372,7 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         final HashCompareHandshake hashCompareHandshake =
                 new HashCompareHandshake(epochHash, !protocolConfig.tolerateMismatchedEpochHash());
         final VersionCompareHandshake versionCompareHandshake =
-                new VersionCompareHandshake(appVersion, !protocolConfig.tolerateMismatchedEpochHash());
+                new VersionCompareHandshake(appVersion, !protocolConfig.tolerateMismatchedVersion());
         final List<ProtocolRunnable> handshakeProtocols = List.of(hashCompareHandshake, versionCompareHandshake);
         for (final NodeId otherId : topology.getNeighbors()) {
             syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
