@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.wiring;
 
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.proto.event.StateSignaturePayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

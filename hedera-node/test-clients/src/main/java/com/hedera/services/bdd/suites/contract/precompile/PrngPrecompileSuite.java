@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -60,8 +61,10 @@ public class PrngPrecompileSuite extends HapiSuite {
     private static final String THE_GRACEFULLY_FAILING_PRNG_CONTRACT = "GracefullyFailingPrng";
     private static final String THE_PRNG_CONTRACT = "PrngSystemContract";
     private static final String BOB = "bob";
+    private static final String TX = "tx";
 
     private static final String GET_SEED = "getPseudorandomSeed";
+    private static final String GET_SEED_PAYABLE = "getPseudorandomSeedPayable";
     private static final String EXPLICIT_LARGE_PARAMS =
             "d83bf9a10000000000000000000000d83bf9a10000d83bf9a1000d83bf9a10000000d83bf9a108000d83bf9a100000d83bf9a1000000"
                     + "0000d83bf9a100000d83bf9a1000000d83bf9a100339000000d83bf9a1000000000123456789012345678901234"
@@ -273,6 +276,26 @@ public class PrngPrecompileSuite extends HapiSuite {
                                         .resultViaFunctionName(
                                                 GET_SEED, prng, isRandomResult(new Object[] {new byte[32]}))))
                         .logged());
+    }
+
+    @HapiTest
+    final HapiSpec prngPrecompileInvalidFeeSubmitted() {
+        final var TX = "TX";
+        return defaultHapiSpec(
+                        "prngPrecompileInvalidFeeSubmitted",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+                .given(
+                        uploadInitCode(THE_PRNG_CONTRACT),
+                        contractCreate(THE_PRNG_CONTRACT).balance(ONE_HBAR))
+                .when(contractCall(THE_PRNG_CONTRACT, GET_SEED_PAYABLE)
+                        .gas(GAS_TO_OFFER)
+                        .via(TX)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
+                .then(getTxnRecord(TX)
+                        .andAllChildRecords()
+                        .hasChildRecordCount(1)
+                        .hasChildRecords(recordWith().status(INVALID_FEE_SUBMITTED)));
     }
 
     @HapiTest

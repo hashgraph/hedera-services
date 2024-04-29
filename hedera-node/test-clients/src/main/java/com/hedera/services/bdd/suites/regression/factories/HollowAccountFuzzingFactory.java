@@ -101,6 +101,7 @@ public class HollowAccountFuzzingFactory {
                     TokenAccountRegistryRel.class, spec.registry(), new RandomSelector());
             final var keys = new RegistrySourcedNameProvider<>(Key.class, spec.registry(), new RandomSelector());
             var contracts = new RegistrySourcedNameProvider<>(ContractID.class, spec.registry(), new RandomSelector());
+            final var emptyCustomOutcomes = new ResponseCodeEnum[] {};
 
             return new BiasedDelegatingProvider()
                     .shouldLogNormalFlow(true)
@@ -121,10 +122,12 @@ public class HollowAccountFuzzingFactory {
                     // This token create op uses normal accounts to create the tokens because token create will
                     // fail if we use hollow account and not set any tokens in registry but we need them for association
                     // expects success
-                    .withOp(new RandomToken(keys, tokens, validAccounts), intPropOrElse("randomToken.bias", 0, props))
+                    .withOp(
+                            new RandomToken(tokens, validAccounts, validAccounts),
+                            intPropOrElse("randomToken.bias", 0, props))
                     // expects invalid signature
                     .withOp(
-                            new RandomTokenHollowAccount(keys, tokens, hollowAccounts, UNIQUE_PAYER_ACCOUNT),
+                            new RandomTokenHollowAccount(tokens, hollowAccounts, UNIQUE_PAYER_ACCOUNT),
                             intPropOrElse("randomTokenHollow.bias", 0, props))
                     // expects invalid signature
                     .withOp(
@@ -151,7 +154,7 @@ public class HollowAccountFuzzingFactory {
                                             "randomContract.ceilingNum", RandomContract.DEFAULT_CEILING_NUM, props)),
                             intPropOrElse("randomContract.bias", 0, props))
                     .withOp(
-                            new RandomContractDeletion(hollowAccounts, contracts),
+                            new RandomContractDeletion(hollowAccounts, contracts, emptyCustomOutcomes),
                             intPropOrElse("randomContractDeletion.bias", 0, props));
         };
     }

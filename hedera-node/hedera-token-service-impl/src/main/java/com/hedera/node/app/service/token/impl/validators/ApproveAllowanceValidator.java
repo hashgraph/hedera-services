@@ -128,6 +128,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
         for (final var allowance : tokenAllowances) {
             final var owner = allowance.owner();
             final var spender = allowance.spenderOrThrow();
+            // pureChecks() ensures that tokenId is not null
             final var token = tokenStore.get(allowance.tokenIdOrThrow());
             // check if token exists
             validateTrue(token != null, INVALID_TOKEN_ID);
@@ -168,6 +169,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
         for (final var allowance : nftAllowancesList) {
             final var owner = allowance.owner();
             final var spender = allowance.spenderOrThrow();
+            // pureChecks() ensures that tokenId is not null
             final var tokenId = allowance.tokenIdOrThrow();
             final var serialNums = allowance.serialNumbers();
 
