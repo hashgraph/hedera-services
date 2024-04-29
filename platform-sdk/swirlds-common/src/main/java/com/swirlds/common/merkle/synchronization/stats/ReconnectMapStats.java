@@ -35,21 +35,27 @@ public interface ReconnectMapStats {
      * * a query response to the teacher, <br>
      * * a request from the learner, <br>
      * * a response from the teacher.
+     *
+     * @param fromTeacher a transfer of data from a teacher to the learner (e.g. a lesson, or a response)
+     * @param fromLearner a transfer of data from the learner to its teacher (e.g. a query response, or a request)
      */
-    default void incrementTransfers() {}
+    default void incrementTransfers(int fromTeacher, int fromLearner) {}
 
     /**
      * Gather stats about internal nodes transfers.
-     * @param num the number of hashes of internal nodes transferred
-     * @param cleanNum the number of hashes of internal nodes transferred unnecessarily because they were clean
+     * @param hashNum the number of hashes of internal nodes transferred
+     * @param cleanHashNum the number of hashes transferred unnecessarily because they were clean
+     * @param dataNum the number of data payloads of internal nodes transferred (for non-VirtualMap trees)
+     * @param cleanDataNum the number of data payloads transferred unnecessarily because they were clean
      */
-    default void incrementInternalNodes(int num, int cleanNum) {}
+    default void incrementInternalNodes(int hashNum, int cleanHashNum, int dataNum, int cleanDataNum) {}
 
     /**
      * Gather stats about leaf nodes transfers.
      * @param hashNum the number of hashes of leaf nodes transferred
+     * @param cleanHashNum the number of hashes transferred unnecessarily because they were clean
      * @param dataNum the number of data payloads of leaf nodes transferred
      * @param cleanDataNum the number of data payloads transferred unnecessarily because they were clean
      */
-    default void incrementLeafNodes(int hashNum, int dataNum, int cleanDataNum) {}
+    default void incrementLeafNodes(int hashNum, int cleanHashNum, int dataNum, int cleanDataNum) {}
 }
