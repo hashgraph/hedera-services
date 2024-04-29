@@ -284,6 +284,8 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
                                                                     UPDATE_MEMO,
                                                                     spec.registry()
                                                                             .getAccountID(UPDATED_TREASURY),
+                                                                    spec.registry()
+                                                                            .getKey(CONTRACT_KEY),
                                                                     expirySecond,
                                                                     targetLedgerId.get()))))));
                 }));
@@ -347,6 +349,11 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, FUNGIBLE_TOKEN_NAME))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
+                        newKeyNamed(CONTRACT_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_INFO_CONTRACT))),
+                        tokenUpdate(FUNGIBLE_TOKEN_NAME)
+                                .adminKey(CONTRACT_KEY)
+                                .signedByPayerAnd(ADMIN_KEY, CONTRACT_KEY),
+                        cryptoUpdate(UPDATED_TREASURY).key(CONTRACT_KEY),
                         contractCall(
                                         TOKEN_INFO_CONTRACT,
                                         UPDATE_INFORMATION_FOR_FUNGIBLE_TOKEN_AND_GET_LATEST_INFORMATION,
@@ -393,6 +400,8 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
                                                                     UPDATE_MEMO,
                                                                     spec.registry()
                                                                             .getAccountID(UPDATED_TREASURY),
+                                                                    spec.registry()
+                                                                            .getKey(CONTRACT_KEY),
                                                                     expirySecond,
                                                                     targetLedgerId.get()))))));
                 }));
@@ -466,6 +475,11 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
                                 .fee(ONE_HBAR))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
+                        newKeyNamed(CONTRACT_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_INFO_CONTRACT))),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN_NAME)
+                                .adminKey(CONTRACT_KEY)
+                                .signedByPayerAnd(ADMIN_KEY, CONTRACT_KEY),
+                        cryptoUpdate(UPDATED_TREASURY).key(CONTRACT_KEY),
                         contractCall(
                                         TOKEN_INFO_CONTRACT,
                                         UPDATE_INFORMATION_FOR_NON_FUNGIBLE_TOKEN_AND_GET_LATEST_INFORMATION,
@@ -514,6 +528,8 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
                                                                     UPDATE_MEMO,
                                                                     spec.registry()
                                                                             .getAccountID(UPDATED_TREASURY),
+                                                                    spec.registry()
+                                                                            .getKey(CONTRACT_KEY),
                                                                     expirySecond,
                                                                     targetLedgerId.get()))
                                                             .withNftTokenInfo(nftTokenInfo)))));
@@ -553,6 +569,10 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, FUNGIBLE_TOKEN_NAME))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
+                        newKeyNamed(CONTRACT_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_INFO_CONTRACT))),
+                        tokenUpdate(FUNGIBLE_TOKEN_NAME)
+                                .adminKey(CONTRACT_KEY)
+                                .signedByPayerAnd(MULTI_KEY, CONTRACT_KEY),
                         contractCall(
                                         TOKEN_INFO_CONTRACT,
                                         UPDATE_AND_GET_TOKEN_KEYS_INFO_TXN,
@@ -670,6 +690,7 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
             final String symbol,
             final String memo,
             final AccountID treasury,
+            final Key adminKey,
             final long expirySecond,
             ByteString ledgerId) {
         final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
@@ -691,7 +712,7 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
                 .setTotalSupply(500L)
                 .setMaxSupply(MAX_SUPPLY)
                 .addAllCustomFees(customFees)
-                .setAdminKey(getTokenKeyFromSpec(spec, TokenKeyType.ADMIN_KEY))
+                .setAdminKey(adminKey)
                 .setKycKey(getTokenKeyFromSpec(spec, TokenKeyType.KYC_KEY))
                 .setFreezeKey(getTokenKeyFromSpec(spec, TokenKeyType.FREEZE_KEY))
                 .setWipeKey(getTokenKeyFromSpec(spec, TokenKeyType.WIPE_KEY))
@@ -747,6 +768,7 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
             final String symbol,
             final String memo,
             final AccountID treasury,
+            final Key adminKey,
             final long expirySecond,
             final ByteString ledgerId) {
         final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
@@ -766,7 +788,7 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
                 .setTotalSupply(1L)
                 .setMaxSupply(10L)
                 .addAllCustomFees(getCustomFeeForNFT(spec))
-                .setAdminKey(getTokenKeyFromSpec(spec, TokenKeyType.ADMIN_KEY))
+                .setAdminKey(adminKey)
                 .setKycKey(getTokenKeyFromSpec(spec, TokenKeyType.KYC_KEY))
                 .setFreezeKey(getTokenKeyFromSpec(spec, TokenKeyType.FREEZE_KEY))
                 .setWipeKey(getTokenKeyFromSpec(spec, TokenKeyType.WIPE_KEY))
