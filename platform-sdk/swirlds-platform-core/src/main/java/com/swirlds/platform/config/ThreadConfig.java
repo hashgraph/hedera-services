@@ -16,26 +16,13 @@
 
 package com.swirlds.platform.config;
 
-import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
-import java.time.Duration;
 
 /**
  * Thread related config
  *
- * @param logStackTracePauseDuration If a thread takes longer than this duration to {@link StoppableThread#pause()}, log
- *                                   a stack trace for debugging purposes. A value of {@link Duration#ZERO} means never
- *                                   log.
- * @param threadPrioritySync         priority for threads that sync (in SyncCaller, SyncListener, SyncServer)
- * @param threadPriorityNonSync      priority for threads that don't sync (all but SyncCaller, SyncListener,SyncServer)
- * @param threadDumpPeriodMs         period of generating thread dump file in the unit of milliseconds
- * @param threadDumpLogDir           thread dump files will be generated in this directory
+ * @param threadPrioritySync priority for threads that sync (in SyncCaller, SyncListener, SyncServer)
  */
 @ConfigData("thread")
-public record ThreadConfig(
-        @ConfigProperty(defaultValue = "5s") Duration logStackTracePauseDuration,
-        @ConfigProperty(defaultValue = "5") int threadPrioritySync,
-        @ConfigProperty(defaultValue = "5") int threadPriorityNonSync,
-        @ConfigProperty(defaultValue = "0") long threadDumpPeriodMs,
-        @ConfigProperty(defaultValue = "data/threadDump") String threadDumpLogDir) {}
+public record ThreadConfig(@ConfigProperty(defaultValue = "5") int threadPrioritySync) {}

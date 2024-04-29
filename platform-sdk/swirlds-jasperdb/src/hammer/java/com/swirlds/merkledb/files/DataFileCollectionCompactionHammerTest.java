@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.merkledb.collections.LongListHeap;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeDataSerializer;
@@ -67,7 +67,8 @@ class DataFileCollectionCompactionHammerTest {
     @MethodSource("provideForBenchmark")
     @Tags({@Tag("Speed")})
     void benchmark(int numFiles, int maxEntriesPerFile) throws IOException {
-        final Path tempFileDir = TemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionCompactionHammerTest");
+        final Path tempFileDir =
+                LegacyTemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionCompactionHammerTest");
         assertDoesNotThrow(() -> {
             final LongListHeap index = new LongListHeap();
             final var serializer = new ExampleFixedSizeDataSerializer();
@@ -125,7 +126,8 @@ class DataFileCollectionCompactionHammerTest {
     @SuppressWarnings("unchecked")
     @Test
     void hammer() throws IOException, InterruptedException, ExecutionException {
-        final Path tempFileDir = TemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionCompactionHammerTest");
+        final Path tempFileDir =
+                LegacyTemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionCompactionHammerTest");
         final LongListHeap index = new LongListHeap();
         final var serializer = new ExampleFixedSizeDataSerializer();
         String storeName = "hammer";

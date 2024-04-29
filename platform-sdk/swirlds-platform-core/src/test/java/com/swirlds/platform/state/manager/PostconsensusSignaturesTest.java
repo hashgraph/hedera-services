@@ -21,6 +21,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.config.StateConfig;
@@ -31,7 +32,6 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
-import com.swirlds.proto.event.StateSignaturePayload;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
