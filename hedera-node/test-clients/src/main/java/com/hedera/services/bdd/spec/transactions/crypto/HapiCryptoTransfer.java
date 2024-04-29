@@ -87,6 +87,10 @@ import org.apache.logging.log4j.Logger;
 public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     static final Logger log = LogManager.getLogger(HapiCryptoTransfer.class);
 
+    private String token;
+
+    private String PARTITION_TOKEN_OPERATION_MODE;
+
     private static final List<TokenMovement> MISSING_TOKEN_AWARE_PROVIDERS = Collections.emptyList();
     private static final Function<HapiSpec, TransferList> MISSING_HBAR_ONLY_PROVIDER = null;
 
@@ -222,7 +226,9 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
     public HapiCryptoTransfer(
             final String account, final String fromPartitionToken, final String toPartitionToken, final long amount) {
-        appendedPartitionFromTo =
+        this.token = fromPartitionToken;
+        this.PARTITION_TOKEN_OPERATION_MODE = "PartitionMove";
+        this.appendedPartitionFromTo =
                 Optional.of(Pair.of(new String[] {account, fromPartitionToken, toPartitionToken}, amount));
     }
 
@@ -246,6 +252,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     protected Function<HapiSpec, List<Key>> variableDefaultSigners() {
         if (hbarOnlyProvider != MISSING_HBAR_ONLY_PROVIDER) {
             return hbarOnlyVariableDefaultSigners();
+        } else if (this.PARTITION_TOKEN_OPERATION_MODE == "PartitionMove") {
+            return partitionMoveSignatures();
         } else {
             return tokenAwareVariableDefaultSigners();
         }
@@ -614,6 +622,14 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
                 }
             });
             return new ArrayList<>(partyKeys);
+        };
+    }
+
+    protected Function<HapiSpec, List<Key>> partitionMoveSignatures() {
+        return spec -> {
+            final List<Key> partyKeys = new ArrayList<>();
+            partyKeys.add(spec.registry().getPartitionMoveKey(this.token));
+            return partyKeys;
         };
     }
 
