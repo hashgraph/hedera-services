@@ -83,7 +83,7 @@ public class IterableStorageManager {
                 final var newFirstContractKey =
                         switch (StorageAccessType.getAccessType(access)) {
                             case UNKNOWN, READ_ONLY, UPDATE -> firstContractKey;
-                                // We might be removing the current first slot
+                                // We might be removing the head slot from the existing list
                             case REMOVAL -> removeAccessedValue(
                                     store,
                                     firstContractKey,
