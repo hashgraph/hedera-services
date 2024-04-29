@@ -21,6 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.PLATFORM_STATUS;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.logging.legacy.payload.PlatformStatusPayload;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
@@ -41,19 +42,14 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * The platform status state machine
- * <p>
- * NOTE: Processing of {@link PlatformStatusAction}s is not thread-safe. It is assumed that the caller will ensure that
- * only one thread is calling {@link #processStatusAction(PlatformStatusAction)} at a time.
+ * The default implementation of {@link StatusStateMachine}.
  */
-public class PlatformStatusStateMachine implements PlatformStatusGetter {
-    private static final Logger logger = LogManager.getLogger(PlatformStatusStateMachine.class);
+public class DefaultStatusStateMachine implements StatusStateMachine {
+    private static final Logger logger = LogManager.getLogger(DefaultStatusStateMachine.class);
 
     /**
      * A source of time
@@ -61,19 +57,9 @@ public class PlatformStatusStateMachine implements PlatformStatusGetter {
     private final Time time;
 
     /**
-     * Consumes any status changes
-     */
-    private final Consumer<PlatformStatus> statusChangeConsumer;
-
-    /**
      * The object containing the state machine logic for the current status
      */
     private PlatformStatusLogic currentStatusLogic;
-
-    /**
-     * The current platform status, to be accessed in a thread safe manner
-     */
-    private final AtomicReference<PlatformStatus> currentStatus;
 
     /**
      * The time at which the current status started
@@ -83,19 +69,12 @@ public class PlatformStatusStateMachine implements PlatformStatusGetter {
     /**
      * Constructor
      *
-     * @param time                 a source of time
-     * @param config               the platform status config
-     * @param statusChangeConsumer consumes any status changes
+     * @param context the platform context
      */
-    public PlatformStatusStateMachine(
-            @NonNull final Time time,
-            @NonNull final PlatformStatusConfig config,
-            @NonNull final Consumer<PlatformStatus> statusChangeConsumer) {
-
-        this.time = Objects.requireNonNull(time);
-        this.statusChangeConsumer = Objects.requireNonNull(statusChangeConsumer);
-        this.currentStatusLogic = new StartingUpStatusLogic(config);
-        this.currentStatus = new AtomicReference<>(currentStatusLogic.getStatus());
+    public DefaultStatusStateMachine(@NonNull final PlatformContext context) {
+        this.time = context.getTime();
+        this.currentStatusLogic =
+                new StartingUpStatusLogic(context.getConfiguration().getConfigData(PlatformStatusConfig.class));
         this.currentStatusStartTime = time.now();
     }
 
@@ -155,14 +134,16 @@ public class PlatformStatusStateMachine implements PlatformStatusGetter {
      *
      * @param action the action to process
      */
-    public void processStatusAction(@NonNull final PlatformStatusAction action) {
+    @Nullable
+    @Override
+    public PlatformStatus submitStatusAction(@NonNull final PlatformStatusAction action) {
         Objects.requireNonNull(action);
 
         final PlatformStatusLogic newLogic = getNewLogic(action);
 
         if (newLogic == null || newLogic == currentStatusLogic) {
             // if status didn't change, there isn't anything to do
-            return;
+            return null;
         }
 
         final String previousStatusName = currentStatusLogic.getStatus().name();
@@ -179,19 +160,19 @@ public class PlatformStatusStateMachine implements PlatformStatusGetter {
                 () -> new PlatformStatusPayload(statusChangeMessage, previousStatusName, newStatusName).toString());
 
         currentStatusLogic = newLogic;
-        currentStatus.set(currentStatusLogic.getStatus());
 
+        final PlatformStatus newStatus = currentStatusLogic.getStatus();
         currentStatusStartTime = time.now();
 
-        statusChangeConsumer.accept(newLogic.getStatus());
+        return newStatus;
     }
 
     /**
      * {@inheritDoc}
      */
+    @Nullable
     @Override
-    @NonNull
-    public PlatformStatus getCurrentStatus() {
-        return currentStatus.get();
+    public PlatformStatus heartbeat(@NonNull final Instant time) {
+        return submitStatusAction(new TimeElapsedAction(time));
     }
 }

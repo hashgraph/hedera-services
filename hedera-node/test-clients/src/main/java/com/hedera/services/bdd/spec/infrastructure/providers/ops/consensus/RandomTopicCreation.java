@@ -40,11 +40,16 @@ public class RandomTopicCreation implements OpProvider {
     private final AtomicInteger opNo = new AtomicInteger();
     private final EntityNameProvider<Key> keys;
     private final RegistrySourcedNameProvider<TopicID> topics;
+    private final ResponseCodeEnum[] customOutcomes;
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(INVALID_TOPIC_ID, TOPIC_EXPIRED);
 
-    public RandomTopicCreation(EntityNameProvider<Key> keys, RegistrySourcedNameProvider<TopicID> topics) {
+    public RandomTopicCreation(
+            EntityNameProvider<Key> keys,
+            RegistrySourcedNameProvider<TopicID> topics,
+            ResponseCodeEnum[] customOutcomes) {
         this.keys = keys;
         this.topics = topics;
+        this.customOutcomes = customOutcomes;
     }
 
     public RandomTopicCreation ceiling(int n) {
@@ -68,9 +73,8 @@ public class RandomTopicCreation implements OpProvider {
         var op = createTopic(newTopic)
                 .adminKeyName(key.get())
                 .submitKeyName(key.get())
-                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                .hasAnyPrecheck()
-                .hasKnownStatusFrom(permissibleOutcomes);
+                .hasPrecheckFrom(plus(STANDARD_PERMISSIBLE_PRECHECKS, customOutcomes))
+                .hasKnownStatusFrom(plus(permissibleOutcomes, customOutcomes));
 
         return Optional.of(op);
     }

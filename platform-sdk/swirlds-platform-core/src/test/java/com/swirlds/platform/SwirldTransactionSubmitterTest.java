@@ -22,23 +22,25 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.config.TransactionConfig_;
 import com.swirlds.platform.metrics.TransactionMetrics;
+import com.swirlds.platform.system.status.DefaultPlatformStatusNexus;
 import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.platform.system.status.PlatformStatusNexus;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.test.fixtures.event.TransactionUtils;
 import java.util.Random;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -48,13 +50,8 @@ class SwirldTransactionSubmitterTest {
 
     private Random random;
 
-    private PlatformStatus platformStatus;
-
     private SwirldTransactionSubmitter transactionSubmitter;
-
-    private static Stream<Arguments> zeroWeightParams() {
-        return Stream.of(Arguments.of(true), Arguments.of(false));
-    }
+    private PlatformStatusNexus statusNexus;
 
     @BeforeAll
     public static void staticSetup() throws ConstructableRegistryException {
@@ -64,23 +61,24 @@ class SwirldTransactionSubmitterTest {
     @BeforeEach
     void setup() {
         random = RandomUtils.getRandom();
-        platformStatus = PlatformStatus.ACTIVE;
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(TransactionConfig_.TRANSACTION_MAX_BYTES, 6144)
                 .getOrCreateConfig();
         transactionConfig = configuration.getConfigData(TransactionConfig.class);
 
-        transactionSubmitter = new SwirldTransactionSubmitter(
-                this::getPlatformStatus, transactionConfig, (t) -> true, mock(TransactionMetrics.class));
-    }
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+        statusNexus = new DefaultPlatformStatusNexus(platformContext);
 
-    private PlatformStatus getPlatformStatus() {
-        return platformStatus;
+        transactionSubmitter = new SwirldTransactionSubmitter(
+                statusNexus, transactionConfig, (t) -> true, mock(TransactionMetrics.class));
     }
 
     @ParameterizedTest
     @ValueSource(ints = {1, 1000, 6144, 6145, 8000})
     void testSwirldTransactionSize(final int contentSize) {
+        statusNexus.setCurrentStatus(PlatformStatus.ACTIVE);
+
         final byte[] nbyte = new byte[contentSize];
         random.nextBytes(nbyte);
         if (contentSize <= transactionConfig.transactionMaxBytes()) {
@@ -97,7 +95,7 @@ class SwirldTransactionSubmitterTest {
     @EnumSource(PlatformStatus.class)
     @DisplayName("Transaction denied when not ACTIVE")
     void testPlatformStatus(final PlatformStatus status) {
-        platformStatus = status;
+        statusNexus.setCurrentStatus(status);
         if (PlatformStatus.ACTIVE.equals(status)) {
             assertTrue(
                     transactionSubmitter.submitTransaction(TransactionUtils.randomSwirldTransaction(random)),

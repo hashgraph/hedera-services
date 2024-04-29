@@ -26,7 +26,7 @@ import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateF
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.logging.legacy.payload.SavedStateLoadedPayload;
@@ -63,7 +63,6 @@ public final class StartupStateUtils {
      * If necessary, perform cleanup in preparation for emergency recovery.
      *
      * @param platformContext     the platform context
-     * @param recycleBin          a utility for deleting files in a way that allows them to possibly be recovered
      * @param selfId              the ID of this node
      * @param swirldName          the name of this swirld
      * @param actualMainClassName the name of the app's SwirldMain class (may be a value provided by configuration)
@@ -73,7 +72,6 @@ public final class StartupStateUtils {
      */
     public static void doRecoveryCleanup(
             @NonNull final PlatformContext platformContext,
-            @NonNull final RecycleBin recycleBin,
             @NonNull final NodeId selfId,
             @NonNull final String swirldName,
             @NonNull final String actualMainClassName,
@@ -102,7 +100,7 @@ public final class StartupStateUtils {
                 .getSavedStateFiles(actualMainClassName, selfId, swirldName);
         for (final SavedStateInfo stateInfo : savedStateFiles) {
             if (stateInfo.metadata().round() > initialStateRound) {
-                recycleState(recycleBin, stateInfo);
+                recycleState(platformContext.getFileSystemManager(), stateInfo);
             }
         }
 
@@ -116,7 +114,6 @@ public final class StartupStateUtils {
      * if no valid state is found on disk.
      *
      * @param platformContext          the platform context
-     * @param recycleBin               the recycle bin
      * @param softwareVersion          the software version of the app
      * @param genesisStateBuilder      a supplier that can build a genesis state
      * @param mainClassName            the name of the app's SwirldMain class
@@ -131,7 +128,6 @@ public final class StartupStateUtils {
     @NonNull
     public static ReservedSignedState getInitialState(
             @NonNull final PlatformContext platformContext,
-            @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final Supplier<SwirldState> genesisStateBuilder,
             @NonNull final String mainClassName,
@@ -149,13 +145,7 @@ public final class StartupStateUtils {
         Objects.requireNonNull(emergencyRecoveryManager);
 
         final ReservedSignedState loadedState = StartupStateUtils.loadStateFile(
-                platformContext,
-                recycleBin,
-                selfId,
-                mainClassName,
-                swirldName,
-                softwareVersion,
-                emergencyRecoveryManager);
+                platformContext, selfId, mainClassName, swirldName, softwareVersion, emergencyRecoveryManager);
 
         try (loadedState) {
             if (loadedState.isNotNull()) {
@@ -180,7 +170,6 @@ public final class StartupStateUtils {
      * Looks at the states on disk, chooses one to load, and then loads the chosen state.
      *
      * @param platformContext          the platform context
-     * @param recycleBin               the recycle bin
      * @param selfId                   the ID of this node
      * @param mainClassName            the name of the main class
      * @param swirldName               the name of the swirld
@@ -193,7 +182,6 @@ public final class StartupStateUtils {
     @NonNull
     static ReservedSignedState loadStateFile(
             @NonNull final PlatformContext platformContext,
-            @NonNull final RecycleBin recycleBin,
             @NonNull final NodeId selfId,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
@@ -218,9 +206,9 @@ public final class StartupStateUtils {
         final ReservedSignedState state;
         if (emergencyStateRequired) {
             state = loadEmergencyState(
-                    platformContext, recycleBin, currentSoftwareVersion, savedStateFiles, emergencyRecoveryManager);
+                    platformContext, currentSoftwareVersion, savedStateFiles, emergencyRecoveryManager);
         } else {
-            state = loadLatestState(platformContext, recycleBin, currentSoftwareVersion, savedStateFiles);
+            state = loadLatestState(platformContext, currentSoftwareVersion, savedStateFiles);
         }
 
         return state;
@@ -274,7 +262,6 @@ public final class StartupStateUtils {
      * Load the latest state that is compatible with the emergency recovery file.
      *
      * @param platformContext          the platform context
-     * @param recycleBin               the recycle bin
      * @param currentSoftwareVersion   the current software version
      * @param savedStateFiles          the saved states to try
      * @param emergencyRecoveryManager the emergency recovery manager
@@ -283,7 +270,6 @@ public final class StartupStateUtils {
     @NonNull
     private static ReservedSignedState loadEmergencyState(
             @NonNull final PlatformContext platformContext,
-            @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @NonNull final List<SavedStateInfo> savedStateFiles,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager)
@@ -307,7 +293,7 @@ public final class StartupStateUtils {
                 continue;
             }
 
-            state = loadStateFile(platformContext, recycleBin, currentSoftwareVersion, savedStateFile);
+            state = loadStateFile(platformContext, currentSoftwareVersion, savedStateFile);
             if (state != null) {
                 break;
             }
@@ -459,14 +445,12 @@ public final class StartupStateUtils {
      * state is found or there are no more states to try.
      *
      * @param platformContext        the platform context
-     * @param recycleBin             the recycle bin
      * @param currentSoftwareVersion the current software version
      * @param savedStateFiles        the saved states to try
      * @return the loaded state
      */
     private static ReservedSignedState loadLatestState(
             @NonNull final PlatformContext platformContext,
-            @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @NonNull final List<SavedStateInfo> savedStateFiles)
             throws SignedStateLoadingException {
@@ -474,8 +458,7 @@ public final class StartupStateUtils {
         logger.info(STARTUP.getMarker(), "Loading latest state from disk.");
 
         for (final SavedStateInfo savedStateFile : savedStateFiles) {
-            final ReservedSignedState state =
-                    loadStateFile(platformContext, recycleBin, currentSoftwareVersion, savedStateFile);
+            final ReservedSignedState state = loadStateFile(platformContext, currentSoftwareVersion, savedStateFile);
             if (state != null) {
                 return state;
             }
@@ -489,7 +472,6 @@ public final class StartupStateUtils {
      * Load the requested state from file. If state can not be loaded, recycle the file and return null.
      *
      * @param platformContext        the platform context
-     * @param recycleBin             the recycle bin
      * @param currentSoftwareVersion the current software version
      * @param savedStateFile         the state to load
      * @return the loaded state, or null if the state could not be loaded. Will be fully hashed if non-null.
@@ -497,7 +479,6 @@ public final class StartupStateUtils {
     @Nullable
     private static ReservedSignedState loadStateFile(
             @NonNull final PlatformContext platformContext,
-            @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @NonNull final SavedStateInfo savedStateFile)
             throws SignedStateLoadingException {
@@ -512,7 +493,7 @@ public final class StartupStateUtils {
 
             final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
             if (stateConfig.deleteInvalidStateFiles()) {
-                recycleState(recycleBin, savedStateFile);
+                recycleState(platformContext.getFileSystemManager(), savedStateFile);
                 return null;
             } else {
                 throw new SignedStateLoadingException("unable to load state, this is unrecoverable");
@@ -553,13 +534,14 @@ public final class StartupStateUtils {
     /**
      * Recycle a state.
      *
-     * @param recycleBin the recycle bin
+     * @param fileSystemManager  the fileSystemManager
      * @param stateInfo  the state to recycle
      */
-    private static void recycleState(@NonNull final RecycleBin recycleBin, @NonNull final SavedStateInfo stateInfo) {
+    private static void recycleState(
+            @NonNull final FileSystemManager fileSystemManager, @NonNull final SavedStateInfo stateInfo) {
         logger.warn(STARTUP.getMarker(), "Moving state {} to the recycle bin.", stateInfo.stateFile());
         try {
-            recycleBin.recycle(stateInfo.getDirectory());
+            fileSystemManager.recycle(stateInfo.getDirectory());
         } catch (final IOException e) {
             throw new UncheckedIOException("unable to recycle state", e);
         }

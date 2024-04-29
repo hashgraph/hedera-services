@@ -316,8 +316,6 @@ public class TransactionProcessor {
                         new InvolvedParties(sender, relayer, contractIDToBesuAddress(transaction.contractIdOrThrow()));
             }
         } else {
-            // In order to be EVM equivalent, we need to gracefully handle calls to potentially non-existent contracts
-            // and thus create a receiver address even if it may not exist in the ledger
             updater.setContractNotRequired();
             parties = new InvolvedParties(
                     sender,
