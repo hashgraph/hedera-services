@@ -34,6 +34,7 @@ import java.time.Instant;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -80,6 +81,7 @@ class ExchangeRateSystemContractTest {
 
     @Test
     void convertsPositiveNumberToTinybarsAsExpected() {
+        given(frame.getValue()).willReturn(Wei.ZERO);
         givenRate(someRate);
 
         final var someInput = tinycentsInput(someTinycentAmount);
@@ -90,6 +92,7 @@ class ExchangeRateSystemContractTest {
 
     @Test
     void convertsPositiveNumberToTinycentsAsExpected() {
+        given(frame.getValue()).willReturn(Wei.ZERO);
         givenRate(someRate);
 
         final var positiveInput = tinybarsInput(someTinybarAmount);
@@ -100,6 +103,7 @@ class ExchangeRateSystemContractTest {
 
     @Test
     void convertsZeroToTinybarsAsExpected() {
+        given(frame.getValue()).willReturn(Wei.ZERO);
         givenRate(someRate);
 
         final var zeroInput = tinycentsInput(0);
