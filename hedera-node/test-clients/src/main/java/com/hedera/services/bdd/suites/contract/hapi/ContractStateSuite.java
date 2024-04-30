@@ -76,7 +76,7 @@ public class ContractStateSuite extends HapiSuite {
                 Map.entry("Int128", BigInteger.valueOf(5)),
                 Map.entry("Int256", BigInteger.valueOf(6)));
 
-        return defaultHapiSpec("ocToken")
+        return defaultHapiSpec("stateChangesSpec")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(IntStream.range(0, iterations)
                         .boxed()
