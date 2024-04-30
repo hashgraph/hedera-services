@@ -20,19 +20,17 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.RandomGraph;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 /**
  * A bidirectional topology that never changes.
  */
 public class StaticTopology implements NetworkTopology {
     private static final long SEED = 0;
-
-    private final List<NodeId> peers = new ArrayList<>();
 
     /** nodes are mapped so lookups are efficient. **/
     private Map<NodeId, Integer> peerNodeToIdMap = new HashMap<>();
@@ -67,8 +65,8 @@ public class StaticTopology implements NetworkTopology {
      * {@inheritDoc}
      */
     @Override
-    public List<NodeId> getNeighbors() {
-        return peers;
+    public Set<NodeId> getNeighbors() {
+        return peerNodeToIdMap.keySet();
     }
 
     /**
@@ -134,7 +132,6 @@ public class StaticTopology implements NetworkTopology {
         for (int i = 0; i < peers.size(); i++) {
             final PeerInfo peer = peers.get(i);
             peerNodeToIdMap.put(peer.nodeId(), i);
-            this.peers.add(peer.nodeId());
         }
         return peerNodeToIdMap;
     }

@@ -66,7 +66,7 @@ class StaticConnectionManagersTest {
                 new StaticTopology(r, peers, addressBook.getIndexOfNodeId(selfId), numNeighbors);
 
         final StaticConnectionManagers managers = new StaticConnectionManagers(topology, connectionCreator);
-        final List<NodeId> neighbors = topology.getNeighbors();
+        final List<NodeId> neighbors = topology.getNeighbors().stream().toList();
         final NodeId neighbor = neighbors.get(r.nextInt(neighbors.size()));
 
         if (topology.shouldConnectToMe(neighbor)) {
@@ -102,7 +102,7 @@ class StaticConnectionManagersTest {
                 new StaticTopology(r, peers, addressBook.getIndexOfNodeId(selfId), numNeighbors);
 
         final StaticConnectionManagers managers = new StaticConnectionManagers(topology, connectionCreator);
-        final List<NodeId> neighbors = topology.getNeighbors();
+        final List<NodeId> neighbors = topology.getNeighbors().stream().toList();
         final NodeId neighbor = neighbors.get(r.nextInt(neighbors.size()));
 
         if (topology.shouldConnectTo(neighbor)) {

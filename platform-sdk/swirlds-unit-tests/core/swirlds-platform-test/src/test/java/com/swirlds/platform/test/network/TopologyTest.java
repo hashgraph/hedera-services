@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -131,11 +132,11 @@ class TopologyTest {
 
             final NetworkTopology topology =
                     new StaticTopology(random, peers, addressBook.getIndexOfNodeId(thisNodeId), numNeighbors);
-            final List<NodeId> neighbors = topology.getNeighbors();
-            final List<NodeId> expected = IntStream.range(0, numNodes)
+            final Set<NodeId> neighbors = topology.getNeighbors();
+            final Set<NodeId> expected = IntStream.range(0, numNodes)
                     .mapToObj(addressBook::getNodeId)
                     .filter(nodeId -> !Objects.equals(thisNodeId, nodeId))
-                    .toList();
+                    .collect(Collectors.toSet());
             assertEquals(expected, neighbors, "all should be neighbors except me");
             for (final NodeId neighbor : neighbors) {
                 assertTrue(
