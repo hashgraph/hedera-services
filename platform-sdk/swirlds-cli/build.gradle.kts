@@ -15,8 +15,8 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.platform.java")
-    id("com.hedera.hashgraph.platform.publish")
+    id("com.hedera.gradle.platform")
+    id("com.hedera.gradle.platform-publish")
 }
 
 testModuleInfo { requires("org.junit.jupiter.api") }

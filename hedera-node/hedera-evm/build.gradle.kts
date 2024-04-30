@@ -15,8 +15,8 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.evm.java")
-    id("com.hedera.hashgraph.evm.publish")
+    id("com.hedera.gradle.evm")
+    id("com.hedera.gradle.evm-publish")
 }
 
 description = "Hedera EVM - API"

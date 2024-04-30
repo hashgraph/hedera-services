@@ -15,6 +15,6 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.blocknode.java")
-    id("com.hedera.hashgraph.blocknode.publish")
+    id("com.hedera.gradle.blocknode")
+    id("com.hedera.gradle.blocknode-publish")
 }

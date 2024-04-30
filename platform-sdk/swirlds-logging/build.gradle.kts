@@ -15,8 +15,8 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.platform.java")
-    id("com.hedera.hashgraph.platform.publish")
+    id("com.hedera.gradle.platform")
+    id("com.hedera.gradle.platform-publish")
     id("com.hedera.hashgraph.java-test-fixtures")
     id("com.hedera.hashgraph.benchmark-conventions")
 }

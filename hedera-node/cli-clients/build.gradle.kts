@@ -15,7 +15,7 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.services.java")
+    id("com.hedera.gradle.services")
     id("com.hedera.hashgraph.shadow-jar")
 }
 
