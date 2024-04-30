@@ -48,11 +48,6 @@ public interface NetworkTopology {
     List<NodeId> getNeighbors();
 
     /**
-     * @return a list of peers this node should be connected to with the applied filter
-     */
-//    List<NodeId> getNeighbors(final Predicate<NodeId> filter);
-
-    /**
      * @return the underlying graph on which this topology is based on
      */
     RandomGraph getConnectionGraph();
