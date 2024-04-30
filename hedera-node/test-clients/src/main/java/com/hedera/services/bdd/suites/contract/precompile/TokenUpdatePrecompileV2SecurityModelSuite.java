@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -23,7 +24,9 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SECP256K1;
+import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
+import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -32,10 +35,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -65,8 +70,11 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants;
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -80,11 +88,14 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
+@HapiTestSuite
+@Tag(SMART_CONTRACT)
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
-public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
+public class TokenUpdatePrecompileV2SecurityModelSuite extends HapiSuite {
 
-    private static final Logger log = LogManager.getLogger(TokenUpdatePrecompileV1SecurityModelSuite.class);
+    private static final Logger log = LogManager.getLogger(TokenUpdatePrecompileV2SecurityModelSuite.class);
 
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final long AUTO_RENEW_PERIOD = 8_000_000L;
@@ -92,6 +103,8 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
     private static final String VANILLA_TOKEN = "TokenD";
     private static final String NFT_TOKEN = "TokenD";
     private static final String MULTI_KEY = "multiKey";
+    private static final String CONTRACT_KEY = "ContractKey";
+    private static final KeyShape TRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
     private static final String UPDATE_KEY_FUNC = "tokenUpdateKeys";
     private static final String GET_KEY_FUNC = "getKeyFromToken";
     public static final String TOKEN_UPDATE_CONTRACT = "UpdateTokenInfoContract";
@@ -122,7 +135,7 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
     private static final long PAUSE_KEY_TYPE = 64L;
 
     public static void main(String... args) {
-        new TokenUpdatePrecompileV1SecurityModelSuite().runSuiteSync();
+        new TokenUpdatePrecompileV2SecurityModelSuite().runSuiteSync();
     }
 
     @Override
@@ -153,6 +166,7 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
         return List.of(updateWithTooLongNameAndSymbol(), updateTokenWithKeysNegative());
     }
 
+    @HapiTest
     final HapiSpec updateTokenWithKeysHappyPath() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return propertyPreservingHapiSpec("updateTokenWithKeysHappyPath")
@@ -267,6 +281,7 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
                                 .hasPauseKey(TOKEN_UPDATE_AS_KEY)));
     }
 
+    @HapiTest
     public HapiSpec updateNftTreasuryWithAndWithoutAdminKey() {
         final var newTokenTreasury = "newTokenTreasury";
         final var NO_ADMIN_TOKEN = "noAdminKeyToken";
@@ -343,6 +358,7 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     public HapiSpec updateWithTooLongNameAndSymbol() {
         final var tooLongString = "ORIGINAL" + TxnUtils.randomUppercase(101);
         final var tooLongSymbolTxn = "tooLongSymbolTxn";
@@ -367,6 +383,11 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
+                        newKeyNamed(CONTRACT_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_UPDATE_CONTRACT))),
+                        tokenUpdate(VANILLA_TOKEN)
+                                .adminKey(CONTRACT_KEY)
+                                .signedByPayerAnd(MULTI_KEY, CONTRACT_KEY),
+                        cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
                         contractCall(
                                         TOKEN_UPDATE_CONTRACT,
                                         "checkNameAndSymbolLength",
@@ -839,6 +860,7 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
                                                                 spec.registry().getKey(TOKEN_UPDATE_AS_KEY))))))));
     }
 
+    @HapiTest
     public HapiSpec updateOnlyKeysForNonFungibleToken() {
         final AtomicReference<TokenID> nftToken = new AtomicReference<>();
         return propertyPreservingHapiSpec("updateOnlyKeysForNonFungibleToken")
@@ -908,6 +930,7 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
                                 .hasPauseKey(TOKEN_UPDATE_AS_KEY))));
     }
 
+    @HapiTest
     final HapiSpec updateTokenWithoutNameSymbolMemo() {
         final var updateTokenWithoutNameSymbolMemoFunc = "updateTokenWithoutNameSymbolMemo";
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();

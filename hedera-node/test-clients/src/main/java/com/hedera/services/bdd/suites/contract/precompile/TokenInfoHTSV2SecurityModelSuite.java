@@ -97,9 +97,9 @@ import org.junit.jupiter.api.Tag;
 @HapiTestSuite
 @Tag(SMART_CONTRACT)
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
-public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
+public class TokenInfoHTSV2SecurityModelSuite extends HapiSuite {
 
-    private static final Logger LOG = LogManager.getLogger(TokenInfoHTSV1SecurityModelSuite.class);
+    private static final Logger LOG = LogManager.getLogger(TokenInfoHTSV2SecurityModelSuite.class);
 
     private static final String TOKEN_INFO_CONTRACT = "TokenInfoContract";
     private static final String ADMIN_KEY = TokenKeyType.ADMIN_KEY.name();
@@ -109,13 +109,13 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
     private static final String WIPE_KEY = TokenKeyType.WIPE_KEY.name();
     private static final String FEE_SCHEDULE_KEY = TokenKeyType.FEE_SCHEDULE_KEY.name();
     private static final String PAUSE_KEY = TokenKeyType.PAUSE_KEY.name();
+    private static final String CONTRACT_KEY = "ContractKey";
+    private static final KeyShape TRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
     private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
     private static final String FEE_DENOM = "denom";
     public static final String HTS_COLLECTOR = "denomFee";
     private static final String ACCOUNT = "Account";
     private static final String CREATE_TXN = "CreateTxn";
-    private static final String CONTRACT_KEY = "ContractKey";
-    private static final KeyShape TRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
     private static final String UPDATE_ANG_GET_TOKEN_INFO_TXN = "UpdateAndGetTokenInfoTxn";
     private static final String UPDATE_ANG_GET_FUNGIBLE_TOKEN_INFO_TXN = "UpdateAndGetFungibleTokenInfoTxn";
     private static final String UPDATE_ANG_GET_NON_FUNGIBLE_TOKEN_INFO_TXN = "UpdateAndGetNonFungibleTokenInfoTxn";
@@ -147,7 +147,7 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
     private static final int MAX_SUPPLY = 1000;
 
     public static void main(final String... args) {
-        new TokenInfoHTSV1SecurityModelSuite().runSuiteSync();
+        new TokenInfoHTSV2SecurityModelSuite().runSuiteSync();
     }
 
     @Override
