@@ -26,7 +26,6 @@ import static java.lang.Integer.MAX_VALUE;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -49,21 +48,6 @@ public class ContractStateSuite extends HapiSuite {
     private static final String CONTRACT = "StateContract";
     private static final SplittableRandom RANDOM = new SplittableRandom(1_234_567L);
     private static final Logger LOG = LogManager.getLogger(ContractStateSuite.class);
-
-    /*
-    {"components":[
-    {"internalType":"uint256","name":"varUint256","type":"uint256"},
-    {"internalType":"address","name":"varAddress","type":"address"},
-    {"internalType":"bytes32","name":"varBytes32","type":"bytes32"},
-    {"internalType":"string","name":"varString","type":"string"},
-    {"internalType":"enum Choices","name":"varContractType","type":"uint8"},
-    {"internalType":"uint256[]","name":"varUint256Arr","type":"uint256[]"},
-    {"internalType":"string","name":"varStringConcat","type":"string"}
-    ],
-     */
-
-    private static final TupleType CONTRACT_STRUCT =
-            TupleType.parse("(uint256,address,bytes32,string,uint8,uint256[],string)");
 
     @Override
     protected Logger getResultsLogger() {
