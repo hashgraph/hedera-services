@@ -35,7 +35,7 @@ import com.swirlds.common.config.StateCommonConfig_;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.platform.NodeId;
@@ -74,7 +74,7 @@ class SignedStateFileReadWriteTest {
 
     @BeforeEach
     void beforeEach() throws IOException {
-        TemporaryFileBuilder.overrideTemporaryFileLocation(testDirectory.resolve("tmp"));
+        LegacyTemporaryFileBuilder.overrideTemporaryFileLocation(testDirectory.resolve("tmp"));
     }
 
     @Test

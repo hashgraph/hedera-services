@@ -64,6 +64,7 @@ class ConsensusTests extends PlatformTest {
         if (!ignoreCoinRoundMarkerFile) {
             assertMarkerFile(ConsensusImpl.COIN_ROUND_MARKER_FILE, false);
         }
+        assertMarkerFile(ConsensusImpl.CONSENSUS_EXCEPTION_MARKER_FILE, false);
     }
 
     /**

@@ -177,7 +177,8 @@ public class ConsensusRoundHandler {
         if (freezeRoundReceived) {
             logger.info(
                     STARTUP.getMarker(),
-                    "Round {} reached consensus after freeze. Round will not be processed until after network restarts.",
+                    "Round {} reached consensus after freeze. Round will not be processed until after network "
+                            + "restarts.",
                     consensusRound.getRoundNum());
             return null;
         }

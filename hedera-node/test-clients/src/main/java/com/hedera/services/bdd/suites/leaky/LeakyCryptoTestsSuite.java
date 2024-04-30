@@ -1148,7 +1148,7 @@ public class LeakyCryptoTestsSuite extends SidecarAwareHapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingAccount(senderAccountIdReference.get())
                                                         .setTargetedAddress(aliasAsByteString)
-                                                        .setGas(200_000L)
+                                                        .setGas(179_000L)
                                                         .setGasUsed(179_000L)
                                                         .setValue(FIVE_HBARS)
                                                         .setOutput(EMPTY)
@@ -1221,14 +1221,14 @@ public class LeakyCryptoTestsSuite extends SidecarAwareHapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingAccount(senderAccountIdReference.get())
                                                         .setRecipientAccount(lazyAccountIdReference.get())
-                                                        .setGas(2_000_000L)
+                                                        .setGas(629_000L)
                                                         .setGasUsed(555_112L)
                                                         .setValue(FIVE_HBARS)
                                                         .setOutput(EMPTY)
                                                         .build())));
                             }));
                 }))
-                .then(tearDownSidecarWatcher(), assertContainsAllExpectedContractActions());
+                .then(tearDownSidecarWatcher(), assertNoMismatchedSidecars());
     }
 
     @HapiTest

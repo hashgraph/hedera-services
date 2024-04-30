@@ -70,6 +70,7 @@ public class RandomScheduleSign implements OpProvider {
         var op = scheduleSign(schedulesQualifying.get())
                 .logged()
                 .alsoSigningWith(account.get())
+                .hasAnyPrecheck()
                 .hasKnownStatusFrom(permissibleOutcomes);
         return Optional.of(op);
     }
