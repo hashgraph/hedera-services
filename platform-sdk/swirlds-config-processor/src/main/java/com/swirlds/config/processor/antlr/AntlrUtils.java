@@ -23,6 +23,7 @@ import com.swirlds.config.processor.antlr.generated.JavaParser.AnnotationContext
 import com.swirlds.config.processor.antlr.generated.JavaParser.ClassOrInterfaceModifierContext;
 import com.swirlds.config.processor.antlr.generated.JavaParser.CompilationUnitContext;
 import com.swirlds.config.processor.antlr.generated.JavaParser.ElementValueContext;
+import com.swirlds.config.processor.antlr.generated.JavaParser.ImportDeclarationContext;
 import com.swirlds.config.processor.antlr.generated.JavaParser.RecordComponentContext;
 import com.swirlds.config.processor.antlr.generated.JavaParser.RecordDeclarationContext;
 import com.swirlds.config.processor.antlr.generated.JavaParser.TypeDeclarationContext;
@@ -33,7 +34,6 @@ import com.swirlds.config.processor.antlr.generated.JavadocParser.DocumentationC
 import com.swirlds.config.processor.antlr.generated.JavadocParser.DocumentationContext;
 import com.swirlds.config.processor.antlr.generated.JavadocParser.TagSectionContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collections;
@@ -47,6 +47,7 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -57,6 +58,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 public final class AntlrUtils {
 
     public static final String JAVADOC_PARAM = "param";
+    public static final String ANNOTATION_VALUE_PROPERTY_NAME = "value";
 
     private AntlrUtils() {}
 
@@ -164,8 +166,8 @@ public final class AntlrUtils {
     public static List<String> getImports(@NonNull final ParserRuleContext ctx) {
         final CompilationUnitContext compilationUnitContext = getCompilationUnit(ctx);
         return compilationUnitContext.importDeclaration().stream()
-                .map(context -> context.qualifiedName())
-                .map(name -> name.getText())
+                .map(ImportDeclarationContext::qualifiedName)
+                .map(RuleContext::getText)
                 .collect(Collectors.toList());
     }
 
@@ -191,6 +193,20 @@ public final class AntlrUtils {
     @NonNull
     public static Optional<String> getAnnotationValue(
             @NonNull final AnnotationContext annotationContext, @NonNull final String identifier) {
+        if (ANNOTATION_VALUE_PROPERTY_NAME.equals(identifier)) {
+            final ElementValueContext elementValueContext = annotationContext.elementValue();
+            if (elementValueContext != null) {
+                return Optional.of(elementValueContext.getText()).map(text -> {
+                    if (text.startsWith("\"") && text.endsWith("\"")) {
+                        return text.substring(1, text.length() - 1);
+                    }
+                    return text;
+                });
+            }
+        }
+        if (annotationContext.elementValuePairs() == null) {
+            return Optional.empty();
+        }
         return annotationContext.elementValuePairs().elementValuePair().stream()
                 .filter(p -> Objects.equals(p.identifier().getText(), identifier))
                 .map(p -> p.elementValue().getText())
@@ -205,26 +221,9 @@ public final class AntlrUtils {
 
     public static boolean isJavaDocNode(@NonNull final ParseTree node) {
         if (node instanceof TerminalNode terminalNode) {
-            if (terminalNode.getSymbol().getType() == JavaParser.JAVADOC_COMMENT) {
-                return true;
-            }
+            return terminalNode.getSymbol().getType() == JavaParser.JAVADOC_COMMENT;
         }
         return false;
-    }
-
-    /**
-     * Returns the value of an annotation {@code value} attribute
-     *
-     * @param annotationContext the annotation context
-     * @return the value of the {@code value} attribute
-     */
-    @NonNull
-    public static Optional<String> getAnnotationValue(@NonNull final AnnotationContext annotationContext) {
-        final ElementValueContext elementValueContext = annotationContext.elementValue();
-        if (elementValueContext != null) {
-            return Optional.of(elementValueContext.getText());
-        }
-        return getAnnotationValue(annotationContext, "value");
     }
 
     public static List<RecordDeclarationContext> getRecordDeclarationContext(
@@ -263,10 +262,10 @@ public final class AntlrUtils {
                 .filter(c -> c instanceof TagSectionContext)
                 .map(c -> (TagSectionContext) c)
                 .flatMap(context -> context.children.stream())
-                .filter(c -> c instanceof BlockTagContext btc)
+                .filter(c -> c instanceof BlockTagContext)
                 .map(c -> (BlockTagContext) c)
                 .filter(c -> Objects.equals(c.blockTagName().NAME().getText(), JAVADOC_PARAM))
-                .map(c -> extractFullText(c))
+                .map(AntlrUtils::extractFullText)
                 .filter(fullText -> !fullText.isBlank())
                 .filter(fullText -> fullText.contains(" "))
                 .forEach(fullText -> {
@@ -280,8 +279,8 @@ public final class AntlrUtils {
 
     private static String extractFullText(@NonNull final BlockTagContext c) {
         final String[] split = c.getText().trim().split("\n \\*");
-        final String result = Arrays.asList(split).stream()
-                .map(s -> s.trim())
+        final String result = Arrays.stream(split)
+                .map(String::trim)
                 .filter(s -> !s.isBlank())
                 .reduce((a, b) -> a + " " + b)
                 .orElse("");
@@ -297,9 +296,8 @@ public final class AntlrUtils {
      *
      * @param fileContent the file content to parse
      * @return the {@link ConfigDataRecordDefinition} object
-     * @throws IOException if an I/O error occurs
      */
-    public static CompilationUnitContext parse(@NonNull final String fileContent) throws IOException {
+    public static CompilationUnitContext parse(@NonNull final String fileContent) {
         final Lexer lexer = new JavaLexer(CharStreams.fromString(fileContent));
         final TokenStream tokens = new CommonTokenStream(lexer);
         final JavaParser parser = new JavaParser(tokens);
