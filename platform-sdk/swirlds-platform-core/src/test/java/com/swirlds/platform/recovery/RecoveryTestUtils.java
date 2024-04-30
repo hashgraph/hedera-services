@@ -34,13 +34,13 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.stream.DefaultConsensusEventStream;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.ObjectStreamIterator;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -108,8 +108,7 @@ public final class RecoveryTestUtils {
                 now,
                 transactions);
 
-        final BaseEventUnhashedData baseEventUnhashedData =
-                new BaseEventUnhashedData(randomSignature(random).getSignatureBytes());
+        final byte[] signature = randomSignature(random).getSignatureBytes();
 
         final ConsensusData consensusData = new ConsensusData();
         consensusData.setConsensusTimestamp(now);
@@ -117,7 +116,8 @@ public final class RecoveryTestUtils {
         consensusData.setConsensusOrder(random.nextLong());
         consensusData.setLastInRoundReceived(lastInRound);
 
-        final EventImpl event = new EventImpl(baseEventHashedData, baseEventUnhashedData, consensusData);
+        final EventImpl event =
+                new EventImpl(new GossipEvent(baseEventHashedData, signature), consensusData, null, null);
         event.setRoundCreated(random.nextLong());
         event.setStale(random.nextBoolean());
         return event;
