@@ -4248,7 +4248,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                             .setRecipientContract(
                                                                     spec.registry()
                                                                             .getContractId(contract))
-                                                            .setGasUsed(80135)
+                                                            .setGasUsed(80193)
                                                             .setOutput(EMPTY)
                                                             .setInput(
                                                                     encodeFunctionCall(
@@ -4263,11 +4263,8 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                             .setCallingContract(
                                                                     spec.registry()
                                                                             .getContractId(contract))
-                                                            .setGas(3870609)
-                                                            .setTargetedAddress(
-                                                                    ByteString.fromHex(
-                                                                            String.valueOf(expectedCreate2Address)
-                                                                                    .substring(2)))
+                                                            .setGas(3870552)
+                                                            .setRecipientContract(childId)
                                                             .setGasUsed(44936)
                                                             .setValue(tcValue)
                                                             .setOutput(EMPTY)
