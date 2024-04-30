@@ -26,13 +26,18 @@ import com.swirlds.common.io.config.TemporaryFileConfig;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
 
 /**
  * This class provides utility methods for constructing temporary files.
+ *
+ * @deprecated use the {@link com.swirlds.common.io.filesystem.FileSystemManager} provided
+ * by {@link com.swirlds.common.context.PlatformContext} instead
  */
-public final class TemporaryFileBuilder {
+@Deprecated
+public final class LegacyTemporaryFileBuilder {
 
-    private TemporaryFileBuilder() {}
+    private LegacyTemporaryFileBuilder() {}
 
     private static long nextFileId = 0;
     private static Path temporaryFileLocation = null;
@@ -81,7 +86,9 @@ public final class TemporaryFileBuilder {
      * name. File will not be automatically deleted until this JVM is restarted.
      *
      * @return a new temporary file
+     * @deprecated use {@link com.swirlds.common.io.filesystem.FileSystemManager#resolveNewTemp(String)} instead.
      */
+    @Deprecated
     public static synchronized Path buildTemporaryFile() throws IOException {
         return buildTemporaryFile(null);
     }
@@ -94,7 +101,9 @@ public final class TemporaryFileBuilder {
      * 		an optional postfix, helps to make temporary file directory easier to understand
      * 		if a human ever looks at it directly. Ignored if null.
      * @return a new temporary file
+     * @deprecated use {@link com.swirlds.common.io.filesystem.FileSystemManager#resolveNewTemp(String)} instead.
      */
+    @Deprecated
     public static synchronized Path buildTemporaryFile(final String postfix) throws IOException {
         final String fileName = nextFileId + (postfix == null ? "" : ("-" + postfix));
         nextFileId++;
@@ -113,7 +122,10 @@ public final class TemporaryFileBuilder {
      * Directory will not be automatically deleted until this JVM is restarted.
      *
      * @return a new temporary directory
+     * @deprecated use {@link com.swirlds.common.io.filesystem.FileSystemManager#resolveNewTemp(String)} instead
+     * and then create a directory using {@link Files#createDirectory(Path, FileAttribute[])}
      */
+    @Deprecated
     public static synchronized Path buildTemporaryDirectory() throws IOException {
         return buildTemporaryDirectory(null);
     }
@@ -127,7 +139,10 @@ public final class TemporaryFileBuilder {
      * 		an optional postfix, helps to make temporary file directory easier to understand
      * 		if a human ever looks at it directly. Ignored if null.
      * @return a new temporary directory
+     * @deprecated use {@link com.swirlds.common.io.filesystem.FileSystemManager#resolveNewTemp(String)} instead
+     * and then create a directory using {@link Files#createDirectory(Path, FileAttribute[])}
      */
+    @Deprecated
     public static synchronized Path buildTemporaryDirectory(final String postfix) throws IOException {
         final Path directory = buildTemporaryFile(postfix);
         if (!exists(directory)) {

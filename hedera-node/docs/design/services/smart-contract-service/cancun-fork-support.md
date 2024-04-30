@@ -75,6 +75,11 @@ following features:
 * `TLOAD` and `TSTORE` operations
 * `VERSIONEDHASH` and `BLOBBASEFEE` operations that query the `TxValues` Object
 
+### Upgrade to latest Besu `GasCalculator`
+
+Update `CustomGasCalculator` to inherit from Besu's `CancunGasCalculator`.
+* (This needs to be part of the regular EVM module upgrade - it was last updated for the London
+release, wasn't done for Shanghai.)
 
 ### KZG precompile initialization
 
