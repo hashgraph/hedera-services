@@ -19,7 +19,6 @@ package com.swirlds.platform.network.topology;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.network.RandomGraph;
 import java.util.List;
-import java.util.function.Predicate;
 
 /**
  * Holds information about the topology of the network
@@ -51,7 +50,7 @@ public interface NetworkTopology {
     /**
      * @return a list of peers this node should be connected to with the applied filter
      */
-    List<NodeId> getNeighbors(final Predicate<NodeId> filter);
+//    List<NodeId> getNeighbors(final Predicate<NodeId> filter);
 
     /**
      * @return the underlying graph on which this topology is based on

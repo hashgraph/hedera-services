@@ -20,10 +20,11 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.RandomGraph;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 import java.util.Random;
-import java.util.function.Predicate;
 
 /**
  * A bidirectional topology that never changes.
@@ -31,7 +32,9 @@ import java.util.function.Predicate;
 public class StaticTopology implements NetworkTopology {
     private static final long SEED = 0;
 
-    private final List<NodeId> peerNodes;
+    private final List<NodeId> peerNodesList = new ArrayList<>();
+    // nodes are mapped so lookups are efficient.
+    private Map<NodeId, Integer> peerNodeToIdMap = new HashMap<>();
 
     /**
      * Two nodes are neighbors if their node indexes are neighbors in the connection graph.
@@ -54,8 +57,7 @@ public class StaticTopology implements NetworkTopology {
             @NonNull final List<PeerInfo> peers,
             final int selfIndex,
             final int numberOfNeighbors) {
-        this.peerNodes =
-                Objects.requireNonNull(peers.stream().map(PeerInfo::nodeId).toList(), "peers must not be null");
+        this.peerNodeToIdMap = map(peers);
         this.selfIndex = selfIndex;
         this.connectionGraph = new RandomGraph(random, peers.size() + 1, numberOfNeighbors, SEED);
     }
@@ -63,17 +65,17 @@ public class StaticTopology implements NetworkTopology {
     /**
      * {@inheritDoc}
      */
-    @Override
-    public List<NodeId> getNeighbors() {
-        return getNeighbors((nodeId -> true));
-    }
+//    @Override
+//    public List<NodeId> getNeighbors() {
+//        return getNeighbors((nodeId -> true));
+//    }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public List<NodeId> getNeighbors(final Predicate<NodeId> filter) {
-        return peerNodes;
+    public List<NodeId> getNeighbors() {
+        return peerNodesList;
     }
 
     /**
@@ -92,7 +94,7 @@ public class StaticTopology implements NetworkTopology {
      * @return true if this node is my neighbor, false if not
      */
     private boolean isNeighbor(final NodeId nodeId) {
-        if (!peerNodes.contains(nodeId)) {
+        if (!peerNodeToIdMap.containsKey(nodeId)) {
             return false;
         }
         final int nodeIndex = getIndexOfNodeId(nodeId);
@@ -117,13 +119,34 @@ public class StaticTopology implements NetworkTopology {
     }
 
     /**
-     * Returns the index of the given node in the peer list, which must not be the self index
+     * Returns the index of the given node, which must not be the self index
+     * or -1 if the node is not in the peer list
      *
      * @param nodeId the node ID
      * @return the index of the node in the peer list
      */
     private int getIndexOfNodeId(@NonNull final NodeId nodeId) {
-        final int index = peerNodes.indexOf(nodeId);
+        final Integer index = peerNodeToIdMap.get(nodeId);
+        if (index == null) {
+            return -1;
+        }
         return selfIndex == index ? index + 1 : index;
+    }
+
+    /**
+     * Maps the list of peers to a map of node IDs to their index in the peer list and populates the peerNodesList with
+     * the node IDs
+     *
+     * @param peers the list of peers
+     * @return the map of node IDs to their index in the peer list
+     */
+    @NonNull
+    private Map<NodeId, Integer> map(@NonNull final List<PeerInfo> peers) {
+        for (int i = 0; i < peers.size(); i++) {
+            final PeerInfo peer = peers.get(i);
+            peerNodeToIdMap.put(peer.nodeId(), i);
+            peerNodesList.add(peer.nodeId());
+        }
+        return peerNodeToIdMap;
     }
 }
