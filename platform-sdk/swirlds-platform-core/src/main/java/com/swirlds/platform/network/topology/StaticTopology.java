@@ -33,14 +33,14 @@ public class StaticTopology implements NetworkTopology {
     private static final long SEED = 0;
 
     /** nodes are mapped so lookups are efficient. **/
-    private Map<NodeId, Integer> peerNodeToIdMap = new HashMap<>();
+    private Map<NodeId, Long> peerNodeToIdMap = new HashMap<>();
 
     /**
      * Two nodes are neighbors if their node indexes are neighbors in the connection graph.
      */
     private final RandomGraph connectionGraph;
 
-    private final int selfIndex;
+    private final NodeId selfId;
 
     /**
      * Constructor.
@@ -48,16 +48,16 @@ public class StaticTopology implements NetworkTopology {
      * @param random            a source of randomness, used to chose random neighbors, does not need to be
      *                          cryptographically secure
      * @param peers             the set of peers in the network
-     * @param selfIndex         the index of this node in the address book
+     * @param selfId            the ID of this node
      * @param numberOfNeighbors the number of neighbors each node should have
      */
     public StaticTopology(
             @NonNull final Random random,
             @NonNull final List<PeerInfo> peers,
-            final int selfIndex,
+            @NonNull final NodeId selfId,
             final int numberOfNeighbors) {
         this.peerNodeToIdMap = map(peers);
-        this.selfIndex = selfIndex;
+        this.selfId = selfId;
         this.connectionGraph = new RandomGraph(random, peers.size() + 1, numberOfNeighbors, SEED);
     }
 
@@ -74,8 +74,7 @@ public class StaticTopology implements NetworkTopology {
      */
     @Override
     public boolean shouldConnectToMe(final NodeId nodeId) {
-        final int nodeIndex = getIndexOfNodeId(nodeId);
-        return isNeighbor(nodeId) && nodeIndex < selfIndex;
+        return isNeighbor(nodeId) && nodeId.id() < selfId.id();
     }
 
     /**
@@ -93,8 +92,7 @@ public class StaticTopology implements NetworkTopology {
      */
     @Override
     public boolean shouldConnectTo(final NodeId nodeId) {
-        final int nodeIndex = getIndexOfNodeId(nodeId);
-        return isNeighbor(nodeId) && nodeIndex > selfIndex;
+        return isNeighbor(nodeId) && nodeId.id() > selfId.id();
     }
 
     /**
@@ -106,32 +104,16 @@ public class StaticTopology implements NetworkTopology {
     }
 
     /**
-     * Returns the index of the given node, which must not be the self index
-     * or -1 if the node is not in the peer list
-     *
-     * @param nodeId the node ID
-     * @return the index of the node in the peer list
-     */
-    private int getIndexOfNodeId(@NonNull final NodeId nodeId) {
-        final Integer index = peerNodeToIdMap.get(nodeId);
-        if (index == null) {
-            return -1;
-        }
-        return selfIndex == index ? index + 1 : index;
-    }
-
-    /**
      * Maps the list of peers to a map of node IDs to their index in the peer list
      * and populates the peerNodesList with the node IDs
      *
      * @param peers the list of peers
-     * @return the map of node IDs to their index in the peer list
+     * @return the map of node IDs to their peer Id
      */
     @NonNull
-    private Map<NodeId, Integer> map(@NonNull final List<PeerInfo> peers) {
-        for (int i = 0; i < peers.size(); i++) {
-            final PeerInfo peer = peers.get(i);
-            peerNodeToIdMap.put(peer.nodeId(), i);
+    private Map<NodeId, Long> map(@NonNull final List<PeerInfo> peers) {
+        for (final PeerInfo peer : peers) {
+            peerNodeToIdMap.put(peer.nodeId(), peer.nodeId().id());
         }
         return peerNodeToIdMap;
     }

@@ -130,8 +130,7 @@ class TopologyTest {
 
             final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, thisNodeId);
 
-            final NetworkTopology topology =
-                    new StaticTopology(random, peers, addressBook.getIndexOfNodeId(thisNodeId), numNeighbors);
+            final NetworkTopology topology = new StaticTopology(random, peers, thisNodeId, numNeighbors);
             final Set<NodeId> neighbors = topology.getNeighbors();
             final Set<NodeId> expected = IntStream.range(0, numNodes)
                     .mapToObj(addressBook::getNodeId)

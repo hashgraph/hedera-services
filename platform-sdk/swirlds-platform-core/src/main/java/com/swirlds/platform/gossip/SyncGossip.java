@@ -195,8 +195,7 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
 
-        topology =
-                new StaticTopology(random, peers, addressBook.getIndexOfNodeId(selfId), basicConfig.numConnections());
+        topology = new StaticTopology(random, peers, selfId, basicConfig.numConnections());
         final NetworkPeerIdentifier peerIdentifier = new NetworkPeerIdentifier(platformContext, peers);
         final SocketFactory socketFactory =
                 NetworkUtils.createSocketFactory(selfId, peers, keysAndCerts, platformContext.getConfiguration());
