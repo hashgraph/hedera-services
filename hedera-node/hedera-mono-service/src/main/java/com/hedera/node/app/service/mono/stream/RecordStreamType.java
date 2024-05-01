@@ -21,7 +21,7 @@ import com.swirlds.common.stream.StreamType;
 /**
  * Stream type specialization for Hedera records.
  *
- * <p>Besides the the HAPI proto version in the file header, which we automatically set in {@link
+ * <p>Besides the HAPI proto version in the file header, which we automatically set in {@link
  * CurrentRecordStreamType} from properties filtering during the Maven build, all the
  * specializations are static and will change very rarely.
  */

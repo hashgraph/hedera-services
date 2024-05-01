@@ -58,7 +58,7 @@ public class FormatSwirldsLogCommand extends AbstractCommand {
 
     @CommandLine.Option(
             names = {"-o", "--output"},
-            description = "Specify the destination for the formatted log file. Defaults the the input directory.")
+            description = "Specify the destination for the formatted log file. Defaults the input directory.")
     private void setOutputPath(@NonNull final Path outputPath) {
         Objects.requireNonNull(outputPath);
         this.outputPath = outputPath.toAbsolutePath().normalize();

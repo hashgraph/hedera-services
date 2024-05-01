@@ -61,7 +61,7 @@ swirld, 123
 # TCP/IP packets (0 to 255). The internet usually ignores this byte.
 #
 # Uncomment exactly one of the app name lines, above.
-# That line should have the the word "app", then the  jar filename,
+# That line should have the word "app", then the  jar filename,
 # then any parameters, separated by commas.
 #
 #	HelloSwirldDemo.jar parameters: none

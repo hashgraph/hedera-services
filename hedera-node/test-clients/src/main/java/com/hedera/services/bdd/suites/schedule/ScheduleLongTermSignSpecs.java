@@ -599,7 +599,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                 .then(
                         scheduleSign("tokenMintScheduled")
                                 .alsoSigningWith("mint")
-                                /* In the rare, but possible, case that the the mint and newMint keys overlap
+                                /* In the rare, but possible, case that the mint and newMint keys overlap
                                  * in their first byte (and that byte is not shared by the DEFAULT_PAYER),
                                  * we will get SOME_SIGNATURES_WERE_INVALID instead of NO_NEW_VALID_SIGNATURES.
                                  *

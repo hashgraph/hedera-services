@@ -273,7 +273,7 @@ owned NFTs](https://github.com/hashgraph/hedera-services/blob/01682-M-AuditRebui
 [iterating over the unique tokens in state and updating the relation for all NFTs](https://github.com/hashgraph/hedera-services/blob/01682-M-AuditRebuiltDataStructures/hedera-node/src/main/java/com/hedera/services/store/tokens/views/UniqTokenViewsManager.java#L242). 
 
 :memo:&nbsp;**Maintaining** this structure again works differently based
-on the the value of `tokens.nfts.useTreasuryWildcards`.
+on the value of `tokens.nfts.useTreasuryWildcards`.
 
 First, with `tokens.nfts.useTreasuryWildcards=true`, 
 1. For `TokenAccountWipe`, the [`TypedTokenStore.persistToken()` method](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/store/TypedTokenStore.java#L304) uses [`TypedTokenStore.destroyRemoved()`](https://github.com/hashgraph/hedera-services/blob/f58e0220a2be5e7217789c9e6e362bd0b380e196/hedera-node/src/main/java/com/hedera/services/store/TypedTokenStore.java#L319) 
@@ -331,7 +331,7 @@ logic based on the value of `tokens.nfts.useTreasuryWildcards`.
 [iterating over the unique tokens in state and updating the relation for all treasury-owned NFTs](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/java/com/hedera/services/store/tokens/views/UniqTokenViewsManager.java#L228). 
 
 :memo:&nbsp;**Maintaining** this structure again works differently based
-on the the value of `tokens.nfts.useTreasuryWildcards`. As noted above, 
+on the value of `tokens.nfts.useTreasuryWildcards`. As noted above, 
 it is simply not used when `tokens.nfts.useTreasuryWildcards=false`.  
 When `tokens.nfts.useTreasuryWildcards=true`,
 

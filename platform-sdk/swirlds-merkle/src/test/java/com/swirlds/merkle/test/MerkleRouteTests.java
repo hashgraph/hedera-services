@@ -226,7 +226,7 @@ class MerkleRouteTests {
      * Check to see if a node is to the left of another. Does not use merkle routes.
      */
     private boolean isToTheLeftOf(final MerkleNode root, final MerkleNode node1, final MerkleNode node2) {
-        // An ancestor is not the the left or right of the node
+        // An ancestor is not the left or right of the node
         if (isAncestor(node1, node2) || isAncestor(node2, node1)) {
             return false;
         }

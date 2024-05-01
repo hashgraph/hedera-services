@@ -6,7 +6,7 @@ interface IExchangeRate {
     // equivalent value in tinybars (1e-8 HBAR) at the current exchange rate 
     // stored in system file 0.0.112. 
     // 
-    // This rate is a weighted median of the the recent" HBAR-USD exchange 
+    // This rate is a weighted median of the recent" HBAR-USD exchange
     // rate on major exchanges, but should _not_ be treated as a live price 
     // oracle! It is important primarily because the network will use it to 
     // compute the tinybar fees for the active transaction. 
@@ -19,7 +19,7 @@ interface IExchangeRate {
     // tinycents (1e-8 US cents or 1e-10 USD) at the current exchange rate 
     // stored in system file 0.0.112. 
     // 
-    // This rate tracks the the HBAR-USD rate on public exchanges, but 
+    // This rate tracks the HBAR-USD rate on public exchanges, but
     // should _not_ be treated as a live price oracle! This conversion is
     // less likely to be needed than the above conversion from tinycent to
     // tinybars, but we include it for completeness.

@@ -148,7 +148,7 @@ public class LoggingTests {
 
     /**
      * Sanity check for the log simulator. Make sure that a log written and then parsed is the same as a log
-     * that is is directly simulated.
+     * that is directly simulated.
      */
     @Test
     @Tag(TestComponentTags.LOGGING)

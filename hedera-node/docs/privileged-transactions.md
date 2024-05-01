@@ -10,7 +10,7 @@ A file with a number in the reserved range is called a **system file**.
 
 Certain system accounts have predefined roles in the network. 
 
-For the purposes of this document, we care about the the following:
+For the purposes of this document, we care about the following:
  - The **treasury**, which upon network creation receives all minted ℏ except those
  explicitly designated for a network node account. 
  - The **address book admin**, used to manage metadata on network nodes 

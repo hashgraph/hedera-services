@@ -375,14 +375,14 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
     }
 
     /**
-     * Get the the thread group that new threads will be created in.
+     * Get the thread group that new threads will be created in.
      */
     public ThreadGroup getThreadGroup() {
         return threadGroup;
     }
 
     /**
-     * Set the the thread group that new threads will be created in.
+     * Set the thread group that new threads will be created in.
      *
      * @return this object
      */

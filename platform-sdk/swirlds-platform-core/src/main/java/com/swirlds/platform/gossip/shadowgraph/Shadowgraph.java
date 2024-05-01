@@ -242,7 +242,7 @@ public class Shadowgraph implements Clearable {
      * <p>It is safe for this method not to be synchronized because:</p>
      * <ol>
      *     <li>this method does not modify any data</li>
-     *     <li>adding events to the the graph does not affect ancestors</li>
+     *     <li>adding events to the graph does not affect ancestors</li>
      *     <li>checks for expired parent events are atomic</li>
      * </ol>
      * <p>Note: This method is always accessed after a call to a synchronized {@link Shadowgraph} method, like

@@ -357,7 +357,7 @@ public class AugmentedDataOutputStream extends DataOutputStream {
      * 		whether to read the checksum or not
      */
     public static int getArraySerializedLength(final byte[] data, final boolean writeChecksum) {
-        int totalByteLength = Integer.BYTES; // add the the size of array length field
+        int totalByteLength = Integer.BYTES; // add the size of array length field
         if (writeChecksum) {
             totalByteLength += Integer.BYTES; // add the length of checksum
         }
