@@ -23,6 +23,7 @@ import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.BACK
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.Query;
@@ -35,6 +36,8 @@ import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.fees.congestion.ThrottleMultiplier;
 import com.hedera.node.app.fees.congestion.UtilizationScaledThrottleMultiplier;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.hapi.utils.sysfiles.serdes.ThrottlesJsonToProtoSerde;
+import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
 import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
@@ -80,6 +83,8 @@ import com.hedera.node.app.throttle.NetworkUtilizationManagerImpl;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleMetrics;
+import com.hedera.node.app.throttle.ThrottleParser;
+import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.app.validation.ExpiryValidation;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -105,6 +110,9 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.time.Instant;
@@ -383,13 +391,33 @@ public interface BaseScaffoldingModule {
     @Provides
     @Singleton
     static NetworkUtilizationManager createNetworkUtilizationManager(
-            @NonNull ConfigProvider configProvider, @NonNull Metrics metrics) {
+            @NonNull HederaState state, @NonNull ConfigProvider configProvider, @NonNull Metrics metrics) {
         var throttleMetrics = new ThrottleMetrics(metrics, BACKEND_THROTTLE);
-        var backendThrottle = new ThrottleAccumulator(() -> 1, configProvider, BACKEND_THROTTLE, throttleMetrics);
+
+        // Populate throttle definitions
+        var backendThrottle = new ThrottleAccumulator(
+                () -> 1,
+                configProvider,
+                BACKEND_THROTTLE,
+                throttleMetrics,
+                new GasLimitDeterministicThrottle(1_000_000L));
+        var throttleFileBytes = FileUtilities.getFileContent(state, new FileID(0, 0, 123));
+        var throttleParser = new ThrottleParser();
+        final var validatedThrottles = throttleParser.parse(throttleFileBytes);
+        backendThrottle.rebuildFor(validatedThrottles.throttleDefinitions());
+
         final var genericFeeMultiplier = getThrottleMultiplier(configProvider, backendThrottle);
 
         final var congestionMultipliers =
                 getCongestionMultipliers(configProvider, genericFeeMultiplier, backendThrottle);
         return new NetworkUtilizationManagerImpl(backendThrottle, congestionMultipliers);
+    }
+
+    static com.hederahashgraph.api.proto.java.ThrottleDefinitions protoDefsFromResource(String testResource) {
+        try (InputStream in = ThrottlesJsonToProtoSerde.class.getClassLoader().getResourceAsStream(testResource)) {
+            return ThrottlesJsonToProtoSerde.loadProtoDefs(in);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }

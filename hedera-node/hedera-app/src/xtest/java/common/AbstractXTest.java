@@ -47,6 +47,7 @@ import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.hapi.utils.sysfiles.serdes.ThrottlesJsonToProtoSerde;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -68,6 +69,7 @@ import com.swirlds.metrics.api.Metrics;
 import contract.AbstractContractXTest;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.ArrayDeque;
 import java.util.HashMap;
@@ -375,7 +377,21 @@ public abstract class AbstractXTest {
                 File.newBuilder()
                         .contents(ExchangeRateSet.PROTOBUF.toBytes(SET_OF_TRADITIONAL_RATES))
                         .build());
+        scenarioFiles.put(
+                FileID.newBuilder().fileNum(123).build(),
+                File.newBuilder()
+                        .contents(Bytes.wrap(
+                                protoDefsFromResource("throttles-dev.json").toByteArray()))
+                        .build());
         return scenarioFiles;
+    }
+
+    static com.hederahashgraph.api.proto.java.ThrottleDefinitions protoDefsFromResource(String testResource) {
+        try (InputStream in = ThrottlesJsonToProtoSerde.class.getClassLoader().getResourceAsStream(testResource)) {
+            return ThrottlesJsonToProtoSerde.loadProtoDefs(in);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private void setupFeeManager() {
