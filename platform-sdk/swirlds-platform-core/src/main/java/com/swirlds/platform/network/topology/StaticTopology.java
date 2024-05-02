@@ -17,14 +17,14 @@
 package com.swirlds.platform.network.topology;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.RandomGraph;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 import java.util.Random;
-import java.util.function.Predicate;
+import java.util.Set;
 
 /**
  * A bidirectional topology that never changes.
@@ -32,55 +32,41 @@ import java.util.function.Predicate;
 public class StaticTopology implements NetworkTopology {
     private static final long SEED = 0;
 
-    private final NodeId selfId;
-    /**
-     * Two nodes are neighbors if their indexes in the address book are neighbors in the connection graph.
-     */
-    private final AddressBook addressBook;
+    /** nodes are mapped so lookups are efficient. **/
+    private Map<NodeId, Long> peerNodeToIdMap = new HashMap<>();
 
+    /**
+     * Two nodes are neighbors if their node indexes are neighbors in the connection graph.
+     */
     private final RandomGraph connectionGraph;
+
+    private final NodeId selfId;
 
     /**
      * Constructor.
      *
      * @param random            a source of randomness, used to chose random neighbors, does not need to be
      *                          cryptographically secure
-     * @param addressBook       the current address book
+     * @param peers             the set of peers in the network
      * @param selfId            the ID of this node
      * @param numberOfNeighbors the number of neighbors each node should have
      */
     public StaticTopology(
             @NonNull final Random random,
-            @NonNull final AddressBook addressBook,
+            @NonNull final List<PeerInfo> peers,
             @NonNull final NodeId selfId,
             final int numberOfNeighbors) {
-        this.addressBook = Objects.requireNonNull(addressBook, "addressBook must not be null");
-        this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
-        this.connectionGraph = new RandomGraph(random, addressBook.getSize(), numberOfNeighbors, SEED);
-
-        if (!addressBook.contains(selfId)) {
-            throw new IllegalArgumentException("Address book does not contain selfId");
-        }
+        this.peerNodeToIdMap = map(peers);
+        this.selfId = selfId;
+        this.connectionGraph = new RandomGraph(random, peers.size() + 1, numberOfNeighbors, SEED);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public List<NodeId> getNeighbors() {
-        return getNeighbors((nodeId -> true));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<NodeId> getNeighbors(final Predicate<NodeId> filter) {
-        final int selfIndex = addressBook.getIndexOfNodeId(selfId);
-        return Arrays.stream(connectionGraph.getNeighbors(selfIndex))
-                .mapToObj(addressBook::getNodeId)
-                .filter(filter)
-                .toList();
+    public Set<NodeId> getNeighbors() {
+        return peerNodeToIdMap.keySet();
     }
 
     /**
@@ -88,7 +74,7 @@ public class StaticTopology implements NetworkTopology {
      */
     @Override
     public boolean shouldConnectToMe(final NodeId nodeId) {
-        return isNeighbor(nodeId) && addressBook.getIndexOfNodeId(nodeId) < addressBook.getIndexOfNodeId(selfId);
+        return isNeighbor(nodeId) && nodeId.id() < selfId.id();
     }
 
     /**
@@ -98,12 +84,7 @@ public class StaticTopology implements NetworkTopology {
      * @return true if this node is my neighbor, false if not
      */
     private boolean isNeighbor(final NodeId nodeId) {
-        if (!addressBook.contains(nodeId)) {
-            return false;
-        }
-        final int selfIndex = addressBook.getIndexOfNodeId(selfId);
-        final int nodeIndex = addressBook.getIndexOfNodeId(nodeId);
-        return connectionGraph.isAdjacent(selfIndex, nodeIndex);
+        return peerNodeToIdMap.containsKey(nodeId);
     }
 
     /**
@@ -111,7 +92,7 @@ public class StaticTopology implements NetworkTopology {
      */
     @Override
     public boolean shouldConnectTo(final NodeId nodeId) {
-        return isNeighbor(nodeId) && addressBook.getIndexOfNodeId(nodeId) > addressBook.getIndexOfNodeId(selfId);
+        return isNeighbor(nodeId) && nodeId.id() > selfId.id();
     }
 
     /**
@@ -120,5 +101,20 @@ public class StaticTopology implements NetworkTopology {
     @Override
     public RandomGraph getConnectionGraph() {
         return connectionGraph;
+    }
+
+    /**
+     * Maps the list of peers to a map of node IDs to their index in the peer list
+     * and populates the peerNodesList with the node IDs
+     *
+     * @param peers the list of peers
+     * @return the map of node IDs to their peer Id
+     */
+    @NonNull
+    private Map<NodeId, Long> map(@NonNull final List<PeerInfo> peers) {
+        for (final PeerInfo peer : peers) {
+            peerNodeToIdMap.put(peer.nodeId(), peer.nodeId().id());
+        }
+        return peerNodeToIdMap;
     }
 }

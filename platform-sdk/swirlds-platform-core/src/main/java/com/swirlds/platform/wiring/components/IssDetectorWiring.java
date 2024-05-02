@@ -23,9 +23,12 @@ import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.state.notifications.IssNotification;
+import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
+import com.swirlds.platform.system.status.actions.PlatformStatusAction;
 import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Wiring for the {@link IssDetector}.
@@ -34,12 +37,14 @@ import java.util.List;
  * @param stateAndRoundInput    the input wire for completed rounds and their corresponding states
  * @param overridingState       the input wire for overriding states
  * @param issNotificationOutput the output wire for ISS notifications
+ * @param statusActionOutput    the output wire for catastrophic failure status actions
  */
 public record IssDetectorWiring(
         @NonNull InputWire<NoInput> endOfPcesReplay,
         @NonNull InputWire<StateAndRound> stateAndRoundInput,
         @NonNull InputWire<ReservedSignedState> overridingState,
-        @NonNull OutputWire<IssNotification> issNotificationOutput) {
+        @NonNull OutputWire<IssNotification> issNotificationOutput,
+        @NonNull OutputWire<PlatformStatusAction> statusActionOutput) {
     /**
      * Create a new instance of this wiring.
      *
@@ -48,12 +53,24 @@ public record IssDetectorWiring(
      */
     @NonNull
     public static IssDetectorWiring create(@NonNull final TaskScheduler<List<IssNotification>> taskScheduler) {
+        final OutputWire<IssNotification> notificationOutputWire =
+                taskScheduler.getOutputWire().buildSplitter("issNotificationSplitter", "iss notifications");
+        final OutputWire<PlatformStatusAction> catastrophicFailureWire =
+                notificationOutputWire.buildTransformer("toStatusAction", "notification", notification -> {
+                    if (Set.of(IssNotification.IssType.SELF_ISS, IssNotification.IssType.CATASTROPHIC_ISS)
+                            .contains(notification.getIssType())) {
+                        return new CatastrophicFailureAction();
+                    }
+                    // don't change status for other types of ISS
+                    return null;
+                });
 
         return new IssDetectorWiring(
                 taskScheduler.buildInputWire("end of PCES replay"),
                 taskScheduler.buildInputWire("stateAndRound"),
                 taskScheduler.buildInputWire("overriding state"),
-                taskScheduler.getOutputWire().buildSplitter("issNotificationSplitter", "iss notifications"));
+                notificationOutputWire,
+                catastrophicFailureWire);
     }
 
     /**
