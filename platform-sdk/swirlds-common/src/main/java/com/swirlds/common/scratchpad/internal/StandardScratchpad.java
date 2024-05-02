@@ -16,7 +16,7 @@
 
 package com.swirlds.common.scratchpad.internal;
 
-import static com.swirlds.common.io.utility.TemporaryFileBuilder.buildTemporaryFile;
+import static com.swirlds.common.io.utility.LegacyTemporaryFileBuilder.buildTemporaryFile;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 

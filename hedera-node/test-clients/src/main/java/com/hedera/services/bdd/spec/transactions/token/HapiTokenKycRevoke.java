@@ -18,7 +18,6 @@ package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 
 import com.google.common.base.MoreObjects;
@@ -93,7 +92,7 @@ public class HapiTokenKycRevoke extends HapiTxnOp<HapiTokenKycRevoke> {
         if (referenceType == ReferenceType.REGISTRY_NAME) {
             aId = TxnUtils.asId(account, spec);
         } else {
-            aId = asIdForKeyLookUp(alias, spec);
+            aId = spec.registry().keyAliasIdFor(alias);
             account = asAccountString(aId);
         }
         final var tId = TxnUtils.asTokenId(token, spec);

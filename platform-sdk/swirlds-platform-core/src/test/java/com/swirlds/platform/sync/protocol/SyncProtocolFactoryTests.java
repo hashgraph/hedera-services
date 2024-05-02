@@ -43,7 +43,9 @@ import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;
 import com.swirlds.platform.network.protocol.ProtocolFactory;
 import com.swirlds.platform.network.protocol.SyncProtocolFactory;
+import com.swirlds.platform.system.status.DefaultPlatformStatusNexus;
 import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.platform.system.status.PlatformStatusNexus;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
@@ -65,6 +67,7 @@ class SyncProtocolFactoryTests {
     private SyncMetrics syncMetrics;
     private FakeTime time;
     private PlatformContext platformContext;
+    private PlatformStatusNexus statusNexus;
 
     @BeforeEach
     void setup() {
@@ -84,6 +87,9 @@ class SyncProtocolFactoryTests {
         Mockito.when(fallenBehindManager.getNeededForFallenBehind()).thenReturn(List.of(new NodeId(1L)));
 
         platformContext = TestPlatformContextBuilder.create().withTime(time).build();
+
+        statusNexus = new DefaultPlatformStatusNexus(platformContext);
+        statusNexus.setCurrentStatus(PlatformStatus.ACTIVE);
     }
 
     @Test
@@ -98,7 +104,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                () -> PlatformStatus.ACTIVE);
+                statusNexus);
 
         assertEquals(2, permitProvider.getNumAvailable());
         assertTrue(syncProtocolFactory.build(peerId).shouldInitiate());
@@ -119,7 +125,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 Duration.ofMillis(100),
                 syncMetrics,
-                () -> PlatformStatus.ACTIVE);
+                statusNexus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
         // do an initial sync, so we can verify that the resulting cooldown period is respected
         assertTrue(protocol.shouldInitiate());
@@ -147,6 +153,8 @@ class SyncProtocolFactoryTests {
     @Test
     @DisplayName("Protocol doesn't initiate if platform has the wrong status")
     void incorrectStatusToInitiate() {
+        statusNexus.setCurrentStatus(PlatformStatus.BEHIND);
+
         final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
                 shadowGraphSynchronizer,
@@ -156,7 +164,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                () -> PlatformStatus.BEHIND);
+                statusNexus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -176,7 +184,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                () -> PlatformStatus.ACTIVE);
+                statusNexus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -201,7 +209,7 @@ class SyncProtocolFactoryTests {
                 () -> true,
                 sleepAfterSync,
                 syncMetrics,
-                () -> PlatformStatus.ACTIVE);
+                statusNexus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -224,7 +232,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                () -> PlatformStatus.ACTIVE);
+                statusNexus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -246,7 +254,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                () -> PlatformStatus.ACTIVE);
+                statusNexus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -267,7 +275,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                () -> PlatformStatus.ACTIVE);
+                statusNexus);
         final Protocol protocol = syncProtocolFactory.build(new NodeId(6));
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -292,7 +300,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                () -> PlatformStatus.ACTIVE);
+                statusNexus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertTrue(protocol.shouldAccept());
@@ -313,7 +321,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 Duration.ofMillis(100),
                 syncMetrics,
-                () -> PlatformStatus.ACTIVE);
+                statusNexus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         // do an initial sync, so we can verify that the resulting cooldown period is respected
@@ -342,6 +350,7 @@ class SyncProtocolFactoryTests {
     @Test
     @DisplayName("Protocol doesn't accept if platform has the wrong status")
     void incorrectStatusToAccept() {
+        statusNexus.setCurrentStatus(PlatformStatus.BEHIND);
         final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
                 shadowGraphSynchronizer,
@@ -351,7 +360,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                () -> PlatformStatus.BEHIND);
+                statusNexus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -379,7 +388,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                () -> PlatformStatus.ACTIVE);
+                statusNexus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertFalse(protocol.shouldAccept());
@@ -398,7 +407,7 @@ class SyncProtocolFactoryTests {
                 () -> true,
                 sleepAfterSync,
                 syncMetrics,
-                () -> PlatformStatus.ACTIVE);
+                statusNexus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -421,7 +430,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                () -> PlatformStatus.ACTIVE);
+                statusNexus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -441,7 +450,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                () -> PlatformStatus.ACTIVE);
+                statusNexus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -463,7 +472,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                () -> PlatformStatus.ACTIVE);
+                statusNexus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -485,7 +494,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                () -> PlatformStatus.ACTIVE);
+                statusNexus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -507,7 +516,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                () -> PlatformStatus.ACTIVE);
+                statusNexus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -530,7 +539,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                () -> PlatformStatus.ACTIVE);
+                statusNexus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         // mock synchronize to throw a ParallelExecutionException
@@ -559,7 +568,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                () -> PlatformStatus.ACTIVE);
+                statusNexus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         // mock synchronize to throw a ParallelExecutionException with root cause being an IOException
@@ -587,7 +596,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                () -> PlatformStatus.ACTIVE);
+                statusNexus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         // mock synchronize to throw a SyncException
@@ -614,7 +623,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                () -> PlatformStatus.ACTIVE);
+                statusNexus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertTrue(protocol.acceptOnSimultaneousInitiate());

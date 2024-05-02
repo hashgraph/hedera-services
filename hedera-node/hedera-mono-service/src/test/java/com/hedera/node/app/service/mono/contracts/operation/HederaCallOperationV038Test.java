@@ -99,7 +99,16 @@ class HederaCallOperationV038Test {
         commonSetup(evmMsgFrame, worldUpdater, acc);
         given(worldUpdater.get(any())).willReturn(null);
         given(calc.callOperationGasCost(
-                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
+                        any(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        any(),
+                        any(),
+                        any(),
+                        anyBoolean()))
                 .willReturn(cost);
         given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
         given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.EMPTY);
@@ -122,7 +131,16 @@ class HederaCallOperationV038Test {
     void executesAsExpected(boolean isFlagEnabled) {
         commonSetup(evmMsgFrame, worldUpdater, acc);
         given(calc.callOperationGasCost(
-                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
+                        any(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        any(),
+                        any(),
+                        any(),
+                        anyBoolean()))
                 .willReturn(cost);
         // and:
         given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
@@ -164,7 +182,16 @@ class HederaCallOperationV038Test {
     void executesAsExpectedToNonExistingWhenLazyCreateEnabledButNoValueIsTransferred() {
         commonSetup(evmMsgFrame, worldUpdater, acc);
         given(calc.callOperationGasCost(
-                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
+                        any(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        any(),
+                        any(),
+                        any(),
+                        anyBoolean()))
                 .willReturn(cost);
         // and:
         given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
@@ -191,7 +218,16 @@ class HederaCallOperationV038Test {
     void executesAsExpectedToNonExistingWhenLazyCreateEnabledButIsMirrorAddress() {
         commonSetup(evmMsgFrame, worldUpdater, acc);
         given(calc.callOperationGasCost(
-                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
+                        any(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        any(),
+                        any(),
+                        any(),
+                        anyBoolean()))
                 .willReturn(cost);
         // and:
         given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
@@ -218,7 +254,16 @@ class HederaCallOperationV038Test {
     void executesLazyCreateAsExpected() {
         commonSetup(evmMsgFrame, worldUpdater, acc);
         given(calc.callOperationGasCost(
-                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
+                        any(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        any(),
+                        any(),
+                        any(),
+                        anyBoolean()))
                 .willReturn(cost);
         // and:
         given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
@@ -252,7 +297,16 @@ class HederaCallOperationV038Test {
     void staticCallsDoNotCheckSignatures() {
         commonSetup(evmMsgFrame, worldUpdater, acc);
         given(calc.callOperationGasCost(
-                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
+                        any(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        any(),
+                        any(),
+                        any(),
+                        anyBoolean()))
                 .willReturn(cost);
         // and:
         given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);

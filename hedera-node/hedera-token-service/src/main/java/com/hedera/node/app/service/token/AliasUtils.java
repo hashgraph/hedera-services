@@ -80,7 +80,9 @@ public final class AliasUtils {
     @Nullable
     public static Bytes extractEvmAddress(@NonNull final Bytes alias) {
         requireNonNull(alias);
-        if (isOfEvmAddressSize(alias)) return alias;
+        if (isOfEvmAddressSize(alias)) {
+            return alias;
+        }
         final var key = asKeyFromAliasOrElse(alias, null);
         return (key != null && key.hasEcdsaSecp256k1()) ? recoverAddressFromPubKey(key.ecdsaSecp256k1OrThrow()) : null;
     }

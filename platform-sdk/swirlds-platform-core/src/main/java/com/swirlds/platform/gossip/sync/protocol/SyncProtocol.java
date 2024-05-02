@@ -31,7 +31,7 @@ import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;
-import com.swirlds.platform.system.status.PlatformStatusGetter;
+import com.swirlds.platform.system.status.PlatformStatusNexus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
@@ -93,21 +93,21 @@ public class SyncProtocol implements Protocol {
 
     private final PlatformContext platformContext;
 
-    private final PlatformStatusGetter platformStatusGetter;
+    private final PlatformStatusNexus statusNexus;
 
     /**
      * Constructs a new sync protocol
      *
-     * @param platformContext      the platform context
-     * @param peerId               the id of the peer being synced with in this protocol
-     * @param synchronizer         the shadow graph synchronizer, responsible for actually doing the sync
-     * @param fallenBehindManager  manager to determine whether this node has fallen behind
-     * @param permitProvider       provides permits to sync
-     * @param gossipHalted         returns true if gossip is halted, false otherwise
-     * @param intakeIsTooFull      returns true if the intake queue is too full to continue syncing, false otherwise
-     * @param sleepAfterSync       the amount of time to sleep after a sync
-     * @param syncMetrics          metrics tracking syncing
-     * @param platformStatusGetter provides the current platform status
+     * @param platformContext     the platform context
+     * @param peerId              the id of the peer being synced with in this protocol
+     * @param synchronizer        the shadow graph synchronizer, responsible for actually doing the sync
+     * @param fallenBehindManager manager to determine whether this node has fallen behind
+     * @param permitProvider      provides permits to sync
+     * @param gossipHalted        returns true if gossip is halted, false otherwise
+     * @param intakeIsTooFull     returns true if the intake queue is too full to continue syncing, false otherwise
+     * @param sleepAfterSync      the amount of time to sleep after a sync
+     * @param syncMetrics         metrics tracking syncing
+     * @param statusNexus         provides the current platform status
      */
     public SyncProtocol(
             @NonNull final PlatformContext platformContext,
@@ -119,7 +119,7 @@ public class SyncProtocol implements Protocol {
             @NonNull final BooleanSupplier intakeIsTooFull,
             @NonNull final Duration sleepAfterSync,
             @NonNull final SyncMetrics syncMetrics,
-            @NonNull final PlatformStatusGetter platformStatusGetter) {
+            @NonNull final PlatformStatusNexus statusNexus) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.peerId = Objects.requireNonNull(peerId);
@@ -130,7 +130,7 @@ public class SyncProtocol implements Protocol {
         this.intakeIsTooFull = Objects.requireNonNull(intakeIsTooFull);
         this.sleepAfterSync = Objects.requireNonNull(sleepAfterSync);
         this.syncMetrics = Objects.requireNonNull(syncMetrics);
-        this.platformStatusGetter = Objects.requireNonNull(platformStatusGetter);
+        this.statusNexus = Objects.requireNonNull(statusNexus);
     }
 
     /**
@@ -149,7 +149,7 @@ public class SyncProtocol implements Protocol {
      * @return true if the node should sync, false otherwise
      */
     private boolean shouldSync() {
-        if (!SyncStatusChecker.doesStatusPermitSync(platformStatusGetter.getCurrentStatus())) {
+        if (!SyncStatusChecker.doesStatusPermitSync(statusNexus.getCurrentStatus())) {
             syncMetrics.doNotSyncPlatformStatus();
             return false;
         }
