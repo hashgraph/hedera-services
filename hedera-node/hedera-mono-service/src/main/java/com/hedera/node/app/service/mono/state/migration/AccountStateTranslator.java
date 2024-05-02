@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.migration;
 
+import static com.hedera.node.app.service.mono.state.migration.ContractStateMigrator.bytesFromInts;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.ByteString;
@@ -133,11 +134,7 @@ public class AccountStateTranslator {
     }
 
     public static Account accountFromOnDiskAccount(@NonNull final OnDiskAccount account) {
-        final var firstContractStorageKey = account.getFirstContractStorageKey() == null
-                ? Bytes.EMPTY
-                : Bytes.wrap(account.getFirstContractStorageKey()
-                        .getKeyAsBigInteger()
-                        .toByteArray());
+        final var firstContractStorageKey = bytesFromInts(account.getFirstStorageKey());
         final var stakedAccountId = account.getStakedId() > 0
                 ? AccountID.newBuilder().accountNum(account.getStakedId()).build()
                 : null;

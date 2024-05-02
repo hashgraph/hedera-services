@@ -131,7 +131,7 @@ public class StandardEventDeduplicator implements EventDeduplicator {
         }
 
         final Set<ByteBuffer> signatures = observedEvents.computeIfAbsent(event.getDescriptor(), NEW_HASH_SET);
-        if (signatures.add(ByteBuffer.wrap(event.getUnhashedData().getSignature()))) {
+        if (signatures.add(ByteBuffer.wrap(event.getSignature()))) {
             if (signatures.size() != 1) {
                 // signature is unique, but descriptor is not
                 disparateSignatureAccumulator.update(1);
