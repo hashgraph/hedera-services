@@ -17,6 +17,7 @@
 package com.swirlds.platform.state.signed;
 
 import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -39,6 +40,7 @@ public interface StateSignatureCollector {
      * @param reservedSignedState the signed state to add
      * @return a list of signed states that are now complete or too old, or null if there are none
      */
+    @InputWireLabel("hashed states")
     @Nullable
     List<ReservedSignedState> addReservedState(@NonNull ReservedSignedState reservedSignedState);
 
@@ -48,6 +50,7 @@ public interface StateSignatureCollector {
      * @param transactions the signature transactions to handle
      * @return a list of signed states that are now complete or too old, or null if there are none
      */
+    @InputWireLabel("preconsensus state signatures")
     @Nullable
     List<ReservedSignedState> handlePreconsensusSignatures(
             @NonNull List<ScopedSystemTransaction<StateSignaturePayload>> transactions);
@@ -58,6 +61,7 @@ public interface StateSignatureCollector {
      * @param transactions the signature transactions to handle
      * @return a list of signed states that are now complete or too old, or null if there are none
      */
+    @InputWireLabel("post consensus state signatures")
     @Nullable
     List<ReservedSignedState> handlePostconsensusSignatures(
             @NonNull List<ScopedSystemTransaction<StateSignaturePayload>> transactions);
@@ -67,5 +71,6 @@ public interface StateSignatureCollector {
      *
      * @param ignored ignored trigger object
      */
+    @InputWireLabel("clear")
     void clear(@NonNull Object ignored);
 }

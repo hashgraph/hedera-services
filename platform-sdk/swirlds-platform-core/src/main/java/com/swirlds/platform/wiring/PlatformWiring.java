@@ -482,7 +482,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                         StateSignatureCollector::handlePreconsensusSignatures));
 
         // Split output of StateSignatureCollector into single ReservedSignedStates.
-        OutputWire<ReservedSignedState> splitReservedSignedStateWire = stateSignatureCollectorWiring.getSplitOutput();
+        OutputWire<ReservedSignedState> splitReservedSignedStateWire = stateSignatureCollectorWiring.getOutputWire().buildSplitter("reservedStateSplitter", "reserved state lists");
         // Add another reservation to the signed states since we are soldering to two different input wires
         OutputWire<ReservedSignedState> allReservedSignedStatesWire =
                 splitReservedSignedStateWire.buildAdvancedTransformer(new SignedStateReserver("allStatesReserver"));
