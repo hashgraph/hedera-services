@@ -187,7 +187,8 @@ public class HapiUtils {
             HederaFunctionality.TOKEN_GET_NFT_INFOS,
             HederaFunctionality.TOKEN_GET_ACCOUNT_NFT_INFOS,
             HederaFunctionality.NETWORK_GET_EXECUTION_TIME,
-            HederaFunctionality.GET_ACCOUNT_DETAILS);
+            HederaFunctionality.GET_ACCOUNT_DETAILS,
+            HederaFunctionality.NODE_GET_INFO);
 
     public static HederaFunctionality functionOf(final TransactionBody txn) throws UnknownHederaFunctionality {
         return switch (txn.data().kind()) {
@@ -237,6 +238,9 @@ public class HapiUtils {
             case TOKEN_WIPE -> HederaFunctionality.TOKEN_ACCOUNT_WIPE;
             case UTIL_PRNG -> HederaFunctionality.UTIL_PRNG;
             case UNCHECKED_SUBMIT -> HederaFunctionality.UNCHECKED_SUBMIT;
+            case NODE_CREATE -> HederaFunctionality.NODE_CREATE;
+            case NODE_UPDATE -> HederaFunctionality.NODE_UPDATE;
+            case NODE_DELETE -> HederaFunctionality.NODE_DELETE;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
     }
