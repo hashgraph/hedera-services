@@ -22,7 +22,6 @@ import com.swirlds.cli.commands.StateCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.context.internal.DefaultPlatformContext;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -161,7 +160,7 @@ public final class CompareStatesCommand extends AbstractCommand {
 
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(
                 ConfigurationBuilder.create(), getAbsolutePath("settings.txt"), configurationPaths);
-        final PlatformContext platformContext = DefaultPlatformContext.create(configuration);
+        final PlatformContext platformContext = PlatformContext.create(configuration);
 
         try (final ReservedSignedState stateA = loadAndHashState(platformContext, stateAPath)) {
             try (final ReservedSignedState stateB = loadAndHashState(platformContext, stateBPath)) {

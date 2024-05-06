@@ -23,7 +23,6 @@ import com.swirlds.cli.commands.EventStreamCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.context.internal.DefaultPlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -125,7 +124,7 @@ public final class EventStreamRecoverCommand extends AbstractCommand {
     public Integer call() throws Exception {
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(
                 ConfigurationBuilder.create(), getAbsolutePath("settings.txt"), configurationPaths);
-        final PlatformContext platformContext = DefaultPlatformContext.create(configuration);
+        final PlatformContext platformContext = PlatformContext.create(configuration);
 
         recoverState(
                 platformContext,

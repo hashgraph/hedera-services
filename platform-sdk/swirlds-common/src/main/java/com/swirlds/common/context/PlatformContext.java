@@ -18,11 +18,16 @@ package com.swirlds.common.context;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.concurrent.ExecutorFactory;
+import com.swirlds.common.context.internal.DefaultPlatformContext;
+import com.swirlds.common.context.internal.PlatformUncaughtExceptionHandler;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.lang.Thread.UncaughtExceptionHandler;
 
 /**
  * Public interface of the platform context that provides access to all basic services and resources. By using the
@@ -33,6 +38,44 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * access all basic services.
  */
 public interface PlatformContext {
+
+    /**
+     * Creates a new instance of the platform context. The instance uses a {@link NoOpMetrics} implementation for
+     * metrics. The instance uses the static {@link CryptographyHolder#get()} call to get the cryptography. The instance
+     * uses the static {@link Time#getCurrent()} call to get the time.
+     *
+     * @param configuration the configuration
+     * @return the platform context
+     * @deprecated since we need to remove the static {@link CryptographyHolder#get()} call in future.
+     */
+    @Deprecated(forRemoval = true)
+    @NonNull
+    static PlatformContext create(@NonNull final Configuration configuration) {
+        final Metrics metrics = new NoOpMetrics();
+        final Cryptography cryptography = CryptographyHolder.get();
+        return create(configuration, metrics, cryptography);
+    }
+
+    /**
+     * Creates a new instance of the platform context.
+     * <p>
+     * The instance uses the static {@link Time#getCurrent()} call to get the time.
+     *
+     * @param configuration the configuration
+     * @param metrics       the metrics
+     * @param cryptography  the cryptography
+     * @return the platform context
+     */
+    @NonNull
+    static PlatformContext create(
+            @NonNull final Configuration configuration,
+            @NonNull final Metrics metrics,
+            @NonNull final Cryptography cryptography) {
+        final Time time = Time.getCurrent();
+        final UncaughtExceptionHandler handler = new PlatformUncaughtExceptionHandler();
+        final ExecutorFactory executorFactory = ExecutorFactory.create("platform", null, handler);
+        return new DefaultPlatformContext(configuration, metrics, cryptography, time, executorFactory);
+    }
 
     /**
      * Returns the {@link Configuration} instance for the platform

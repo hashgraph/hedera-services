@@ -23,7 +23,6 @@ import com.swirlds.cli.commands.StateCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.context.internal.DefaultPlatformContext;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -69,7 +68,7 @@ public class GenesisPlatformStateCommand extends AbstractCommand {
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
         BootstrapUtils.setupConstructableRegistry();
 
-        final PlatformContext platformContext = DefaultPlatformContext.create(configuration);
+        final PlatformContext platformContext = PlatformContext.create(configuration);
 
         System.out.printf("Reading from %s %n", statePath.toAbsolutePath());
         final DeserializedSignedState deserializedSignedState =
