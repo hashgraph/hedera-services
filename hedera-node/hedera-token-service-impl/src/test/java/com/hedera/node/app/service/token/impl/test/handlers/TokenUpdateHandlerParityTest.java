@@ -32,13 +32,14 @@ import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_RE
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_REPLACING_TREASURY_AS_CUSTOM_PAYER;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_REPLACING_TREASURY_AS_PAYER;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_REPLACING_WITH_MISSING_TREASURY;
-import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_FREEZE_KEYED_TOKEN;
-import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_KYC_KEYED_TOKEN;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_FREEZE_KEYED_TOKEN_NO_VALIDATION;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_KYC_KEYED_TOKEN_FULL_VALIDATION;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_KYC_KEYED_TOKEN_NO_VALIDATION;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_MISSING_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_MISSING_TOKEN_ADMIN_KEY;
-import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_NO_KEYS_AFFECTED;
-import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_SUPPLY_KEYED_TOKEN;
-import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_WIPE_KEYED_TOKEN;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_NO_FIELDS_CHANGED;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_SUPPLY_KEYED_TOKEN_NO_VALIDATION;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_WIPE_KEYED_TOKEN_NO_KEY_VALIDATION;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
@@ -50,6 +51,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
@@ -75,15 +77,14 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
     }
 
     @Test
-    void tokenUpdateWithoutAffectingKeys() throws PreCheckException {
-        final var txn = txnFrom(UPDATE_WITH_NO_KEYS_AFFECTED);
+    void tokenUpdateWithNoFieldsChanged() throws PreCheckException {
+        final var txn = txnFrom(UPDATE_WITH_NO_FIELDS_CHANGED);
         final var context = new FakePreHandleContext(readableAccountStore, txn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(1, context.requiredNonPayerKeys().size());
-        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_ADMIN_KT.asPbjKey()));
+        assertTrue(context.requiredNonPayerKeys().isEmpty());
     }
 
     @Test
@@ -150,15 +151,12 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
 
     @Test
     void tokenUpdateWithSupplyKeyedToken() throws PreCheckException {
-        final var txn = txnFrom(UPDATE_WITH_SUPPLY_KEYED_TOKEN);
+        final var txn = txnFrom(UPDATE_WITH_SUPPLY_KEYED_TOKEN_NO_VALIDATION);
         final var context = new FakePreHandleContext(readableAccountStore, txn);
-        final var lowPriorityKeyList = Key.newBuilder()
-                .keyList(KeyList.newBuilder().keys(TOKEN_SUPPLY_KT.asPbjKey()).build())
-                .build();
         final var thresholdKey = Key.newBuilder()
                 .thresholdKey(ThresholdKey.newBuilder()
                         .keys(KeyList.newBuilder()
-                                .keys(lowPriorityKeyList, TOKEN_ADMIN_KT.asPbjKey())
+                                .keys(TOKEN_SUPPLY_KT.asPbjKey(), TOKEN_ADMIN_KT.asPbjKey())
                                 .build())
                         .threshold(1)
                         .build())
@@ -173,17 +171,40 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
 
     @Test
     void tokenUpdateWithKYCKeyedToken() throws PreCheckException {
-        final var txn = txnFrom(UPDATE_WITH_KYC_KEYED_TOKEN);
+        final var txn = txnFrom(UPDATE_WITH_KYC_KEYED_TOKEN_NO_VALIDATION);
         final var context = new FakePreHandleContext(readableAccountStore, txn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
         subject.preHandle(context);
-        final var lowPriorityKeyList = Key.newBuilder()
-                .keyList(KeyList.newBuilder().keys(TOKEN_KYC_KT.asPbjKey()).build())
-                .build();
         final var thresholdKey = Key.newBuilder()
                 .thresholdKey(ThresholdKey.newBuilder()
                         .keys(KeyList.newBuilder()
-                                .keys(lowPriorityKeyList, TOKEN_ADMIN_KT.asPbjKey())
+                                .keys(TOKEN_KYC_KT.asPbjKey(), TOKEN_ADMIN_KT.asPbjKey())
+                                .build())
+                        .threshold(1)
+                        .build())
+                .build();
+
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(1, context.requiredNonPayerKeys().size());
+        assertThat(context.requiredNonPayerKeys(), contains(thresholdKey));
+    }
+
+    @Test
+    void tokenUpdateWithKYCKeyedTokenAndFullValidation() throws PreCheckException {
+        final var txn = txnFrom(UPDATE_WITH_KYC_KEYED_TOKEN_FULL_VALIDATION);
+        final var context = new FakePreHandleContext(readableAccountStore, txn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
+        final var thresholdKey = Key.newBuilder()
+                .thresholdKey(ThresholdKey.newBuilder()
+                        .keys(KeyList.newBuilder()
+                                .keys(
+                                        Key.newBuilder()
+                                                .keyList(KeyList.newBuilder()
+                                                        .keys(TOKEN_KYC_KT.asPbjKey(), TOKEN_REPLACE_KT.asPbjKey())
+                                                        .build())
+                                                .build(),
+                                        TOKEN_ADMIN_KT.asPbjKey())
                                 .build())
                         .threshold(1)
                         .build())
@@ -196,17 +217,14 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
 
     @Test
     void tokenUpdateWithFreezeKeyedToken() throws PreCheckException {
-        final var txn = txnFrom(UPDATE_WITH_FREEZE_KEYED_TOKEN);
+        final var txn = txnFrom(UPDATE_WITH_FREEZE_KEYED_TOKEN_NO_VALIDATION);
         final var context = new FakePreHandleContext(readableAccountStore, txn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
         subject.preHandle(context);
-        final var lowPriorityKeyList = Key.newBuilder()
-                .keyList(KeyList.newBuilder().keys(TOKEN_FREEZE_KT.asPbjKey()).build())
-                .build();
         final var thresholdKey = Key.newBuilder()
                 .thresholdKey(ThresholdKey.newBuilder()
                         .keys(KeyList.newBuilder()
-                                .keys(lowPriorityKeyList, TOKEN_ADMIN_KT.asPbjKey())
+                                .keys(TOKEN_FREEZE_KT.asPbjKey(), TOKEN_ADMIN_KT.asPbjKey())
                                 .build())
                         .threshold(1)
                         .build())
@@ -219,17 +237,14 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
 
     @Test
     void tokenUpdateWithWipeKeyedToken() throws PreCheckException {
-        final var txn = txnFrom(UPDATE_WITH_WIPE_KEYED_TOKEN);
+        final var txn = txnFrom(UPDATE_WITH_WIPE_KEYED_TOKEN_NO_KEY_VALIDATION);
         final var context = new FakePreHandleContext(readableAccountStore, txn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
         subject.preHandle(context);
-        final var lowPriorityKeyList = Key.newBuilder()
-                .keyList(KeyList.newBuilder().keys(TOKEN_WIPE_KT.asPbjKey()).build())
-                .build();
         final var thresholdKey = Key.newBuilder()
                 .thresholdKey(ThresholdKey.newBuilder()
                         .keys(KeyList.newBuilder()
-                                .keys(lowPriorityKeyList, TOKEN_ADMIN_KT.asPbjKey())
+                                .keys(TOKEN_WIPE_KT.asPbjKey(), TOKEN_ADMIN_KT.asPbjKey())
                                 .build())
                         .threshold(1)
                         .build())

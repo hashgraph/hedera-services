@@ -42,7 +42,7 @@ import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.util.TokenKeys;
+import com.hedera.node.app.service.token.impl.util.TokenKey;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
@@ -58,8 +58,8 @@ import org.apache.logging.log4j.Logger;
 
 public class BaseTokenHandler {
     private static final Logger log = LogManager.getLogger(BaseTokenHandler.class);
-    protected static final Set<TokenKeys> TOKEN_KEYS = EnumSet.allOf(TokenKeys.class);
-    protected static final Set<TokenKeys> NON_ADMIN_TOKEN_KEYS = EnumSet.complementOf(EnumSet.of(TokenKeys.ADMIN_KEY));
+    public static final Set<TokenKey> NON_ADMIN_TOKEN_KEYS = EnumSet.complementOf(EnumSet.of(TokenKey.ADMIN_KEY));
+    static final Set<TokenKey> TOKEN_KEYS = EnumSet.allOf(TokenKey.class);
 
     /**
      * Mints fungible tokens. This method is called in both token create and mint.
@@ -429,31 +429,14 @@ public class BaseTokenHandler {
     }
 
     /**
-     * Check if TokenUpdateOp wants to update only some of the low priority keys or the metadata field
-     * low priority keys are -> wipeKey, kycKey, supplyKey, freezeKey, feeScheduleKey, pauseKey or metadataKey
+     * Checks if the given op updates any of the non-key token properties that can only be
+     * changed given the admin key signature.
+     *
+     * @param op the token update op to check
+     * @return true if it requires admin key signature
      */
-    public static boolean noOtherFieldThanLowPriorityKeyOrMetadataWillBeUpdated(
-            @NonNull final TokenUpdateTransactionBody op) {
-        return !((op.symbol() != null && !op.symbol().isEmpty())
-                || (op.name() != null && !op.name().isEmpty())
-                || op.hasTreasury()
-                || op.hasAdminKey()
-                || op.hasAutoRenewAccount()
-                || op.hasAutoRenewPeriod()
-                || op.hasMemo()
-                || op.hasExpiry());
-    }
-
-    /**
-     * Check if a given token already has some of the low priority keys
-     */
-    public static boolean hasAlreadySomeNonAdminKeys(@NonNull final Token token) {
-        for (final var nonAdminKey : NON_ADMIN_TOKEN_KEYS) {
-            if (nonAdminKey.isPresentInitially(token)) {
-                return true;
-            }
-        }
-        return false;
+    protected static boolean updatesAdminOnlyNonKeyTokenProperty(@NonNull final TokenUpdateTransactionBody op) {
+        return !op.symbol().isEmpty() || !op.name().isEmpty() || op.hasAutoRenewPeriod() || op.hasMemo();
     }
 
     @NonNull

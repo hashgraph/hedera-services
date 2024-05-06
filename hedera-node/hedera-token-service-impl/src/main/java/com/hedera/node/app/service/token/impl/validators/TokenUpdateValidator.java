@@ -17,16 +17,10 @@
 package com.hedera.node.app.service.token.impl.validators;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
-import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.hasAlreadySomeNonAdminKeys;
-import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.isExpiryOnlyUpdateOp;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
-import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.TokenKeyValidation;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -53,48 +47,20 @@ public class TokenUpdateValidator {
             @NonNull final HandleContext context, @NonNull final TokenUpdateTransactionBody op) {
         final var readableAccountStore = context.readableStore(ReadableAccountStore.class);
         final var tokenStore = context.readableStore(ReadableTokenStore.class);
-        final var tokenId = op.tokenOrThrow();
-        final var token = getIfUsable(tokenId, tokenStore);
+        final var token = getIfUsable(op.tokenOrThrow(), tokenStore);
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-        // If the token has an empty admin key it can't be updated for any other fields other than low priority keys or
-        // expiry
-        // For updating only low priority keys - (wipeKey, kycKey, supplyKey, freezeKey, feeScheduleKey, pauseKey or
-        // metadataKey)
-        // the transaction should have admin key or the respective low priority key signature
-        if (isEmpty(token.adminKey())) {
-            validateTrue(isExpiryOnlyUpdateOp(op) || hasAlreadySomeNonAdminKeys(token), TOKEN_IS_IMMUTABLE);
-        }
-        // validate memo
         if (op.hasMemo()) {
             context.attributeValidator().validateMemo(op.memo());
         }
-        // validate metadata
         if (op.hasMetadata()) {
             validator.validateTokenMetadata(op.metadataOrThrow(), tokensConfig);
         }
-        // validate token symbol, if being changed
-        if (op.symbol() != null && !op.symbol().isEmpty()) {
+        if (!op.symbol().isEmpty()) {
             validator.validateTokenSymbol(op.symbol(), tokensConfig);
         }
-        // validate token name, if being changed
-        if (op.name() != null && !op.name().isEmpty()) {
+        if (!op.name().isEmpty()) {
             validator.validateTokenName(op.name(), tokensConfig);
         }
-        // validate token keys, if any being changed
-        if (op.keyVerificationMode() != TokenKeyValidation.NO_VALIDATION) {
-            validator.validateTokenKeys(
-                    op.hasAdminKey(), op.adminKey(),
-                    op.hasKycKey(), op.kycKey(),
-                    op.hasWipeKey(), op.wipeKey(),
-                    op.hasSupplyKey(), op.supplyKey(),
-                    op.hasFreezeKey(), op.freezeKey(),
-                    op.hasFeeScheduleKey(), op.feeScheduleKey(),
-                    op.hasPauseKey(), op.pauseKey(),
-                    op.hasMetadataKey(), op.metadataKey());
-        }
-
-        // Check whether there is change on the following properties in the transaction body
-        // If no change occurred, no need to change them or validate them
         if (!(op.hasExpiry() || op.hasAutoRenewPeriod() || op.hasAutoRenewAccount())) {
             return new ValidationResult(
                     token,
