@@ -482,14 +482,14 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                         StateSignatureCollector::handlePreconsensusSignatures));
 
         // Split output of StateSignatureCollector into single ReservedSignedStates.
-        OutputWire<ReservedSignedState> splitReservedSignedStateWire = stateSignatureCollectorWiring.getOutputWire().buildSplitter("reservedStateSplitter", "reserved state lists");
+        final OutputWire<ReservedSignedState> splitReservedSignedStateWire = stateSignatureCollectorWiring.getOutputWire().buildSplitter("reservedStateSplitter", "reserved state lists");
         // Add another reservation to the signed states since we are soldering to two different input wires
-        OutputWire<ReservedSignedState> allReservedSignedStatesWire =
+        final OutputWire<ReservedSignedState> allReservedSignedStatesWire =
                 splitReservedSignedStateWire.buildAdvancedTransformer(new SignedStateReserver("allStatesReserver"));
         // All reserved signed states are saved to disk.
         allReservedSignedStatesWire.solderTo(signedStateFileManagerWiring.saveToDiskFilter());
         // Filter to complete states only and add a 3rd reservation since completes states are used in two input wires.
-        OutputWire<ReservedSignedState> completeReservedSignedStatesWire = allReservedSignedStatesWire
+        final OutputWire<ReservedSignedState> completeReservedSignedStatesWire = allReservedSignedStatesWire
                 .buildFilter("completeStateFilter", "states", rs -> {
                     if (rs.get().isComplete()) {
                         return true;
@@ -500,7 +500,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                     }
                 })
                 .buildAdvancedTransformer(new SignedStateReserver("completeStatesReserver"));
-        ;
         completeReservedSignedStatesWire.solderTo(
                 latestCompleteStateNexusWiring.getInputWire(LatestCompleteStateNexus::setStateIfNewer));
 
