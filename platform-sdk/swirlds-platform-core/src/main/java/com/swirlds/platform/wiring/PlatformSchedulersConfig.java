@@ -124,7 +124,7 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "1000") int completeStateNotifierUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateHasherSchedulerType,
         @ConfigProperty(defaultValue = "2") int stateHasherUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(60) UNHANDLED_TASK_METRIC")
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(60) UNHANDLED_TASK_METRIC BUSY_WAIT")
                 TaskSchedulerConfiguration stateGarbageCollector,
         @ConfigProperty(defaultValue = "200ms") Duration stateGarbageCollectorHeartbeatPeriod,
         @ConfigProperty(defaultValue = "SEQUENTIAL UNHANDLED_TASK_METRIC")

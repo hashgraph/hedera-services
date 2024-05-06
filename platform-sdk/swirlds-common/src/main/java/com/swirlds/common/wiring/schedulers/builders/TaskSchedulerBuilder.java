@@ -178,6 +178,14 @@ public interface TaskSchedulerBuilder<OUT> {
     TaskSchedulerBuilder<OUT> withHyperlink(@Nullable String hyperlink);
 
     /**
+     * Set whether back pressure for input wires to this scheduler should busy wait. Default is false.
+     * @param busyWait whether input wires should busy wait
+     * @return this
+     */
+    @NonNull
+    TaskSchedulerBuilder<OUT> withBusyWait(boolean busyWait);
+
+    /**
      * Build the task scheduler.
      *
      * @return the task scheduler

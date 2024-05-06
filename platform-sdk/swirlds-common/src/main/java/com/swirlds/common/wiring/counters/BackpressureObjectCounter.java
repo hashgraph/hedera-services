@@ -56,9 +56,14 @@ public class BackpressureObjectCounter extends ObjectCounter {
      * @param capacity      the maximum number of objects that can be in the part of the system that this object is
      *                      being used to monitor before backpressure is applied
      * @param sleepDuration when a method needs to block, the duration to sleep while blocking
+     * @param busyWait      if true, thread will busy wait when on-ramping is not immediately possible
      */
     public BackpressureObjectCounter(
-            @NonNull final String name, final long capacity, @NonNull final Duration sleepDuration) {
+            @NonNull final String name,
+            final long capacity,
+            @NonNull final Duration sleepDuration,
+            final boolean busyWait) {
+
         if (capacity <= 0) {
             throw new IllegalArgumentException("Capacity must be greater than zero");
         }
@@ -67,8 +72,7 @@ public class BackpressureObjectCounter extends ObjectCounter {
         this.capacity = capacity;
 
         final long sleepNanos = sleepDuration.toNanos();
-
-        onRampBlocker = new BackpressureBlocker(count, capacity, sleepNanos);
+        onRampBlocker = busyWait ? null : new BackpressureBlocker(count, capacity, sleepNanos);
         waitUntilEmptyBlocker = new EmptyBlocker(count, sleepNanos);
     }
 
@@ -88,36 +92,7 @@ public class BackpressureObjectCounter extends ObjectCounter {
         }
 
         // Slow case. Capacity wasn't reserved, so we need to block.
-
-        while (true) {
-            try {
-                // This will block until capacity is available and the count has been incremented.
-                //
-                // This is logically equivalent to the following pseudocode.
-                // Note that the managed block is thread safe when onRamp() is being called from multiple threads,
-                // even though this pseudocode is not.
-                //
-                //                while (count >= capacity) {
-                //                    Thread.sleep(sleepNanos);
-                //                }
-                //                count++;
-                //
-                // The reason why we use the managedBlock() strategy instead of something simpler has to do with
-                // the fork join pool paradigm. Unlike traditional thread pools where we have more threads than
-                // CPUs, blocking (e.g. Thread.sleep()) on a fork join pool may monopolize an entire CPU core.
-                // The managedBlock() pattern allows us to block while yielding the physical CPU core to other
-                // tasks.
-                ForkJoinPool.managedBlock(onRampBlocker);
-                return;
-            } catch (final InterruptedException ex) {
-                // This should be impossible.
-                Thread.currentThread().interrupt();
-                throw new IllegalStateException("Interrupted while blocking on an onRamp() for " + name);
-            } catch (final RejectedExecutionException ex) {
-                // We've exhausted our supply of background threads, we have no choice but to busy wait.
-                Thread.onSpinWait();
-            }
-        }
+        block();
     }
 
     /**
@@ -176,6 +151,57 @@ public class BackpressureObjectCounter extends ObjectCounter {
             // This should be impossible.
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Interrupted while blocking on an waitUntilEmpty() for " + name);
+        }
+    }
+
+    /**
+     * Block until the element can be on-ramped.
+     */
+    private void block() {
+        if (onRampBlocker == null) {
+            // Busy wait and spin.
+            while (true) {
+                final long resultingCount = count.incrementAndGet();
+                if (resultingCount <= capacity) {
+                    // We didn't violate capacity by incrementing the count, so we're done.
+                    return;
+                } else {
+                    // We may have violated capacity restrictions by incrementing the count.
+                    // Decrement count and continue to spin.
+                    count.decrementAndGet();
+                }
+            }
+        } else {
+            // Delegate the blocking to a background thread.
+            while (true) {
+                try {
+                    // This will block until capacity is available and the count has been incremented.
+                    //
+                    // This is logically equivalent to the following pseudocode.
+                    // Note that the managed block is thread safe when onRamp() is being called from multiple threads,
+                    // even though this pseudocode is not.
+                    //
+                    //                while (count >= capacity) {
+                    //                    Thread.sleep(sleepNanos);
+                    //                }
+                    //                count++;
+                    //
+                    // The reason why we use the managedBlock() strategy instead of something simpler has to do with
+                    // the fork join pool paradigm. Unlike traditional thread pools where we have more threads than
+                    // CPUs, blocking (e.g. Thread.sleep()) on a fork join pool may monopolize an entire CPU core.
+                    // The managedBlock() pattern allows us to block while yielding the physical CPU core to other
+                    // tasks.
+                    ForkJoinPool.managedBlock(onRampBlocker);
+                    return;
+                } catch (final InterruptedException ex) {
+                    // This should be impossible.
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("Interrupted while blocking on an onRamp() for " + name);
+                } catch (final RejectedExecutionException ex) {
+                    // We've exhausted our supply of background threads, we have no choice but to busy wait.
+                    Thread.onSpinWait();
+                }
+            }
         }
     }
 }

@@ -64,6 +64,7 @@ public abstract class AbstractTaskSchedulerBuilder<OUT> implements TaskScheduler
     protected ForkJoinPool pool;
     protected UncaughtExceptionHandler uncaughtExceptionHandler;
     protected String hyperlink;
+    private boolean busyWait;
 
     protected boolean unhandledTaskMetricEnabled = false;
     protected boolean busyFractionMetricEnabled = false;
@@ -126,6 +127,9 @@ public abstract class AbstractTaskSchedulerBuilder<OUT> implements TaskScheduler
         }
         if (configuration.squelchingEnabled() != null) {
             withSquelchingEnabled(configuration.squelchingEnabled());
+        }
+        if (configuration.busyWaitEnabled() != null) {
+            withBusyWait(configuration.busyWaitEnabled());
         }
         return this;
     }
@@ -265,6 +269,16 @@ public abstract class AbstractTaskSchedulerBuilder<OUT> implements TaskScheduler
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public TaskSchedulerBuilder<OUT> withBusyWait(final boolean busyWait) {
+        this.busyWait = busyWait;
+        return this;
+    }
+
+    /**
      * Build an uncaught exception handler if one was not provided.
      *
      * @return the uncaught exception handler
@@ -334,7 +348,7 @@ public abstract class AbstractTaskSchedulerBuilder<OUT> implements TaskScheduler
                 && type != DIRECT
                 && type != DIRECT_THREADSAFE) {
 
-            innerCounter = new BackpressureObjectCounter(name, unhandledTaskCapacity, sleepDuration);
+            innerCounter = new BackpressureObjectCounter(name, unhandledTaskCapacity, sleepDuration, busyWait);
         } else if (unhandledTaskMetricEnabled || flushingEnabled) {
             innerCounter = new StandardObjectCounter(sleepDuration);
         } else {

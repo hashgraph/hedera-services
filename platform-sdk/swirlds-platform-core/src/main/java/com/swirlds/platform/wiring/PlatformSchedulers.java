@@ -197,6 +197,7 @@ public record PlatformSchedulers(
                         .withUnhandledTaskMetricEnabled(true)
                         .withHyperlink(platformCoreHyperlink(SignedStateHasher.class))
                         .withFlushingEnabled(true)
+                        .withBusyWait(true)
                         .build()
                         .cast());
     }

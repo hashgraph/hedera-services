@@ -65,8 +65,8 @@ class MultiObjectCounterTests {
 
         // When attempting an on ramp, only the first counter's capacity should be consulted.
 
-        final ObjectCounter counterA = new BackpressureObjectCounter("test", 10, Duration.ofSeconds(1));
-        final ObjectCounter counterB = new BackpressureObjectCounter("test", 5, Duration.ofSeconds(1));
+        final ObjectCounter counterA = new BackpressureObjectCounter("test", 10, Duration.ofSeconds(1), false);
+        final ObjectCounter counterB = new BackpressureObjectCounter("test", 5, Duration.ofSeconds(1), false);
         final ObjectCounter counterC = new StandardObjectCounter(Duration.ofSeconds(1));
 
         final MultiObjectCounter counter = new MultiObjectCounter(counterA, counterB, counterC);
@@ -95,8 +95,8 @@ class MultiObjectCounterTests {
 
         // When attempting an on ramp, only the first counter's capacity should be consulted.
 
-        final ObjectCounter counterA = new BackpressureObjectCounter("test", 10, Duration.ofSeconds(1));
-        final ObjectCounter counterB = new BackpressureObjectCounter("test", 5, Duration.ofSeconds(1));
+        final ObjectCounter counterA = new BackpressureObjectCounter("test", 10, Duration.ofSeconds(1), false);
+        final ObjectCounter counterB = new BackpressureObjectCounter("test", 5, Duration.ofSeconds(1), false);
         final ObjectCounter counterC = new StandardObjectCounter(Duration.ofSeconds(1));
 
         final MultiObjectCounter counter = new MultiObjectCounter(counterA, counterB, counterC);
@@ -120,8 +120,8 @@ class MultiObjectCounterTests {
 
     @Test
     void waitUntilEmptyTest() throws InterruptedException {
-        final ObjectCounter counterA = new BackpressureObjectCounter("test", 10, Duration.ofSeconds(1));
-        final ObjectCounter counterB = new BackpressureObjectCounter("test", 5, Duration.ofSeconds(1));
+        final ObjectCounter counterA = new BackpressureObjectCounter("test", 10, Duration.ofSeconds(1), false);
+        final ObjectCounter counterB = new BackpressureObjectCounter("test", 5, Duration.ofSeconds(1), false);
         final ObjectCounter counterC = new StandardObjectCounter(Duration.ofSeconds(1));
 
         final MultiObjectCounter counter = new MultiObjectCounter(counterA, counterB, counterC);

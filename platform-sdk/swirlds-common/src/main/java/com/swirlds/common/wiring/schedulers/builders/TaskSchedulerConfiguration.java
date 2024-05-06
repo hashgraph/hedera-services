@@ -35,6 +35,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * @param busyFractionMetricEnabled  whether the busy fraction metric should be enabled, if null then false is used
  * @param flushingEnabled            whether flushing is enabled, if null then false is used
  * @param squelchingEnabled          whether squelching is enabled, if null then false is used
+ * @param busyWaitEnabled            whether busy waiting is enabled, if null then false is used
  */
 public record TaskSchedulerConfiguration(
         @Nullable TaskSchedulerType type,
@@ -42,28 +43,29 @@ public record TaskSchedulerConfiguration(
         @Nullable Boolean unhandledTaskMetricEnabled,
         @Nullable Boolean busyFractionMetricEnabled,
         @Nullable Boolean flushingEnabled,
-        @Nullable Boolean squelchingEnabled) {
+        @Nullable Boolean squelchingEnabled,
+        @Nullable Boolean busyWaitEnabled) {
 
     /**
      * This configuration is for a no-op task scheduler. It is not necessary to use this constant for a no-op task
      * scheduler, but it is provided for convenience.
      */
     public static final TaskSchedulerConfiguration NO_OP_CONFIGURATION =
-            new TaskSchedulerConfiguration(TaskSchedulerType.NO_OP, 0L, false, false, false, false);
+            new TaskSchedulerConfiguration(TaskSchedulerType.NO_OP, 0L, false, false, false, false, false);
 
     /**
      * This configuration is for a simple direct task scheduler. It is not necessary to use this constant for a direct
      * task scheduler, but it is provided for convenience.
      */
     public static final TaskSchedulerConfiguration DIRECT_CONFIGURATION =
-            new TaskSchedulerConfiguration(TaskSchedulerType.DIRECT, 0L, false, false, false, false);
+            new TaskSchedulerConfiguration(TaskSchedulerType.DIRECT, 0L, false, false, false, false, false);
 
     /**
      * This configuration is for a thread-safe direct task scheduler. It is not necessary to use this constant for a
      * thread-safe direct task scheduler, but it is provided for convenience.
      */
     public static final TaskSchedulerConfiguration DIRECT_THREADSAFE_CONFIGURATION =
-            new TaskSchedulerConfiguration(TaskSchedulerType.DIRECT_THREADSAFE, 0L, false, false, false, false);
+            new TaskSchedulerConfiguration(TaskSchedulerType.DIRECT_THREADSAFE, 0L, false, false, false, false, false);
 
     /**
      * Parse a string representation of a task scheduler configuration.
@@ -99,6 +101,7 @@ public record TaskSchedulerConfiguration(
         Boolean busyFractionMetricEnabled = null;
         Boolean flushingEnabled = null;
         Boolean squelchingEnabled = null;
+        Boolean busyWaitEnabled = null;
 
         final String[] parts = string.split(" ");
         for (final String part : parts) {
@@ -163,6 +166,15 @@ public record TaskSchedulerConfiguration(
                 continue;
             }
 
+            final Boolean parsedBusyWait = tryToParseOption(TaskSchedulerConfigOption.BUSY_WAIT, strippedPart);
+            if (parsedBusyWait != null) {
+                if (busyWaitEnabled != null) {
+                    throw new IllegalArgumentException("Multiple busy wait configurations specified: " + string);
+                }
+                busyWaitEnabled = parsedBusyWait;
+                continue;
+            }
+
             throw new IllegalArgumentException("Invalid task scheduler configuration: " + part);
         }
 
@@ -172,7 +184,8 @@ public record TaskSchedulerConfiguration(
                 unhandledTaskMetricEnabled,
                 busyFractionMetricEnabled,
                 flushingEnabled,
-                squelchingEnabled);
+                squelchingEnabled,
+                busyWaitEnabled);
     }
 
     /**

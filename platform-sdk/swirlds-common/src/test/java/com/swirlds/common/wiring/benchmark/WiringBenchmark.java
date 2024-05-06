@@ -60,7 +60,7 @@ class WiringBenchmark {
         final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
         // Ensures that we have no more than 10,000 events in the pipeline at any given time
-        final ObjectCounter backpressure = new BackpressureObjectCounter("backpressure", 10_000, Duration.ZERO);
+        final ObjectCounter backpressure = new BackpressureObjectCounter("backpressure", 10_000, Duration.ZERO, false);
 
         final TaskScheduler<WiringBenchmarkEvent> verificationTaskScheduler = model.schedulerBuilder("verification")
                 .withPool(executor)

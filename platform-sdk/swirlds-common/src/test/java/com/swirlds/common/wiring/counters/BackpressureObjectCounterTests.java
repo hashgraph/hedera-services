@@ -34,7 +34,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -44,11 +43,13 @@ class BackpressureObjectCounterTests {
      * Choose a capacity that is sufficiently high as to never trigger. Validate that the counting part of this
      * implementation works as expected.
      */
-    @Test
-    void countWithHighCapacityTest() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void countWithHighCapacityTest(final boolean busyWait) {
         final Random random = getRandomPrintSeed();
 
-        final ObjectCounter counter = new BackpressureObjectCounter("test", 1_000_000_000, Duration.ofMillis(1));
+        final ObjectCounter counter =
+                new BackpressureObjectCounter("test", 1_000_000_000, Duration.ofMillis(1), busyWait);
 
         int count = 0;
         for (int i = 0; i < 1000; i++) {
@@ -81,7 +82,7 @@ class BackpressureObjectCounterTests {
     void onRampTest(final int sleepMillis) throws InterruptedException {
         final Duration sleepDuration = Duration.ofMillis(sleepMillis);
 
-        final ObjectCounter counter = new BackpressureObjectCounter("test", 10, sleepDuration);
+        final ObjectCounter counter = new BackpressureObjectCounter("test", 10, sleepDuration, false);
 
         // Fill up the counter to capacity
         for (int i = 0; i < 10; i++) {
@@ -128,9 +129,62 @@ class BackpressureObjectCounterTests {
         assertEquals(10, counter.getCount());
     }
 
-    @Test
-    void attemptOnRampTest() {
-        final ObjectCounter counter = new BackpressureObjectCounter("test", 10, Duration.ofMillis(1));
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1})
+    void busyWaitOnRampTest(final int sleepMillis) throws InterruptedException {
+        final Duration sleepDuration = Duration.ofMillis(sleepMillis);
+
+        final ObjectCounter counter = new BackpressureObjectCounter("test", 10, sleepDuration, true);
+
+        // Fill up the counter to capacity
+        for (int i = 0; i < 10; i++) {
+            counter.onRamp();
+        }
+
+        assertEquals(10, counter.getCount());
+
+        // Attempt to add one more, should block.
+        final AtomicBoolean added = new AtomicBoolean(false);
+        final AtomicReference<Boolean> interrupted = new AtomicReference<>();
+        final Thread thread = new ThreadConfiguration(getStaticThreadManager())
+                .setRunnable(() -> {
+                    counter.onRamp();
+                    added.set(true);
+
+                    interrupted.set(Thread.currentThread().isInterrupted());
+                })
+                .build(true);
+
+        assertEquals(10, counter.getCount());
+
+        // Sleep for a little while. Thread should be unable to on ramp another element.
+        // Count can briefly overflow to 11, but should quickly return to 10.
+        MILLISECONDS.sleep(50);
+        final long count1 = counter.getCount();
+        assertTrue(count1 == 10 || count1 == 11, "unexpected count " + count1);
+
+        // Interrupting the thread should not unblock us.
+        thread.interrupt();
+        MILLISECONDS.sleep(50);
+        // Count can briefly overflow to 11, but should quickly return to 10.
+        final long count2 = counter.getCount();
+        assertTrue(count2 == 10 || count2 == 11, "unexpected count " + count2);
+
+        // Off ramp one element. Thread should become unblocked.
+        counter.offRamp();
+
+        assertEventuallyTrue(added::get, Duration.ofSeconds(10), "Thread should have been unblocked");
+
+        // even though the interrupt did not unblock the thread, the interrupt should not have been squelched.
+        assertEventuallyEquals(true, interrupted::get, Duration.ofSeconds(10), "Thread should have been interrupted");
+
+        assertEquals(10, counter.getCount());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void attemptOnRampTest(final boolean busyWait) {
+        final ObjectCounter counter = new BackpressureObjectCounter("test", 10, Duration.ofMillis(1), busyWait);
 
         // Fill up the counter to capacity
         for (int i = 0; i < 10; i++) {
@@ -145,9 +199,10 @@ class BackpressureObjectCounterTests {
         assertEquals(10, counter.getCount());
     }
 
-    @Test
-    void forceOnRampTest() {
-        final ObjectCounter counter = new BackpressureObjectCounter("test", 10, Duration.ofMillis(1));
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void forceOnRampTest(final boolean busyWait) {
+        final ObjectCounter counter = new BackpressureObjectCounter("test", 10, Duration.ofMillis(1), busyWait);
 
         // Fill up the counter to capacity
         for (int i = 0; i < 10; i++) {
@@ -162,9 +217,10 @@ class BackpressureObjectCounterTests {
         assertEquals(11, counter.getCount());
     }
 
-    @Test
-    void waitUntilEmptyTest() throws InterruptedException {
-        final ObjectCounter counter = new BackpressureObjectCounter("test", 1000, Duration.ofMillis(1));
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void waitUntilEmptyTest(final boolean busyWait) throws InterruptedException {
+        final ObjectCounter counter = new BackpressureObjectCounter("test", 1000, Duration.ofMillis(1), busyWait);
 
         for (int i = 0; i < 100; i++) {
             counter.onRamp();
@@ -205,8 +261,9 @@ class BackpressureObjectCounterTests {
     /**
      * If the fork join pool runs out of threads, back pressure should handle the situation gracefully.
      */
-    @Test
-    void backpressureDoesntOverwhelmForkJoinPool() throws InterruptedException {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void backpressureDoesntOverwhelmForkJoinPool(final boolean busyWait) throws InterruptedException {
 
         final int maxPoolSize = 10;
         final ForkJoinPool pool = new ForkJoinPool(
@@ -256,7 +313,7 @@ class BackpressureObjectCounterTests {
 
         // Now, see if a backpressure counter can block without throwing.
 
-        final ObjectCounter counter = new BackpressureObjectCounter("test", 1, Duration.ofMillis(1));
+        final ObjectCounter counter = new BackpressureObjectCounter("test", 1, Duration.ofMillis(1), busyWait);
         counter.onRamp();
 
         final AtomicBoolean taskCompleted = new AtomicBoolean(false);

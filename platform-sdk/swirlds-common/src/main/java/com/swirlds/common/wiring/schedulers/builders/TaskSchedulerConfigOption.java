@@ -36,7 +36,11 @@ public enum TaskSchedulerConfigOption {
     /**
      * If present, the scheduler will be capable of squelching.
      */
-    SQUELCHABLE;
+    SQUELCHABLE,
+    /**
+     * If present, back pressure applied to input wires to this scheduler will cause the caller to busy wait.
+     */
+    BUSY_WAIT;
 
     /**
      * This is not defined as an enum constant because it is used in a special way. To specify the capacity,
