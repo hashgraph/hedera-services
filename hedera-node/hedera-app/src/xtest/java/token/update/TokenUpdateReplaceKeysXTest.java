@@ -17,7 +17,6 @@
 package token.update;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.node.app.spi.key.KeyUtils.ALL_ZEROS_INVALID_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -38,6 +37,11 @@ import java.util.Objects;
 import token.AbstractTokenXTest;
 
 public class TokenUpdateReplaceKeysXTest extends AbstractTokenXTest {
+    // This key is structurally valid, but effectively unusable because there is no
+    // known way to invert the SHA-512 hash of its associated curve point
+    public static final Key UNUSABLE_ZEROS_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("0000000000000000000000000000000000000000000000000000000000000000"))
+            .build();
     private Map<AccountID, Account> accountsCurrent;
     private final Key TOKEN_TREASURY_KEY = Key.newBuilder()
             .ed25519(Bytes.fromHex("00aaa00aaa00aaa00aaa00aaa00aaaab00aaa00aaa00aaa00aaa00aaa00aaaad"))
@@ -107,49 +111,49 @@ public class TokenUpdateReplaceKeysXTest extends AbstractTokenXTest {
         // change freeze key to an invalid
         handleAndCommitSingleTransaction(
                 component.tokenUpdateHandler(),
-                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.freezeKey(ALL_ZEROS_INVALID_KEY)
+                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.freezeKey(UNUSABLE_ZEROS_KEY)
                         .keyVerificationMode(TokenKeyValidation.NO_VALIDATION))),
                 OK);
         // change kyc key to an invalid
         handleAndCommitSingleTransaction(
                 component.tokenUpdateHandler(),
-                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.kycKey(ALL_ZEROS_INVALID_KEY)
+                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.kycKey(UNUSABLE_ZEROS_KEY)
                         .keyVerificationMode(TokenKeyValidation.NO_VALIDATION))),
                 OK);
         // change wipe key to an invalid
         handleAndCommitSingleTransaction(
                 component.tokenUpdateHandler(),
-                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.wipeKey(ALL_ZEROS_INVALID_KEY)
+                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.wipeKey(UNUSABLE_ZEROS_KEY)
                         .keyVerificationMode(TokenKeyValidation.NO_VALIDATION))),
                 OK);
         // change supply key to an invalid
         handleAndCommitSingleTransaction(
                 component.tokenUpdateHandler(),
-                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.supplyKey(ALL_ZEROS_INVALID_KEY)
+                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.supplyKey(UNUSABLE_ZEROS_KEY)
                         .keyVerificationMode(TokenKeyValidation.NO_VALIDATION))),
                 OK);
         // change fee schedule key to an invalid
         handleAndCommitSingleTransaction(
                 component.tokenUpdateHandler(),
-                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.feeScheduleKey(ALL_ZEROS_INVALID_KEY)
+                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.feeScheduleKey(UNUSABLE_ZEROS_KEY)
                         .keyVerificationMode(TokenKeyValidation.NO_VALIDATION))),
                 OK);
         // change pause key to an invalid
         handleAndCommitSingleTransaction(
                 component.tokenUpdateHandler(),
-                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.pauseKey(ALL_ZEROS_INVALID_KEY)
+                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.pauseKey(UNUSABLE_ZEROS_KEY)
                         .keyVerificationMode(TokenKeyValidation.NO_VALIDATION))),
                 OK);
         // change metadata key to an invalid
         handleAndCommitSingleTransaction(
                 component.tokenUpdateHandler(),
-                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.metadataKey(ALL_ZEROS_INVALID_KEY)
+                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.metadataKey(UNUSABLE_ZEROS_KEY)
                         .keyVerificationMode(TokenKeyValidation.NO_VALIDATION))),
                 OK);
         // change admin key to an invalid
         handleAndCommitSingleTransaction(
                 component.tokenUpdateHandler(),
-                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.adminKey(ALL_ZEROS_INVALID_KEY)
+                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.adminKey(UNUSABLE_ZEROS_KEY)
                         .keyVerificationMode(TokenKeyValidation.NO_VALIDATION))),
                 OK);
     }

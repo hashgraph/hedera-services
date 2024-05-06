@@ -64,11 +64,11 @@ public class BaseTokenHandler {
     /**
      * The set of token keys that are not admin keys.
      */
-    public static final Set<TokenKey> NON_ADMIN_TOKEN_KEYS = EnumSet.complementOf(EnumSet.of(TokenKey.ADMIN_KEY));
+    protected static final Set<TokenKey> NON_ADMIN_TOKEN_KEYS = EnumSet.complementOf(EnumSet.of(TokenKey.ADMIN_KEY));
     /**
      * The set of all token keys.
      */
-    static final Set<TokenKey> TOKEN_KEYS = EnumSet.allOf(TokenKey.class);
+    protected static final Set<TokenKey> TOKEN_KEYS = EnumSet.allOf(TokenKey.class);
 
     /**
      * Mints fungible tokens. This method is called in both token create and mint.

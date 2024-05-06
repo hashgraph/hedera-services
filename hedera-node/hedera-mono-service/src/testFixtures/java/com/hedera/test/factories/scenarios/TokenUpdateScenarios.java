@@ -90,7 +90,7 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
                     .get());
         }
     },
-    UPDATE_WITH_SUPPLY_KEYED_TOKEN_NO_VALIDATION {
+    UPDATE_WITH_SUPPLY_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED {
         @Override
         public PlatformTxnAccessor platformTxn()
                 throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
@@ -102,7 +102,7 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
                     .get());
         }
     },
-    UPDATE_WITH_KYC_KEYED_TOKEN_FULL_VALIDATION {
+    UPDATE_WITH_KYC_KEYED_TOKEN_REPLACEMENT_KEY_REQUIRED {
         @Override
         public PlatformTxnAccessor platformTxn()
                 throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
@@ -113,7 +113,7 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
                     .get());
         }
     },
-    UPDATE_WITH_KYC_KEYED_TOKEN_NO_VALIDATION {
+    UPDATE_WITH_KYC_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED {
         @Override
         public PlatformTxnAccessor platformTxn()
                 throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
@@ -125,7 +125,7 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
                     .get());
         }
     },
-    UPDATE_WITH_FREEZE_KEYED_TOKEN_NO_VALIDATION {
+    UPDATE_WITH_FREEZE_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED {
         @Override
         public PlatformTxnAccessor platformTxn()
                 throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
@@ -137,7 +137,7 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
                     .get());
         }
     },
-    UPDATE_WITH_WIPE_KEYED_TOKEN_NO_KEY_VALIDATION {
+    UPDATE_WITH_WIPE_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED {
         @Override
         public PlatformTxnAccessor platformTxn()
                 throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,

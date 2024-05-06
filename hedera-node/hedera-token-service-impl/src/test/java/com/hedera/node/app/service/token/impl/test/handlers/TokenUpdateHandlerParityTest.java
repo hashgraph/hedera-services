@@ -32,14 +32,14 @@ import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_RE
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_REPLACING_TREASURY_AS_CUSTOM_PAYER;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_REPLACING_TREASURY_AS_PAYER;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_REPLACING_WITH_MISSING_TREASURY;
-import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_FREEZE_KEYED_TOKEN_NO_VALIDATION;
-import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_KYC_KEYED_TOKEN_FULL_VALIDATION;
-import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_KYC_KEYED_TOKEN_NO_VALIDATION;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_FREEZE_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_KYC_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_KYC_KEYED_TOKEN_REPLACEMENT_KEY_REQUIRED;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_MISSING_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_MISSING_TOKEN_ADMIN_KEY;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_NO_FIELDS_CHANGED;
-import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_SUPPLY_KEYED_TOKEN_NO_VALIDATION;
-import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_WIPE_KEYED_TOKEN_NO_KEY_VALIDATION;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_SUPPLY_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_WIPE_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
@@ -151,7 +151,7 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
 
     @Test
     void tokenUpdateWithSupplyKeyedToken() throws PreCheckException {
-        final var txn = txnFrom(UPDATE_WITH_SUPPLY_KEYED_TOKEN_NO_VALIDATION);
+        final var txn = txnFrom(UPDATE_WITH_SUPPLY_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED);
         final var context = new FakePreHandleContext(readableAccountStore, txn);
         final var thresholdKey = Key.newBuilder()
                 .thresholdKey(ThresholdKey.newBuilder()
@@ -171,7 +171,7 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
 
     @Test
     void tokenUpdateWithKYCKeyedToken() throws PreCheckException {
-        final var txn = txnFrom(UPDATE_WITH_KYC_KEYED_TOKEN_NO_VALIDATION);
+        final var txn = txnFrom(UPDATE_WITH_KYC_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED);
         final var context = new FakePreHandleContext(readableAccountStore, txn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
         subject.preHandle(context);
@@ -191,7 +191,7 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
 
     @Test
     void tokenUpdateWithKYCKeyedTokenAndFullValidation() throws PreCheckException {
-        final var txn = txnFrom(UPDATE_WITH_KYC_KEYED_TOKEN_FULL_VALIDATION);
+        final var txn = txnFrom(UPDATE_WITH_KYC_KEYED_TOKEN_REPLACEMENT_KEY_REQUIRED);
         final var context = new FakePreHandleContext(readableAccountStore, txn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
         subject.preHandle(context);
@@ -217,7 +217,7 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
 
     @Test
     void tokenUpdateWithFreezeKeyedToken() throws PreCheckException {
-        final var txn = txnFrom(UPDATE_WITH_FREEZE_KEYED_TOKEN_NO_VALIDATION);
+        final var txn = txnFrom(UPDATE_WITH_FREEZE_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED);
         final var context = new FakePreHandleContext(readableAccountStore, txn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
         subject.preHandle(context);
@@ -237,7 +237,7 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
 
     @Test
     void tokenUpdateWithWipeKeyedToken() throws PreCheckException {
-        final var txn = txnFrom(UPDATE_WITH_WIPE_KEYED_TOKEN_NO_KEY_VALIDATION);
+        final var txn = txnFrom(UPDATE_WITH_WIPE_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED);
         final var context = new FakePreHandleContext(readableAccountStore, txn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
         subject.preHandle(context);

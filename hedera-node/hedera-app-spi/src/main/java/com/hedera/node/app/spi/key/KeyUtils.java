@@ -33,9 +33,6 @@ public class KeyUtils {
 
     public static final Key IMMUTABILITY_SENTINEL_KEY =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
-    public static final Key ALL_ZEROS_INVALID_KEY = Key.newBuilder()
-            .ed25519(Bytes.fromHex("0000000000000000000000000000000000000000"))
-            .build();
 
     public static final int EVM_ADDRESS_BYTE_LENGTH = 20;
     public static final int ED25519_BYTE_LENGTH = 32;
