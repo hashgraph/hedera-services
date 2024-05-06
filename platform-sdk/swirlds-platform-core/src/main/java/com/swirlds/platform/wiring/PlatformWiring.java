@@ -92,6 +92,7 @@ import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
+import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusConfig;
 import com.swirlds.platform.system.status.PlatformStatusNexus;
@@ -101,7 +102,6 @@ import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
 import com.swirlds.platform.wiring.components.HashLoggerWiring;
-import com.swirlds.platform.wiring.components.IssDetectorWiring;
 import com.swirlds.platform.wiring.components.IssHandlerWiring;
 import com.swirlds.platform.wiring.components.PassThroughWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
@@ -155,7 +155,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
     private final ComponentWiring<ConsensusEventStream, Void> consensusEventStreamWiring;
     private final RunningEventHashOverrideWiring runningEventHashOverrideWiring;
-    private final IssDetectorWiring issDetectorWiring;
+    private final ComponentWiring<IssDetector, List<IssNotification>> issDetectorWiring;
     private final IssHandlerWiring issHandlerWiring;
     private final HashLoggerWiring hashLoggerWiring;
     private final ComponentWiring<LatestCompleteStateNotifier, CompleteStateNotificationWithCleanup>
@@ -282,7 +282,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                         .build()
                         .cast());
 
-        issDetectorWiring = IssDetectorWiring.create(schedulers.issDetectorScheduler());
+        issDetectorWiring = new ComponentWiring<>(model, IssDetector.class, config.issDetector());
         issHandlerWiring = IssHandlerWiring.create(schedulers.issHandlerScheduler());
         hashLoggerWiring = HashLoggerWiring.create(schedulers.hashLoggerScheduler());
 
@@ -399,9 +399,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         signedStateFileManagerWiring
                 .stateWrittenToDiskNotificationOutput()
                 .solderTo(notifierWiring.getInputWire(AppNotifier::sendStateWrittenToDiskNotification));
-        issDetectorWiring
-                .issNotificationOutput()
-                .solderTo(notifierWiring.getInputWire(AppNotifier::sendIssNotification));
+
+        final OutputWire<IssNotification> issNotificationOutputWire = issDetectorWiring.getSplitOutput();
+        issNotificationOutputWire.solderTo(notifierWiring.getInputWire(AppNotifier::sendIssNotification));
         statusStateMachineWiring
                 .getOutputWire()
                 .solderTo(notifierWiring.getInputWire(AppNotifier::sendPlatformStatusChangeNotification));
@@ -564,7 +564,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         signedStateHasherWiring.stateOutput().solderTo(hashLoggerWiring.hashLoggerInputWire());
         signedStateHasherWiring.stateOutput().solderTo(stateSignerWiring.signState());
-        signedStateHasherWiring.stateAndRoundOutput().solderTo(issDetectorWiring.stateAndRoundInput());
+        signedStateHasherWiring
+                .stateAndRoundOutput()
+                .solderTo(issDetectorWiring.getInputWire(IssDetector::handleStateAndRound));
 
         // FUTURE WORK: combine the signedStateHasherWiring State and Round outputs into a single StateAndRound output.
         // FUTURE WORK: Split the single StateAndRound output into separate State and Round wires.
@@ -614,9 +616,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .runningHashUpdateOutput()
                 .solderTo(runningEventHasherWiring.getInputWire(RunningEventHasher::overrideRunningEventHash));
 
-        issDetectorWiring.issNotificationOutput().solderTo(issHandlerWiring.issNotificationInput());
+        final OutputWire<IssNotification> splitIssDetectorOutput = issDetectorWiring.getSplitOutput();
+        splitIssDetectorOutput.solderTo(issHandlerWiring.issNotificationInput());
         issDetectorWiring
-                .statusActionOutput()
+                .getSplitAndTransformedOutput(IssDetector::getStatusAction)
                 .solderTo(statusStateMachineWiring.getInputWire(StatusStateMachine::submitStatusAction));
 
         completeReservedSignedStatesWire.solderTo(latestCompleteStateNotifierWiring.getInputWire(
@@ -661,6 +664,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::clear);
         pcesWriterWiring.getInputWire(PcesWriter::registerDiscontinuity);
         stateSignatureCollectorWiring.getInputWire(StateSignatureCollector::clear);
+        issDetectorWiring.getInputWire(IssDetector::overridingState);
+        issDetectorWiring.getInputWire(IssDetector::signalEndOfPreconsensusReplay);
     }
 
     /**
@@ -688,7 +693,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param stateSignatureCollector   the signed state manager to bind
      * @param eventWindowManager        the event window manager to bind
      * @param consensusRoundHandler     the consensus round handler to bind
-     * @param issDetector               the ISS detector to bind
      * @param issHandler                the ISS handler to bind
      * @param hashLogger                the hash logger to bind
      * @param birthRoundMigrationShim   the birth round migration shim to bind, ignored if birth round migration has not
@@ -711,7 +715,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final StateSignatureCollector stateSignatureCollector,
             @NonNull final EventWindowManager eventWindowManager,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
-            @NonNull final IssDetector issDetector,
             @NonNull final IssHandler issHandler,
             @NonNull final HashLogger hashLogger,
             @Nullable final BirthRoundMigrationShim birthRoundMigrationShim,
@@ -746,7 +749,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         consensusRoundHandlerWiring.bind(consensusRoundHandler);
         runningEventHasherWiring.bind(builder::buildRunningEventHasher);
         consensusEventStreamWiring.bind(builder::buildConsensusEventStream);
-        issDetectorWiring.bind(issDetector);
+        issDetectorWiring.bind(builder::buildIssDetector);
         issHandlerWiring.bind(issHandler);
         hashLoggerWiring.bind(hashLogger);
         if (birthRoundMigrationShimWiring != null) {
@@ -892,10 +895,22 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
-     * @return the wiring wrapper for the ISS detector
+     * Pass an overriding state to the ISS detector.
+     *
+     * @param state the overriding state
      */
-    public @NonNull IssDetectorWiring getIssDetectorWiring() {
-        return issDetectorWiring;
+    @NonNull
+    public void overrideIssDetectorState(@NonNull final ReservedSignedState state) {
+        issDetectorWiring.getInputWire(IssDetector::overridingState).put(state);
+    }
+
+    /**
+     * Signal the end of the preconsensus replay to the ISS detector.
+     */
+    public void signalEndOfPcesReplay() {
+        issDetectorWiring
+                .getInputWire(IssDetector::signalEndOfPreconsensusReplay)
+                .put(NoInput.getInstance());
     }
 
     /**

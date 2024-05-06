@@ -12,4 +12,12 @@ contract LowLevelCall {
         // Optionally, revert the transaction if the call fails
         require(success);
     }
+
+    function callRequestedAndIgnoreFailure(
+        address target,
+        bytes calldata payload,
+        uint256 gasAmount
+    ) external returns (bool success, bytes memory result) {
+        (success, result) = target.call{gas: gasAmount}(payload);
+    }
 }

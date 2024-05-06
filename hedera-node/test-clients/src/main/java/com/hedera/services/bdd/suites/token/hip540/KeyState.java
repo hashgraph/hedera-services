@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.stream;
-
-import com.swirlds.common.crypto.Signature;
-import edu.umd.cs.findbugs.annotations.NonNull;
+package com.hedera.services.bdd.suites.token.hip540;
 
 /**
- * An object capable of signing data.
+ * Enumerates the possible states of a key in a HIP-540 test scenario.
  */
-@FunctionalInterface
-public interface Signer {
-
-    /**
-     * generate signature bytes for given data
-     *
-     * @param data an array of bytes
-     * @return signature bytes
-     */
-    @NonNull
-    Signature sign(@NonNull byte[] data);
+public enum KeyState {
+    MISSING,
+    USABLE,
+    ZEROED_OUT
 }

@@ -96,7 +96,8 @@ class PlatformWiringTests {
                 .withStatusStateMachine(mock(StatusStateMachine.class))
                 .withTransactionPrehandler(mock(TransactionPrehandler.class))
                 .withPcesWriter(mock(PcesWriter.class))
-                .withSignedStateSentinel(mock(SignedStateSentinel.class));
+                .withSignedStateSentinel(mock(SignedStateSentinel.class))
+                .withIssDetector(mock(IssDetector.class));
 
         wiring.bind(
                 componentBuilder,
@@ -107,7 +108,6 @@ class PlatformWiringTests {
                 mock(StateSignatureCollector.class),
                 mock(EventWindowManager.class),
                 mock(ConsensusRoundHandler.class),
-                mock(IssDetector.class),
                 mock(IssHandler.class),
                 mock(HashLogger.class),
                 mock(BirthRoundMigrationShim.class),

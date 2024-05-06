@@ -26,7 +26,6 @@ import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_UNDELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -189,9 +188,9 @@ public final class IngestChecker {
 
             // If the fee offered does not cover the gas cost of the transaction, then
             // we would again end up with uncompensated work
-            final var gasCost = solvencyPreCheck.estimateAdditionalCosts(txBody, CONTRACT_CALL, consensusTime)
-                    - txBody.contractCallOrThrow().amount();
-            validateTruePreCheck(txBody.transactionFee() >= gasCost, INSUFFICIENT_TX_FEE);
+            // final var gasCost = solvencyPreCheck.estimateAdditionalCosts(txBody, CONTRACT_CALL, consensusTime)
+            //         - txBody.contractCallOrThrow().amount();
+            // validateTruePreCheck(txBody.transactionFee() >= gasCost, INSUFFICIENT_TX_FEE);
         } else if (functionality == ETHEREUM_TRANSACTION) {
             final var ethTxData = populateEthTxData(
                     requireNonNull(txBody.ethereumTransactionOrThrow().ethereumData())
