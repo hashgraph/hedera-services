@@ -10,6 +10,15 @@ git clone https://github.com/hashgraph/hedera-services.git
 
 From IntelliJ, choose `File -> Open` the _hedera-services/_ directory you just cloned.
 
+### (optional) IntelliJ plugins
+
+The following plugins add comfort features for working with certain parts of the code base:
+
+- [Android IntelliJ plugin](https://plugins.jetbrains.com/plugin/22989-android)
+  adds additional code navigation capabilities for Dagger2 annotated interfaces.
+- [JMH IntelliJ plugin](https://plugins.jetbrains.com/plugin/7529-jmh-java-microbenchmark-harness)
+  allows running selected JMH benchmarks directly from the IDE.
+
 ## Configure the JDK used by Gradle
 
 The project is imported as a Gradle project. Before you can use all features reliably, make sure that Gradle is
