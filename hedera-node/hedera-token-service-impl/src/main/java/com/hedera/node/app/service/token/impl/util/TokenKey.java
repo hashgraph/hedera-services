@@ -42,6 +42,9 @@ import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+/**
+ * All the keys that can be updated on a Token. This provides a way to update token keys.
+ */
 public enum TokenKey {
     ADMIN_KEY {
         @Override
@@ -339,20 +342,58 @@ public enum TokenKey {
         }
     };
 
+    /**
+     * Check if the key is present in the update transaction body.
+     * @param update the update transaction body
+     * @return true if the key is present in the update transaction body
+     */
     public abstract boolean isPresentInUpdate(TokenUpdateTransactionBody update);
 
+    /**
+     * Check if the key is present in the original token.
+     * @param originalToken the original token
+     * @return true if the key is present in the original token and false otherwise
+     */
     public abstract boolean isPresentInitially(Token originalToken);
 
+    /**
+     * Set the key on the token builder.
+     * @param builder the token builder
+     * @param update the update transaction body
+     */
     public abstract void setOn(final Token.Builder builder, TokenUpdateTransactionBody update);
 
+    /**
+     * Get the key from the update transaction body.
+     * @param update the update transaction body
+     * @return the key or null if the key is not present
+     */
     public abstract Key getFromUpdate(TokenUpdateTransactionBody update);
 
+    /**
+     * Get the key from the original token.
+     * @param originalToken the original token
+     * @return the key or null if the key is not present
+     */
     public abstract @Nullable Key getFromToken(Token originalToken);
 
+    /**
+     * Get the status code to be returned when the token has no key, based on the key type.
+     * @return the status code
+     */
     public abstract ResponseCodeEnum tokenHasNoKeyStatus();
 
+    /**
+     * Get the status code to be returned when the key is invalid, based on the key type.
+     * @return the status code
+     */
     public abstract ResponseCodeEnum invalidKeyStatus();
 
+    /**
+     * Check if the transaction body has immutable sentinel key used for key removals.
+     * @param update the update transaction body
+     * @return true if the transaction body has the sentinel key and false otherwise
+     */
     public boolean containsKeyRemoval(@NonNull final TokenUpdateTransactionBody update) {
         if (isPresentInUpdate(update)) {
             return isKeyRemoval(getFromUpdate(update));
@@ -360,6 +401,12 @@ public enum TokenKey {
         return false;
     }
 
+    /**
+     * Update the key on the token builder.
+     * @param update the update transaction body
+     * @param originalToken the original token
+     * @param builder the token builder
+     */
     public void updateKey(
             @NonNull final TokenUpdateTransactionBody update,
             @NonNull final Token originalToken,
@@ -370,6 +417,11 @@ public enum TokenKey {
         }
     }
 
+    /**
+     * Get the new key value. If the key is a sentinel key used for key removals, return null. Otherwise, return the key.
+     * @param newKey the new key
+     * @return the new key value
+     */
     private static Key getNewKeyValue(Key newKey) {
         return isKeyRemoval(newKey) ? null : newKey;
     }

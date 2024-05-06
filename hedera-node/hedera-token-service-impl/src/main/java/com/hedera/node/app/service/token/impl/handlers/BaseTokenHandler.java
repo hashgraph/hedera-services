@@ -56,9 +56,18 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Provides common functionality for token handlers.
+ */
 public class BaseTokenHandler {
     private static final Logger log = LogManager.getLogger(BaseTokenHandler.class);
+    /**
+     * The set of token keys that are not admin keys.
+     */
     public static final Set<TokenKey> NON_ADMIN_TOKEN_KEYS = EnumSet.complementOf(EnumSet.of(TokenKey.ADMIN_KEY));
+    /**
+     * The set of all token keys.
+     */
     static final Set<TokenKey> TOKEN_KEYS = EnumSet.allOf(TokenKey.class);
 
     /**
@@ -409,25 +418,6 @@ public class BaseTokenHandler {
     }
 
     /* ------------------------- Helper functions ------------------------- */
-
-    /**
-     * Returns true if the given token update op is an expiry-only update op.
-     * This is needed for validating whether a token update op has admin key present on the token,
-     * to update any other fields other than expiry.
-     * @param op the token update op to check
-     * @return true if the given token update op is an expiry-only update op
-     */
-    public static boolean isExpiryOnlyUpdateOp(@NonNull final TokenUpdateTransactionBody op) {
-        if (!op.hasExpiry()) {
-            return false;
-        }
-        final var defaultWithExpiry = TokenUpdateTransactionBody.newBuilder()
-                .expiry(op.expiry())
-                .token(op.token())
-                .build();
-        return op.equals(defaultWithExpiry);
-    }
-
     /**
      * Checks if the given op updates any of the non-key token properties that can only be
      * changed given the admin key signature.
