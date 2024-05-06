@@ -24,6 +24,7 @@ import static com.swirlds.logging.benchmark.config.Constants.WARMUP_ITERATIONS;
 import static com.swirlds.logging.benchmark.config.Constants.WARMUP_TIME_IN_SECONDS_PER_ITERATION;
 
 import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.Logger;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -33,7 +34,14 @@ import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 
-public class Log4J2Benchmark extends Log4J2BaseBenchmark {
+public class Log4J2Benchmark extends AbstractLog4JBenchmark {
+
+    private Log4JRunner logRunner;
+
+    @Override
+    protected void additionalInitialization(Logger logger) {
+        logRunner = new Log4JRunner(logger);
+    }
 
     @Benchmark
     @Fork(value = FORK_COUNT)

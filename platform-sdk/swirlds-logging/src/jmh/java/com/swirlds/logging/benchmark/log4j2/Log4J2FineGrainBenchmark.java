@@ -28,6 +28,7 @@ import com.swirlds.logging.benchmark.util.Throwables;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.apache.logging.log4j.ThreadContext;
@@ -43,7 +44,7 @@ import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 
 @State(Scope.Benchmark)
-public class Log4J2FineGrainBenchmark extends Log4J2BaseBenchmark {
+public class Log4J2FineGrainBenchmark extends AbstractLog4JBenchmark {
     private static final Marker MARKER = MarkerManager.getMarker("marker");
 
     @Benchmark
@@ -61,6 +62,23 @@ public class Log4J2FineGrainBenchmark extends Log4J2BaseBenchmark {
             timeUnit = TimeUnit.MILLISECONDS)
     public void logSimpleStatement() {
         logger.log(org.apache.logging.log4j.Level.INFO, "logSimpleStatement, Hello world!");
+    }
+
+    @Benchmark
+    @Fork(value = FORK_COUNT)
+    @Threads(PARALLEL_THREAD_COUNT)
+    @BenchmarkMode(Mode.Throughput)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    @Warmup(
+            iterations = WARMUP_ITERATIONS,
+            time = WARMUP_TIME_IN_SECONDS_PER_ITERATION,
+            timeUnit = TimeUnit.MILLISECONDS)
+    @Measurement(
+            iterations = MEASUREMENT_ITERATIONS,
+            time = MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION,
+            timeUnit = TimeUnit.MILLISECONDS)
+    public void checkEnabled() {
+        logger.isEnabled(org.apache.logging.log4j.Level.INFO);
     }
 
     @Benchmark
@@ -240,5 +258,10 @@ public class Log4J2FineGrainBenchmark extends Log4J2BaseBenchmark {
                 new BigDecimal("10.1"),
                 "comodo",
                 Throwables.DEEP_THROWABLE);
+    }
+
+    @Override
+    protected void additionalInitialization(Logger logger) {
+        // Do nothing
     }
 }

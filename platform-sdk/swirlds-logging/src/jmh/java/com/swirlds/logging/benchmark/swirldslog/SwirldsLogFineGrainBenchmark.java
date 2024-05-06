@@ -72,6 +72,23 @@ public class SwirldsLogFineGrainBenchmark extends SwirldsLogBaseBenchmark {
             iterations = MEASUREMENT_ITERATIONS,
             time = MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION,
             timeUnit = TimeUnit.MILLISECONDS)
+    public void checkEnabled() {
+        logger.isEnabled(com.swirlds.logging.api.Level.INFO);
+    }
+
+    @Benchmark
+    @Fork(value = FORK_COUNT)
+    @Threads(PARALLEL_THREAD_COUNT)
+    @BenchmarkMode(Mode.Throughput)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    @Warmup(
+            iterations = WARMUP_ITERATIONS,
+            time = WARMUP_TIME_IN_SECONDS_PER_ITERATION,
+            timeUnit = TimeUnit.MILLISECONDS)
+    @Measurement(
+            iterations = MEASUREMENT_ITERATIONS,
+            time = MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION,
+            timeUnit = TimeUnit.MILLISECONDS)
     public void logOffStatement() {
         logger.log(com.swirlds.logging.api.Level.OFF, "logOffStatement, Hello world!");
     }
