@@ -40,7 +40,7 @@ import com.swirlds.common.AutoCloseableNonThrowing;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.context.internal.DefaultPlatformContext;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.LegacyFileConfigSource;
@@ -352,7 +352,7 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
 
         registerConstructables();
 
-        final var platformContext = PlatformContext.create(buildConfiguration(configurationPaths));
+        final var platformContext = DefaultPlatformContext.create(buildConfiguration(configurationPaths));
 
         ReservedSignedState rss;
         try {
