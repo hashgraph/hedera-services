@@ -21,6 +21,9 @@ plugins { id("com.hedera.hashgraph.settings") }
 // "BOM" with versions of 3rd party dependencies
 include("hedera-dependency-versions")
 
+// Project to aggregate code coverage data for the whole repository into one report
+include(":reports", "gradle/reports")
+
 // Hedera Node projects
 include(":app", "hedera-node/hedera-app")
 

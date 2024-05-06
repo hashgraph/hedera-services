@@ -4,4 +4,8 @@ coverage:
       default:
         threshold: 1.0
 ignore:
-  - "test-clients"
+  - "example-apps"
+  - "hapi"
+  - "hedera-node/cli-clients"
+  - "hedera-node/test-clients"
+  - "platform-sdk/platform-apps"
