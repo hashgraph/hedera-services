@@ -113,7 +113,8 @@ public class HelloSwirldDemoMain implements SwirldMain {
     private void platformStatusChange(final PlatformStatusChangeNotification notification) {
         final PlatformStatus newStatus = notification.getNewStatus();
         if (PlatformStatus.ACTIVE.equals(newStatus)) {
-            final String myName = platform.getSelfAddress().getSelfName();
+            final String myName =
+                    platform.getAddressBook().getAddress(platform.getSelfId()).getSelfName();
 
             console.out.println("Hello Swirld from " + myName);
 
