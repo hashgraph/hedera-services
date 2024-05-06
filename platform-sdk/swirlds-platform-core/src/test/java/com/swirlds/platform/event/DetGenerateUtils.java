@@ -19,13 +19,13 @@ package com.swirlds.platform.event;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHashBytes;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
 
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -33,7 +33,6 @@ import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
-import com.swirlds.proto.event.StateSignaturePayload;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -73,10 +72,6 @@ public abstract class DetGenerateUtils {
                 generateRandomInstant(random, DEFAULT_MAX_EPOCH), // timeCreated
                 generateTransactions(DEFAULT_TRANSACTION_NUMBER, DEFAULT_TRANSACTION_MAX_SIZE, random)
                         .toArray(new ConsensusTransactionImpl[0])); // transactions
-    }
-
-    public static BaseEventUnhashedData generateBaseEventUnhashedData(final Random random) {
-        return new BaseEventUnhashedData(generateRandomByteArray(random, DEFAULT_SIGNATURE_SIZE));
     }
 
     public static ConsensusData generateConsensusEventData(final Random random) {

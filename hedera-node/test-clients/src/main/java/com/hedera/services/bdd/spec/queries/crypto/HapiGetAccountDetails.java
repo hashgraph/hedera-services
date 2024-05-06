@@ -208,7 +208,7 @@ public class HapiGetAccountDetails extends HapiQueryOp<HapiGetAccountDetails> {
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getAccountDetailsQuery(spec, payment, false);
+        Query query = maybeModified(getAccountDetailsQuery(spec, payment, false), spec);
         response = spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls).getAccountDetails(query);
         final var details = response.getAccountDetails();
         if (details.getHeader().getNodeTransactionPrecheckCode() == OK) {

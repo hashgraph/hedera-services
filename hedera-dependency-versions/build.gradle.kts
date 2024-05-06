@@ -19,7 +19,7 @@ plugins {
 }
 
 val besuNativeVersion = "0.8.2"
-val besuVersion = "24.1.2"
+val besuVersion = "24.3.3"
 val bouncycastleVersion = "1.78"
 val daggerVersion = "2.42"
 val eclipseCollectionsVersion = "10.4.0"
@@ -58,7 +58,7 @@ moduleInfo {
     version("com.google.jimfs", "1.2")
     version("com.google.protobuf", protobufVersion)
     version("com.google.protobuf.util", protobufVersion)
-    version("com.hedera.pbj.runtime", "0.8.5")
+    version("com.hedera.pbj.runtime", "0.8.7")
     version("com.squareup.javapoet", "1.13.0")
     version("com.sun.jna", "5.12.1")
     version("dagger", daggerVersion)
@@ -81,7 +81,7 @@ moduleInfo {
     version("javax.inject", "1")
     version("lazysodium.java", "5.1.1")
     version("net.i2p.crypto.eddsa", "0.3.0")
-    version("org.antlr.antlr4.runtime", "4.11.1")
+    version("org.antlr.antlr4.runtime", "4.13.1")
     version("org.apache.commons.codec", "1.15")
     version("org.apache.commons.collections4", "4.4")
     version("org.apache.commons.io", "2.15.1")

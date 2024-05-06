@@ -69,7 +69,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sidecarIdValidator;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustIncludeNoFailuresFrom;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
@@ -116,6 +118,7 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -260,7 +263,8 @@ public class ContractCallSuite extends HapiSuite {
                 callsToSystemEntityNumsAreTreatedAsPrecompileCalls(),
                 hollowCreationFailsCleanly(),
                 repeatedCreate2FailsWithInterpretableActionSidecars(),
-                callStaticCallToLargeAddress());
+                callStaticCallToLargeAddress(),
+                callToNonExtantEvmAddressUsesTargetedAddress());
     }
 
     @HapiTest
@@ -1571,6 +1575,14 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
+    final HapiSpec idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(uploadInitCode(PAY_RECEIVABLE_CONTRACT), contractCreate(PAY_RECEIVABLE_CONTRACT))
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> contractCall(PAY_RECEIVABLE_CONTRACT)));
+    }
+
+    @HapiTest
     HapiSpec callFailsWhenAmountIsNegativeButStillChargedFee() {
         final var payer = "payer";
         return defaultHapiSpec("callFailsWhenAmountIsNegativeButStillChargedFee")
@@ -2519,6 +2531,34 @@ public class ContractCallSuite extends HapiSuite {
                             callContractID.getContractNum() < 10000,
                             "Expected contract num < 10000 but got " + callContractID.getContractNum());
                 }));
+    }
+
+    @HapiTest
+    final HapiSpec callToNonExtantLongZeroAddressUsesTargetedAddress() {
+        final var contract = "LowLevelCall";
+        final var nonExtantMirrorAddress = asHeadlongAddress("0xE8D4A50FFF");
+        return defaultHapiSpec("callToNonExtantLongZeroAddressUsesTargetedAddress")
+                .given(
+                        streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when()
+                .then(contractCall(
+                        contract, "callRequested", nonExtantMirrorAddress, new byte[0], BigInteger.valueOf(88_888L)));
+    }
+
+    @HapiTest
+    final HapiSpec callToNonExtantEvmAddressUsesTargetedAddress() {
+        final var contract = "LowLevelCall";
+        final var nonExtantEvmAddress = asHeadlongAddress(TxnUtils.randomUtf8Bytes(20));
+        return defaultHapiSpec("callToNonExtantEvmAddressUsesTargetedAddress")
+                .given(
+                        streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when()
+                .then(contractCall(
+                        contract, "callRequested", nonExtantEvmAddress, new byte[0], BigInteger.valueOf(88_888L)));
     }
 
     private String getNestedContractAddress(final String contract, final HapiSpec spec) {

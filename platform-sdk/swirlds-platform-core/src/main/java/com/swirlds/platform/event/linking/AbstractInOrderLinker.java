@@ -23,7 +23,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
-import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
@@ -185,7 +184,7 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
         missingParentLogger.error(
                 EXCEPTION.getMarker(),
                 "Child has a missing parent. This should not be possible. Child: {}, Parent EventDescriptor: {}",
-                EventStrings.toMediumString(child),
+                child,
                 parentDescriptor);
     }
 
@@ -204,8 +203,8 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
                 EXCEPTION.getMarker(),
                 "Event has a parent with a different generation than claimed. Child: {}, parent: {}, "
                         + "claimed generation: {}, actual generation: {}",
-                EventStrings.toMediumString(child),
-                EventStrings.toMediumString(candidateParent),
+                child,
+                candidateParent,
                 parentDescriptor.getGeneration(),
                 candidateParent.getGeneration());
     }
@@ -225,8 +224,8 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
                 EXCEPTION.getMarker(),
                 "Event has a parent with a different birth round than claimed. Child: {}, parent: {}, "
                         + "claimed birth round: {}, actual birth round: {}",
-                EventStrings.toMediumString(child),
-                EventStrings.toMediumString(candidateParent),
+                child,
+                candidateParent,
                 parentDescriptor.getBirthRound(),
                 candidateParent.getBirthRound());
     }
@@ -249,8 +248,8 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
                 EXCEPTION.getMarker(),
                 "Child time created isn't strictly after self parent time created. "
                         + "Child: {}, parent: {}, child time created: {}, parent time created: {}",
-                EventStrings.toMediumString(child),
-                EventStrings.toMediumString(candidateParent),
+                child,
+                candidateParent,
                 childTimeCreated,
                 parentTimeCreated);
     }

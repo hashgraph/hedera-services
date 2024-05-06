@@ -32,7 +32,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.EventStreamPathIterator;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
@@ -79,7 +79,7 @@ class EventStreamRoundIteratorTest {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
@@ -124,7 +124,7 @@ class EventStreamRoundIteratorTest {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
@@ -178,7 +178,7 @@ class EventStreamRoundIteratorTest {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
@@ -242,7 +242,7 @@ class EventStreamRoundIteratorTest {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
@@ -265,7 +265,7 @@ class EventStreamRoundIteratorTest {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
@@ -327,7 +327,7 @@ class EventStreamRoundIteratorTest {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
