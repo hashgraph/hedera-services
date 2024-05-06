@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.fees.calculation.file.queries;
 
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.hapi.fees.usage.file.ExtantFileContext;
@@ -25,6 +26,7 @@ import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.QueryResourceUsageEstimator;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import javax.inject.Inject;
@@ -65,7 +67,8 @@ public final class GetFileInfoResourceUsage implements QueryResourceUsageEstimat
         return fileOpsUsage.fileInfoUsage(query, ctx);
     }
 
-    public FeeData usageGiven(final Query query, @Nullable final File file) {
+    public FeeData usageGiven(@NonNull final Query query, @Nullable final File file) {
+        requireNonNull(query);
         if (file == null) {
             return FeeData.getDefaultInstance();
         }

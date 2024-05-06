@@ -42,6 +42,10 @@ import java.util.stream.Stream;
  * original transaction.
  */
 public class SubmitModificationsOp extends UtilOp {
+    // An account to create as part of the submit-with-modifications process
+    // to ensure fees are charged (the default payer is a superuser account
+    // that is never charged fees); this ensures we cover calculateFees()
+    // code paths in handlers
     private static final String MODIFIED_CIVILIAN_PAYER = "modifiedCivilianPayer";
     private final boolean useCivilianPayer;
     private final Supplier<HapiTxnOp<?>> txnOpSupplier;
@@ -62,7 +66,7 @@ public class SubmitModificationsOp extends UtilOp {
                 spec,
                 sourcing(() ->
                         useCivilianPayer ? cryptoCreate(MODIFIED_CIVILIAN_PAYER).balance(10 * THOUSAND_HBAR) : noOp()),
-                originalTransaction().withTxnTransform(txn -> {
+                preModifiedTransaction().withTxnTransform(txn -> {
                     modifications.addAll(modificationsFn.apply(txn));
                     return txn;
                 }),
@@ -76,7 +80,7 @@ public class SubmitModificationsOp extends UtilOp {
         return false;
     }
 
-    private HapiTxnOp<?> originalTransaction() {
+    private HapiTxnOp<?> preModifiedTransaction() {
         final var op = txnOpSupplier.get();
         if (useCivilianPayer) {
             op.payingWith(MODIFIED_CIVILIAN_PAYER);

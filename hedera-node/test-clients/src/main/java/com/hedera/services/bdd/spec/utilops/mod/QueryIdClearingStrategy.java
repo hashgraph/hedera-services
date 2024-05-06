@@ -41,6 +41,10 @@ public class QueryIdClearingStrategy extends IdClearingStrategy<QueryModificatio
             Map.entry("proto.ContractGetBytecodeQuery.contractID", ExpectedAnswer.onCostAnswer(INVALID_CONTRACT_ID)),
             Map.entry("proto.FileGetContentsQuery.fileID", ExpectedAnswer.onCostAnswer(INVALID_FILE_ID)),
             Map.entry("proto.FileGetInfoQuery.fileID", ExpectedAnswer.onCostAnswer(INVALID_FILE_ID)),
+            // Since both the free getTxnReceipt query AND the paid getTxnRecord query use the same
+            // TransactionID.accountID field, we have two possible expected answers: For the free query,
+            // a failure when using the ANSWER_ONLY response type; and for the paid query, a failure
+            // one step earlier when using the COST_ANSWER response type
             Map.entry(
                     "proto.TransactionID.accountID",
                     new ExpectedAnswer(

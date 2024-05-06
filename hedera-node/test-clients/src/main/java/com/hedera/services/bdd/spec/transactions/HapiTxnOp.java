@@ -35,6 +35,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static java.lang.Thread.sleep;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -642,7 +643,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return self();
     }
 
-    public T payingWith(final String name) {
+    public T payingWith(@NonNull final String name) {
+        requireNonNull(name);
         payer = Optional.of(name);
         if (signers.isPresent()) {
             final List<Function<HapiSpec, Key>> payerAndSigners = new ArrayList<>();
