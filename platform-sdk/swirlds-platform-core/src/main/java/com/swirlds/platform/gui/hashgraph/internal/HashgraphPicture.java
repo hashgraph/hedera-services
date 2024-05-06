@@ -25,7 +25,6 @@ import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.HashgraphPictureOptions;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.PlatformEvent;
 import java.awt.AWTException;
 import java.awt.Color;
 import java.awt.Font;
@@ -131,12 +130,12 @@ public class HashgraphPicture extends JPanel {
             final int d = (int) (2 * pictureMetadata.getR());
 
             // for each event, draw 2 downward lines to its parents
-            for (final PlatformEvent event : events) {
+            for (final EventImpl event : events) {
                 drawLinksToParents(g, event);
             }
 
             // for each event, draw its circle
-            for (final PlatformEvent event : events) {
+            for (final EventImpl event : events) {
                 drawEventCircle(g, event, options, d);
             }
         } catch (final Exception e) {
@@ -144,10 +143,10 @@ public class HashgraphPicture extends JPanel {
         }
     }
 
-    private void drawLinksToParents(final Graphics g, final PlatformEvent event) {
+    private void drawLinksToParents(final Graphics g, final EventImpl event) {
         g.setColor(HashgraphGuiUtils.eventColor(event, options));
-        final PlatformEvent e1 = event.getSelfParent();
-        PlatformEvent e2 = event.getOtherParent();
+        final EventImpl e1 = event.getSelfParent();
+        EventImpl e2 = event.getOtherParent();
         final AddressBook addressBook = hashgraphSource.getAddressBook();
         if (e2 != null
                 && (!addressBook.contains(e2.getCreatorId())
@@ -173,11 +172,11 @@ public class HashgraphPicture extends JPanel {
     }
 
     private void drawEventCircle(
-            final Graphics g, final PlatformEvent event, final HashgraphPictureOptions options, final int d) {
+            final Graphics g, final EventImpl event, final HashgraphPictureOptions options, final int d) {
         final FontMetrics fm = g.getFontMetrics();
         final int fa = fm.getMaxAscent();
         final int fd = fm.getMaxDescent();
-        final PlatformEvent e2 = event.getOtherParent() != null
+        final EventImpl e2 = event.getOtherParent() != null
                         && hashgraphSource
                                 .getAddressBook()
                                 .contains(event.getOtherParent().getCreatorId())

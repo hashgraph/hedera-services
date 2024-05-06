@@ -18,6 +18,7 @@ package com.swirlds.platform.test.fixtures.event;
 
 import static com.swirlds.platform.system.events.EventConstants.BIRTH_ROUND_UNDEFINED;
 
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -25,12 +26,10 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
-import com.swirlds.proto.event.StateSignaturePayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -502,8 +501,7 @@ public class TestingEventBuilder {
         final byte[] signature = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(signature);
 
-        final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(signature);
-        final GossipEvent gossipEvent = new GossipEvent(hashedData, unhashedData);
+        final GossipEvent gossipEvent = new GossipEvent(hashedData, signature);
 
         return gossipEvent;
     }

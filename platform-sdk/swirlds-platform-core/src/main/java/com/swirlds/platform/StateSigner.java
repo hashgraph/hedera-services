@@ -16,13 +16,13 @@
 
 package com.swirlds.platform;
 
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.status.PlatformStatus;
-import com.swirlds.platform.system.status.PlatformStatusGetter;
-import com.swirlds.proto.event.StateSignaturePayload;
+import com.swirlds.platform.system.status.PlatformStatusNexus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -31,20 +31,24 @@ import java.util.Objects;
  * This class is responsible for signing states and producing {@link StateSignaturePayload}s.
  */
 public class StateSigner {
-    /** An object responsible for signing states with this node's key. */
+    /**
+     * An object responsible for signing states with this node's key.
+     */
     private final PlatformSigner signer;
-    /** provides the current platform status */
-    private final PlatformStatusGetter platformStatusGetter;
+    /**
+     * provides the current platform status
+     */
+    private final PlatformStatusNexus statusNexus;
 
     /**
      * Create a new {@link StateSigner} instance.
      *
-     * @param signer               an object responsible for signing states with this node's key
-     * @param platformStatusGetter provides the current platform status
+     * @param signer      an object responsible for signing states with this node's key
+     * @param statusNexus provides the current platform status
      */
-    public StateSigner(@NonNull final PlatformSigner signer, @NonNull final PlatformStatusGetter platformStatusGetter) {
+    public StateSigner(@NonNull final PlatformSigner signer, @NonNull final PlatformStatusNexus statusNexus) {
         this.signer = Objects.requireNonNull(signer);
-        this.platformStatusGetter = Objects.requireNonNull(platformStatusGetter);
+        this.statusNexus = Objects.requireNonNull(statusNexus);
     }
 
     /**
@@ -57,7 +61,7 @@ public class StateSigner {
      */
     public @Nullable StateSignaturePayload signState(@NonNull final ReservedSignedState reservedSignedState) {
         try (reservedSignedState) {
-            if (platformStatusGetter.getCurrentStatus() == PlatformStatus.REPLAYING_EVENTS) {
+            if (statusNexus.getCurrentStatus() == PlatformStatus.REPLAYING_EVENTS) {
                 // the only time we don't want to submit signatures is during PCES replay
                 return null;
             }

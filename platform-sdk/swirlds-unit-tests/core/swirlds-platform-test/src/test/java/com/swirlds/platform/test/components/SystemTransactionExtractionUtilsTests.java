@@ -21,11 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.components.transaction.system.SystemTransactionExtractionUtils;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
-import com.swirlds.proto.event.StateSignaturePayload;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

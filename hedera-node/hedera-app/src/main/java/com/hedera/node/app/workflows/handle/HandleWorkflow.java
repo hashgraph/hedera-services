@@ -334,7 +334,15 @@ public class HandleWorkflow {
         final var feeAccumulator = createFeeAccumulator(stack, configuration, recordBuilder);
 
         final var tokenServiceContext = new TokenContextImpl(
-                configuration, storeMetricsService, stack, recordListBuilder, blockRecordManager, isFirstTransaction);
+                configuration,
+                state,
+                storeMetricsService,
+                stack,
+                recordListBuilder,
+                blockRecordManager,
+                isFirstTransaction);
+        // Do any one-time work for the first transaction after genesis;
+        // overhead for all following transactions is effectively zero
         genesisRecordsTimeHook.process(tokenServiceContext);
         try {
             // If this is the first user transaction after midnight, then handle staking updates prior to handling the
@@ -647,12 +655,24 @@ public class HandleWorkflow {
         }
 
         throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
-        transactionFinalizer.finalizeParentRecord(
-                payer,
-                tokenServiceContext,
-                functionality,
-                extraRewardReceivers(txBody, functionality, recordBuilder),
-                prePaidRewards);
+        try {
+            transactionFinalizer.finalizeParentRecord(
+                    payer,
+                    tokenServiceContext,
+                    functionality,
+                    extraRewardReceivers(txBody, functionality, recordBuilder),
+                    prePaidRewards);
+        } catch (final Exception e) {
+            logger.error(
+                    "Possibly CATASTROPHIC error: failed to finalize parent record for transaction {}",
+                    transactionInfo.transactionID(),
+                    e);
+
+            // Undo any changes made to the state
+            final var userTransactionRecordBuilder = recordListBuilder.userTransactionRecordBuilder();
+            userTransactionRecordBuilder.nullOutSideEffectFields();
+            rollback(true, ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);
+        }
 
         // Commit all state changes
         stack.commitFullStack();
