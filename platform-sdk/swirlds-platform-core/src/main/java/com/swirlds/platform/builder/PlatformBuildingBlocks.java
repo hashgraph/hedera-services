@@ -19,6 +19,7 @@ package com.swirlds.platform.builder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
@@ -26,6 +27,7 @@ import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -73,6 +75,7 @@ import java.util.function.Supplier;
  *                                               underlying data source), this indirection can be removed once states
  *                                               are passed within the wiring framework
  * @param initialPcesFiles                       the initial set of PCES files present when the node starts
+ * @param issScratchpad                          scratchpad storage for ISS recovery
  * @param notificationEngine                     for sending notifications to the application (legacy pattern)
  * @param firstPlatform                          if this is the first platform being built (there is static setup that
  *                                               needs to be done, long term plan is to stop using static variables)
@@ -109,6 +112,7 @@ public record PlatformBuildingBlocks(
         @NonNull AtomicReference<Predicate<Instant>> isInFreezePeriodReference,
         @NonNull AtomicReference<Function<String, ReservedSignedState>> latestImmutableStateProviderReference,
         @NonNull PcesFileTracker initialPcesFiles,
+        @NonNull Scratchpad<IssScratchpad> issScratchpad,
         @NonNull NotificationEngine notificationEngine,
         @NonNull AtomicReference<Supplier<PlatformStatus>> platformStatusSupplierReference,
         @NonNull AtomicReference<StatusActionSubmitter> statusActionSubmitterReference,

@@ -168,7 +168,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
      * @param intakeEventCounter            keeps track of the number of events in the intake pipeline from each peer
      * @param statusActionSubmitter         for submitting updates to the platform status manager
      */
-    protected SyncGossip(
+    public SyncGossip(
             @NonNull final PlatformContext platformContext,
             @NonNull final Random random,
             @NonNull final ThreadManager threadManager,

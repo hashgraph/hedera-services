@@ -93,7 +93,8 @@ class PlatformWiringTests {
                 .withStatusStateMachine(mock(StatusStateMachine.class))
                 .withTransactionPrehandler(mock(TransactionPrehandler.class))
                 .withPcesWriter(mock(PcesWriter.class))
-                .withSignedStateSentinel(mock(SignedStateSentinel.class));
+                .withSignedStateSentinel(mock(SignedStateSentinel.class))
+                .withIssDetector(mock(IssDetector.class));
 
         // Gossip is a special case, it's not like other components.
         // Currently we just have a facade between gossip and the wiring framework.
@@ -116,7 +117,6 @@ class PlatformWiringTests {
                 mock(StateSignatureCollector.class),
                 mock(EventWindowManager.class),
                 mock(ConsensusRoundHandler.class),
-                mock(IssDetector.class),
                 mock(IssHandler.class),
                 mock(HashLogger.class),
                 mock(BirthRoundMigrationShim.class),
