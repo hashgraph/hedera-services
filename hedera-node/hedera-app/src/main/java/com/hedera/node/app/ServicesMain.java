@@ -25,7 +25,7 @@ import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
-import static com.swirlds.platform.util.BootstrapUtils.readSettingsDotTxt;
+import static com.swirlds.platform.util.BootstrapUtils.readLegacySettingsFile;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.config.ConfigProviderImpl;
@@ -154,7 +154,7 @@ public class ServicesMain implements SwirldMain {
         final var config = ConfigurationBuilder.create()
                 .withSource(SystemEnvironmentConfigSource.getInstance())
                 .withSource(SystemPropertiesConfigSource.getInstance());
-        readSettingsDotTxt(config, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
+        readLegacySettingsFile(config, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
 
         final SoftwareVersion version = hedera.getSoftwareVersion();
         logger.info("Starting node {} with version {}", selfId, version);

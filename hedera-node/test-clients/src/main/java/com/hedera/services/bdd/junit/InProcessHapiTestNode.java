@@ -21,7 +21,7 @@ import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTIN
 import static com.swirlds.platform.system.status.PlatformStatus.BEHIND;
 import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
 import static com.swirlds.platform.system.status.PlatformStatus.RECONNECT_COMPLETE;
-import static com.swirlds.platform.util.BootstrapUtils.readSettingsDotTxt;
+import static com.swirlds.platform.util.BootstrapUtils.readLegacySettingsFile;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -420,7 +420,7 @@ public class InProcessHapiTestNode implements HapiTestNode {
                     .withValue("state.savedStateDirectory", path("data/saved"))
                     .withValue("loadKeysFromPfxFiles", "false")
                     .withValue("grpc.port", Integer.toString(grpcPort));
-            readSettingsDotTxt(configBuilder, Path.of(path(DEFAULT_SETTINGS_FILE_NAME)));
+            readLegacySettingsFile(configBuilder, Path.of(path(DEFAULT_SETTINGS_FILE_NAME)));
 
             final PlatformContext platformContext = PlatformContextBuilder.create(new NodeId(nodeId))
                     .withConfigurationBuilder(configBuilder)

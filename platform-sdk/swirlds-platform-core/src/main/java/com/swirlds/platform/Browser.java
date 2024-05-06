@@ -31,7 +31,7 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowser
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.loadSwirldMains;
-import static com.swirlds.platform.util.BootstrapUtils.readSettingsDotTxt;
+import static com.swirlds.platform.util.BootstrapUtils.readLegacySettingsFile;
 import static com.swirlds.platform.util.BootstrapUtils.setupBrowserWindow;
 
 import com.swirlds.common.context.PlatformContext;
@@ -187,7 +187,7 @@ public class Browser {
             // Duplicating config here is ugly, but Browser is test only code now.
             // In the future we should clean it up, but it's not urgent to do so.
             final ConfigurationBuilder guiConfigBuilder = ConfigurationBuilder.create();
-            readSettingsDotTxt(guiConfigBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
+            readLegacySettingsFile(guiConfigBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
             guiConfigBuilder.autoDiscoverExtensions();
             final Configuration guiConfig = guiConfigBuilder.build();
 
@@ -209,7 +209,7 @@ public class Browser {
             for (final Class<? extends Record> configType : configTypes) {
                 configBuilder.withConfigDataType(configType);
             }
-            readSettingsDotTxt(configBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
+            readLegacySettingsFile(configBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
 
             final PlatformContext platformContext = PlatformContextBuilder.create(nodeId)
                     .withConfigurationBuilder(configBuilder)

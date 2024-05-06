@@ -18,7 +18,7 @@ package com.swirlds.platform.crypto;
 
 import static com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader.loadConfigFile;
 import static com.swirlds.platform.state.address.AddressBookNetworkUtils.isLocal;
-import static com.swirlds.platform.util.BootstrapUtils.readSettingsDotTxt;
+import static com.swirlds.platform.util.BootstrapUtils.readLegacySettingsFile;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -194,7 +194,7 @@ class EnhancedKeyStoreLoaderTest {
      */
     private Configuration configure(final Path keyDirectory) {
         final ConfigurationBuilder builder = ConfigurationBuilder.create();
-        readSettingsDotTxt(builder, testDataDirectory.resolve("settings.txt"));
+        readLegacySettingsFile(builder, testDataDirectory.resolve("settings.txt"));
         builder.autoDiscoverExtensions();
 
         builder.withValue("paths.keysDirPath", keyDirectory.toAbsolutePath().toString());

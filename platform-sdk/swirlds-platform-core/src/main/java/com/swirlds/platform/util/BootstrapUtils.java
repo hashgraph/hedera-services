@@ -90,13 +90,13 @@ public final class BootstrapUtils {
     private BootstrapUtils() {}
 
     /**
-     * Load settings from a legacy settings.txt source.
+     * Load settings from a legacy source (i.e. settings.txt).
      *
      * @param configurationBuilder the configuration builder
      * @param settingsPath         the path to the settings.txt file (does not actually have to be named
      *                             "settings.txt")
      */
-    public static void readSettingsDotTxt(
+    public static void readLegacySettingsFile(
             @NonNull final ConfigurationBuilder configurationBuilder, @NonNull final Path settingsPath) {
         try {
             final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile(settingsPath);
