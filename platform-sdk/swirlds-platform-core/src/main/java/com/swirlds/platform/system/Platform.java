@@ -17,9 +17,9 @@
 package com.swirlds.platform.system;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.stream.Signer;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -27,7 +27,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * An interface for Swirlds Platform.
  */
-public interface Platform extends Signer {
+public interface Platform {
 
     /**
      * Get the platform context, which contains various utilities and services provided by the platform.
@@ -99,6 +99,16 @@ public interface Platform extends Signer {
      * transaction will ever reach consensus, only that this node will make a best-effort attempt to make that happen.
      */
     boolean createTransaction(@NonNull byte[] transaction);
+
+    /**
+     * generate signature bytes for given data
+     *
+     * @param data
+     * 		an array of bytes
+     * @return signature bytes
+     */
+    @NonNull
+    Signature sign(@NonNull byte[] data);
 
     /**
      * Start this platform.

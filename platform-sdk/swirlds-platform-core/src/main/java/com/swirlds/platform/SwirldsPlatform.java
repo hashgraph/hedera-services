@@ -964,7 +964,7 @@ public class SwirldsPlatform implements Platform {
      */
     @Override
     @NonNull
-    public Signature sign(final byte[] data) {
+    public Signature sign(@NonNull final byte[] data) {
         return new PlatformSigner(keysAndCerts).sign(data);
     }
 
