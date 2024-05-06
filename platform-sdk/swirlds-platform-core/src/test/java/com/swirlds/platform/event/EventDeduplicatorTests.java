@@ -199,7 +199,7 @@ class EventDeduplicatorTests {
 
                 // randomize the signature
                 // this modifies the event in place (since we don't have a copy constructor), but that doesn't matter
-                ByteBuffer.wrap(duplicateEvent.getUnhashedData().getSignature())
+                ByteBuffer.wrap(duplicateEvent.getSignature())
                         .put(randomSignatureBytes(random).toByteArray());
 
                 if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
