@@ -33,11 +33,13 @@ import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocalWithFunctionAbi;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.literalInitcodeFor;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -85,6 +87,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2M
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.SALT;
+import static com.hedera.services.bdd.suites.perf.mixedops.MixedOpsLoadTest.TOKEN;
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.randomHeadlongAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
@@ -2531,6 +2534,53 @@ public class ContractCallSuite extends HapiSuite {
                             callContractID.getContractNum() < 10000,
                             "Expected contract num < 10000 but got " + callContractID.getContractNum());
                 }));
+    }
+
+    @HapiTest
+    final HapiSpec htsCallWithInsufficientGasHasNoStateChanges() {
+        final var contract = "LowLevelCall";
+        final var htsSystemContractAddress = asHeadlongAddress("0x0167");
+        final var transferToken = new Function("transferToken(address,address,address,int64)", "(int64)");
+        final AtomicReference<Address> treasuryAddress = new AtomicReference<>();
+        final AtomicReference<Address> receiverAddress = new AtomicReference<>();
+        final AtomicReference<Address> tokenAddress = new AtomicReference<>();
+        final var initialSupply = 100L;
+        return defaultHapiSpec("htsCallWithInsufficientGasHasNoStateChanges")
+                .given(
+                        cryptoCreate(TOKEN_TREASURY).exposingEvmAddressTo(treasuryAddress::set),
+                        cryptoCreate(CIVILIAN_PAYER)
+                                .exposingEvmAddressTo(receiverAddress::set)
+                                .maxAutomaticTokenAssociations(1),
+                        tokenCreate(TOKEN)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(initialSupply)
+                                .exposingAddressTo(tokenAddress::set),
+                        uploadInitCode(contract),
+                        contractCreate(contract),
+                        cryptoApproveAllowance()
+                                .addTokenAllowance(TOKEN_TREASURY, TOKEN, contract, 100)
+                                .signedBy(DEFAULT_PAYER, TOKEN_TREASURY))
+                .when()
+                .then(
+                        // Call transferToken() with insufficent gas
+                        sourcing(() -> contractCall(
+                                        contract,
+                                        "callRequestedAndIgnoreFailure",
+                                        htsSystemContractAddress,
+                                        transferToken
+                                                .encodeCallWithArgs(
+                                                        tokenAddress.get(),
+                                                        treasuryAddress.get(),
+                                                        receiverAddress.get(),
+                                                        13L)
+                                                .array(),
+                                        BigInteger.valueOf(13_000L))
+                                .via("callTxn")),
+                        childRecordsCheck("callTxn", SUCCESS, recordWith().status(INSUFFICIENT_GAS)),
+                        // Verify no token balances changed
+                        getAccountDetails(TOKEN_TREASURY)
+                                .hasToken(relationshipWith(TOKEN).balance(initialSupply)),
+                        getAccountDetails(CIVILIAN_PAYER).hasNoTokenRelationship(TOKEN));
     }
 
     @HapiTest
