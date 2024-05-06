@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.test.schemas;
 
+import static com.hedera.node.app.service.mono.state.migration.ContractStateMigrator.bytesFromInts;
+import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.asPackedInts;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
@@ -44,7 +46,9 @@ import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccou
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.buildConfig;
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.configBuilder;
 import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -53,6 +57,8 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.service.mono.state.migration.AccountStateTranslator;
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.schemas.InitialModServiceTokenSchema;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
@@ -68,6 +74,7 @@ import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.workflows.handle.record.MigrationContextImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
@@ -80,6 +87,8 @@ import org.bouncycastle.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -131,6 +140,26 @@ final class InitialModServiceTokenSchemaTest {
         networkInfo = new FakeNetworkInfo();
 
         config = buildConfig(DEFAULT_NUM_SYSTEM_ACCOUNTS, true);
+    }
+
+    @CsvSource({
+        "abababababababababababababababababababababababababababababababab",
+        "abcdef",
+        "0123456789",
+    })
+    @ParameterizedTest
+    void keysAreMigratedIdentically(@NonNull final String hexedKey) {
+        var unhexedKey = unhex(hexedKey);
+        if (unhexedKey.length != 32) {
+            final var leftPadded = new byte[32];
+            System.arraycopy(unhexedKey, 0, leftPadded, 32 - unhexedKey.length, unhexedKey.length);
+            unhexedKey = leftPadded;
+        }
+        final var onDiskAccount = new OnDiskAccount();
+        onDiskAccount.setFirstStorageKey(asPackedInts(unhexedKey));
+        final var account = AccountStateTranslator.accountFromOnDiskAccount(onDiskAccount);
+        final var expectedKey = bytesFromInts(onDiskAccount.getFirstStorageKey());
+        assertEquals(expectedKey, account.firstContractStorageKey());
     }
 
     @Test

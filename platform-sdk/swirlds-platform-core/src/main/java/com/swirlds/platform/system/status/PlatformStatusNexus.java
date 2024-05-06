@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,26 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.io;
+package com.swirlds.platform.system.status;
 
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import java.io.IOException;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-public interface OptionalSelfSerializable<E extends Enum<E>> extends SelfSerializable {
-    void serialize(SerializableDataOutputStream out, E option) throws IOException;
+/**
+ * A nexus for holding the current platform status, and providing thread-safe access to it.
+ */
+public interface PlatformStatusNexus {
+    /**
+     * Get the current status
+     *
+     * @return the current status
+     */
+    @NonNull
+    PlatformStatus getCurrentStatus();
+
+    /**
+     * Set a new status
+     *
+     * @param status the new status
+     */
+    void setCurrentStatus(@NonNull final PlatformStatus status);
 }

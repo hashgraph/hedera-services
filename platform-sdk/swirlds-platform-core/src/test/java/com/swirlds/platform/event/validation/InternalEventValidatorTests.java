@@ -39,7 +39,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -115,11 +114,9 @@ class InternalEventValidatorTests {
         when(hashedData.getOtherParents())
                 .thenReturn(otherParent == null ? Collections.EMPTY_LIST : Collections.singletonList(otherParent));
 
-        final BaseEventUnhashedData unhashedData = mock(BaseEventUnhashedData.class);
-
         final GossipEvent event = mock(GossipEvent.class);
         when(event.getHashedData()).thenReturn(hashedData);
-        when(event.getUnhashedData()).thenReturn(unhashedData);
+        when(event.getSignature()).thenReturn(new byte[0]);
         when(event.getGeneration()).thenReturn(self.getGeneration());
         when(event.getDescriptor()).thenReturn(self);
 
@@ -147,10 +144,10 @@ class InternalEventValidatorTests {
     }
 
     @Test
-    @DisplayName("An event with null unhashed data is invalid")
-    void nullUnhashedData() {
+    @DisplayName("An event with null signature is invalid")
+    void nullSignatureData() {
         final GossipEvent event = generateGoodEvent(random, 1111);
-        when(event.getUnhashedData()).thenReturn(null);
+        when(event.getSignature()).thenReturn(null);
 
         assertNull(multinodeValidator.validateEvent(event));
         assertNull(singleNodeValidator.validateEvent(event));
