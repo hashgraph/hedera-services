@@ -726,10 +726,7 @@ public final class Hedera implements SwirldMain {
         final var nextBlockInfo =
                 currentBlockInfo.copyBuilder().migrationRecordsStreamed(false).build();
         blockInfoState.put(nextBlockInfo);
-        logger.info(
-                "Unmarked migration records streamed with block info {} with hash {}",
-                nextBlockInfo,
-                blockInfoState.hashCode());
+        logger.info("Unmarked migration records streamed");
         ((WritableSingletonStateBase<BlockInfo>) blockInfoState).commit();
     }
 

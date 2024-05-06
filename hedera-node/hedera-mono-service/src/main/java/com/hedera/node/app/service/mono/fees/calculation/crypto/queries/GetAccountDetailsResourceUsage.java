@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.fees.calculation.crypto.queries;
 
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage;
@@ -91,7 +92,7 @@ public final class GetAccountDetailsResourceUsage implements QueryResourceUsageE
      */
     public FeeData usageGiven(final com.hedera.hapi.node.transaction.Query query, final Account account) {
         if (account == null) {
-            return FeeData.getDefaultInstance();
+            return CONSTANT_FEE_DATA;
         }
         final var ctx = ExtantCryptoContext.newBuilder()
                 .setCurrentKey(fromPbj(account.key()))
