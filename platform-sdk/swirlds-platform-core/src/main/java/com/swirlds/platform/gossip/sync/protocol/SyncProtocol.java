@@ -99,16 +99,16 @@ public class SyncProtocol implements Protocol {
     /**
      * Constructs a new sync protocol
      *
-     * @param platformContext     the platform context
-     * @param peerId              the id of the peer being synced with in this protocol
-     * @param synchronizer        the shadow graph synchronizer, responsible for actually doing the sync
-     * @param fallenBehindManager manager to determine whether this node has fallen behind
-     * @param permitProvider      provides permits to sync
-     * @param gossipHalted        returns true if gossip is halted, false otherwise
-     * @param intakeIsTooFull     returns true if the intake queue is too full to continue syncing, false otherwise
-     * @param sleepAfterSync      the amount of time to sleep after a sync
-     * @param syncMetrics         metrics tracking syncing
-     * @param platformStatusSupplier         provides the current platform status
+     * @param platformContext        the platform context
+     * @param peerId                 the id of the peer being synced with in this protocol
+     * @param synchronizer           the shadow graph synchronizer, responsible for actually doing the sync
+     * @param fallenBehindManager    manager to determine whether this node has fallen behind
+     * @param permitProvider         provides permits to sync
+     * @param gossipHalted           returns true if gossip is halted, false otherwise
+     * @param intakeIsTooFull        returns true if the intake queue is too full to continue syncing, false otherwise
+     * @param sleepAfterSync         the amount of time to sleep after a sync
+     * @param syncMetrics            metrics tracking syncing
+     * @param platformStatusSupplier provides the current platform status
      */
     public SyncProtocol(
             @NonNull final PlatformContext platformContext,
@@ -120,7 +120,7 @@ public class SyncProtocol implements Protocol {
             @NonNull final BooleanSupplier intakeIsTooFull,
             @NonNull final Duration sleepAfterSync,
             @NonNull final SyncMetrics syncMetrics,
-            final Supplier<PlatformStatus> platformStatusSupplier) {
+            @NonNull final Supplier<PlatformStatus> platformStatusSupplier) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.peerId = Objects.requireNonNull(peerId);
