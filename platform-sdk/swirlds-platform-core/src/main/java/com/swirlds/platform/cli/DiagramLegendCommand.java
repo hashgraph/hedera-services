@@ -19,6 +19,7 @@ package com.swirlds.platform.cli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.context.internal.DefaultPlatformContext;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.common.wiring.model.diagram.ModelEdgeSubstitution;
@@ -54,7 +55,7 @@ public final class DiagramLegendCommand extends AbstractCommand {
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
         BootstrapUtils.setupConstructableRegistry();
 
-        final PlatformContext platformContext = PlatformContext.create(configuration);
+        final PlatformContext platformContext = DefaultPlatformContext.create(configuration);
 
         final WiringModel model = WiringModelBuilder.create(platformContext).build();
 

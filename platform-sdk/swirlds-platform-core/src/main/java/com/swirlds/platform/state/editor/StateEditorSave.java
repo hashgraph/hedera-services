@@ -23,6 +23,7 @@ import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSigne
 
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.context.internal.DefaultPlatformContext;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -73,7 +74,7 @@ public class StateEditorSave extends StateEditorOperation {
             final Configuration configuration =
                     DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
 
-            final PlatformContext platformContext = PlatformContext.create(configuration);
+            final PlatformContext platformContext = DefaultPlatformContext.create(configuration);
 
             try (final ReservedSignedState signedState = getStateEditor().getSignedStateCopy()) {
                 writeSignedStateFilesToDirectory(platformContext, NO_NODE_ID, directory, signedState.get());

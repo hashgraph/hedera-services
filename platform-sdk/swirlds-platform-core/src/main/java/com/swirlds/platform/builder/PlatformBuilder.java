@@ -29,8 +29,8 @@ import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialStat
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.context.internal.DefaultPlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -368,7 +368,7 @@ public final class PlatformBuilder {
         setupGlobalMetrics(configuration);
         final Metrics metrics = getMetricsProvider().createPlatformMetrics(selfId);
 
-        return PlatformContext.create(configuration, metrics, cryptography);
+        return DefaultPlatformContext.create(configuration, metrics, cryptography);
     }
 
     /**

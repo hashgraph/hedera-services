@@ -21,6 +21,8 @@ import com.swirlds.common.concurrent.ExecutorFactory;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
@@ -41,6 +43,8 @@ public final class DefaultPlatformContext implements PlatformContext {
 
     private final ExecutorFactory executorFactory;
 
+    private FileSystemManager fileSystemManager;
+
     /**
      * Constructor.
      *
@@ -56,11 +60,28 @@ public final class DefaultPlatformContext implements PlatformContext {
             @NonNull final Cryptography cryptography,
             @NonNull final Time time,
             @NonNull final ExecutorFactory executorFactory) {
+        this(
+                configuration,
+                metrics,
+                cryptography,
+                time,
+                executorFactory,
+                FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, metrics));
+    }
+
+    public DefaultPlatformContext(
+            @NonNull final Configuration configuration,
+            @NonNull final Metrics metrics,
+            @NonNull final Cryptography cryptography,
+            @NonNull final Time time,
+            @NonNull final ExecutorFactory executorFactory,
+            @NonNull final FileSystemManager fileSystemManager) {
         this.configuration = Objects.requireNonNull(configuration);
         this.metrics = Objects.requireNonNull(metrics);
         this.cryptography = Objects.requireNonNull(cryptography);
         this.time = Objects.requireNonNull(time);
         this.executorFactory = Objects.requireNonNull(executorFactory);
+        this.fileSystemManager = Objects.requireNonNull(fileSystemManager);
     }
 
     /**
@@ -135,6 +156,12 @@ public final class DefaultPlatformContext implements PlatformContext {
     @Override
     public Time getTime() {
         return time;
+    }
+
+    @NonNull
+    @Override
+    public FileSystemManager getFileSystemManager() {
+        return fileSystemManager;
     }
 
     @Override

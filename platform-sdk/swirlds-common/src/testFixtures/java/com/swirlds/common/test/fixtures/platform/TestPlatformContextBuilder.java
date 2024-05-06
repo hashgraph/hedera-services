@@ -19,6 +19,7 @@ package com.swirlds.common.test.fixtures.platform;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.concurrent.ExecutorFactory;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -214,6 +215,11 @@ public final class TestPlatformContextBuilder {
             @Override
             public FileSystemManager getFileSystemManager() {
                 return fileSystemManager;
+            }
+
+            @Override
+            public ExecutorFactory getExecutorFactory() {
+                return null;
             }
         };
     }

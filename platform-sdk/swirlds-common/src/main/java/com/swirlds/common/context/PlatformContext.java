@@ -17,6 +17,7 @@
 package com.swirlds.common.context;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.concurrent.ExecutorFactory;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.config.api.Configuration;
@@ -72,4 +73,11 @@ public interface PlatformContext {
      */
     @NonNull
     FileSystemManager getFileSystemManager();
+
+    /**
+     * Returns the {@link ExecutorFactory} for this node
+     *
+     * @return the {@link ExecutorFactory} for this node
+     */
+    ExecutorFactory getExecutorFactory();
 }

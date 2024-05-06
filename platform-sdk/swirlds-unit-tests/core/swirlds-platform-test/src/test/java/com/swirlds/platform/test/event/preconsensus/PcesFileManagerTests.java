@@ -29,6 +29,7 @@ import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.context.internal.DefaultPlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.config.FileSystemManagerConfig_;
 import com.swirlds.common.io.utility.FileUtils;
@@ -101,7 +102,7 @@ class PcesFileManagerTests {
                 .withValue(PcesConfig_.COMPACT_LAST_FILE_ON_STARTUP, false)
                 .getOrCreateConfig();
 
-        return new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get(), time);
+        return DefaultPlatformContext.create(configuration, new NoOpMetrics(), CryptographyHolder.get(), time);
     }
 
     @ParameterizedTest
