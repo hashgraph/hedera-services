@@ -28,34 +28,48 @@ package com.swirlds.common.merkle.synchronization.stats;
  */
 public interface ReconnectMapStats {
     /**
-     * Increment a transfers counter.
+     * Increment a transfers from teacher counter.
      * <p>
-     * Different reconnect algorithms may define the term "transfer" differently. Examples of a transfer: <br>
+     * Different reconnect algorithms may define the term "transfer" differently. Examples of a transfer from teacher: <br>
      * * a lesson from the teacher, <br>
-     * * a query response to the teacher, <br>
-     * * a request from the learner, <br>
-     * * a response from the teacher.
-     *
-     * @param fromTeacher a transfer of data from a teacher to the learner (e.g. a lesson, or a response)
-     * @param fromLearner a transfer of data from the learner to its teacher (e.g. a query response, or a request)
+     * * a response from the teacher per a prior request from the learner.
      */
-    default void incrementTransfers(int fromTeacher, int fromLearner) {}
+    default void incrementTransfersFromTeacher() {}
 
     /**
-     * Gather stats about internal nodes transfers.
+     * Increment a transfers from learner counter.
+     * <p>
+     * Different reconnect algorithms may define the term "transfer" differently. Examples of a transfer from learner: <br>
+     * * a query response to the teacher for a single hash, <br>
+     * * a request from the learner.
+     */
+    default void incrementTransfersFromLearner() {}
+
+    /**
+     * Gather stats about internal nodes hashes transfers.
      * @param hashNum the number of hashes of internal nodes transferred
      * @param cleanHashNum the number of hashes transferred unnecessarily because they were clean
+     */
+    default void incrementInternalHashes(int hashNum, int cleanHashNum) {}
+
+    /**
+     * Gather stats about internal nodes data transfers.
      * @param dataNum the number of data payloads of internal nodes transferred (for non-VirtualMap trees)
      * @param cleanDataNum the number of data payloads transferred unnecessarily because they were clean
      */
-    default void incrementInternalNodes(int hashNum, int cleanHashNum, int dataNum, int cleanDataNum) {}
+    default void incrementInternalData(int dataNum, int cleanDataNum) {}
 
     /**
-     * Gather stats about leaf nodes transfers.
+     * Gather stats about leaf nodes hashes transfers.
      * @param hashNum the number of hashes of leaf nodes transferred
      * @param cleanHashNum the number of hashes transferred unnecessarily because they were clean
+     */
+    default void incrementLeafHashes(int hashNum, int cleanHashNum) {}
+
+    /**
+     * Gather stats about leaf nodes data transfers.
      * @param dataNum the number of data payloads of leaf nodes transferred
      * @param cleanDataNum the number of data payloads transferred unnecessarily because they were clean
      */
-    default void incrementLeafNodes(int hashNum, int cleanHashNum, int dataNum, int cleanDataNum) {}
+    default void incrementLeafData(int dataNum, int cleanDataNum) {}
 }
