@@ -132,7 +132,7 @@ public class RecordStreamManager {
             Files.createDirectories(Paths.get(nodeScopedSidecarDir));
             protobufStreamFileWriter = new RecordStreamFileWriter(
                     nodeScopedRecordLogDir,
-                    platform,
+                    platform::sign,
                     streamType,
                     nodeScopedSidecarDir,
                     globalDynamicProperties.getSidecarMaxSizeMb() * MB_TO_BYTES,

@@ -25,10 +25,8 @@ description = "Hedera API"
 
 // Add downloaded HAPI repo protobuf files into build directory and add to sources to build them
 tasks.cloneHederaProtobufs {
-    branchOrTag = "add-node-query"
-    //    branchOrTag = "main"
-    // As long as the 'branchOrTag' above is not stable, run always:
-    outputs.upToDateWhen { false }
+    tag = "v0.50.0-release"
+    // branch = "add-node-query"
 }
 
 sourceSets {

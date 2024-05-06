@@ -51,8 +51,8 @@ class WinTabAddresses extends PrePaintableJPanel {
         redoWindow = false;
         String s = "";
         synchronized (getPlatforms()) {
-            for (Platform p : getPlatforms()) {
-                final Address address = p.getSelfAddress();
+            for (final Platform p : getPlatforms()) {
+                final Address address = p.getAddressBook().getAddress(p.getSelfId());
                 s += "\n" + address.getNodeId().id() + "   " + address.getNickname()
                         + "   " + address.getSelfName()
                         + "   " + address.getHostnameInternal()
