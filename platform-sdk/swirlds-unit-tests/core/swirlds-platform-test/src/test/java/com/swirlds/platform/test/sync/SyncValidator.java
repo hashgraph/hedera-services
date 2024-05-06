@@ -31,11 +31,11 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -202,10 +202,10 @@ public class SyncValidator {
 
             for (final GossipEvent actual : actualList) {
                 final BaseEventHashedData actualHashedData = actual.getHashedData();
-                final BaseEventUnhashedData actualUnhashedData = actual.getUnhashedData();
+                final byte[] actualSignature = actual.getSignature();
 
                 if (expected.getHashedData().equals(actualHashedData)
-                        && expected.getUnhashedData().equals(actualUnhashedData)) {
+                        && Arrays.equals(expected.getSignature(), actualSignature)) {
                     foundMatch = true;
                     break;
                 }

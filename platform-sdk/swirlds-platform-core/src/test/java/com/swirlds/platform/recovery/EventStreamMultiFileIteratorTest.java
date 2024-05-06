@@ -103,8 +103,7 @@ class EventStreamMultiFileIteratorTest {
                 final DetailedConsensusEvent event = deserializedEvents.get(eventIndex);
 
                 // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
+                final EventImpl e = new EventImpl(event);
                 assertEventsAreEqual(e, events.get(eventIndex));
             }
 
@@ -144,8 +143,7 @@ class EventStreamMultiFileIteratorTest {
                 final DetailedConsensusEvent event = deserializedEvents.get(eventIndex);
 
                 // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
+                final EventImpl e = new EventImpl(event);
                 assertEventsAreEqual(e, events.get(eventIndex + startingIndex));
             }
 
@@ -216,8 +214,7 @@ class EventStreamMultiFileIteratorTest {
                 final DetailedConsensusEvent event = deserializedEvents.get(eventIndex);
 
                 // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
+                final EventImpl e = new EventImpl(event);
                 assertEquals(e, events.get(eventIndex), "event should match input event");
             }
 
@@ -272,8 +269,7 @@ class EventStreamMultiFileIteratorTest {
                 final DetailedConsensusEvent event = deserializedEvents.get(eventIndex);
 
                 // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
+                final EventImpl e = new EventImpl(event);
                 assertEventsAreEqual(e, events.get(eventIndex));
             }
 
@@ -312,8 +308,7 @@ class EventStreamMultiFileIteratorTest {
                 final DetailedConsensusEvent event = deserializedEvents.get(eventIndex);
 
                 // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
+                final EventImpl e = new EventImpl(event);
                 assertEquals(e, events.get(eventIndex), "event should match input event");
             }
 
@@ -417,8 +412,7 @@ class EventStreamMultiFileIteratorTest {
                 final DetailedConsensusEvent event = deserializedEvents.get(eventIndex);
 
                 // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
+                final EventImpl e = new EventImpl(event);
                 assertEventsAreEqual(e, events.get(startingIndex + eventIndex));
             }
         }
