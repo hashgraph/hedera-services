@@ -543,6 +543,7 @@ public class SwirldsPlatform implements Platform {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public NodeId getSelfId() {
         return selfId;
     }
@@ -812,6 +813,7 @@ public class SwirldsPlatform implements Platform {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public PlatformContext getContext() {
         return platformContext;
     }
@@ -820,6 +822,7 @@ public class SwirldsPlatform implements Platform {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public NotificationEngine getNotificationEngine() {
         return notificationEngine;
     }
@@ -828,7 +831,8 @@ public class SwirldsPlatform implements Platform {
      * {@inheritDoc}
      */
     @Override
-    public Signature sign(final byte[] data) {
+    @NonNull
+    public Signature sign(@NonNull final byte[] data) {
         return new PlatformSigner(keysAndCerts).sign(data);
     }
 
@@ -838,6 +842,7 @@ public class SwirldsPlatform implements Platform {
      * @return AddressBook
      */
     @Override
+    @NonNull
     public AddressBook getAddressBook() {
         return currentAddressBook;
     }
@@ -847,8 +852,8 @@ public class SwirldsPlatform implements Platform {
      */
     @SuppressWarnings("unchecked")
     @Override
-    public @NonNull <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(
-            @NonNull final String reason) {
+    @NonNull
+    public <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(@NonNull final String reason) {
         final ReservedSignedState wrapper = latestImmutableStateNexus.getState(reason);
         return wrapper == null
                 ? AutoCloseableWrapper.empty()
