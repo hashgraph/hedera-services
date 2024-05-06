@@ -25,7 +25,6 @@ import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.event.preconsensus.PcesBirthRoundMigration.migratePcesToBirthRoundMode;
 import static com.swirlds.platform.state.BirthRoundStateMigration.modifyStateForBirthRoundMigration;
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
-import static com.swirlds.platform.state.iss.IssDetector.DO_NOT_IGNORE_ROUNDS;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RESTART;
@@ -39,10 +38,8 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
@@ -73,7 +70,6 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
@@ -94,9 +90,7 @@ import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
-import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.nexus.DefaultLatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.EmergencyStateNexus;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
@@ -131,7 +125,6 @@ import com.swirlds.platform.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.util.ThingsToStart;
-import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.PlatformWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -355,37 +348,6 @@ public class SwirldsPlatform implements Platform {
         StartupStateUtils.doRecoveryCleanup(
                 platformContext, selfId, swirldName, actualMainClassName, epochHash, initialState.getRound());
 
-        // Only validate preconsensus signature transactions if we are not recovering from an ISS.
-        // ISS round == null means we haven't observed an ISS yet.
-        // ISS round < current round means there was an ISS prior to the saved state
-        //    that has already been recovered from.
-        // ISS round >= current round means that the ISS happens in the future relative the initial state, meaning
-        //    we may observe ISS-inducing signature transactions in the preconsensus event stream.
-        final Scratchpad<IssScratchpad> issScratchpad =
-                Scratchpad.create(platformContext, selfId, IssScratchpad.class, "platform.iss");
-        issScratchpad.logContents();
-        final SerializableLong issRound = issScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
-
-        final boolean forceIgnorePcesSignatures = platformContext
-                .getConfiguration()
-                .getConfigData(PcesConfig.class)
-                .forceIgnorePcesSignatures();
-
-        final boolean ignorePreconsensusSignatures;
-        if (forceIgnorePcesSignatures) {
-            // this is used FOR TESTING ONLY
-            ignorePreconsensusSignatures = true;
-        } else {
-            ignorePreconsensusSignatures = issRound != null && issRound.getValue() >= initialState.getRound();
-        }
-
-        // A round that we will completely skip ISS detection for. Needed for tests that do janky state modification
-        // without a software upgrade (in production this feature should not be used).
-        final long roundToIgnore = stateConfig.validateInitialState() ? DO_NOT_IGNORE_ROUNDS : initialState.getRound();
-
-        final IssDetector issDetector = new IssDetector(
-                platformContext, currentAddressBook, appVersion, ignorePreconsensusSignatures, roundToIgnore);
-
         final SignedStateFileManager signedStateFileManager = new SignedStateFileManager(
                 platformContext,
                 new SignedStateMetrics(platformContext.getMetrics()),
@@ -459,8 +421,8 @@ public class SwirldsPlatform implements Platform {
 
         platformWiring.wireExternalComponents(blocks.transactionPool());
 
-        final IssHandler issHandler =
-                new IssHandler(stateConfig, this::haltRequested, SystemExitUtils::handleFatalError, issScratchpad);
+        final IssHandler issHandler = new IssHandler(
+                stateConfig, this::haltRequested, SystemExitUtils::handleFatalError, blocks.issScratchpad());
 
         final HashLogger hashLogger =
                 new HashLogger(platformContext.getConfiguration().getConfigData(StateConfig.class));
@@ -484,7 +446,6 @@ public class SwirldsPlatform implements Platform {
                 stateSignatureCollector,
                 eventWindowManager,
                 consensusRoundHandler,
-                issDetector,
                 issHandler,
                 hashLogger,
                 birthRoundMigrationShim,
@@ -589,7 +550,7 @@ public class SwirldsPlatform implements Platform {
                     initialAncientThreshold,
                     initialAncientThreshold,
                     AncientMode.getAncientMode(platformContext)));
-            platformWiring.getIssDetectorWiring().overridingState().put(initialState.reserve("initialize issDetector"));
+            platformWiring.overrideIssDetectorState(initialState.reserve("initialize issDetector"));
 
             // We don't want to send this notification until after we are starting up.
             thingsToStart.add(() -> {
@@ -738,10 +699,7 @@ public class SwirldsPlatform implements Platform {
         logger.info(LogMarker.STATE_HASH.getMarker(), "RECONNECT: loadReconnectState: reloading state");
         logger.debug(RECONNECT.getMarker(), "`loadReconnectState` : reloading state");
         try {
-            platformWiring
-                    .getIssDetectorWiring()
-                    .overridingState()
-                    .put(signedState.reserve("reconnect state to issDetector"));
+            platformWiring.overrideIssDetectorState(signedState.reserve("reconnect state to issDetector"));
 
             // It's important to call init() before loading the signed state. The loading process makes copies
             // of the state, and we want to be sure that the first state in the chain of copies has been initialized.
@@ -925,7 +883,7 @@ public class SwirldsPlatform implements Platform {
 
         // FUTURE WORK: These flushes can be done by the PCES replayer.
         platformWiring.flushStateHasher();
-        platformWiring.getIssDetectorWiring().endOfPcesReplay().put(NoInput.getInstance());
+        platformWiring.signalEndOfPcesReplay();
 
         platformWiring
                 .getStatusActionSubmitter()
