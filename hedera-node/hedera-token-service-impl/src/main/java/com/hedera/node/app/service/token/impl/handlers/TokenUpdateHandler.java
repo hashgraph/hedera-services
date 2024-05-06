@@ -441,12 +441,30 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         }
     }
 
+    /**
+     * Check if the token update transaction body updates any non-key token property.
+     * @param context pre handle context
+     * @param token original token
+     * @param roleKey role key
+     * @throws PreCheckException if the token is immutable
+     */
     private void requireAdminOrRole(
             @NonNull final PreHandleContext context, @NonNull final Token token, @NonNull final TokenKey roleKey)
             throws PreCheckException {
         requireAdminOrRole(context, token, roleKey, null);
     }
 
+    /**
+     * If the original token has RoleKey, only then updating role key is possible. Otherwise, fail with TOKEN_IS_IMMUTABLE.
+     * If the original token has AdminKey, then require the admin key to sign the transaction. Otherwise, require the
+     * role key to sign the transaction.
+     * If the original token has neither AdminKey nor RoleKey, then fail with TOKEN_IS_IMMUTABLE.
+     * @param context pre handle context
+     * @param token original token
+     * @param roleKey role key
+     * @param replacementKey replacement key
+     * @throws PreCheckException if the token is immutable
+     */
     private void requireAdminOrRole(
             @NonNull final PreHandleContext context,
             @NonNull final Token token,
@@ -468,12 +486,24 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         }
     }
 
+    /**
+     * Checks if the token has adminKey, if so require the admin key to sign the transaction.
+     * If the token does not have adminKey, then fail with TOKEN_IS_IMMUTABLE.
+     * @param context pre handle context
+     * @param originalToken original token
+     * @throws PreCheckException if the token is immutable
+     */
     private void requireAdmin(@NonNull final PreHandleContext context, @NonNull final Token originalToken)
             throws PreCheckException {
         validateTruePreCheck(originalToken.hasAdminKey(), TOKEN_IS_IMMUTABLE);
         context.requireKey(originalToken.adminKeyOrThrow());
     }
 
+    /**
+     * Checks if the token update transaction body has any key removals, by using immutable sentinel keys to remove the key.
+     * @param op token update transaction body
+     * @return true if the token update transaction body has any key removals, false otherwise
+     */
     private boolean containsKeyRemoval(@NonNull final TokenUpdateTransactionBody op) {
         for (final var tokenKey : TOKEN_KEYS) {
             if (tokenKey.containsKeyRemoval(op)) {
@@ -483,6 +513,11 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         return false;
     }
 
+    /**
+     * Creates a threshold key with threshold 1 with the given keys.
+     * @param keysRequired keys required
+     * @return threshold key with threshold 1
+     */
     private Key oneOf(@NonNull final Key... keysRequired) {
         return Key.newBuilder()
                 .thresholdKey(ThresholdKey.newBuilder()
@@ -492,6 +527,11 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                 .build();
     }
 
+    /**
+     * Creates a key list with the given keys.
+     * @param keysRequired keys required
+     * @return key list
+     */
     private Key allOf(@NonNull final Key... keysRequired) {
         return Key.newBuilder()
                 .keyList(new KeyList(Arrays.asList(keysRequired)))
