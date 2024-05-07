@@ -37,9 +37,12 @@ public final class RunningHashesTranslator {
         requireNonNull(recordsRunningHashLeaf);
         return new RunningHashes.Builder()
                 .runningHash(recordsRunningHashLeaf.getRunningHash().getHash().getBytes())
-                .nMinus1RunningHash(recordsRunningHashLeaf.getNMinus1RunningHash().getHash().getBytes())
-                .nMinus2RunningHash(recordsRunningHashLeaf.getNMinus2RunningHash().getHash().getBytes())
-                .nMinus3RunningHash(recordsRunningHashLeaf.getNMinus3RunningHash().getHash().getBytes())
+                .nMinus1RunningHash(
+                        recordsRunningHashLeaf.getNMinus1RunningHash().getHash().getBytes())
+                .nMinus2RunningHash(
+                        recordsRunningHashLeaf.getNMinus2RunningHash().getHash().getBytes())
+                .nMinus3RunningHash(
+                        recordsRunningHashLeaf.getNMinus3RunningHash().getHash().getBytes())
                 .build();
     }
 }

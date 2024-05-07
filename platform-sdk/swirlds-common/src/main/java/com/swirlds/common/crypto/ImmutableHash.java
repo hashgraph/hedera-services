@@ -17,7 +17,6 @@
 package com.swirlds.common.crypto;
 
 import com.swirlds.common.constructable.ConstructableIgnored;
-import java.util.Arrays;
 
 @ConstructableIgnored
 public class ImmutableHash extends Hash {

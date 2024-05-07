@@ -18,7 +18,6 @@ package com.swirlds.common.crypto;
 
 import com.swirlds.common.io.SelfSerializable;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.security.MessageDigest;
 import java.util.List;
 
 public interface Cryptography {
@@ -102,7 +101,7 @@ public interface Cryptography {
     /**
      * Same as {@link #digestBytesSync(byte[], DigestType)} with DigestType set to {@link DigestType#SHA_384}
      */
-    default byte[] digestBytesSync(@NonNull final byte[] message){
+    default byte[] digestBytesSync(@NonNull final byte[] message) {
         return digestBytesSync(message, DEFAULT_DIGEST_TYPE);
     }
 
