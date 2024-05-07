@@ -42,6 +42,7 @@ public class Server {
     public static void start(final @NonNull BaseContext context, final @NonNull HttpHandlerRegistry... registries)
             throws IOException {
         final BaseExampleRestApiConfig config = context.configuration().getConfigData(BaseExampleRestApiConfig.class);
+
         // Create HTTP server instance
         final HttpServerProvider provider = HttpServerProvider.provider();
         final HttpServer server = provider.createHttpServer(new InetSocketAddress(config.host(), config.port()), 0);

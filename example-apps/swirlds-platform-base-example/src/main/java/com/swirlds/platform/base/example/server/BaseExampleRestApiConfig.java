@@ -17,11 +17,8 @@
 package com.swirlds.platform.base.example.server;
 
 import com.swirlds.config.api.ConfigData;
-import com.swirlds.config.api.ConfigProperty;
+import com.swirlds.config.api.DefaultValue;
 
 @ConfigData("base.example.server")
 public record BaseExampleRestApiConfig(
-        @ConfigProperty(defaultValue = "localhost") String host,
-        int port,
-        String basePath,
-        @ConfigProperty(defaultValue = "true") boolean banner) {}
+        @DefaultValue("localhost") String host, int port, String basePath, @DefaultValue("true") boolean banner) {}

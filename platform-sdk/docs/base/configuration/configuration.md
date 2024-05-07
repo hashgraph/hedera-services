@@ -202,7 +202,8 @@ can be simply added to the config API:
   config properties
 - `com.swirlds.config.impl.sources.PropertyFileConfigSource`: This source provides the content of 1 property file as a
   config source. Multiple can be added, one for each file
-
+- `com.swirlds.config.impl.sources.ClasspathFileConfigSource`: This source provides the content of 1 property file 
+  present in the classpath as a config source. Multiple can be added, one for each file
 The uniqueness of property names across configuration sources is not enforced by the configuration API. If multiple
 properties with the same name are loaded by different sources, the latest properties will overwrite the previous value.
 Based on that a hierarchy of config sources must be defined. To do so the `com.swirlds.config.api.source.ConfigSource`
@@ -230,23 +231,24 @@ final String id = config.getValue("app.id");
 Next to the low level API the config API provides a way to access configuration properties in a more structured manner.
 To do so the config API introduces config data records that are Java records that hold configuration properties. Such
 config data records can be defined individually. By doing so you can define individual records to configure a specific
-module. The config API provides the 2 annotations `com.swirlds.config.api.ConfigData`
-and `com.swirlds.config.api.ConfigProperty` to define config data record types. Using the config data records is the
+module. The config API provides annotations `com.swirlds.config.api.ConfigData`, `com.swirlds.config.api.ConfigProperty`
+and `com.swirlds.config.api.DefaultValue` to define config data record types. Using the config data records is the 
 preferred way to use the config API. The following code snippet shows a sample definition of a config data record type:
 
 ```
 @ConfigData("endpoint")
 public record EndpointConfig(
-    @ConfigProperty(defaultValue = "8080") int port,
-    @ConfigProperty(value="host", defaultValue = "localhost") String server,
-    @ConfigProperty(defaultValue = "404,500") List<Integer> errorCodes) {}
+    @DefaultValue("8080") int port,
+    @ConfigProperty("host") @DefaultValue("localhost") String server,
+    @DefaultValue("404,500") List<Integer> errorCodes) {}
 ```
 
 The given snippet defines a configuration for a socket based endpoint and defines the host, the port and a list of error
 codes. The `value` of the `ConfigData` annotation defines the prefix of the property names that will be followed by
 a `.` if the value is not blank. The name of the components of the records define the name of properties. That name can
-be overwritten by the `value` of the `@ConfigProperty` annotation. For the given sample the 3 properties that are part
-of the record have the names:
+be overwritten by the `value` of the `@ConfigProperty` annotation. A default value can be indicated for the property 
+with `@DefaultValue`.
+For the given sample the 3 properties that are part of the record have the names:
 
 - `endpoint.port`
 - `endpoint.host`
@@ -256,15 +258,16 @@ This names can be used to provide values of the properties by any config source.
 and `List<Integer>` are used in the given sample all data types that are supported by the config API can be used for
 components in config data records.
 
-In the sample default values are provided for all properties by setting the `defaultValue` of the `ConfigProperty`. The
-default value of this parameter is defined by `ConfigProperty.UNDEFINED_DEFAULT_VALUE`. If a default value is not
-specified by the ConfigProperty annotation a config source must specify the value. If no value is specified the
-configuration will fail on init (see the configuration lifecycle).
+In the sample default values are provided for all properties by setting a `@DefaultValue`. If a default value is not
+specified a config source must specify the value. If no value is specified the configuration will fail on init (see the
+configuration lifecycle).
 
-**Note:** Since Java does not allow to set `null` as a value of an annotation attribute the `@ConfigProperty` annotation
-provides the constant `NULL_DEFAULT_VALUE` that can be used as a default value for the unusual use case that you want to
-have a config data record property with `null` as a default value. If you want an empty list as the default value for a
-list property you need to define `[]` as the default value (or use the constant `Configuration.EMPTY_LIST`).
+**Note:** Since Java does not allow to set `null` as a value of an annotation attribute, to handle cases where the 
+properties need to be either unset or empty two syntax sugared versions exist. `@UnsetValue` and `@EmptyValue`. The 
+first one is synonym for `@DefaultValue({})` and is used to set the property value to Java's default type value (e.g. 0 
+for `int` and `null` for `Object`). The second one is synonym for `@DefaultValue("")` and is used to set the property 
+value to whatever empty means for the type (e.g.: empty string for `String`, empty list for `List`).
+
 
 It is optional to annotate components of the record with the ConfigProperty annotation. The following code snippet shows
 another example of a config data record:

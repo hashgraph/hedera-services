@@ -21,6 +21,7 @@ import com.swirlds.config.impl.converters.BigDecimalConverter;
 import com.swirlds.config.impl.converters.BigIntegerConverter;
 import com.swirlds.config.impl.converters.BooleanConverter;
 import com.swirlds.config.impl.converters.ByteConverter;
+import com.swirlds.config.impl.converters.CharConverter;
 import com.swirlds.config.impl.converters.ChronoUnitConverter;
 import com.swirlds.config.impl.converters.DoubleConverter;
 import com.swirlds.config.impl.converters.DurationConverter;
@@ -61,6 +62,7 @@ class ConverterService implements ConfigLifecycle {
     private static final ConfigConverter<String> STRING_CONVERTER = new StringConverter();
 
     private static final ConfigConverter<Integer> INTEGER_CONVERTER = new IntegerConverter();
+    private static final ConfigConverter<Character> CHAR_CONVERTER = new CharConverter();
 
     private static final ConfigConverter<Long> LONG_CONVERTER = new LongConverter();
 
@@ -149,6 +151,7 @@ class ConverterService implements ConfigLifecycle {
         throwIfInitialized();
         // Primitives
         addConverter(Integer.TYPE, INTEGER_CONVERTER);
+        addConverter(Character.TYPE, CHAR_CONVERTER);
         addConverter(Long.TYPE, LONG_CONVERTER);
         addConverter(Double.TYPE, DOUBLE_CONVERTER);
         addConverter(Float.TYPE, FLOAT_CONVERTER);
@@ -158,6 +161,7 @@ class ConverterService implements ConfigLifecycle {
 
         addConverter(String.class, STRING_CONVERTER);
         addConverter(Integer.class, INTEGER_CONVERTER);
+        addConverter(Character.class, CHAR_CONVERTER);
         addConverter(Long.class, LONG_CONVERTER);
         addConverter(Double.class, DOUBLE_CONVERTER);
         addConverter(Float.class, FLOAT_CONVERTER);

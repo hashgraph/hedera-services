@@ -19,6 +19,7 @@ package com.swirlds.platform.base.example;
 import com.swirlds.platform.base.example.executorsample.BaseExecutorHandlerFactory;
 import com.swirlds.platform.base.example.ext.BaseContext;
 import com.swirlds.platform.base.example.ext.BaseContextFactory;
+import com.swirlds.platform.base.example.ext.ConfigTestLoadingRecord;
 import com.swirlds.platform.base.example.jdkmetrics.JVMInternalMetrics;
 import com.swirlds.platform.base.example.metricsample.MetricsSampleHandlerRegistry;
 import com.swirlds.platform.base.example.server.Server;
@@ -34,6 +35,13 @@ public class Application {
         final BaseContext baseContext = BaseContextFactory.create();
         // Add JDK metrics to track memory, cpu, etc
         JVMInternalMetrics.registerMetrics(baseContext.metrics());
+
+        // Load a config record showcasing many different combinations of DefaultValue and ConfigParameter annotations
+        final ConfigTestLoadingRecord configTestLoadingRecord =
+                baseContext.configuration().getConfigData(ConfigTestLoadingRecord.class);
+        // Check the properties loading worked as expected
+        configTestLoadingRecord.check();
+
         Server.start(
                 baseContext,
                 new StoreExampleHandlerRegistry(),

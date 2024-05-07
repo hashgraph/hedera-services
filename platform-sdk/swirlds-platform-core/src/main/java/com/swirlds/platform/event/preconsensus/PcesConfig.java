@@ -103,5 +103,4 @@ public record PcesConfig(
         @DefaultValue("true") boolean compactLastFileOnStartup,
         @DefaultValue("false") boolean forceIgnorePcesSignatures,
         @DefaultValue("1m") Duration roundDurabilityBufferHeartbeatPeriod,
-        @DefaultValue("1m") Duration suspiciousRoundDurabilityDuration,
-        @DefaultValue("") String value ) {}
+        @DefaultValue("1m") Duration suspiciousRoundDurabilityDuration) {}

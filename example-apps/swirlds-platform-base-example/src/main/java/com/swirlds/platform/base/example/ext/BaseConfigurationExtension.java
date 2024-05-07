@@ -39,6 +39,10 @@ public class BaseConfigurationExtension implements ConfigurationExtension {
 
         // Load Configuration Definitions
         return Set.of(
-                BaseExampleRestApiConfig.class, BasicCommonConfig.class, MetricsConfig.class, PrometheusConfig.class);
+                BaseExampleRestApiConfig.class,
+                BasicCommonConfig.class,
+                MetricsConfig.class,
+                PrometheusConfig.class,
+                ConfigTestLoadingRecord.class);
     }
 }
