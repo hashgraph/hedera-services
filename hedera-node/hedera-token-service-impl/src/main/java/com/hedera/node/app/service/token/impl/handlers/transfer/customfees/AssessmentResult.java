@@ -50,7 +50,7 @@ import org.apache.commons.lang3.tuple.Pair;
  * <p> All the assessed custom fees are stored in assessedCustomFees, which is used to construct transaction record</p>
  */
 public class AssessmentResult {
-
+    // The default token ID for representing hbar changes
     public static TokenID HBAR_TOKEN_ID = TokenID.DEFAULT;
     private Map<TokenID, Map<AccountID, Long>> htsAdjustments;
     // two maps to aggregate all custom fee balance changes. These two maps are used
@@ -93,42 +93,83 @@ public class AssessmentResult {
         assessedCustomFees = new ArrayList<>();
     }
 
+    /**
+     * Returns the immutable input token adjustments.
+     * @return the immutable input token adjustments
+     */
     public Map<TokenID, Map<AccountID, Long>> getImmutableInputTokenAdjustments() {
         return immutableInputTokenAdjustments;
     }
 
+    /**
+     * Returns the mutable input balance adjustments.
+     * @return the mutable input balance adjustments
+     */
     public Map<TokenID, Map<AccountID, Long>> getMutableInputBalanceAdjustments() {
         return mutableInputBalanceAdjustments;
     }
 
+    /**
+     * Returns the hbar adjustments.
+     * @return the hbar adjustments
+     */
     public Map<AccountID, Long> getHbarAdjustments() {
         return hbarAdjustments;
     }
 
+    /**
+     * Returns the hts adjustments.
+     * @return the hts adjustments
+     */
     public Map<TokenID, Map<AccountID, Long>> getHtsAdjustments() {
         return htsAdjustments;
     }
 
+    /**
+     * Returns the assessed custom fees.
+     * @return the assessed custom fees
+     */
     public List<AssessedCustomFee> getAssessedCustomFees() {
         return assessedCustomFees;
     }
 
+    /**
+     * Adds an assessed custom fee.
+     * @param assessedCustomFee the assessed custom fee
+     */
     public void addAssessedCustomFee(final AssessedCustomFee assessedCustomFee) {
         assessedCustomFees.add(assessedCustomFee);
     }
 
+    /**
+     * Returns the royalties paid.
+     * @return the royalties paid
+     */
     public Set<Pair<AccountID, TokenID>> getRoyaltiesPaid() {
         return royaltiesPaid;
     }
 
+    /**
+     * Adds a pair of account ID and token ID to the royalties paid.
+     * @param paid the pair of account ID and token ID
+     */
     public void addToRoyaltiesPaid(final Pair<AccountID, TokenID> paid) {
         royaltiesPaid.add(paid);
     }
 
+    /**
+     * Returns the immutable input hbar adjustments.
+     * @return the immutable input hbar adjustments
+     */
     public Map<AccountID, Long> getImmutableInputHbarAdjustments() {
         return immutableInputHbarAdjustments;
     }
 
+    /**
+     * Builds a map of fungible token transfers from the given {@link TokenTransferList}.
+     * @param tokenTransfers the token transfers
+     * @return the map of fungible token transfers
+     */
     private Map<TokenID, Map<AccountID, Long>> buildFungibleTokenTransferMap(
             final List<TokenTransferList> tokenTransfers) {
         final var fungibleTransfersMap = new LinkedHashMap<TokenID, Map<AccountID, Long>>();
@@ -147,15 +188,16 @@ public class AssessmentResult {
         return fungibleTransfersMap;
     }
 
+    /**
+     * Builds a map of hbar transfers from the given {@link AccountAmount}.
+     * @param hbarTransfers the hbar transfers
+     * @return the map of hbar transfers
+     */
     private Map<AccountID, Long> buildHbarTransferMap(@NonNull final List<AccountAmount> hbarTransfers) {
         final var adjustments = new LinkedHashMap<AccountID, Long>();
         for (final var aa : hbarTransfers) {
             adjustments.put(aa.accountID(), aa.amount());
         }
         return adjustments;
-    }
-
-    public boolean haveAssessedChanges() {
-        return !assessedCustomFees.isEmpty() || !hbarAdjustments.isEmpty() || !htsAdjustments.isEmpty();
     }
 }

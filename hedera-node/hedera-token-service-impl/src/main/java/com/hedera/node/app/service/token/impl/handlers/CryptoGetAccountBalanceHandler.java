@@ -56,6 +56,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public CryptoGetAccountBalanceHandler() {
         // Exists for injection

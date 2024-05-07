@@ -83,6 +83,10 @@ import javax.inject.Singleton;
 public class CryptoApproveAllowanceHandler implements TransactionHandler {
     private final ApproveAllowanceValidator allowanceValidator;
 
+    /**
+     * Constructs a {@link CryptoApproveAllowanceHandler} with the given {@link ApproveAllowanceValidator}.
+     * @param allowanceValidator the validator to use for validating the transaction
+     */
     @Inject
     public CryptoApproveAllowanceHandler(@NonNull final ApproveAllowanceValidator allowanceValidator) {
         this.allowanceValidator = allowanceValidator;

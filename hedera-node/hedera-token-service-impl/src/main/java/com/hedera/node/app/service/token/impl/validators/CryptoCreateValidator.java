@@ -39,8 +39,12 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoCreateValidator {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
-    public CryptoCreateValidator() { // Exists for injection
+    public CryptoCreateValidator() {
+        // Exists for injection
     }
 
     /**
@@ -87,6 +91,7 @@ public class CryptoCreateValidator {
      * @param ledgerConfig LedgerConfig
      * @param entitiesConfig EntitiesConfig
      * @param tokensConfig TokensConfig
+     * @return true if too many auto associations
      */
     public boolean tooManyAutoAssociations(
             final int n,

@@ -98,6 +98,11 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
     private final CryptoCreateValidator cryptoCreateValidator;
     private final StakingValidator stakingValidator;
 
+    /**
+     * Constructs a {@link CryptoCreateHandler} with the given {@link CryptoCreateValidator} and {@link StakingValidator}.
+     * @param cryptoCreateValidator the validator for the crypto create transaction
+     * @param stakingValidator the validator for the staking information in the crypto create transaction
+     */
     @Inject
     public CryptoCreateHandler(
             @NonNull final CryptoCreateValidator cryptoCreateValidator,
