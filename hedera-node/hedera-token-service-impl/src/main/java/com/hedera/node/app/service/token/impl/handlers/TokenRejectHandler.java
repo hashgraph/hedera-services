@@ -68,12 +68,11 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         requireNonNull(context);
         final var txn = context.body();
         final var op = txn.tokenRejectOrThrow();
-        final var accountStore = context.createStore(ReadableAccountStore.class);
 
         // If account is specified, we need to verify that its valid and require it to sign the transaction.
         if (op.hasAccount()) {
-            var account = op.account();
-            verifySenderAndRequireKey(account, context, accountStore);
+            final var accountStore = context.createStore(ReadableAccountStore.class);
+            verifySenderAndRequireKey(op.account(), context, accountStore);
         }
     }
 
