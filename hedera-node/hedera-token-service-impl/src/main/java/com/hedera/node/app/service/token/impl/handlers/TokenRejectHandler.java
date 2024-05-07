@@ -123,8 +123,6 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         final var op = context.body().tokenRejectOrThrow();
         final var rejections = op.rejections();
         // Todo: Implement the logic for token rejection
-        // We can exctract the similar logic here for the calculate fees, but we cannot dispatch it, because wont have
-        // control over the transaction
     }
 
     @NonNull
