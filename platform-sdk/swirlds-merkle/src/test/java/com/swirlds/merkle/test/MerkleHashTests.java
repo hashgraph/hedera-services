@@ -184,16 +184,6 @@ class MerkleHashTests {
             }
         });
     }
-
-    /**
-     * Utility function that writes a tree's hash to a file.
-     */
-    void writeTreeToFile(final MerkleNode tree, final String filePath) throws IOException {
-        final FileOutputStream stream = new FileOutputStream(filePath);
-        stream.write(cryptography.digestTreeSync(tree).getValue());
-        stream.close();
-    }
-
     /**
      * This test verifies that two MerkleInternal nodes with different types
      * but the same children hash to different values.

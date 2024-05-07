@@ -47,7 +47,7 @@ public final class SyncLogging {
             return "null";
         }
         return hashes.stream()
-                .map(h -> CommonUtils.hex(h.getValue(), BRIEF_HASH_LENGTH))
+                .map(h -> h.toHex(BRIEF_HASH_LENGTH))
                 .collect(Collectors.joining(","));
     }
 
