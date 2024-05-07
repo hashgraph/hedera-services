@@ -265,8 +265,13 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
     @Override
     public void close() {
         try {
-            waitUntilReady();
-            records.getDataSource().close();
+            try {
+                waitUntilReady();
+            } finally {
+                // If the current thread is interrupted, waitUntilReady() above throws an interrupted
+                // exception. This is why the data source is closed in the "finally" block
+                records.getDataSource().close();
+            }
         } catch (final IOException e) {
             logger.error(EXCEPTION.getMarker(), "interrupted while attempting to close data source");
         } catch (final InterruptedException e) {

@@ -324,9 +324,11 @@ public class LearningSynchronizer implements ReconnectNodeCount {
                     newRoot.compareAndSet(null, reconstructedRoot.get());
 
                     viewsInProgress.decrementAndGet();
-                    boolean nextViewScheduled = receiveNextSubtree(workGroup, in, out, reconstructedRoots);
-                    while (nextViewScheduled) {
-                        nextViewScheduled = receiveNextSubtree(workGroup, in, out, reconstructedRoots);
+                    if (success) {
+                        boolean nextViewScheduled = receiveNextSubtree(workGroup, in, out, reconstructedRoots);
+                        while (nextViewScheduled) {
+                            nextViewScheduled = receiveNextSubtree(workGroup, in, out, reconstructedRoots);
+                        }
                     }
 
                     // Check if it was the last subtree to sync

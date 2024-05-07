@@ -242,6 +242,7 @@ public class TeachingSynchronizer {
             view.waitUntilReady();
         } catch (final InterruptedException e) {
             logger.error("Interrupted while waiting for a view to become ready, {}", view);
+            subtree.close();
             throw new MerkleSynchronizationException("Interrupted while waiting for a view to become ready");
         }
         logger.info(RECONNECT.getMarker(), "Sending tree rooted with route {}", route);
@@ -258,9 +259,11 @@ public class TeachingSynchronizer {
             subtree.close();
 
             viewsInProgress.decrementAndGet();
-            boolean nextViewScheduled = synchronizeNextSubtree(workGroup, in, out);
-            while (nextViewScheduled) {
-                nextViewScheduled = synchronizeNextSubtree(workGroup, in, out);
+            if (success) {
+                boolean nextViewScheduled = synchronizeNextSubtree(workGroup, in, out);
+                while (nextViewScheduled) {
+                    nextViewScheduled = synchronizeNextSubtree(workGroup, in, out);
+                }
             }
 
             // Check if this was the last subtree to sync
