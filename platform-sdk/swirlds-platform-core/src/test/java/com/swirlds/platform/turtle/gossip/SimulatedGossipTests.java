@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gossip.simulation;
+package com.swirlds.platform.turtle.gossip;
 
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration.DIRECT_THREADSAFE_CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
