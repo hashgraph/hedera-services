@@ -38,14 +38,20 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+/**
+ * Handles the ownership change of NFTs in a token transfer.
+ */
 public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferStep {
-    private static final Logger logger = LogManager.getLogger(NFTOwnersChangeStep.class);
     private final CryptoTransferTransactionBody op;
     private final AccountID topLevelPayer;
 
+    /**
+     * Constructs the {@link NFTOwnersChangeStep} with the given {@link CryptoTransferTransactionBody} and payer
+     * {@link AccountID}.
+     * @param op the {@link CryptoTransferTransactionBody}
+     * @param topLevelPayer the payer {@link AccountID}
+     */
     public NFTOwnersChangeStep(final CryptoTransferTransactionBody op, final AccountID topLevelPayer) {
         this.op = op;
         this.topLevelPayer = topLevelPayer;

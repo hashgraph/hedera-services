@@ -138,6 +138,7 @@ public class InitialModServiceTokenSchema extends Schema {
      * SyntheticRecordsGenerator} for more details). Even though these sorted sets contain account
      * objects, these account objects may or may not yet exist in state. They're usually not needed,
      * but are required for an event recovery situation.
+     * @param blocklistAccts a supplier of synthetic account records that are to be blocked
      */
     public InitialModServiceTokenSchema(
             final Supplier<SortedSet<Account>> sysAccts,
@@ -169,22 +170,43 @@ public class InitialModServiceTokenSchema extends Schema {
                 StateDefinition.singleton(STAKING_NETWORK_REWARDS_KEY, NetworkStakingRewards.PROTOBUF));
     }
 
+    /**
+     * Sets the in-state NFTs to be migrated from.
+     * @param fs the in-state NFTs
+     */
     public void setNftsFromState(@Nullable final VirtualMap<UniqueTokenKey, UniqueTokenValue> fs) {
         this.nftsFs = fs;
     }
 
+    /**
+     * Sets the in-state token rels to be migrated from.
+     * @param fs the in-state token rels
+     */
     public void setTokenRelsFromState(@Nullable final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> fs) {
         this.trFs = fs;
     }
 
+    /**
+     * Sets the in-state accounts to be migrated from.
+     * @param fs the in-state accounts
+     */
     public void setAcctsFromState(@Nullable final VirtualMap<EntityNumVirtualKey, OnDiskAccount> fs) {
         this.acctsFs = fs;
     }
 
+    /**
+     * Sets the in-state tokens to be migrated from.
+     * @param fs the in-state tokens
+     */
     public void setTokensFromState(@Nullable final MerkleMap<EntityNum, MerkleToken> fs) {
         this.tFs = fs;
     }
 
+    /**
+     * Sets the in-state staking info to be migrated from.
+     * @param stakingFs the in-state staking info
+     * @param mnc the in-state network context
+     */
     public void setStakingFs(
             @Nullable final MerkleMap<EntityNum, MerkleStakingInfo> stakingFs,
             @Nullable final MerkleNetworkContext mnc) {
@@ -598,6 +620,11 @@ public class InitialModServiceTokenSchema extends Schema {
         return totalBalance;
     }
 
+    /**
+     * Get the entity numbers of all system entities that are not contracts.
+     * @param numReservedSystemEntities The number of reserved system entities
+     * @return The entity numbers of all system entities that are not contracts
+     */
     @VisibleForTesting
     public static long[] nonContractSystemNums(final long numReservedSystemEntities) {
         return LongStream.rangeClosed(FIRST_POST_SYSTEM_FILE_ENTITY, numReservedSystemEntities)
