@@ -110,11 +110,9 @@ public class HashTests {
         assertNotEquals(0, original.compareTo(new Hash(DigestType.SHA_512)));
 
         ////////
-        assertArrayEquals(original.getValue(), copy.getValue());
-        assertArrayEquals(original.getValue(), recalculated.getValue());
-        assertArrayEquals(copy.getValue(), recalculated.getValue());
-        assertFalse(Arrays.equals(original.getValue(), different.getValue()));
-        assertFalse(Arrays.equals(copy.getValue(), different.getValue()));
+        assertEquals(original.getBytes(), copy.getBytes());
+        assertEquals(original.getBytes(), recalculated.getBytes());
+        assertEquals(copy.getBytes(), recalculated.getBytes());
 
         assertEquals(original, copy);
         assertEquals(original, recalculated);

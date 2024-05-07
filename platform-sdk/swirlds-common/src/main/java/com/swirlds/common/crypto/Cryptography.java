@@ -17,6 +17,8 @@
 package com.swirlds.common.crypto;
 
 import com.swirlds.common.io.SelfSerializable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.security.MessageDigest;
 import java.util.List;
 
 public interface Cryptography {
@@ -96,6 +98,24 @@ public interface Cryptography {
      * @throws CryptographyException if an unrecoverable error occurs while computing the digest
      */
     Hash digestSync(final SerializableHashable serializableHashable, final DigestType digestType, boolean setHash);
+
+    /**
+     * Same as {@link #digestBytesSync(byte[], DigestType)} with DigestType set to {@link DigestType#SHA_384}
+     */
+    default byte[] digestBytesSync(@NonNull final byte[] message){
+        return digestBytesSync(message, DEFAULT_DIGEST_TYPE);
+    }
+
+    /**
+     * Computes a cryptographic hash (message digest) for the given message.
+     *
+     * @param message    the message contents to be hashed
+     * @param digestType the type of digest used to compute the hash
+     * @return the cryptographic hash for the given message contents
+     * @throws CryptographyException if an unrecoverable error occurs while computing the digest
+     */
+    @NonNull
+    byte[] digestBytesSync(@NonNull final byte[] message, @NonNull final DigestType digestType);
 
     /**
      * @return the hash for a null value. Uses SHA_384.

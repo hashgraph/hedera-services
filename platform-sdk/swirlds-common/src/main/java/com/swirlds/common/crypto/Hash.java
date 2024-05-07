@@ -41,6 +41,7 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
     public static final int CLASS_VERSION = 1;
 
     private byte[] value;
+    private Bytes bytes;
     private DigestType digestType;
 
     /**
@@ -108,6 +109,7 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
 
         this.digestType = other.digestType;
         this.value = Arrays.copyOf(other.value, other.value.length);
+        this.bytes = other.bytes;
     }
 
     protected Hash(
@@ -145,6 +147,7 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
             // We throw an exception here because the value array contained all zero bytes
             throw new EmptyHashValueException("Hash creation failed, hash is array of zeroes");
         }
+        this.bytes = Bytes.wrap(this.value);
     }
 
     /**
@@ -221,6 +224,7 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
         if (value == null) {
             throw new BadIOException("Invalid hash value read from the stream");
         }
+        this.bytes = Bytes.wrap(value);
     }
 
     /**

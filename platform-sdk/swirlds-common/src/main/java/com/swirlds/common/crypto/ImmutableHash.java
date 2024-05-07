@@ -53,7 +53,6 @@ public class ImmutableHash extends Hash {
      */
     @Override
     public byte[] getValue() {
-        final byte[] value = super.getValue();
-        return Arrays.copyOf(value, value.length);
+        return getBytes().toByteArray();
     }
 }

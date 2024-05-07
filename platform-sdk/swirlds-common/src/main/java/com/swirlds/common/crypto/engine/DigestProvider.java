@@ -17,7 +17,6 @@
 package com.swirlds.common.crypto.engine;
 
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Message;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -26,7 +25,7 @@ import java.security.NoSuchAlgorithmException;
  * Implementation of a message digest provider. This implementation depends on the JCE {@link MessageDigest} providers
  * and supports all algorithms supported by the JVM.
  */
-public class DigestProvider extends CachingOperationProvider<Message, Void, Hash, MessageDigest, DigestType> {
+public class DigestProvider extends CachingOperationProvider<Message, Void, byte[], MessageDigest, DigestType> {
 
     /**
      * Default Constructor.
@@ -45,7 +44,7 @@ public class DigestProvider extends CachingOperationProvider<Message, Void, Hash
      * @throws NoSuchAlgorithmException
      * 		if an implementation of the required algorithm cannot be located or loaded
      */
-    protected Hash compute(final byte[] msg) throws NoSuchAlgorithmException {
+    protected byte[] compute(final byte[] msg) throws NoSuchAlgorithmException {
         return compute(msg, DigestType.SHA_384);
     }
 
@@ -60,30 +59,12 @@ public class DigestProvider extends CachingOperationProvider<Message, Void, Hash
      * @throws NoSuchAlgorithmException
      * 		if an implementation of the required algorithm cannot be located or loaded
      */
-    protected Hash compute(final byte[] msg, final DigestType algorithmType) throws NoSuchAlgorithmException {
+    protected byte[] compute(final byte[] msg, final DigestType algorithmType) throws NoSuchAlgorithmException {
         if (msg == null) {
             throw new IllegalArgumentException("msg");
         }
 
         return compute(msg, 0, msg.length, algorithmType);
-    }
-
-    /**
-     * Computes the result of the cryptographic transformation using the given subset of bytes from the provided
-     * message.  This implementation defaults to an SHA-384 message digest and is provided for convenience.
-     *
-     * @param msg
-     * 		the message for which to compute a message digest
-     * @param offset
-     * 		the starting offset to begin reading
-     * @param length
-     * 		the total number of bytes to read
-     * @return the message digest as an array of the raw bytes
-     * @throws NoSuchAlgorithmException
-     * 		if an implementation of the required algorithm cannot be located or loaded
-     */
-    private Hash compute(final byte[] msg, final int offset, final int length) throws NoSuchAlgorithmException {
-        return compute(msg, offset, length, DigestType.SHA_384);
     }
 
     /**
@@ -102,10 +83,10 @@ public class DigestProvider extends CachingOperationProvider<Message, Void, Hash
      * @throws NoSuchAlgorithmException
      * 		if an implementation of the required algorithm cannot be located or loaded
      */
-    private Hash compute(final byte[] msg, final int offset, final int length, final DigestType algorithmType)
+    private byte[] compute(final byte[] msg, final int offset, final int length, final DigestType algorithmType)
             throws NoSuchAlgorithmException {
         final MessageDigest algorithm = loadAlgorithm(algorithmType);
-        return new Hash(compute(algorithm, msg, offset, length), algorithmType);
+        return compute(algorithm, msg, offset, length);
     }
 
     /**
@@ -120,12 +101,12 @@ public class DigestProvider extends CachingOperationProvider<Message, Void, Hash
      * {@inheritDoc}
      */
     @Override
-    protected Hash handleItem(
+    protected byte[] handleItem(
             final MessageDigest algorithm,
             final DigestType algorithmType,
             final Message item,
             final Void optionalData) {
-        return new Hash(compute(algorithm, item.getPayloadDirect(), item.getOffset(), item.getLength()), algorithmType);
+        return compute(algorithm, item.getPayloadDirect(), item.getOffset(), item.getLength());
     }
 
     /**
