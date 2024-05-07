@@ -35,12 +35,9 @@ import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateHasher;
 import com.swirlds.platform.state.signed.StateSavingResult;
-import com.swirlds.platform.state.signed.StateSignatureCollector;
-import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 
 /**
  * The {@link TaskScheduler}s used by the platform.
@@ -65,7 +62,6 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
         @NonNull TaskScheduler<StateSignaturePayload> stateSignerScheduler,
         @NonNull TaskScheduler<NoInput> pcesReplayerScheduler,
-        @NonNull TaskScheduler<Void> shadowgraphScheduler,
         @NonNull TaskScheduler<StateAndRound> consensusRoundHandlerScheduler,
         @NonNull TaskScheduler<RunningEventHashOverride> runningHashUpdateScheduler,
         @NonNull TaskScheduler<Void> issHandlerScheduler,
