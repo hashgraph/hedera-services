@@ -32,7 +32,6 @@ import static com.swirlds.platform.system.SoftwareVersion.NO_VERSION;
 import static com.swirlds.platform.system.UptimeData.NO_ROUND;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.base.utility.Pair;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -43,8 +42,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.common.utility.Clearable;
-import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.builder.PlatformBuildingBlocks;
@@ -179,11 +176,6 @@ public class SwirldsPlatform implements Platform {
      * Checks the validity of transactions and submits valid ones to the transaction pool
      */
     private final SwirldTransactionSubmitter transactionSubmitter;
-
-    /**
-     * clears all pipelines to prepare for a reconnect
-     */
-    private final Clearable clearAllPipelines;
 
     /**
      * All things that need to be started when the platform is started.
@@ -457,14 +449,10 @@ public class SwirldsPlatform implements Platform {
             });
         }
 
-        // TODO eliminate this!!!
-        clearAllPipelines =
-                new LoggingClearables(RECONNECT.getMarker(), List.of(Pair.of(platformWiring, "platformWiring")));
-
         blocks.getLatestCompleteStateReference()
                 .set(() -> latestCompleteStateNexus.getState("get latest complete state for reconnect"));
         blocks.loadReconnectStateReference().set(this::loadReconnectState);
-        blocks.clearAllPipelinesForReconnectReference().set(clearAllPipelines::clear);
+        blocks.clearAllPipelinesForReconnectReference().set(platformWiring::clear);
         blocks.latestImmutableStateProviderReference().set(latestImmutableStateNexus::getState);
     }
 
@@ -642,7 +630,7 @@ public class SwirldsPlatform implements Platform {
         } catch (final RuntimeException e) {
             logger.debug(RECONNECT.getMarker(), "`loadReconnectState` : FAILED, reason: {}", e.getMessage());
             // if the loading fails for whatever reason, we clear all data again in case some of it has been loaded
-            clearAllPipelines.clear();
+            platformWiring.clear();
             throw e;
         }
     }
