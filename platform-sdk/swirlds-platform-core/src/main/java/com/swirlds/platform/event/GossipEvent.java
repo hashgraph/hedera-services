@@ -23,7 +23,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -40,8 +39,6 @@ public class GossipEvent implements SelfSerializable {
     private static final int MAX_SIG_LENGTH = 384;
 
     private static final class ClassVersion {
-        public static final int ORIGINAL = 1;
-        public static final int REMOVED_ROUND = 2;
         /**
          * Event serialization changes
          *
@@ -50,9 +47,10 @@ public class GossipEvent implements SelfSerializable {
         public static final int BIRTH_ROUND = 3;
     }
 
-    private int serializedVersion = ClassVersion.BIRTH_ROUND;
     private BaseEventHashedData hashedData;
-    private BaseEventUnhashedData unhashedData;
+    /** creator's signature for this event */
+    private byte[] signature;
+
     private Instant timeReceived;
 
     /**
@@ -84,11 +82,11 @@ public class GossipEvent implements SelfSerializable {
 
     /**
      * @param hashedData   the hashed data for the event
-     * @param unhashedData the unhashed data for the event
+     * @param signature the signature for the event
      */
-    public GossipEvent(final BaseEventHashedData hashedData, final BaseEventUnhashedData unhashedData) {
+    public GossipEvent(final BaseEventHashedData hashedData, final byte[] signature) {
         this.hashedData = hashedData;
-        this.unhashedData = unhashedData;
+        this.signature = signature;
         this.timeReceived = Instant.now();
         this.senderId = null;
     }
@@ -122,13 +120,8 @@ public class GossipEvent implements SelfSerializable {
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        if (serializedVersion < ClassVersion.BIRTH_ROUND) {
-            out.writeSerializable(hashedData, false);
-            out.writeSerializable(unhashedData, false);
-        } else {
-            out.writeSerializable(hashedData, false);
-            out.writeByteArray(unhashedData.getSignature());
-        }
+        out.writeSerializable(hashedData, false);
+        out.writeByteArray(signature);
     }
 
     /**
@@ -136,15 +129,8 @@ public class GossipEvent implements SelfSerializable {
      */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        serializedVersion = version;
-        if (version < ClassVersion.BIRTH_ROUND) {
-            hashedData = in.readSerializable(false, BaseEventHashedData::new);
-            unhashedData = in.readSerializable(false, BaseEventUnhashedData::new);
-        } else {
-            hashedData = in.readSerializable(false, BaseEventHashedData::new);
-            final byte[] signature = in.readByteArray(MAX_SIG_LENGTH);
-            unhashedData = new BaseEventUnhashedData(signature);
-        }
+        hashedData = in.readSerializable(false, BaseEventHashedData::new);
+        this.signature = in.readByteArray(MAX_SIG_LENGTH);
         timeReceived = Instant.now();
     }
 
@@ -156,10 +142,10 @@ public class GossipEvent implements SelfSerializable {
     }
 
     /**
-     * Get the unhashed data for the event.
+     * @return the signature for the event
      */
-    public BaseEventUnhashedData getUnhashedData() {
-        return unhashedData;
+    public byte[] getSignature() {
+        return signature;
     }
 
     /**
@@ -244,12 +230,12 @@ public class GossipEvent implements SelfSerializable {
      */
     @Override
     public int getVersion() {
-        return serializedVersion;
+        return ClassVersion.BIRTH_ROUND;
     }
 
     @Override
     public int getMinimumSupportedVersion() {
-        return ClassVersion.REMOVED_ROUND;
+        return ClassVersion.BIRTH_ROUND;
     }
 
     /**

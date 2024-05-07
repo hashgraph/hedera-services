@@ -17,6 +17,7 @@
 package com.swirlds.platform.builder;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.doStaticSetup;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
@@ -30,12 +31,12 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
+import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.config.BasicConfig;
-import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
@@ -51,15 +52,17 @@ import com.swirlds.platform.gossip.DefaultIntakeEventCounter;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
-import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.address.AddressBookInitializer;
+import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.util.RandomBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -280,20 +283,8 @@ public final class PlatformBuilder {
         // the AddressBook is not changed after this point, so we calculate the hash now
         platformContext.getCryptography().digestSync(configAddressBook);
 
-        final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
-        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
-        final EmergencyRecoveryManager emergencyRecoveryManager =
-                new EmergencyRecoveryManager(stateConfig, basicConfig.getEmergencyRecoveryFileLoadDir());
-
         final ReservedSignedState initialState = getInitialState(
-                platformContext,
-                softwareVersion,
-                genesisStateBuilder,
-                appName,
-                swirldName,
-                selfId,
-                configAddressBook,
-                emergencyRecoveryManager);
+                platformContext, softwareVersion, genesisStateBuilder, appName, swirldName, selfId, configAddressBook);
 
         final boolean softwareUpgrade = detectSoftwareUpgrade(softwareVersion, initialState.get());
 
@@ -367,6 +358,18 @@ public final class PlatformBuilder {
                 MerkleCryptographyFactory.create(configuration, platformContext.getCryptography());
         MerkleCryptoFactory.set(merkleCryptography);
 
+        final Scratchpad<IssScratchpad> issScratchpad =
+                Scratchpad.create(platformContext, selfId, IssScratchpad.class, "platform.iss");
+        issScratchpad.logContents();
+
+        final AtomicReference<StatusActionSubmitter> statusActionSubmitterAtomicReference = new AtomicReference<>();
+        final SwirldStateManager swirldStateManager = new SwirldStateManager(
+                platformContext,
+                initialState.get().getAddressBook(),
+                selfId,
+                x -> statusActionSubmitterAtomicReference.get().submitStatusAction(x),
+                softwareVersion);
+
         final PlatformBuildingBlocks buildingBlocks = new PlatformBuildingBlocks(
                 platformContext,
                 keysAndCerts.get(selfId),
@@ -375,7 +378,6 @@ public final class PlatformBuilder {
                 swirldName,
                 softwareVersion,
                 initialState,
-                emergencyRecoveryManager,
                 preconsensusEventConsumer,
                 snapshotOverrideConsumer,
                 intakeEventCounter,
@@ -385,6 +387,14 @@ public final class PlatformBuilder {
                 new AtomicReference<>(),
                 new AtomicReference<>(),
                 initialPcesFiles,
+                issScratchpad,
+                NotificationEngine.buildEngine(getStaticThreadManager()),
+                new AtomicReference<>(),
+                statusActionSubmitterAtomicReference,
+                swirldStateManager,
+                new AtomicReference<>(),
+                new AtomicReference<>(),
+                new AtomicReference<>(),
                 firstPlatform);
 
         return new PlatformComponentBuilder(buildingBlocks);

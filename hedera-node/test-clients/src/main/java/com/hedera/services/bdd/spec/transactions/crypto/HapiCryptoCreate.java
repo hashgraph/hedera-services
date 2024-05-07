@@ -16,11 +16,13 @@
 
 package com.hedera.services.bdd.spec.transactions.crypto;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.evmAddressFromSecp256k1Key;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -334,7 +336,10 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         Optional.ofNullable(addressObserver)
                 .ifPresent(obs -> evmAddress.ifPresentOrElse(
                         address -> obs.accept(HapiParserUtil.asHeadlongAddress(address.toByteArray())),
-                        () -> obs.accept(HapiParserUtil.evmAddressFromSecp256k1Key(key))));
+                        () -> obs.accept(
+                                key.hasECDSASecp256K1()
+                                        ? evmAddressFromSecp256k1Key(key)
+                                        : idAsHeadlongAddress(lastReceipt.getAccountID()))));
 
         if (advertiseCreation) {
             final String banner = "\n\n"

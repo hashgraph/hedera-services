@@ -124,6 +124,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public PlatformContext getContext() {
         return context;
     }
@@ -132,6 +133,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public NotificationEngine getNotificationEngine() {
         return notificationEngine;
     }
@@ -140,6 +142,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public AddressBook getAddressBook() {
         return addressBook;
     }
@@ -148,6 +151,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public NodeId getSelfId() {
         return selfId;
     }
@@ -157,6 +161,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
      */
     @SuppressWarnings("unchecked")
     @Override
+    @NonNull
     public synchronized <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(
             @NonNull final String reason) {
         final ReservedSignedState reservedSignedState = immutableState.getAndReserve(reason);
