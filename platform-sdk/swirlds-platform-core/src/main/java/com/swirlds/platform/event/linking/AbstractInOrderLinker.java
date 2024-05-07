@@ -31,7 +31,6 @@ import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -165,10 +164,9 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
 
     /**
      * Clear the internal state of this linker.
-     *
-     * @param ignored ignored trigger object
      */
-    public void clear(@NonNull final NoInput ignored) {
+    @Override
+    public void clear() {
         parentDescriptorMap.clear();
         parentHashMap.clear();
     }

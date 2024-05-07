@@ -31,7 +31,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
-import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateHasher;
@@ -53,7 +52,6 @@ import java.util.List;
  * @param signedStateFileManagerScheduler           the scheduler for the signed state file manager
  * @param stateSignerScheduler                      the scheduler for the state signer
  * @param pcesReplayerScheduler                     the scheduler for the pces replayer
- * @param shadowgraphScheduler                      the scheduler for the shadowgraph
  * @param consensusRoundHandlerScheduler            the scheduler for the consensus round handler
  * @param runningHashUpdateScheduler                the scheduler for the running hash updater
  * @param issHandlerScheduler                       the scheduler for the iss handler
@@ -126,14 +124,6 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("pcesReplayer")
                         .withType(TaskSchedulerType.DIRECT)
                         .withHyperlink(platformCoreHyperlink(PcesReplayer.class))
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("shadowgraph")
-                        .withType(config.shadowgraphSchedulerType())
-                        .withUnhandledTaskCapacity(config.shadowgraphUnhandledCapacity())
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(Shadowgraph.class))
-                        .withFlushingEnabled(true)
                         .build()
                         .cast(),
                 // the literal "consensusRoundHandler" is used by the app to log on the transaction handling thread.

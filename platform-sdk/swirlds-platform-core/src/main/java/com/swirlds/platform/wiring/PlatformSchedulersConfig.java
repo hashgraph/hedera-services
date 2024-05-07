@@ -40,7 +40,6 @@ import java.time.Duration;
  * @param eventSignatureValidator                  configuration for the event signature validator scheduler
  * @param orphanBuffer                             configuration for the orphan buffer scheduler
  * @param consensusEngine                          configuration for the consensus engine scheduler
- * @param inOrderLinker                            configuration for the in order linker scheduler
  * @param eventCreationManager                     configuration for the event creation manager scheduler
  * @param selfEventSigner                          configuration for the self event signer scheduler
  * @param signedStateFileManagerSchedulerType      the signed state file manager scheduler type
@@ -53,8 +52,6 @@ import java.time.Duration;
  * @param pcesSequencer                            configuration for the preconsensus event sequencer scheduler
  * @param applicationTransactionPrehandler         configuration for the application transaction prehandler scheduler
  * @param stateSignatureCollector                  configuration for the state signature collector scheduler
- * @param shadowgraphSchedulerType                 the shadowgraph scheduler type
- * @param shadowgraphUnhandledCapacity             number of unhandled tasks allowed for the shadowgraph
  * @param consensusRoundHandlerSchedulerType       the consensus round handler scheduler type
  * @param consensusRoundHandlerUnhandledCapacity   number of unhandled tasks allowed for the consensus round handler
  * @param runningEventHasher                       configuration for the running event hasher scheduler
@@ -75,6 +72,7 @@ import java.time.Duration;
  * @param signedStateSentinel                      configuration for the signed state sentinel scheduler
  * @param signedStateSentinelHeartbeatPeriod       the frequency that heartbeats should be sent to the signed state
  *                                                 sentinel
+ * @param gossip                                   configuration for the gossip scheduler
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -93,8 +91,6 @@ public record PlatformSchedulersConfig(
                         defaultValue =
                                 "SEQUENTIAL_THREAD CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
                 TaskSchedulerConfiguration consensusEngine,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
-                TaskSchedulerConfiguration inOrderLinker,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventCreationManager,
         @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration selfEventSigner,
@@ -109,8 +105,6 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration applicationTransactionPrehandler,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration stateSignatureCollector,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType shadowgraphSchedulerType,
-        @ConfigProperty(defaultValue = "500") int shadowgraphUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType consensusRoundHandlerSchedulerType,
         @ConfigProperty(defaultValue = "5") int consensusRoundHandlerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(5) UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
@@ -135,4 +129,6 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration roundDurabilityBuffer,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration statusStateMachine,
-        @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration platformStatusNexus) {}
+        @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration platformStatusNexus,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration gossip) {}
