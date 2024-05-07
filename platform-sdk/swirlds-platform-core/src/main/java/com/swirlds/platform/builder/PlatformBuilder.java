@@ -27,7 +27,6 @@ import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
@@ -353,7 +352,6 @@ public final class PlatformBuilder {
         }
 
         // FUTURE WORK: remove after static use of cryptography is abolished
-        CryptographyHolder.set(platformContext.getCryptography());
         final MerkleCryptography merkleCryptography =
                 MerkleCryptographyFactory.create(configuration, platformContext.getCryptography());
         MerkleCryptoFactory.set(merkleCryptography);

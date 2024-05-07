@@ -24,6 +24,7 @@ import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyFactory;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
 import com.swirlds.common.platform.NodeId;
@@ -198,7 +199,9 @@ public class PlatformContextBuilder {
      */
     @NonNull
     private static Cryptography buildCryptography(@NonNull final Configuration configuration) {
-        return CryptographyFactory.create(configuration);
+        final Cryptography cryptography = CryptographyFactory.create(configuration);
+        CryptographyHolder.set(cryptography);
+        return cryptography;
     }
 
     /**
