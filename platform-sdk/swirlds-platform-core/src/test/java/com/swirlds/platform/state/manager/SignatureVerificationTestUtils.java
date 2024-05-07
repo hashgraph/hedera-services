@@ -34,7 +34,7 @@ public class SignatureVerificationTestUtils {
      * invalid signature for any other key/hash.
      */
     public static Signature buildFakeSignature(@NonNull final PublicKey key, @NonNull final Hash hash) {
-        return new Signature(SignatureType.RSA, concat(key.getEncoded(), hash.getValue()));
+        return new Signature(SignatureType.RSA, concat(key.getEncoded(), hash.getBytes().toByteArray()));
     }
 
     /**
@@ -42,7 +42,7 @@ public class SignatureVerificationTestUtils {
      * invalid signature for any other key/hash.
      */
     public static Bytes buildFakeSignatureBytes(@NonNull final PublicKey key, @NonNull final Hash hash) {
-        return Bytes.wrap(concat(key.getEncoded(), hash.getValue()));
+        return Bytes.wrap(concat(key.getEncoded(), hash.getBytes().toByteArray()));
     }
 
     /**

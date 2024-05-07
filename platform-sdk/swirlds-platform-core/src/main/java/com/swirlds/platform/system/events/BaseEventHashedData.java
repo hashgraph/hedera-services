@@ -240,13 +240,8 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
                 .append("birthRound", birthRound)
                 .append("timeCreated", timeCreated)
                 .append("transactions size", transactions == null ? "null" : transactions.length)
-                .append("hash", CommonUtils.hex(valueOrNull(getHash()), TO_STRING_BYTE_ARRAY_LENGTH))
+                .append("hash", getHash() == null ? "null" : getHash().toHex(TO_STRING_BYTE_ARRAY_LENGTH))
                 .toString();
-    }
-
-    @Nullable
-    private byte[] valueOrNull(final Hash hash) {
-        return hash == null ? null : hash.getValue();
     }
 
     @Override

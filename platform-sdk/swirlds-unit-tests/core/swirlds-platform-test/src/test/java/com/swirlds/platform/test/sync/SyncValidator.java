@@ -223,7 +223,7 @@ public class SyncValidator {
         if (!expectedAndNotFound.isEmpty()) {
             List<String> missingHashes = expectedAndNotFound.stream()
                     .map(EventImpl::getBaseHash)
-                    .map(h -> CommonUtils.hex(h.getValue(), 4))
+                    .map(h -> h.toHex(4))
                     .collect(Collectors.toList());
             fail(format(
                     "Actual list is missing %s expected event(s) with hash(es) %s",
