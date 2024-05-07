@@ -176,7 +176,7 @@ class ShadowgraphTest {
     private void assertSetsContainSameHashes(final Set<Hash> expected, final Set<Hash> actual) {
         for (final Hash hash : expected) {
             if (!actual.contains(hash)) {
-                fail(String.format("Expected to find an ancestor with hash %s", CommonUtils.hex(hash.getValue(), 4)));
+                fail(String.format("Expected to find an ancestor with hash %s", hash.toHex(4)));
             }
         }
     }

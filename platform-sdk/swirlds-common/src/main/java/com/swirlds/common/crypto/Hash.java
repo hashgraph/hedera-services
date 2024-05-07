@@ -295,8 +295,8 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
     /**
      * Create a short string representation of this hash.
      */
-    public String toShortString() {
-        return toShortString(SHORT_STRING_BYTES);
+    public String toHex() {
+        return toHex(SHORT_STRING_BYTES);
     }
 
     /**
@@ -305,7 +305,7 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
      * @param length
      * 		the number of characters to include in the short string
      */
-    public String toShortString(final int length) {
+    public String toHex(final int length) {
         return (value == null) ? null : hex(value, length);
     }
 
