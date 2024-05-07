@@ -29,8 +29,10 @@ import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.platform.NodeId;
@@ -42,6 +44,8 @@ import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
@@ -117,9 +121,37 @@ public class ServicesMain implements SwirldMain {
     }
 
     /**
-     * Launches the application.
+     * Launches Services directly, without use of the "app browser" from
+     * {@link com.swirlds.platform.Browser}. The approximate startup sequence is:
+     * <ol>
+     *     <li>Scan the classpath for {@link RuntimeConstructable} classes,
+     *     registering their no-op constructors as the default factories for their
+     *     class ids.</li>
+     *     <li>Create the application's {@link Hedera} singleton, which overrides
+     *     the default factory for the stable {@literal 0x8e300b0dfdafbb1a} class
+     *     id of the Services Merkle tree root with a reference to its
+     *     {@link Hedera#newState()} method.</li>
+     *     <li>Determine this node's <b>self id</b> by searching the <i>config.txt</i>
+     *     in the working directory for any address book entries with IP addresses
+     *     local to this machine; if there is there is more than one such entry,
+     *     fail unless the command line args include a {@literal -local N} arg.</li>
+     *     <li>Build a {@link Platform} instance from Services application metadata
+     *     and the working directory <i>settings.txt</i>, providing the same
+     *     {@link Hedera#newState()} method reference as the genesis state factory.
+     *     (<b>IMPORTANT:</b> This step instantiates and invokes
+     *     {@link SwirldState#init(Platform, PlatformState, InitTrigger, SoftwareVersion)}
+     *     on a {@link MerkleHederaState} instance that delegates the call back to our
+     *     Hedera instance.)</li>
+     *     <li>Call {@link Hedera#init(Platform, NodeId)} to complete startup phase
+     *     validation and register notification listeners on the platform.</li>
+     *     <li>Invoke {@link Platform#start()}.</li>
+     * </ol>
      *
-     * @param args First arg, if specified, will be the node ID
+     * <p>Please see the <i>startup-phase-lifecycle.png</i> in this directory to visualize
+     * the sequence of events in the startup phase and the centrality of the {@link Hedera}
+     * singleton.
+     *
+     * @param args optionally, what node id to run; required if the address book is ambiguous
      */
     public static void main(final String... args) throws Exception {
         BootstrapUtils.setupConstructableRegistry();
@@ -166,6 +198,29 @@ public class ServicesMain implements SwirldMain {
         builder.withPreviousSoftwareVersionClassId(0x6f2b1bc2df8cbd0bL /* SerializableSemVers.CLASS_ID */);
         builder.withPlatformContext(platformContext);
 
+        // IMPORTANT: A surface-level reading of this method will undersell the centrality
+        // of the Hedera instance. It is actually omnipresent throughout both the startup
+        // and runtime phases of the application.
+        //
+        // Let's see why. When we build the platform, the builder will either:
+        //   (1) Create a genesis state; or,
+        //   (2) Deserialize a saved state.
+        // In both cases the state object will be created by the hedera::newState method
+        // reference bound to our Hedera instance. Because,
+        //   (1) We provided this method as the genesis state factory right above; and,
+        //   (2) Our Hedera instance's constructor registered its newState() method with the
+        //       ConstructableRegistry as the factory for the Services Merkle tree class id.
+        //
+        // Now, note that hedera::newState returns MerkleHederaState instances that delegate
+        // their lifecycle methods to an injected instance of HederaLifecycles---and
+        // hedera::newState injects an instance of HederaLifecyclesImpl which primarily
+        // delegates these calls back to the Hedera instance itself.
+        //
+        // Thus, the Hedera instance centralizes nearly all the setup and runtime logic for the
+        // application. It implements this logic by instantiating a Dagger2 @Singleton component
+        // whose object graph roots include the Ingest, PreHandle, Handle, and Query workflows;
+        // as well as other infrastructure components that need to be initialized or accessed
+        // at specific points in the Swirlds application lifecycle.
         final Platform platform = builder.build();
         hedera.init(platform, selfId);
         platform.start();
@@ -175,7 +230,7 @@ public class ServicesMain implements SwirldMain {
     /**
      * Selects the node to run locally from either the command line arguments or the address book.
      *
-     * @param nodesToRun        the list of nodes configured to run based on the address book.
+     * @param nodesToRun the list of nodes configured to run based on the address book.
      * @param localNodesToStart the node ids specified on the command line.
      * @return the node which should be run locally.
      * @throws ConfigurationException if more than one node would be started or the requested node is not configured.
