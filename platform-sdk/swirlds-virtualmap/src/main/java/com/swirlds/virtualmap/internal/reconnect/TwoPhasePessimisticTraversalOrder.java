@@ -107,13 +107,13 @@ public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
         this.nodeCount = nodeCount;
 
         final int leafParentRank = Path.getRank(firstLeafPath) - 1;
-        if (leafParentRank < 5) {
+        if (leafParentRank < 14) {
             chunkCount = 0;
             return; // no phase 1, just iterate over all leaves
         }
 
-        // Higher the stop rank, less number of chunks. Half of the tree height seems to work well
-        chunksStopRank = leafParentRank / 2;
+        // Higher the stop rank, less number of chunks
+        chunksStopRank = Math.max(leafParentRank / 2, 13);
         chunkCount = 1 << chunksStopRank;
         // Height of chunks starting from leaf parent rank. Chunks starting from first leaf rank
         // will be of minChunkHeight + 1 height
