@@ -133,17 +133,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
     private final SyncManagerImpl syncManager;
     private final ReconnectThrottle reconnectThrottle;
     private final ReconnectMetrics reconnectMetrics;
-    //    protected final PlatformContext platformContext; TODO
-    //    protected final AddressBook addressBook;
-    //    protected final NodeId selfId;
-    //    protected final NetworkTopology topology;
-    //    protected final NetworkMetrics networkMetrics;
-    //    protected final ReconnectHelper reconnectHelper;
-    //    protected final StaticConnectionManagers connectionManagers;
-    //    protected final FallenBehindManagerImpl fallenBehindManager;
-    //    protected final SyncManagerImpl syncManager;
-    //    protected final ReconnectThrottle reconnectThrottle;
-    //    protected final ReconnectMetrics reconnectMetrics;
 
     protected final StatusActionSubmitter statusActionSubmitter;
     protected final Supplier<PlatformStatus> platformStatusSupplier;
@@ -179,7 +168,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
      * @param intakeEventCounter            keeps track of the number of events in the intake pipeline from each peer
      * @param statusActionSubmitter         for submitting updates to the platform status manager
      */
-    protected SyncGossip(
+    public SyncGossip(
             @NonNull final PlatformContext platformContext,
             @NonNull final Random random,
             @NonNull final ThreadManager threadManager,

@@ -41,6 +41,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.metrics.api.Metrics;
@@ -64,6 +65,7 @@ import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.address.AddressBookInitializer;
+import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -487,6 +489,10 @@ public final class PlatformBuilder {
             throw new UncheckedIOException(e);
         }
 
+        final Scratchpad<IssScratchpad> issScratchpad =
+                Scratchpad.create(platformContext, selfId, IssScratchpad.class, "platform.iss");
+        issScratchpad.logContents();
+
         final AtomicReference<StatusActionSubmitter> statusActionSubmitterAtomicReference = new AtomicReference<>();
         final SwirldStateManager swirldStateManager = new SwirldStateManager(
                 platformContext,
@@ -512,6 +518,7 @@ public final class PlatformBuilder {
                 new AtomicReference<>(),
                 new AtomicReference<>(),
                 initialPcesFiles,
+                issScratchpad,
                 NotificationEngine.buildEngine(getStaticThreadManager()),
                 new AtomicReference<>(),
                 statusActionSubmitterAtomicReference,

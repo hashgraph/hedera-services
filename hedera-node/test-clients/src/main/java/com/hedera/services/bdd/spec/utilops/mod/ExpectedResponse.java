@@ -35,6 +35,7 @@ import java.util.Set;
  */
 public record ExpectedResponse(
         @Nullable Set<ResponseCodeEnum> permissiblePrechecks, @Nullable Set<ResponseCodeEnum> permissibleOutcomes) {
+    private static final Set<ResponseCodeEnum> SUCCESS = EnumSet.of(ResponseCodeEnum.SUCCESS);
 
     public static ExpectedResponse atIngest(@NonNull final ResponseCodeEnum status) {
         return new ExpectedResponse(EnumSet.of(status), null);
@@ -59,5 +60,9 @@ public record ExpectedResponse(
             requireNonNull(permissibleOutcomes);
             op.hasKnownStatusFrom(permissibleOutcomes.toArray(ResponseCodeEnum[]::new));
         }
+    }
+
+    public boolean isSuccess() {
+        return SUCCESS.equals(permissibleOutcomes);
     }
 }

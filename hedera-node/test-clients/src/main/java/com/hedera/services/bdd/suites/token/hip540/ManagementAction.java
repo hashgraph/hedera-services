@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.io;
+package com.hedera.services.bdd.suites.token.hip540;
 
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import java.io.IOException;
-
-public interface OptionalSelfSerializable<E extends Enum<E>> extends SelfSerializable {
-    void serialize(SerializableDataOutputStream out, E option) throws IOException;
+/**
+ * Enumerates the possible non-admin key management actions in a HIP-540 test scenario.
+ */
+public enum ManagementAction {
+    ADD,
+    REMOVE,
+    REPLACE,
+    ZERO_OUT,
+    REPLACE_WITH_INVALID,
 }
