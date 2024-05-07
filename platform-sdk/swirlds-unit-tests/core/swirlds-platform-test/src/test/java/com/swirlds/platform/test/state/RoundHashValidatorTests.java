@@ -261,9 +261,9 @@ class RoundHashValidatorTests {
         final Random random = getRandomPrintSeed();
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(Math.max(10, random.nextInt(1000)))
-                .setAverageWeight(100)
-                .setWeightStandardDeviation(50)
+                .withSize(Math.max(10, random.nextInt(1000)))
+                .withAverageWeight(100)
+                .withWeightStandardDeviation(50)
                 .build();
 
         final HashGenerationData hashGenerationData = generateNodeHashes(random, addressBook, expectedStatus, 0);
@@ -307,9 +307,9 @@ class RoundHashValidatorTests {
         final Random random = getRandomPrintSeed();
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(Math.max(10, random.nextInt(1000)))
-                .setAverageWeight(100)
-                .setWeightStandardDeviation(50)
+                .withSize(Math.max(10, random.nextInt(1000)))
+                .withAverageWeight(100)
+                .withWeightStandardDeviation(50)
                 .build();
 
         final HashGenerationData hashGenerationData = generateNodeHashes(random, addressBook, expectedStatus, 0);
@@ -351,9 +351,9 @@ class RoundHashValidatorTests {
         final Random random = getRandomPrintSeed();
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(Math.max(10, random.nextInt(1000)))
-                .setAverageWeight(100)
-                .setWeightStandardDeviation(50)
+                .withSize(Math.max(10, random.nextInt(1000)))
+                .withAverageWeight(100)
+                .withWeightStandardDeviation(50)
                 .build();
 
         final HashGenerationData hashGenerationData = generateNodeHashes(random, addressBook, expectedStatus, 0);
@@ -401,9 +401,9 @@ class RoundHashValidatorTests {
         final Random random = getRandomPrintSeed();
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(Math.max(10, random.nextInt(1000)))
-                .setAverageWeight(100)
-                .setWeightStandardDeviation(50)
+                .withSize(Math.max(10, random.nextInt(1000)))
+                .withAverageWeight(100)
+                .withWeightStandardDeviation(50)
                 .build();
 
         final HashGenerationData hashGenerationData =
@@ -434,9 +434,9 @@ class RoundHashValidatorTests {
         final Random random = getRandomPrintSeed();
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(Math.max(10, random.nextInt(1000)))
-                .setAverageWeight(100)
-                .setWeightStandardDeviation(50)
+                .withSize(Math.max(10, random.nextInt(1000)))
+                .withAverageWeight(100)
+                .withWeightStandardDeviation(50)
                 .build();
         final long totalWeight = addressBook.getTotalWeight();
 
@@ -475,9 +475,9 @@ class RoundHashValidatorTests {
         final Random random = getRandomPrintSeed();
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(Math.max(10, random.nextInt(1000)))
-                .setAverageWeight(100)
-                .setWeightStandardDeviation(50)
+                .withSize(Math.max(10, random.nextInt(1000)))
+                .withAverageWeight(100)
+                .withWeightStandardDeviation(50)
                 .build();
         final long totalWeight = addressBook.getTotalWeight();
 
@@ -520,9 +520,9 @@ class RoundHashValidatorTests {
         final Random random = getRandomPrintSeed();
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(Math.max(10, random.nextInt(1000)))
-                .setAverageWeight(100)
-                .setWeightStandardDeviation(50)
+                .withSize(Math.max(10, random.nextInt(1000)))
+                .withAverageWeight(100)
+                .withWeightStandardDeviation(50)
                 .build();
         final long totalWeight = addressBook.getTotalWeight();
 

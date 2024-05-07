@@ -51,7 +51,7 @@ class TipsetTests {
         final int nodeCount = 100;
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(nodeCount).build();
+                new RandomAddressBookGenerator(random).withSize(nodeCount).build();
 
         final Tipset tipset = new Tipset(addressBook);
         assertEquals(nodeCount, tipset.size());
@@ -78,7 +78,7 @@ class TipsetTests {
         final int nodeCount = 100;
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(nodeCount).build();
+                new RandomAddressBookGenerator(random).withSize(nodeCount).build();
 
         for (int count = 0; count < 10; count++) {
             final List<Tipset> tipsets = new ArrayList<>();
@@ -108,9 +108,9 @@ class TipsetTests {
         final int nodeCount = 100;
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(nodeCount)
-                .setAverageWeight(1)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
+                .withSize(nodeCount)
+                .withAverageWeight(1)
+                .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
 
         final NodeId selfId = addressBook.getNodeId(random.nextInt(nodeCount));
@@ -164,7 +164,7 @@ class TipsetTests {
         final int nodeCount = 100;
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(nodeCount).build();
+                new RandomAddressBookGenerator(random).withSize(nodeCount).build();
 
         final Map<NodeId, Long> weights = new HashMap<>();
         for (final Address address : addressBook) {

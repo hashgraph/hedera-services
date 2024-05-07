@@ -97,7 +97,7 @@ class ShadowgraphByBirthRoundTests {
     }
 
     private void initShadowGraph(final Random random, final int numEvents, final int numNodes) {
-        addressBook = new RandomAddressBookGenerator(random).setSize(numNodes).build();
+        addressBook = new RandomAddressBookGenerator(random).withSize(numNodes).build();
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, true)

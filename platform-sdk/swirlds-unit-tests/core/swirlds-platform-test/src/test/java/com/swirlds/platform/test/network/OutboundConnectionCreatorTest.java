@@ -62,9 +62,9 @@ class OutboundConnectionCreatorTest {
         final int numNodes = 10;
         final Random r = new Random();
         final AddressBook addressBook = new RandomAddressBookGenerator(r)
-                .setSize(numNodes)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
+                .withSize(numNodes)
+                .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
+                .withHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
                 .build();
         final int thisNodeIndex = r.nextInt(numNodes);
         final int otherNodeIndex = r.nextInt(numNodes);
@@ -142,9 +142,9 @@ class OutboundConnectionCreatorTest {
         final int numNodes = 10;
         final Random r = new Random();
         final AddressBook addressBook = new RandomAddressBookGenerator(r)
-                .setSize(numNodes)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
+                .withSize(numNodes)
+                .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
+                .withHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
                 .build();
         final int thisNodeIndex = r.nextInt(numNodes);
         final int otherNodeIndex = r.nextInt(numNodes);

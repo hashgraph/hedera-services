@@ -110,10 +110,10 @@ final class ReconnectTest {
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(numNodes)
-                .setAverageWeight(weightPerNode)
-                .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
-                .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
+                .withSize(numNodes)
+                .withAverageWeight(weightPerNode)
+                .withWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
+                .withHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
                 .build();
 
         try (final PairedStreams pairedStreams = new PairedStreams()) {

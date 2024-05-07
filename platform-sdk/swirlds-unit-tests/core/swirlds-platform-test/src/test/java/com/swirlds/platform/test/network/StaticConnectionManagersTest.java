@@ -55,7 +55,7 @@ class StaticConnectionManagersTest {
     void testShouldConnectToMe(final int numNodes, final int numNeighbors) throws Exception {
         final Random r = RandomUtils.getRandomPrintSeed();
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(r).setSize(numNodes).build();
+                new RandomAddressBookGenerator(r).withSize(numNodes).build();
         final NodeId selfId = addressBook.getNodeId(r.nextInt(numNodes));
         final StaticTopology topology = new StaticTopology(r, addressBook, selfId, numNeighbors);
         final StaticConnectionManagers managers = new StaticConnectionManagers(topology, connectionCreator);
@@ -88,7 +88,7 @@ class StaticConnectionManagersTest {
     void testShouldConnectTo(final int numNodes, final int numNeighbors) throws Exception {
         final Random r = RandomUtils.getRandomPrintSeed();
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(r).setSize(numNodes).build();
+                new RandomAddressBookGenerator(r).withSize(numNodes).build();
         final NodeId selfId = addressBook.getNodeId(r.nextInt(numNodes));
         final StaticTopology topology = new StaticTopology(r, addressBook, selfId, numNeighbors);
         final StaticConnectionManagers managers = new StaticConnectionManagers(topology, connectionCreator);

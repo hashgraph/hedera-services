@@ -170,9 +170,9 @@ class IssDetectorTests extends PlatformTest {
     void noIss() {
         final Randotron random = Randotron.create();
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(100)
-                .setAverageWeight(100)
-                .setWeightStandardDeviation(50)
+                .withSize(100)
+                .withAverageWeight(100)
+                .withWeightStandardDeviation(50)
                 .build();
 
         final PlatformContext platformContext = createDefaultPlatformContext();
@@ -232,9 +232,9 @@ class IssDetectorTests extends PlatformTest {
         final Randotron random = Randotron.create();
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(Math.max(10, random.nextInt(1000)))
-                .setAverageWeight(100)
-                .setWeightStandardDeviation(50)
+                .withSize(Math.max(10, random.nextInt(1000)))
+                .withAverageWeight(100)
+                .withWeightStandardDeviation(50)
                 .build();
 
         final PlatformContext platformContext = createDefaultPlatformContext();
@@ -377,9 +377,9 @@ class IssDetectorTests extends PlatformTest {
         final PlatformContext platformContext = createDefaultPlatformContext();
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(100)
-                .setAverageWeight(100)
-                .setWeightStandardDeviation(50)
+                .withSize(100)
+                .withAverageWeight(100)
+                .withWeightStandardDeviation(50)
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
@@ -499,9 +499,9 @@ class IssDetectorTests extends PlatformTest {
                 .getConfigData(ConsensusConfig.class)
                 .roundsNonAncient();
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(100)
-                .setAverageWeight(100)
-                .setWeightStandardDeviation(50)
+                .withSize(100)
+                .withAverageWeight(100)
+                .withWeightStandardDeviation(50)
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
@@ -584,9 +584,9 @@ class IssDetectorTests extends PlatformTest {
                 .getConfigData(ConsensusConfig.class)
                 .roundsNonAncient();
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(100)
-                .setAverageWeight(100)
-                .setWeightStandardDeviation(50)
+                .withSize(100)
+                .withAverageWeight(100)
+                .withWeightStandardDeviation(50)
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
@@ -656,9 +656,9 @@ class IssDetectorTests extends PlatformTest {
         final Randotron random = Randotron.create();
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(100)
-                .setAverageWeight(100)
-                .setWeightStandardDeviation(50)
+                .withSize(100)
+                .withAverageWeight(100)
+                .withWeightStandardDeviation(50)
                 .build();
 
         final PlatformContext platformContext = createDefaultPlatformContext();

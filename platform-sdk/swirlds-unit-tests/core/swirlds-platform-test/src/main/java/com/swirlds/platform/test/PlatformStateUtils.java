@@ -46,9 +46,9 @@ public final class PlatformStateUtils {
     public static PlatformState randomPlatformState(final Random random) {
         final PlatformState platformState = new PlatformState();
 
-        final AddressBook addressBook = new RandomAddressBookGenerator()
-                .setSize(4)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
+        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+                .withSize(4)
+                .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
 
         platformState.setAddressBook(addressBook);

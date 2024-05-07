@@ -84,7 +84,7 @@ class RosterDiffGeneratorTests {
         final RosterDiffGenerator generator = new RosterDiffGenerator(platformContext);
 
         AddressBook previousRoster =
-                new RandomAddressBookGenerator(random).setSize(8).build();
+                new RandomAddressBookGenerator(random).withSize(8).build();
         previousRoster.setHash(platformContext.getCryptography().digestSync(previousRoster));
         assertNull(generator.generateDiff(new UpdatedRoster(0, previousRoster)));
 

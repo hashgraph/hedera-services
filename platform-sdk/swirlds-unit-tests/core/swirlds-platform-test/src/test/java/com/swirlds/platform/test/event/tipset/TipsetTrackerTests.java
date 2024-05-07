@@ -69,7 +69,7 @@ class TipsetTrackerTests {
 
         final int nodeCount = random.nextInt(10, 20);
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(nodeCount).build();
+                new RandomAddressBookGenerator(random).withSize(nodeCount).build();
 
         final Map<NodeId, EventDescriptor> latestEvents = new HashMap<>();
         final Map<EventDescriptor, Tipset> expectedTipsets = new HashMap<>();

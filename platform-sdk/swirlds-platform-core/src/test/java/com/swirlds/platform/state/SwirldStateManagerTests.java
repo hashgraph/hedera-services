@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.state.signed.SignedState;
@@ -42,7 +43,7 @@ class SwirldStateManagerTests {
     @BeforeEach
     void setup() {
         final SwirldsPlatform platform = mock(SwirldsPlatform.class);
-        final AddressBook addressBook = new RandomAddressBookGenerator().build();
+        final AddressBook addressBook = new RandomAddressBookGenerator(Randotron.create()).build();
         when(platform.getAddressBook()).thenReturn(addressBook);
         initialState = newState();
         final PlatformContext platformContext =

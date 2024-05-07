@@ -83,7 +83,7 @@ class TipsetWeightCalculatorTests {
         final Map<NodeId, EventDescriptor> latestEvents = new HashMap<>();
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(nodeCount).build();
+                new RandomAddressBookGenerator(random).withSize(nodeCount).build();
 
         final Map<NodeId, Long> weightMap = new HashMap<>();
         long totalWeight = 0;
@@ -216,9 +216,9 @@ class TipsetWeightCalculatorTests {
         final int nodeCount = 4;
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(nodeCount)
-                .setAverageWeight(1)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
+                .withSize(nodeCount)
+                .withAverageWeight(1)
+                .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
 
         // In this test, we simulate from the perspective of node A. All nodes have 1 weight.
@@ -429,9 +429,9 @@ class TipsetWeightCalculatorTests {
         final int nodeCount = 4;
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(nodeCount)
-                .setAverageWeight(1)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
+                .withSize(nodeCount)
+                .withAverageWeight(1)
+                .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
 
         // In this test, we simulate from the perspective of node A.
@@ -507,9 +507,9 @@ class TipsetWeightCalculatorTests {
         final int nodeCount = 4;
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(nodeCount)
-                .setAverageWeight(1)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
+                .withSize(nodeCount)
+                .withAverageWeight(1)
+                .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
 
         final NodeId nodeA = addressBook.getNodeId(0);

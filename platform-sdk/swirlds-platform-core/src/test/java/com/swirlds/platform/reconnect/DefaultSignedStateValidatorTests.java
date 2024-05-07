@@ -27,6 +27,7 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
@@ -234,10 +235,11 @@ class DefaultSignedStateValidatorTests {
     @MethodSource({"staticNodeParams", "randomizedNodeParams"})
     @DisplayName("Signed State Validation")
     void testSignedStateValidationRandom(final String desc, final List<Node> nodes, final List<Node> signingNodes) {
+        final Randotron randotron = Randotron.create();
         final Map<NodeId, Long> nodeWeights = nodes.stream().collect(Collectors.toMap(Node::id, Node::weight));
-        addressBook = new RandomAddressBookGenerator()
-                .setNodeIds(nodeWeights.keySet())
-                .setCustomWeightGenerator(nodeWeights::get)
+        addressBook = new RandomAddressBookGenerator(randotron)
+                .withNodeIds(nodeWeights.keySet())
+                .withCustomWeightGenerator(nodeWeights::get)
                 .build();
 
         final PlatformContext platformContext =

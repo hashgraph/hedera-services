@@ -125,7 +125,7 @@ class UptimeTests {
         final FakeTime time = new FakeTime();
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(10).build();
+                new RandomAddressBookGenerator(random).withSize(10).build();
         final NodeId selfId = addressBook.getNodeId(0);
 
         final UptimeTracker uptimeTracker =
@@ -263,7 +263,7 @@ class UptimeTests {
         final FakeTime time = new FakeTime();
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(10).build();
+                new RandomAddressBookGenerator(random).withSize(10).build();
         final NodeId selfId = addressBook.getNodeId(0);
 
         final UptimeTracker uptimeTracker =
@@ -614,7 +614,7 @@ class UptimeTests {
         final FakeTime time = new FakeTime();
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(3).build();
+                new RandomAddressBookGenerator(random).withSize(3).build();
         final NodeId selfId = addressBook.getNodeId(0);
 
         final UptimeTracker uptimeTracker =

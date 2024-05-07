@@ -117,32 +117,18 @@ public class RandomAddressBookGenerator {
      */
     private Function<NodeId, Long> customWeightGenerator;
 
-    /** the next available node id for new addresses. */
-    private NodeId nextNodeId = NodeId.FIRST_NODE_ID;
-
     /**
-     * Create a new address book generator.
+     * the next available node id for new addresses.
      */
-    public RandomAddressBookGenerator() {
-        this(new Random());
-    }
+    private NodeId nextNodeId = NodeId.FIRST_NODE_ID;
 
     /**
      * Create a new address book generator with a source of randomness.
      *
      * @param random a source of randomness
      */
-    public RandomAddressBookGenerator(final Random random) {
-        this.random = random;
-    }
-
-    /**
-     * Create a new address book generator with a seed.
-     *
-     * @param seed the seed for the random number generator
-     */
-    public RandomAddressBookGenerator(final long seed) {
-        this(new Random(seed));
+    public RandomAddressBookGenerator(@NonNull final Random random) {
+        this.random = Objects.requireNonNull(random);
     }
 
     /**
@@ -233,6 +219,7 @@ public class RandomAddressBookGenerator {
     /**
      * Build a random address book given the provided configuration.
      */
+    @NonNull
     public AddressBook build() {
         final AddressBook addressBook = new AddressBook();
         addressBook.setNextNodeId(this.nextNodeId);
@@ -244,14 +231,15 @@ public class RandomAddressBookGenerator {
 
     /**
      * Add new addresses to an address book. The number of addresses is equal to the value specified by
-     * {@link #setSize(int)}. The next candidate ID is set to be the address book's
+     * {@link #withSize(int)}. The next candidate ID is set to be the address book's
      * {@link AddressBook#getNextNodeId()}.
      *
      * @param addressBook the address book to add new addresses to
      * @return the input address book after it has been expanded
      */
+    @NonNull
     public AddressBook addToAddressBook(final AddressBook addressBook) {
-        setNextPossibleNodeId(addressBook.getNextNodeId());
+        withNextPossibleNodeId(addressBook.getNextNodeId());
 
         if (!nodeIds.isEmpty()) {
             nodeIds.stream().sorted().forEach(nodeId -> addressBook.add(buildNextAddress(nodeId)));
@@ -294,6 +282,7 @@ public class RandomAddressBookGenerator {
      *
      * @return a random address
      */
+    @NonNull
     public Address buildNextAddress() {
         return buildNextAddress(null);
     }
@@ -310,19 +299,12 @@ public class RandomAddressBookGenerator {
     }
 
     /**
-     * Build a random address with a specific node ID and take.
-     */
-    public Address buildNextAddress(final NodeId nodeId, final long weight) {
-        this.nextNodeId = nodeId;
-        return addressWithRandomData(random, getNextNodeId(), weight);
-    }
-
-    /**
      * Set the size of the address book.
      *
      * @return this object
      */
-    public RandomAddressBookGenerator setSize(final int size) {
+    @NonNull
+    public RandomAddressBookGenerator withSize(final int size) {
         this.size = size;
         return this;
     }
@@ -332,7 +314,8 @@ public class RandomAddressBookGenerator {
      *
      * @return this object
      */
-    public RandomAddressBookGenerator setNodeIds(@NonNull final Set<NodeId> nodeIds) {
+    @NonNull // TODO maybe remove
+    public RandomAddressBookGenerator withNodeIds(@NonNull final Set<NodeId> nodeIds) {
         Objects.requireNonNull(nodeIds, "NodeIds must not be null");
         this.nodeIds.clear();
         this.nodeIds.addAll(nodeIds);
@@ -344,7 +327,8 @@ public class RandomAddressBookGenerator {
      *
      * @return this object
      */
-    public RandomAddressBookGenerator setHashStrategy(final HashStrategy hashStrategy) {
+    @NonNull // TODO remove
+    public RandomAddressBookGenerator withHashStrategy(@NonNull final HashStrategy hashStrategy) {
         this.hashStrategy = hashStrategy;
         return this;
     }
@@ -354,7 +338,8 @@ public class RandomAddressBookGenerator {
      *
      * @return this object
      */
-    public RandomAddressBookGenerator setAverageWeight(final long averageWeight) {
+    @NonNull
+    public RandomAddressBookGenerator withAverageWeight(final long averageWeight) {
         this.averageWeight = averageWeight;
         return this;
     }
@@ -364,7 +349,8 @@ public class RandomAddressBookGenerator {
      *
      * @return this object
      */
-    public RandomAddressBookGenerator setWeightStandardDeviation(final long weightStandardDeviation) {
+    @NonNull
+    public RandomAddressBookGenerator withWeightStandardDeviation(final long weightStandardDeviation) {
         this.weightStandardDeviation = weightStandardDeviation;
         return this;
     }
@@ -374,7 +360,8 @@ public class RandomAddressBookGenerator {
      *
      * @return this object
      */
-    public RandomAddressBookGenerator setMinimumWeight(final long minimumWeight) {
+    @NonNull
+    public RandomAddressBookGenerator withMinimumWeight(final long minimumWeight) {
         this.minimumWeight = minimumWeight;
         return this;
     }
@@ -384,7 +371,8 @@ public class RandomAddressBookGenerator {
      *
      * @return this object
      */
-    public RandomAddressBookGenerator setMaximumWeight(final long maximumWeight) {
+    @NonNull
+    public RandomAddressBookGenerator withMaximumWeight(final long maximumWeight) {
         this.maximumWeight = maximumWeight;
         return this;
     }
@@ -395,7 +383,8 @@ public class RandomAddressBookGenerator {
      *
      * @return this object
      */
-    public RandomAddressBookGenerator setCustomWeightGenerator(final Function<NodeId, Long> customWeightGenerator) {
+    @NonNull
+    public RandomAddressBookGenerator withCustomWeightGenerator(final Function<NodeId, Long> customWeightGenerator) {
         this.customWeightGenerator = customWeightGenerator;
         return this;
     }
@@ -405,7 +394,8 @@ public class RandomAddressBookGenerator {
      *
      * @return this object
      */
-    public RandomAddressBookGenerator setWeightDistributionStrategy(
+    @NonNull
+    public RandomAddressBookGenerator withWeightDistributionStrategy(
             final WeightDistributionStrategy weightDistributionStrategy) {
 
         this.weightDistributionStrategy = weightDistributionStrategy;
@@ -419,7 +409,8 @@ public class RandomAddressBookGenerator {
      * @param nodeId the next node ID that is considered when generating a random address
      * @return this object
      */
-    public RandomAddressBookGenerator setNextPossibleNodeId(@NonNull final NodeId nodeId) {
+    @NonNull
+    public RandomAddressBookGenerator withNextPossibleNodeId(@NonNull final NodeId nodeId) {
         Objects.requireNonNull(nodeId, "NodeId must not be null");
         this.nextNodeId = nodeId;
         return this;

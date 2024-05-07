@@ -125,7 +125,7 @@ class SyncFilteringTest {
         final Random random = getRandomPrintSeed();
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(32).build();
+                new RandomAddressBookGenerator(random).withSize(32).build();
         final NodeId selfId = addressBook.getNodeId(0);
 
         final Instant startingTime = Instant.ofEpochMilli(random.nextInt());

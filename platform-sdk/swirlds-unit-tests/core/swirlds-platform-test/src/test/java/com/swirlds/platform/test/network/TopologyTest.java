@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticTopology;
@@ -118,8 +119,9 @@ class TopologyTest {
     @ParameterizedTest
     @MethodSource("fullyConnected")
     void testFullyConnectedTopology(final int numNodes, final int numNeighbors, final long ignoredSeed) {
+        final Randotron randotron = Randotron.create();
         final AddressBook addressBook =
-                new RandomAddressBookGenerator().setSize(numNodes).build();
+                new RandomAddressBookGenerator(randotron).withSize(numNodes).build();
         for (int thisNode = 0; thisNode < numNodes; thisNode++) {
             final NodeId outOfBoundsId = addressBook.getNextNodeId();
             final NodeId thisNodeId = addressBook.getNodeId(thisNode);

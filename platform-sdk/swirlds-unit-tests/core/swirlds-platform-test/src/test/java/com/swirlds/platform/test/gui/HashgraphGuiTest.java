@@ -17,6 +17,7 @@
 package com.swirlds.platform.test.gui;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
@@ -27,7 +28,7 @@ class HashgraphGuiTest {
     @Test
     @Disabled("this test is useful for debugging consensus")
     void runGuiWithControls() {
-        final long seed = 1;
+        final Randotron randotron = Randotron.create(1);
         final int numNodes = 4;
         final int initialEvents = 0;
 
@@ -35,9 +36,9 @@ class HashgraphGuiTest {
                 TestPlatformContextBuilder.create().build();
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(seed).setSize(numNodes).build();
+                new RandomAddressBookGenerator(randotron).withSize(numNodes).build();
 
-        final TestGuiSource guiSource = new TestGuiSource(platformContext, seed, addressBook);
+        final TestGuiSource guiSource = new TestGuiSource(platformContext, randotron.nextInt(), addressBook);
         guiSource.generateEvents(initialEvents);
         guiSource.runGui();
     }

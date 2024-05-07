@@ -42,7 +42,7 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractStateSignatureC
     // DO NOT ADD ADDITIONAL UNIT TESTS TO THIS CLASS!
 
     private final AddressBook addressBook =
-            new RandomAddressBookGenerator(random).setSize(4).build();
+            new RandomAddressBookGenerator(random).withSize(4).build();
 
     /**
      * Called on each state as it gets too old without collecting enough signatures.

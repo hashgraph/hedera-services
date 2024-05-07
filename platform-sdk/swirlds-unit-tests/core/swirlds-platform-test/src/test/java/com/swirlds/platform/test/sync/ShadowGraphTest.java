@@ -96,7 +96,7 @@ class ShadowgraphTest {
     }
 
     private void initShadowgraph(final Random random, final int numEvents, final int numNodes) {
-        addressBook = new RandomAddressBookGenerator(random).setSize(numNodes).build();
+        addressBook = new RandomAddressBookGenerator(random).withSize(numNodes).build();
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
@@ -724,7 +724,7 @@ class ShadowgraphTest {
 
         final Random random = RandomUtils.getRandomPrintSeed();
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(numNodes).build();
+                new RandomAddressBookGenerator(random).withSize(numNodes).build();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 

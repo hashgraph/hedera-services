@@ -68,11 +68,11 @@ class StateSigningTests {
         final int nodeCount = random.nextInt(10, 20);
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setWeightDistributionStrategy(
+                .withWeightDistributionStrategy(
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSize(nodeCount)
+                .withSize(nodeCount)
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
@@ -173,11 +173,11 @@ class StateSigningTests {
         final int nodeCount = random.nextInt(10, 20);
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setWeightDistributionStrategy(
+                .withWeightDistributionStrategy(
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSize(nodeCount)
+                .withSize(nodeCount)
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
@@ -270,11 +270,11 @@ class StateSigningTests {
         final int nodeCount = random.nextInt(10, 20);
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setWeightDistributionStrategy(
+                .withWeightDistributionStrategy(
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSize(nodeCount)
+                .withSize(nodeCount)
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
@@ -351,11 +351,11 @@ class StateSigningTests {
         final int nodeCount = random.nextInt(10, 20);
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setWeightDistributionStrategy(
+                .withWeightDistributionStrategy(
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSize(nodeCount)
+                .withSize(nodeCount)
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
@@ -402,11 +402,11 @@ class StateSigningTests {
         final int nodeCount = random.nextInt(10, 20);
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setWeightDistributionStrategy(
+                .withWeightDistributionStrategy(
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSize(nodeCount)
+                .withSize(nodeCount)
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
@@ -463,11 +463,11 @@ class StateSigningTests {
         final int nodeCount = random.nextInt(10, 20);
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setWeightDistributionStrategy(
+                .withWeightDistributionStrategy(
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSize(nodeCount)
+                .withSize(nodeCount)
                 .build();
 
         // set node to zero weight
@@ -527,11 +527,11 @@ class StateSigningTests {
         final int nodeCount = random.nextInt(10, 20);
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setWeightDistributionStrategy(
+                .withWeightDistributionStrategy(
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSize(nodeCount)
+                .withSize(nodeCount)
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)

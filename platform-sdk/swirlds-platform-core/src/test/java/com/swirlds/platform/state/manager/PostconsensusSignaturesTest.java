@@ -44,8 +44,8 @@ import org.junit.jupiter.api.Test;
 class PostconsensusSignaturesTest extends AbstractStateSignatureCollectorTest {
 
     private final AddressBook addressBook = new RandomAddressBookGenerator(random)
-            .setSize(4)
-            .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
+            .withSize(4)
+            .withWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
             .build();
 
     /**

@@ -327,10 +327,10 @@ class EmergencyReconnectTests {
 
     private AddressBook newAddressBook(final Random random, final int numNodes) {
         return new RandomAddressBookGenerator(random)
-                .setSize(numNodes)
-                .setAverageWeight(100L)
-                .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
-                .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
+                .withSize(numNodes)
+                .withAverageWeight(100L)
+                .withWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
+                .withHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
                 .build();
     }
 

@@ -296,7 +296,7 @@ class TipsetEventCreatorTests {
         final int networkSize = 10;
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(networkSize).build();
+                new RandomAddressBookGenerator(random).withSize(networkSize).build();
 
         final FakeTime time = new FakeTime();
 
@@ -350,7 +350,7 @@ class TipsetEventCreatorTests {
         final int networkSize = 10;
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(networkSize).build();
+                new RandomAddressBookGenerator(random).withSize(networkSize).build();
 
         final FakeTime time = new FakeTime();
 
@@ -418,7 +418,7 @@ class TipsetEventCreatorTests {
         final int networkSize = 10;
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(networkSize).build();
+                new RandomAddressBookGenerator(random).withSize(networkSize).build();
 
         final FakeTime time = new FakeTime();
 
@@ -493,7 +493,7 @@ class TipsetEventCreatorTests {
         final int networkSize = 10;
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(networkSize).build();
+                new RandomAddressBookGenerator(random).withSize(networkSize).build();
 
         final FakeTime time = new FakeTime();
 
@@ -561,7 +561,7 @@ class TipsetEventCreatorTests {
         final int networkSize = 10;
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(networkSize).build();
+                new RandomAddressBookGenerator(random).withSize(networkSize).build();
 
         final NodeId zeroWeightNode = addressBook.getNodeId(0);
 
@@ -658,7 +658,7 @@ class TipsetEventCreatorTests {
         final int networkSize = 10;
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(networkSize).build();
+                new RandomAddressBookGenerator(random).withSize(networkSize).build();
 
         final NodeId zeroWeightNode = addressBook.getNodeId(0);
 
@@ -766,7 +766,7 @@ class TipsetEventCreatorTests {
         final int networkSize = 1;
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(networkSize).build();
+                new RandomAddressBookGenerator(random).withSize(networkSize).build();
 
         final FakeTime time = new FakeTime();
 
@@ -845,8 +845,8 @@ class TipsetEventCreatorTests {
         final int networkSize = 4;
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setCustomWeightGenerator(x -> 1L)
-                .setSize(networkSize)
+                .withCustomWeightGenerator(x -> 1L)
+                .withSize(networkSize)
                 .build();
 
         final FakeTime time = new FakeTime();
@@ -922,8 +922,8 @@ class TipsetEventCreatorTests {
         final int networkSize = 4;
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setCustomWeightGenerator(x -> 1L)
-                .setSize(networkSize)
+                .withCustomWeightGenerator(x -> 1L)
+                .withSize(networkSize)
                 .build();
 
         final FakeTime time = new FakeTime();
@@ -991,8 +991,8 @@ class TipsetEventCreatorTests {
         final int networkSize = 4;
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setCustomWeightGenerator(x -> 1L)
-                .setSize(networkSize)
+                .withCustomWeightGenerator(x -> 1L)
+                .withSize(networkSize)
                 .build();
 
         final FakeTime time = new FakeTime();
@@ -1028,7 +1028,7 @@ class TipsetEventCreatorTests {
         final int networkSize = 10;
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(networkSize).build();
+                new RandomAddressBookGenerator(random).withSize(networkSize).build();
 
         final FakeTime time = new FakeTime();
 
