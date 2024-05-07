@@ -40,7 +40,7 @@ public final class DefaultPlatformContext implements PlatformContext {
 
     private final ExecutorFactory executorFactory;
 
-    private FileSystemManager fileSystemManager;
+    private final FileSystemManager fileSystemManager;
 
     /**
      * Constructor.
