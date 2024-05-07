@@ -36,6 +36,8 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
@@ -84,6 +86,15 @@ public class CryptoDeleteSuite extends HapiSuite {
                 cannotDeleteTreasuryAccount(),
                 deletedAccountCannotBePayer(),
                 canQueryForRecordsWithDeletedPayers());
+    }
+
+    @HapiTest
+    final HapiSpec accountIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("accountIdVariantsTreatedAsExpected")
+                .given(cryptoCreate(TRANSFER_ACCOUNT), cryptoCreate(ACCOUNT_TO_BE_DELETED))
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> cryptoDelete(ACCOUNT_TO_BE_DELETED)
+                        .transfer(TRANSFER_ACCOUNT)));
     }
 
     @HapiTest

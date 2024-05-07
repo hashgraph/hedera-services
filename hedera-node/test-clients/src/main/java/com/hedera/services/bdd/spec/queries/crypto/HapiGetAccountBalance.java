@@ -293,7 +293,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getAccountBalanceQuery(spec, payment, false);
+        Query query = maybeModified(getAccountBalanceQuery(spec, payment, false), spec);
         response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).cryptoGetBalance(query);
         ResponseCodeEnum status =
                 response.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode();
