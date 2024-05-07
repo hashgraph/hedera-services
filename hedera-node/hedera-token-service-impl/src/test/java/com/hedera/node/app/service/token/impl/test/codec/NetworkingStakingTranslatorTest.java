@@ -17,10 +17,15 @@
 package com.hedera.node.app.service.token.impl.test.codec;
 
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_NETWORK_REWARDS_KEY;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
+import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
 import com.hedera.node.app.service.token.impl.ReadableNetworkStakingRewardsStoreImpl;
 import com.hedera.node.app.service.token.impl.codec.NetworkingStakingTranslator;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
@@ -40,19 +45,38 @@ class NetworkingStakingTranslatorTest {
     @Mock(strictness = Mock.Strictness.LENIENT)
     private ReadableSingletonState stakingRewardsState;
 
-    private ReadableNetworkStakingRewardsStoreImpl subject;
-
     @BeforeEach
     void setUp() {
         given(states.getSingleton(STAKING_NETWORK_REWARDS_KEY)).willReturn(stakingRewardsState);
         given(stakingRewardsState.get()).willReturn(new NetworkStakingRewards(true, 1L, 2L, 3L));
-        subject = new ReadableNetworkStakingRewardsStoreImpl(states);
+    }
+
+    @Test
+    void testNetworkStakingRewardsFromMerkleNetworkContextWithNullInput() {
+        assertThrows(NullPointerException.class, () -> {
+            NetworkingStakingTranslator.networkStakingRewardsFromMerkleNetworkContext(null);
+        });
+    }
+
+    @Test
+    void testNetworkStakingRewardsFromMerkleNetworkContextWithInvalidInput() {
+        MerkleNetworkContext merkleNetworkContextInvalid = new MerkleNetworkContext();
+        merkleNetworkContextInvalid.setStakingRewardsActivated(true);
+        merkleNetworkContextInvalid.setTotalStakedRewardStart(-1L);
+        merkleNetworkContextInvalid.setPendingRewards(100_000_000_001L);
+        merkleNetworkContextInvalid.setTotalStakedStart(-5L);
+        merkleNetworkContextInvalid.setSeqNo(new SequenceNumber(1001));
+        merkleNetworkContextInvalid.setMidnightRates(new ExchangeRates());
+
+        assertDoesNotThrow(() -> {
+            NetworkingStakingTranslator.networkStakingRewardsFromMerkleNetworkContext(merkleNetworkContextInvalid);
+        });
     }
 
     @Test
     void createNetworkStakingRewardsFromMerkleNetworkContext() {
-        final com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext merkleNetworkContext =
-                new com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext();
+        final MerkleNetworkContext merkleNetworkContext =
+                new MerkleNetworkContext();
 
         merkleNetworkContext.setStakingRewardsActivated(true);
         merkleNetworkContext.setTotalStakedRewardStart(1L);
@@ -65,9 +89,9 @@ class NetworkingStakingTranslatorTest {
         assertEquals(getExpectedNetworkStakingRewards(), convertedNetworkStakingRewards);
     }
 
-    private com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext getExpectedMerkleNetworkContext() {
-        final com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext merkleNetworkContext =
-                new com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext();
+    private MerkleNetworkContext getExpectedMerkleNetworkContext() {
+        final MerkleNetworkContext merkleNetworkContext =
+                new MerkleNetworkContext();
 
         merkleNetworkContext.setStakingRewardsActivated(true);
         merkleNetworkContext.setTotalStakedRewardStart(1L);
