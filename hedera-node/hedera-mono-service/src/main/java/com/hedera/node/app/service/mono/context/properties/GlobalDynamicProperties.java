@@ -1028,5 +1028,4 @@ public class GlobalDynamicProperties implements EvmProperties {
                 || !allowCallsToNonContractAccounts
                 || grandfatherContracts.contains(target));
     }
-
 }
