@@ -26,7 +26,6 @@ import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
-import com.hedera.node.app.service.token.impl.ReadableNetworkStakingRewardsStoreImpl;
 import com.hedera.node.app.service.token.impl.codec.NetworkingStakingTranslator;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -75,8 +74,7 @@ class NetworkingStakingTranslatorTest {
 
     @Test
     void createNetworkStakingRewardsFromMerkleNetworkContext() {
-        final MerkleNetworkContext merkleNetworkContext =
-                new MerkleNetworkContext();
+        final MerkleNetworkContext merkleNetworkContext = new MerkleNetworkContext();
 
         merkleNetworkContext.setStakingRewardsActivated(true);
         merkleNetworkContext.setTotalStakedRewardStart(1L);
@@ -90,8 +88,7 @@ class NetworkingStakingTranslatorTest {
     }
 
     private MerkleNetworkContext getExpectedMerkleNetworkContext() {
-        final MerkleNetworkContext merkleNetworkContext =
-                new MerkleNetworkContext();
+        final MerkleNetworkContext merkleNetworkContext = new MerkleNetworkContext();
 
         merkleNetworkContext.setStakingRewardsActivated(true);
         merkleNetworkContext.setTotalStakedRewardStart(1L);
