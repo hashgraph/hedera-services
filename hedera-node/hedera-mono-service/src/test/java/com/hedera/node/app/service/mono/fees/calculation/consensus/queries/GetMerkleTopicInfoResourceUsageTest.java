@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.fees.calculation.consensus.queries;
 
+import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
@@ -79,7 +80,7 @@ class GetMerkleTopicInfoResourceUsageTest {
     void throwsIaeWhenTopicDoesNotExist() {
         final var query = topicInfoQuery(topicId, ANSWER_ONLY);
 
-        assertSame(FeeData.getDefaultInstance(), subject.usageGiven(query, view));
+        assertSame(CONSTANT_FEE_DATA, subject.usageGiven(query, view));
     }
 
     @ParameterizedTest

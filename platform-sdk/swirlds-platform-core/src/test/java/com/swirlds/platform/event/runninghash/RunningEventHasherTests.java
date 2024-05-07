@@ -81,7 +81,7 @@ class RunningEventHasherTests {
             final List<EventImpl> events = new ArrayList<>();
             for (int i = 0; i < eventCount; i++) {
                 final GossipEvent event = new TestingEventBuilder(random).build();
-                final EventImpl eventImpl = new EventImpl(event.getHashedData(), event.getUnhashedData());
+                final EventImpl eventImpl = new EventImpl(event);
                 eventImpl.setConsensusTimestamp(time.now());
                 events.add(eventImpl);
 
@@ -124,7 +124,7 @@ class RunningEventHasherTests {
         final List<EventImpl> events = new ArrayList<>();
         for (int i = 0; i < eventCount; i++) {
             final GossipEvent event = new TestingEventBuilder(random).build();
-            final EventImpl eventImpl = new EventImpl(event.getHashedData(), event.getUnhashedData());
+            final EventImpl eventImpl = new EventImpl(event);
             eventImpl.setConsensusTimestamp(time.now());
             events.add(eventImpl);
 
@@ -165,7 +165,7 @@ class RunningEventHasherTests {
         final List<EventImpl> events = new ArrayList<>();
         for (int i = 0; i < random.nextInt(1, 10); i++) {
             final GossipEvent event = new TestingEventBuilder(random).build();
-            final EventImpl eventImpl = new EventImpl(event.getHashedData(), event.getUnhashedData());
+            final EventImpl eventImpl = new EventImpl(event);
             eventImpl.setConsensusTimestamp(time.now());
             events.add(eventImpl);
 
@@ -203,7 +203,7 @@ class RunningEventHasherTests {
         final List<EventImpl> events = new ArrayList<>();
         for (int i = 0; i < eventCount; i++) {
             final GossipEvent event = new TestingEventBuilder(random).build();
-            final EventImpl eventImpl = new EventImpl(event.getHashedData(), event.getUnhashedData());
+            final EventImpl eventImpl = new EventImpl(event);
             eventImpl.setConsensusTimestamp(time.now());
             events.add(eventImpl);
 
@@ -245,7 +245,7 @@ class RunningEventHasherTests {
         final List<EventImpl> events = new ArrayList<>();
         for (int i = 0; i < eventCount; i++) {
             final GossipEvent event = new TestingEventBuilder(random).build();
-            final EventImpl eventImpl = new EventImpl(event.getHashedData(), event.getUnhashedData());
+            final EventImpl eventImpl = new EventImpl(event);
             eventImpl.setConsensusTimestamp(time.now());
             events.add(eventImpl);
 
@@ -254,8 +254,7 @@ class RunningEventHasherTests {
 
         final List<EventImpl> eventsB = new ArrayList<>(events);
         final EventImpl originalEvent = events.get(0);
-        final EventImpl modifiedEvent =
-                new EventImpl(originalEvent.getBaseEvent().getHashedData(), originalEvent.getUnhashedData());
+        final EventImpl modifiedEvent = new EventImpl(originalEvent.getBaseEvent());
         final Instant modifiedTimestamp =
                 originalEvent.getConsensusData().getConsensusTimestamp().plusSeconds(1);
         modifiedEvent.setConsensusTimestamp(modifiedTimestamp);
@@ -292,7 +291,7 @@ class RunningEventHasherTests {
         final List<EventImpl> events = new ArrayList<>();
         for (int i = 0; i < eventCount; i++) {
             final GossipEvent event = new TestingEventBuilder(random).build();
-            final EventImpl eventImpl = new EventImpl(event.getHashedData(), event.getUnhashedData());
+            final EventImpl eventImpl = new EventImpl(event);
             eventImpl.setConsensusTimestamp(time.now());
             events.add(eventImpl);
 
@@ -301,8 +300,7 @@ class RunningEventHasherTests {
 
         final List<EventImpl> eventsB = new ArrayList<>(events);
         final EventImpl originalEvent = events.get(0);
-        final EventImpl modifiedEvent =
-                new EventImpl(originalEvent.getBaseEvent().getHashedData(), originalEvent.getUnhashedData());
+        final EventImpl modifiedEvent = new EventImpl(originalEvent.getBaseEvent());
         final Instant modifiedTimestamp =
                 originalEvent.getConsensusData().getConsensusTimestamp().plusNanos(1);
         modifiedEvent.setConsensusTimestamp(modifiedTimestamp);
@@ -339,7 +337,7 @@ class RunningEventHasherTests {
         final List<EventImpl> events = new ArrayList<>();
         for (int i = 0; i < eventCount; i++) {
             final GossipEvent event = new TestingEventBuilder(random).build();
-            final EventImpl eventImpl = new EventImpl(event.getHashedData(), event.getUnhashedData());
+            final EventImpl eventImpl = new EventImpl(event);
             eventImpl.setConsensusTimestamp(time.now());
             events.add(eventImpl);
 
@@ -349,7 +347,7 @@ class RunningEventHasherTests {
         final List<EventImpl> eventsB = new ArrayList<>(events);
         final EventImpl originalEvent = events.get(0);
         final GossipEvent newGossipEvent = new TestingEventBuilder(random).build();
-        final EventImpl modifiedEvent = new EventImpl(newGossipEvent.getHashedData(), newGossipEvent.getUnhashedData());
+        final EventImpl modifiedEvent = new EventImpl(newGossipEvent);
         modifiedEvent.setConsensusTimestamp(originalEvent.getConsensusData().getConsensusTimestamp());
         eventsB.set(0, modifiedEvent);
 
@@ -384,7 +382,7 @@ class RunningEventHasherTests {
         final List<EventImpl> events = new ArrayList<>();
         for (int i = 0; i < eventCount; i++) {
             final GossipEvent event = new TestingEventBuilder(random).build();
-            final EventImpl eventImpl = new EventImpl(event.getHashedData(), event.getUnhashedData());
+            final EventImpl eventImpl = new EventImpl(event);
             eventImpl.setConsensusTimestamp(time.now());
             events.add(eventImpl);
 
@@ -425,7 +423,7 @@ class RunningEventHasherTests {
         final List<EventImpl> events = new ArrayList<>();
         for (int i = 0; i < eventCount; i++) {
             final GossipEvent event = new TestingEventBuilder(random).build();
-            final EventImpl eventImpl = new EventImpl(event.getHashedData(), event.getUnhashedData());
+            final EventImpl eventImpl = new EventImpl(event);
             eventImpl.setConsensusTimestamp(time.now());
             events.add(eventImpl);
 
@@ -434,7 +432,7 @@ class RunningEventHasherTests {
 
         final List<EventImpl> eventsB = new ArrayList<>(events);
         final GossipEvent newGossipEvent = new TestingEventBuilder(random).build();
-        final EventImpl extraEvent = new EventImpl(newGossipEvent.getHashedData(), newGossipEvent.getUnhashedData());
+        final EventImpl extraEvent = new EventImpl(newGossipEvent);
         extraEvent.setConsensusTimestamp(time.now());
         eventsB.add(extraEvent);
 

@@ -56,6 +56,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
@@ -107,6 +113,10 @@ public class TokenUpdateSpecs extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
+        return allOf(positiveTests(), negativeTests());
+    }
+
+    private List<HapiSpec> positiveTests() {
         return List.of(
                 symbolChanges(),
                 standardImmutabilitySemanticsHold(),
@@ -115,18 +125,10 @@ public class TokenUpdateSpecs extends HapiSuite {
                 tooLongSymbolCheckHolds(),
                 nameChanges(),
                 keysChange(),
-                validatesAlreadyDeletedToken(),
                 treasuryEvolves(),
-                deletedAutoRenewAccountCheckHolds(),
-                renewalPeriodCheckHolds(),
-                invalidTreasuryCheckHolds(),
                 newTreasuryMustSign(),
                 newTreasuryAutoAssociationWorks(),
-                tokensCanBeMadeImmutableWithEmptyKeyList(),
                 updateNftTreasuryHappyPath(),
-                updateTokenTreasuryRequiresZeroTokenBalance(),
-                validatesMissingAdminKey(),
-                validatesMissingRef(),
                 validatesNewExpiry(),
                 /* HIP-18 */
                 customFeesOnlyUpdatableWithKey(),
@@ -137,8 +139,26 @@ public class TokenUpdateSpecs extends HapiSuite {
                 canUpdateExpiryOnlyOpWithoutAdminKey());
     }
 
+    private List<HapiSpec> negativeTests() {
+        return List.of(
+                updateTokenTreasuryRequiresZeroTokenBalance(),
+                validatesAlreadyDeletedToken(),
+                tokensCanBeMadeImmutableWithEmptyKeyList(),
+                deletedAutoRenewAccountCheckHolds(),
+                renewalPeriodCheckHolds(),
+                invalidTreasuryCheckHolds(),
+                validatesMissingRef(),
+                validatesMissingAdminKey(),
+                tokenUpdateTokenHasNoFreezeKey(),
+                tokenUpdateTokenHasNoSupplyKey(),
+                tokenUpdateTokenHasNoKycKey(),
+                tokenUpdateTokenHasNoWipeKey(),
+                tokenUpdateTokenHasNoPauseKey(),
+                tokenUpdateTokenHasNoMetadataKey());
+    }
+
     @HapiTest
-    private HapiSpec canUpdateExpiryOnlyOpWithoutAdminKey() {
+    final HapiSpec canUpdateExpiryOnlyOpWithoutAdminKey() {
         final var smallBuffer = 12_345L;
         final var okExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() - smallBuffer;
         String originalMemo = "First things first";
@@ -211,7 +231,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                         tokenCreate(mutableForNow).adminKey("initialAdmin"))
                 .when(
                         tokenUpdate(mutableForNow)
-                                .improperlyEmptyingAdminKey()
+                                .usingInvalidAdminKey()
                                 .signedByPayerAnd("initialAdmin")
                                 .hasPrecheck(INVALID_ADMIN_KEY),
                         tokenUpdate(mutableForNow).properlyEmptyingAdminKey().signedByPayerAnd("initialAdmin"))
@@ -814,6 +834,204 @@ public class TokenUpdateSpecs extends HapiSuite {
                 .then(getTokenInfo(tokenWithFeeKey)
                         .hasCustom(fixedHbarFeeInSchedule(newHbarFee, hbarCollector))
                         .hasFeeScheduleKey(tokenWithFeeKey));
+    }
+
+    @HapiTest
+    final HapiSpec tokenUpdateTokenHasNoFreezeKey() {
+        final var tokenName = "token";
+        final var HBAR_COLLECTOR = "hbarFee";
+
+        final var admin = "admin";
+        final var adminKey = "adminKey";
+        final var freezeKey = "freezeKey";
+        final var freeze = "freeze";
+        final var freezeKey2 = "freezeKey2";
+
+        return defaultHapiSpec("tokenUpdateTokenHasNoFreezeKey")
+                .given(
+                        newKeyNamed(adminKey),
+                        newKeyNamed(freezeKey),
+                        newKeyNamed(freezeKey2),
+                        cryptoCreate(HBAR_COLLECTOR),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(admin).key(adminKey).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(freeze).key(freezeKey).balance(ONE_MILLION_HBARS),
+                        tokenCreate(tokenName)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(10)
+                                .adminKey(adminKey)
+                                .payingWith(admin))
+                .when(tokenUpdate(tokenName)
+                        .freezeKey(freezeKey2)
+                        .signedBy(adminKey, freezeKey)
+                        .payingWith(freeze)
+                        .hasKnownStatus(TOKEN_HAS_NO_FREEZE_KEY))
+                .then();
+    }
+
+    @HapiTest
+    final HapiSpec tokenUpdateTokenHasNoSupplyKey() {
+        final var tokenName = "token";
+        final var HBAR_COLLECTOR = "hbarFee";
+
+        final var admin = "admin";
+        final var adminKey = "adminKey";
+        final var supplyKey = "supplyKey";
+        final var supply = "supply";
+        final var supplyKey2 = "supplyKey2";
+
+        return defaultHapiSpec("tokenUpdateTokenHasNoSupplyKey")
+                .given(
+                        newKeyNamed(adminKey),
+                        newKeyNamed(supplyKey),
+                        newKeyNamed(supplyKey2),
+                        cryptoCreate(HBAR_COLLECTOR),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(admin).key(adminKey).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(supply).key(supplyKey).balance(ONE_MILLION_HBARS),
+                        tokenCreate(tokenName)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(10)
+                                .adminKey(adminKey)
+                                .payingWith(admin))
+                .when(tokenUpdate(tokenName)
+                        .supplyKey(supplyKey2)
+                        .signedBy(adminKey, supplyKey)
+                        .payingWith(supply)
+                        .hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY))
+                .then();
+    }
+
+    @HapiTest
+    final HapiSpec tokenUpdateTokenHasNoKycKey() {
+        final var tokenName = "token";
+        final var HBAR_COLLECTOR = "hbarFee";
+
+        final var admin = "admin";
+        final var adminKey = "adminKey";
+        final var kycKey = "kycKey";
+        final var kyc = "kyc";
+        final var kycKey2 = "kycKey2";
+
+        return defaultHapiSpec("tokenUpdateTokenHasNoKycKey")
+                .given(
+                        newKeyNamed(adminKey),
+                        newKeyNamed(kycKey),
+                        newKeyNamed(kycKey2),
+                        cryptoCreate(HBAR_COLLECTOR),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(admin).key(adminKey).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(kyc).key(kycKey).balance(ONE_MILLION_HBARS),
+                        tokenCreate(tokenName)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(10)
+                                .adminKey(adminKey)
+                                .payingWith(admin))
+                .when(tokenUpdate(tokenName)
+                        .kycKey(kycKey2)
+                        .signedBy(adminKey, kycKey)
+                        .payingWith(kyc)
+                        .hasKnownStatus(TOKEN_HAS_NO_KYC_KEY))
+                .then();
+    }
+
+    @HapiTest
+    final HapiSpec tokenUpdateTokenHasNoWipeKey() {
+        final var tokenName = "token";
+        final var HBAR_COLLECTOR = "hbarFee";
+
+        final var admin = "admin";
+        final var adminKey = "adminKey";
+        final var wipeKey = "wipeKey";
+        final var wipe = "wipe";
+        final var wipeKey2 = "wipeKey2";
+
+        return defaultHapiSpec("tokenUpdateTokenHasNoWipeKey")
+                .given(
+                        newKeyNamed(adminKey),
+                        newKeyNamed(wipeKey),
+                        newKeyNamed(wipeKey2),
+                        cryptoCreate(HBAR_COLLECTOR),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(admin).key(adminKey).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(wipe).key(wipeKey).balance(ONE_MILLION_HBARS),
+                        tokenCreate(tokenName)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(10)
+                                .adminKey(adminKey)
+                                .payingWith(admin))
+                .when(tokenUpdate(tokenName)
+                        .wipeKey(wipeKey2)
+                        .signedBy(adminKey, wipeKey)
+                        .payingWith(wipe)
+                        .hasKnownStatus(TOKEN_HAS_NO_WIPE_KEY))
+                .then();
+    }
+
+    @HapiTest
+    final HapiSpec tokenUpdateTokenHasNoPauseKey() {
+        final var tokenName = "token";
+        final var HBAR_COLLECTOR = "hbarFee";
+
+        final var admin = "admin";
+        final var adminKey = "adminKey";
+        final var pauseKey = "pauseKey";
+        final var pause = "pause";
+        final var pauseKey2 = "pauseKey2";
+
+        return defaultHapiSpec("tokenUpdateTokenHasNoPauseKey")
+                .given(
+                        newKeyNamed(adminKey),
+                        newKeyNamed(pauseKey),
+                        newKeyNamed(pauseKey2),
+                        cryptoCreate(HBAR_COLLECTOR),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(admin).key(adminKey).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(pause).key(pauseKey).balance(ONE_MILLION_HBARS),
+                        tokenCreate(tokenName)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(10)
+                                .adminKey(adminKey)
+                                .payingWith(admin))
+                .when(tokenUpdate(tokenName)
+                        .pauseKey(pauseKey2)
+                        .signedBy(adminKey, pauseKey)
+                        .payingWith(pause)
+                        .hasKnownStatus(TOKEN_HAS_NO_PAUSE_KEY))
+                .then();
+    }
+
+    @HapiTest
+    final HapiSpec tokenUpdateTokenHasNoMetadataKey() {
+        final var tokenName = "token";
+        final var HBAR_COLLECTOR = "hbarFee";
+
+        final var admin = "admin";
+        final var adminKey = "adminKey";
+        final var metadataKey = "metadataKey";
+        final var metadata = "metadata";
+        final var metadataKey2 = "metadataKey2";
+
+        return defaultHapiSpec("tokenUpdateTokenHasNoMetadataKey")
+                .given(
+                        newKeyNamed(adminKey),
+                        newKeyNamed(metadataKey),
+                        newKeyNamed(metadataKey2),
+                        cryptoCreate(HBAR_COLLECTOR),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(admin).key(adminKey).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(metadata).key(metadataKey).balance(ONE_MILLION_HBARS),
+                        tokenCreate(tokenName)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(10)
+                                .adminKey(adminKey)
+                                .payingWith(admin))
+                .when(tokenUpdate(tokenName)
+                        .metadataKey(metadataKey2)
+                        .signedBy(adminKey, metadataKey)
+                        .payingWith(metadata)
+                        .hasKnownStatus(TOKEN_HAS_NO_METADATA_KEY))
+                .then();
     }
 
     @HapiTest
