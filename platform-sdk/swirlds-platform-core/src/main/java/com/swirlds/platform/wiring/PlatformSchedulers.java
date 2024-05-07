@@ -32,14 +32,12 @@ import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
-import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateHasher;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
-import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -59,7 +57,6 @@ import java.util.List;
  * @param shadowgraphScheduler                      the scheduler for the shadowgraph
  * @param consensusRoundHandlerScheduler            the scheduler for the consensus round handler
  * @param runningHashUpdateScheduler                the scheduler for the running hash updater
- * @param issDetectorScheduler                      the scheduler for the iss detector
  * @param issHandlerScheduler                       the scheduler for the iss handler
  * @param hashLoggerScheduler                       the scheduler for the hash logger
  * @param latestCompleteStateNotifierScheduler      the scheduler for the latest complete state notifier
@@ -75,7 +72,6 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<Void> shadowgraphScheduler,
         @NonNull TaskScheduler<StateAndRound> consensusRoundHandlerScheduler,
         @NonNull TaskScheduler<RunningEventHashOverride> runningHashUpdateScheduler,
-        @NonNull TaskScheduler<List<IssNotification>> issDetectorScheduler,
         @NonNull TaskScheduler<Void> issHandlerScheduler,
         @NonNull TaskScheduler<Void> hashLoggerScheduler,
         @NonNull TaskScheduler<Void> latestCompleteStateNotifierScheduler,
@@ -164,13 +160,6 @@ public record PlatformSchedulers(
                         .cast(),
                 model.schedulerBuilder("RunningEventHashOverride")
                         .withType(TaskSchedulerType.DIRECT_THREADSAFE)
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("issDetector")
-                        .withType(config.issDetectorSchedulerType())
-                        .withUnhandledTaskCapacity(config.issDetectorUnhandledCapacity())
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(IssDetector.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("issHandler")

@@ -19,20 +19,18 @@ package com.swirlds.platform.builder;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getGlobalMetrics;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
+import static com.swirlds.platform.state.iss.IssDetector.DO_NOT_IGNORE_ROUNDS;
 
+import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.components.consensus.DefaultConsensusEngine;
+import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.creation.DefaultEventCreationManager;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.creation.EventCreator;
-import com.swirlds.platform.event.creation.rules.AggregateEventCreationRules;
-import com.swirlds.platform.event.creation.rules.BackpressureRule;
-import com.swirlds.platform.event.creation.rules.EventCreationRule;
-import com.swirlds.platform.event.creation.rules.MaximumRateRule;
-import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
 import com.swirlds.platform.event.creation.tipset.TipsetEventCreator;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.deduplication.StandardEventDeduplicator;
@@ -44,6 +42,7 @@ import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
 import com.swirlds.platform.event.preconsensus.DefaultPcesWriter;
+import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
@@ -62,10 +61,17 @@ import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.state.iss.DefaultIssDetector;
+import com.swirlds.platform.state.iss.IssDetector;
+import com.swirlds.platform.state.iss.IssScratchpad;
+import com.swirlds.platform.state.signed.DefaultSignedStateSentinel;
 import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.status.DefaultStatusStateMachine;
+import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.util.MetricsDocUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -106,10 +112,13 @@ public class PlatformComponentBuilder {
     private InOrderLinker inOrderLinker;
     private ConsensusEngine consensusEngine;
     private ConsensusEventStream consensusEventStream;
+    private SignedStateSentinel signedStateSentinel;
     private PcesSequencer pcesSequencer;
     private RoundDurabilityBuffer roundDurabilityBuffer;
+    private StatusStateMachine statusStateMachine;
     private TransactionPrehandler transactionPrehandler;
     private PcesWriter pcesWriter;
+    private IssDetector issDetector;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -477,15 +486,11 @@ public class PlatformComponentBuilder {
                     blocks.appVersion(),
                     blocks.transactionPool());
 
-            final EventCreationRule eventCreationRules = AggregateEventCreationRules.of(
-                    new MaximumRateRule(blocks.platformContext()),
-                    new BackpressureRule(
-                            blocks.platformContext(),
-                            () -> blocks.intakeQueueSizeSupplierSupplier().get().getAsLong()),
-                    new PlatformStatusRule(() -> blocks.currentPlatformStatus().get(), blocks.transactionPool()));
-
-            eventCreationManager =
-                    new DefaultEventCreationManager(blocks.platformContext(), eventCreator, eventCreationRules);
+            eventCreationManager = new DefaultEventCreationManager(
+                    blocks.platformContext(),
+                    blocks.transactionPool(),
+                    blocks.intakeQueueSizeSupplierSupplier().get(),
+                    eventCreator);
         }
         return eventCreationManager;
     }
@@ -659,6 +664,70 @@ public class PlatformComponentBuilder {
     }
 
     /**
+     * Provide a status state machine in place of the platform's default status state machine.
+     *
+     * @param statusStateMachine the status state machine to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withStatusStateMachine(@NonNull final StatusStateMachine statusStateMachine) {
+        throwIfAlreadyUsed();
+        if (this.statusStateMachine != null) {
+            throw new IllegalStateException("Status state machine has already been set");
+        }
+        this.statusStateMachine = Objects.requireNonNull(statusStateMachine);
+        return this;
+    }
+
+    /**
+     * Build the status state machine if it has not yet been built. If one has been provided via
+     * {@link #withStatusStateMachine(StatusStateMachine)}, that state machine will be used. If this method is called
+     * more than once, only the first call will build the status state machine. Otherwise, the default state machine
+     * will be created and returned.
+     *
+     * @return the status state machine
+     */
+    @NonNull
+    public StatusStateMachine buildStatusStateMachine() {
+        if (statusStateMachine == null) {
+            statusStateMachine = new DefaultStatusStateMachine(blocks.platformContext());
+        }
+        return statusStateMachine;
+    }
+
+    /**
+     * Provide a signed state sentinel in place of the platform's default signed state sentinel.
+     *
+     * @param signedStateSentinel the signed state sentinel to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withSignedStateSentinel(@NonNull final SignedStateSentinel signedStateSentinel) {
+        throwIfAlreadyUsed();
+        if (this.signedStateSentinel != null) {
+            throw new IllegalStateException("Signed state sentinel has already been set");
+        }
+        this.signedStateSentinel = Objects.requireNonNull(signedStateSentinel);
+        return this;
+    }
+
+    /**
+     * Build the signed state sentinel if it has not yet been built. If one has been provided via
+     * {@link #withSignedStateSentinel(SignedStateSentinel)}, that sentinel will be used. If this method is called more
+     * than once, only the first call will build the signed state sentinel. Otherwise, the default sentinel will be
+     * created and returned.
+     *
+     * @return the signed state sentinel
+     */
+    @NonNull
+    public SignedStateSentinel buildSignedStateSentinel() {
+        if (signedStateSentinel == null) {
+            signedStateSentinel = new DefaultSignedStateSentinel(blocks.platformContext());
+        }
+        return signedStateSentinel;
+    }
+
+    /**
      * Provide a transaction prehandler in place of the platform's default transaction prehandler.
      *
      * @param transactionPrehandler the transaction prehandler to use
@@ -732,5 +801,74 @@ public class PlatformComponentBuilder {
             }
         }
         return pcesWriter;
+    }
+
+    /**
+     * Provide an ISS detector in place of the platform's default ISS detector.
+     *
+     * @param issDetector the ISS detector to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withIssDetector(@NonNull final IssDetector issDetector) {
+        throwIfAlreadyUsed();
+        if (this.issDetector != null) {
+            throw new IllegalStateException("ISS detector has already been set");
+        }
+        this.issDetector = Objects.requireNonNull(issDetector);
+        return this;
+    }
+
+    /**
+     * Build the ISS detector if it has not yet been built. If one has been provided via
+     * {@link #withIssDetector(IssDetector)}, that detector will be used. If this method is called more than once, only
+     * the first call will build the ISS detector. Otherwise, the default detector will be created and returned.
+     *
+     * @return the ISS detector
+     */
+    @NonNull
+    public IssDetector buildIssDetector() {
+        if (issDetector == null) {
+            // Only validate preconsensus signature transactions if we are not recovering from an ISS.
+            // ISS round == null means we haven't observed an ISS yet.
+            // ISS round < current round means there was an ISS prior to the saved state
+            //    that has already been recovered from.
+            // ISS round >= current round means that the ISS happens in the future relative the initial state, meaning
+            //    we may observe ISS-inducing signature transactions in the preconsensus event stream.
+
+            final SerializableLong issRound = blocks.issScratchpad().get(IssScratchpad.LAST_ISS_ROUND);
+
+            final boolean forceIgnorePcesSignatures = blocks.platformContext()
+                    .getConfiguration()
+                    .getConfigData(PcesConfig.class)
+                    .forceIgnorePcesSignatures();
+
+            final long initialStateRound = blocks.initialState().get().getRound();
+
+            final boolean ignorePreconsensusSignatures;
+            if (forceIgnorePcesSignatures) {
+                // this is used FOR TESTING ONLY
+                ignorePreconsensusSignatures = true;
+            } else {
+                ignorePreconsensusSignatures = issRound != null && issRound.getValue() >= initialStateRound;
+            }
+
+            // A round that we will completely skip ISS detection for. Needed for tests that do janky state modification
+            // without a software upgrade (in production this feature should not be used).
+            final long roundToIgnore = blocks.platformContext()
+                            .getConfiguration()
+                            .getConfigData(StateConfig.class)
+                            .validateInitialState()
+                    ? DO_NOT_IGNORE_ROUNDS
+                    : initialStateRound;
+
+            issDetector = new DefaultIssDetector(
+                    blocks.platformContext(),
+                    blocks.initialState().get().getState().getPlatformState().getAddressBook(),
+                    blocks.appVersion(),
+                    ignorePreconsensusSignatures,
+                    roundToIgnore);
+        }
+        return issDetector;
     }
 }

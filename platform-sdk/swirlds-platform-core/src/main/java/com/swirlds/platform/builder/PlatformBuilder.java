@@ -18,7 +18,6 @@ package com.swirlds.platform.builder;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.doStaticSetup;
@@ -27,7 +26,6 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupG
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
-import static com.swirlds.platform.system.status.PlatformStatus.STARTING_UP;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
@@ -37,11 +35,11 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.metrics.api.Metrics;
@@ -67,6 +65,7 @@ import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.address.AddressBookInitializer;
+import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -420,9 +419,6 @@ public final class PlatformBuilder {
         // the AddressBook is not changed after this point, so we calculate the hash now
         platformContext.getCryptography().digestSync(configAddressBook);
 
-        final RecycleBinImpl recycleBin = rethrowIO(() -> new RecycleBinImpl(
-                configuration, platformContext.getMetrics(), getStaticThreadManager(), Time.getCurrent(), selfId));
-
         final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final EmergencyRecoveryManager emergencyRecoveryManager =
@@ -430,7 +426,6 @@ public final class PlatformBuilder {
 
         final ReservedSignedState initialState = getInitialState(
                 platformContext,
-                recycleBin,
                 softwareVersion,
                 genesisStateBuilder,
                 appName,
@@ -494,7 +489,6 @@ public final class PlatformBuilder {
             // the old type and start writing the new type.
             initialPcesFiles = PcesFileReader.readFilesFromDisk(
                     platformContext,
-                    recycleBin,
                     databaseDirectory,
                     initialState.get().getRound(),
                     preconsensusEventStreamConfig.permitGaps(),
@@ -506,10 +500,13 @@ public final class PlatformBuilder {
             throw new UncheckedIOException(e);
         }
 
+        final Scratchpad<IssScratchpad> issScratchpad =
+                Scratchpad.create(platformContext, selfId, IssScratchpad.class, "platform.iss");
+        issScratchpad.logContents();
+
         final PlatformBuildingBlocks buildingBlocks = new PlatformBuildingBlocks(
                 platformContext,
                 keysAndCerts.get(selfId),
-                recycleBin,
                 selfId,
                 appName,
                 swirldName,
@@ -521,11 +518,11 @@ public final class PlatformBuilder {
                 intakeEventCounter,
                 new RandomBuilder(),
                 new TransactionPool(platformContext),
-                new AtomicReference<>(STARTING_UP),
                 new AtomicReference<>(),
                 new AtomicReference<>(),
                 new AtomicReference<>(),
                 initialPcesFiles,
+                issScratchpad,
                 firstPlatform);
 
         return new PlatformComponentBuilder(buildingBlocks);

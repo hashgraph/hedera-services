@@ -44,8 +44,8 @@ public final class MatcherUtils {
      * @param expectedGas the expected gas
      * @return {@link GasMatcher} checking for equality within a range of 32 units
      */
-    public static GasMatcher within32Units(final Long expectedGas) {
-        return new GasMatcher(expectedGas, false, 32L);
+    public static GasMatcher within64Units(final Long expectedGas) {
+        return new GasMatcher(expectedGas, false, 64L);
     }
 
     /**

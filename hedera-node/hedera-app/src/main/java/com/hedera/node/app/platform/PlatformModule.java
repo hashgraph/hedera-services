@@ -45,7 +45,7 @@ public interface PlatformModule {
     @Provides
     @Singleton
     static Signer signer(@NonNull final Platform platform) {
-        return platform;
+        return platform::sign;
     }
 
     @Provides

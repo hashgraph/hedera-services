@@ -102,7 +102,16 @@ class HederaStaticCallOperationTest {
         CommonCallSetup.commonSetup(evmMsgFrame, worldUpdater, acc);
         given(worldUpdater.get(any())).willReturn(null);
         given(calc.callOperationGasCost(
-                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
+                        any(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        any(),
+                        any(),
+                        any(),
+                        anyBoolean()))
                 .willReturn(cost);
         given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
         given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.EMPTY);
@@ -122,7 +131,16 @@ class HederaStaticCallOperationTest {
     void executesAsExpected() {
         CommonCallSetup.commonSetup(evmMsgFrame, worldUpdater, acc);
         given(calc.callOperationGasCost(
-                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
+                        any(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        any(),
+                        any(),
+                        any(),
+                        anyBoolean()))
                 .willReturn(cost);
         for (int i = 0; i < 10; i++) {
             lenient().when(evmMsgFrame.getStackItem(i)).thenReturn(Bytes.ofUnsignedInt(10));
