@@ -31,6 +31,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -53,6 +54,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF;
+import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -172,7 +174,7 @@ public class TokenUpdatePrecompileV2SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("updateTokenWithKeysHappyPath")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
@@ -227,6 +229,11 @@ public class TokenUpdatePrecompileV2SecurityModelSuite extends HapiSuite {
                                 .signedBy(GENESIS, ACCOUNT)
                                 .alsoSigningWithFullPrefix(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        newKeyNamed(CONTRACT_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_UPDATE_CONTRACT))),
+                        tokenUpdate(VANILLA_TOKEN)
+                                .adminKey(CONTRACT_KEY)
+                                .signedByPayerAnd(MULTI_KEY, CONTRACT_KEY),
+                        cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
                         contractCall(
                                         TOKEN_UPDATE_CONTRACT,
                                         "updateTokenWithAllFields",
@@ -252,7 +259,10 @@ public class TokenUpdatePrecompileV2SecurityModelSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
                                 .signedBy(GENESIS, ACCOUNT)
-                                .alsoSigningWithFullPrefix(ACCOUNT),
+                                .alsoSigningWithFullPrefix(MULTI_KEY, ACCOUNT, ED25519KEY)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .via("test"),
+                        getTxnRecord("test").andAllChildRecords().logged(),
                         newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT.signedWith(TOKEN_UPDATE_CONTRACT)),
                         newKeyNamed(TOKEN_UPDATE_AS_KEY).shape(CONTRACT.signedWith(TOKEN_UPDATE_CONTRACT)))))
                 .then(
@@ -428,6 +438,7 @@ public class TokenUpdatePrecompileV2SecurityModelSuite extends HapiSuite {
                                 TransactionRecordAsserts.recordWith().status(TOKEN_SYMBOL_TOO_LONG)))));
     }
 
+    @HapiTest
     final HapiSpec updateTokenWithKeysNegative() {
         final var updateTokenWithKeysFunc = "updateTokenWithKeys";
         final var NO_FEE_SCHEDULE_KEY_TXN = "NO_FEE_SCHEDULE_KEY_TXN";
@@ -666,6 +677,7 @@ public class TokenUpdatePrecompileV2SecurityModelSuite extends HapiSuite {
                                 TransactionRecordAsserts.recordWith().status(TOKEN_HAS_NO_KYC_KEY)))));
     }
 
+    @HapiTest
     final HapiSpec updateOnlyTokenKeysAndGetTheUpdatedValues() {
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
