@@ -50,25 +50,28 @@ import org.apache.commons.lang3.tuple.Pair;
  * <p> All the assessed custom fees are stored in assessedCustomFees, which is used to construct transaction record</p>
  */
 public class AssessmentResult {
-    // The default token ID for representing hbar changes
+    /**
+     * The default token ID for representing hbar changes
+     */
     public static TokenID HBAR_TOKEN_ID = TokenID.DEFAULT;
-    private Map<TokenID, Map<AccountID, Long>> htsAdjustments;
+
+    private final Map<TokenID, Map<AccountID, Long>> htsAdjustments;
     // two maps to aggregate all custom fee balance changes. These two maps are used
     // to construct a transaction body that needs to be assessed again for custom fees
-    private Map<AccountID, Long> hbarAdjustments;
+    private final Map<AccountID, Long> hbarAdjustments;
     // In a given CryptoTransfer, we only charge royalties to an account once per token type; so
     // even if 0.0.A is sending multiple NFTs of type 0.0.T in a single transfer, we only deduct
     // royalty fees once from the value it receives in return. This is used to track the royalties
     // that have been paid in a given CryptoTransfer.
-    private Set<Pair<AccountID, TokenID>> royaltiesPaid;
+    private final Set<Pair<AccountID, TokenID>> royaltiesPaid;
     // Contains token adjustments from the transaction body.
-    private Map<TokenID, Map<AccountID, Long>> immutableInputTokenAdjustments;
+    private final Map<TokenID, Map<AccountID, Long>> immutableInputTokenAdjustments;
     // Contains Hbar and token adjustments. Hbar adjustments are used using a sentinel tokenId key
-    private Map<TokenID, Map<AccountID, Long>> mutableInputBalanceAdjustments;
-    private Map<AccountID, Long> immutableInputHbarAdjustments;
+    private final Map<TokenID, Map<AccountID, Long>> mutableInputBalanceAdjustments;
+    private final Map<AccountID, Long> immutableInputHbarAdjustments;
     /* And for each "assessable change" that can be charged a custom fee, delegate to our
     fee assessor to update the balance changes with the custom fee. */
-    private List<AssessedCustomFee> assessedCustomFees;
+    private final List<AssessedCustomFee> assessedCustomFees;
 
     /**
      * Constructs an AssessmentResult object with the input token transfers and hbar transfers from the transaction body.
