@@ -41,6 +41,9 @@ import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * This utility class provides convenient methods for logging state operations for different types of state types.
+ */
 public class StateLogger {
     /** The logger we are using for the State log */
     private static final Logger logger = LogManager.getLogger(StateLogger.class);

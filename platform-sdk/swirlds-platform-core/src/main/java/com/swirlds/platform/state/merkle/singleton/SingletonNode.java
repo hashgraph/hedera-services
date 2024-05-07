@@ -49,9 +49,9 @@ public class SingletonNode<T> extends PartialBinaryMerkleInternal implements Lab
 
     public SingletonNode(
             @NonNull final String serviceName,
-            @NonNull String stateKey,
+            @NonNull final String stateKey,
             long classId,
-            Codec<T> codec,
+            @NonNull final Codec<T> codec,
             @Nullable final T value) {
         setLeft(new StringLeaf(StateUtils.computeLabel(serviceName, stateKey)));
         setRight(new ValueLeaf<>(classId, codec, value));
