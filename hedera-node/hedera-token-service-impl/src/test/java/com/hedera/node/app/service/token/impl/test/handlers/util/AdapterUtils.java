@@ -47,6 +47,9 @@ import com.hedera.test.utils.TestFixturesKeyLookup;
 import java.util.Map;
 import org.mockito.Mockito;
 
+/**
+ * Utility class for creating {@link ReadableAccountStore} objects.
+ */
 public class AdapterUtils {
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private static final String ALIASES_KEY = "ALIASES";
@@ -68,18 +71,32 @@ public class AdapterUtils {
                 ACCOUNTS_KEY, wellKnownAccountsState())));
     }
 
+    /**
+     * Returns a {@link ReadableStates} object that contains the given key-value pairs.
+     * @param keysToMock the key-value pairs
+     * @return the {@link ReadableStates} object
+     */
     public static ReadableStates mockStates(final Map<String, ReadableKVState> keysToMock) {
         final var mockStates = Mockito.mock(ReadableStates.class);
         keysToMock.forEach((key, state) -> given(mockStates.get(key)).willReturn(state));
         return mockStates;
     }
 
+    /**
+     * Returns a {@link WritableStates} object that contains the given key-value pairs.
+     * @param keysToMock the key-value pairs
+     * @return the {@link WritableStates} object
+     */
     public static WritableStates mockWritableStates(final Map<String, WritableKVState> keysToMock) {
         final var mockStates = Mockito.mock(WritableStates.class);
         keysToMock.forEach((key, state) -> given(mockStates.get(key)).willReturn(state));
         return mockStates;
     }
 
+    /**
+     * Returns a {@link ReadableKVState} object that contains the well-known accounts used in a {@code SigRequirementsTest}
+     * @return
+     */
     private static ReadableKVState<AccountID, ? extends HederaAccount> wellKnownAccountsState() {
         final var wrappedState = new MapReadableKVState<>(ACCOUNTS_KEY, TxnHandlingScenario.wellKnownAccounts());
         return new StateKeyAdapter<>(
