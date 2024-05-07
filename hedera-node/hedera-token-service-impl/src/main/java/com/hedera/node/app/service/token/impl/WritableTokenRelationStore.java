@@ -99,6 +99,7 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
      *
      * @param accountId - the number of the account to be retrieved
      * @param tokenId   - the number of the token to be retrieved
+     * @return the token relation with the given token number and account number, or {@code Optional.empty()} if no such
      */
     @Nullable
     public TokenRelation getForModify(@NonNull final AccountID accountId, @NonNull final TokenID tokenId) {

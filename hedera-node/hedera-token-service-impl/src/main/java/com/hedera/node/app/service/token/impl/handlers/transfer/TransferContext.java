@@ -69,9 +69,16 @@ public interface TransferContext {
      */
     Map<Bytes, AccountID> resolutions();
 
-    // Throw if the fee cannot be charged for whatever reason
+    /**
+     * Charges extra fee to the HAPI payer account in the current transfer context with the given amount
+     * @param amount the amount to charge
+     */
     void chargeExtraFeeToHapiPayer(long amount);
 
+    /**
+     * Returns the handle context of the current transfer context
+     * @return the handle context of the current transfer context
+     */
     HandleContext getHandleContext();
 
     /* ------------------- Needed for building records ------------------- */

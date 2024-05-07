@@ -135,6 +135,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * null}
      *
      * @param accountID - the id of the Account to be retrieved.
+     * @return the Account with the given AccountID, or null if no such account exists.
      */
     @Nullable
     public Account get(@NonNull final AccountID accountID) {
@@ -146,6 +147,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * If no such account exists, returns {@code Optional.empty()}
      *
      * @param id - the number of the account to be retrieved.
+     * @return the account with the given account number, or null if no such account exists.
      */
     @Nullable
     public Account getForModify(@NonNull final AccountID id) {
@@ -249,6 +251,10 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
         return aliases().modifiedKeys();
     }
 
+    /**
+     * Checks if the given accountId is not the default accountId. If it is, throws an {@link IllegalArgumentException}.
+     * @param accountId The accountId to check.
+     */
     public static void requireNotDefault(@NonNull final AccountID accountId) {
         if (accountId.equals(AccountID.DEFAULT)) {
             throw new IllegalArgumentException("Account ID cannot be default");
