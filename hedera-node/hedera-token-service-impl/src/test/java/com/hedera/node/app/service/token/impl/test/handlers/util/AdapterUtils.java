@@ -104,6 +104,10 @@ public class AdapterUtils {
                 (AccountID id) -> new EntityNum(id.accountNumOrThrow().intValue()));
     }
 
+    /**
+     * Returns a {@link WritableKVState} object that contains the well-known aliases used in a {@code SigRequirementsTest}
+     * @return the well-known aliases state
+     */
     public static MapWritableKVState<ProtoBytes, AccountID> wellKnownAliasState() {
         final Map<ProtoBytes, AccountID> wellKnownAliases = Map.ofEntries(
                 Map.entry(new ProtoBytes(Bytes.wrap(CURRENTLY_UNUSED_ALIAS)), asAccount(MISSING_NUM.longValue())),
@@ -115,6 +119,11 @@ public class AdapterUtils {
         return new MapWritableKVState<>(ALIASES_KEY, wellKnownAliases);
     }
 
+    /**
+     * Returns a {@link TransactionBody} object from a {@link TxnHandlingScenario}
+     * @param scenario the scenario
+     * @return the {@link TransactionBody} object
+     */
     public static TransactionBody txnFrom(final TxnHandlingScenario scenario) {
         try {
             return toPbj(scenario.platformTxn().getTxn());

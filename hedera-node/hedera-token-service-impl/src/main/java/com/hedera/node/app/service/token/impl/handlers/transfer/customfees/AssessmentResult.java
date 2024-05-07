@@ -32,6 +32,23 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 
+/**
+ * Contains the adjustments of accounts and tokens as a result of a token transfer. This result is passed through all
+ * the steps of CryptoTransfer.
+ * <p> The adjustment maps are divided into two categories: mutable and immutable (for both hbar and tokens).
+ * The mutable maps are used to accumulate custom fee assessed changes during the assessment process. The immutable
+ * maps are used to store the original changes that were passed to the assessment process from the input transaction
+ * body. </p>
+ * <p> The immutableInputTokenAdjustments and immutableInputHbarAdjustments are used to store the original changes that
+ * were passed to the assessment process from the input transaction body. </p>
+ * <p> The mutableInputBalanceAdjustments is created from immutableInputHbarAdjustments and is used to accumulate
+ * custom fee assessed balance changes during the assessment process. </p>
+ * <p> The htsAdjustments map is created from immutableInputTokenAdjustments and used to store the token balance
+ * changes that are assessed custom fees. </p>
+ * <p> The mutable maps are passed to next level by constructing a valid transaction body from the changes accumulated.
+ * Then the transaction body is passed to next level to assess custom fees. </p>
+ * <p> All the assessed custom fees are stored in assessedCustomFees, which is used to construct transaction record</p>
+ */
 public class AssessmentResult {
 
     public static TokenID HBAR_TOKEN_ID = TokenID.DEFAULT;
@@ -39,7 +56,12 @@ public class AssessmentResult {
     // two maps to aggregate all custom fee balance changes. These two maps are used
     // to construct a transaction body that needs to be assessed again for custom fees
     private Map<AccountID, Long> hbarAdjustments;
+    // In a given CryptoTransfer, we only charge royalties to an account once per token type; so
+    // even if 0.0.A is sending multiple NFTs of type 0.0.T in a single transfer, we only deduct
+    // royalty fees once from the value it receives in return. This is used to track the royalties
+    // that have been paid in a given CryptoTransfer.
     private Set<Pair<AccountID, TokenID>> royaltiesPaid;
+    // Contains token adjustments from the transaction body.
     private Map<TokenID, Map<AccountID, Long>> immutableInputTokenAdjustments;
     // Contains Hbar and token adjustments. Hbar adjustments are used using a sentinel tokenId key
     private Map<TokenID, Map<AccountID, Long>> mutableInputBalanceAdjustments;
@@ -48,9 +70,13 @@ public class AssessmentResult {
     fee assessor to update the balance changes with the custom fee. */
     private List<AssessedCustomFee> assessedCustomFees;
 
-    public AssessmentResult(
-            final List<TokenTransferList> inputTokenTransfers, final List<AccountAmount> inputHbarTransfers) {
-        mutableInputBalanceAdjustments = buildFungibleTokenTransferMap(inputTokenTransfers);
+    /**
+     * Constructs an AssessmentResult object with the input token transfers and hbar transfers from the transaction body.
+     * @param tokenTransfers the token transfers
+     * @param hbarTransfers the hbar transfers
+     */
+    public AssessmentResult(final List<TokenTransferList> tokenTransfers, final List<AccountAmount> hbarTransfers) {
+        mutableInputBalanceAdjustments = buildFungibleTokenTransferMap(tokenTransfers);
         immutableInputTokenAdjustments = Collections.unmodifiableMap(mutableInputBalanceAdjustments.entrySet().stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
@@ -58,7 +84,7 @@ public class AssessmentResult {
                         (a, b) -> a,
                         LinkedHashMap::new)));
 
-        immutableInputHbarAdjustments = buildHbarTransferMap(inputHbarTransfers);
+        immutableInputHbarAdjustments = buildHbarTransferMap(hbarTransfers);
         mutableInputBalanceAdjustments.put(HBAR_TOKEN_ID, new LinkedHashMap<>(immutableInputHbarAdjustments));
 
         htsAdjustments = new LinkedHashMap<>();
@@ -93,10 +119,6 @@ public class AssessmentResult {
 
     public Set<Pair<AccountID, TokenID>> getRoyaltiesPaid() {
         return royaltiesPaid;
-    }
-
-    public void setRoyaltiesPaid(final Set<Pair<AccountID, TokenID>> royaltiesPaid) {
-        this.royaltiesPaid = royaltiesPaid;
     }
 
     public void addToRoyaltiesPaid(final Pair<AccountID, TokenID> paid) {

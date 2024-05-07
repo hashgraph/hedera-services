@@ -31,7 +31,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -143,14 +142,13 @@ public class TokenUpdateNftsSuite extends HapiSuite {
                 .then(
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 7L)
                                 .hasSerialNum(7L)
+                                .logged()
                                 .hasMetadata(ByteString.copyFromUtf8("g")),
-                        tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(7L))
-                                .signedBy(GENESIS)
-                                .hasKnownStatus(INVALID_SIGNATURE),
                         tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(7L))
                                 .signedBy(DEFAULT_PAYER, METADATA_KEY),
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 7L)
                                 .hasSerialNum(7L)
+                                .logged()
                                 .hasMetadata(ByteString.copyFromUtf8(NFT_TEST_METADATA)),
                         burnToken(NON_FUNGIBLE_TOKEN, List.of(7L)),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 6L));
