@@ -16,7 +16,6 @@
 
 package com.swirlds.config.impl;
 
-import static com.swirlds.config.api.ConfigProperty.NULL_DEFAULT_VALUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -28,6 +27,9 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.api.DefaultValue;
+import com.swirlds.config.api.EmptyValue;
+import com.swirlds.config.api.UnsetValue;
 import com.swirlds.config.api.validation.ConfigViolation;
 import com.swirlds.config.api.validation.ConfigViolationException;
 import com.swirlds.config.api.validation.annotation.ConstraintMethod;
@@ -38,8 +40,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
-class ConfigApiRecordsTests {
+class ConfigApiRecordsV2Tests {
 
     @Test
     void getConfigProxy() {
@@ -250,18 +254,23 @@ class ConfigApiRecordsTests {
     void testNullDefaultsInConfigDataRecord() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
-                .withConfigDataType(NullConfig.class)
+                .withConfigDataType(UnSetConfig.class)
                 .build();
 
         // when
-        final String value = configuration.getConfigData(NullConfig.class).value();
-        final List<Integer> list = configuration.getConfigData(NullConfig.class).list();
-        final Set<Integer> set = configuration.getConfigData(NullConfig.class).set();
+        final String value = configuration.getConfigData(UnSetConfig.class).value();
+        final List<Integer> list =
+                configuration.getConfigData(UnSetConfig.class).list();
+        final Set<Integer> set = configuration.getConfigData(UnSetConfig.class).set();
+        final int number = configuration.getConfigData(UnSetConfig.class).number();
+        final char c = configuration.getConfigData(UnSetConfig.class).character();
 
         // then
         assertNull(value);
         assertNull(list);
         assertNull(set);
+        assertEquals(0, number);
+        assertEquals('\u0000', c);
     }
 
     @Test
@@ -282,18 +291,45 @@ class ConfigApiRecordsTests {
         assertIterableEquals(Set.of(), set);
     }
 
+    @ParameterizedTest
+    @ValueSource(
+            classes = {
+                InvalidRecordConfig.class,
+                InvalidRecordConfig2.class,
+                InvalidRecordConfig3.class,
+                InvalidRecordConfig4.class
+            })
+    void testInvalidDataRecord(Class<? extends Record> clazz) {
+        assertThrows(
+                IllegalStateException.class,
+                () -> ConfigurationBuilder.create().withConfigDataType(clazz).build(),
+                "Config should fail at startup with invalid record");
+    }
+
+    @Test
+    void testInvalidAnnotationForTypeInDataRecord() {
+        assertThrows(
+                IllegalStateException.class,
+                () -> ConfigurationBuilder.create()
+                        .withConfigDataType(InvalidAnnotationForTypeRecord.class)
+                        .build(),
+                "Config should fail at startup with invalid record");
+    }
+
     @ConfigData("null")
-    public record NullConfig(
-            @ConfigProperty(defaultValue = NULL_DEFAULT_VALUE) List<Integer> list,
-            @ConfigProperty(defaultValue = NULL_DEFAULT_VALUE) Set<Integer> set,
-            @ConfigProperty(defaultValue = NULL_DEFAULT_VALUE) String value) {}
+    public record UnSetConfig(
+            @UnsetValue List<Integer> list,
+            @UnsetValue Set<Integer> set,
+            @UnsetValue String value,
+            @UnsetValue int number,
+            @UnsetValue char character) {}
 
     @ConfigData("network")
     public record NetworkConfig(
             @Min(1) int port,
-            @ConstraintMethod("checkServer") @ConfigProperty(defaultValue = "localhost") String server,
-            @ConfigProperty(value = "errorCodes", defaultValue = "404,500") List<Integer> errorCodes,
-            @ConfigProperty(value = "errorCodes", defaultValue = "404,500") Set<Long> errorCodeSet) {
+            @ConstraintMethod("checkServer") @DefaultValue("localhost") String server,
+            @ConfigProperty("errorCodes") @DefaultValue("404,500") List<Integer> errorCodes,
+            @ConfigProperty("errorCodes") @DefaultValue("404,500") Set<Long> errorCodeSet) {
 
         public ConfigViolation checkServer(final Configuration configuration) {
             if (Objects.equals("invalid", server)) {
@@ -305,6 +341,21 @@ class ConfigApiRecordsTests {
 
     @ConfigData("empty")
     public record EmptyCollectionConfig(
-            @ConfigProperty(defaultValue = "[]") List<Integer> list,
-            @ConfigProperty(defaultValue = "[]") Set<Integer> set) {}
+            @EmptyValue String string, @EmptyValue List<Integer> list, @EmptyValue Set<Integer> set) {}
+
+    @ConfigData
+    public record InvalidRecordConfig(
+            @ConfigProperty(value = "errorCodes", defaultValue = "value") @DefaultValue("value2") String string) {}
+
+    @ConfigData
+    public record InvalidRecordConfig2(@DefaultValue("value1") @EmptyValue String string) {}
+
+    @ConfigData
+    public record InvalidRecordConfig3(@DefaultValue("value1") @UnsetValue String string) {}
+
+    @ConfigData
+    public record InvalidRecordConfig4(@EmptyValue @UnsetValue String string) {}
+
+    @ConfigData
+    public record InvalidAnnotationForTypeRecord(@EmptyValue int value) {}
 }

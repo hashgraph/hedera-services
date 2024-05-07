@@ -49,11 +49,13 @@ public final class AntlrConfigRecordParser {
      */
     private static final String DEFAULT_VALUE = "defaultValue";
     /**
-     * Property name for: {@code Annotation#value()}}
+     * Property name for: {@code @SomeAnnotation.value()}
      */
     private static final String VALUE = "value";
-
-    private static final Map<String, String> MAP = Map.ofEntries(
+    /**
+     * The translation between type and default value
+     */
+    private static final Map<String, String> TYPE_TO_DEFAULT_VALUE = Map.ofEntries(
             entry(Byte.TYPE.getTypeName(), "0"),
             entry(Short.TYPE.getTypeName(), "0"),
             entry(Character.TYPE.getTypeName(), Character.valueOf((char) 0).toString()),
@@ -124,6 +126,7 @@ public final class AntlrConfigRecordParser {
     }
 
     @NonNull
+    @Deprecated
     private static ConfigDataPropertyDefinition createDefinitionFromConfigProperty(
             @NonNull final RecordComponentContext ctx,
             @Nullable final String configPropertyNamePrefix,
@@ -224,7 +227,7 @@ public final class AntlrConfigRecordParser {
         final String type = getType(ctx, imports);
         final String description =
                 Optional.ofNullable(javadocParams.get(componentName)).orElse("");
-        final String defaultValue = MAP.get(type);
+        final String defaultValue = TYPE_TO_DEFAULT_VALUE.get(type);
         return new ConfigDataPropertyDefinition(componentName, name, type, defaultValue, description);
     }
 

@@ -266,7 +266,7 @@ class ConfigApiTests {
         // then
         assertThrows(
                 IllegalArgumentException.class,
-                () -> configuration.getConfigData(NetworkConfig.class),
+                () -> configuration.getConfigData(NotRegisteredRecord.class),
                 "It should not be possible to create an object of a not registered config data type");
     }
 
@@ -490,4 +490,6 @@ class ConfigApiTests {
         assertNull(value5, "The value must be null");
         assertNull(value6, "The value must be null since a default is only used if a property is not defined");
     }
+
+    private record NotRegisteredRecord() {}
 }

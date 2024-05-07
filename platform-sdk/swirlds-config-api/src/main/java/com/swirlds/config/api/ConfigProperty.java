@@ -24,31 +24,28 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
+ * <p>
  * Annotation that can be used to annotate properties for a config data object. A config data object is a {@link Record}
  * that provides access to config values in an object-oriented way (see {@link ConfigData} for more information).
- * <p>
+ * </p>
  * Example:
- * <pre>
- * &#64;ConfigData("network")
- * public record NetworkConfig(&#64;ConfigProperty("portNumber") int port,
- *                             &#64;ConfigProperty("serverName") String server) {
- * }
- * </pre>
+ * <pre>{@code
+ * @ConfigData("network")
+ * public record NetworkConfig(@ConfigProperty("portNumber") int port, @ConfigProperty("serverName") String server) {}
+ * }</pre>
  * In this example, the {@code port} and {@code server} values can easily be accessed by calling the record instance
  * (see {@link Configuration#getConfigData(Class)} for more information). The property name of the {@code port} property will
  * be {@code "network.portNumber"} and the property name of the {@code server} property will be {@code "network.serverName"}.
- * </p>
  * <p>
  * If any of Java's keywords are used in the config file, and you want to map that property in a record, {@code ConfigProperty} can be used
  *  to remap the property name in the record. For example:
- * <pre>
- * &#64;ConfigData("config")
- * public record Configuration(&#64;ConfigProperty("class") String className) {
- * }
- * </pre>
+ * </p>
+ * <pre>{@code
+ * @ConfigData("config")
+ * public record Configuration(&#64;ConfigProperty("class") String className) {}
+ * }</pre>
  * In this example, the property name in the config file is "class", which is a Java keyword. By using {@code ConfigProperty},
  * we can map it to a different name in the record, such as "className".
- * </p>
  * <p>
  * The {@code defaultValue} attribute of this annotation is deprecated and will be removed in future versions. To assign default values to properties, use {@link DefaultValue}
  * or its syntax sugared versions {@link EmptyValue} or {@link UnsetValue}.
@@ -56,6 +53,7 @@ import java.lang.annotation.Target;
  * <p>
  * This annotation is not mandatory. If it is not set, the name of the property in the config file must match the name of
  * the property in the record.
+ * </p>
  */
 @Documented
 @Retention(RUNTIME)

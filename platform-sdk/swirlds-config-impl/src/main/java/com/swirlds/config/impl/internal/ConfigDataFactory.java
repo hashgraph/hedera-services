@@ -51,7 +51,10 @@ import java.util.stream.Collectors;
  */
 class ConfigDataFactory {
 
-    public static final Map<Type, String> MAP = Map.ofEntries(
+    /**
+     * The translation between type and default value
+     */
+    private static final Map<Type, String> TYPE_TO_DEFAULT_VALUE = Map.ofEntries(
             entry(Byte.TYPE, "0"),
             entry(Short.TYPE, "0"),
             entry(Character.TYPE, Character.valueOf((char) 0).toString()),
@@ -60,7 +63,6 @@ class ConfigDataFactory {
             entry(Float.TYPE, "0.0"),
             entry(Double.TYPE, "0.0"),
             entry(Boolean.TYPE, "false"));
-    ;
     /**
      * The configuration that is internally used to fill the properties of the config data instances.
      */
@@ -137,7 +139,9 @@ class ConfigDataFactory {
         Objects.requireNonNull(component, "component must not be null");
         final Class<T> type = getGenericSetType(component);
         final Optional<String> rawDefaultValue = getRawDefaultValue(component);
-        if (rawDefaultValue.isEmpty()) return null;
+        if (rawDefaultValue.isEmpty()) {
+            return null;
+        }
         return rawDefaultValue.map(ConfigListUtils::createList).stream()
                 .flatMap(Collection::stream)
                 .map(v -> converterService.convert(v, type))
@@ -150,7 +154,9 @@ class ConfigDataFactory {
         final Class<T> type = getGenericListType(component);
 
         final Optional<String> rawDefaultValue = getRawDefaultValue(component);
-        if (rawDefaultValue.isEmpty()) return null;
+        if (rawDefaultValue.isEmpty()) {
+            return null;
+        }
         return rawDefaultValue.map(ConfigListUtils::createList).stream()
                 .flatMap(Collection::stream)
                 .map(v -> converterService.convert(v, type))
@@ -226,7 +232,7 @@ class ConfigDataFactory {
             return Optional.ofNullable(defaultAnnotation.value())
                     .filter(v -> v.length > 0)
                     .map(v -> v[0])
-                    .or(() -> Optional.ofNullable(MAP.get(component.getType())));
+                    .or(() -> Optional.ofNullable(TYPE_TO_DEFAULT_VALUE.get(component.getType())));
         } else {
             return Optional.empty();
         }
@@ -234,17 +240,15 @@ class ConfigDataFactory {
 
     private static DefaultValue getDefaultValueAnnotation(@NonNull final RecordComponent component) {
         DefaultValue defaultAnnotation = component.getAnnotation(DefaultValue.class);
-        if (defaultAnnotation == null) {
-            Annotation[] annotations = component.getAnnotations();
-            for (Annotation annotation : annotations) {
-                if (isIndirectlyAnnotatedWith(annotation.annotationType(), DefaultValue.class)) {
-                    if (defaultAnnotation == null) {
-                        defaultAnnotation = annotation.annotationType().getAnnotation(DefaultValue.class);
-                    } else {
-                        throw new IllegalArgumentException(
-                                "Can not have more than one @DefaultValue annotations on the same record component: "
-                                        + component.getDeclaringRecord().getName() + "." + component.getName());
-                    }
+        Annotation[] annotations = component.getAnnotations();
+        for (Annotation annotation : annotations) {
+            if (isIndirectlyAnnotatedWith(annotation.annotationType(), DefaultValue.class)) {
+                if (defaultAnnotation == null) {
+                    defaultAnnotation = annotation.annotationType().getAnnotation(DefaultValue.class);
+                } else {
+                    throw new IllegalStateException(
+                            "Can not have more than one @DefaultValue annotations on the same record component: "
+                                    + component.getDeclaringRecord().getName() + "." + component.getName());
                 }
             }
         }
@@ -254,7 +258,9 @@ class ConfigDataFactory {
     // Method to check if an element is indirectly annotated with a specified annotation
     private static boolean isIndirectlyAnnotatedWith(
             @NonNull final AnnotatedElement element, Class<? extends Annotation> annotationClass) {
-        if (isSystemAnnotation(annotationClass)) throw new IllegalArgumentException("Cannot assert System annotations");
+        if (isSystemAnnotation(annotationClass)) {
+            throw new IllegalArgumentException("Cannot assert System annotations");
+        }
 
         // Check if the element is directly annotated with the specified annotation
         if (element.isAnnotationPresent(annotationClass)) {
@@ -264,7 +270,9 @@ class ConfigDataFactory {
         // Check if the element is indirectly annotated with the specified annotation
         Annotation[] annotations = element.getAnnotations();
         for (Annotation annotation : annotations) {
-            if (isSystemAnnotation(annotation.annotationType())) continue;
+            if (isSystemAnnotation(annotation.annotationType())) {
+                continue;
+            }
             // Recursively check if the meta-annotations are indirectly present
             if (isIndirectlyAnnotatedWith(annotation.annotationType(), annotationClass)) {
                 return true;
@@ -291,10 +299,11 @@ class ConfigDataFactory {
         final DefaultValue defaultAnnotation = getDefaultValueAnnotation(component);
         verifyAtMostOneConfigAnnotation(component, configPropertyAnnotation, defaultAnnotation);
 
-        if (configPropertyAnnotation != null) {
-            return !Objects.equals(ConfigProperty.UNDEFINED_DEFAULT_VALUE, configPropertyAnnotation.defaultValue());
+        if (defaultAnnotation != null) {
+            return true;
         } else {
-            return defaultAnnotation != null;
+            return configPropertyAnnotation != null
+                    && !Objects.equals(ConfigProperty.UNDEFINED_DEFAULT_VALUE, configPropertyAnnotation.defaultValue());
         }
     }
 
@@ -304,6 +313,7 @@ class ConfigDataFactory {
      * @param component                the record component to verify
      * @param configPropertyAnnotation the config property annotation, null if not present
      * @param defaultAnnotation        the config default annotation, null if not present
+     * @throws IllegalStateException if the record configuration is invalid
      */
     private static void verifyAtMostOneConfigAnnotation(
             @NonNull final RecordComponent component,
@@ -313,20 +323,20 @@ class ConfigDataFactory {
                 && defaultAnnotation != null
                 && configPropertyAnnotation.defaultValue() != null
                 && !configPropertyAnnotation.defaultValue().equals(ConfigProperty.UNDEFINED_DEFAULT_VALUE)) {
-            throw new IllegalArgumentException(
-                    "Can not have both @ConfigProperty#defaultValue and @DefaultValue annotations on the same record component: "
+            throw new IllegalStateException(
+                    "Cannot have both @ConfigProperty#defaultValue and @DefaultValue annotations on the same record component: "
                             + component.getDeclaringRecord().getName() + "." + component.getName());
         }
 
         if (defaultAnnotation != null && defaultAnnotation.value().length > 1) {
-            throw new IllegalArgumentException(
-                    "Can not have more than one parameter in @DefaultValue annotations for the same property: "
+            throw new IllegalStateException(
+                    "Cannot have more than one parameter in @DefaultValue annotations for the same property: "
                             + component.getDeclaringRecord().getName() + "." + component.getName());
         }
 
         if (defaultAnnotation != null
                 && Arrays.asList(defaultAnnotation.value()).contains(ConfigProperty.UNDEFINED_DEFAULT_VALUE)) {
-            throw new IllegalArgumentException(
+            throw new IllegalStateException(
                     "Do not use @ConfigProperty.UNDEFINED_DEFAULT_VALUE in @DefaultValue annotations for the same record component: "
                             + component.getDeclaringRecord().getName() + "." + component.getName());
         }

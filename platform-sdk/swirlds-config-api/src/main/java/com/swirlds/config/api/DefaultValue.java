@@ -43,50 +43,45 @@ import java.lang.annotation.Target;
  * This annotation cannot be used in parallel with {@link ConfigProperty#defaultValue()}. If both
  * annotations coexist for the same property, the behavior is undefined, and it may lead to unexpected results.
  * </p>
- * <p>
  * Example usage:
- * <pre>
+ * <pre>{@code
  * public record ServerConfig(
  *         String host,
  *         int port,
- *         &#64;DefaultValue("5000") int timeout) {
+ *         @DefaultValue("5000") int timeout) {
  * }
- * </pre>
+ * }</pre>
+ * <p>
  * In this example, the {@code timeout} property is annotated with {@code DefaultValue}, specifying a default value of "5000" milliseconds.
  * If no value is provided in the config data object, the timeout property will default to "5000" milliseconds. Both {@code host} and {@code port} need to exist in the config property file.
  * </p>
- * <p>
- *
- *  To set an undefined value for a property:
- * <pre>
+ * To set an undefined value for a property:
+ * <pre>{@code
  * public record ServerConfig(
- *         &#64;DefaultValue({}) String host,
- *         &#64;DefaultValue({}) int port,
- *         &#64;DefaultValue({}) short timeout,
- *         &#64;DefaultValue({}) List<String> blockedIps) {
+ *         @DefaultValue({}) String host,
+ *         @DefaultValue({}) int port,
+ *         @DefaultValue({}) short timeout,
+ *         @DefaultValue({}) List<String> blockedIps) {
  * }
- * </pre>
+ * }</pre>
  * By setting {@code &#64;DefaultValue({})} the value of the property will be handled as java default's type values.
  * In this example both {@code host} and {@code blockedIps} will be mapped to null, and both {@code port} and {@code timeOut} are mapped to0.
- * </p>
- * <p>
  * To set an empty value for a property:
- * <pre>
+ * <pre>{@code
  * public record ServerConfig(
- *         &#64;DefaultValue("") String host,
+ *         @DefaultValue("") String host,
  *         int port,
  *         short timeout,
- *         &#64;DefaultValue("") List<String> blockedIps) {
+ *         @DefaultValue("") List<String> blockedIps) {
  * }
- * </pre>
+ * }</pre>
+ * <p>
  * By setting {@code &#64;DefaultValue("")} the value of the property will be handled as java default's type values.
  * In this example {@code host} will be mapped to an empty String and {@code blockedIps} will be mapped to an empty list.
- * </p>
- * <p>
  * Syntax Sugar Version:
  * To provide a more concise syntax, {@link UnsetValue} or {@link EmptyValue} annotations can be used instead of {@code DefaultValue} in any of the above 2 examples.
  * All these annotations imply that the property is optional and does not need to be explicitly provided in the config.
- * Only one of them can be used for a single Record's property or {@link IllegalArgumentException} will be thrown.
+ * Only one of them can be used for a single Record's property or {@link IllegalStateException} will be thrown.
  * </p>
  * @see UnsetValue
  * @see EmptyValue

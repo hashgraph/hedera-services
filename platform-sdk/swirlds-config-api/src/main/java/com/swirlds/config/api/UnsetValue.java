@@ -33,7 +33,6 @@ import java.lang.annotation.Retention;
  * This annotation can be particularly useful for representing Java's default types as unset values. For example, an {@code int} property
  * annotated with {@code UnsetValue} may represent an optional integer value that defaults to Java's default value of 0 if unset.
  * </p>
- * <p>
  * Rules for Java types:
  * <ul>
  *     <li>{@code byte}, {@code short}, {@code int}, {@code long}: Default to 0.</li>
@@ -43,25 +42,20 @@ import java.lang.annotation.Retention;
  *     <li>{@code Object}: Default to {@code null}.</li>
  *     <li>{@code array types}: Default to {@code null}.</li>
  * </ul>
- * </p>
- * <p>
  * Example usage:
- * <pre>
+ * <pre>{@code
  * public record ServerConfig(
- *         &#64;UnsetValue String host,
+ *         @UnsetValue String host,
  *         int port,
- *         &#64;UnsetValue int timeout) {
+ *         @UnsetValue int timeout) {
  * }
- * </pre>
+ * }</pre>
  * In this example, both {@code host} and {@code timeout} property are annotated with {@code UnsetValue}, indicating that they are optional and may
  * not have a defined value in the config data object. {@code host} will be mapped to null and {@code timeOut} to zero.
- * By the contrary {@code port} property will have to be informed in the property file or {@link IllegalArgumentException} will be thrown on start-up time.
- * </p>
+ * By the contrary {@code port} property will have to be informed in the property file or {@link IllegalStateException} will be thrown on start-up time.
  * <p>
- * This is a syntax sugar version of:
- * <pre>
- * &#64;DefaultValue({})
- * </pre>
+ * This is a syntax sugar version of: {@code @DefaultValue({})}
+ * </p>
  * @see DefaultValue
  * @see EmptyValue
  */

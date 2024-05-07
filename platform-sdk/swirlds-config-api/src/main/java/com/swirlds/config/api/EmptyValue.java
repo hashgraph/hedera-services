@@ -33,7 +33,6 @@ import java.lang.annotation.Retention;
  * This annotation can be particularly useful for representing Java's default types as empty values. For example, an {@code int} property
  * annotated with {@code EmptyValue} may represent an optional integer value that defaults to Java's default value of 0 if empty.
  * </p>
- * <p>
  * Rules for Java types:
  * <ul>
  *     <li>{@code char}: Default to '' (empty character).</li>
@@ -41,23 +40,19 @@ import java.lang.annotation.Retention;
  *     <li>{@code Collection types} (e.g., {@code List}, {@code Set}): Default to an empty collection.</li>
  *     <li>The behaviour for other types is undefined.</li>
  * </ul>
- * </p>
- * <p>
  * Example usage:
- * <pre>
+ * <pre>{@code
  * public record ServerConfig(
  *         String host,
  *         int port,
- *         &#64;EmptyValue List<String> blockedIps) {
+ *         @EmptyValue List<String> blockedIps) {
  * }
- * </pre>
+ * }</pre>
  * In this example, the {@code blockedIps} property is annotated with {@code EmptyValue}, indicating that it is optional and may
  * have an empty list in the config data object.
+ * <p>
+ * This is a syntax sugar version of: {@code DefaultValue({""}}
  * </p>
- * This is a syntax sugar version of:
- * <pre>
- * &#64;DefaultValue({""})
- * </pre>
  * @see DefaultValue
  * @see UnsetValue
  */
