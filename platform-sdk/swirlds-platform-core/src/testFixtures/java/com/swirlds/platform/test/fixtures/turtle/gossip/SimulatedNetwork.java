@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.fixtures.turtle;
+package com.swirlds.platform.test.fixtures.turtle.gossip;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;

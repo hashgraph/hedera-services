@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.fixtures.turtle;
+package com.swirlds.platform.test.fixtures.turtle.gossip;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.GossipEvent;
