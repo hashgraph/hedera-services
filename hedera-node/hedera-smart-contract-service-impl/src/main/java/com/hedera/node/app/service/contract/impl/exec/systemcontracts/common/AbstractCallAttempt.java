@@ -18,5 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.common;
 
 /**
  * Base class for system contract call attempts.
+ * @Future for now this abstract class is empty, subsequent PRs will add common call attempt functionality
+ * once a HasCallAttempt class has been added.
  */
 public class AbstractCallAttempt {}
