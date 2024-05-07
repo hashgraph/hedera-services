@@ -16,17 +16,31 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hedera.hapi.node.base.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.LONG_ACCOUNT_AMOUNT_BYTES;
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage.LONG_BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
+import static com.hedera.node.app.spi.key.KeyUtils.isValid;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.token.TokenReference;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -36,6 +50,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.FeesConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashSet;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -51,13 +66,57 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        // Todo implement the preHandle logic
+        final var txn = context.body();
+        final var op = txn.tokenRejectOrThrow();
+        final var accountStore = context.createStore(ReadableAccountStore.class);
+        var senderAccount = op.account();
+        verifySenderAndRequireKey(senderAccount, context, accountStore);
     }
 
+    private void verifySenderAndRequireKey(
+            final AccountID senderId, final PreHandleContext context, final ReadableAccountStore accountStore)
+            throws PreCheckException {
+
+        final var senderAccount = accountStore.getAliasedAccountById(senderId);
+        if (senderAccount == null) {
+            throw new PreCheckException(INVALID_ACCOUNT_ID);
+        }
+
+        // If the sender account is immutable, then we throw an exception.
+        final var key = senderAccount.key();
+        if (key == null || !isValid(key)) {
+            throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
+        }
+        context.requireKey(key);
+    }
+
+    @SuppressWarnings("java:S2259")
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-        // Todo: Implement the pureChecks logic
-        throw new UnsupportedOperationException("Not implemented yet.");
+        requireNonNull(txn, "Transaction body cannot be null");
+        final var op = txn.tokenRejectOrThrow();
+
+        validateTruePreCheck(op.hasAccount(), INVALID_ACCOUNT_ID);
+        validateFalsePreCheck(op.rejections().isEmpty(), INVALID_TRANSACTION_BODY);
+
+        var uniqueTokenReferences = new HashSet<TokenReference>();
+        for (final var rejection : op.rejections()) {
+            if (!uniqueTokenReferences.add(rejection)) {
+                throw new PreCheckException(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
+            }
+            // Ensure one token type per single rejection reference.
+            validateFalsePreCheck(rejection.hasFungibleToken() && rejection.hasNft(), INVALID_TRANSACTION_BODY);
+
+            if (rejection.hasFungibleToken()) {
+                final var tokenID = rejection.fungibleToken();
+                validateTruePreCheck(tokenID != null && !tokenID.equals(TokenID.DEFAULT), INVALID_TOKEN_ID);
+            }
+            if (rejection.hasNft()) {
+                final var nftID = rejection.nft();
+                validateTruePreCheck(nftID != null && nftID.tokenId() != null, INVALID_NFT_ID);
+                validateTruePreCheck(nftID.serialNumber() > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
+            }
+        }
     }
 
     @Override
@@ -114,7 +173,8 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
 
     private long calculateRamByteSeconds(
             final int weightedTokensInvolved, final int weightedFungibleTokens, final int numOfNFTRejections) {
-        return USAGE_PROPERTIES.legacyReceiptStorageSecs() * TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(
-                weightedTokensInvolved, weightedFungibleTokens, numOfNFTRejections);
+        return USAGE_PROPERTIES.legacyReceiptStorageSecs()
+                * TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(
+                        weightedTokensInvolved, weightedFungibleTokens, numOfNFTRejections);
     }
 }
