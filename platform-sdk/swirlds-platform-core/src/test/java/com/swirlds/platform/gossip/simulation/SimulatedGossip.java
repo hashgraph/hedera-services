@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.gossip.simulation;
 
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
@@ -24,9 +25,26 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
+/**
+ * Simulates the {@link Gossip} subsystem for a group of nodes running on a {@link SimulatedNetwork}.
+ */
 public class SimulatedGossip implements Gossip {
 
+    private final SimulatedNetwork network;
+    private final NodeId selfId;
+
+    private StandardOutputWire<GossipEvent> eventOutput;
+
+    public SimulatedGossip(@NonNull final SimulatedNetwork network, @NonNull final NodeId selfId) {
+        this.network = Objects.requireNonNull(network);
+        this.selfId = Objects.requireNonNull(selfId);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void bind(
             @NonNull final WiringModel model,
@@ -35,7 +53,23 @@ public class SimulatedGossip implements Gossip {
             @NonNull final StandardOutputWire<GossipEvent> eventOutput,
             @NonNull final BindableInputWire<NoInput, Void> startInput,
             @NonNull final BindableInputWire<NoInput, Void> stopInput,
-            @NonNull final BindableInputWire<NoInput, Void> clearInput) {}
+            @NonNull final BindableInputWire<NoInput, Void> clearInput) {
 
-    void receiveEvent(@NonNull final GossipEvent event) {}
+        this.eventOutput = Objects.requireNonNull(eventOutput);
+        eventInput.bindConsumer(event -> network.submitEvent(selfId, event));
+
+        eventWindowInput.bindConsumer(ignored -> {});
+        startInput.bindConsumer(ignored -> {});
+        stopInput.bindConsumer(ignored -> {});
+        clearInput.bindConsumer(ignored -> {});
+    }
+
+    /**
+     * This method is called every time this node receives an event from the network.
+     *
+     * @param event the event that was received
+     */
+    void receiveEvent(@NonNull final GossipEvent event) {
+        eventOutput.forward(event);
+    }
 }
