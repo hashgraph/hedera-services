@@ -64,6 +64,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 // FUTURE : Remove this and use CryptoTokenHandlerTestBase instead for all classes extending this class
 
+/**
+ * Base class for token handler tests.
+ */
 @ExtendWith(MockitoExtension.class)
 public class TokenHandlerTestBase {
     protected static final String TOKENS = "TOKENS";
@@ -139,6 +142,9 @@ public class TokenHandlerTestBase {
     protected ReadableTokenStore readableTokenStore;
     protected WritableTokenStore writableTokenStore;
 
+    /**
+     * Sets up the common test environment.
+     */
     @BeforeEach
     public void commonSetUp() {
         givenValidToken();
