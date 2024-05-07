@@ -69,8 +69,12 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         final var txn = context.body();
         final var op = txn.tokenRejectOrThrow();
         final var accountStore = context.createStore(ReadableAccountStore.class);
-        var senderAccount = op.account();
-        verifySenderAndRequireKey(senderAccount, context, accountStore);
+
+        // If account is specified, we need to verify that its valid and require it to sign the transaction.
+        if (op.hasAccount()) {
+            var account = op.account();
+            verifySenderAndRequireKey(account, context, accountStore);
+        }
     }
 
     private void verifySenderAndRequireKey(
@@ -78,9 +82,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
             throws PreCheckException {
 
         final var senderAccount = accountStore.getAliasedAccountById(senderId);
-        if (senderAccount == null) {
-            throw new PreCheckException(INVALID_ACCOUNT_ID);
-        }
+        validateTruePreCheck(senderAccount != null, INVALID_ACCOUNT_ID);
 
         // If the sender account is immutable, then we throw an exception.
         final var key = senderAccount.key();
@@ -95,8 +97,6 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         requireNonNull(txn, "Transaction body cannot be null");
         final var op = txn.tokenRejectOrThrow();
-
-        validateTruePreCheck(op.hasAccount(), INVALID_ACCOUNT_ID);
         validateFalsePreCheck(op.rejections().isEmpty(), INVALID_TRANSACTION_BODY);
 
         var uniqueTokenReferences = new HashSet<TokenReference>();
@@ -124,6 +124,8 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         final var op = context.body().tokenRejectOrThrow();
         final var rejections = op.rejections();
         // Todo: Implement the logic for token rejection
+        // We can exctract the similar logic here for the calculate fees, but we cannot dispatch it, because wont have
+        // control over the transaction
     }
 
     @NonNull
