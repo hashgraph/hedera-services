@@ -39,6 +39,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.metrics.api.Metrics;
@@ -64,6 +65,7 @@ import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.address.AddressBookInitializer;
+import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -516,6 +518,10 @@ public final class PlatformBuilder {
             throw new UncheckedIOException(e);
         }
 
+        final Scratchpad<IssScratchpad> issScratchpad =
+                Scratchpad.create(platformContext, selfId, IssScratchpad.class, "platform.iss");
+        issScratchpad.logContents();
+
         final ApplicationCallbacks callbacks =
                 new ApplicationCallbacks(preconsensusEventConsumer, snapshotOverrideConsumer, staleEventConsumer);
 
@@ -536,6 +542,7 @@ public final class PlatformBuilder {
                 new AtomicReference<>(),
                 new AtomicReference<>(),
                 initialPcesFiles,
+                issScratchpad,
                 firstPlatform);
 
         return new PlatformComponentBuilder(buildingBlocks);

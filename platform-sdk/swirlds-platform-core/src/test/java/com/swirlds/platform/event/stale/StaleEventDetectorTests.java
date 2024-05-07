@@ -167,7 +167,7 @@ class StaleEventDetectorTests {
             @NonNull final Randotron randotron, @NonNull final List<GossipEvent> events, final long ancientThreshold) {
         final List<EventImpl> eventImpls = new ArrayList<>();
         for (final GossipEvent consensusEvent : events) {
-            eventImpls.add(new EventImpl(consensusEvent.getHashedData(), consensusEvent.getUnhashedData()));
+            eventImpls.add(new EventImpl(consensusEvent));
         }
 
         final EventWindow eventWindow = new EventWindow(
