@@ -101,7 +101,6 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACT_UNLIMITED_AUTO_ASSOCIATIONS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
@@ -398,7 +397,6 @@ class BootstrapPropertiesTest {
             entry(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED, true),
             entry(CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED, true),
             entry(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, true),
-            entry(CONTRACT_UNLIMITED_AUTO_ASSOCIATIONS, true),
             entry(DEV_DEFAULT_LISTENING_NODE_ACCOUNT, "0.0.3"),
             entry(ENTITIES_MAX_LIFETIME, 3153600000L),
             entry(ENTITIES_SYSTEM_DELETABLE, EnumSet.of(EntityType.FILE)),

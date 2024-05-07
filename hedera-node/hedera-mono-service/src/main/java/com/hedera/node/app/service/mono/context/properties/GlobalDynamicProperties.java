@@ -75,7 +75,6 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACT_UNLIMITED_AUTO_ASSOCIATIONS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_LIMIT_TOKEN_ASSOCIATIONS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FEES_MIN_CONGESTION_PERIOD;
@@ -313,7 +312,6 @@ public class GlobalDynamicProperties implements EvmProperties {
     private int cacheWarmThreads;
     private int configVersion;
     private boolean tokenBalancesEnabledInQueries;
-    private boolean unlimitedAutoAssociations;
 
     @Inject
     public GlobalDynamicProperties(final HederaNumbers hederaNums, @CompositeProps final PropertySource properties) {
@@ -473,7 +471,6 @@ public class GlobalDynamicProperties implements EvmProperties {
         sumOfConsensusWeights = properties.getIntProperty(STAKING_SUM_OF_CONSENSUS_WEIGHTS);
         cacheWarmThreads = properties.getIntProperty(CACHE_CRYPTO_TRANSFER_WARM_THREADS);
         tokenBalancesEnabledInQueries = properties.getBooleanProperty(TOKEN_BALANCES_ENABLED_IN_QUERIES);
-        unlimitedAutoAssociations = properties.getBooleanProperty(CONTRACT_UNLIMITED_AUTO_ASSOCIATIONS);
     }
 
     public int sumOfConsensusWeights() {
@@ -1032,7 +1029,4 @@ public class GlobalDynamicProperties implements EvmProperties {
                 || grandfatherContracts.contains(target));
     }
 
-    public boolean areAutoAssociationsUnlimited() {
-        return unlimitedAutoAssociations;
-    }
 }
