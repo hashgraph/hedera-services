@@ -45,6 +45,9 @@ import java.util.Random;
  */
 public class SimulatedNetwork {
 
+    /**
+     * The random number generator to use for simulating network delays.
+     */
     private final Random random;
 
     /**
@@ -63,7 +66,14 @@ public class SimulatedNetwork {
      */
     private final Map<NodeId, SimulatedGossip> gossipInstances = new HashMap<>();
 
+    /**
+     * The average delay for events to travel between nodes, in nanoseconds.
+     */
     private final long averageDelayNanos;
+
+    /**
+     * The standard deviation of the delay for events to travel between nodes, in nanoseconds.
+     */
     private final long standardDeviationDelayNanos;
 
     /**
@@ -194,7 +204,9 @@ public class SimulatedNetwork {
             outputStream.writeSerializable(event, false);
             final SerializableDataInputStream inputStream =
                     new SerializableDataInputStream(new ByteArrayInputStream(byteArrayOutputStream.toByteArray()));
-            return inputStream.readSerializable(false, GossipEvent::new);
+            final GossipEvent copy = inputStream.readSerializable(false, GossipEvent::new);
+            copy.getHashedData().setHash(event.getHashedData().getHash());
+            return copy;
         } catch (final IOException e) {
             throw new RuntimeException(e);
         }
