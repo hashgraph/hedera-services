@@ -20,7 +20,6 @@ import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMA
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -164,7 +163,7 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
         if (account != null && referenceType == ReferenceType.REGISTRY_NAME) {
             aId = TxnUtils.asId(account, spec);
         } else if (account != null) {
-            aId = asIdForKeyLookUp(alias, spec);
+            aId = spec.registry().keyAliasIdFor(alias);
             account = asAccountString(aId);
         }
         TokenAssociateTransactionBody opBody = spec.txns()

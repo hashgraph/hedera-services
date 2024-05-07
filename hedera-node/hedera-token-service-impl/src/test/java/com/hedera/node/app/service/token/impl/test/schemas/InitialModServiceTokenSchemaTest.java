@@ -16,12 +16,22 @@
 
 package com.hedera.node.app.service.token.impl.test.schemas;
 
+import static com.hedera.node.app.service.mono.state.migration.ContractStateMigrator.bytesFromInts;
+import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.asPackedInts;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_NETWORK_REWARDS_KEY;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.NODE_NUM_1;
+import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.NODE_NUM_2;
+import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.NODE_NUM_3;
+import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.NODE_NUM_4;
+import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.NODE_NUM_8;
+import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.STAKING_INFO_1;
+import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.STAKING_INFO_2;
+import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.STAKING_INFO_3;
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.DEFAULT_NUM_SYSTEM_ACCOUNTS;
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.EVM_ADDRESSES;
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.EVM_ADDRESS_0;
@@ -36,7 +46,9 @@ import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccou
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.buildConfig;
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.configBuilder;
 import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -45,6 +57,8 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.service.mono.state.migration.AccountStateTranslator;
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.schemas.InitialModServiceTokenSchema;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
@@ -60,6 +74,7 @@ import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.workflows.handle.record.MigrationContextImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
@@ -72,6 +87,8 @@ import org.bouncycastle.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -123,6 +140,26 @@ final class InitialModServiceTokenSchemaTest {
         networkInfo = new FakeNetworkInfo();
 
         config = buildConfig(DEFAULT_NUM_SYSTEM_ACCOUNTS, true);
+    }
+
+    @CsvSource({
+        "abababababababababababababababababababababababababababababababab",
+        "abcdef",
+        "0123456789",
+    })
+    @ParameterizedTest
+    void keysAreMigratedIdentically(@NonNull final String hexedKey) {
+        var unhexedKey = unhex(hexedKey);
+        if (unhexedKey.length != 32) {
+            final var leftPadded = new byte[32];
+            System.arraycopy(unhexedKey, 0, leftPadded, 32 - unhexedKey.length, unhexedKey.length);
+            unhexedKey = leftPadded;
+        }
+        final var onDiskAccount = new OnDiskAccount();
+        onDiskAccount.setFirstStorageKey(asPackedInts(unhexedKey));
+        final var account = AccountStateTranslator.accountFromOnDiskAccount(onDiskAccount);
+        final var expectedKey = bytesFromInts(onDiskAccount.getFirstStorageKey());
+        assertEquals(expectedKey, account.firstContractStorageKey());
     }
 
     @Test
@@ -658,6 +695,52 @@ final class InitialModServiceTokenSchemaTest {
         for (int i = 802; i < 900; i++) {
             assertThat(accounts.contains(asAccount(i))).isFalse();
         }
+    }
+
+    @Test
+    void marksNonExistingNodesToDeletedInStateAndAddsNewNodesToState() {
+        accounts = MapWritableKVState.<AccountID, Account>builder(TokenServiceImpl.ACCOUNTS_KEY)
+                .build();
+        // State has nodeIds 1, 2, 3
+        final var stakingInfosState = new MapWritableKVState.Builder<EntityNumber, StakingNodeInfo>(STAKING_INFO_KEY)
+                .value(NODE_NUM_1, STAKING_INFO_1)
+                .value(NODE_NUM_2, STAKING_INFO_2)
+                .value(NODE_NUM_3, STAKING_INFO_3)
+                .build();
+        final var previousStates = newStatesInstance(
+                accounts,
+                MapWritableKVState.<Bytes, AccountID>builder(ALIASES_KEY).build(),
+                newWritableEntityIdState(),
+                stakingInfosState);
+        newStates = newStatesInstance(
+                accounts,
+                MapWritableKVState.<Bytes, AccountID>builder(ALIASES_KEY).build(),
+                newWritableEntityIdState(),
+                stakingInfosState);
+        entityIdStore = new WritableEntityIdStore(newStates);
+        // Platform address book has node Ids 2, 4, 8
+        networkInfo = new FakeNetworkInfo();
+        config = buildConfig(DEFAULT_NUM_SYSTEM_ACCOUNTS, true);
+
+        final var schema = newSubjectWithAllExpected();
+        // When we call restart, the state will be updated to mark node 1 and 3 as deleted
+        schema.restart(new MigrationContextImpl(
+                previousStates, newStates, config, networkInfo, genesisRecordsBuilder, entityIdStore, null));
+        final var updatedStates = newStates.get(STAKING_INFO_KEY);
+        // marks nodes 1, 2 as deleted
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_1)).deleted()).isTrue();
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_2)).deleted()).isFalse();
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_3)).deleted()).isTrue();
+        // Also adds node 4 to the state
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_4)).deleted()).isFalse();
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_4)).weight()).isZero();
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_4)).minStake()).isZero();
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_4)).maxStake()).isEqualTo(1666666666666666666L);
+        // Also adds node 8 to the state
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_8)).deleted()).isFalse();
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_8)).weight()).isZero();
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_8)).minStake()).isZero();
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_8)).maxStake()).isEqualTo(1666666666666666666L);
     }
 
     private Configuration overridingLedgerBalanceWithZero() {

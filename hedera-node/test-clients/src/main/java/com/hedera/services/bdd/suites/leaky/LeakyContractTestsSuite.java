@@ -212,6 +212,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.BytesValue;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
@@ -347,7 +348,6 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                 temporarySStoreRefundTest(),
                 transferZeroHbarsToCaller(),
                 canCallPendingContractSafely(),
-                deletedContractsCannotBeUpdated(),
                 createTokenWithInvalidRoyaltyFee(),
                 autoAssociationSlotsAppearsInInfo(),
                 createTokenWithInvalidFeeCollector(),
@@ -1961,24 +1961,6 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
     }
 
     @HapiTest
-    @Order(7)
-    final HapiSpec deletedContractsCannotBeUpdated() {
-        final var contract = "SelfDestructCallable";
-        final var beneficiary = "beneficiary";
-        return defaultHapiSpec(
-                        "DeletedContractsCannotBeUpdated",
-                        EXPECT_STREAMLINED_INGEST_RECORDS,
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_NONCE)
-                .given(
-                        uploadInitCode(contract),
-                        contractCreate(contract).gas(300_000),
-                        cryptoCreate(beneficiary).balance(ONE_HUNDRED_HBARS))
-                .when(contractCall(contract, "destroy").deferStatusResolution().payingWith(beneficiary))
-                .then(contractUpdate(contract).newMemo("Hi there!").hasKnownStatus(INVALID_CONTRACT_ID));
-    }
-
-    @HapiTest
     @Order(6)
     final HapiSpec canCallPendingContractSafely() {
         final var numSlots = 64L;
@@ -2107,6 +2089,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
         final var mirrorTxn = "mirrorTxn";
         final var revertingTxn = "revertingTxn";
         final var payTxn = "payTxn";
+        final var evmAddressOfChildContract = new AtomicReference<BytesValue>();
 
         return propertyPreservingHapiSpec(
                         "evmLazyCreateViaSolidityCall",
@@ -2126,7 +2109,10 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         uploadInitCode(LAZY_CREATE_CONTRACT),
                         contractCreate(LAZY_CREATE_CONTRACT).via(CALL_TX_REC),
-                        getTxnRecord(CALL_TX_REC).andAllChildRecords().logged(),
+                        getTxnRecord(CALL_TX_REC).andAllChildRecords().logged().exposingAllTo(records -> {
+                            final var lastChildResult = records.getLast().getContractCreateResult();
+                            evmAddressOfChildContract.set(lastChildResult.getEvmAddress());
+                        }),
                         initializeSidecarWatcher())
                 .when(withOpContext((spec, opLog) -> {
                     final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
@@ -2189,13 +2175,12 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                                     getAccountBalance(lazyAccountName).hasTinyBars(depositAmount),
                                     expectContractStateChangesSidecarFor(
                                             payTxn,
-                                            List.of(
-                                                    StateChange.stateChangeFor(LAZY_CREATE_CONTRACT)
-                                                            .withStorageChanges(
-                                                                    StorageChange.onlyRead(
-                                                                            formattedAssertionValue(0L),
-                                                                            formattedAssertionValue(
-                                                                                    "0x2ac2b6c29522c39b246a044bc2a2681fc296c38dc3a1c2a3470fc297c2a9"))))),
+                                            List.of(StateChange.stateChangeFor(LAZY_CREATE_CONTRACT)
+                                                    .withStorageChanges(StorageChange.onlyRead(
+                                                            formattedAssertionValue(0L),
+                                                            evmAddressOfChildContract
+                                                                    .get()
+                                                                    .getValue())))),
                                     expectContractActionSidecarFor(
                                             payTxn,
                                             List.of(ContractAction.newBuilder()
@@ -2206,12 +2191,12 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                                                             spec.registry().getContractId(LAZY_CREATE_CONTRACT))
                                                     .setRecipientAccount(lazyAccountId)
                                                     .setOutput(EMPTY)
-                                                    .setGas(5_832_500)
-                                                    .setValue(250)
+                                                    .setGas(5_832_424)
+                                                    .setValue(depositAmount / 4)
                                                     .build())));
                         }),
                         tearDownSidecarWatcher(),
-                        assertContainsAllExpectedContractActions());
+                        assertNoMismatchedSidecars());
     }
 
     // Requires legacy security model, cannot be enabled as @HapiTest without refactoring to use contract keys

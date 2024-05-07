@@ -20,10 +20,10 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -55,9 +55,7 @@ public class RandomEventUtils {
         final byte[] sig = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(sig);
 
-        final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(sig);
-
-        return new IndexedEvent(hashedData, unhashedData, selfParent, otherParent);
+        return new IndexedEvent(new GossipEvent(hashedData, sig), selfParent, otherParent);
     }
 
     /**
