@@ -71,6 +71,9 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
     private static final TokenID NO_ASSOCIATED_TOKENS =
             TokenID.newBuilder().tokenNum(-1).build();
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenDissociateFromAccountHandler() {}
 

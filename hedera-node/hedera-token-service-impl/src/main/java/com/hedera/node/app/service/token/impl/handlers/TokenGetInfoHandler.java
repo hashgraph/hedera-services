@@ -62,6 +62,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenGetInfoHandler extends PaidQueryHandler {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenGetInfoHandler() {
         // Exists for injection

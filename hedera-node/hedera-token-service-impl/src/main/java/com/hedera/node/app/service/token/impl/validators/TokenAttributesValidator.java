@@ -51,7 +51,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenAttributesValidator {
-
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenAttributesValidator() {
         // Dagger
@@ -60,6 +62,7 @@ public class TokenAttributesValidator {
     /**
      * Validates the token symbol, if it exists and is not empty or not too long.
      * @param symbol the token symbol to validate
+     * @param tokensConfig the tokens configuration
      */
     public void validateTokenSymbol(@Nullable final String symbol, @NonNull final TokensConfig tokensConfig) {
         tokenStringCheck(symbol, tokensConfig.maxSymbolUtf8Bytes(), MISSING_TOKEN_SYMBOL, TOKEN_SYMBOL_TOO_LONG);
@@ -68,6 +71,7 @@ public class TokenAttributesValidator {
     /**
      * Validates the token name, if it is exists and is not empty or not too long.
      * @param name the token name to validate
+     * @param tokensConfig the tokens configuration
      */
     public void validateTokenName(@Nullable final String name, @NonNull final TokensConfig tokensConfig) {
         tokenStringCheck(name, tokensConfig.maxTokenNameUtf8Bytes(), MISSING_TOKEN_NAME, TOKEN_NAME_TOO_LONG);
@@ -76,6 +80,7 @@ public class TokenAttributesValidator {
     /**
      * Validates the token metadata, if it exists and is not too long.
      * @param metadata the token metadata to validate
+     * @param tokensConfig the tokens configuration
      */
     public void validateTokenMetadata(@NonNull final Bytes metadata, @NonNull final TokensConfig tokensConfig) {
         if (metadata.length() > 0) {
@@ -122,6 +127,8 @@ public class TokenAttributesValidator {
      * @param feeScheduleKey the token fee schedule key to validate
      * @param hasPauseKey whether the token has a pause key
      * @param pauseKey the token pause key to validate
+     * @param hasMetadataKey whether the token has a metadata key
+     * @param metadataKey the token metadata key to validate
      */
     public void validateTokenKeys(
             final boolean hasAdminKey,
