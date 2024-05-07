@@ -221,7 +221,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 maxAutoAssociationSpec(),
-                canDissociateFromMultipleExpiredTokens(),
+                cannotDissociateFromExpiredTokenWithNonZeroBalance(),
                 cannotExceedAccountAllowanceLimit(),
                 cannotExceedAllowancesTransactionLimit(),
                 createAnAccountWithEVMAddressAliasAndECKey(),
@@ -500,7 +500,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
 
     @Order(1)
     @HapiTest
-    public HapiSpec canDissociateFromMultipleExpiredTokens() {
+    public HapiSpec cannotDissociateFromExpiredTokenWithNonZeroBalance() {
         final var civilian = "civilian";
         final long initialSupply = 100L;
         final long nonZeroXfer = 10L;
