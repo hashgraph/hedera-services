@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.ethereum;
 
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
@@ -29,12 +30,16 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
+import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
+import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
+import static com.hedera.services.bdd.spec.keys.SigControl.SECP256K1_ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCryptoTransferToExplicit;
@@ -43,11 +48,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCodeWithConstructorArguments;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -60,6 +67,8 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
+import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -75,9 +84,12 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
@@ -121,7 +133,8 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 topLevelSendToReceiverSigRequiredAccountReverts(),
                 internalBurnToZeroAddressReverts(),
                 ethereumCallWithCalldataBiggerThanMaxSucceeds(),
-                createWithSelfDestructInConstructorHasSaneRecord());
+                createWithSelfDestructInConstructorHasSaneRecord(),
+                createTokenWithEthereumContractCallSignedWithSECP256K1());
     }
 
     List<HapiSpec> ethereumCreates() {
@@ -130,6 +143,103 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 contractCreateWithConstructorArgs(),
                 bigContractCreate(),
                 doesNotCreateChildRecordIfEthereumContractCreateFails());
+    }
+
+    @HapiTest
+    HapiSpec createTokenWithEthereumContractCallSignedWithSECP256K1() {
+        final String THRESHOLD_KEY = "THRESHOLD_KEY";
+        final String SIGNER = "SIGNER";
+        final String TOKEN_CREATE_CONTRACT = "TestTokenCreateContract";
+        final AtomicReference<AccountID> aliasedAccountId = new AtomicReference<>();
+        final KeyShape THRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, SECP_256K1_SHAPE, CONTRACT);
+
+        return defaultHapiSpec(
+                        "createTokenWithEthereumContractCallSignedWithSECP256K1",
+                        NONDETERMINISTIC_ETHEREUM_DATA,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
+                .given(
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
+
+                        // Create relay account
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+
+                        // Deploy TokenCreateContract
+                        uploadInitCode(TOKEN_CREATE_CONTRACT),
+                        contractCreate(TOKEN_CREATE_CONTRACT).gas(5_000_000L),
+                        withOpContext((spec, opLog) -> {
+                            // generate Threshold key with shape => [1, [random SECP256K1 key, contract_id]]
+                            allRunFor(
+                                    spec,
+                                    newKeyNamed(THRESHOLD_KEY)
+                                            .shape(THRESHOLD_KEY_SHAPE.signedWith(
+                                                    sigs(SECP256K1_ON, TOKEN_CREATE_CONTRACT))));
+
+                            // Get the generated SECP256K1 from the Threshold key
+                            final var ecdsaKeyObject = spec.registry()
+                                    .getKey(THRESHOLD_KEY)
+                                    .getThresholdKey()
+                                    .getKeys()
+                                    .getKeys(0);
+
+                            final var ecdsaKey =
+                                    ecdsaKeyObject.getECDSASecp256K1().toByteArray();
+
+                            // Calculate the evm address based on SECP256K1
+                            final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+
+                            // create a hollow account with the evm address
+                            final var accountCreation =
+                                    cryptoTransfer(tinyBarsFromTo(GENESIS, evmAddress, ONE_HUNDRED_HBARS));
+
+                            final var publicKey = CommonUtils.hex(ecdsaKey);
+                            final var privateKey = spec.keys().getPrivateKey(publicKey);
+                            final var accountInfo = getAliasedAccountInfo(evmAddress)
+                                    .exposingIdTo(accountId -> aliasedAccountId.set(accountId));
+
+                            allRunFor(spec, accountCreation, accountInfo);
+
+                            // Update the registry so that the hollow account is named SIGNER
+                            spec.registry().saveAccountAlias(SIGNER, aliasedAccountId.get());
+                            spec.registry().saveAccountId(SIGNER, aliasedAccountId.get());
+                            spec.registry().saveKey(SIGNER, ecdsaKeyObject);
+                            spec.keys().incorporate(SIGNER, publicKey, privateKey, SECP256K1_ON);
+
+                            // after this the account has an evmAddress, can be referred to as SIGNER and has a
+                            // threshold key
+                            final var update = cryptoUpdate(SIGNER).key(THRESHOLD_KEY);
+
+                            allRunFor(spec, update);
+
+                            // update the registry so that the key SIGNER refers to the generated SECP256K1 key
+                            spec.registry().saveKey(SIGNER, ecdsaKeyObject);
+                            spec.keys().incorporate(SIGNER, publicKey, privateKey, SECP256K1_ON);
+
+                            // create a token through an Ethereum contract call
+                            // The tx is signed by SECP256K1 and is being paid by RELAYER
+                            // The call reverts, but ideally it should be successful
+                            final var ethCall = ethereumCall(
+                                            TOKEN_CREATE_CONTRACT,
+                                            "createFungibleTokenWithSECP256K1AdminKeyPublic",
+                                            asHeadlongAddress(evmAddress.toByteArray()),
+                                            ecdsaKey)
+                                    .type(EthTxData.EthTransactionType.EIP1559)
+                                    .nonce(0)
+                                    .signingWith(SIGNER)
+                                    .payingWith(RELAYER)
+                                    .sending(50 * ONE_HBAR)
+                                    .maxGasAllowance(ONE_HBAR * 10)
+                                    .gasLimit(12_000_000L)
+                                    .via("tokenCreateTx")
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
+
+                            allRunFor(spec, ethCall);
+                        }))
+                .when()
+                .then(getTxnRecord("tokenCreateTx")
+                        .andAllChildRecords()
+                        .hasChildRecords(recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE))
+                        .logged());
     }
 
     @HapiTest
