@@ -55,8 +55,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class SimulatedGossipTests {
 
-    // TODO test size 1 and size 2 networks
-
     /**
      * Given a list of events that may contain duplicates, create a set of unique event descriptors.
      *
