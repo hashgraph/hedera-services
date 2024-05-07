@@ -34,7 +34,6 @@ import com.swirlds.platform.network.protocol.Protocol;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.system.status.PlatformStatus;
-import com.swirlds.platform.system.status.PlatformStatusNexus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
@@ -64,7 +63,7 @@ public class ReconnectProtocol implements Protocol {
     /**
      * Provides the platform status.
      */
-    private final PlatformStatusNexus statusNexus;
+    private final Supplier<PlatformStatus> platformStatusSupplier;
 
     private final Configuration configuration;
     private ReservedSignedState teacherState;
@@ -97,7 +96,7 @@ public class ReconnectProtocol implements Protocol {
      * @param reconnectMetrics        tracks reconnect metrics
      * @param reconnectController     controls reconnecting as a learner
      * @param fallenBehindManager     maintains this node's behind status
-     * @param statusNexus             provides the platform status
+     * @param platformStatusSupplier  provides the platform status
      * @param configuration           platform configuration
      * @param time                    the time object to use
      */
@@ -112,7 +111,7 @@ public class ReconnectProtocol implements Protocol {
             @NonNull final ReconnectController reconnectController,
             @NonNull final SignedStateValidator validator,
             @NonNull final FallenBehindManager fallenBehindManager,
-            @NonNull final PlatformStatusNexus statusNexus,
+            @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
             @NonNull final Configuration configuration,
             @NonNull final Time time) {
 
@@ -126,7 +125,7 @@ public class ReconnectProtocol implements Protocol {
         this.reconnectController = Objects.requireNonNull(reconnectController);
         this.validator = Objects.requireNonNull(validator);
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
-        this.statusNexus = Objects.requireNonNull(statusNexus);
+        this.platformStatusSupplier = Objects.requireNonNull(platformStatusSupplier);
         this.configuration = Objects.requireNonNull(configuration);
         Objects.requireNonNull(time);
 
@@ -183,7 +182,7 @@ public class ReconnectProtocol implements Protocol {
         }
 
         // only teach if the platform is active
-        if (statusNexus.getCurrentStatus() != PlatformStatus.ACTIVE) {
+        if (platformStatusSupplier.get() != PlatformStatus.ACTIVE) {
             notActiveLogger.info(
                     RECONNECT.getMarker(),
                     "Rejecting reconnect request from node {} because this node isn't ACTIVE",
