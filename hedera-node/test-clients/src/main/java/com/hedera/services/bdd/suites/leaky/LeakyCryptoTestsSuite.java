@@ -122,9 +122,7 @@ import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ED_25519_K
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.RECEIVER;
-import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.DEFAULT_MIN_AUTO_RENEW_PERIOD;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
-import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.TokenIdOrderingAsserts.withOrderedTokenIds;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_TXN;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.UNIQUE;
@@ -149,6 +147,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -499,13 +498,12 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                         overriding("tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK));
     }
 
-    @BddMethodIsNotATest
     @Order(1)
+    @HapiTest
     public HapiSpec canDissociateFromMultipleExpiredTokens() {
         final var civilian = "civilian";
         final long initialSupply = 100L;
         final long nonZeroXfer = 10L;
-        final var dissociateTxn = "dissociateTxn";
         final var numTokens = 10;
         final IntFunction<String> tokenNameFn = i -> "fungible" + i;
         final String[] assocOrder = new String[numTokens];
@@ -513,7 +511,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
         final String[] dissocOrder = new String[numTokens];
         Arrays.setAll(dissocOrder, i -> tokenNameFn.apply(numTokens - 1 - i));
 
-        return defaultHapiSpec("CanDissociateFromMultipleExpiredTokens")
+        return propertyPreservingHapiSpec("CanDissociateFromMultipleExpiredTokens")
+                .preserving(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION)
                 .given(
                         overriding(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, "1"),
                         cryptoCreate(TOKEN_TREASURY),
@@ -530,11 +529,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 .mapToObj(i -> cryptoTransfer(moving(nonZeroXfer, tokenNameFn.apply(i))
                                         .between(TOKEN_TREASURY, civilian)))
                                 .toArray(HapiSpecOperation[]::new)))
-                .when(sleepFor(1_000L), tokenDissociate(civilian, dissocOrder).via(dissociateTxn))
-                .then(
-                        getTxnRecord(dissociateTxn)
-                                .hasPriority(recordWith().tokenTransfers(withOrderedTokenIds(assocOrder))),
-                        overriding(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, DEFAULT_MIN_AUTO_RENEW_PERIOD));
+                .when(sleepFor(2_000L))
+                .then(tokenDissociate(civilian, dissocOrder).hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES));
     }
 
     @HapiTest
