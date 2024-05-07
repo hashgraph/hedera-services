@@ -48,7 +48,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transf
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SpecialRewardReceivers;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SystemAccountCreditScreen;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
+import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -56,7 +56,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-class ClassicTransfersCallTest extends HtsCallTestBase {
+class ClassicTransfersCallTest extends CallTestBase {
     private static final TupleType INT64_ENCODER = TupleType.parse(ReturnTypes.INT_64);
 
     @Mock

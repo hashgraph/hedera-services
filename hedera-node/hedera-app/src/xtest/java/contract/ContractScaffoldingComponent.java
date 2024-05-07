@@ -17,7 +17,7 @@
 package contract;
 
 import com.hedera.node.app.service.contract.impl.exec.processors.HtsTranslatorsModule;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.workflows.handle.HandlersInjectionModule;
 import com.swirlds.config.api.Configuration;
@@ -44,5 +44,5 @@ public interface ContractScaffoldingComponent extends BaseScaffoldingComponent {
                 @BindsInstance StoreMetricsService storeMetricsService);
     }
 
-    List<HtsCallTranslator> callTranslators();
+    List<CallTranslator> callTranslators();
 }
