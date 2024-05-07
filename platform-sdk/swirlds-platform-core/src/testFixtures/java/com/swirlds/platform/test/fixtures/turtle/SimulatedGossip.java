@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.turtle.gossip;
+package com.swirlds.platform.test.fixtures.turtle;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.wiring.model.WiringModel;
