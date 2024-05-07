@@ -178,9 +178,9 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                 .exposingNumTo(contractNum::set))
                 .when()
                 .then(sourcing(() -> cryptoTransfer(tinyBarsFromTo(contract, FUNDING, 1))
-                        .signedBy(cryptoAdminKey)
                         .fee(ONE_HBAR)
                         .payingWith("0.0." + contractNum.longValue())
+                        .signedBy(cryptoAdminKey)
                         .hasPrecheck(PAYER_ACCOUNT_NOT_FOUND)));
     }
 
