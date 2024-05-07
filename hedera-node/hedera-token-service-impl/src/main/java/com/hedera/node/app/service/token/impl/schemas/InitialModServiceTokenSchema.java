@@ -85,9 +85,11 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -333,8 +335,9 @@ public class InitialModServiceTokenSchema extends Schema {
 
             if (stakingToState.isModified()) ((WritableKVStateBase) stakingToState).commit();
             final var stakingConfig = ctx.configuration().getConfigData(StakingConfig.class);
-            final var currentStakingPeriod =
-                    stakePeriodAt(mnc.consensusTimeOfLastHandledTxn(), stakingConfig.periodMins());
+            final var effectiveNow =
+                    Optional.ofNullable(mnc.consensusTimeOfLastHandledTxn()).orElseGet(Instant::now);
+            final var currentStakingPeriod = stakePeriodAt(effectiveNow, stakingConfig.periodMins());
             final var numStoredPeriods = stakingConfig.rewardHistoryNumStoredPeriods();
             log.info("BBM: finished staking info");
 
