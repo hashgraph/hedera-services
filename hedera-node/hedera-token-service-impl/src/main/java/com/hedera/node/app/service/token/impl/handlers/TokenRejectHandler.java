@@ -30,6 +30,7 @@ import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.LONG_ACC
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage.LONG_BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
+import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -96,7 +97,11 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         requireNonNull(txn, "Transaction body cannot be null");
         final var op = txn.tokenRejectOrThrow();
+
         validateFalsePreCheck(op.rejections().isEmpty(), INVALID_TRANSACTION_BODY);
+        if (op.hasAccount()) {
+            validateAccountID(op.account(), null);
+        }
 
         var uniqueTokenReferences = new HashSet<TokenReference>();
         for (final var rejection : op.rejections()) {
