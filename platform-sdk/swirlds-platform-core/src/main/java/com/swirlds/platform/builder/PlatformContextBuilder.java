@@ -27,6 +27,9 @@ import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
+import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.merkle.crypto.MerkleCryptography;
+import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -201,6 +204,8 @@ public class PlatformContextBuilder {
     private static Cryptography buildCryptography(@NonNull final Configuration configuration) {
         final Cryptography cryptography = CryptographyFactory.create(configuration);
         CryptographyHolder.set(cryptography);
+        final MerkleCryptography merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
+        MerkleCryptoFactory.set(merkleCryptography);
         return cryptography;
     }
 

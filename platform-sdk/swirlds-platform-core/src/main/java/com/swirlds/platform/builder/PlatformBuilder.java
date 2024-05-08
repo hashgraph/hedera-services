@@ -27,9 +27,6 @@ import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.merkle.crypto.MerkleCryptography;
-import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
@@ -350,11 +347,6 @@ public final class PlatformBuilder {
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
-
-        // FUTURE WORK: remove after static use of cryptography is abolished
-        final MerkleCryptography merkleCryptography =
-                MerkleCryptographyFactory.create(configuration, platformContext.getCryptography());
-        MerkleCryptoFactory.set(merkleCryptography);
 
         final Scratchpad<IssScratchpad> issScratchpad =
                 Scratchpad.create(platformContext, selfId, IssScratchpad.class, "platform.iss");
