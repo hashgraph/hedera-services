@@ -14,24 +14,27 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.common;
 
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
+import static java.util.Objects.requireNonNull;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Strategy interface for translating {@link HtsCallAttempt}s into {@link HtsCall}s.
+ * Basic implementation support for a {@link CallTranslator} that returns a translated
+ * call when the {@link AbstractCallAttempt} matches and null otherwise.
  */
-public interface HtsCallTranslator {
+public abstract class AbstractCallTranslator<T extends AbstractCallAttempt> implements CallTranslator<T> {
     /**
-     * Tries to translate the given {@code attempt} into a {@link HtsCall}, returning null if the call
-     * doesn't match the target type of this translator.
-     *
-     * @param attempt the attempt to translate
-     * @return the translated {@link HtsCall}
+     * {@inheritDoc}
      */
-    @Nullable
-    HtsCall translateCallAttempt(@NonNull HtsCallAttempt attempt);
+    @Override
+    public @Nullable Call translateCallAttempt(@NonNull final T attempt) {
+        requireNonNull(attempt);
+        if (matches(attempt)) {
+            return callFrom(attempt);
+        }
+        return null;
+    }
 }

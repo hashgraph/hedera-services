@@ -42,9 +42,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
 import static com.hedera.services.bdd.spec.utilops.streams.RecordAssertions.triggerAndCloseAtLeastOneFileIfNotInterrupted;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SUFFIX;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -366,8 +368,12 @@ public class HapiSpec implements Runnable {
             if (!isEthereumAccountCreatedForSpec(this)) {
                 ops.addAll(createEthereumAccountForSpec(this));
             }
+            final var adminKey = this.registry().getKey(DEFAULT_CONTRACT_SENDER);
             ops.addAll(UtilVerbs.convertHapiCallsToEthereumCalls(
-                    Stream.of(given, when, then).flatMap(Arrays::stream).toList()));
+                    Stream.of(given, when, then).flatMap(Arrays::stream).toList(),
+                    SECP_256K1_SOURCE_KEY,
+                    adminKey,
+                    hapiSetup.defaultCreateGas()));
         }
 
         try {

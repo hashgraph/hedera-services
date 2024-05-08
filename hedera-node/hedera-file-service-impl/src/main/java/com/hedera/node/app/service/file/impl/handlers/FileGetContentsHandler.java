@@ -82,7 +82,7 @@ public class FileGetContentsHandler extends FileQueryBase {
         final var query = queryContext.query();
         final var fileStore = queryContext.createStore(ReadableFileStore.class);
         final var op = query.fileGetContentsOrThrow();
-        final var fileId = op.fileIDOrThrow();
+        final var fileId = op.fileIDOrElse(FileID.DEFAULT);
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         final FileContents fileContents = contentFile(fileId, fileStore);
         return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetFileContentsResourceUsage(

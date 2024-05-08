@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.common;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isDelegateCall;
 
@@ -24,9 +24,9 @@ import javax.inject.Singleton;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 @Singleton
-public class HtsCallAddressChecks {
+public class CallAddressChecks {
     @Inject
-    public HtsCallAddressChecks() {
+    public CallAddressChecks() {
         // Dagger2
     }
 

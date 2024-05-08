@@ -50,10 +50,9 @@ public class BaseScheduledExecutorService implements ScheduledExecutorService {
      */
     public static final int CORE_POOL_SIZE = 1;
 
-    /**
-     * The singleton instance of this executor.
-     */
-    private static volatile BaseScheduledExecutorService instance;
+    private static final class InstanceHolder {
+        private static final BaseScheduledExecutorService INSTANCE = new BaseScheduledExecutorService();
+    }
 
     /**
      * The lock for creating the singleton instance.
@@ -74,31 +73,12 @@ public class BaseScheduledExecutorService implements ScheduledExecutorService {
      * Constructs a new executor.
      */
     private BaseScheduledExecutorService() {
-        final ThreadFactory threadFactory = BaseExecutorThreadFactory.getInstance();
+        final ThreadFactory threadFactory = new BaseExecutorThreadFactory();
         this.innerService = Executors.newScheduledThreadPool(CORE_POOL_SIZE, threadFactory);
         this.observers = new CopyOnWriteArrayList<>();
         final Thread shutdownHook = new Thread(() -> innerService.shutdown());
         shutdownHook.setName("BaseScheduledExecutorService-shutdownHook");
         Runtime.getRuntime().addShutdownHook(shutdownHook);
-    }
-
-    /**
-     * Returns the singleton instance of this executor.
-     *
-     * @return the instance
-     */
-    public static BaseScheduledExecutorService getInstance() {
-        if (instance == null) {
-            instanceLock.lock();
-            try {
-                if (instance == null) {
-                    instance = new BaseScheduledExecutorService();
-                }
-            } finally {
-                instanceLock.unlock();
-            }
-        }
-        return instance;
     }
 
     /**
@@ -277,5 +257,15 @@ public class BaseScheduledExecutorService implements ScheduledExecutorService {
     public void execute(Runnable command) {
         final Runnable wrapped = wrapOnSubmit(command);
         innerService.execute(wrapped);
+    }
+
+    /**
+     * Returns the singleton instance of this executor.
+     *
+     * @return the instance
+     */
+    @NonNull
+    public static BaseScheduledExecutorService getInstance() {
+        return InstanceHolder.INSTANCE;
     }
 }

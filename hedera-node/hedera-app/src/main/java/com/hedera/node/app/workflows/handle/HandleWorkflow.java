@@ -317,8 +317,8 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
-        // Determine if this is the first transaction after startup. This needs to be determined BEFORE starting the
-        // user transaction
+        // (FUTURE) We actually want consider exporting synthetic transactions on every
+        // first post-upgrade transaction, not just the first transaction after genesis.
         final var consTimeOfLastHandledTxn = blockRecordManager.consTimeOfLastHandledTxn();
         final var isFirstTransaction = !consTimeOfLastHandledTxn.isAfter(Instant.EPOCH);
 
