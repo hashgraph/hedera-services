@@ -101,7 +101,12 @@ public class ConsensusRoundHandler {
     /**
      * If true then write the legacy running event hash each round.
      */
-    private boolean writeLegacyRunningEventHash;
+    private final boolean writeLegacyRunningEventHash;
+
+    /**
+     * If true then write the running event hash each round.
+     */
+    private final boolean writeRunningEventHash;
 
     /**
      * If true then wait for application transactions to be prehandled before handling the consensus round.
@@ -140,6 +145,7 @@ public class ConsensusRoundHandler {
 
         // If the CES is using a no-op scheduler then the legacy running event hash won't be computed.
         writeLegacyRunningEventHash = schedulersConfig.consensusEventStream().type() != TaskSchedulerType.NO_OP;
+        writeRunningEventHash = schedulersConfig.runningEventHasher().type() != TaskSchedulerType.NO_OP;
 
         // If the application transaction prehandler is a no-op then we don't need to wait for it.
         waitForPrehandle = schedulersConfig.applicationTransactionPrehandler().type() != TaskSchedulerType.NO_OP;
@@ -251,7 +257,11 @@ public class ConsensusRoundHandler {
         final PlatformState platformState =
                 swirldStateManager.getConsensusState().getPlatformState();
 
-        platformState.setRunningEventHash(round.getRunningEventHash());
+        if (writeRunningEventHash) {
+            platformState.setRunningEventHash(round.getRunningEventHash());
+        } else {
+            platformState.setRunningEventHash(platformContext.getCryptography().getNullHash());
+        }
 
         if (writeLegacyRunningEventHash) {
             // Update the running hash object. If there are no events, the running hash does not change.

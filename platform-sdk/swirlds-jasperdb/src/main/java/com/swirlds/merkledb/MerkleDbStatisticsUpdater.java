@@ -21,23 +21,17 @@ import static com.swirlds.base.units.UnitConstants.BYTES_TO_MEBIBYTES;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.OffHeapUser;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileReader;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LongSummaryStatistics;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntConsumer;
 
 /**
  * This class is responsible for updating statistics for a MerkleDb instance.
  */
 public class MerkleDbStatisticsUpdater {
-
-    /**
-     * When we register stats for the first instance, also register the global stats. If true then
-     * this is the first time stats are being registered for an instance.
-     */
-    private static final AtomicBoolean firstStatRegistration = new AtomicBoolean(true);
 
     private static final FunctionGauge.Config<Long> COUNT_OF_OPEN_DATABASES_CONFIG = new FunctionGauge.Config<>(
                     MerkleDbStatistics.STAT_CATEGORY,
@@ -48,11 +42,9 @@ public class MerkleDbStatisticsUpdater {
             .withFormat("%d");
 
     private final MerkleDbStatistics statistics;
-    private final MerkleDbDataSource<?, ?> dataSource;
 
-    public MerkleDbStatisticsUpdater(@NonNull MerkleDbDataSource<?, ?> dataSource) {
-        statistics = new MerkleDbStatistics(dataSource.getDatabase().getConfig(), dataSource.getTableName());
-        this.dataSource = dataSource;
+    public MerkleDbStatisticsUpdater(@NonNull final MerkleDbConfig config, @NonNull final String tableName) {
+        statistics = new MerkleDbStatistics(config, tableName);
     }
 
     /**
@@ -60,10 +52,8 @@ public class MerkleDbStatisticsUpdater {
      * @param metrics the metrics to register
      */
     public void registerMetrics(final Metrics metrics) {
-        if (firstStatRegistration.compareAndSet(true, false)) {
-            // register static/global statistics
-            metrics.getOrCreate(COUNT_OF_OPEN_DATABASES_CONFIG);
-        }
+        // register static/global statistics
+        metrics.getOrCreate(COUNT_OF_OPEN_DATABASES_CONFIG);
 
         // register instance statistics
         statistics.registerMetrics(metrics);
@@ -93,7 +83,7 @@ public class MerkleDbStatisticsUpdater {
      *
      * @return hashes store file size, Mb
      */
-    int updateHashesStoreFileStats() {
+    int updateHashesStoreFileStats(final MerkleDbDataSource<?, ?> dataSource) {
         if (dataSource.getHashStoreDisk() != null) {
             final LongSummaryStatistics internalHashesFileSizeStats =
                     dataSource.getHashStoreDisk().getFilesSizeStatistics();
@@ -110,7 +100,7 @@ public class MerkleDbStatisticsUpdater {
      *
      * @return leaves store file size, Mb
      */
-    private int updateLeavesStoreFileStats() {
+    private int updateLeavesStoreFileStats(final MerkleDbDataSource<?, ?> dataSource) {
         final LongSummaryStatistics leafDataFileSizeStats =
                 dataSource.getPathToKeyValue().getFilesSizeStatistics();
         statistics.setLeavesStoreFileCount((int) leafDataFileSizeStats.getCount());
@@ -125,7 +115,7 @@ public class MerkleDbStatisticsUpdater {
      *
      * @return leaf keys store file size, Mb
      */
-    private int updateLeafKeysStoreFileStats() {
+    private int updateLeafKeysStoreFileStats(final MerkleDbDataSource<?, ?> dataSource) {
         if (dataSource.getObjectKeyToPath() != null) {
             final LongSummaryStatistics leafKeyFileSizeStats =
                     dataSource.getObjectKeyToPath().getFilesSizeStatistics();
@@ -138,15 +128,16 @@ public class MerkleDbStatisticsUpdater {
     }
 
     /** Calculate updates statistics for all the storages and then updates total usage */
-    void updateStoreFileStats() {
-        statistics.setTotalFileSizeMb(
-                updateHashesStoreFileStats() + updateLeavesStoreFileStats() + updateLeafKeysStoreFileStats());
+    void updateStoreFileStats(final MerkleDbDataSource<?, ?> dataSource) {
+        statistics.setTotalFileSizeMb(updateHashesStoreFileStats(dataSource)
+                + updateLeavesStoreFileStats(dataSource)
+                + updateLeafKeysStoreFileStats(dataSource));
     }
 
     /**
      * Updates statistics with off-heap memory consumption.
      */
-    void updateOffHeapStats() {
+    void updateOffHeapStats(final MerkleDbDataSource<?, ?> dataSource) {
         int totalOffHeapMemoryConsumption = updateOffHeapStat(
                         dataSource.getPathToDiskLocationInternalNodes(), statistics::setOffHeapHashesIndexMb)
                 + updateOffHeapStat(dataSource.getPathToDiskLocationLeafNodes(), statistics::setOffHeapLeavesIndexMb)

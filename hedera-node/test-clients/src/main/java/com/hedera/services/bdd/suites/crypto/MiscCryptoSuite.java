@@ -32,6 +32,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModifiedWithFixedPayer;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.verifyAddLiveHashNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.verifyUserFreezeNotAuthorized;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -162,11 +163,12 @@ public class MiscCryptoSuite extends HapiSuite {
 
     @HapiTest
     public HapiSpec getDetailsIdVariantsTreatedAsExpected() {
-        return defaultHapiSpec("getBalanceIdVariantsTreatedAsExpected")
+        return defaultHapiSpec("getDetailsIdVariantsTreatedAsExpected")
                 .given()
                 .when()
-                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getAccountDetails(DEFAULT_PAYER)
-                        .payingWith(GENESIS)));
+                .then(sendModifiedWithFixedPayer(
+                        withSuccessivelyVariedQueryIds(),
+                        () -> getAccountDetails(DEFAULT_PAYER).payingWith(GENESIS)));
     }
 
     @HapiTest

@@ -19,7 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallAddressChecks;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -30,7 +30,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class HtsCallAddressChecksTest {
+class CallAddressChecksTest {
     @Mock
     private MessageFrame frame;
 
@@ -39,7 +39,7 @@ class HtsCallAddressChecksTest {
 
     private Deque<MessageFrame> stack = new ArrayDeque<>();
 
-    private final HtsCallAddressChecks subject = new HtsCallAddressChecks();
+    private final CallAddressChecks subject = new CallAddressChecks();
 
     @Test
     void detectsParentDelegateCall() {
