@@ -167,7 +167,6 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .via("creation"),
                         // Get its EVM address for later use in the contract call
                         getTxnRecord("creation")
-                                .logged()
                                 .exposingCreationDetailsTo(allDetails -> creationDetails.set(allDetails.getFirst())),
                         // Update key to a threshold key authorizing our contract use this account as a token treasury
                         newKeyNamed(thresholdKey)
@@ -194,15 +193,14 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         sourcing(() -> contractCall(
                                         contract,
                                         "createFungibleTokenWithSECP256K1AdminKeyPublic",
-                                        // Treasury is the EVM address
                                         creationDetails.get().evmAddress(),
-                                        // Admin key is the ECDSA key
                                         adminKey.get())
                                 .via("creationActivatingAdminKeyViaSigMap")
                                 .gas(5_000_000L)
                                 .sending(100 * ONE_HBAR)
+                                // This is the important change, include a top-level signature with the admin key
                                 .alsoSigningWithFullPrefix(cryptoKey)),
-                        // Finally confirm we also succeed when providing the admin key's
+                        // Finally confirm we ALSO succeed when providing the admin key's
                         // signature via an EthereumTransaction signature
                         cryptoCreate(RELAYER).balance(10 * THOUSAND_HBAR),
                         sourcing(() -> ethereumCall(
