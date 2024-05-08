@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
@@ -202,10 +203,10 @@ public class SyncValidator {
 
             for (final GossipEvent actual : actualList) {
                 final BaseEventHashedData actualHashedData = actual.getHashedData();
-                final byte[] actualSignature = actual.getSignature();
+                final Bytes actualSignature = actual.getSignature();
 
                 if (expected.getHashedData().equals(actualHashedData)
-                        && Arrays.equals(expected.getSignature(), actualSignature)) {
+                        && expected.getBaseEvent().getSignature().equals(actualSignature)) {
                     foundMatch = true;
                     break;
                 }

@@ -197,14 +197,14 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
         }
 
         final boolean isSignatureValid = signatureVerifier.verifySignature(
-                event.getHashedData().getHash().getValue(), event.getSignature(), publicKey);
+                event.getHashedData().getHash().getValue(), event.getSignatureOld(), publicKey);
 
         if (!isSignatureValid) {
             rateLimitedLogger.error(
                     EXCEPTION.getMarker(),
                     "Event failed signature check. Event: {}, Signature: {}, Hash: {}",
                     event,
-                    CommonUtils.hex(event.getSignature()),
+                    event.getSignature().toHex(),
                     event.getHashedData().getHash());
         }
 
