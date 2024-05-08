@@ -142,13 +142,11 @@ public class TokenUpdateNftsSuite extends HapiSuite {
                 .then(
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 7L)
                                 .hasSerialNum(7L)
-                                .logged()
                                 .hasMetadata(ByteString.copyFromUtf8("g")),
                         tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(7L))
                                 .signedBy(DEFAULT_PAYER, METADATA_KEY),
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 7L)
                                 .hasSerialNum(7L)
-                                .logged()
                                 .hasMetadata(ByteString.copyFromUtf8(NFT_TEST_METADATA)),
                         burnToken(NON_FUNGIBLE_TOKEN, List.of(7L)),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 6L));
