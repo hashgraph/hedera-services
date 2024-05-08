@@ -58,7 +58,7 @@ import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -296,7 +296,7 @@ class TipsetEventCreatorTests {
         final int networkSize = 10;
 
         final AddressBook addressBook =
-                RandomAddressBookGenerator.create(random).withSize(networkSize).build();
+                RandomAddressBookBuilder.create(random).withSize(networkSize).build();
 
         final FakeTime time = new FakeTime();
 
@@ -350,7 +350,7 @@ class TipsetEventCreatorTests {
         final int networkSize = 10;
 
         final AddressBook addressBook =
-                RandomAddressBookGenerator.create(random).withSize(networkSize).build();
+                RandomAddressBookBuilder.create(random).withSize(networkSize).build();
 
         final FakeTime time = new FakeTime();
 
@@ -418,7 +418,7 @@ class TipsetEventCreatorTests {
         final int networkSize = 10;
 
         final AddressBook addressBook =
-                RandomAddressBookGenerator.create(random).withSize(networkSize).build();
+                RandomAddressBookBuilder.create(random).withSize(networkSize).build();
 
         final FakeTime time = new FakeTime();
 
@@ -493,7 +493,7 @@ class TipsetEventCreatorTests {
         final int networkSize = 10;
 
         final AddressBook addressBook =
-                RandomAddressBookGenerator.create(random).withSize(networkSize).build();
+                RandomAddressBookBuilder.create(random).withSize(networkSize).build();
 
         final FakeTime time = new FakeTime();
 
@@ -561,7 +561,7 @@ class TipsetEventCreatorTests {
         final int networkSize = 10;
 
         final AddressBook addressBook =
-                RandomAddressBookGenerator.create(random).withSize(networkSize).build();
+                RandomAddressBookBuilder.create(random).withSize(networkSize).build();
 
         final NodeId zeroWeightNode = addressBook.getNodeId(0);
 
@@ -658,7 +658,7 @@ class TipsetEventCreatorTests {
         final int networkSize = 10;
 
         final AddressBook addressBook =
-                RandomAddressBookGenerator.create(random).withSize(networkSize).build();
+                RandomAddressBookBuilder.create(random).withSize(networkSize).build();
 
         final NodeId zeroWeightNode = addressBook.getNodeId(0);
 
@@ -766,7 +766,7 @@ class TipsetEventCreatorTests {
         final int networkSize = 1;
 
         final AddressBook addressBook =
-                RandomAddressBookGenerator.create(random).withSize(networkSize).build();
+                RandomAddressBookBuilder.create(random).withSize(networkSize).build();
 
         final FakeTime time = new FakeTime();
 
@@ -844,7 +844,7 @@ class TipsetEventCreatorTests {
 
         final int networkSize = 4;
 
-        final AddressBook addressBook = RandomAddressBookGenerator.create(random)
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
                 .withCustomWeightGenerator(x -> 1L)
                 .withSize(networkSize)
                 .build();
@@ -921,7 +921,7 @@ class TipsetEventCreatorTests {
 
         final int networkSize = 4;
 
-        final AddressBook addressBook = RandomAddressBookGenerator.create(random)
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
                 .withCustomWeightGenerator(x -> 1L)
                 .withSize(networkSize)
                 .build();
@@ -990,7 +990,7 @@ class TipsetEventCreatorTests {
 
         final int networkSize = 4;
 
-        final AddressBook addressBook = RandomAddressBookGenerator.create(random)
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
                 .withCustomWeightGenerator(x -> 1L)
                 .withSize(networkSize)
                 .build();
@@ -1028,7 +1028,7 @@ class TipsetEventCreatorTests {
         final int networkSize = 10;
 
         final AddressBook addressBook =
-                RandomAddressBookGenerator.create(random).withSize(networkSize).build();
+                RandomAddressBookBuilder.create(random).withSize(networkSize).build();
 
         final FakeTime time = new FakeTime();
 

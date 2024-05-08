@@ -28,7 +28,7 @@ import com.swirlds.platform.event.linking.ConsensusLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.metrics.NoOpConsensusMetrics;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
 import com.swirlds.platform.test.fixtures.event.DynamicValueGenerator;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
@@ -208,9 +208,9 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     private void buildAddressBookInitializeEventSources(@NonNull final List<EventSource<?>> eventSources) {
         final int eventSourceCount = eventSources.size();
 
-        final AddressBook addressBook = RandomAddressBookGenerator.create(getRandom())
+        final AddressBook addressBook = RandomAddressBookBuilder.create(getRandom())
                 .withSize(eventSourceCount)
-                .withHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
+                .withHashStrategy(RandomAddressBookBuilder.HashStrategy.FAKE_HASH)
                 .build();
         setAddressBookInitializeEventSources(eventSources, addressBook);
     }

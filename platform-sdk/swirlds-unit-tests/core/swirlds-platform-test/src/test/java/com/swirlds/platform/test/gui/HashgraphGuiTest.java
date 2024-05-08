@@ -20,7 +20,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +36,7 @@ class HashgraphGuiTest {
                 TestPlatformContextBuilder.create().build();
 
         final AddressBook addressBook =
-                RandomAddressBookGenerator.create(randotron).withSize(numNodes).build();
+                RandomAddressBookBuilder.create(randotron).withSize(numNodes).build();
 
         final TestGuiSource guiSource = new TestGuiSource(platformContext, randotron.nextInt(), addressBook);
         guiSource.generateEvents(initialEvents);

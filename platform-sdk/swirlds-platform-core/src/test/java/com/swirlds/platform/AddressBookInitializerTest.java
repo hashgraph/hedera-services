@@ -46,7 +46,7 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -436,7 +436,7 @@ class AddressBookInitializerTest {
      */
     @NonNull
     private AddressBook getRandomAddressBook(@NonNull final Random random) {
-        return RandomAddressBookGenerator.create(random)
+        return RandomAddressBookBuilder.create(random)
                 .withSize(5)
                 .withCustomWeightGenerator(i -> i.id())
                 .build();

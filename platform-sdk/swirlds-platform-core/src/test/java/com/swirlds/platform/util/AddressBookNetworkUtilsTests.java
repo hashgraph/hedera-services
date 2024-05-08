@@ -25,7 +25,7 @@ import com.swirlds.platform.network.Network;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -44,7 +44,7 @@ class AddressBookNetworkUtilsTests {
     void determineLocalNodeAddress() throws UnknownHostException {
         final Randotron randotron = Randotron.create();
         final AddressBook addressBook =
-                RandomAddressBookGenerator.create(randotron).withSize(2).build();
+                RandomAddressBookBuilder.create(randotron).withSize(2).build();
         final Address address = addressBook.getAddress(addressBook.getNodeId(0));
 
         final Address loopBackAddress = address.copySetHostnameInternal(
@@ -70,7 +70,7 @@ class AddressBookNetworkUtilsTests {
     void ErrorOnInvalidLocalAddress() {
         final Randotron randotron = Randotron.create();
         final AddressBook addressBook =
-                RandomAddressBookGenerator.create(randotron).withSize(2).build();
+                RandomAddressBookBuilder.create(randotron).withSize(2).build();
         final Address address = addressBook.getAddress(addressBook.getNodeId(0));
 
         final Address badLocalAddress = address.copySetHostnameInternal("500.8.8");

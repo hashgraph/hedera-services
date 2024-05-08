@@ -44,7 +44,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.io.IOException;
 import java.security.PublicKey;
 import java.time.Duration;
@@ -109,11 +109,11 @@ final class ReconnectTest {
                 IntStream.range(0, numNodes).mapToObj(NodeId::new).toList();
         final Random random = RandomUtils.getRandomPrintSeed();
 
-        final AddressBook addressBook = RandomAddressBookGenerator.create(random)
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
                 .withSize(numNodes)
                 .withAverageWeight(weightPerNode)
-                .withWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
-                .withHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
+                .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
+                .withHashStrategy(RandomAddressBookBuilder.HashStrategy.REAL_HASH)
                 .build();
 
         try (final PairedStreams pairedStreams = new PairedStreams()) {

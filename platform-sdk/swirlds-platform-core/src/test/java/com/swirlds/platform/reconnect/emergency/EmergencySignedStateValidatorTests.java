@@ -32,7 +32,7 @@ import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -53,10 +53,10 @@ public class EmergencySignedStateValidatorTests {
 
     @BeforeEach
     void setup() {
-        addressBook = RandomAddressBookGenerator.create(Randotron.create())
+        addressBook = RandomAddressBookBuilder.create(Randotron.create())
                 .withSize(NUM_NODES)
                 .withAverageWeight(WEIGHT_PER_NODE)
-                .withWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
+                .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
                 .build();
     }
 

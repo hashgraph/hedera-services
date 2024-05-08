@@ -35,7 +35,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.state.signed.SignedStateValidationData;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -237,7 +237,7 @@ class DefaultSignedStateValidatorTests {
     void testSignedStateValidationRandom(final String desc, final List<Node> nodes, final List<Node> signingNodes) {
         final Randotron randotron = Randotron.create();
         final Map<NodeId, Long> nodeWeights = nodes.stream().collect(Collectors.toMap(Node::id, Node::weight));
-        addressBook = RandomAddressBookGenerator.create(randotron)
+        addressBook = RandomAddressBookBuilder.create(randotron)
                 .withNodeIds(nodeWeights.keySet())
                 .withCustomWeightGenerator(nodeWeights::get)
                 .build();

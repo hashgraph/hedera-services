@@ -37,7 +37,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -105,9 +105,9 @@ public class RandomSignedStateGenerator {
     public SignedState build() {
         final AddressBook addressBookInstance;
         if (addressBook == null) {
-            addressBookInstance = RandomAddressBookGenerator.create(random)
-                    .withWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
-                    .withHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
+            addressBookInstance = RandomAddressBookBuilder.create(random)
+                    .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
+                    .withHashStrategy(RandomAddressBookBuilder.HashStrategy.REAL_HASH)
                     .build();
         } else {
             addressBookInstance = addressBook;

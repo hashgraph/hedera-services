@@ -28,7 +28,7 @@ import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.util.HashMap;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,7 +42,7 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractStateSignatureC
     // DO NOT ADD ADDITIONAL UNIT TESTS TO THIS CLASS!
 
     private final AddressBook addressBook =
-            RandomAddressBookGenerator.create(random).withSize(4).build();
+            RandomAddressBookBuilder.create(random).withSize(4).build();
 
     /**
      * Called on each state as it gets too old without collecting enough signatures.

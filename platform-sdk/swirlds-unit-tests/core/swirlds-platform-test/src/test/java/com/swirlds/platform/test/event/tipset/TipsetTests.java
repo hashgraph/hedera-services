@@ -24,8 +24,8 @@ import com.swirlds.platform.event.creation.tipset.Tipset;
 import com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator.WeightDistributionStrategy;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder.WeightDistributionStrategy;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -51,7 +51,7 @@ class TipsetTests {
         final int nodeCount = 100;
 
         final AddressBook addressBook =
-                RandomAddressBookGenerator.create(random).withSize(nodeCount).build();
+                RandomAddressBookBuilder.create(random).withSize(nodeCount).build();
 
         final Tipset tipset = new Tipset(addressBook);
         assertEquals(nodeCount, tipset.size());
@@ -78,7 +78,7 @@ class TipsetTests {
         final int nodeCount = 100;
 
         final AddressBook addressBook =
-                RandomAddressBookGenerator.create(random).withSize(nodeCount).build();
+                RandomAddressBookBuilder.create(random).withSize(nodeCount).build();
 
         for (int count = 0; count < 10; count++) {
             final List<Tipset> tipsets = new ArrayList<>();
@@ -107,7 +107,7 @@ class TipsetTests {
 
         final int nodeCount = 100;
 
-        final AddressBook addressBook = RandomAddressBookGenerator.create(random)
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
                 .withSize(nodeCount)
                 .withAverageWeight(1)
                 .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
@@ -164,7 +164,7 @@ class TipsetTests {
         final int nodeCount = 100;
 
         final AddressBook addressBook =
-                RandomAddressBookGenerator.create(random).withSize(nodeCount).build();
+                RandomAddressBookBuilder.create(random).withSize(nodeCount).build();
 
         final Map<NodeId, Long> weights = new HashMap<>();
         for (final Address address : addressBook) {

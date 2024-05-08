@@ -31,7 +31,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,9 +43,9 @@ import org.junit.jupiter.api.Test;
  */
 class PostconsensusSignaturesTest extends AbstractStateSignatureCollectorTest {
 
-    private final AddressBook addressBook = RandomAddressBookGenerator.create(random)
+    private final AddressBook addressBook = RandomAddressBookBuilder.create(random)
             .withSize(4)
-            .withWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
+            .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
             .build();
 
     /**

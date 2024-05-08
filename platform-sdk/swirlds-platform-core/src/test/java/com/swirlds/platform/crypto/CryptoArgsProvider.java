@@ -20,8 +20,8 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.ResourceLoader;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator.WeightDistributionStrategy;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder.WeightDistributionStrategy;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.URISyntaxException;
 import java.security.KeyStoreException;
@@ -59,7 +59,7 @@ public class CryptoArgsProvider {
     }
 
     public static AddressBook createAddressBook(final int size) {
-        final AddressBook addresses = RandomAddressBookGenerator.create(Randotron.create())
+        final AddressBook addresses = RandomAddressBookBuilder.create(Randotron.create())
                 .withSize(size)
                 .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();

@@ -27,7 +27,7 @@ import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticTopology;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -121,7 +121,7 @@ class TopologyTest {
     void testFullyConnectedTopology(final int numNodes, final int numNeighbors, final long ignoredSeed) {
         final Randotron randotron = Randotron.create();
         final AddressBook addressBook =
-                RandomAddressBookGenerator.create(randotron).withSize(numNodes).build();
+                RandomAddressBookBuilder.create(randotron).withSize(numNodes).build();
         for (int thisNode = 0; thisNode < numNodes; thisNode++) {
             final NodeId outOfBoundsId = addressBook.getNextNodeId();
             final NodeId thisNodeId = addressBook.getNodeId(thisNode);

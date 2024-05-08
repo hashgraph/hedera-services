@@ -35,7 +35,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.ShuffledEventEmitter;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -82,7 +82,7 @@ public class SyncTestExecutor {
     public SyncTestExecutor(final SyncTestParams params) {
         this.params = params;
         this.ancientMode = params.getAncientMode();
-        this.addressBook = RandomAddressBookGenerator.create(Randotron.create())
+        this.addressBook = RandomAddressBookBuilder.create(Randotron.create())
                 .withSize(params.getNumNetworkNodes())
                 .build();
 

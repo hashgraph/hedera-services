@@ -29,7 +29,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -44,7 +44,7 @@ class SwirldStateManagerTests {
     void setup() {
         final SwirldsPlatform platform = mock(SwirldsPlatform.class);
         final AddressBook addressBook =
-                RandomAddressBookGenerator.create(Randotron.create()).build();
+                RandomAddressBookBuilder.create(Randotron.create()).build();
         when(platform.getAddressBook()).thenReturn(addressBook);
         initialState = newState();
         final PlatformContext platformContext =

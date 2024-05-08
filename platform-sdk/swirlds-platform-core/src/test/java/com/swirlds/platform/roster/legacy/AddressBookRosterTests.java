@@ -29,7 +29,7 @@ import com.swirlds.platform.roster.Roster;
 import com.swirlds.platform.roster.RosterEntry;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -44,7 +44,7 @@ public class AddressBookRosterTests {
     void serializeDeserializeTest() throws IOException, ConstructableRegistryException {
         final Randotron randotron = Randotron.create();
         final AddressBook addressBook =
-                RandomAddressBookGenerator.create(randotron).withSize(100).build();
+                RandomAddressBookBuilder.create(randotron).withSize(100).build();
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         final AddressBookRoster roster = new AddressBookRoster(addressBook);
 
@@ -66,7 +66,7 @@ public class AddressBookRosterTests {
     void addressBookRosterTest() {
         final Randotron randotron = Randotron.create();
         final AddressBook addressBook =
-                RandomAddressBookGenerator.create(randotron).withSize(100).build();
+                RandomAddressBookBuilder.create(randotron).withSize(100).build();
         final Roster roster = new AddressBookRoster(addressBook);
         final Iterator<RosterEntry> entries = roster.iterator();
         for (int i = 0; i < addressBook.getSize(); i++) {
@@ -87,7 +87,7 @@ public class AddressBookRosterTests {
     void serializeDeserializeEntryTest() throws IOException, ConstructableRegistryException {
         final Randotron randotron = Randotron.create();
         final AddressBook addressBook =
-                RandomAddressBookGenerator.create(randotron).withSize(100).build();
+                RandomAddressBookBuilder.create(randotron).withSize(100).build();
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         final Roster roster = new AddressBookRoster(addressBook);
 

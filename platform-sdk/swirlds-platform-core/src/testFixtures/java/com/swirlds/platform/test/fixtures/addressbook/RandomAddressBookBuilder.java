@@ -42,7 +42,7 @@ import java.util.function.Function;
 /**
  * A utility for generating a random address book.
  */
-public class RandomAddressBookGenerator {
+public class RandomAddressBookBuilder {
 
     // TODO add a way to generate with real keys
 
@@ -131,8 +131,8 @@ public class RandomAddressBookGenerator {
      * @return a new random address book generator
      */
     @NonNull
-    public static RandomAddressBookGenerator create(@NonNull final Random random) {
-        return new RandomAddressBookGenerator(random);
+    public static RandomAddressBookBuilder create(@NonNull final Random random) {
+        return new RandomAddressBookBuilder(random);
     }
 
     /**
@@ -140,7 +140,7 @@ public class RandomAddressBookGenerator {
      *
      * @param random a source of randomness
      */
-    private RandomAddressBookGenerator(@NonNull final Random random) {
+    private RandomAddressBookBuilder(@NonNull final Random random) {
         this.random = Objects.requireNonNull(random);
     }
 
@@ -325,7 +325,7 @@ public class RandomAddressBookGenerator {
      * @return this object
      */
     @NonNull
-    public RandomAddressBookGenerator withSize(final int size) {
+    public RandomAddressBookBuilder withSize(final int size) {
         this.size = size;
         return this;
     }
@@ -336,7 +336,7 @@ public class RandomAddressBookGenerator {
      * @return this object
      */
     @NonNull // TODO maybe remove
-    public RandomAddressBookGenerator withNodeIds(@NonNull final Set<NodeId> nodeIds) {
+    public RandomAddressBookBuilder withNodeIds(@NonNull final Set<NodeId> nodeIds) {
         Objects.requireNonNull(nodeIds, "NodeIds must not be null");
         this.nodeIds.clear();
         this.nodeIds.addAll(nodeIds);
@@ -349,7 +349,7 @@ public class RandomAddressBookGenerator {
      * @return this object
      */
     @NonNull // TODO remove
-    public RandomAddressBookGenerator withHashStrategy(@NonNull final HashStrategy hashStrategy) {
+    public RandomAddressBookBuilder withHashStrategy(@NonNull final HashStrategy hashStrategy) {
         this.hashStrategy = hashStrategy;
         return this;
     }
@@ -360,7 +360,7 @@ public class RandomAddressBookGenerator {
      * @return this object
      */
     @NonNull
-    public RandomAddressBookGenerator withAverageWeight(final long averageWeight) {
+    public RandomAddressBookBuilder withAverageWeight(final long averageWeight) {
         this.averageWeight = averageWeight;
         return this;
     }
@@ -371,7 +371,7 @@ public class RandomAddressBookGenerator {
      * @return this object
      */
     @NonNull
-    public RandomAddressBookGenerator withWeightStandardDeviation(final long weightStandardDeviation) {
+    public RandomAddressBookBuilder withWeightStandardDeviation(final long weightStandardDeviation) {
         this.weightStandardDeviation = weightStandardDeviation;
         return this;
     }
@@ -382,7 +382,7 @@ public class RandomAddressBookGenerator {
      * @return this object
      */
     @NonNull
-    public RandomAddressBookGenerator withMinimumWeight(final long minimumWeight) {
+    public RandomAddressBookBuilder withMinimumWeight(final long minimumWeight) {
         this.minimumWeight = minimumWeight;
         return this;
     }
@@ -393,7 +393,7 @@ public class RandomAddressBookGenerator {
      * @return this object
      */
     @NonNull
-    public RandomAddressBookGenerator withMaximumWeight(final long maximumWeight) {
+    public RandomAddressBookBuilder withMaximumWeight(final long maximumWeight) {
         this.maximumWeight = maximumWeight;
         return this;
     }
@@ -405,7 +405,7 @@ public class RandomAddressBookGenerator {
      * @return this object
      */
     @NonNull
-    public RandomAddressBookGenerator withCustomWeightGenerator(final Function<NodeId, Long> customWeightGenerator) {
+    public RandomAddressBookBuilder withCustomWeightGenerator(final Function<NodeId, Long> customWeightGenerator) {
         this.customWeightGenerator = customWeightGenerator;
         return this;
     }
@@ -416,7 +416,7 @@ public class RandomAddressBookGenerator {
      * @return this object
      */
     @NonNull
-    public RandomAddressBookGenerator withWeightDistributionStrategy(
+    public RandomAddressBookBuilder withWeightDistributionStrategy(
             final WeightDistributionStrategy weightDistributionStrategy) {
 
         this.weightDistributionStrategy = weightDistributionStrategy;
