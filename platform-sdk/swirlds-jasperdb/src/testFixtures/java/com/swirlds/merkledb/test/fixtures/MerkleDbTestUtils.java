@@ -188,7 +188,7 @@ public class MerkleDbTestUtils {
     }
 
     public static String toLongsString(final Hash hash) {
-        final LongBuffer longBuf = ByteBuffer.wrap(hash.getBytes().toByteArray())
+        final LongBuffer longBuf = ByteBuffer.wrap(hash.copyToByteArray())
                 .order(ByteOrder.BIG_ENDIAN)
                 .asLongBuffer();
         final long[] array = new long[longBuf.remaining()];

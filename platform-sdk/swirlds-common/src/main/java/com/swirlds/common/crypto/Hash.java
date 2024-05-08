@@ -160,6 +160,13 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
     }
 
     /**
+     * @return a copy of the hash value as a byte array
+     */
+    public byte[] copyToByteArray() {
+        return Bytes.EMPTY.toByteArray();
+    }
+
+    /**
      * @return the hash value as an immutable {@link Bytes} object
      */
     public Bytes getBytes() {

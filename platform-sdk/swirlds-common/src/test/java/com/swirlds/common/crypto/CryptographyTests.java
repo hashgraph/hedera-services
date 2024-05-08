@@ -90,7 +90,7 @@ class CryptographyTests {
         for (int i = 0; i < messages.length; i++) {
             messages[i] = digestPool.next();
             final Hash hash = cryptography.digestSync(messages[i].getPayloadDirect(), DigestType.SHA_384);
-            assertTrue(digestPool.isValid(messages[i], hash.getBytes().toByteArray()));
+            assertTrue(digestPool.isValid(messages[i], hash.copyToByteArray()));
         }
     }
 

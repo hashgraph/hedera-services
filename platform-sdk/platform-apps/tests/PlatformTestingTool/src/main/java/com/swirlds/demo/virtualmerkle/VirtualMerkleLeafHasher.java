@@ -210,19 +210,19 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
 
                 // add content to json
                 if (accountsHash != null) {
-                    rootNode.put("accounts", accountsHash.getBytes().toHex());
+                    rootNode.put("accounts", accountsHash.toHex());
                 } else {
                     rootNode.put("accounts", "empty");
                 }
 
                 if (scHash != null) {
-                    rootNode.put("sc", scHash.getBytes().toHex());
+                    rootNode.put("sc", scHash.toHex());
                 } else {
                     rootNode.put("sc", "empty");
                 }
 
                 if (byteCodeHash != null) {
-                    rootNode.put("byteCode", byteCodeHash.getBytes().toHex());
+                    rootNode.put("byteCode", byteCodeHash.toHex());
                 } else {
                     rootNode.put("byteCode", "empty");
                 }

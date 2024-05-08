@@ -52,6 +52,6 @@ public class ImmutableHash extends Hash {
      */
     @Override
     public byte[] getValue() {
-        return getBytes().toByteArray();
+        return copyToByteArray();
     }
 }
