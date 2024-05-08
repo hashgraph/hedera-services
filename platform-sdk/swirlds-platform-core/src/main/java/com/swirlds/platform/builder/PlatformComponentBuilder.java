@@ -22,6 +22,7 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatform
 import static com.swirlds.platform.state.iss.IssDetector.DO_NOT_IGNORE_ROUNDS;
 
 import com.swirlds.common.merkle.utility.SerializableLong;
+import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.components.consensus.DefaultConsensusEngine;
@@ -36,8 +37,6 @@ import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.deduplication.StandardEventDeduplicator;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
-import com.swirlds.platform.event.linking.GossipLinker;
-import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
@@ -60,6 +59,7 @@ import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
+import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.iss.DefaultIssDetector;
 import com.swirlds.platform.state.iss.IssDetector;
@@ -73,6 +73,7 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.status.DefaultStatusStateMachine;
 import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.util.MetricsDocUtils;
+import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -109,7 +110,6 @@ public class PlatformComponentBuilder {
     private OrphanBuffer orphanBuffer;
     private RunningEventHasher runningEventHasher;
     private EventCreationManager eventCreationManager;
-    private InOrderLinker inOrderLinker;
     private ConsensusEngine consensusEngine;
     private ConsensusEventStream consensusEventStream;
     private SignedStateSentinel signedStateSentinel;
@@ -119,6 +119,7 @@ public class PlatformComponentBuilder {
     private TransactionPrehandler transactionPrehandler;
     private PcesWriter pcesWriter;
     private IssDetector issDetector;
+    private Gossip gossip;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -238,13 +239,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public InternalEventValidator buildInternalEventValidator() {
         if (internalEventValidator == null) {
-            final boolean singleNodeNetwork = blocks.initialState()
-                            .get()
-                            .getState()
-                            .getPlatformState()
-                            .getAddressBook()
-                            .getSize()
-                    == 1;
+            final boolean singleNodeNetwork = blocks.initialAddressBook().getSize() == 1;
             internalEventValidator = new DefaultInternalEventValidator(
                     blocks.platformContext(), singleNodeNetwork, blocks.intakeEventCounter());
         }
@@ -315,7 +310,7 @@ public class PlatformComponentBuilder {
                     CryptoStatic::verifySignature,
                     blocks.appVersion(),
                     blocks.initialState().get().getState().getPlatformState().getPreviousAddressBook(),
-                    blocks.initialState().get().getState().getPlatformState().getAddressBook(),
+                    blocks.initialAddressBook(),
                     blocks.intakeEventCounter());
         }
         return eventSignatureValidator;
@@ -481,7 +476,7 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(),
                     blocks.randomBuilder().buildNonCryptographicRandom(),
                     data -> new PlatformSigner(blocks.keysAndCerts()).sign(data),
-                    blocks.initialState().get().getState().getPlatformState().getAddressBook(),
+                    blocks.initialAddressBook(),
                     blocks.selfId(),
                     blocks.appVersion(),
                     blocks.transactionPool());
@@ -493,39 +488,6 @@ public class PlatformComponentBuilder {
                     eventCreator);
         }
         return eventCreationManager;
-    }
-
-    /**
-     * Build the in-order linker if it has not yet been built. If one has been provided via
-     * {@link #withInOrderLinker(InOrderLinker)}, that in-order linker will be used. If this method is called more than
-     * once, only the first call will build the in-order linker. Otherwise, the default in-order linker will be created
-     * and returned.
-     *
-     * @return the in-order linker
-     */
-    @NonNull
-    public InOrderLinker buildInOrderLinker() {
-        if (inOrderLinker == null) {
-            inOrderLinker = new GossipLinker(blocks.platformContext(), blocks.intakeEventCounter());
-        }
-        return inOrderLinker;
-    }
-
-    /**
-     * Provide an in-order linker in place of the platform's default in-order linker.
-     *
-     * @param inOrderLinker the in-order linker to use
-     * @return this builder
-     */
-    @NonNull
-    public PlatformComponentBuilder withInOrderLinker(@NonNull final InOrderLinker inOrderLinker) {
-        throwIfAlreadyUsed();
-        if (this.inOrderLinker != null) {
-            throw new IllegalStateException("In-order linker has already been set");
-        }
-        this.inOrderLinker = Objects.requireNonNull(inOrderLinker);
-
-        return this;
     }
 
     /**
@@ -870,5 +832,51 @@ public class PlatformComponentBuilder {
                     roundToIgnore);
         }
         return issDetector;
+    }
+
+    /**
+     * Provide a gossip in place of the platform's default gossip.
+     *
+     * @param gossip the gossip to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withGossip(@NonNull final Gossip gossip) {
+        throwIfAlreadyUsed();
+        if (this.gossip != null) {
+            throw new IllegalStateException("Gossip has already been set");
+        }
+        this.gossip = Objects.requireNonNull(gossip);
+        return this;
+    }
+
+    /**
+     * Build the gossip if it has not yet been built. If one has been provided via {@link #withGossip(Gossip)}, that
+     * gossip will be used. If this method is called more than once, only the first call will build the gossip.
+     * Otherwise, the default gossip will be created and returned.
+     *
+     * @return the gossip
+     */
+    @NonNull
+    public Gossip buildGossip() {
+        if (gossip == null) {
+            gossip = new SyncGossip(
+                    blocks.platformContext(),
+                    blocks.randomBuilder().buildNonCryptographicRandom(),
+                    AdHocThreadManager.getStaticThreadManager(),
+                    blocks.keysAndCerts(),
+                    blocks.initialAddressBook(),
+                    blocks.selfId(),
+                    blocks.appVersion(),
+                    () -> blocks.intakeQueueSizeSupplierSupplier().get().getAsLong(),
+                    blocks.swirldStateManager(),
+                    () -> blocks.getLatestCompleteStateReference().get().get(),
+                    x -> blocks.statusActionSubmitterReference().get().submitStatusAction(x),
+                    () -> blocks.platformStatusSupplierReference().get().get(),
+                    state -> blocks.loadReconnectStateReference().get().accept(state),
+                    () -> blocks.clearAllPipelinesForReconnectReference().get().run(),
+                    blocks.intakeEventCounter());
+        }
+        return gossip;
     }
 }
