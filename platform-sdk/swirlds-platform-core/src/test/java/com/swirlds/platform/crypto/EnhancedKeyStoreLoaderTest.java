@@ -16,8 +16,10 @@
 
 package com.swirlds.platform.crypto;
 
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader.loadConfigFile;
 import static com.swirlds.platform.state.address.AddressBookNetworkUtils.isLocal;
+import static com.swirlds.platform.util.BootstrapUtils.readLegacySettingsFile;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -28,7 +30,6 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.resource.ResourceLoader;
-import com.swirlds.platform.util.BootstrapUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -195,7 +196,7 @@ class EnhancedKeyStoreLoaderTest {
      */
     private Configuration configure(final Path keyDirectory) throws IOException {
         final ConfigurationBuilder builder = ConfigurationBuilder.create();
-        BootstrapUtils.setupConfigBuilder(builder, testDataDirectory.resolve("settings.txt"));
+        readLegacySettingsFile(builder, testDataDirectory.resolve(DEFAULT_SETTINGS_FILE_NAME));
 
         builder.withValue("paths.keysDirPath", keyDirectory.toAbsolutePath().toString());
 
