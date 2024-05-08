@@ -65,7 +65,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Class for retrieving objects in a certain context, e.g. during a {@code handler.handle(...)} call.
+ * Class for retrieving objects in a certain context. For example, during a {@code handler.handle(...)} call.
  * This allows compartmentalizing common validation logic without requiring store implementations to
  * throw inappropriately-contextual exceptions, and also abstracts duplicated business logic out of
  * multiple handlers.
