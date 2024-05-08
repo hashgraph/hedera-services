@@ -138,7 +138,12 @@ public class InitialModServiceTokenSchema extends Schema {
      * SyntheticRecordsGenerator} for more details). Even though these sorted sets contain account
      * objects, these account objects may or may not yet exist in state. They're usually not needed,
      * but are required for an event recovery situation.
+     * @param sysAccts a supplier of synthetic system account records
+     * @param stakingAccts a supplier of synthetic staking account records
+     * @param treasuryAccts a supplier of synthetic treasury account records
+     * @param miscAccts a supplier of synthetic miscellaneous account records
      * @param blocklistAccts a supplier of synthetic account records that are to be blocked
+     * @param version the semantic version of the software
      */
     public InitialModServiceTokenSchema(
             final Supplier<SortedSet<Account>> sysAccts,
