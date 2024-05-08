@@ -64,7 +64,6 @@ class OutboundConnectionCreatorTest {
         final AddressBook addressBook = RandomAddressBookBuilder.create(r)
                 .withSize(numNodes)
                 .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .withHashStrategy(RandomAddressBookBuilder.HashStrategy.FAKE_HASH)
                 .build();
         final int thisNodeIndex = r.nextInt(numNodes);
         final int otherNodeIndex = r.nextInt(numNodes);
@@ -144,7 +143,6 @@ class OutboundConnectionCreatorTest {
         final AddressBook addressBook = RandomAddressBookBuilder.create(r)
                 .withSize(numNodes)
                 .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .withHashStrategy(RandomAddressBookBuilder.HashStrategy.FAKE_HASH)
                 .build();
         final int thisNodeIndex = r.nextInt(numNodes);
         final int otherNodeIndex = r.nextInt(numNodes);

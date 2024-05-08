@@ -154,7 +154,6 @@ class AddressBookTests {
         final Random random = getRandomPrintSeed();
 
         final RandomAddressBookBuilder generator = RandomAddressBookBuilder.create(random)
-                .withMinimumWeight(0)
                 .withAverageWeight(100)
                 .withWeightStandardDeviation(50)
                 .withSize(100);
@@ -290,7 +289,6 @@ class AddressBookTests {
     void clearTest() {
         final AddressBook addressBook = RandomAddressBookBuilder.create(getRandomPrintSeed())
                 .withSize(100)
-                .withMinimumWeight(0)
                 .withMaximumWeight(10)
                 .withAverageWeight(5)
                 .withWeightStandardDeviation(5)

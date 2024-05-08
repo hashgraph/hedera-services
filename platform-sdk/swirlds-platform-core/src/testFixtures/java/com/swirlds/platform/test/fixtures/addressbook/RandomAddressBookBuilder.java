@@ -16,20 +16,12 @@
 
 package com.swirlds.platform.test.fixtures.addressbook;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.NameUtils;
-import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.platform.crypto.SerializableX509Certificate;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.crypto.PreGeneratedX509Certs;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -57,20 +49,6 @@ public class RandomAddressBookBuilder {
      * The number of addresses to put into the address book.
      */
     private int size = 4;
-
-    /**
-     * Describes different ways that the random address book is hashed.
-     */
-    public enum HashStrategy { // TODO remove
-        NO_HASH,
-        FAKE_HASH,
-        REAL_HASH
-    }
-
-    /**
-     * The strategy that should be used when hashing the address book.
-     */
-    private HashStrategy hashStrategy = HashStrategy.NO_HASH;
 
     /**
      * Describes different ways that the random address book has its weight distributed if the custom strategy lambda is
@@ -144,62 +122,6 @@ public class RandomAddressBookBuilder {
         this.random = Objects.requireNonNull(random);
     }
 
-    // TODO move to RandomAddressGenerator
-
-    /**
-     * Generate an address that has random data in the "unimportant" fields.
-     *
-     * @param random a source of randomness
-     * @param id     the node ID
-     * @param weight the weight
-     */
-    @NonNull
-    public static Address addressWithRandomData(
-            @NonNull final Random random, @NonNull final NodeId id, final long weight) {
-        Objects.requireNonNull(random, "Random must not be null");
-        Objects.requireNonNull(id, "NodeId must not be null");
-
-        final SerializableX509Certificate sigCert = PreGeneratedX509Certs.getSigCert(id.id());
-        final SerializableX509Certificate agreeCert = PreGeneratedX509Certs.getAgreeCert(id.id());
-
-        final String nickname = NameUtils.getName(id.id());
-        final String selfName = RandomUtils.randomString(random, 10);
-
-        final int maxPort = 65535;
-        final int minPort = 2000;
-        final String addressInternalHostname;
-        try {
-            addressInternalHostname =
-                    InetAddress.getByName(RandomUtils.randomIp(random)).getHostAddress();
-        } catch (final UnknownHostException e) {
-            throw new RuntimeException(e);
-        }
-        final int portInternalIpv4 = minPort + random.nextInt(maxPort - minPort);
-        final String addressExternalHostname;
-        try {
-            addressExternalHostname =
-                    InetAddress.getByName(RandomUtils.randomIp(random)).getHostAddress();
-        } catch (final UnknownHostException e) {
-            throw new RuntimeException(e);
-        }
-        final int portExternalIpv4 = minPort + random.nextInt(maxPort - minPort);
-
-        final String memo = RandomUtils.randomString(random, 10);
-
-        return new Address(
-                id,
-                nickname,
-                selfName,
-                weight,
-                addressInternalHostname,
-                portInternalIpv4,
-                addressExternalHostname,
-                portExternalIpv4,
-                sigCert,
-                agreeCert,
-                memo);
-    }
-
     /**
      * Generate the next node ID.
      */
@@ -224,7 +146,8 @@ public class RandomAddressBookBuilder {
         final long unboundedWeight;
         switch (weightDistributionStrategy) {
             case BALANCED -> unboundedWeight = averageWeight;
-            case GAUSSIAN -> unboundedWeight = (long) (averageWeight + random.nextGaussian() * weightStandardDeviation);
+            case GAUSSIAN -> unboundedWeight =
+                    Math.max(0, (long) (averageWeight + random.nextGaussian() * weightStandardDeviation));
             default -> throw new IllegalStateException("Unexpected value: " + weightDistributionStrategy);
         }
 
@@ -266,11 +189,7 @@ public class RandomAddressBookBuilder {
             }
         }
 
-        if (hashStrategy == HashStrategy.FAKE_HASH) {
-            addressBook.setHash(randomHash(random));
-        } else if (hashStrategy == HashStrategy.REAL_HASH) {
-            CryptographyHolder.get().digestSync(addressBook);
-        }
+        CryptographyHolder.get().digestSync(addressBook);
 
         return addressBook;
     }
@@ -296,8 +215,6 @@ public class RandomAddressBookBuilder {
         return addressBook;
     }
 
-    // TODO create random address generator
-
     /**
      * Build a random address using provided configuration. Address IS NOT automatically added to the address book.
      *
@@ -316,7 +233,11 @@ public class RandomAddressBookBuilder {
     @NonNull
     private Address buildNextAddress(@Nullable final NodeId suppliedNodeId) {
         final NodeId nodeId = suppliedNodeId == null ? getNextNodeId() : suppliedNodeId;
-        return addressWithRandomData(random, nodeId, getNextWeight(nodeId));
+
+        return RandomAddressBuilder.create(random)
+                .withNodeId(nodeId)
+                .withWeight(getNextWeight(nodeId))
+                .build();
     }
 
     /**
@@ -340,17 +261,6 @@ public class RandomAddressBookBuilder {
         Objects.requireNonNull(nodeIds, "NodeIds must not be null");
         this.nodeIds.clear();
         this.nodeIds.addAll(nodeIds);
-        return this;
-    }
-
-    /**
-     * Set the desired hashing strategy for the address book.
-     *
-     * @return this object
-     */
-    @NonNull // TODO remove
-    public RandomAddressBookBuilder withHashStrategy(@NonNull final HashStrategy hashStrategy) {
-        this.hashStrategy = hashStrategy;
         return this;
     }
 

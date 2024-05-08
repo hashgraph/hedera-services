@@ -32,6 +32,7 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBuilder;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -149,9 +150,9 @@ class RosterDiffGeneratorTests {
                 final NodeId nodeToAdd = newRoster.getNextNodeId();
                 addedNodes.add(nodeToAdd);
 
-                final Address address = RandomAddressBookBuilder.addressWithRandomData(
-                        random, nodeToAdd, random.nextLong(1, 100_000_000));
-
+                final Address address = RandomAddressBuilder.create(random)
+                        .withNodeId(nodeToAdd)
+                        .build();
                 newRoster.add(address);
             }
 

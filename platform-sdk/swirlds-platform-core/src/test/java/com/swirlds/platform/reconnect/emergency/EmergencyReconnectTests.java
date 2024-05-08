@@ -330,7 +330,6 @@ class EmergencyReconnectTests {
                 .withSize(numNodes)
                 .withAverageWeight(100L)
                 .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
-                .withHashStrategy(RandomAddressBookBuilder.HashStrategy.REAL_HASH)
                 .build();
     }
 

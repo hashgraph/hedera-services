@@ -107,7 +107,6 @@ public class RandomSignedStateGenerator {
         if (addressBook == null) {
             addressBookInstance = RandomAddressBookBuilder.create(random)
                     .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
-                    .withHashStrategy(RandomAddressBookBuilder.HashStrategy.REAL_HASH)
                     .build();
         } else {
             addressBookInstance = addressBook;
