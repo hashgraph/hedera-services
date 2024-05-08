@@ -96,13 +96,7 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
         final var accountStore = context.writableStore(WritableAccountStore.class);
         final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var validated = validateSemantics(
-                tokenIds,
-                op.accountOrThrow(),
-                tokensConfig,
-                entitiesConfig,
-                accountStore,
-                tokenStore,
-                tokenRelStore);
+                tokenIds, op.accountOrThrow(), tokensConfig, entitiesConfig, accountStore, tokenStore, tokenRelStore);
 
         // Now that we've validated we can link all the new token IDs to the account,
         // create the corresponding token relations and update the account
