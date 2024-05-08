@@ -224,7 +224,7 @@ class AccountTest {
         subject.dissociateUsing(List.of(dissociationRel), validator);
 
         // then:
-        verify(dissociationRel).updateModelRelsSubjectTo(validator);
+        verify(dissociationRel).updateModelRelsSubjectTo();
         assertEquals(numPositiveBalances - 1, subject.getNumPositiveBalances());
         assertEquals(numAssociations - 1, subject.getNumAssociations());
         assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
@@ -251,7 +251,7 @@ class AccountTest {
         subject.dissociateUsing(List.of(dissociationRel), validator);
 
         // then:
-        verify(dissociationRel).updateModelRelsSubjectTo(validator);
+        verify(dissociationRel).updateModelRelsSubjectTo();
         assertEquals(numAssociations - 1, subject.getNumAssociations());
         assertEquals(numPositiveBalances, subject.getNumPositiveBalances());
         assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
@@ -279,7 +279,7 @@ class AccountTest {
         subject.dissociateUsing(List.of(dissociationRel), validator);
 
         // then:
-        verify(dissociationRel).updateModelRelsSubjectTo(validator);
+        verify(dissociationRel).updateModelRelsSubjectTo();
         assertEquals(numAssociations - 1, subject.getNumAssociations());
         assertEquals(numPositiveBalances, subject.getNumPositiveBalances());
         assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
@@ -308,7 +308,7 @@ class AccountTest {
         subject.dissociateUsing(List.of(dissociationRel), validator);
 
         // then:
-        verify(dissociationRel).updateModelRelsSubjectTo(validator);
+        verify(dissociationRel).updateModelRelsSubjectTo();
         assertEquals(numAssociations - 1, subject.getNumAssociations());
         assertEquals(numPositiveBalances, subject.getNumPositiveBalances());
         assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
@@ -333,7 +333,7 @@ class AccountTest {
         subject.dissociateUsing(List.of(dissociationRel), validator);
 
         // then:
-        verify(dissociationRel).updateModelRelsSubjectTo(validator);
+        verify(dissociationRel).updateModelRelsSubjectTo();
         assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
     }
 

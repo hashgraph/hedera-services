@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.common;
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.encodedRc;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.standardized;
 import static java.util.Objects.requireNonNull;
@@ -36,15 +36,15 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 
 /**
- * Minimal implementation support for an {@link HtsCall} that needs an {@link HederaWorldUpdater.Enhancement}
+ * Minimal implementation support for an {@link Call} that needs an {@link HederaWorldUpdater.Enhancement}
  * and {@link SystemContractGasCalculator}.
  */
-public abstract class AbstractHtsCall implements HtsCall {
+public abstract class AbstractCall implements Call {
     protected final SystemContractGasCalculator gasCalculator;
     protected final HederaWorldUpdater.Enhancement enhancement;
     private final boolean isViewCall;
 
-    protected AbstractHtsCall(
+    protected AbstractCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             final boolean isViewCall) {
