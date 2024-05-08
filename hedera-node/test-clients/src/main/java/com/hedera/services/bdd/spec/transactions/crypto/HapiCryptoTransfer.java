@@ -87,6 +87,10 @@ import org.apache.logging.log4j.Logger;
 public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     static final Logger log = LogManager.getLogger(HapiCryptoTransfer.class);
 
+    private String token;
+
+    private String PARTITION_TOKEN_OPERATION_MODE;
+
     private static final List<TokenMovement> MISSING_TOKEN_AWARE_PROVIDERS = Collections.emptyList();
     private static final Function<HapiSpec, TransferList> MISSING_HBAR_ONLY_PROVIDER = null;
 
@@ -123,6 +127,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     private Optional<BiConsumer<HapiSpec, CryptoTransferTransactionBody.Builder>> explicitDef = Optional.empty();
     private boolean fullyAggregateTokenTransfers = true;
     private static boolean transferToKey = false;
+
+    private Optional<Pair<String[], Long>> appendedPartitionFromTo = Optional.empty();
 
     @Override
     public HederaFunctionality type() {
@@ -218,6 +224,14 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
         this.tokenAwareProviders = List.of(sources);
     }
 
+    public HapiCryptoTransfer(
+            final String account, final String fromPartitionToken, final String toPartitionToken, final long amount) {
+        this.token = fromPartitionToken;
+        this.PARTITION_TOKEN_OPERATION_MODE = "PartitionMove";
+        this.appendedPartitionFromTo =
+                Optional.of(Pair.of(new String[] {account, fromPartitionToken, toPartitionToken}, amount));
+    }
+
     public HapiCryptoTransfer dontFullyAggregateTokenTransfers() {
         this.fullyAggregateTokenTransfers = false;
         return this;
@@ -238,6 +252,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     protected Function<HapiSpec, List<Key>> variableDefaultSigners() {
         if (hbarOnlyProvider != MISSING_HBAR_ONLY_PROVIDER) {
             return hbarOnlyVariableDefaultSigners();
+        } else if (this.PARTITION_TOKEN_OPERATION_MODE == "PartitionMove") {
+            return partitionMoveSignatures();
         } else {
             return tokenAwareVariableDefaultSigners();
         }
@@ -489,6 +505,24 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
                             AccountAmount.newBuilder().setAccountID(receiver).setAmount(+amount));
             b.addTokenTransfers(appendList);
         }
+        if (appendedPartitionFromTo.isPresent()) {
+            final var extra = appendedPartitionFromTo.get();
+            final var involved = extra.getLeft();
+            final var account = TxnUtils.asId(involved[0], spec);
+            final var fromPartitionToken = TxnUtils.asTokenId(involved[1], spec);
+            final var toPartitionToken = TxnUtils.asTokenId(involved[2], spec);
+            final var amount = extra.getRight();
+            final var reduceUnits = TokenTransferList.newBuilder()
+                    .setToken(fromPartitionToken)
+                    .addTransfers(
+                            AccountAmount.newBuilder().setAccountID(account).setAmount(-amount));
+            b.addTokenTransfers(reduceUnits);
+            final var appendUnits = TokenTransferList.newBuilder()
+                    .setToken(toPartitionToken)
+                    .addTransfers(
+                            AccountAmount.newBuilder().setAccountID(account).setAmount(+amount));
+            b.addTokenTransfers(appendUnits);
+        }
         if (breakNetZeroTokenChangeInvariant && b.getTokenTransfersCount() > 0) {
             for (int i = 0, n = b.getTokenTransfersCount(); i < n; i++) {
                 final var changesHere = b.getTokenTransfersBuilder(i);
@@ -588,6 +622,14 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
                 }
             });
             return new ArrayList<>(partyKeys);
+        };
+    }
+
+    protected Function<HapiSpec, List<Key>> partitionMoveSignatures() {
+        return spec -> {
+            final List<Key> partyKeys = new ArrayList<>();
+            partyKeys.add(spec.registry().getPartitionMoveKey(this.token));
+            return partyKeys;
         };
     }
 
