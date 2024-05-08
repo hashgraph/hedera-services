@@ -1,5 +1,5 @@
-import com.swirlds.logging.api.extensions.provider.LogProviderFactory;
-import com.swirlds.logging.log4j.appender.Log4JProviderFactory;
+import com.swirlds.logging.log4j.factory.BaseLoggingProvider;
+import org.apache.logging.log4j.spi.Provider;
 
 module com.swirlds.logging.log4j.appender {
     requires static com.github.spotbugs.annotations;
@@ -9,8 +9,8 @@ module com.swirlds.logging.log4j.appender {
     requires transitive org.apache.logging.log4j.core;
     requires transitive org.apache.logging.log4j;
 
-    provides LogProviderFactory with
-            Log4JProviderFactory;
+    provides Provider with
+            BaseLoggingProvider;
 
-    exports com.swirlds.logging.log4j.appender;
+    exports com.swirlds.logging.log4j.factory;
 }
