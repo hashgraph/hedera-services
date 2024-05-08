@@ -59,7 +59,7 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
 
     /**
      * Constructs the step with the operation.
-     * @param op - the operation
+     * @param op the operation
      */
     public AssociateTokenRecipientsStep(@NonNull final CryptoTransferTransactionBody op) {
         this.op = requireNonNull(op);

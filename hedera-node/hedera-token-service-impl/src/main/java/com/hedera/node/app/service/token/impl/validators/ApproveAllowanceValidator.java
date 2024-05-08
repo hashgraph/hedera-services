@@ -251,7 +251,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
     }
 
     /**
-     * Validates the token basic fields like token type, token relation exists.
+     * Validates some of the token's basic fields like token type and token relation exists.
      * @param owner owner account
      * @param spender spender account
      * @param token token

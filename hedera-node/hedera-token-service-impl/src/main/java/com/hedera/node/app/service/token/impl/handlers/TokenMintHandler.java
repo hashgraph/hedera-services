@@ -81,7 +81,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
 
     /**
      * Default constructor for injection.
-     * @param validator - the token supply change ops validator
+     * @param validator the token supply change ops validator
      */
     @Inject
     public TokenMintHandler(@NonNull final TokenSupplyChangeOpsValidator validator) {

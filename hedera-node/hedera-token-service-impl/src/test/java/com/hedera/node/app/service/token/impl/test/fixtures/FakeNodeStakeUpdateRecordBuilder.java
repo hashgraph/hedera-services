@@ -23,7 +23,6 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Fake Node Stake Update Record Builder
- *
  */
 public class FakeNodeStakeUpdateRecordBuilder {
     /**

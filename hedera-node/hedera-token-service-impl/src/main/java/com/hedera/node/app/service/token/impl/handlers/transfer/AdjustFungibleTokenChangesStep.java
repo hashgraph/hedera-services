@@ -56,8 +56,8 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
 
     /**
      * Constructs the step with the CryptoTransferTransactionBody and the topLevelPayer.
-     * @param op - the CryptoTransferTransactionBody
-     * @param topLevelPayer - the payer account
+     * @param op the CryptoTransferTransactionBody
+     * @param topLevelPayer the payer account
      */
     public AdjustFungibleTokenChangesStep(
             @NonNull final CryptoTransferTransactionBody op, @NonNull final AccountID topLevelPayer) {

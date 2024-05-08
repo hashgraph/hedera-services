@@ -91,7 +91,7 @@ public class CryptoCreateValidator {
      * @param ledgerConfig LedgerConfig
      * @param entitiesConfig EntitiesConfig
      * @param tokensConfig TokensConfig
-     * @return true if too many auto associations
+     * @return true the given number is greater than the max number of auto associations
      */
     public boolean tooManyAutoAssociations(
             final int n,
