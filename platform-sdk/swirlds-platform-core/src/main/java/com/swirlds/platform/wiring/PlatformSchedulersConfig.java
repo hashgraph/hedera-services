@@ -51,8 +51,7 @@ import java.time.Duration;
  * @param pcesWriter                               configuration for the preconsensus event writer scheduler
  * @param pcesSequencer                            configuration for the preconsensus event sequencer scheduler
  * @param applicationTransactionPrehandler         configuration for the application transaction prehandler scheduler
- * @param stateSignatureCollectorSchedulerType     the state signature collector scheduler type
- * @param stateSignatureCollectorUnhandledCapacity number of unhandled tasks allowed for the state signature collector
+ * @param stateSignatureCollector                  configuration for the state signature collector scheduler
  * @param consensusRoundHandlerSchedulerType       the consensus round handler scheduler type
  * @param consensusRoundHandlerUnhandledCapacity   number of unhandled tasks allowed for the consensus round handler
  * @param runningEventHasher                       configuration for the running event hasher scheduler
@@ -107,8 +106,8 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration pcesSequencer,
         @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration applicationTransactionPrehandler,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType stateSignatureCollectorSchedulerType,
-        @ConfigProperty(defaultValue = "500") int stateSignatureCollectorUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration stateSignatureCollector,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType consensusRoundHandlerSchedulerType,
         @ConfigProperty(defaultValue = "5") int consensusRoundHandlerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(5) UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")

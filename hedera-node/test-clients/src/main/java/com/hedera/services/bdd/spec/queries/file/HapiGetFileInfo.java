@@ -139,7 +139,7 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 
     @Override
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getFileInfoQuery(spec, payment, true);
+        Query query = maybeModified(getFileInfoQuery(spec, payment, true), spec);
         Response response =
                 spec.clients().getFileSvcStub(targetNodeFor(spec), useTls).getFileInfo(query);
         return costFrom(response);

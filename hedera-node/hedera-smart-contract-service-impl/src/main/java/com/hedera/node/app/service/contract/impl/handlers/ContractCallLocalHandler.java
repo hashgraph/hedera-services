@@ -95,8 +95,9 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
         // to call)
         final var contract = context.createStore(ReadableAccountStore.class).getContractById(contractID);
         if (contract == null) {
-            final var tokenID =
-                    TokenID.newBuilder().tokenNum(contractID.contractNum()).build();
+            final var tokenID = TokenID.newBuilder()
+                    .tokenNum(contractID.contractNumOrElse(0L))
+                    .build();
             final var tokenContract =
                     context.createStore(ReadableTokenStore.class).get(tokenID);
             mustExist(tokenContract, INVALID_CONTRACT_ID);
