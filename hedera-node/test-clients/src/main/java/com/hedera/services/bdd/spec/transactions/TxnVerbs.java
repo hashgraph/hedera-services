@@ -146,6 +146,11 @@ public class TxnVerbs {
         return new HapiCryptoTransfer(account, fromPartitionToken, toPartitionToken, amount);
     }
 
+    public static HapiCryptoTransfer moveUnitsBetweenDifferentUserPartitions(
+            String fromAccount, String fromPartitionToken, String toAccount, String toPartitionToken, long amount) {
+        return new HapiCryptoTransfer(fromAccount, fromPartitionToken, toAccount, toPartitionToken, amount);
+    }
+
     public static HapiCryptoUpdate cryptoUpdate(String account) {
         return new HapiCryptoUpdate(account);
     }
