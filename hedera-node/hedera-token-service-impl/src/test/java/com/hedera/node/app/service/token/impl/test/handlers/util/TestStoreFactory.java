@@ -51,6 +51,9 @@ import com.swirlds.config.api.Configuration;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * A factory for creating test stores.
+ */
 public final class TestStoreFactory {
 
     private static final Configuration CONFIGURATION = HederaTestConfigBuilder.createConfig();
