@@ -35,6 +35,10 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public class QueryModificationsOp extends UtilOp {
+    // An account to create as part of the send-with-modifications process
+    // to ensure fees are charged (the default payer is a superuser account
+    // that is never charged fees); this ensures we cover calculateFees()
+    // code paths in handlers
     private static final String MODIFIED_CIVILIAN_PAYER = "modifiedCivilianPayer";
     private final boolean useCivilianPayer;
     private final Supplier<HapiQueryOp<?>> queryOpSupplier;

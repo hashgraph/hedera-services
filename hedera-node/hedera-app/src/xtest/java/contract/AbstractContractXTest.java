@@ -273,8 +273,8 @@ public abstract class AbstractContractXTest extends AbstractXTest {
                         component.config().getConfigData(HederaConfig.class),
                         HederaFunctionality.CONTRACT_CALL,
                         new PendingCreationMetadataRef()),
-                new HandleHederaNativeOperations(context),
-                new HandleSystemContractOperations(context));
+                new HandleHederaNativeOperations(context, null),
+                new HandleSystemContractOperations(context, null));
         given(proxyUpdater.enhancement()).willReturn(enhancement);
         given(frame.getWorldUpdater()).willReturn(proxyUpdater);
         given(frame.getSenderAddress()).willReturn(sender);
