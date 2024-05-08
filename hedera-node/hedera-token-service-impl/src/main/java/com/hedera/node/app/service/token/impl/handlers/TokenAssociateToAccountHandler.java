@@ -54,7 +54,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -93,7 +92,6 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
         final var op = context.body().tokenAssociateOrThrow();
         final var tokenIds = op.tokens().stream().sorted(TOKEN_ID_COMPARATOR).toList();
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-        final var contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
         final var accountStore = context.writableStore(WritableAccountStore.class);
         final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
@@ -102,7 +100,6 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
                 op.accountOrThrow(),
                 tokensConfig,
                 entitiesConfig,
-                contractsConfig,
                 accountStore,
                 tokenStore,
                 tokenRelStore);
@@ -134,7 +131,6 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
             @NonNull final AccountID accountId,
             @NonNull final TokensConfig tokenConfig,
             @NonNull final EntitiesConfig entitiesConfig,
-            @NonNull final ContractsConfig contractsConfig,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull final WritableTokenRelationStore tokenRelStore) {
@@ -161,7 +157,7 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
         // Check that the total number of old and new token IDs wouldn't be bigger than
         // the max number of token associations allowed per account (if the rel limit is enabled)
         validateTrue(
-                maxAccountAssociationsAllowTokenRels(tokenConfig, entitiesConfig, contractsConfig, account, tokenIds),
+                maxAccountAssociationsAllowTokenRels(tokenConfig, entitiesConfig, account, tokenIds),
                 TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
         // Check that a token rel doesn't already exist for each new token ID
@@ -182,22 +178,18 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
      * Method that checks if the number of token associations for the given account is within the
      * allowable limit set by the config (if the limit is enabled)
      *
-     * @return true if tokenAssociationsLimited is false or if the unlimitedAutoAssociations is true
-     * or the number of token associations is
+     * @return true if tokenAssociationsLimited is false or if the number of token associations is
      * within the allowed maxTokensPerAccount
      */
     private boolean maxAccountAssociationsAllowTokenRels(
             @NonNull final TokensConfig config,
             @NonNull final EntitiesConfig entitiesConfig,
-            @NonNull final ContractsConfig contractsConfig,
             @NonNull final Account account,
             @NonNull final List<TokenID> tokenIds) {
         final var numAssociations = requireNonNull(account).numberAssociations();
         final var tokenAssociationsLimited = entitiesConfig.limitTokenAssociations();
         final var maxTokensPerAccount = config.maxPerAccount();
-        return !tokenAssociationsLimited
-                || ((numAssociations + tokenIds.size() <= maxTokensPerAccount)
-                        && contractsConfig.unlimitedAutoAssociations());
+        return !tokenAssociationsLimited || (numAssociations + tokenIds.size() <= maxTokensPerAccount);
     }
 
     private record Validated(@NonNull Account account, @NonNull List<Token> tokens) {}

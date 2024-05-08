@@ -65,7 +65,6 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
@@ -490,9 +489,6 @@ class TokenAssociateToAccountHandlerTest {
             final var entitiesConfig = mock(EntitiesConfig.class);
             lenient().when(config.getConfigData(EntitiesConfig.class)).thenReturn(entitiesConfig);
             lenient().when(entitiesConfig.limitTokenAssociations()).thenReturn(limitedRels);
-            final var contractsConfig = mock(ContractsConfig.class);
-            lenient().when(config.getConfigData(ContractsConfig.class)).thenReturn(contractsConfig);
-            lenient().when(contractsConfig.unlimitedAutoAssociations()).thenReturn(true);
         }
     }
 
