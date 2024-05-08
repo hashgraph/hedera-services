@@ -25,8 +25,6 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.pr
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.setPropagatedCallFailure;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult.failureFrom;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult.successFrom;
-import static com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure.NONE;
-import static com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure.RESULT_CANNOT_BE_EXTERNALIZED;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
@@ -148,7 +146,7 @@ public class FrameRunner {
         // executed the CALL operation whose dispatched frame failed due to a missing receiver
         // signature; since mono-service did that check as part of the CALL operation itself
         final var maybeFailureToPropagate = getAndClearPropagatedCallFailure(frame);
-        if (maybeFailureToPropagate != NONE) {
+        if (maybeFailureToPropagate != HevmPropagatedCallFailure.NONE) {
             maybeNext(frame).ifPresent(f -> {
                 f.setState(EXCEPTIONAL_HALT);
                 f.setExceptionalHaltReason(maybeFailureToPropagate.exceptionalHaltReason());
@@ -168,7 +166,7 @@ public class FrameRunner {
     // potentially other cases could be handled here if necessary
     private void propagateHaltException(MessageFrame frame, ExceptionalHaltReason haltReason) {
         if (haltReason.equals(INSUFFICIENT_CHILD_RECORDS)) {
-            setPropagatedCallFailure(frame, RESULT_CANNOT_BE_EXTERNALIZED);
+            setPropagatedCallFailure(frame, HevmPropagatedCallFailure.RESULT_CANNOT_BE_EXTERNALIZED);
         } else if (haltReason.equals(INVALID_FEE_SUBMITTED)) {
             setPropagatedCallFailure(frame, HevmPropagatedCallFailure.INVALID_FEE_SUBMITTED);
         }

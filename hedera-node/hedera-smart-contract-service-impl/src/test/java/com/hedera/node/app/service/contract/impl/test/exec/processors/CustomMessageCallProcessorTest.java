@@ -69,6 +69,7 @@ class CustomMessageCallProcessorTest {
     private static final long GAS_REQUIREMENT = 2L;
     private static final Bytes INPUT_DATA = Bytes.fromHexString("0x1234");
     private static final Bytes OUTPUT_DATA = Bytes.fromHexString("0x5678");
+    private static final Bytes NOOP_OUTPUT_DATA = Bytes.fromHexString("0x");
     private static final Address NON_EVM_PRECOMPILE_SYSTEM_ADDRESS = Address.fromHexString("0x222");
     private static final Address CODE_ADDRESS = Address.fromHexString("0x111222333");
     private static final Address SENDER_ADDRESS = Address.fromHexString("0x222333444");
@@ -160,11 +161,12 @@ class CustomMessageCallProcessorTest {
         givenHaltableFrame(isHalted);
         givenCallWithCode(NON_EVM_PRECOMPILE_SYSTEM_ADDRESS);
         given(addressChecks.isSystemAccount(NON_EVM_PRECOMPILE_SYSTEM_ADDRESS)).willReturn(true);
-        when(frame.getValue()).thenReturn(Wei.of(2L));
+        when(frame.getValue()).thenReturn(Wei.ZERO);
 
         subject.start(frame, operationTracer);
-
-        verifyHalt(CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED);
+        verify(frame).setOutputData(NOOP_OUTPUT_DATA);
+        verify(frame).setState(MessageFrame.State.COMPLETED_SUCCESS);
+        verify(frame).setExceptionalHaltReason(Optional.empty());
     }
 
     @Test
