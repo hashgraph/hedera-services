@@ -37,7 +37,7 @@ public class WritableStakingInfoStoreImplTest {
     /**
      * Node ID 1.
      */
-    private static final EntityNumber NODE_ID_1 =
+    public static final EntityNumber NODE_ID_1 =
             EntityNumber.newBuilder().number(1L).build();
 
     private WritableStakingInfoStore subject;
