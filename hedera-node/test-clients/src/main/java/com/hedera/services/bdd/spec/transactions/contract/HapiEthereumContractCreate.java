@@ -65,7 +65,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     private long maxPriorityGas = 20_000L;
     private Optional<FileID> ethFileID = Optional.empty();
     private boolean invalidateEthData = false;
-    private Optional<Long> maxGasAllowance = Optional.of(ONE_HUNDRED_HBARS);
+    private Long maxGasAllowance = ONE_HUNDRED_HBARS;
     private String privateKeyRef = SECP_256K1_SOURCE_KEY;
     private Integer chainId = CHAIN_ID;
 
@@ -144,25 +144,11 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         this.retryLimits = contractCreate.getRetryLimits();
         this.permissibleStatuses = contractCreate.getPermissibleStatuses();
         this.permissiblePrechecks = contractCreate.getPermissiblePrechecks();
-
         this.payer = contractCreate.getPayer();
         this.fee = contractCreate.getFee();
-
-        // todo check if 5 hbars is proper value - copied from HapiEthereumCall
-        this.maxGasAllowance = Optional.of(FIVE_HBARS);
+        this.maxGasAllowance = FIVE_HBARS;
     }
 
-    private Optional<BigInteger> weibarsToTinybars(Optional<Long> balance) {
-        if (balance.isEmpty()) {
-            return Optional.of(BigInteger.ZERO);
-        }
-        try {
-            return Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(balance.get())));
-        } catch (ArithmeticException e) {
-            return Optional.of(BigInteger.ZERO);
-        }
-    }
-    
     public HapiEthereumContractCreate(
             @NonNull final String contract, @NonNull final BiConsumer<HapiSpec, EthereumTransactionBody.Builder> spec) {
         super(contract);
@@ -222,7 +208,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     }
 
     public HapiEthereumContractCreate maxGasAllowance(long maxGasAllowance) {
-        this.maxGasAllowance = Optional.of(maxGasAllowance);
+        this.maxGasAllowance = maxGasAllowance;
         return this;
     }
 
@@ -281,14 +267,12 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         final var filePath = Utils.getResourcePath(bytecodeFile.get(), ".bin");
         final var fileContents = Utils.extractByteCode(filePath);
 
-        byte[] callData;
+        ByteString bytecode = fileContents;
         if (args.isPresent() && abi.isPresent()) {
-            final var bytecode = fileContents.concat(TxnUtils.constructorArgsToByteString(abi.get(), args.get()));
-            callData = Bytes.fromHexString(new String(bytecode.toByteArray())).toArray();
-        } else {
-            callData =
-                    Bytes.fromHexString(new String(fileContents.toByteArray())).toArray();
+            bytecode = bytecode.concat(TxnUtils.constructorArgsToByteString(abi.get(), args.get()));
         }
+        final var callData =
+                Bytes.fromHexString(new String(bytecode.toByteArray())).toArray();
 
         final var gasPriceBytes = gasLongToBytes(gasPrice.longValueExact());
 
@@ -340,7 +324,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
                                 builder.setEthereumData(ByteString.copyFrom(ethData.encodeTx()));
                             }
                             ethFileID.ifPresent(builder::setCallData);
-                            maxGasAllowance.ifPresent(builder::setMaxGasAllowance);
+                            builder.setMaxGasAllowance(maxGasAllowance);
                         });
 
         return b -> {
@@ -348,6 +332,17 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
             this.memo.ifPresent(b::setMemo);
             b.setEthereumTransaction(opBody);
         };
+    }
+
+    private Optional<BigInteger> weibarsToTinybars(Optional<Long> balance) {
+        if (balance.isEmpty()) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(balance.get())));
+        } catch (ArithmeticException e) {
+            return Optional.empty();
+        }
     }
 
     @Override

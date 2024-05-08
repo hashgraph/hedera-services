@@ -623,7 +623,7 @@ public class TxnVerbs {
      * @return
      */
     public static HapiSpecOperation updateInitCodeWithConstructorArgs(
-            final String contractName, final String abi, final Object... args) {
+            final Optional<String> payer, final String contractName, final String abi, final Object... args) {
         return withOpContext((spec, ctxLog) -> {
             List<HapiSpecOperation> ops = new ArrayList<>();
 
@@ -631,7 +631,7 @@ public class TxnVerbs {
 
             // concatenate bytecode with params
             final var bytecode = extractByteCode(path).concat(TxnUtils.constructorArgsToByteString(abi, args));
-            final var updatedFile = updateLargeFile(GENESIS, contractName, bytecode);
+            final var updatedFile = updateLargeFile(payer.orElse(GENESIS), contractName, bytecode);
             ops.add(updatedFile);
 
             allRunFor(spec, ops);

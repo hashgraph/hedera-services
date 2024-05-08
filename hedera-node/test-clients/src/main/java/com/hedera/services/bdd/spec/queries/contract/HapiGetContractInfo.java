@@ -180,6 +180,12 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
         if (registryEntry.isPresent()) {
             spec.registry().saveContractInfo(registryEntry.get(), actualInfo);
         }
+    }
+
+    @Override
+    protected void updateStateOf(HapiSpec spec) throws Throwable {
+        ContractInfo actualInfo = response.getContractGetInfo().getContractInfo();
+
         if (saveEVMAddressToRegistry.isPresent()) {
             spec.registry()
                     .saveEVMAddress(

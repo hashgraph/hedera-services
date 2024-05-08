@@ -284,8 +284,6 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                         creationAttempt, CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_ALIAS_KEY)));
     }
 
-    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
-    // since we have CONTRACT_ID key. Also, because of gas difference
     @HapiTest
     final HapiSpec erc20TransferLazyCreate() {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
@@ -310,6 +308,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> tokenAddr.set(
                                         HapiPropertySource.asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
                         uploadInitCode(ERC_20_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key. Also, because of gas difference
                         contractCreate(ERC_20_CONTRACT).refusingEthConversion(),
                         tokenAssociate(ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
                         cryptoTransfer(moving(5, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ERC_20_CONTRACT)))
@@ -320,6 +320,9 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                     final var alias = ByteStringUtils.wrapUnsafely(addressBytes);
                     allRunFor(
                             spec,
+                            // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                            // tokenAssociate,
+                            // since we have CONTRACT_ID key. Also, because of gas difference
                             contractCall(
                                             ERC_20_CONTRACT,
                                             TRANSFER_THEN_REVERT,
@@ -370,9 +373,6 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                 .then();
     }
 
-    // Expected INSUFFICIENT_GAS but was REVERTED_SUCCESS
-    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
-    // since we have CONTRACT_ID key. Also, because of gas difference
     @HapiTest
     final HapiSpec erc20TransferFromLazyCreate() {
         return defaultHapiSpec(
@@ -397,6 +397,9 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(ERC_20_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key. Also, because of gas difference
+
                         contractCreate(ERC_20_CONTRACT).refusingEthConversion(),
                         tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                         tokenAssociate(RECIPIENT, FUNGIBLE_TOKEN),
@@ -491,8 +494,6 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                 .then();
     }
 
-    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
-    // since we have CONTRACT_ID key. Also, because of gas difference
     @HapiTest
     final HapiSpec erc721TransferFromLazyCreate() {
         return defaultHapiSpec(
@@ -515,6 +516,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(ERC_721_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key. Also, because of gas difference
                         contractCreate(ERC_721_CONTRACT).refusingEthConversion(),
                         tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                         tokenAssociate(SPENDER, NON_FUNGIBLE_TOKEN),
@@ -536,6 +539,9 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     .signedBy(DEFAULT_PAYER, OWNER)
                                     .fee(ONE_HBAR),
                             getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasSpenderID(ERC_721_CONTRACT),
+                            // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                            // tokenAssociate,
+                            // since we have CONTRACT_ID key. Also, because of gas difference
                             contractCall(
                                             ERC_721_CONTRACT,
                                             TRANSFER_FROM_THEN_REVERT,
@@ -737,7 +743,6 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                 .then();
     }
 
-    // Adding refusingEthConversion() due to fee differences
     @HapiTest
     final HapiSpec revertedAutoCreationRollsBackEvenIfTopLevelSucceeds() {
         return defaultHapiSpec(
@@ -754,6 +759,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 .initialSupply(0L)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(AUTO_CREATION_MODES),
+                        // Adding refusingEthConversion() due to fee differences
                         contractCreate(AUTO_CREATION_MODES).refusingEthConversion(),
                         mintToken(NFT_TOKEN, List.of(META1, META2)),
                         cryptoApproveAllowance()

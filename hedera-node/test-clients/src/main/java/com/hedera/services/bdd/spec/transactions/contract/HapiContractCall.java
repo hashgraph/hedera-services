@@ -156,7 +156,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     }
 
     public boolean isConvertableToEthCall(HapiSpec spec) {
-        // check if the key is SECP256K1
+        // Ensure key must be SECP256K1
         var key = spec.registry().getKey(privateKeyRef);
         if (key != null && !key.hasECDSASecp256K1()) {
             return false;
@@ -178,6 +178,10 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 
     public Object[] getParams() {
         return params;
+    }
+
+    public void setParams(Object[] params) {
+        this.params = params;
     }
 
     public String getTxnName() {
@@ -363,9 +367,5 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
         return super.toStringHelper().add("contract", contract).add("abi", abi).add("params", Arrays.toString(params));
-    }
-
-    public void setParams(Object[] params) {
-        this.params = params;
     }
 }

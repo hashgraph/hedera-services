@@ -227,8 +227,6 @@ public class ContractDeleteSuite extends HapiSuite {
                         getTxnRecord(externalViolation).hasPriority(recordWith().feeGreaterThan(0L)));
     }
 
-    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
-    // since we have CONTRACT_ID key
     @HapiTest
     HapiSpec cannotDeleteOrSelfDestructTokenTreasury() {
         final var someToken = "someToken";
@@ -245,10 +243,16 @@ public class ContractDeleteSuite extends HapiSuite {
                         contractCustomCreate(selfDestructCallable, "1")
                                 .adminKey(multiKey)
                                 .balance(123)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
                                 .refusingEthConversion(),
                         contractCustomCreate(selfDestructCallable, "2")
                                 .adminKey(multiKey)
                                 .balance(321)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
                                 .refusingEthConversion(),
                         tokenCreate(someToken).adminKey(multiKey).treasury(selfDestructCallable + "1"))
                 .when(
@@ -266,8 +270,6 @@ public class ContractDeleteSuite extends HapiSuite {
                 .then(contractCall(selfDestructCallable + "2", CONTRACT_DESTROY).payingWith(beneficiary));
     }
 
-    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
-    // since we have CONTRACT_ID key
     @HapiTest
     HapiSpec cannotDeleteOrSelfDestructContractWithNonZeroBalance() {
         final var someToken = "someToken";
@@ -284,8 +286,13 @@ public class ContractDeleteSuite extends HapiSuite {
                         contractCreate(selfDestructableContract)
                                 .adminKey(multiKey)
                                 .balance(123)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
                                 .refusingEthConversion(),
                         uploadInitCode(otherMiscContract),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
                         contractCreate(otherMiscContract).refusingEthConversion(),
                         tokenCreate(someToken)
                                 .initialSupply(0L)
@@ -306,11 +313,11 @@ public class ContractDeleteSuite extends HapiSuite {
                                 .payingWith(beneficiary));
     }
 
-    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
-    // since we have CONTRACT_ID key
     @HapiTest
     HapiSpec rejectsWithoutProperSig() {
         return defaultHapiSpec("rejectsWithoutProperSig")
+                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                // since we have CONTRACT_ID key
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).refusingEthConversion())
                 .when()
                 .then(contractDelete(CONTRACT).signedBy(GENESIS).hasKnownStatus(INVALID_SIGNATURE));
@@ -362,8 +369,6 @@ public class ContractDeleteSuite extends HapiSuite {
                 .then(contractDelete(CONTRACT).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT));
     }
 
-    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
-    // since we have CONTRACT_ID key
     @HapiTest
     final HapiSpec deleteTransfersToAccount() {
         return defaultHapiSpec("DeleteTransfersToAccount")
@@ -371,14 +376,15 @@ public class ContractDeleteSuite extends HapiSuite {
                         cryptoCreate(RECEIVER_CONTRACT_NAME).balance(0L),
                         uploadInitCode(PAYABLE_CONSTRUCTOR),
                         contractCreate(PAYABLE_CONSTRUCTOR)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
                                 .refusingEthConversion()
                                 .balance(1L))
                 .when(contractDelete(PAYABLE_CONSTRUCTOR).transferAccount(RECEIVER_CONTRACT_NAME))
                 .then(getAccountBalance(RECEIVER_CONTRACT_NAME).hasTinyBars(1L));
     }
 
-    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
-    // since we have CONTRACT_ID key
     @HapiTest
     final HapiSpec deleteTransfersToContract() {
         final var suffix = "Receiver";
@@ -387,6 +393,9 @@ public class ContractDeleteSuite extends HapiSuite {
                 .given(
                         uploadInitCode(PAYABLE_CONSTRUCTOR),
                         contractCreate(PAYABLE_CONSTRUCTOR)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
                                 .refusingEthConversion()
                                 .balance(0L),
                         contractCustomCreate(PAYABLE_CONSTRUCTOR, suffix).balance(1L))

@@ -104,8 +104,6 @@ public class DelegatePrecompileSuite extends HapiSuite {
         return List.of(delegateCallForTransfer(), delegateCallForBurn(), delegateCallForMint());
     }
 
-    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
-    // since we have CONTRACT_ID key
     @HapiTest
     final HapiSpec delegateCallForTransfer() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -130,6 +128,8 @@ public class DelegatePrecompileSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverID::set),
                         uploadInitCode(OUTER_CONTRACT, NESTED_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
                         contractCreate(NESTED_CONTRACT).refusingEthConversion(),
                         tokenAssociate(NESTED_CONTRACT, VANILLA_TOKEN),
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
@@ -141,6 +141,9 @@ public class DelegatePrecompileSuite extends HapiSuite {
                         contractCreate(
                                         OUTER_CONTRACT,
                                         asHeadlongAddress(getNestedContractAddress(NESTED_CONTRACT, spec)))
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
                                 .refusingEthConversion(),
                         tokenAssociate(OUTER_CONTRACT, VANILLA_TOKEN),
                         newKeyNamed(SIMPLE_AND_DELEGATE_KEY_NAME)

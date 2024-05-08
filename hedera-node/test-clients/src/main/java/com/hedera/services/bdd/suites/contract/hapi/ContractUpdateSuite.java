@@ -247,8 +247,6 @@ public class ContractUpdateSuite extends HapiSuite {
                                                                 }))))));
     }
 
-    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
-    // since we have CONTRACT_ID key
     @HapiTest
     final HapiSpec updateWithBothMemoSettersWorks() {
         final var firstMemo = "First";
@@ -260,6 +258,9 @@ public class ContractUpdateSuite extends HapiSuite {
                         newKeyNamed(ADMIN_KEY),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
                                 .refusingEthConversion()
                                 .adminKey(ADMIN_KEY)
                                 .entityMemo(firstMemo))
@@ -292,8 +293,6 @@ public class ContractUpdateSuite extends HapiSuite {
                 .then(contractUpdate(CONTRACT).newExpirySecs(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME));
     }
 
-    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
-    // since we have CONTRACT_ID key
     @HapiTest
     final HapiSpec updateAutoRenewWorks() {
         return defaultHapiSpec("UpdateAutoRenewWorks", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -301,6 +300,9 @@ public class ContractUpdateSuite extends HapiSuite {
                         newKeyNamed(ADMIN_KEY),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
                                 .refusingEthConversion()
                                 .adminKey(ADMIN_KEY)
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS))
@@ -339,8 +341,6 @@ public class ContractUpdateSuite extends HapiSuite {
                         .logged());
     }
 
-    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
-    // since we have CONTRACT_ID key
     @HapiTest
     final HapiSpec updateAdminKeyWorks() {
         return defaultHapiSpec("UpdateAdminKeyWorks", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -348,6 +348,8 @@ public class ContractUpdateSuite extends HapiSuite {
                         newKeyNamed(ADMIN_KEY),
                         newKeyNamed(NEW_ADMIN_KEY),
                         uploadInitCode(CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
                         contractCreate(CONTRACT).refusingEthConversion().adminKey(ADMIN_KEY))
                 .when(contractUpdate(CONTRACT).newKey(NEW_ADMIN_KEY))
                 .then(
@@ -365,8 +367,6 @@ public class ContractUpdateSuite extends HapiSuite {
                 .then(getContractInfo(CONTRACT).has(contractWith().immutableContractKey(CONTRACT)));
     }
 
-    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
-    // since we have CONTRACT_ID key
     @HapiTest
     final HapiSpec canMakeContractImmutableWithEmptyKeyList() {
         return defaultHapiSpec("CanMakeContractImmutableWithEmptyKeyList", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -374,6 +374,8 @@ public class ContractUpdateSuite extends HapiSuite {
                         newKeyNamed(ADMIN_KEY),
                         newKeyNamed(NEW_ADMIN_KEY),
                         uploadInitCode(CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
                         contractCreate(CONTRACT).refusingEthConversion().adminKey(ADMIN_KEY))
                 .when(
                         contractUpdate(CONTRACT).improperlyEmptyingAdminKey().hasPrecheck(INVALID_ADMIN_KEY),
@@ -381,12 +383,12 @@ public class ContractUpdateSuite extends HapiSuite {
                 .then(contractUpdate(CONTRACT).newKey(NEW_ADMIN_KEY).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT));
     }
 
-    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
-    // since we have CONTRACT_ID key
     @HapiTest
     final HapiSpec givenAdminKeyMustBeValid() {
         final var contract = "BalanceLookup";
         return defaultHapiSpec("GivenAdminKeyMustBeValid", NONDETERMINISTIC_TRANSACTION_FEES)
+                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                // since we have CONTRACT_ID key
                 .given(uploadInitCode(contract), contractCreate(contract).refusingEthConversion())
                 .when(getContractInfo(contract).logged())
                 .then(contractUpdate(contract)
@@ -491,8 +493,6 @@ public class ContractUpdateSuite extends HapiSuite {
                         contractDelete(contract + suffix).payingWith(payer).hasKnownStatus(SUCCESS));
     }
 
-    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
-    // since we have CONTRACT_ID key
     @HapiTest
     final HapiSpec updateDoesNotChangeBytecode() {
         // HSCS-DCPR-001
@@ -501,6 +501,8 @@ public class ContractUpdateSuite extends HapiSuite {
         return defaultHapiSpec("updateDoesNotChangeBytecode", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(simpleStorageContract, emptyConstructorContract),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
                         contractCreate(simpleStorageContract).refusingEthConversion(),
                         getContractBytecode(simpleStorageContract).saveResultTo("initialBytecode"))
                 .when(contractUpdate(simpleStorageContract).bytecode(emptyConstructorContract))

@@ -640,14 +640,17 @@ public class TxnUtils {
         return !isEndOfStakingPeriodRecord(record);
     }
 
-    public static ByteString constructorArgsToByteString(String abi, Object[] args)
-            throws UnsupportedEncodingException {
+    public static ByteString constructorArgsToByteString(final String abi, final Object[] args) {
         var params = encodeParametersForConstructor(args, abi);
 
         var paramsAsHex = Bytes.wrap(params).toHexString();
         // remove the 0x prefix
         var paramsToUse = paramsAsHex.substring(2);
 
-        return ByteString.copyFrom(paramsToUse, "UTF-8");
+        try {
+            return ByteString.copyFrom(paramsToUse, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }

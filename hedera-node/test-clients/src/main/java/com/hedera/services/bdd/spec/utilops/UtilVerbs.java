@@ -1700,8 +1700,9 @@ public class UtilVerbs {
                 if (callOp.getArgs().isPresent() && callOp.getAbi().isPresent()) {
                     var convertedArgs =
                             tryToSwapLongZeroToEVMAddresses(callOp.getArgs().get(), spec);
-                    callOp.setArgs(Optional.of(convertedArgs));
+                    callOp.args(Optional.of(convertedArgs));
                     convertedOps.add(updateInitCodeWithConstructorArgs(
+                            Optional.empty(),
                             callOp.getContract(),
                             callOp.getAbi().get(),
                             callOp.getArgs().get()));
@@ -1730,19 +1731,22 @@ public class UtilVerbs {
         return Arrays.stream(args)
                 .map(arg -> {
                     if (arg instanceof Address address) {
-                        var explicitFromHeadlong = explicitFromHeadlong(address);
-                        if (isLongZeroAddress(explicitFromHeadlong)) {
-                            var contractNum = numberOfLongZero(explicitFromHeadlong(address));
-                            if (spec.registry().hasEVMAddress(String.valueOf(contractNum))) {
-                                return HapiParserUtil.asHeadlongAddress(
-                                        spec.registry().getEVMAddress(String.valueOf(contractNum)));
-                            }
-                        }
-                        return arg;
+                        return swapLongZeroToEVMAddresses(spec, arg, address);
                     }
                     return arg;
                 })
                 .toArray();
+    }
+
+    private static Object swapLongZeroToEVMAddresses(HapiSpec spec, Object arg, Address address) {
+        var explicitFromHeadlong = explicitFromHeadlong(address);
+        if (isLongZeroAddress(explicitFromHeadlong)) {
+            var contractNum = numberOfLongZero(explicitFromHeadlong(address));
+            if (spec.registry().hasEVMAddress(String.valueOf(contractNum))) {
+                return HapiParserUtil.asHeadlongAddress(spec.registry().getEVMAddress(String.valueOf(contractNum)));
+            }
+        }
+        return arg;
     }
 
     public static byte[] getPrivateKeyFromSpec(final HapiSpec spec, final String privateKeyRef) {

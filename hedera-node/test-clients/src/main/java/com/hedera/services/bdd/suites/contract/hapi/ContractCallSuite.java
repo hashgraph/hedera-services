@@ -787,8 +787,6 @@ public class ContractCallSuite extends HapiSuite {
                 .then();
     }
 
-    // refusingEthConversion because the minters contract has placeholders that the HapiEthereumContractCreate doesn't
-    // support
     @SuppressWarnings("java:S5669")
     @HapiTest
     final HapiSpec bitcarbonTestStillPasses() {
@@ -809,6 +807,9 @@ public class ContractCallSuite extends HapiSuite {
                                 .getAccountInfo(DEFAULT_CONTRACT_SENDER)
                                 .getContractAccountID())))),
                         uploadInitCode(addressBook, jurisdictions),
+                        // refusingEthConversion because the minters contract has placeholders that the
+                        // HapiEthereumContractCreate doesn't
+                        // support
                         contractCreate(addressBook)
                                 .gas(1_000_000L)
                                 .exposingNumTo(num -> addressBookMirror.set(asHexedSolidityAddress(0, 0, num)))
@@ -1531,8 +1532,6 @@ public class ContractCallSuite extends HapiSuite {
                 }));
     }
 
-    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
-    // since we have CONTRACT_ID key
     @HapiTest
     HapiSpec depositDeleteSuccess() {
         final var initBalance = 7890L;
@@ -1542,6 +1541,9 @@ public class ContractCallSuite extends HapiSuite {
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT)
                                 .adminKey(THRESHOLD)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
                                 .refusingEthConversion())
                 .when(contractCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(DEPOSIT_AMOUNT))
                         .via(PAY_TXN)
@@ -1587,7 +1589,6 @@ public class ContractCallSuite extends HapiSuite {
                                         resultWith().logs(inOrder(logWith().longAtBytes(DEPOSIT_AMOUNT, 24))))));
     }
 
-    // Adding refusingEthConversion() due to fee differences
     @HapiTest
     final HapiSpec idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
@@ -1923,7 +1924,6 @@ public class ContractCallSuite extends HapiSuite {
                 .then(getAccountBalance(RECEIVER).hasTinyBars(10_000L + 10));
     }
 
-    // Adding refusingEthConversion() due to fee differences
     @HapiTest
     final HapiSpec hscsEvm005TransfersWithSubLevelCallsBetweenContracts() {
         final var topLevelContract = "TopLevelTransferring";
@@ -1942,10 +1942,12 @@ public class ContractCallSuite extends HapiSuite {
                         contractCreate(topLevelContract)
                                 .payingWith(ACCOUNT)
                                 .balance(INITIAL_CONTRACT_BALANCE)
+                                // Adding refusingEthConversion() due to fee differences
                                 .refusingEthConversion(),
                         contractCreate(subLevelContract)
                                 .payingWith(ACCOUNT)
                                 .balance(INITIAL_CONTRACT_BALANCE)
+                                // Adding refusingEthConversion() due to fee differences
                                 .refusingEthConversion())
                 .then(
                         contractCall(topLevelContract).sending(10).payingWith(ACCOUNT),
@@ -2294,7 +2296,6 @@ public class ContractCallSuite extends HapiSuite {
                                 .has(contractWith().balance(10_000L - 50L))));
     }
 
-    // Adding refusingEthConversion() due to fee differences
     @HapiTest
     final HapiSpec sendHbarsToCallerFromDifferentAddresses() {
         return defaultHapiSpec(
@@ -2324,9 +2325,13 @@ public class ContractCallSuite extends HapiSuite {
                             uploadInitCode(NESTED_TRANSFERRING_CONTRACT, NESTED_TRANSFER_CONTRACT);
                     final var createFirstNestedContract = contractCustomCreate(NESTED_TRANSFER_CONTRACT, "1")
                             .balance(10_000L)
+
+                            // Adding refusingEthConversion() due to fee differences
                             .refusingEthConversion();
                     final var createSecondNestedContract = contractCustomCreate(NESTED_TRANSFER_CONTRACT, "2")
                             .balance(10_000L)
+
+                            // Adding refusingEthConversion() due to fee differences
                             .refusingEthConversion();
                     final var transfer2 = cryptoTransfer(
                             TokenMovement.movingHbar(10_000_000L).between(GENESIS, DEFAULT_CONTRACT_RECEIVER));
@@ -2353,6 +2358,8 @@ public class ContractCallSuite extends HapiSuite {
                                                 getNestedContractAddress(NESTED_TRANSFER_CONTRACT + "2", spec)))
                                 .balance(10_000L)
                                 .payingWith(GENESIS)
+
+                                // Adding refusingEthConversion() due to fee differences
                                 .refusingEthConversion(),
                         contractCall(
                                         NESTED_TRANSFERRING_CONTRACT,
@@ -2490,7 +2497,6 @@ public class ContractCallSuite extends HapiSuite {
                         .has(contractWith().balance(10_000L))));
     }
 
-    // Adding refusingEthConversion() due to fee differences
     @HapiTest
     final HapiSpec transferZeroHbars() {
         return defaultHapiSpec(
@@ -2499,6 +2505,7 @@ public class ContractCallSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(10_000L),
                         uploadInitCode(TRANSFERRING_CONTRACT),
+                        // Adding refusingEthConversion() due to fee differences
                         contractCreate(TRANSFERRING_CONTRACT).balance(10_000L).refusingEthConversion(),
                         getAccountInfo(RECEIVER).savingSnapshot(RECEIVER_INFO))
                 .when(withOpContext((spec, log) -> {

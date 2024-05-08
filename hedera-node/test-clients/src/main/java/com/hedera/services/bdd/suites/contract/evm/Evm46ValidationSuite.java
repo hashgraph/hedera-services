@@ -263,8 +263,6 @@ public class Evm46ValidationSuite extends HapiSuite {
                 testBalanceOfForSystemAccounts());
     }
 
-    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
-    // since we have CONTRACT_ID key
     @HapiTest
     private HapiSpec directCallToDeletedContractResultsInSuccessfulNoop() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
@@ -274,6 +272,9 @@ public class Evm46ValidationSuite extends HapiSuite {
                         cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
                         contractCreate(INTERNAL_CALLER_CONTRACT)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
                                 .refusingEthConversion()
                                 .balance(ONE_HBAR),
                         contractDelete(INTERNAL_CALLER_CONTRACT))
@@ -613,7 +614,6 @@ public class Evm46ValidationSuite extends HapiSuite {
                                         resultWith().createdContractIdsCount(0).gasUsed(24972))));
     }
 
-    // Adding refusingEthConversion() due to fee differences and not supported address type
     @HapiTest
     private HapiSpec internalCallToExistingMirrorAddressResultsInSuccessfulCall() {
 
@@ -624,9 +624,11 @@ public class Evm46ValidationSuite extends HapiSuite {
                         uploadInitCode(INTERNAL_CALLER_CONTRACT, INTERNAL_CALLEE_CONTRACT),
                         contractCreate(INTERNAL_CALLER_CONTRACT)
                                 .balance(ONE_HBAR)
+                                // Adding refusingEthConversion() due to fee differences and not supported address type
                                 .refusingEthConversion(),
                         contractCreate(INTERNAL_CALLEE_CONTRACT)
                                 .exposingNumTo(calleeNum::set)
+                                // Adding refusingEthConversion() due to fee differences and not supported address type
                                 .refusingEthConversion())
                 .when(withOpContext((spec, ignored) -> allRunFor(
                         spec,
@@ -1009,8 +1011,6 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot("autoCreatedSnapshot", 1)));
     }
 
-    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
-    // since we have CONTRACT_ID key
     @HapiTest
     private HapiSpec internalCallToDeletedContractReturnsSuccessfulNoop() {
         final AtomicLong calleeNum = new AtomicLong();
@@ -1018,9 +1018,15 @@ public class Evm46ValidationSuite extends HapiSuite {
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT, INTERNAL_CALLEE_CONTRACT),
                         contractCreate(INTERNAL_CALLER_CONTRACT)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
                                 .refusingEthConversion()
                                 .balance(ONE_HBAR),
                         contractCreate(INTERNAL_CALLEE_CONTRACT)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
                                 .refusingEthConversion()
                                 .exposingNumTo(calleeNum::set),
                         contractDelete(INTERNAL_CALLEE_CONTRACT))
