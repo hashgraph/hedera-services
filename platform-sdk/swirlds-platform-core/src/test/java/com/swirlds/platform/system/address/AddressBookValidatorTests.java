@@ -49,7 +49,7 @@ class AddressBookValidatorTests {
                 RandomAddressBookBuilder.create(randotron).withSize(0).build();
         final AddressBook zeroWeightAddressBook = RandomAddressBookBuilder.create(randotron)
                 .withSize(10)
-                .withCustomWeightGenerator(n -> 0L)
+                .withMaximumWeight(0)
                 .build();
         final AddressBook validAddressBook =
                 RandomAddressBookBuilder.create(randotron).withSize(10).build();

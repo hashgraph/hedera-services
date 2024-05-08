@@ -845,7 +845,8 @@ class TipsetEventCreatorTests {
         final int networkSize = 4;
 
         final AddressBook addressBook = RandomAddressBookBuilder.create(random)
-                .withCustomWeightGenerator(x -> 1L)
+                .withMinimumWeight(1)
+                .withMaximumWeight(1)
                 .withSize(networkSize)
                 .build();
 
@@ -922,7 +923,8 @@ class TipsetEventCreatorTests {
         final int networkSize = 4;
 
         final AddressBook addressBook = RandomAddressBookBuilder.create(random)
-                .withCustomWeightGenerator(x -> 1L)
+                .withMinimumWeight(1)
+                .withMaximumWeight(1)
                 .withSize(networkSize)
                 .build();
 
@@ -991,7 +993,8 @@ class TipsetEventCreatorTests {
         final int networkSize = 4;
 
         final AddressBook addressBook = RandomAddressBookBuilder.create(random)
-                .withCustomWeightGenerator(x -> 1L)
+                .withMinimumWeight(1)
+                .withMaximumWeight(1)
                 .withSize(networkSize)
                 .build();
 

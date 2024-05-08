@@ -35,7 +35,8 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.state.signed.SignedStateValidationData;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -231,16 +232,24 @@ class DefaultSignedStateValidatorTests {
                 .collect(Collectors.toList()));
     }
 
+    @NonNull
+    private static AddressBook createAddressBook(@NonNull final Random random, @NonNull final List<Node> nodes) {
+        final AddressBook addressBook = new AddressBook();
+        for (final Node node : nodes.stream().sorted().toList()) {
+            addressBook.add(RandomAddressBuilder.create(random)
+                    .withNodeId(node.id)
+                    .withWeight(node.weight)
+                    .build());
+        }
+        return addressBook;
+    }
+
     @ParameterizedTest
     @MethodSource({"staticNodeParams", "randomizedNodeParams"})
     @DisplayName("Signed State Validation")
     void testSignedStateValidationRandom(final String desc, final List<Node> nodes, final List<Node> signingNodes) {
         final Randotron randotron = Randotron.create();
-        final Map<NodeId, Long> nodeWeights = nodes.stream().collect(Collectors.toMap(Node::id, Node::weight));
-        addressBook = RandomAddressBookBuilder.create(randotron)
-                .withNodeIds(nodeWeights.keySet())
-                .withCustomWeightGenerator(nodeWeights::get)
-                .build();
+        addressBook = createAddressBook(randotron, nodes);
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
@@ -344,11 +353,16 @@ class DefaultSignedStateValidatorTests {
      * A record representing a simple node that holds its id, amount of weight, and if it signs states with a valid
      * signature.
      */
-    private record Node(NodeId id, long weight, boolean validSignature) {
+    private record Node(NodeId id, long weight, boolean validSignature) implements Comparable<Node> {
 
         @Override
         public String toString() {
             return String.format("NodeId: %s,\tWeight: %s,\tValidSig: %s", id, weight, validSignature);
+        }
+
+        @Override
+        public int compareTo(@NonNull final Node that) {
+            return id.compareTo(that.id);
         }
     }
 }

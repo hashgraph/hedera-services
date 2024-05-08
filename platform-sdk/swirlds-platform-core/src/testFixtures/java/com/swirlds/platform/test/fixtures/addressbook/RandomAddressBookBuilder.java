@@ -18,15 +18,10 @@ package com.swirlds.platform.test.fixtures.addressbook;
 
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Random;
-import java.util.Set;
-import java.util.function.Function;
 
 /**
  * A utility for generating a random address book.
@@ -39,8 +34,6 @@ public class RandomAddressBookBuilder {
      * All randomness comes from this.
      */
     private final Random random;
-
-    private final Set<NodeId> nodeIds = new HashSet<>();
 
     /**
      * The number of addresses to put into the address book.
@@ -90,11 +83,6 @@ public class RandomAddressBookBuilder {
     private long maximumWeight = 100_000;
 
     /**
-     * Used to determine weight for each node. Overrides all other behaviors if set.
-     */
-    private Function<NodeId, Long> customWeightGenerator;
-
-    /**
      * the next available node id for new addresses.
      */
     private NodeId nextNodeId = NodeId.FIRST_NODE_ID;
@@ -133,13 +121,7 @@ public class RandomAddressBookBuilder {
     /**
      * Generate the next weight for the next address.
      */
-    private long getNextWeight(@NonNull final NodeId nodeId) {
-        Objects.requireNonNull(nodeId, "NodeId must not be null");
-
-        if (customWeightGenerator != null) {
-            return customWeightGenerator.apply(nodeId);
-        }
-
+    private long getNextWeight() {
         final long unboundedWeight;
         switch (weightDistributionStrategy) {
             case BALANCED -> unboundedWeight = averageWeight;
@@ -178,44 +160,16 @@ public class RandomAddressBookBuilder {
     public AddressBook addToAddressBook(final AddressBook addressBook) {
         nextNodeId = addressBook.getNextNodeId();
 
-        if (!nodeIds.isEmpty()) {
-            nodeIds.stream().sorted().forEach(nodeId -> addressBook.add(buildNextAddress(nodeId)));
-        } else {
-            for (int index = 0; index < size; index++) {
-                addressBook.add(buildNextAddress());
-            }
+        for (int index = 0; index < size; index++) {
+            addressBook.add(RandomAddressBuilder.create(random)
+                    .withNodeId(getNextNodeId())
+                    .withWeight(getNextWeight())
+                    .build());
         }
 
         CryptographyHolder.get().digestSync(addressBook);
 
         return addressBook;
-    }
-
-    // TODO remove, this doesn't belong here
-
-    /**
-     * Build a random address using provided configuration. Address IS NOT automatically added to the address book.
-     *
-     * @return a random address
-     */
-    @NonNull
-    private Address buildNextAddress() {
-        return buildNextAddress(null);
-    }
-
-    /**
-     * Build a random address using provided configuration. Address IS NOT automatically added to the address book.
-     *
-     * @return a random address
-     */
-    @NonNull
-    private Address buildNextAddress(@Nullable final NodeId suppliedNodeId) {
-        final NodeId nodeId = suppliedNodeId == null ? getNextNodeId() : suppliedNodeId;
-
-        return RandomAddressBuilder.create(random)
-                .withNodeId(nodeId)
-                .withWeight(getNextWeight(nodeId))
-                .build();
     }
 
     /**
@@ -226,19 +180,6 @@ public class RandomAddressBookBuilder {
     @NonNull
     public RandomAddressBookBuilder withSize(final int size) {
         this.size = size;
-        return this;
-    }
-
-    /**
-     * Set the node IDs of the address book.
-     *
-     * @return this object
-     */
-    @NonNull // TODO maybe remove
-    public RandomAddressBookBuilder withNodeIds(@NonNull final Set<NodeId> nodeIds) {
-        Objects.requireNonNull(nodeIds, "NodeIds must not be null");
-        this.nodeIds.clear();
-        this.nodeIds.addAll(nodeIds);
         return this;
     }
 
@@ -283,18 +224,6 @@ public class RandomAddressBookBuilder {
     @NonNull
     public RandomAddressBookBuilder withMaximumWeight(final long maximumWeight) {
         this.maximumWeight = maximumWeight;
-        return this;
-    }
-
-    /**
-     * Provide a method that is used to determine the weight of each node. Overrides all other weight generation
-     * settings if set.
-     *
-     * @return this object
-     */
-    @NonNull
-    public RandomAddressBookBuilder withCustomWeightGenerator(final Function<NodeId, Long> customWeightGenerator) {
-        this.customWeightGenerator = customWeightGenerator;
         return this;
     }
 
