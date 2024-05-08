@@ -21,6 +21,7 @@ import static com.swirlds.platform.state.editor.StateEditorUtils.formatRoute;
 
 import com.swirlds.cli.utility.CommandBuilder;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.context.PlatformContextFactory;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
@@ -63,7 +64,7 @@ public class StateEditor {
 
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
 
-        platformContext = PlatformContext.create(configuration);
+        platformContext = PlatformContextFactory.create(configuration);
 
         final DeserializedSignedState deserializedSignedState =
                 SignedStateFileReader.readStateFile(platformContext, statePath);

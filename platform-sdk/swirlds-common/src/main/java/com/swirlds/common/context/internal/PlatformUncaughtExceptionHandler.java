@@ -16,6 +16,7 @@
 
 package com.swirlds.common.context.internal;
 
+import com.swirlds.logging.legacy.LogMarker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -26,9 +27,24 @@ public class PlatformUncaughtExceptionHandler implements Thread.UncaughtExceptio
 
     private static final Logger logger = LogManager.getLogger(PlatformUncaughtExceptionHandler.class);
 
+    private static final class InstanceHolder {
+        private static final PlatformUncaughtExceptionHandler INSTANCE = new PlatformUncaughtExceptionHandler();
+    }
+
+    private PlatformUncaughtExceptionHandler() {}
+
     @Override
     public void uncaughtException(Thread t, Throwable e) {
-        logger.error("Uncaught exception in thread: " + t.getName(), e);
-        throw new RuntimeException("Uncaught exception", e);
+        logger.error(LogMarker.EXCEPTION.getMarker(), "Uncaught exception in platform thread: " + t.getName(), e);
+        throw new UncaughtPlatformException(e);
+    }
+
+    /**
+     * Returns the singleton instance of the uncaught exception handler.
+     *
+     * @return the singleton instance of the uncaught exception handler
+     */
+    public static Thread.UncaughtExceptionHandler getInstance() {
+        return InstanceHolder.INSTANCE;
     }
 }

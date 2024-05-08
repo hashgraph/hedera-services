@@ -20,6 +20,7 @@ import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.context.PlatformContextFactory;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
@@ -57,7 +58,7 @@ public class GuiEventStorage {
     public GuiEventStorage(@NonNull final Configuration configuration, @NonNull final AddressBook addressBook) {
 
         this.configuration = Objects.requireNonNull(configuration);
-        final PlatformContext platformContext = PlatformContext.create(configuration);
+        final PlatformContext platformContext = PlatformContextFactory.create(configuration);
 
         this.consensus = new ConsensusImpl(platformContext, new NoOpConsensusMetrics(), addressBook);
         // Future work: birth round compatibility for GUI

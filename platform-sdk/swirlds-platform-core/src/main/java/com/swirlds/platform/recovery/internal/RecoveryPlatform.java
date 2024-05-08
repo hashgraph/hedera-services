@@ -21,6 +21,7 @@ import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 
 import com.swirlds.common.AutoCloseableNonThrowing;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.context.PlatformContextFactory;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
@@ -81,7 +82,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
 
         notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
 
-        context = PlatformContext.create(configuration);
+        context = PlatformContextFactory.create(configuration);
 
         setLatestState(initialState);
     }

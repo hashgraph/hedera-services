@@ -33,6 +33,7 @@ import java.util.Objects;
  */
 public final class DefaultPlatformContext implements PlatformContext {
 
+    public static final String PLATFORM_THREAD_GROUP_NAME = "platform";
     private final Configuration configuration;
     private final Metrics metrics;
     private final Cryptography cryptography;
@@ -48,37 +49,18 @@ public final class DefaultPlatformContext implements PlatformContext {
      * @param configuration the configuration
      * @param metrics       the metrics
      * @param cryptography  the cryptography
-     * @param time          the time
-     * @param executorFactory the executor factory
      */
     public DefaultPlatformContext(
             @NonNull final Configuration configuration,
             @NonNull final Metrics metrics,
-            @NonNull final Cryptography cryptography,
-            @NonNull final Time time,
-            @NonNull final ExecutorFactory executorFactory) {
-        this(
-                configuration,
-                metrics,
-                cryptography,
-                time,
-                executorFactory,
-                FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, metrics));
-    }
-
-    public DefaultPlatformContext(
-            @NonNull final Configuration configuration,
-            @NonNull final Metrics metrics,
-            @NonNull final Cryptography cryptography,
-            @NonNull final Time time,
-            @NonNull final ExecutorFactory executorFactory,
-            @NonNull final FileSystemManager fileSystemManager) {
+            @NonNull final Cryptography cryptography) {
         this.configuration = Objects.requireNonNull(configuration);
         this.metrics = Objects.requireNonNull(metrics);
         this.cryptography = Objects.requireNonNull(cryptography);
-        this.time = Objects.requireNonNull(time);
-        this.executorFactory = Objects.requireNonNull(executorFactory);
-        this.fileSystemManager = Objects.requireNonNull(fileSystemManager);
+        this.time = Time.getCurrent();
+        this.executorFactory = ExecutorFactory.create(
+                PLATFORM_THREAD_GROUP_NAME, null, PlatformUncaughtExceptionHandler.getInstance());
+        this.fileSystemManager = FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, metrics);
     }
 
     /**
