@@ -289,6 +289,12 @@ public class UtilVerbs {
         return new SubmitModificationsOp(txnOpSupplier, modificationsFn);
     }
 
+    public static SubmitModificationsOp submitModifiedWithFixedPayer(
+            @NonNull final Function<Transaction, List<TxnModification>> modificationsFn,
+            @NonNull final Supplier<HapiTxnOp<?>> txnOpSupplier) {
+        return new SubmitModificationsOp(false, txnOpSupplier, modificationsFn);
+    }
+
     /**
      * Returns an operation that repeatedly sends a query from the given
      * supplier, but each time after modifying the query with one of the
@@ -306,6 +312,12 @@ public class UtilVerbs {
             @NonNull final Function<Query, List<QueryModification>> modificationsFn,
             @NonNull final Supplier<HapiQueryOp<?>> queryOpSupplier) {
         return new QueryModificationsOp(queryOpSupplier, modificationsFn);
+    }
+
+    public static QueryModificationsOp sendModifiedWithFixedPayer(
+            @NonNull final Function<Query, List<QueryModification>> modificationsFn,
+            @NonNull final Supplier<HapiQueryOp<?>> queryOpSupplier) {
+        return new QueryModificationsOp(false, queryOpSupplier, modificationsFn);
     }
 
     public static SourcedOp sourcing(Supplier<HapiSpecOperation> source) {

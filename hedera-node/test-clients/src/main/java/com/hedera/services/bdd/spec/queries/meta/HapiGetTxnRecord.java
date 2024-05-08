@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.isEndOfStakingPeriodRecord;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
 import static com.hedera.services.bdd.suites.HapiSuite.HBAR_TOKEN_SENTINEL;
 import static com.hedera.services.bdd.suites.crypto.CryptoTransferSuite.sdec;
@@ -145,6 +146,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     private Consumer<List<String>> createdIdsObserver = null;
 
     @Nullable
+    private Consumer<List<AccountCreationDetails>> creationDetailsObserver = null;
+
+    @Nullable
     private Consumer<List<TokenID>> createdTokenIdsObserver = null;
 
     private boolean assertEffectivePayersAreKnown = false;
@@ -214,9 +218,14 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         return this;
     }
 
+    public HapiGetTxnRecord exposingCreationDetailsTo(final Consumer<List<AccountCreationDetails>> observer) {
+        creationDetailsObserver = observer;
+        return andAllChildRecords();
+    }
+
     public HapiGetTxnRecord exposingTokenCreationsTo(final Consumer<List<TokenID>> createdTokenIdsObserver) {
         this.createdTokenIdsObserver = createdTokenIdsObserver;
-        return this;
+        return andAllChildRecords();
     }
 
     public HapiGetTxnRecord exposingFilteredCallResultVia(
@@ -903,11 +912,20 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
             allRecordsObserver.accept(allRecords);
         }
         final List<String> creations = (createdIdsObserver != null) ? new ArrayList<>() : null;
+        final List<AccountCreationDetails> creationDetails =
+                (creationDetailsObserver != null) ? new ArrayList<>() : null;
         final List<TokenID> tokenCreations = (createdTokenIdsObserver != null) ? new ArrayList<>() : null;
         for (final var rec : childRecords) {
-            if (rec.getReceipt().hasAccountID() && creations != null) {
-                creations.add(
-                        HapiPropertySource.asAccountString(rec.getReceipt().getAccountID()));
+            if (rec.getReceipt().hasAccountID()) {
+                if (creations != null) {
+                    creations.add(
+                            HapiPropertySource.asAccountString(rec.getReceipt().getAccountID()));
+                }
+                if (creationDetails != null) {
+                    creationDetails.add(new AccountCreationDetails(
+                            rec.getReceipt().getAccountID(),
+                            asHeadlongAddress(rec.getEvmAddress().toByteArray())));
+                }
             }
             if (rec.getReceipt().hasTokenID() && tokenCreations != null) {
                 tokenCreations.add(rec.getReceipt().getTokenID());
@@ -935,6 +953,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         }
         if (createdTokenIdsObserver != null) {
             createdTokenIdsObserver.accept(tokenCreations);
+        }
+        if (creationDetailsObserver != null) {
+            creationDetailsObserver.accept(creationDetails);
         }
 
         if (loggingOnlyFee && spec.ratesProvider().hasRateSet()) {
@@ -999,7 +1020,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     @Override
     protected long lookupCostWith(final HapiSpec spec, final Transaction payment) throws Throwable {
-        final Query query = getRecordQuery(spec, payment, true);
+        final Query query = maybeModified(getRecordQuery(spec, payment, true), spec);
         final Response response =
                 spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTxRecordByTxID(query);
         return costFrom(response);
