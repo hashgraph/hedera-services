@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStaki
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.computeNextStake;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.readableNonZeroHistory;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.transactionWith;
+import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.Fraction;
@@ -119,7 +120,7 @@ public class EndOfStakingPeriodUpdater {
         final Map<Long, StakingNodeInfo> updatedNodeInfos = new HashMap<>();
         final Map<Long, Long> newPendingRewardRates = new HashMap<>();
         for (final var nodeNum : nodeIds.stream().sorted().toList()) {
-            var currStakingInfo = stakingInfoStore.getForModify(nodeNum);
+            var currStakingInfo = requireNonNull(stakingInfoStore.getForModify(nodeNum));
 
             // The return value here includes both the new reward sum history, and the reward rate
             // (tinybars-per-hbar-staked-to-reward) that will be paid to all accounts who had staked-to-reward for this
@@ -136,7 +137,8 @@ public class EndOfStakingPeriodUpdater {
                     .rewardSumHistory(newRewardSumHistory.rewardSumHistory())
                     .build();
             log.info(
-                    "   > Non-zero reward sum history is now {}",
+                    "Non-zero reward sum history for node number {} is now {}",
+                    () -> nodeNum,
                     () -> readableNonZeroHistory(newRewardSumHistory.rewardSumHistory()));
 
             final var oldStakeRewardStart = currStakingInfo.stakeRewardStart();
@@ -413,8 +415,7 @@ public class EndOfStakingPeriodUpdater {
     }
 
     private long getRewardsBalance(@NonNull final ReadableAccountStore accountStore) {
-        return accountStore
-                .getAccountById(asAccount(accountNumbers.stakingRewardAccount()))
+        return requireNonNull(accountStore.getAccountById(asAccount(accountNumbers.stakingRewardAccount())))
                 .tinybarBalance();
     }
 
@@ -455,8 +456,8 @@ public class EndOfStakingPeriodUpdater {
      */
     private static TransactionBody.Builder newNodeStakeUpdateBuilder(
             final Timestamp stakingPeriodEnd,
-            final List<NodeStake> nodeStakes,
-            final StakingConfig stakingConfig,
+            @NonNull final List<NodeStake> nodeStakes,
+            @NonNull final StakingConfig stakingConfig,
             final long totalStakedRewardStart,
             final long maxPerHbarRewardRate,
             final long reservedStakingRewards,
