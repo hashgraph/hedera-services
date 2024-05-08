@@ -143,8 +143,8 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     }
 
     /**
-     * Returns the {@link Account} with the given {@link AccountID}.
-     * If no such account exists, returns {@code Optional.empty()}
+     * Returns the {@link Account} with the given {@link AccountID}.It uses the getForModify method
+     * to get the account. If no such account exists, returns {@code null}
      *
      * @param id - the number of the account to be retrieved.
      * @return the account with the given account number, or null if no such account exists.
