@@ -17,6 +17,7 @@
 package com.swirlds.common.test.fixtures.platform;
 
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.concurrent.ExecutorFactory;
@@ -34,6 +35,7 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -186,6 +188,13 @@ public final class TestPlatformContextBuilder {
             fileSystemManager = getDefaultManager();
         }
 
+        final ExecutorFactory executorFactory = ExecutorFactory.create("test", new UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                fail("Uncaught exception in thread " + t.getName(), e);
+            }
+        });
+
         return new PlatformContext() {
             @NonNull
             @Override
@@ -219,7 +228,7 @@ public final class TestPlatformContextBuilder {
 
             @Override
             public ExecutorFactory getExecutorFactory() {
-                return null;
+                return executorFactory;
             }
         };
     }
