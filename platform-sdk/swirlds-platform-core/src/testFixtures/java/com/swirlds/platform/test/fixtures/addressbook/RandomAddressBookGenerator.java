@@ -44,6 +44,8 @@ import java.util.function.Function;
  */
 public class RandomAddressBookGenerator {
 
+    // TODO add a way to generate with real keys
+
     /**
      * All randomness comes from this.
      */
@@ -59,7 +61,7 @@ public class RandomAddressBookGenerator {
     /**
      * Describes different ways that the random address book is hashed.
      */
-    public enum HashStrategy {
+    public enum HashStrategy { // TODO remove
         NO_HASH,
         FAKE_HASH,
         REAL_HASH
@@ -130,6 +132,8 @@ public class RandomAddressBookGenerator {
     public RandomAddressBookGenerator(@NonNull final Random random) {
         this.random = Objects.requireNonNull(random);
     }
+
+    // TODO move to RandomAddressGenerator
 
     /**
      * Generate an address that has random data in the "unimportant" fields.
@@ -229,6 +233,8 @@ public class RandomAddressBookGenerator {
         return addressBook;
     }
 
+    // TODO remove (or at least make private)
+
     /**
      * Add new addresses to an address book. The number of addresses is equal to the value specified by
      * {@link #withSize(int)}. The next candidate ID is set to be the address book's
@@ -258,6 +264,8 @@ public class RandomAddressBookGenerator {
         return addressBook;
     }
 
+    // TODO remove, this doesn't belong here
+
     /**
      * Remove a number of addresses from an address book.
      *
@@ -277,6 +285,8 @@ public class RandomAddressBookGenerator {
         return addressBook;
     }
 
+    // TODO create random address generator
+
     /**
      * Build a random address using provided configuration. Address IS NOT automatically added to the address book.
      *
@@ -293,7 +303,7 @@ public class RandomAddressBookGenerator {
      * @return a random address
      */
     @NonNull
-    public Address buildNextAddress(@Nullable final NodeId suppliedNodeId) {
+    private Address buildNextAddress(@Nullable final NodeId suppliedNodeId) {
         final NodeId nodeId = suppliedNodeId == null ? getNextNodeId() : suppliedNodeId;
         return addressWithRandomData(random, nodeId, getNextWeight(nodeId));
     }
@@ -409,8 +419,8 @@ public class RandomAddressBookGenerator {
      * @param nodeId the next node ID that is considered when generating a random address
      * @return this object
      */
-    @NonNull
-    public RandomAddressBookGenerator withNextPossibleNodeId(@NonNull final NodeId nodeId) {
+    @NonNull // TODO this can be removed
+    private RandomAddressBookGenerator withNextPossibleNodeId(@NonNull final NodeId nodeId) {
         Objects.requireNonNull(nodeId, "NodeId must not be null");
         this.nextNodeId = nodeId;
         return this;
