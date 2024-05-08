@@ -37,13 +37,13 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.AutoCloseableNonThrowing;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.context.PlatformContext;
-import com.swirlds.config.api.Configuration;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.LegacyFileConfigSource;
+import com.swirlds.platform.builder.PlatformContextBuilder;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.system.StaticSoftwareVersion;
@@ -352,7 +352,10 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
 
         registerConstructables();
 
-        final var platformContext = PlatformContext.create(buildConfiguration(configurationPaths));
+        final var platformContext = PlatformContextBuilder.create(new NodeId(0))
+                .withConfigurationBuilder(buildConfiguration(configurationPaths))
+                .withMetrics(new NoOpMetrics())
+                .build();
 
         ReservedSignedState rss;
         try {
@@ -374,7 +377,7 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
     }
 
     /** Build a configuration object from the provided configuration paths. */
-    private Configuration buildConfiguration(@NonNull final List<Path> configurationPaths) {
+    private ConfigurationBuilder buildConfiguration(@NonNull final List<Path> configurationPaths) {
         Objects.requireNonNull(configurationPaths, "configurationPaths");
 
         final var builder = ConfigurationBuilder.create().autoDiscoverExtensions();
@@ -388,9 +391,7 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
             }
         }
 
-        final var configuration = builder.build();
-        ConfigurationHolder.getInstance().setConfiguration(configuration);
-        return configuration;
+        return builder;
     }
 
     /** register all applicable classes on classpath before deserializing signed state */

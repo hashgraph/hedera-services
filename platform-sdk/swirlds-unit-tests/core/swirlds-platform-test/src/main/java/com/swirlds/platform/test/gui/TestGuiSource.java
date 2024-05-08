@@ -63,19 +63,18 @@ public class TestGuiSource {
 
         intake = new TestIntake(platformContext, graphGenerator.getAddressBook());
 
-        eventStorage = new GuiEventStorage(platformContext.getConfiguration(), addressBook);
+        eventStorage = new GuiEventStorage(addressBook);
         guiSource = new StandardGuiSource(addressBook, eventStorage);
     }
 
     public TestGuiSource(
-            @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final GraphGenerator<?> graphGenerator,
             @NonNull final TestIntake intake) {
         this.graphGenerator = graphGenerator;
         this.intake = intake;
 
-        eventStorage = new GuiEventStorage(platformContext.getConfiguration(), addressBook);
+        eventStorage = new GuiEventStorage(addressBook);
         guiSource = new StandardGuiSource(addressBook, eventStorage);
     }
 

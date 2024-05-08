@@ -25,7 +25,6 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -74,13 +73,13 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
         this.addressBook = initialState.getAddressBook();
 
         if (loadSigningKeys) {
-            keysAndCerts = initNodeSecurity(addressBook, platformContext.getConfiguration()).get(selfId);
+            keysAndCerts = initNodeSecurity(addressBook, platformContext.getConfiguration())
+                    .get(selfId);
         } else {
             keysAndCerts = null;
         }
 
         notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
-
 
         setLatestState(initialState);
     }

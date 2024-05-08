@@ -17,6 +17,7 @@
 package com.swirlds.platform.cli;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.util.BootstrapUtils.readLegacySettingsFile;
 
 import com.swirlds.cli.commands.StateCommand;
@@ -26,11 +27,9 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.builder.PlatformContextBuilder;
-import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateComparison;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
@@ -163,7 +162,7 @@ public final class CompareStatesCommand extends AbstractCommand {
         BootstrapUtils.setupConstructableRegistry();
 
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
-        readLegacySettingsFile(configurationBuilder, getAbsolutePath("settings.txt"));
+        readLegacySettingsFile(configurationBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
 
         final PlatformContext platformContext = PlatformContextBuilder.create(new NodeId(0))
                 .withMetrics(new NoOpMetrics())

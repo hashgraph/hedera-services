@@ -114,8 +114,8 @@ public class PlatformContextBuilder {
             executorFactory = buildExecutorFactory();
         }
 
-        return new DefaultPlatformContext(configuration, metrics, cryptography, time, executorFactory,
-                fileSystemManager);
+        return new DefaultPlatformContext(
+                configuration, metrics, cryptography, time, executorFactory, fileSystemManager);
     }
 
     /**
@@ -267,8 +267,8 @@ public class PlatformContextBuilder {
      */
     @NonNull
     private static ExecutorFactory buildExecutorFactory() {
-        final ExecutorFactory executorFactory = ExecutorFactory.create("platform", null,
-                buildUncaughtExceptionHandler());
+        final ExecutorFactory executorFactory =
+                ExecutorFactory.create("platform", null, buildUncaughtExceptionHandler());
         return executorFactory;
     }
 }

@@ -31,16 +31,18 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowser
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.loadSwirldMains;
+import static com.swirlds.platform.util.BootstrapUtils.readLegacySettingsFile;
 import static com.swirlds.platform.util.BootstrapUtils.setupBrowserWindow;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.builder.PlatformBuilder;
+import com.swirlds.platform.builder.PlatformContextBuilder;
 import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.gui.GuiEventStorage;
@@ -54,7 +56,6 @@ import com.swirlds.platform.gui.model.InfoSwirld;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.SystemExitUtils;
-import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.GraphicsEnvironment;
 import java.nio.file.Path;
@@ -195,13 +196,20 @@ public class Browser {
             final NodeId nodeId = nodesToRun.get(index);
             final SwirldMain appMain = appMains.get(nodeId);
 
-            final ConfigurationBuilder configBuilder = ConfigurationBuilder.create();
+            final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
+            readLegacySettingsFile(configurationBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
+
             final List<Class<? extends Record>> configTypes = appMain.getConfigDataTypes();
             for (final Class<? extends Record> configType : configTypes) {
-                configBuilder.withConfigDataType(configType);
+                configurationBuilder.withConfigDataType(configType);
             }
 
+            final PlatformContext platformContext = PlatformContextBuilder.create(nodeId)
+                    .withConfigurationBuilder(configurationBuilder)
+                    .build();
+
             final PlatformBuilder builder = PlatformBuilder.create(
+                    platformContext,
                     appMain.getClass().getName(),
                     appDefinition.getSwirldName(),
                     appMain.getSoftwareVersion(),
@@ -213,8 +221,7 @@ public class Browser {
                 builder.withConsensusSnapshotOverrideCallback(guiEventStorage::handleSnapshotOverride);
             }
 
-            final SwirldsPlatform platform = (SwirldsPlatform)
-                    builder.withConfigurationBuilder(configBuilder).build();
+            final SwirldsPlatform platform = (SwirldsPlatform) builder.build();
             platforms.put(nodeId, platform);
 
             if (showUi) {

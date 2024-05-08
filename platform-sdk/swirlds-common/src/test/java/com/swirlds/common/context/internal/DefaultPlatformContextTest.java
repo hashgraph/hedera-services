@@ -48,7 +48,7 @@ class DefaultPlatformContextTest {
                 metricsProvider.createPlatformMetrics(nodeId),
                 CryptographyHolder.get(),
                 Time.getCurrent(),
-                ExecutorFactory.create("test", new PlatformUncaughtExceptionHandler()),
+                ExecutorFactory.create("test", (t, e) -> {}),
                 new TestFileSystemManager(Path.of("/tmp/test")));
 
         // then

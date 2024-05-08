@@ -17,6 +17,7 @@
 package com.swirlds.platform.cli;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.recovery.EventRecoveryWorkflow.recoverState;
 import static com.swirlds.platform.util.BootstrapUtils.readLegacySettingsFile;
 
@@ -26,10 +27,8 @@ import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.builder.PlatformContextBuilder;
-import com.swirlds.platform.config.DefaultConfiguration;
 import java.nio.file.Path;
 import java.util.List;
 import picocli.CommandLine;
@@ -127,7 +126,7 @@ public final class EventStreamRecoverCommand extends AbstractCommand {
     public Integer call() throws Exception {
 
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
-        readLegacySettingsFile(configurationBuilder, getAbsolutePath("settings.txt"));
+        readLegacySettingsFile(configurationBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
 
         final PlatformContext platformContext = PlatformContextBuilder.create(new NodeId(0))
                 .withMetrics(new NoOpMetrics())

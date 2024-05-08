@@ -17,13 +17,9 @@
 package com.swirlds.platform.builder;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
-import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
-import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.doStaticSetup;
-import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
-import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
@@ -31,18 +27,10 @@ import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.CryptographyFactory;
-import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.merkle.crypto.MerkleCryptography;
-import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
@@ -71,10 +59,8 @@ import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
-import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.util.RandomBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -98,18 +84,12 @@ public final class PlatformBuilder {
     private final NodeId selfId;
     private final String swirldName;
 
-    private PlatformContext platformContext;
-    private ConfigurationBuilder configurationBuilder;
+    private final PlatformContext platformContext;
 
     /**
      * The path to the configuration file (i.e. the file with the address book).
      */
     private Path configPath = getAbsolutePath(DEFAULT_CONFIG_FILE_NAME);
-
-    /**
-     * The path to the settings file (i.e. the path used to instantiate {@link Configuration}).
-     */
-    private Path settingsPath;
 
     private Consumer<GossipEvent> preconsensusEventConsumer;
     private Consumer<ConsensusSnapshot> snapshotOverrideConsumer;
@@ -122,6 +102,7 @@ public final class PlatformBuilder {
     /**
      * Create a new platform builder.
      *
+     * @param platformContext     the platform context to use for this node
      * @param appName             the name of the application, currently used for deciding where to store states on
      *                            disk
      * @param swirldName          the name of the swirld, currently used for deciding where to store states on disk
@@ -131,17 +112,19 @@ public final class PlatformBuilder {
      */
     @NonNull
     public static PlatformBuilder create(
+            @NonNull final PlatformContext platformContext,
             @NonNull final String appName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final Supplier<SwirldState> genesisStateBuilder,
             @NonNull final NodeId selfId) {
-        return new PlatformBuilder(appName, swirldName, softwareVersion, genesisStateBuilder, selfId);
+        return new PlatformBuilder(platformContext, appName, swirldName, softwareVersion, genesisStateBuilder, selfId);
     }
 
     /**
      * Constructor.
      *
+     * @param platformContext     the platform context to use for this node
      * @param appName             the name of the application, currently used for deciding where to store states on
      *                            disk
      * @param swirldName          the name of the swirld, currently used for deciding where to store states on disk
@@ -150,82 +133,23 @@ public final class PlatformBuilder {
      * @param genesisStateBuilder a supplier that will be called to create the genesis state, if necessary
      */
     private PlatformBuilder(
+            @NonNull final PlatformContext platformContext,
             @NonNull final String appName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final Supplier<SwirldState> genesisStateBuilder,
             @NonNull final NodeId selfId) {
 
+        this.platformContext = Objects.requireNonNull(platformContext);
         this.appName = Objects.requireNonNull(appName);
         this.swirldName = Objects.requireNonNull(swirldName);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
         this.genesisStateBuilder = Objects.requireNonNull(genesisStateBuilder);
         this.selfId = Objects.requireNonNull(selfId);
 
+        PlatformConfigUtils.checkConfiguration(platformContext.getConfiguration());
+
         StaticSoftwareVersion.setSoftwareVersion(softwareVersion);
-    }
-
-    /**
-     * Set the platform context to use. If not provided then one is generated when the platform is built.
-     *
-     * @param platformContext the platform context to use
-     * @return this
-     * @throws IllegalStateException if {@link #withConfigurationBuilder(ConfigurationBuilder)} has been called or if
-     *                               {@link #withSettingsPath(Path)} has been called
-     */
-    @NonNull
-    public PlatformBuilder withPlatformContext(@NonNull final PlatformContext platformContext) {
-        throwIfAlreadyUsed();
-        if (configurationBuilder != null) {
-            throw new IllegalStateException("Cannot set the platform context after the config builder has been set. "
-                    + "This method should not be called if withConfigurationBuilder() has been called.");
-        }
-        if (settingsPath != null) {
-            throw new IllegalStateException("Cannot set the platform context after the settings path has been set. "
-                    + "This method should not be called if withSettingsPath() has been called.");
-        }
-        this.platformContext = Objects.requireNonNull(platformContext);
-
-        return this;
-    }
-
-    /**
-     * Set the configuration builder to use. If not provided then one is generated when the platform is built.
-     *
-     * @param configurationBuilder the configuration builder to use
-     * @return this
-     * @throws IllegalStateException if {@link #withPlatformContext(PlatformContext)} has been called
-     */
-    @NonNull
-    public PlatformBuilder withConfigurationBuilder(@Nullable final ConfigurationBuilder configurationBuilder) {
-        throwIfAlreadyUsed();
-        if (platformContext != null) {
-            throw new IllegalStateException("Cannot set the config builder after the platform context has been "
-                    + "created. This method should not be called if withPlatformContext() has been called.");
-        }
-        this.configurationBuilder = Objects.requireNonNull(configurationBuilder);
-
-        return this;
-    }
-
-    /**
-     * Set the path to the settings file (i.e. the file used to instantiate {@link Configuration}). Traditionally named
-     * {@link PlatformBuildConstants#DEFAULT_SETTINGS_FILE_NAME}.
-     *
-     * @param path the path to the settings file
-     * @return this
-     * @throws IllegalStateException if {@link #withPlatformContext(PlatformContext)} has been called
-     */
-    @NonNull
-    public PlatformBuilder withSettingsPath(@NonNull final Path path) {
-        throwIfAlreadyUsed();
-        if (platformContext != null) {
-            throw new IllegalStateException("Cannot set the settings path after the platform context has been created. "
-                    + "This method should not be called if withPlatformContext() has been called.");
-        }
-
-        this.settingsPath = getAbsolutePath(Objects.requireNonNull(path));
-        return this;
     }
 
     /**
@@ -310,28 +234,6 @@ public final class PlatformBuilder {
     }
 
     /**
-     * Build the configuration for the node.
-     *
-     * @param configurationBuilder used to build configuration
-     * @param settingsPath         the path to the settings file
-     * @return the configuration
-     */
-    @NonNull
-    private static Configuration buildConfiguration(
-            @NonNull final ConfigurationBuilder configurationBuilder, @NonNull final Path settingsPath) {
-
-        Objects.requireNonNull(configurationBuilder);
-        Objects.requireNonNull(settingsPath);
-
-        rethrowIO(() -> BootstrapUtils.setupConfigBuilder(configurationBuilder, settingsPath));
-
-        final Configuration configuration = configurationBuilder.build();
-        PlatformConfigUtils.checkConfiguration(configuration);
-
-        return configuration;
-    }
-
-    /**
      * Parse the address book from the config.txt file.
      *
      * @return the address book
@@ -341,36 +243,6 @@ public final class PlatformBuilder {
         final LegacyConfigProperties legacyConfig = LegacyConfigPropertiesLoader.loadConfigFile(configPath);
         legacyConfig.appConfig().ifPresent(c -> ParameterProvider.getInstance().setParameters(c.params()));
         return legacyConfig.getAddressBook();
-    }
-
-    /**
-     * Build a platform context that is compatible with the platform.
-     *
-     * @param configurationBuilder used to build configuration, can be pre-configured for application specific
-     *                             configuration needs
-     * @param settingsPath         the path to the settings file
-     * @param selfId               the ID of this node
-     * @return a new platform context
-     */
-    @NonNull
-    public static PlatformContext buildPlatformContext(
-            @NonNull final ConfigurationBuilder configurationBuilder,
-            @NonNull final Path settingsPath,
-            @NonNull final NodeId selfId) {
-
-        final Configuration configuration = buildConfiguration(configurationBuilder, settingsPath);
-
-        final Cryptography cryptography = CryptographyFactory.create(configuration);
-        final MerkleCryptography merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
-
-        // For backwards compatibility with the old static access pattern.
-        CryptographyHolder.set(cryptography);
-        MerkleCryptoFactory.set(merkleCryptography);
-
-        setupGlobalMetrics(configuration);
-        final Metrics metrics = getMetricsProvider().createPlatformMetrics(selfId);
-
-        return PlatformContext.create(configuration, metrics, cryptography);
     }
 
     /**
@@ -391,19 +263,8 @@ public final class PlatformBuilder {
      */
     @NonNull
     public PlatformComponentBuilder buildComponentBuilder() {
-
         throwIfAlreadyUsed();
         used = true;
-
-        if (platformContext == null) {
-            if (configurationBuilder == null) {
-                configurationBuilder = ConfigurationBuilder.create();
-            }
-            if (settingsPath == null) {
-                settingsPath = getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME);
-            }
-            platformContext = buildPlatformContext(configurationBuilder, settingsPath, selfId);
-        }
 
         final Configuration configuration = platformContext.getConfiguration();
 

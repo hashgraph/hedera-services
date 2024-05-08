@@ -17,6 +17,7 @@
 package com.swirlds.platform.gui;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION;
 import static com.swirlds.platform.util.BootstrapUtils.readLegacySettingsFile;
@@ -61,10 +62,12 @@ public class GuiEventStorage {
     public GuiEventStorage(@NonNull final AddressBook addressBook) {
 
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
-        readLegacySettingsFile(configurationBuilder, getAbsolutePath("settings.txt"));
+        readLegacySettingsFile(configurationBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
 
         final PlatformContext platformContext = PlatformContextBuilder.create(new NodeId(0))
-                .withMetrics(new NoOpMetrics()).withConfigurationBuilder(configurationBuilder).build();
+                .withMetrics(new NoOpMetrics())
+                .withConfigurationBuilder(configurationBuilder)
+                .build();
         configuration = platformContext.getConfiguration();
 
         this.consensus = new ConsensusImpl(platformContext, new NoOpConsensusMetrics(), addressBook);

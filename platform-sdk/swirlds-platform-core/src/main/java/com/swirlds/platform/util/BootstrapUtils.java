@@ -113,8 +113,7 @@ public final class BootstrapUtils {
      * @param settingsPath         the path to the settings file
      */
     public static void readLegacySettingsFile(
-            @NonNull final ConfigurationBuilder configurationBuilder,
-            @NonNull final Path settingsPath) {
+            @NonNull final ConfigurationBuilder configurationBuilder, @NonNull final Path settingsPath) {
 
         try {
             final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile(settingsPath);
@@ -148,7 +147,7 @@ public final class BootstrapUtils {
      */
     public static void setupBrowserWindow()
             throws UnsupportedLookAndFeelException, ClassNotFoundException, InstantiationException,
-            IllegalAccessException {
+                    IllegalAccessException {
         // discover the inset size and set the look and feel
         UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
         final JFrame jframe = new JFrame();
@@ -193,9 +192,9 @@ public final class BootstrapUtils {
 
             return (SwirldMain) constructor.newInstance();
         } catch (final ClassNotFoundException
-                       | InstantiationException
-                       | IllegalAccessException
-                       | InvocationTargetException e) {
+                | InstantiationException
+                | IllegalAccessException
+                | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
     }
