@@ -29,6 +29,8 @@ import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
 import com.hedera.node.app.service.token.impl.codec.NetworkingStakingTranslator;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,6 +45,20 @@ class NetworkingStakingTranslatorTest {
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     private ReadableSingletonState stakingRewardsState;
+
+    @Test
+    void testCoverageForPrivateConstructor()
+            throws NoSuchMethodException, InstantiationException, IllegalAccessException {
+        final Constructor<NetworkingStakingTranslator> constructor =
+                NetworkingStakingTranslator.class.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        try {
+            constructor.newInstance();
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            assertEquals(UnsupportedOperationException.class, cause.getClass());
+        }
+    }
 
     @BeforeEach
     void setUp() {
