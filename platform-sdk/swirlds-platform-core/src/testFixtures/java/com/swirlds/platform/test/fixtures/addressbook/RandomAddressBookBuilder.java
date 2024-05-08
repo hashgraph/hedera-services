@@ -184,7 +184,9 @@ public class RandomAddressBookBuilder {
     }
 
     /**
-     * Set the average weight for an address.
+     * Set the average weight for an address. If the weight distribution strategy is
+     * {@link WeightDistributionStrategy#BALANCED}, all addresses will have this weight. If the weight distribution
+     * strategy is {@link WeightDistributionStrategy#GAUSSIAN}, this will be the mean weight.
      *
      * @return this object
      */
@@ -195,7 +197,8 @@ public class RandomAddressBookBuilder {
     }
 
     /**
-     * Set the standard deviation for the weight for an address.
+     * Set the standard deviation for the weight for an address. Ignored unless the weight distribution strategy is
+     * {@link WeightDistributionStrategy#GAUSSIAN}.
      *
      * @return this object
      */
@@ -206,7 +209,7 @@ public class RandomAddressBookBuilder {
     }
 
     /**
-     * Set the minimum weight for an address.
+     * Set the minimum weight for an address. Overrides the weight generation strategy.
      *
      * @return this object
      */
@@ -217,7 +220,7 @@ public class RandomAddressBookBuilder {
     }
 
     /**
-     * Set the maximum weight for an address.
+     * Set the maximum weight for an address. Overrides the weight generation strategy.
      *
      * @return this object
      */
