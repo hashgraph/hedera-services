@@ -66,7 +66,7 @@ Similar to implementation that exist for `HTS` function calls, the following new
 
 ### Support for Proxy Contract
 The following code path will be introduced in order to support calls to the `hbarAllowance` and `hbarApprove` functions for EOA accounts via the `IHRC632` interface.
-uring the `MessageFrame` construction for top level calls.  The following pseudo code describes the logic:
+The following pseudo code describes the logic during the `MessageFrame` construction for top level calls:
 
 ```java
 if (messageFrame.to is an EOA account address) {
@@ -102,8 +102,8 @@ In addition to unit tests and xTests, the following acceptance tests will be imp
 #### Positive Tests
 - Test that an EOA can call the `hbarApprove` function and grant an allowance to another account when an EOA signs the transaction.  The negative case is the first negative case below.
 - Test that a contract can call the `hbarApprove` function and grant an allowance to another account for value (hbars) that the contract owns. The negative case is the second negative case below.
-- Test that an EOA can call the `hbarAllowance` function and retrieve the allowance granted to another account or contract.
-- Test that a contract can call the `hbarAllowance` function and retrieve the allowance granted to another account or contract.
+- Test that an EOA can call the `hbarAllowance` function and retrieve the allowance granted to the EOA, another account or contract.
+- Test that a contract can call the `hbarAllowance` function and retrieve the allowance granted to the calling contract, another account or contract.
 
 #### Negative Tests
 - Test that an EOA calling the `hbarApprove` function without the EOA signature will fail.
