@@ -31,7 +31,6 @@ import com.hedera.node.app.service.file.ReadableFileStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.bouncycastle.util.encoders.DecoderException;
 import org.bouncycastle.util.encoders.Hex;
 
 /**
@@ -75,24 +74,16 @@ public class EthereumCallDataHydration {
                 return failureFrom(FILE_DELETED);
             }
 
-            final var initcodeBytes = callDataFile.contents().toByteArray();
             // Bytes.fromHex() doesn't appreciate a leading '0x' but we supported it in mono-service
-            final String hexedInitcode;
-            if (initcodeBytes.length > 0 && initcodeBytes[0] == (byte) '0' && initcodeBytes[1] == (byte) 'x') {
-                hexedInitcode = new String(initcodeBytes, 2, initcodeBytes.length - 2);
-            } else {
-                hexedInitcode = new String(initcodeBytes);
-            }
-
-            final byte[] callData;
-            try {
-                callData = Hex.decode(hexedInitcode);
-            } catch (final DecoderException ignore) {
-                return failureFrom(INVALID_FILE_ID);
-            }
+            final var hexPrefix = new byte[] {(byte) '0', (byte) 'x'};
+            final var contents = callDataFile.contents();
+            final var offset = contents.matchesPrefix(hexPrefix) ? hexPrefix.length : 0L;
+            final var len = contents.length() - offset;
+            final var callData = Hex.decode(contents.getBytes(offset, len).toByteArray());
             if (callData.length == 0) {
                 return failureFrom(CONTRACT_FILE_EMPTY);
             }
+
             return successFrom(ethTxData.replaceCallData(callData));
         } else {
             return successFrom(ethTxData);
