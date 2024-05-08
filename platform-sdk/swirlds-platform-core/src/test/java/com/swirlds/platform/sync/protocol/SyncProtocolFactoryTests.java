@@ -104,7 +104,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus);
+                statusNexus::getCurrentStatus);
 
         assertEquals(2, permitProvider.getNumAvailable());
         assertTrue(syncProtocolFactory.build(peerId).shouldInitiate());
@@ -125,7 +125,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 Duration.ofMillis(100),
                 syncMetrics,
-                statusNexus);
+                statusNexus::getCurrentStatus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
         // do an initial sync, so we can verify that the resulting cooldown period is respected
         assertTrue(protocol.shouldInitiate());
@@ -164,7 +164,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus);
+                statusNexus::getCurrentStatus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -184,7 +184,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus);
+                statusNexus::getCurrentStatus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -209,7 +209,7 @@ class SyncProtocolFactoryTests {
                 () -> true,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus);
+                statusNexus::getCurrentStatus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -232,7 +232,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus);
+                statusNexus::getCurrentStatus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -254,7 +254,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus);
+                statusNexus::getCurrentStatus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -275,7 +275,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus);
+                statusNexus::getCurrentStatus);
         final Protocol protocol = syncProtocolFactory.build(new NodeId(6));
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -300,7 +300,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus);
+                statusNexus::getCurrentStatus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertTrue(protocol.shouldAccept());
@@ -321,7 +321,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 Duration.ofMillis(100),
                 syncMetrics,
-                statusNexus);
+                statusNexus::getCurrentStatus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         // do an initial sync, so we can verify that the resulting cooldown period is respected
@@ -360,7 +360,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus);
+                statusNexus::getCurrentStatus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -388,7 +388,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus);
+                statusNexus::getCurrentStatus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertFalse(protocol.shouldAccept());
@@ -407,7 +407,7 @@ class SyncProtocolFactoryTests {
                 () -> true,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus);
+                statusNexus::getCurrentStatus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -430,7 +430,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus);
+                statusNexus::getCurrentStatus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -450,7 +450,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus);
+                statusNexus::getCurrentStatus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -472,7 +472,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus);
+                statusNexus::getCurrentStatus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -494,7 +494,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus);
+                statusNexus::getCurrentStatus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -516,7 +516,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus);
+                statusNexus::getCurrentStatus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -539,7 +539,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus);
+                statusNexus::getCurrentStatus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         // mock synchronize to throw a ParallelExecutionException
@@ -568,7 +568,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus);
+                statusNexus::getCurrentStatus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         // mock synchronize to throw a ParallelExecutionException with root cause being an IOException
@@ -596,7 +596,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus);
+                statusNexus::getCurrentStatus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         // mock synchronize to throw a SyncException
@@ -623,7 +623,7 @@ class SyncProtocolFactoryTests {
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus);
+                statusNexus::getCurrentStatus);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertTrue(protocol.acceptOnSimultaneousInitiate());

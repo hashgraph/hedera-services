@@ -14,30 +14,25 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.common;
 
-import static java.util.Objects.requireNonNull;
-
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Basic implementation support for a {@link HtsCallTranslator} that returns a translated
- * call when the {@link HtsCallAttempt} matches and null otherwise.
+ * Strategy interface for translating {@link HtsCallAttempt}s into {@link Call}s.
  */
-public abstract class AbstractHtsCallTranslator implements HtsCallTranslator {
+public interface CallTranslator<T> {
     /**
-     * {@inheritDoc}
+     * Tries to translate the given {@code attempt} into a {@link Call}, returning null if the call
+     * doesn't match the target type of this translator.
+     *
+     * @param attempt the attempt to translate
+     * @return the translated {@link Call}
      */
-    @Override
-    public @Nullable HtsCall translateCallAttempt(@NonNull final HtsCallAttempt attempt) {
-        requireNonNull(attempt);
-        if (matches(attempt)) {
-            return callFrom(attempt);
-        }
-        return null;
-    }
+    @Nullable
+    Call translateCallAttempt(@NonNull T attempt);
 
     /**
      * Returns true if the attempt matches the selector of the call this translator is responsible for.
@@ -45,7 +40,7 @@ public abstract class AbstractHtsCallTranslator implements HtsCallTranslator {
      * @param attempt the selector to match
      * @return true if the selector matches the selector of the call this translator is responsible for
      */
-    public abstract boolean matches(@NonNull HtsCallAttempt attempt);
+    boolean matches(@NonNull T attempt);
 
     /**
      * Returns a call from the given attempt.
@@ -53,5 +48,5 @@ public abstract class AbstractHtsCallTranslator implements HtsCallTranslator {
      * @param attempt the attempt to get the call from
      * @return a call from the given attempt
      */
-    public abstract HtsCall callFrom(@NonNull HtsCallAttempt attempt);
+    Call callFrom(@NonNull T attempt);
 }
