@@ -299,8 +299,8 @@ public class LearningSynchronizer implements ReconnectNodeCount {
             return false;
         }
         final MerkleNode root = rootsToReceive.poll();
-
         final String route = root == null ? "[]" : root.getRoute().toString();
+
         final int viewId = nextViewId++;
         final LearnerTreeView<?> view = views.get(viewId);
         if (view == null) {

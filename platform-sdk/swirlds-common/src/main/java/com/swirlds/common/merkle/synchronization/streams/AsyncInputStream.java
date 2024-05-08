@@ -65,9 +65,6 @@ public class AsyncInputStream implements AutoCloseable {
 
     private final SerializableDataInputStream inputStream;
 
-    // Number of expected messages to read from this input stream. If the stream is used to
-    // synchronize multiple merkle sub-trees in parallel, this is the number of messages
-    // accross all of them
     private final AtomicInteger anticipatedMessages;
 
     // Messages read from the underlying input stream so far, per merkle sub-tree
@@ -129,14 +126,17 @@ public class AsyncInputStream implements AutoCloseable {
         SelfSerializable message = null;
         try {
             while (alive.get() && !Thread.currentThread().isInterrupted()) {
-                final int previous =
-                        anticipatedMessages.getAndUpdate((final int value) -> value == 0 ? 0 : (value - 1));
-                if (previous == 0) {
-                    Thread.onSpinWait();
-                    continue;
-                }
-
+                message = null;
                 final int viewId = inputStream.readInt();
+                if (viewId < 0) {
+                    if (anticipatedMessages.get() > 0) {
+                        logger.error(RECONNECT.getMarker(),
+                                "Async input stream is done, but more messages are expected");
+                        throw new MerkleSynchronizationException("Could not read all messages from async input stream");
+                    }
+                    logger.info(RECONNECT.getMarker(), "Async input stream is done");
+                    break;
+                }
                 message = messagesFactory.apply(viewId);
                 if (message == null) {
                     throw new MerkleSynchronizationException(
@@ -151,6 +151,8 @@ public class AsyncInputStream implements AutoCloseable {
                     throw new MerkleSynchronizationException(
                             "Timed out waiting to add message to received messages queue");
                 }
+
+                anticipatedMessages.decrementAndGet();
             }
         } catch (final IOException e) {
             final String exceptionMessage = message == null

@@ -133,8 +133,7 @@ public class AsyncOutputStream implements AutoCloseable {
     }
 
     public void run() {
-        while ((alive.get() || !streamQueue.isEmpty())
-                && !Thread.currentThread().isInterrupted()) {
+        while ((alive.get() || !streamQueue.isEmpty()) && !Thread.currentThread().isInterrupted()) {
             flushIfRequired();
             boolean workDone = handleQueuedMessages();
             if (!workDone) {
@@ -152,6 +151,13 @@ public class AsyncOutputStream implements AutoCloseable {
             }
         }
         flush();
+        try {
+            // Send reconnect termination marker
+            outputStream.writeInt(-1);
+            outputStream.flush();
+        } catch (final IOException e) {
+            throw new MerkleSynchronizationException(e);
+        }
     }
 
     /**

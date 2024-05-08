@@ -84,6 +84,10 @@ class AsyncStreamTest {
                 assertEquals(i, message.getValue(), "message should match the value that was serialized");
             }
 
+            // Send reconnect completion marker
+            streams.getLearnerOutput().writeInt(-1);
+            streams.getLearnerOutput().flush();
+
             in.close();
             out.close();
             workGroup.waitForTermination();
@@ -118,6 +122,10 @@ class AsyncStreamTest {
                 final SerializableLong message = in.readAnticipatedMessage(viewId);
                 assertEquals(i, message.getValue(), "message should match the value that was serialized");
             }
+
+            // Send reconnect completion marker
+            streams.getLearnerOutput().writeInt(-1);
+            streams.getLearnerOutput().flush();
 
             in.close();
             out.close();
@@ -267,6 +275,10 @@ class AsyncStreamTest {
         MILLISECONDS.sleep(100);
 
         assertEquals(count, messagesReceived.get(), "all messages should be read");
+
+        // Send reconnect completion marker
+        out.writeInt(-1);
+        out.flush();
 
         in.close();
         workGroup.waitForTermination();
