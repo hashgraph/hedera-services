@@ -334,8 +334,7 @@ public class EndOfStakingPeriodUpdater {
     }
 
     @VisibleForTesting
-    public static com.hedera.hapi.node.base.Timestamp lastInstantOfPreviousPeriodFor(
-            @NonNull final Instant consensusTime) {
+    public static Timestamp lastInstantOfPreviousPeriodFor(@NonNull final Instant consensusTime) {
         final var justBeforeMidNightTime = LocalDate.ofInstant(consensusTime, ZoneId.of("UTC"))
                 .atStartOfDay()
                 .minusNanos(1); // give out the timestamp that is just before midnight
@@ -455,7 +454,7 @@ public class EndOfStakingPeriodUpdater {
      * @return the transaction builder with the {@code NodeStakeUpdateTransactionBody} set
      */
     private static TransactionBody.Builder newNodeStakeUpdateBuilder(
-            final com.hedera.hapi.node.base.Timestamp stakingPeriodEnd,
+            final Timestamp stakingPeriodEnd,
             final List<NodeStake> nodeStakes,
             final StakingConfig stakingConfig,
             final long totalStakedRewardStart,
@@ -468,7 +467,7 @@ public class EndOfStakingPeriodUpdater {
         final var stakingPeriod = stakingConfig.periodMins();
         final var stakingPeriodsStored = stakingConfig.rewardHistoryNumStoredPeriods();
 
-        final var nodeRewardFeeFraction = com.hedera.hapi.node.base.Fraction.newBuilder()
+        final var nodeRewardFeeFraction = Fraction.newBuilder()
                 .numerator(stakingConfig.feesNodeRewardPercentage())
                 .denominator(100L)
                 .build();

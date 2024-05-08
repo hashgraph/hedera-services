@@ -32,7 +32,6 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
@@ -50,6 +49,7 @@ import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -64,13 +64,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class EndOfStakingPeriodUpdaterTest {
+    @Mock
+    private TokenContext context;
+
     private ReadableAccountStore accountStore;
 
     private EndOfStakingPeriodUpdater subject;
     private NodeStakeUpdateRecordBuilder nodeStakeUpdateRecordBuilder;
-
-    @Mock
-    private ReadableStakingInfoStore iterableStakingInfoStore;
+    private MapWritableKVState<EntityNumber, StakingNodeInfo> stakingInfosState;
+    private WritableStakingInfoStore stakingInfoStore;
+    private WritableSingletonState<NetworkStakingRewards> stakingRewardsState;
+    private WritableNetworkStakingRewardsStore stakingRewardsStore;
 
     @BeforeEach
     void setup() {
@@ -84,8 +88,6 @@ public class EndOfStakingPeriodUpdaterTest {
 
     @Test
     void skipsEndOfStakingPeriodUpdatesIfStakingNotEnabled() {
-        final var consensusTime = Instant.now();
-
         // Set up the staking config
         final var context = mock(TokenContext.class);
         given(context.configuration())
@@ -178,39 +180,11 @@ public class EndOfStakingPeriodUpdaterTest {
 
     @Test
     void deletedNodesGetsZeroPendingRewards() {
-        final var context = mock(TokenContext.class);
-        given(context.consensusTime()).willReturn(Instant.now());
-
-        // Create staking config
-        final var stakingConfig = newStakingConfig().getOrCreateConfig();
-        given(context.configuration()).willReturn(stakingConfig);
-
-        // Create account store (with data)
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
-
-        // Create staking info store (with data)
-        final var stakingInfosState = new MapWritableKVState.Builder<EntityNumber, StakingNodeInfo>(STAKING_INFO_KEY)
-                .value(NODE_NUM_1, STAKING_INFO_1.copyBuilder().deleted(true).build())
-                .value(NODE_NUM_2, STAKING_INFO_2)
-                .value(NODE_NUM_3, STAKING_INFO_3.copyBuilder().deleted(true).build())
-                .build();
-        final var stakingInfoStore =
-                new WritableStakingInfoStore(new MapWritableStates(Map.of(STAKING_INFO_KEY, stakingInfosState)));
-        given(context.writableStore(WritableStakingInfoStore.class)).willReturn(stakingInfoStore);
-
-        // Create staking reward store (with data)
-        final var backingValue = new AtomicReference<>(new NetworkStakingRewards(true, 1_000_000_000L, 0, 0));
-        final var stakingRewardsState =
-                new WritableSingletonStateBase<>(STAKING_NETWORK_REWARDS_KEY, backingValue::get, backingValue::set);
-        final var states = mock(WritableStates.class);
-        given(states.getSingleton(STAKING_NETWORK_REWARDS_KEY))
-                .willReturn((WritableSingletonState) stakingRewardsState);
-        final var stakingRewardsStore = new WritableNetworkStakingRewardsStore(states);
-        given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(stakingRewardsStore);
-        given(context.addUncheckedPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class))
-                .willReturn(nodeStakeUpdateRecordBuilder);
-        given(context.knownNodeIds()).willReturn(Set.of(NODE_NUM_1.number(), NODE_NUM_2.number(), NODE_NUM_3.number()));
-
+        commonSetup(
+                1_000_000_000L,
+                STAKING_INFO_1.copyBuilder().deleted(true).build(),
+                STAKING_INFO_2,
+                STAKING_INFO_3.copyBuilder().deleted(true).build());
         // Assert preconditions
         Assertions.assertThat(STAKING_INFO_1.weight()).isZero();
         Assertions.assertThat(STAKING_INFO_2.weight()).isZero();
@@ -248,38 +222,7 @@ public class EndOfStakingPeriodUpdaterTest {
 
     @Test
     void calculatesNewEndOfPeriodStakingFieldsAsExpected() {
-        final var context = mock(TokenContext.class);
-        given(context.consensusTime()).willReturn(Instant.now());
-
-        // Create staking config
-        final var stakingConfig = newStakingConfig().getOrCreateConfig();
-        given(context.configuration()).willReturn(stakingConfig);
-
-        // Create account store (with data)
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
-
-        // Create staking info store (with data)
-        final var stakingInfosState = new MapWritableKVState.Builder<EntityNumber, StakingNodeInfo>(STAKING_INFO_KEY)
-                .value(NODE_NUM_1, STAKING_INFO_1)
-                .value(NODE_NUM_2, STAKING_INFO_2)
-                .value(NODE_NUM_3, STAKING_INFO_3)
-                .build();
-        final var stakingInfoStore =
-                new WritableStakingInfoStore(new MapWritableStates(Map.of(STAKING_INFO_KEY, stakingInfosState)));
-        given(context.writableStore(WritableStakingInfoStore.class)).willReturn(stakingInfoStore);
-
-        // Create staking reward store (with data)
-        final var backingValue = new AtomicReference<>(new NetworkStakingRewards(true, 1_000_000_000L, 0, 0));
-        final var stakingRewardsState =
-                new WritableSingletonStateBase<>(STAKING_NETWORK_REWARDS_KEY, backingValue::get, backingValue::set);
-        final var states = mock(WritableStates.class);
-        given(states.getSingleton(STAKING_NETWORK_REWARDS_KEY))
-                .willReturn((WritableSingletonState) stakingRewardsState);
-        final var stakingRewardsStore = new WritableNetworkStakingRewardsStore(states);
-        given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(stakingRewardsStore);
-        given(context.addUncheckedPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class))
-                .willReturn(nodeStakeUpdateRecordBuilder);
-        given(context.knownNodeIds()).willReturn(Set.of(NODE_NUM_1.number(), NODE_NUM_2.number(), NODE_NUM_3.number()));
+        commonSetup(1_000_000_000L, STAKING_INFO_1, STAKING_INFO_2, STAKING_INFO_3);
 
         // Assert preconditions
         Assertions.assertThat(STAKING_INFO_1.weight()).isZero();
@@ -317,6 +260,28 @@ public class EndOfStakingPeriodUpdaterTest {
     }
 
     @Test
+    void zeroWholeHbarsStakedCaseWorks() {
+        commonSetup(
+                0L,
+                STAKING_INFO_1.copyBuilder().stakeRewardStart(0).build(),
+                STAKING_INFO_2.copyBuilder().stakeRewardStart(0).build(),
+                STAKING_INFO_3.copyBuilder().stakeRewardStart(0).build());
+        Assertions.assertThat(stakingRewardsStore.totalStakeRewardStart()).isEqualTo(0);
+
+        subject.updateNodes(context);
+
+        Assertions.assertThat(stakingRewardsStore.totalStakeRewardStart())
+                .isEqualTo(STAKE_TO_REWARD_1 + STAKE_TO_REWARD_2 + STAKE_TO_REWARD_3);
+        Assertions.assertThat(stakingRewardsStore.totalStakedStart()).isEqualTo(130000000000L);
+        final var resultStakingInfo1 = stakingInfoStore.get(NODE_NUM_1.number());
+        final var resultStakingInfo2 = stakingInfoStore.get(NODE_NUM_2.number());
+        final var resultStakingInfo3 = stakingInfoStore.get(NODE_NUM_3.number());
+        Assertions.assertThat(resultStakingInfo1.rewardSumHistory()).isEqualTo(List.of(6L, 6L, 5L));
+        Assertions.assertThat(resultStakingInfo2.rewardSumHistory()).isEqualTo(List.of(1L, 1L, 1L));
+        Assertions.assertThat(resultStakingInfo3.rewardSumHistory()).isEqualTo(List.of(3L, 3L, 1L));
+    }
+
+    @Test
     void calculatesMidnightTimeCorrectly() {
         final var consensusSecs = 1653660350L;
         final var consensusNanos = 12345L;
@@ -327,6 +292,44 @@ public class EndOfStakingPeriodUpdaterTest {
 
         Assertions.assertThat(subject.lastInstantOfPreviousPeriodFor(consensusTime))
                 .isEqualTo(expectedMidnightTime);
+    }
+
+    private void commonSetup(
+            final long totalStakeRewardStart,
+            @NonNull final StakingNodeInfo info1,
+            @NonNull final StakingNodeInfo info2,
+            @NonNull final StakingNodeInfo info3) {
+        given(context.consensusTime()).willReturn(Instant.now());
+
+        // Create staking config
+        final var stakingConfig = newStakingConfig().getOrCreateConfig();
+        given(context.configuration()).willReturn(stakingConfig);
+
+        // Create account store (with data)
+        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+
+        // Create staking info store (with data)
+        stakingInfosState = new MapWritableKVState.Builder<EntityNumber, StakingNodeInfo>(STAKING_INFO_KEY)
+                .value(NODE_NUM_1, info1)
+                .value(NODE_NUM_2, info2)
+                .value(NODE_NUM_3, info3)
+                .build();
+        stakingInfoStore =
+                new WritableStakingInfoStore(new MapWritableStates(Map.of(STAKING_INFO_KEY, stakingInfosState)));
+        given(context.writableStore(WritableStakingInfoStore.class)).willReturn(stakingInfoStore);
+
+        // Create staking reward store (with data)
+        final var backingValue = new AtomicReference<>(new NetworkStakingRewards(true, totalStakeRewardStart, 0, 0));
+        stakingRewardsState =
+                new WritableSingletonStateBase<>(STAKING_NETWORK_REWARDS_KEY, backingValue::get, backingValue::set);
+        final var states = mock(WritableStates.class);
+        given(states.getSingleton(STAKING_NETWORK_REWARDS_KEY))
+                .willReturn((WritableSingletonState) stakingRewardsState);
+        stakingRewardsStore = new WritableNetworkStakingRewardsStore(states);
+        given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(stakingRewardsStore);
+        given(context.addUncheckedPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class))
+                .willReturn(nodeStakeUpdateRecordBuilder);
+        given(context.knownNodeIds()).willReturn(Set.of(NODE_NUM_1.number(), NODE_NUM_2.number(), NODE_NUM_3.number()));
     }
 
     private static final int SUM_OF_CONSENSUS_WEIGHTS = 500;
