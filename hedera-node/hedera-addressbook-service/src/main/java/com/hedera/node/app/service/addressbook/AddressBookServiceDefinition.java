@@ -29,8 +29,8 @@ import java.util.Set;
  * The Addressbook Service provides the ability for Hedera Hashgraph to provide facilitate changes to the nodes used across the Hedera network.
  */
 @SuppressWarnings("java:S6548")
-public final class AddressbookServiceDefinition implements RpcServiceDefinition {
-    public static final AddressbookServiceDefinition INSTANCE = new AddressbookServiceDefinition();
+public final class AddressBookServiceDefinition implements RpcServiceDefinition {
+    public static final AddressBookServiceDefinition INSTANCE = new AddressBookServiceDefinition();
 
     private static final Set<RpcMethodDefinition<?, ?>> methods = Set.of(
 
@@ -60,7 +60,7 @@ public final class AddressbookServiceDefinition implements RpcServiceDefinition 
             //
             new RpcMethodDefinition<>("getNodeInfo", Query.class, Response.class));
 
-    private AddressbookServiceDefinition() {
+    private AddressBookServiceDefinition() {
         // Forbid instantiation
     }
 

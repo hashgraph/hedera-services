@@ -35,11 +35,20 @@ public interface ReadableNodeStore {
      * @return node's metadata
      */
     @Nullable
-    Node getNode(final long nodeId);
+    Node get(final long nodeId);
 
     /**
      * Returns the number of nodes in the state.
      * @return the number of nodes in the state.
      */
     long sizeOfState();
+
+    /**
+     * Warms the system by preloading a node into memory
+     *
+     * <p>The default implementation is empty because preloading data into memory is only used for some implementations.
+     *
+     * @param nodeId the node id
+     */
+    default void warm(final long nodeId) {}
 }

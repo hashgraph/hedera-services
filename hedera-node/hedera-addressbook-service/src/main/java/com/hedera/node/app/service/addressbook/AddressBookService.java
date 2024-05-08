@@ -25,12 +25,11 @@ import java.util.Set;
 
 /**
  * Implements the HAPI <a
- * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/address_book_service.proto">Consensus
- * Service</a>.
+ * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/address_book_service.proto">Address Book Service</a>.
  */
-public interface AddressbookService extends Service {
+public interface AddressBookService extends Service {
 
-    String NAME = "AddressbookService";
+    String NAME = "AddressBookService";
 
     @NonNull
     @Override
@@ -41,7 +40,7 @@ public interface AddressbookService extends Service {
     @NonNull
     @Override
     default Set<RpcServiceDefinition> rpcDefinitions() {
-        return Set.of(AddressbookServiceDefinition.INSTANCE);
+        return Set.of(AddressBookServiceDefinition.INSTANCE);
     }
 
     /**
@@ -50,7 +49,7 @@ public interface AddressbookService extends Service {
      * @return the implementation instance
      */
     @NonNull
-    static AddressbookService getInstance() {
-        return ServiceFactory.loadService(AddressbookService.class, ServiceLoader.load(AddressbookService.class));
+    static AddressBookService getInstance() {
+        return ServiceFactory.loadService(AddressBookService.class, ServiceLoader.load(AddressBookService.class));
     }
 }
