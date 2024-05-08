@@ -61,7 +61,7 @@ class OutboundConnectionCreatorTest {
 
         final int numNodes = 10;
         final Random r = new Random();
-        final AddressBook addressBook = new RandomAddressBookGenerator(r)
+        final AddressBook addressBook = RandomAddressBookGenerator.create(r)
                 .withSize(numNodes)
                 .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .withHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
@@ -141,7 +141,7 @@ class OutboundConnectionCreatorTest {
 
         final int numNodes = 10;
         final Random r = new Random();
-        final AddressBook addressBook = new RandomAddressBookGenerator(r)
+        final AddressBook addressBook = RandomAddressBookGenerator.create(r)
                 .withSize(numNodes)
                 .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .withHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)

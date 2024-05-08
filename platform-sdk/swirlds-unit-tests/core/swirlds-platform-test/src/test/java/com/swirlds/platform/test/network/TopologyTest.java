@@ -121,7 +121,7 @@ class TopologyTest {
     void testFullyConnectedTopology(final int numNodes, final int numNeighbors, final long ignoredSeed) {
         final Randotron randotron = Randotron.create();
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(randotron).withSize(numNodes).build();
+                RandomAddressBookGenerator.create(randotron).withSize(numNodes).build();
         for (int thisNode = 0; thisNode < numNodes; thisNode++) {
             final NodeId outOfBoundsId = addressBook.getNextNodeId();
             final NodeId thisNodeId = addressBook.getNodeId(thisNode);

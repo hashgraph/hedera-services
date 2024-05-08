@@ -208,7 +208,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     private void buildAddressBookInitializeEventSources(@NonNull final List<EventSource<?>> eventSources) {
         final int eventSourceCount = eventSources.size();
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(getRandom())
+        final AddressBook addressBook = RandomAddressBookGenerator.create(getRandom())
                 .withSize(eventSourceCount)
                 .withHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
                 .build();

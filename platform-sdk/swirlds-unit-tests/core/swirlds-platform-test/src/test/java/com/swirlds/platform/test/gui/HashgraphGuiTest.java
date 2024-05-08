@@ -36,7 +36,7 @@ class HashgraphGuiTest {
                 TestPlatformContextBuilder.create().build();
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(randotron).withSize(numNodes).build();
+                RandomAddressBookGenerator.create(randotron).withSize(numNodes).build();
 
         final TestGuiSource guiSource = new TestGuiSource(platformContext, randotron.nextInt(), addressBook);
         guiSource.generateEvents(initialEvents);

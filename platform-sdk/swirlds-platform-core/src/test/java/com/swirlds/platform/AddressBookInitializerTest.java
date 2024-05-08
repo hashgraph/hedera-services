@@ -436,7 +436,7 @@ class AddressBookInitializerTest {
      */
     @NonNull
     private AddressBook getRandomAddressBook(@NonNull final Random random) {
-        return new RandomAddressBookGenerator(random)
+        return RandomAddressBookGenerator.create(random)
                 .withSize(5)
                 .withCustomWeightGenerator(i -> i.id())
                 .build();

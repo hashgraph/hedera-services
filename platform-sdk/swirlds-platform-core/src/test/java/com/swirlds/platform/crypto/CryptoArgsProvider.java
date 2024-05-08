@@ -59,7 +59,7 @@ public class CryptoArgsProvider {
     }
 
     public static AddressBook createAddressBook(final int size) {
-        final AddressBook addresses = new RandomAddressBookGenerator(Randotron.create())
+        final AddressBook addresses = RandomAddressBookGenerator.create(Randotron.create())
                 .withSize(size)
                 .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();

@@ -109,7 +109,7 @@ final class ReconnectTest {
                 IntStream.range(0, numNodes).mapToObj(NodeId::new).toList();
         final Random random = RandomUtils.getRandomPrintSeed();
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+        final AddressBook addressBook = RandomAddressBookGenerator.create(random)
                 .withSize(numNodes)
                 .withAverageWeight(weightPerNode)
                 .withWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)

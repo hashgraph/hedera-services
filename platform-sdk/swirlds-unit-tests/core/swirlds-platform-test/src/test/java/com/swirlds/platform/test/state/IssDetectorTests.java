@@ -169,7 +169,7 @@ class IssDetectorTests extends PlatformTest {
     @DisplayName("No ISSes Test")
     void noIss() {
         final Randotron random = Randotron.create();
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+        final AddressBook addressBook = RandomAddressBookGenerator.create(random)
                 .withSize(100)
                 .withAverageWeight(100)
                 .withWeightStandardDeviation(50)
@@ -231,7 +231,7 @@ class IssDetectorTests extends PlatformTest {
     void mixedOrderTest() {
         final Randotron random = Randotron.create();
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+        final AddressBook addressBook = RandomAddressBookGenerator.create(random)
                 .withSize(Math.max(10, random.nextInt(1000)))
                 .withAverageWeight(100)
                 .withWeightStandardDeviation(50)
@@ -376,7 +376,7 @@ class IssDetectorTests extends PlatformTest {
         final Randotron random = Randotron.create();
         final PlatformContext platformContext = createDefaultPlatformContext();
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+        final AddressBook addressBook = RandomAddressBookGenerator.create(random)
                 .withSize(100)
                 .withAverageWeight(100)
                 .withWeightStandardDeviation(50)
@@ -498,7 +498,7 @@ class IssDetectorTests extends PlatformTest {
                 .getConfiguration()
                 .getConfigData(ConsensusConfig.class)
                 .roundsNonAncient();
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+        final AddressBook addressBook = RandomAddressBookGenerator.create(random)
                 .withSize(100)
                 .withAverageWeight(100)
                 .withWeightStandardDeviation(50)
@@ -583,7 +583,7 @@ class IssDetectorTests extends PlatformTest {
                 .getConfiguration()
                 .getConfigData(ConsensusConfig.class)
                 .roundsNonAncient();
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+        final AddressBook addressBook = RandomAddressBookGenerator.create(random)
                 .withSize(100)
                 .withAverageWeight(100)
                 .withWeightStandardDeviation(50)
@@ -655,7 +655,7 @@ class IssDetectorTests extends PlatformTest {
     void ignoredRoundTest() {
         final Randotron random = Randotron.create();
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+        final AddressBook addressBook = RandomAddressBookGenerator.create(random)
                 .withSize(100)
                 .withAverageWeight(100)
                 .withWeightStandardDeviation(50)

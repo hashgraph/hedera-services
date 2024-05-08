@@ -42,7 +42,7 @@ class IssMetricsTests {
         final Randotron randotron = Randotron.create();
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(randotron).withSize(100).build();
+                RandomAddressBookGenerator.create(randotron).withSize(100).build();
 
         final IssMetrics issMetrics = new IssMetrics(new NoOpMetrics(), addressBook);
 
@@ -62,7 +62,7 @@ class IssMetricsTests {
         final Hash hashB = randomHash(random);
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).withSize(100).build();
+                RandomAddressBookGenerator.create(random).withSize(100).build();
 
         final IssMetrics issMetrics = new IssMetrics(new NoOpMetrics(), addressBook);
 

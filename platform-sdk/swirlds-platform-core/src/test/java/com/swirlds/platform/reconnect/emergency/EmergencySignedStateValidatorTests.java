@@ -53,7 +53,7 @@ public class EmergencySignedStateValidatorTests {
 
     @BeforeEach
     void setup() {
-        addressBook = new RandomAddressBookGenerator(Randotron.create())
+        addressBook = RandomAddressBookGenerator.create(Randotron.create())
                 .withSize(NUM_NODES)
                 .withAverageWeight(WEIGHT_PER_NODE)
                 .withWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)

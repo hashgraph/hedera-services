@@ -326,7 +326,7 @@ class EmergencyReconnectTests {
     }
 
     private AddressBook newAddressBook(final Random random, final int numNodes) {
-        return new RandomAddressBookGenerator(random)
+        return RandomAddressBookGenerator.create(random)
                 .withSize(numNodes)
                 .withAverageWeight(100L)
                 .withWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)

@@ -44,7 +44,7 @@ class AddressBookNetworkUtilsTests {
     void determineLocalNodeAddress() throws UnknownHostException {
         final Randotron randotron = Randotron.create();
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(randotron).withSize(2).build();
+                RandomAddressBookGenerator.create(randotron).withSize(2).build();
         final Address address = addressBook.getAddress(addressBook.getNodeId(0));
 
         final Address loopBackAddress = address.copySetHostnameInternal(
@@ -70,7 +70,7 @@ class AddressBookNetworkUtilsTests {
     void ErrorOnInvalidLocalAddress() {
         final Randotron randotron = Randotron.create();
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(randotron).withSize(2).build();
+                RandomAddressBookGenerator.create(randotron).withSize(2).build();
         final Address address = addressBook.getAddress(addressBook.getNodeId(0));
 
         final Address badLocalAddress = address.copySetHostnameInternal("500.8.8");

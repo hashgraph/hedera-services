@@ -37,7 +37,7 @@ import org.junit.jupiter.api.Test;
 
 class FallenBehindManagerTest {
     private final int numNodes = 11;
-    private final AddressBook addressBook = new RandomAddressBookGenerator(Randotron.create())
+    private final AddressBook addressBook = RandomAddressBookGenerator.create(Randotron.create())
             .withSize(numNodes)
             .build();
     private final double fallenBehindThreshold = 0.5;

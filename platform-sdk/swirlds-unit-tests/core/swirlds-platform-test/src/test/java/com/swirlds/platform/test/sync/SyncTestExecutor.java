@@ -82,7 +82,7 @@ public class SyncTestExecutor {
     public SyncTestExecutor(final SyncTestParams params) {
         this.params = params;
         this.ancientMode = params.getAncientMode();
-        this.addressBook = new RandomAddressBookGenerator(Randotron.create())
+        this.addressBook = RandomAddressBookGenerator.create(Randotron.create())
                 .withSize(params.getNumNetworkNodes())
                 .build();
 

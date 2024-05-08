@@ -237,7 +237,7 @@ class DefaultSignedStateValidatorTests {
     void testSignedStateValidationRandom(final String desc, final List<Node> nodes, final List<Node> signingNodes) {
         final Randotron randotron = Randotron.create();
         final Map<NodeId, Long> nodeWeights = nodes.stream().collect(Collectors.toMap(Node::id, Node::weight));
-        addressBook = new RandomAddressBookGenerator(randotron)
+        addressBook = RandomAddressBookGenerator.create(randotron)
                 .withNodeIds(nodeWeights.keySet())
                 .withCustomWeightGenerator(nodeWeights::get)
                 .build();

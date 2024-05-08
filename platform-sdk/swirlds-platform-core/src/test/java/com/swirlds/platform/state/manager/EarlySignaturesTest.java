@@ -46,7 +46,7 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
 
     private final int roundAgeToSign = 3;
 
-    private final AddressBook addressBook = new RandomAddressBookGenerator(random)
+    private final AddressBook addressBook = RandomAddressBookGenerator.create(random)
             .withSize(4)
             .withWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
             .build();

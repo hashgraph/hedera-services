@@ -43,7 +43,8 @@ class SwirldStateManagerTests {
     @BeforeEach
     void setup() {
         final SwirldsPlatform platform = mock(SwirldsPlatform.class);
-        final AddressBook addressBook = new RandomAddressBookGenerator(Randotron.create()).build();
+        final AddressBook addressBook =
+                RandomAddressBookGenerator.create(Randotron.create()).build();
         when(platform.getAddressBook()).thenReturn(addressBook);
         initialState = newState();
         final PlatformContext platformContext =

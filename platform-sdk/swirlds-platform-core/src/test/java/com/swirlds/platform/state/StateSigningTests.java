@@ -67,7 +67,7 @@ class StateSigningTests {
 
         final int nodeCount = random.nextInt(10, 20);
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+        final AddressBook addressBook = RandomAddressBookGenerator.create(random)
                 .withWeightDistributionStrategy(
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
@@ -172,7 +172,7 @@ class StateSigningTests {
 
         final int nodeCount = random.nextInt(10, 20);
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+        final AddressBook addressBook = RandomAddressBookGenerator.create(random)
                 .withWeightDistributionStrategy(
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
@@ -269,7 +269,7 @@ class StateSigningTests {
 
         final int nodeCount = random.nextInt(10, 20);
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+        final AddressBook addressBook = RandomAddressBookGenerator.create(random)
                 .withWeightDistributionStrategy(
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
@@ -350,7 +350,7 @@ class StateSigningTests {
 
         final int nodeCount = random.nextInt(10, 20);
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+        final AddressBook addressBook = RandomAddressBookGenerator.create(random)
                 .withWeightDistributionStrategy(
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
@@ -401,7 +401,7 @@ class StateSigningTests {
 
         final int nodeCount = random.nextInt(10, 20);
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+        final AddressBook addressBook = RandomAddressBookGenerator.create(random)
                 .withWeightDistributionStrategy(
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
@@ -462,7 +462,7 @@ class StateSigningTests {
 
         final int nodeCount = random.nextInt(10, 20);
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+        final AddressBook addressBook = RandomAddressBookGenerator.create(random)
                 .withWeightDistributionStrategy(
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
@@ -526,7 +526,7 @@ class StateSigningTests {
 
         final int nodeCount = random.nextInt(10, 20);
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+        final AddressBook addressBook = RandomAddressBookGenerator.create(random)
                 .withWeightDistributionStrategy(
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED

@@ -125,11 +125,22 @@ public class RandomAddressBookGenerator {
     private NodeId nextNodeId = NodeId.FIRST_NODE_ID;
 
     /**
-     * Create a new address book generator with a source of randomness.
+     * Create a new random address book generator.
+     *
+     * @param random a source of randomness
+     * @return a new random address book generator
+     */
+    @NonNull
+    public static RandomAddressBookGenerator create(@NonNull final Random random) {
+        return new RandomAddressBookGenerator(random);
+    }
+
+    /**
+     * Constructor.
      *
      * @param random a source of randomness
      */
-    public RandomAddressBookGenerator(@NonNull final Random random) {
+    private RandomAddressBookGenerator(@NonNull final Random random) {
         this.random = Objects.requireNonNull(random);
     }
 
@@ -245,7 +256,7 @@ public class RandomAddressBookGenerator {
      */
     @NonNull
     public AddressBook addToAddressBook(final AddressBook addressBook) {
-        withNextPossibleNodeId(addressBook.getNextNodeId());
+        nextNodeId = addressBook.getNextNodeId();
 
         if (!nodeIds.isEmpty()) {
             nodeIds.stream().sorted().forEach(nodeId -> addressBook.add(buildNextAddress(nodeId)));
@@ -409,20 +420,6 @@ public class RandomAddressBookGenerator {
             final WeightDistributionStrategy weightDistributionStrategy) {
 
         this.weightDistributionStrategy = weightDistributionStrategy;
-        return this;
-    }
-
-    /**
-     * Set the next node ID that may be used to generate a random address. This node ID may be skipped if gaps are
-     * permitted.
-     *
-     * @param nodeId the next node ID that is considered when generating a random address
-     * @return this object
-     */
-    @NonNull // TODO this can be removed
-    private RandomAddressBookGenerator withNextPossibleNodeId(@NonNull final NodeId nodeId) {
-        Objects.requireNonNull(nodeId, "NodeId must not be null");
-        this.nextNodeId = nodeId;
         return this;
     }
 }

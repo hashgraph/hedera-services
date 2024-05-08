@@ -48,7 +48,7 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractStateSignatureColle
     // DO NOT ADD ADDITIONAL UNIT TESTS TO THIS CLASS!
 
     private final AddressBook addressBook =
-            new RandomAddressBookGenerator(random).withSize(4).build();
+            RandomAddressBookGenerator.create(random).withSize(4).build();
 
     /**
      * Called on each state as it gets too old without collecting enough signatures.

@@ -52,7 +52,7 @@ class RosterDiffGeneratorTests {
                 TestPlatformContextBuilder.create().build();
         final RosterDiffGenerator generator = new RosterDiffGenerator(platformContext);
 
-        final AddressBook roster = new RandomAddressBookGenerator(random).build();
+        final AddressBook roster = RandomAddressBookGenerator.create(random).build();
         roster.setHash(platformContext.getCryptography().digestSync(roster));
 
         // First round added should yield a null diff
@@ -84,7 +84,7 @@ class RosterDiffGeneratorTests {
         final RosterDiffGenerator generator = new RosterDiffGenerator(platformContext);
 
         AddressBook previousRoster =
-                new RandomAddressBookGenerator(random).withSize(8).build();
+                RandomAddressBookGenerator.create(random).withSize(8).build();
         previousRoster.setHash(platformContext.getCryptography().digestSync(previousRoster));
         assertNull(generator.generateDiff(new UpdatedRoster(0, previousRoster)));
 

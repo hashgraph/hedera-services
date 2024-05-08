@@ -92,7 +92,7 @@ public class PreGeneratedX509Certs {
 
         // create address book without any certs.
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).withSize(numCerts).build();
+                RandomAddressBookGenerator.create(random).withSize(numCerts).build();
 
         // generate certs for the address book.
         generateKeysAndCerts(addressBook);

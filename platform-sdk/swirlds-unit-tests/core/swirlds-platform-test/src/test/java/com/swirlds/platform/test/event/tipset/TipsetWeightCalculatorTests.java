@@ -83,7 +83,7 @@ class TipsetWeightCalculatorTests {
         final Map<NodeId, EventDescriptor> latestEvents = new HashMap<>();
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).withSize(nodeCount).build();
+                RandomAddressBookGenerator.create(random).withSize(nodeCount).build();
 
         final Map<NodeId, Long> weightMap = new HashMap<>();
         long totalWeight = 0;
@@ -215,7 +215,7 @@ class TipsetWeightCalculatorTests {
         final Random random = getRandomPrintSeed();
         final int nodeCount = 4;
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+        final AddressBook addressBook = RandomAddressBookGenerator.create(random)
                 .withSize(nodeCount)
                 .withAverageWeight(1)
                 .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
@@ -428,7 +428,7 @@ class TipsetWeightCalculatorTests {
         final Random random = getRandomPrintSeed();
         final int nodeCount = 4;
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+        final AddressBook addressBook = RandomAddressBookGenerator.create(random)
                 .withSize(nodeCount)
                 .withAverageWeight(1)
                 .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
@@ -506,7 +506,7 @@ class TipsetWeightCalculatorTests {
         final Random random = getRandomPrintSeed();
         final int nodeCount = 4;
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+        final AddressBook addressBook = RandomAddressBookGenerator.create(random)
                 .withSize(nodeCount)
                 .withAverageWeight(1)
                 .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
