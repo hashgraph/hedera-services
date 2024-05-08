@@ -19,6 +19,7 @@ package com.swirlds.platform.wiring;
 import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder.UNLIMITED_CAPACITY;
 
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.wiring.counters.ObjectCounter;
@@ -29,23 +30,14 @@ import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
-import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
-import com.swirlds.platform.eventhandling.TransactionPrehandler;
-import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
-import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
-import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateHasher;
 import com.swirlds.platform.state.signed.StateSavingResult;
-import com.swirlds.platform.state.signed.StateSignatureCollector;
-import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.StateAndRound;
-import com.swirlds.proto.event.StateSignaturePayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 
 /**
  * The {@link TaskScheduler}s used by the platform.
@@ -57,13 +49,8 @@ import java.util.List;
  * @param signedStateFileManagerScheduler           the scheduler for the signed state file manager
  * @param stateSignerScheduler                      the scheduler for the state signer
  * @param pcesReplayerScheduler                     the scheduler for the pces replayer
- * @param pcesWriterScheduler                       the scheduler for the pces writer
- * @param applicationTransactionPrehandlerScheduler the scheduler for the application transaction prehandler
- * @param stateSignatureCollectorScheduler          the scheduler for the state signature collector
- * @param shadowgraphScheduler                      the scheduler for the shadowgraph
  * @param consensusRoundHandlerScheduler            the scheduler for the consensus round handler
  * @param runningHashUpdateScheduler                the scheduler for the running hash updater
- * @param issDetectorScheduler                      the scheduler for the iss detector
  * @param issHandlerScheduler                       the scheduler for the iss handler
  * @param hashLoggerScheduler                       the scheduler for the hash logger
  * @param latestCompleteStateNotifierScheduler      the scheduler for the latest complete state notifier
@@ -74,14 +61,9 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> postHashCollectorScheduler,
         @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
         @NonNull TaskScheduler<StateSignaturePayload> stateSignerScheduler,
-        @NonNull TaskScheduler<DoneStreamingPcesTrigger> pcesReplayerScheduler,
-        @NonNull TaskScheduler<Long> pcesWriterScheduler,
-        @NonNull TaskScheduler<Void> applicationTransactionPrehandlerScheduler,
-        @NonNull TaskScheduler<List<ReservedSignedState>> stateSignatureCollectorScheduler,
-        @NonNull TaskScheduler<Void> shadowgraphScheduler,
+        @NonNull TaskScheduler<NoInput> pcesReplayerScheduler,
         @NonNull TaskScheduler<StateAndRound> consensusRoundHandlerScheduler,
         @NonNull TaskScheduler<RunningEventHashOverride> runningHashUpdateScheduler,
-        @NonNull TaskScheduler<List<IssNotification>> issDetectorScheduler,
         @NonNull TaskScheduler<Void> issHandlerScheduler,
         @NonNull TaskScheduler<Void> hashLoggerScheduler,
         @NonNull TaskScheduler<Void> latestCompleteStateNotifierScheduler,
@@ -140,37 +122,6 @@ public record PlatformSchedulers(
                         .withHyperlink(platformCoreHyperlink(PcesReplayer.class))
                         .build()
                         .cast(),
-                model.schedulerBuilder("pcesWriter")
-                        .withType(config.pcesWriterSchedulerType())
-                        .withUnhandledTaskCapacity(config.pcesWriterUnhandledCapacity())
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(PcesWriter.class))
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("applicationTransactionPrehandler")
-                        .withType(config.applicationTransactionPrehandlerSchedulerType())
-                        .withUnhandledTaskCapacity(config.applicationTransactionPrehandlerUnhandledCapacity())
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(TransactionPrehandler.class))
-                        .withFlushingEnabled(true)
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("stateSignatureCollector")
-                        .withType(config.stateSignatureCollectorSchedulerType())
-                        .withUnhandledTaskCapacity(config.stateSignatureCollectorUnhandledCapacity())
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(StateSignatureCollector.class))
-                        .withFlushingEnabled(true)
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("shadowgraph")
-                        .withType(config.shadowgraphSchedulerType())
-                        .withUnhandledTaskCapacity(config.shadowgraphUnhandledCapacity())
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(Shadowgraph.class))
-                        .withFlushingEnabled(true)
-                        .build()
-                        .cast(),
                 // the literal "consensusRoundHandler" is used by the app to log on the transaction handling thread.
                 // Do not modify, unless you also change the TRANSACTION_HANDLING_THREAD_NAME constant
                 model.schedulerBuilder("consensusRoundHandler")
@@ -185,13 +136,6 @@ public record PlatformSchedulers(
                         .cast(),
                 model.schedulerBuilder("RunningEventHashOverride")
                         .withType(TaskSchedulerType.DIRECT_THREADSAFE)
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("issDetector")
-                        .withType(config.issDetectorSchedulerType())
-                        .withUnhandledTaskCapacity(config.issDetectorUnhandledCapacity())
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(IssDetector.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("issHandler")

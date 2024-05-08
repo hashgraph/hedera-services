@@ -252,7 +252,7 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 
     @Override
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getFileContentQuery(spec, payment, true);
+        Query query = maybeModified(getFileContentQuery(spec, payment, true), spec);
         Response response =
                 spec.clients().getFileSvcStub(targetNodeFor(spec), useTls).getFileContent(query);
         return costFrom(response);

@@ -315,6 +315,12 @@ public class UtilVerbs {
         return new QueryModificationsOp(queryOpSupplier, modificationsFn);
     }
 
+    public static QueryModificationsOp sendModifiedWithFixedPayer(
+            @NonNull final Function<Query, List<QueryModification>> modificationsFn,
+            @NonNull final Supplier<HapiQueryOp<?>> queryOpSupplier) {
+        return new QueryModificationsOp(false, queryOpSupplier, modificationsFn);
+    }
+
     public static SourcedOp sourcing(Supplier<HapiSpecOperation> source) {
         return new SourcedOp(source);
     }

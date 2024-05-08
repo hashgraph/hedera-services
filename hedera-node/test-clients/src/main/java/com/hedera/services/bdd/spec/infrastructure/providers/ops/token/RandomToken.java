@@ -22,12 +22,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
@@ -49,16 +47,17 @@ public class RandomToken implements OpProvider {
     public static final long DEFAULT_MAX_SUPPLY = 1_000;
 
     protected int ceilingNum = DEFAULT_CEILING_NUM;
-    protected final RegistrySourcedNameProvider<TokenID> tokens;
-    protected final RegistrySourcedNameProvider<AccountID> accounts;
-    protected final AtomicInteger opNo = new AtomicInteger();
     private double kycKeyProb = 0.5;
     private double wipeKeyProb = 0.5;
     private double adminKeyProb = 0.5;
     private double supplyKeyProb = 0.5;
     private double freezeKeyProb = 0.5;
     private double autoRenewProb = 0.5;
-    private final EntityNameProvider<Key> keys;
+    protected final AtomicInteger opNo = new AtomicInteger();
+    protected final RegistrySourcedNameProvider<TokenID> tokens;
+    protected final RegistrySourcedNameProvider<AccountID> autoRenewAccounts;
+    protected final RegistrySourcedNameProvider<AccountID> tokenAdminAccount;
+
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
             /* Auto-renew account might be deleted by the time our TokenCreate reaches consensus */
             INVALID_AUTORENEW_ACCOUNT,
@@ -71,12 +70,12 @@ public class RandomToken implements OpProvider {
     }
 
     public RandomToken(
-            EntityNameProvider<Key> keys,
             RegistrySourcedNameProvider<TokenID> tokens,
-            RegistrySourcedNameProvider<AccountID> accounts) {
-        this.keys = keys;
+            RegistrySourcedNameProvider<AccountID> tokenAdminAccount,
+            RegistrySourcedNameProvider<AccountID> autoRenewAccounts) {
         this.tokens = tokens;
-        this.accounts = accounts;
+        this.tokenAdminAccount = tokenAdminAccount;
+        this.autoRenewAccounts = autoRenewAccounts;
     }
 
     @Override
@@ -87,7 +86,6 @@ public class RandomToken implements OpProvider {
 
         int id = opNo.getAndIncrement();
         HapiTokenCreate op = tokenCreate(my("token" + id))
-                .advertisingCreation()
                 .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
                 .hasKnownStatusFrom(permissibleOutcomes);
 
@@ -113,7 +111,7 @@ public class RandomToken implements OpProvider {
 
     protected void randomlyConfigureAutoRenew(HapiTokenCreate op) {
         if (BASE_RANDOM.nextDouble() < autoRenewProb) {
-            var account = accounts.getQualifying();
+            var account = autoRenewAccounts.getQualifying();
             account.ifPresent(op::autoRenewAccount);
         }
     }
@@ -150,7 +148,7 @@ public class RandomToken implements OpProvider {
         var sb = new StringBuilder("[");
         for (int i = 0; i < probs.length; i++) {
             if (BASE_RANDOM.nextDouble() < probs[i]) {
-                var key = keys.getQualifying();
+                var key = tokenAdminAccount.getQualifying();
                 if (key.isPresent()) {
                     if (i == FREEZE_KEY_INDEX) {
                         op.freezeDefault(BASE_RANDOM.nextBoolean());

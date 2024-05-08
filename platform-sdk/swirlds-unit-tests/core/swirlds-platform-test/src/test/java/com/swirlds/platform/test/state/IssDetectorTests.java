@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -37,6 +38,7 @@ import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.iss.DefaultIssDetector;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -53,7 +55,6 @@ import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator
 import com.swirlds.platform.test.fixtures.event.EventImplTestUtils;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import com.swirlds.platform.wiring.components.StateAndRound;
-import com.swirlds.proto.event.StateSignaturePayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -66,6 +67,7 @@ import org.junit.jupiter.api.Test;
 
 @DisplayName("IssDetector Tests")
 class IssDetectorTests extends PlatformTest {
+
     /**
      * Generates a list of events, with each event containing a signature transaction from a node for the given round.
      *
@@ -175,8 +177,8 @@ class IssDetectorTests extends PlatformTest {
 
         final PlatformContext platformContext = createDefaultPlatformContext();
 
-        final IssDetector issDetector =
-                new IssDetector(platformContext, addressBook, new BasicSoftwareVersion(1), false, DO_NOT_IGNORE_ROUNDS);
+        final IssDetector issDetector = new DefaultIssDetector(
+                platformContext, addressBook, new BasicSoftwareVersion(1), false, DO_NOT_IGNORE_ROUNDS);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         // signature events are generated for each round when that round is handled, and then are included randomly
@@ -295,8 +297,8 @@ class IssDetectorTests extends PlatformTest {
             }
         }
 
-        final IssDetector issDetector =
-                new IssDetector(platformContext, addressBook, new BasicSoftwareVersion(1), false, DO_NOT_IGNORE_ROUNDS);
+        final IssDetector issDetector = new DefaultIssDetector(
+                platformContext, addressBook, new BasicSoftwareVersion(1), false, DO_NOT_IGNORE_ROUNDS);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         long currentRound = 0;
@@ -381,8 +383,8 @@ class IssDetectorTests extends PlatformTest {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final IssDetector issDetector =
-                new IssDetector(platformContext, addressBook, new BasicSoftwareVersion(1), false, DO_NOT_IGNORE_ROUNDS);
+        final IssDetector issDetector = new DefaultIssDetector(
+                platformContext, addressBook, new BasicSoftwareVersion(1), false, DO_NOT_IGNORE_ROUNDS);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         long currentRound = 0;
@@ -503,8 +505,8 @@ class IssDetectorTests extends PlatformTest {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final IssDetector issDetector =
-                new IssDetector(platformContext, addressBook, new BasicSoftwareVersion(1), false, DO_NOT_IGNORE_ROUNDS);
+        final IssDetector issDetector = new DefaultIssDetector(
+                platformContext, addressBook, new BasicSoftwareVersion(1), false, DO_NOT_IGNORE_ROUNDS);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         long currentRound = 0;
@@ -588,8 +590,8 @@ class IssDetectorTests extends PlatformTest {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final IssDetector issDetector =
-                new IssDetector(platformContext, addressBook, new BasicSoftwareVersion(1), false, DO_NOT_IGNORE_ROUNDS);
+        final IssDetector issDetector = new DefaultIssDetector(
+                platformContext, addressBook, new BasicSoftwareVersion(1), false, DO_NOT_IGNORE_ROUNDS);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         long currentRound = 0;
@@ -666,7 +668,7 @@ class IssDetectorTests extends PlatformTest {
                 .roundsNonAncient();
 
         final IssDetector issDetector =
-                new IssDetector(platformContext, addressBook, new BasicSoftwareVersion(1), false, 1);
+                new DefaultIssDetector(platformContext, addressBook, new BasicSoftwareVersion(1), false, 1);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         long currentRound = 0;

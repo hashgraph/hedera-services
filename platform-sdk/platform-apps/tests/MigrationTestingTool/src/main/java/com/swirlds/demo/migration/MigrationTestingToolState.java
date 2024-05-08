@@ -20,7 +20,6 @@ import static com.swirlds.demo.migration.MigrationTestingToolMain.PREVIOUS_SOFTW
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
@@ -42,12 +41,8 @@ import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
-import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -257,20 +252,6 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
     }
 
     /**
-     * Parse a {@link MigrationTestingToolTransaction} from a {@link Transaction}.
-     */
-    private static MigrationTestingToolTransaction parseTransaction(final Transaction transaction) {
-        final SerializableDataInputStream in =
-                new SerializableDataInputStream(new ByteArrayInputStream(transaction.getContents()));
-
-        try {
-            return in.readSerializable(false, MigrationTestingToolTransaction::new);
-        } catch (final IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -281,7 +262,11 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
             for (final Iterator<ConsensusTransaction> transIt = event.consensusTransactionIterator();
                     transIt.hasNext(); ) {
                 final ConsensusTransaction trans = transIt.next();
-                final MigrationTestingToolTransaction mTrans = parseTransaction(trans);
+                if (trans.isSystem()) {
+                    continue;
+                }
+                final MigrationTestingToolTransaction mTrans =
+                        TransactionUtils.parseTransaction(trans.getApplicationPayload());
                 mTrans.applyTo(this);
             }
         }

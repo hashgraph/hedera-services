@@ -16,10 +16,12 @@
 
 package com.swirlds.platform.system.transaction;
 
+import com.hedera.hapi.platform.event.EventPayload;
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.io.SerializableWithKnownLength;
-import com.swirlds.proto.event.EventPayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.locks.ReadWriteLock;
 
@@ -54,6 +56,16 @@ public sealed interface Transaction extends SerializableWithKnownLength permits 
     OneOf<EventPayload.PayloadOneOfType> getPayload();
 
     /**
+     * A convenience method for retrieving the application payload {@link Bytes} object. Before calling this method,
+     * ensure that the transaction is not a system transaction by calling {@link #isSystem()}.
+     *
+     * @return the application payload Bytes or null if the payload is a system payload
+     */
+    default @NonNull Bytes getApplicationPayload() {
+        return !isSystem() ? getPayload().as() : Bytes.EMPTY;
+    }
+
+    /**
      * Get the size of the transaction
      *
      * @return the size of the transaction in the unit of byte
@@ -66,7 +78,9 @@ public sealed interface Transaction extends SerializableWithKnownLength permits 
      * @return {@code true} if this is a system transaction; otherwise {@code false} if this is an application
      * 		transaction
      */
-    boolean isSystem();
+    default boolean isSystem() {
+        return getPayload().kind() != PayloadOneOfType.APPLICATION_PAYLOAD;
+    }
 
     /**
      * Returns the custom metadata object set via {@link #setMetadata(Object)}.

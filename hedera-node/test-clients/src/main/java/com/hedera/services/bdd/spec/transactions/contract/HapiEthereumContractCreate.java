@@ -144,6 +144,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         this.retryLimits = contractCreate.getRetryLimits();
         this.permissibleStatuses = contractCreate.getPermissibleStatuses();
         this.permissiblePrechecks = contractCreate.getPermissiblePrechecks();
+
         this.payer = contractCreate.getPayer();
         this.fee = contractCreate.getFee();
 
@@ -161,7 +162,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
             return Optional.of(BigInteger.ZERO);
         }
     }
-
+    
     public HapiEthereumContractCreate(
             @NonNull final String contract, @NonNull final BiConsumer<HapiSpec, EthereumTransactionBody.Builder> spec) {
         super(contract);

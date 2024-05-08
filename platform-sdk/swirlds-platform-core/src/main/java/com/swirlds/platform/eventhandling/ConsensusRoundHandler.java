@@ -101,7 +101,17 @@ public class ConsensusRoundHandler {
     /**
      * If true then write the legacy running event hash each round.
      */
-    private boolean writeLegacyRunningEventHash;
+    private final boolean writeLegacyRunningEventHash;
+
+    /**
+     * If true then write the running event hash each round.
+     */
+    private final boolean writeRunningEventHash;
+
+    /**
+     * If true then wait for application transactions to be prehandled before handling the consensus round.
+     */
+    private final boolean waitForPrehandle;
 
     /**
      * Constructor
@@ -130,13 +140,15 @@ public class ConsensusRoundHandler {
 
         previousRoundLegacyRunningEventHash = platformContext.getCryptography().getNullHash();
 
+        final PlatformSchedulersConfig schedulersConfig =
+                platformContext.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
+
         // If the CES is using a no-op scheduler then the legacy running event hash won't be computed.
-        writeLegacyRunningEventHash = platformContext
-                        .getConfiguration()
-                        .getConfigData(PlatformSchedulersConfig.class)
-                        .consensusEventStream()
-                        .type()
-                != TaskSchedulerType.NO_OP;
+        writeLegacyRunningEventHash = schedulersConfig.consensusEventStream().type() != TaskSchedulerType.NO_OP;
+        writeRunningEventHash = schedulersConfig.runningEventHasher().type() != TaskSchedulerType.NO_OP;
+
+        // If the application transaction prehandler is a no-op then we don't need to wait for it.
+        waitForPrehandle = schedulersConfig.applicationTransactionPrehandler().type() != TaskSchedulerType.NO_OP;
     }
 
     /**
@@ -171,7 +183,8 @@ public class ConsensusRoundHandler {
         if (freezeRoundReceived) {
             logger.info(
                     STARTUP.getMarker(),
-                    "Round {} reached consensus after freeze. Round will not be processed until after network restarts.",
+                    "Round {} reached consensus after freeze. Round will not be processed until after network "
+                            + "restarts.",
                     consensusRound.getRoundNum());
             return null;
         }
@@ -195,8 +208,11 @@ public class ConsensusRoundHandler {
             // state is passed into the application handle method, and should contain the data for the current round
             updatePlatformState(consensusRound);
 
-            handlerMetrics.setPhase(WAITING_FOR_PREHANDLE);
-            consensusRound.forEach(event -> ((EventImpl) event).getBaseEvent().awaitPrehandleCompletion());
+            if (waitForPrehandle) {
+                handlerMetrics.setPhase(WAITING_FOR_PREHANDLE);
+                consensusRound.forEach(
+                        event -> ((EventImpl) event).getBaseEvent().awaitPrehandleCompletion());
+            }
 
             handlerMetrics.setPhase(HANDLING_CONSENSUS_ROUND);
             swirldStateManager.handleConsensusRound(consensusRound);
@@ -241,7 +257,11 @@ public class ConsensusRoundHandler {
         final PlatformState platformState =
                 swirldStateManager.getConsensusState().getPlatformState();
 
-        platformState.setRunningEventHash(round.getRunningEventHash());
+        if (writeRunningEventHash) {
+            platformState.setRunningEventHash(round.getRunningEventHash());
+        } else {
+            platformState.setRunningEventHash(platformContext.getCryptography().getNullHash());
+        }
 
         if (writeLegacyRunningEventHash) {
             // Update the running hash object. If there are no events, the running hash does not change.

@@ -40,7 +40,7 @@ import com.swirlds.common.config.StateCommonConfig_;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.platform.NodeId;
@@ -109,7 +109,7 @@ class SignedStateFileManagerTests {
 
     @BeforeEach
     void beforeEach() throws IOException {
-        TemporaryFileBuilder.overrideTemporaryFileLocation(testDirectory);
+        LegacyTemporaryFileBuilder.overrideTemporaryFileLocation(testDirectory);
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
                 .withValue(
                         StateCommonConfig_.SAVED_STATE_DIRECTORY,

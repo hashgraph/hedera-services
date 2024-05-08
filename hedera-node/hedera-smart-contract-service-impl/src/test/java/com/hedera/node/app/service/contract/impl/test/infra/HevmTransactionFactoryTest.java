@@ -89,6 +89,7 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
@@ -138,6 +139,11 @@ class HevmTransactionFactoryTest {
     @Mock
     private AttributeValidator attributeValidator;
 
+    @Mock
+    private HederaEvmContext context;
+
+    private static final long TOP_LEVEL_TINYBAR_GAS_PRICE = 100L;
+
     private HevmTransactionFactory subject;
 
     @BeforeEach
@@ -155,7 +161,8 @@ class HevmTransactionFactoryTest {
                 fileStore,
                 attributeValidator,
                 tokenServiceApi,
-                ethereumSignatures);
+                ethereumSignatures,
+                context);
     }
 
     @Test
@@ -541,7 +548,7 @@ class HevmTransactionFactoryTest {
         assertEquals(ETH_DATA_WITH_TO_ADDRESS.gasLimit(), transaction.gasLimit());
         assertEquals(
                 ETH_DATA_WITH_TO_ADDRESS
-                        .getMaxGasAsBigInteger()
+                        .getMaxGasAsBigInteger(TOP_LEVEL_TINYBAR_GAS_PRICE)
                         .divide(WEIBARS_TO_TINYBARS)
                         .longValueExact(),
                 transaction.offeredGasPrice());
@@ -568,7 +575,9 @@ class HevmTransactionFactoryTest {
         assertEquals(Bytes.wrap(dataToUse.chainId()), transaction.chainId());
         assertEquals(dataToUse.value().divide(WEIBARS_TO_TINYBARS).longValueExact(), transaction.value());
         assertEquals(dataToUse.gasLimit(), transaction.gasLimit());
-        assertEquals(dataToUse.effectiveOfferedGasPriceInTinybars(), transaction.offeredGasPrice());
+        assertEquals(
+                dataToUse.effectiveOfferedGasPriceInTinybars(TOP_LEVEL_TINYBAR_GAS_PRICE),
+                transaction.offeredGasPrice());
         assertEquals(MAX_GAS_ALLOWANCE, transaction.maxGasAllowance());
 
         final var minAutoRenewPeriod = Duration.newBuilder()
@@ -679,7 +688,8 @@ class HevmTransactionFactoryTest {
                 fileStore,
                 attributeValidator,
                 tokenServiceApi,
-                ethereumSignatures);
+                ethereumSignatures,
+                context);
     }
 
     private void givenInsteadFailedHydrationSubject() {
@@ -696,7 +706,8 @@ class HevmTransactionFactoryTest {
                 fileStore,
                 attributeValidator,
                 tokenServiceApi,
-                ethereumSignatures);
+                ethereumSignatures,
+                context);
     }
 
     private void givenInsteadHydratedEthTxWithWrongChainId(@NonNull final EthTxData ethTxData) {
@@ -713,7 +724,8 @@ class HevmTransactionFactoryTest {
                 fileStore,
                 attributeValidator,
                 tokenServiceApi,
-                ethereumSignatures);
+                ethereumSignatures,
+                context);
     }
 
     private void givenInsteadHydratedEthTxWithRightChainId(@NonNull final EthTxData ethTxData) {
@@ -730,6 +742,7 @@ class HevmTransactionFactoryTest {
                 fileStore,
                 attributeValidator,
                 tokenServiceApi,
-                ethereumSignatures);
+                ethereumSignatures,
+                context);
     }
 }

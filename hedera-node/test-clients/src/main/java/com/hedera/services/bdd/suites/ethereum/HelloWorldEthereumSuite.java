@@ -265,7 +265,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                                         .logs(inOrder())
                                                         .senderId(spec.registry()
                                                                 .getAccountID(spec.registry()
-                                                                        .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .keyAliasIdFor(SECP_256K1_SOURCE_KEY)
                                                                         .getAlias()
                                                                         .toStringUtf8())))
                                                 .ethereumHash(ByteString.copyFrom(
@@ -307,7 +307,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                                                         List.of(eventSignatureOf("Info(uint256)")))))
                                                         .senderId(spec.registry()
                                                                 .getAccountID(spec.registry()
-                                                                        .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .keyAliasIdFor(SECP_256K1_SOURCE_KEY)
                                                                         .getAlias()
                                                                         .toStringUtf8())))
                                                 .ethereumHash(ByteString.copyFrom(
@@ -374,7 +374,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                                         .logs(inOrder())
                                                         .senderId(spec.registry()
                                                                 .getAccountID(spec.registry()
-                                                                        .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .keyAliasIdFor(SECP_256K1_SOURCE_KEY)
                                                                         .getAlias()
                                                                         .toStringUtf8()))
                                                         .create1EvmAddress(
@@ -469,7 +469,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                                         .logs(inOrder())
                                                         .senderId(spec.registry()
                                                                 .getAccountID(spec.registry()
-                                                                        .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .keyAliasIdFor(SECP_256K1_SOURCE_KEY)
                                                                         .getAlias()
                                                                         .toStringUtf8()))
                                                         .create1EvmAddress(
@@ -524,7 +524,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                                         .logs(inOrder())
                                                         .senderId(spec.registry()
                                                                 .getAccountID(spec.registry()
-                                                                        .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .keyAliasIdFor(SECP_256K1_SOURCE_KEY)
                                                                         .getAlias()
                                                                         .toStringUtf8()))
                                                         .create1EvmAddress(
