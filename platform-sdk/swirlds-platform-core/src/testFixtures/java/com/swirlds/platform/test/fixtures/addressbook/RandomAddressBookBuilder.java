@@ -16,9 +16,17 @@
 
 package com.swirlds.platform.test.fixtures.addressbook;
 
+import static com.swirlds.platform.crypto.KeyCertPurpose.SIGNING;
+
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.crypto.KeyCertPurpose;
+import com.swirlds.platform.crypto.KeysAndCerts;
+import com.swirlds.platform.crypto.PublicStores;
+import com.swirlds.platform.crypto.SerializableX509Certificate;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 
@@ -26,8 +34,6 @@ import java.util.Random;
  * A utility for generating a random address book.
  */
 public class RandomAddressBookBuilder {
-
-    // TODO add a way to generate with real keys
 
     /**
      * All randomness comes from this.
@@ -87,6 +93,16 @@ public class RandomAddressBookBuilder {
     private NodeId nextNodeId = NodeId.FIRST_NODE_ID;
 
     /**
+     * If true then generate real cryptographic keys.
+     */
+    private boolean realKeys;
+
+    /**
+     * If we are using real keys, this map will hold the private keys for each address.
+     */
+    private Map<NodeId, KeysAndCerts> privateKeys = new HashMap<>();
+
+    /**
      * Create a new random address book generator.
      *
      * @param random a source of randomness
@@ -121,10 +137,32 @@ public class RandomAddressBookBuilder {
         }
 
         for (int index = 0; index < size; index++) {
-            addressBook.add(RandomAddressBuilder.create(random)
-                    .withNodeId(getNextNodeId())
-                    .withWeight(getNextWeight())
-                    .build());
+            final NodeId nodeId = getNextNodeId();
+            final RandomAddressBuilder addressBuilder =
+                    RandomAddressBuilder.create(random).withNodeId(nodeId).withWeight(getNextWeight());
+
+            if (realKeys) {
+                // TODO extract
+                try {
+                    final PublicStores publicStores = new PublicStores();
+                    final String name = nodeId.toString();
+                    final KeysAndCerts keysAndCerts = KeysAndCerts.generate(
+                            nodeId.toString(), new byte[] {}, new byte[] {}, new byte[] {}, publicStores);
+                    privateKeys.put(nodeId, keysAndCerts);
+
+                    final SerializableX509Certificate sigCert =
+                            new SerializableX509Certificate(publicStores.getCertificate(SIGNING, name));
+                    final SerializableX509Certificate agrCert = new SerializableX509Certificate(
+                            publicStores.getCertificate(KeyCertPurpose.AGREEMENT, name));
+
+                    addressBuilder.withSigCert(sigCert).withAgreeCert(agrCert);
+
+                } catch (final Exception e) {
+                    throw new RuntimeException();
+                }
+            }
+
+            addressBook.add(addressBuilder.build());
         }
 
         return addressBook;
@@ -202,8 +240,41 @@ public class RandomAddressBookBuilder {
     }
 
     /**
+     * Specify if real cryptographic keys should be generated (default false). Warning: generating real keys is very
+     * time consuming.
+     *
+     * @param realKeysEnabled if true then generate real cryptographic keys
+     * @return this object
+     */
+    @NonNull
+    public RandomAddressBookBuilder withRealKeysEnabled(final boolean realKeysEnabled) { // TODO test this
+        this.realKeys = realKeysEnabled;
+        return this;
+    }
+
+    /**
+     * Get the private keys for a node. Should only be called after the address book has been built and only if
+     * {@link #withRealKeysEnabled(boolean)} was set to true.
+     *
+     * @param nodeId the node id
+     * @return the private keys
+     * @throws IllegalStateException if real keys are not being generated or the address book has not been built
+     */
+    @NonNull
+    public KeysAndCerts getPrivateKeys(final NodeId nodeId) {
+        if (!realKeys) {
+            throw new IllegalStateException("Real keys are not being generated");
+        }
+        if (!privateKeys.containsKey(nodeId)) {
+            throw new IllegalStateException("Unknown node ID " + nodeId);
+        }
+        return privateKeys.get(nodeId);
+    }
+
+    /**
      * Generate the next node ID.
      */
+    @NonNull
     private NodeId getNextNodeId() {
         final NodeId nextId = nextNodeId;
         // randomly advance between 1 and 3 steps
