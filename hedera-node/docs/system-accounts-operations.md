@@ -109,7 +109,7 @@ Legend of the symbols used in the tables below:
 
 ### Call operations that do not transfer value (CallOp, DelegateCallOp, CallCodeOp, StaticCallOp)
 
-_Please note that the expected behavior above is valid considering there is no `value` passed. If there is `value`, this falls in the next section ("Transfer and send operations")._
+_Please note that the expected behavior described in this section is valid if there is no `value` passed. If there is `value`, this falls in the next section ("Transfer and send operations")._
 
 1. For address 0x0:
    - **Ethereum:** success with no op. There is no contract on this address. It is often associated with token burn & mint/genesis events and used as a generic null address.
