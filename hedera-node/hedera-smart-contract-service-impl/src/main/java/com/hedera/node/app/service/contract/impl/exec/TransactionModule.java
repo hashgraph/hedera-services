@@ -144,7 +144,7 @@ public interface TransactionModule {
     static Key provideSenderEcdsaKey(
             @NonNull final EthTxSigsCache ethTxSigsCache, @Nullable final HydratedEthTxData hydratedEthTxData) {
         if (hydratedEthTxData != null && hydratedEthTxData.isAvailable()) {
-            final var ethTxSigs = ethTxSigsCache.computeIfAbsent(requireNonNull(hydratedEthTxData.ethTxData()));
+            final var ethTxSigs = ethTxSigsCache.computeIfAbsent(hydratedEthTxData.ethTxDataOrThrow());
             return Key.newBuilder()
                     .ecdsaSecp256k1(Bytes.wrap(ethTxSigs.publicKey()))
                     .build();

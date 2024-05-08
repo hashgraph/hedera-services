@@ -77,9 +77,11 @@ public interface VerificationStrategy {
      */
     default Predicate<Key> asSignatureTestIn(
             @NonNull final HandleContext context, @Nullable final Key maybeEthSenderKey) {
+        requireNonNull(context);
         return new Predicate<>() {
             @Override
-            public boolean test(Key key) {
+            public boolean test(@NonNull final Key key) {
+                requireNonNull(key);
                 return switch (key.key().kind()) {
                     case KEY_LIST -> {
                         final var keys = key.keyListOrThrow().keys();

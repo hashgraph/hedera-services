@@ -31,10 +31,11 @@ public class SpecificCryptoVerificationStrategy implements VerificationStrategy 
     private final Key qualifyingKey;
 
     public SpecificCryptoVerificationStrategy(@NonNull final Key qualifyingKey) {
+        requireNonNull(qualifyingKey);
         if (!qualifyingKey.hasEd25519() && !qualifyingKey.hasEcdsaSecp256k1()) {
             throw new IllegalArgumentException("Qualifying key must be a cryptographic key");
         }
-        this.qualifyingKey = requireNonNull(qualifyingKey);
+        this.qualifyingKey = qualifyingKey;
     }
 
     /**
@@ -48,6 +49,7 @@ public class SpecificCryptoVerificationStrategy implements VerificationStrategy 
      */
     @Override
     public Decision decideForPrimitive(@NonNull final Key key) {
+        requireNonNull(key);
         return qualifyingKey.equals(key) ? DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION : INVALID;
     }
 }
