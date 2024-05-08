@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUti
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -37,12 +38,15 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalcul
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsDistributor;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandlerImpl;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import com.hedera.node.config.ConfigProvider;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -92,6 +96,28 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         rewardsPayer = new StakingRewardsDistributor(stakingRewardHelper, stakeRewardCalculator);
         stakeInfoHelper = new StakeInfoHelper();
         subject = new StakingRewardsHandlerImpl(rewardsPayer, stakePeriodManager, stakeInfoHelper);
+    }
+
+    @Test
+    void testCoverageForPrivateConstructor()
+            throws NoSuchMethodException, InstantiationException, IllegalAccessException {
+        final Constructor<StakingUtilities> constructor = StakingUtilities.class.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        try {
+            constructor.newInstance();
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            assertEquals(UnsupportedOperationException.class, cause.getClass());
+        }
+    }
+
+    @Test
+    void testStakeMetaChangesForNullOriginalAccount() {
+        noStakeChanges();
+        final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), emptyMap());
+        final var modifiedAccount = writableAccountStore.get(payerId);
+        assert modifiedAccount != null;
+        assertThat(StakingUtilities.hasStakeMetaChanges(null, modifiedAccount)).isTrue();
     }
 
     @Test
