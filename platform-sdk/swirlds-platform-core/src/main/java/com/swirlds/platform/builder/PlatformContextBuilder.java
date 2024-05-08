@@ -22,6 +22,7 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupG
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.concurrent.ExecutorFactory;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
@@ -217,7 +218,9 @@ public class PlatformContextBuilder {
         Objects.requireNonNull(configurationBuilder);
         // FUTURE WORK: don't use auto-discovery (requires design discussion)
         configurationBuilder.autoDiscoverExtensions();
-        return configurationBuilder.build();
+        final Configuration configuration = configurationBuilder.build();
+        ConfigurationHolder.getInstance().setConfiguration(configuration);
+        return configuration;
     }
 
     /**

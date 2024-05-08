@@ -85,14 +85,11 @@ public final class StaticPlatformBuilder {
      * @return true if this is the first time this method has been called, false otherwise
      */
     public static boolean doStaticSetup(@NonNull final Configuration configuration, @Nullable final Path configPath) {
-
         if (staticSetupCompleted) {
             // Only setup static utilities once
             return false;
         }
         staticSetupCompleted = true;
-
-        ConfigurationHolder.getInstance().setConfiguration(configuration);
 
         // Setup logging
         final Path log4jPath = getAbsolutePath(LOG4J_FILE_NAME);
