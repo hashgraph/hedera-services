@@ -67,7 +67,7 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
 
     /**
      * Default constructor for injection.
-     * @param validator the validator for the delete allowance
+     * @param validator the validator for validating a delete allowance transaction
      */
     @Inject
     public CryptoDeleteAllowanceHandler(@NonNull final DeleteAllowanceValidator validator) {
