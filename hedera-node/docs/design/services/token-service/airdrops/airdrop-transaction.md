@@ -193,13 +193,14 @@ If the airdrop transaction fees from the list above are covered by a separate pa
 * Verify that an airdrop with a token and existing recipient with `maxAutoAssociations=-1` works correctly and the recipient receives the token directly
 * Verify that an airdrop with a token and existing recipient with `maxAutoAssociations` equal to a positive number and there are free `autoAssociations` slots works correctly and the recipient receives the token directly
 * Verify that an airdrop with a token and existing recipient with `maxAutoAssociations=0` and missing token association, works correctly and the airdrop lends in the pending state
-* Verify that an airdrop with a token and existing recipient with `maxAutoAssociations` equal to a positive number and there are no free `autoAssociations` slots works correctly and airdrop lends in the pending state
+* Verify that an airdrop with a token and existing recipient with `maxAutoAssociations` equal to a positive number and there are no free `autoAssociations` slots works correctly and the airdrop lends in the pending state
 * Verify that an airdrop with a token and a missing recipient pointed by its public `ECDSA key alias`, works correctly by auto-creating the recipient with `maxAutoAssociations=-1` and the token is directly transferred to it
 * Verify that an airdrop with a token and a missing recipient pointed by its `evm_address` alias, works correctly by lazy-creating the recipient with `maxAutoAssociations=-1` and the token is directly transferred to it
 * Verify that an airdrop with a missing TokenID fails
 * Verify that an airdrop with an NFT and non-existing serial number fails
 * Verify that an airdrop with wrong input data (e.g. negative amount, negative serial number or missing mandatory field) fails
 * Verify that an airdrop with a missing signature of the sender fails
-* Verify that an airdrop, which fee expenses are covered by a separate payer account but has missing payer signature - fails
-* Verify that an airdrop with more than 10 entries in the `token_transfers` list - fails
-* Verify that an airdrop with a duplicate entry in the `token_transfers` list - fails
+* Verify that an airdrop, which fee expenses are covered by a separate payer account, but has missing payer signature fails
+* Verify that an airdrop with more than 10 entries in the `token_transfers` list fails
+* Verify that an airdrop with a duplicate entry for the same NFT in the `token_transfers` list fails with `PENDING_NFT_AIRDROP_ALREADY_EXISTS`
+* Verify that an airdrop with a duplicate entry for the same fungible token and recipient in the `token_transfers` list works correctly and the fungible token amount is aggregated in the final airdrop to the recipient
