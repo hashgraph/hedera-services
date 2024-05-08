@@ -16,13 +16,19 @@
 
 package com.swirlds.platform.gui;
 
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION;
+import static com.swirlds.platform.util.BootstrapUtils.readLegacySettingsFile;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
+import com.swirlds.platform.builder.PlatformContextBuilder;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.GossipEvent;
@@ -32,7 +38,6 @@ import com.swirlds.platform.metrics.NoOpConsensusMetrics;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * This class is responsible for storing events utilized by the GUI.
@@ -51,13 +56,16 @@ public class GuiEventStorage {
     /**
      * Constructor
      *
-     * @param configuration this node's configuration
-     * @param addressBook   the network's address book
+     * @param addressBook the network's address book
      */
-    public GuiEventStorage(@NonNull final Configuration configuration, @NonNull final AddressBook addressBook) {
+    public GuiEventStorage(@NonNull final AddressBook addressBook) {
 
-        this.configuration = Objects.requireNonNull(configuration);
-        final PlatformContext platformContext = PlatformContext.create(configuration);
+        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
+        readLegacySettingsFile(configurationBuilder, getAbsolutePath("settings.txt"));
+
+        final PlatformContext platformContext = PlatformContextBuilder.create(new NodeId(0))
+                .withMetrics(new NoOpMetrics()).withConfigurationBuilder(configurationBuilder).build();
+        configuration = platformContext.getConfiguration();
 
         this.consensus = new ConsensusImpl(platformContext, new NoOpConsensusMetrics(), addressBook);
         // Future work: birth round compatibility for GUI

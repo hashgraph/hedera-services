@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.context.internal;
+package com.swirlds.common.context;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.concurrent.ExecutorFactory;

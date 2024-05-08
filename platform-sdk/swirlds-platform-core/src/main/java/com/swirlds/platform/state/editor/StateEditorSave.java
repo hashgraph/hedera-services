@@ -24,9 +24,12 @@ import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSigne
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.logging.legacy.LogMarker;
+import com.swirlds.platform.builder.PlatformContextBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import java.io.IOException;
@@ -70,10 +73,9 @@ public class StateEditorSave extends StateEditorOperation {
                 Files.createDirectories(directory);
             }
 
-            final Configuration configuration =
-                    DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
-
-            final PlatformContext platformContext = PlatformContext.create(configuration);
+            final PlatformContext platformContext = PlatformContextBuilder.create(new NodeId(0))
+                    .withMetrics(new NoOpMetrics())
+                    .build();
 
             try (final ReservedSignedState signedState = getStateEditor().getSignedStateCopy()) {
                 writeSignedStateFilesToDirectory(platformContext, NO_NODE_ID, directory, signedState.get());

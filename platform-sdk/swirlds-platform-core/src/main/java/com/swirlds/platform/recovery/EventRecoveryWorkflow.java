@@ -304,7 +304,7 @@ public final class EventRecoveryWorkflow {
         logger.info(STARTUP.getMarker(), "Initializing application state");
 
         final RecoveryPlatform platform =
-                new RecoveryPlatform(configuration, initialState.get(), selfId, loadSigningKeys);
+                new RecoveryPlatform(platformContext, initialState.get(), selfId, loadSigningKeys);
 
         initialState
                 .get()

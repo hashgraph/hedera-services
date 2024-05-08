@@ -182,13 +182,7 @@ public class Browser {
             final InfoSwirld infoSwirld = new InfoSwirld(infoApp, new byte[CryptoConstants.HASH_SIZE_BYTES]);
             new InfoMember(infoSwirld, "Node" + nodesToRun.getFirst().id());
 
-            // Duplicating config here is ugly, but Browser is test only code now.
-            // In the future we should clean it up, but it's not urgent to do so.
-            final ConfigurationBuilder guiConfigBuilder = ConfigurationBuilder.create();
-            BootstrapUtils.setupConfigBuilder(guiConfigBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
-            final Configuration guiConfig = guiConfigBuilder.build();
-
-            guiEventStorage = new GuiEventStorage(guiConfig, appDefinition.getConfigAddressBook());
+            guiEventStorage = new GuiEventStorage(appDefinition.getConfigAddressBook());
 
             guiSource = new StandardGuiSource(appDefinition.getConfigAddressBook(), guiEventStorage);
         } else {

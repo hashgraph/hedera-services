@@ -18,14 +18,17 @@ package com.swirlds.platform.cli;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.platform.recovery.EventRecoveryWorkflow.recoverState;
+import static com.swirlds.platform.util.BootstrapUtils.readLegacySettingsFile;
 
 import com.swirlds.cli.commands.EventStreamCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.builder.PlatformContextBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
 import java.nio.file.Path;
 import java.util.List;
@@ -122,9 +125,14 @@ public final class EventStreamRecoverCommand extends AbstractCommand {
 
     @Override
     public Integer call() throws Exception {
-        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(
-                ConfigurationBuilder.create(), getAbsolutePath("settings.txt"), configurationPaths);
-        final PlatformContext platformContext = PlatformContext.create(configuration);
+
+        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
+        readLegacySettingsFile(configurationBuilder, getAbsolutePath("settings.txt"));
+
+        final PlatformContext platformContext = PlatformContextBuilder.create(new NodeId(0))
+                .withMetrics(new NoOpMetrics())
+                .withConfigurationBuilder(configurationBuilder)
+                .build();
 
         recoverState(
                 platformContext,

@@ -56,32 +56,31 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
     /**
      * Create a new recovery platform.
      *
-     * @param configuration   the node's configuration
+     * @param platformContext the platform context
      * @param initialState    the starting signed state
      * @param selfId          the ID of the node
      * @param loadSigningKeys whether to load the signing keys, if false then {@link #sign(byte[])} will throw if
      *                        called
      */
     public RecoveryPlatform(
-            @NonNull final Configuration configuration,
+            @NonNull final PlatformContext platformContext,
             @NonNull final SignedState initialState,
             @NonNull final NodeId selfId,
             final boolean loadSigningKeys) {
-        Objects.requireNonNull(configuration, "configuration must not be null");
-        Objects.requireNonNull(initialState, "initialState must not be null");
-        this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
+        context = Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(initialState);
+        this.selfId = Objects.requireNonNull(selfId);
 
         this.addressBook = initialState.getAddressBook();
 
         if (loadSigningKeys) {
-            keysAndCerts = initNodeSecurity(addressBook, configuration).get(selfId);
+            keysAndCerts = initNodeSecurity(addressBook, platformContext.getConfiguration()).get(selfId);
         } else {
             keysAndCerts = null;
         }
 
         notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
 
-        context = PlatformContext.create(configuration);
 
         setLatestState(initialState);
     }

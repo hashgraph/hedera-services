@@ -27,8 +27,11 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.merkle.route.MerkleRouteUtils;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.builder.PlatformContextBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
@@ -61,9 +64,9 @@ public class StateEditor {
     @SuppressWarnings("java:S106")
     public StateEditor(final Path statePath) throws IOException {
 
-        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
-
-        platformContext = PlatformContext.create(configuration);
+        platformContext = PlatformContextBuilder.create(new NodeId(0))
+                .withMetrics(new NoOpMetrics())
+                .build();
 
         final DeserializedSignedState deserializedSignedState =
                 SignedStateFileReader.readStateFile(platformContext, statePath);

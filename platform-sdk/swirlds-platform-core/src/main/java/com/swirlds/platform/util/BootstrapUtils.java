@@ -59,6 +59,7 @@ import java.awt.Dimension;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
@@ -95,7 +96,7 @@ public final class BootstrapUtils {
      * @param settingsPath         the path to the settings.txt file
      * @throws IOException if there is a problem reading the configuration files
      */
-    public static void setupConfigBuilder(
+    public static void setupConfigBuilder( // TODO remove
             @NonNull final ConfigurationBuilder configurationBuilder, @NonNull final Path settingsPath)
             throws IOException {
 
@@ -103,6 +104,25 @@ public final class BootstrapUtils {
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
 
         configurationBuilder.autoDiscoverExtensions().withSource(mappedSettingsConfigSource);
+    }
+
+    /**
+     * Read the legacy settings file and add it to the configuration builder.
+     *
+     * @param configurationBuilder the configuration builder
+     * @param settingsPath         the path to the settings file
+     */
+    public static void readLegacySettingsFile(
+            @NonNull final ConfigurationBuilder configurationBuilder,
+            @NonNull final Path settingsPath) {
+
+        try {
+            final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile(settingsPath);
+            final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
+            configurationBuilder.withSource(mappedSettingsConfigSource);
+        } catch (final IOException e) {
+            throw new UncheckedIOException("Failed to read settings.txt file", e);
+        }
     }
 
     /**
@@ -128,7 +148,7 @@ public final class BootstrapUtils {
      */
     public static void setupBrowserWindow()
             throws UnsupportedLookAndFeelException, ClassNotFoundException, InstantiationException,
-                    IllegalAccessException {
+            IllegalAccessException {
         // discover the inset size and set the look and feel
         UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
         final JFrame jframe = new JFrame();
@@ -173,9 +193,9 @@ public final class BootstrapUtils {
 
             return (SwirldMain) constructor.newInstance();
         } catch (final ClassNotFoundException
-                | InstantiationException
-                | IllegalAccessException
-                | InvocationTargetException e) {
+                       | InstantiationException
+                       | IllegalAccessException
+                       | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
     }

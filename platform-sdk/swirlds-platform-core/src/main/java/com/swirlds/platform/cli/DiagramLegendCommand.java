@@ -19,6 +19,8 @@ package com.swirlds.platform.cli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.common.wiring.model.diagram.ModelEdgeSubstitution;
@@ -29,6 +31,7 @@ import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.builder.PlatformContextBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.util.BootstrapUtils;
 import java.io.IOException;
@@ -51,10 +54,11 @@ public final class DiagramLegendCommand extends AbstractCommand {
     @Override
     public Integer call() throws IOException {
 
-        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
         BootstrapUtils.setupConstructableRegistry();
 
-        final PlatformContext platformContext = PlatformContext.create(configuration);
+        final PlatformContext platformContext = PlatformContextBuilder.create(new NodeId(0))
+                .withMetrics(new NoOpMetrics())
+                .build();
 
         final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
