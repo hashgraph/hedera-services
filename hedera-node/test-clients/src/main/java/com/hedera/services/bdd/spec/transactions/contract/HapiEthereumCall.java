@@ -146,7 +146,6 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         this.txnName = contractCall.getTxnName();
         this.gas = contractCall.getGas();
         this.expectedStatus = Optional.of(contractCall.getExpectedStatus());
-        this.permissibleStatuses = contractCall.getPermissibleStatuses();
         this.payer = contractCall.getPayer();
         this.expectedPrecheck = Optional.of(contractCall.getExpectedPrecheck());
         this.fiddler = contractCall.getFiddler();

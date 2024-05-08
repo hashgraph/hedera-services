@@ -88,6 +88,7 @@ import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.LockFreeStateNexus;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.DefaultSignedStateHasher;
+import com.swirlds.platform.state.signed.DefaultStateSignatureCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedState;
@@ -306,7 +307,7 @@ public class SwirldsPlatform implements Platform {
         savedStateController = new DefaultSavedStateController(stateConfig);
 
         final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
-        final StateSignatureCollector stateSignatureCollector = new StateSignatureCollector(
+        final StateSignatureCollector stateSignatureCollector = new DefaultStateSignatureCollector(
                 platformContext.getConfiguration().getConfigData(StateConfig.class), signedStateMetrics);
 
         final LatestCompleteStateNotifier latestCompleteStateNotifier = new DefaultLatestCompleteStateNotifier();

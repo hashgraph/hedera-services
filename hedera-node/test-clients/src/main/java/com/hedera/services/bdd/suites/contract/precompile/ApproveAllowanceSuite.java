@@ -209,9 +209,11 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(HTS_APPROVE_ALLOWANCE_CONTRACT),
-                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT).refusingEthConversion(),
                         uploadInitCode(nestedContract),
-                        contractCreate(nestedContract).adminKey(MULTI_KEY),
+                        contractCreate(nestedContract).adminKey(MULTI_KEY).refusingEthConversion(),
                         tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                         tokenAssociate(HTS_APPROVE_ALLOWANCE_CONTRACT, FUNGIBLE_TOKEN),
                         tokenAssociate(nestedContract, FUNGIBLE_TOKEN))
@@ -400,7 +402,9 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(HTS_APPROVE_ALLOWANCE_CONTRACT),
-                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT).refusingEthConversion(),
                         tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                         tokenAssociate(HTS_APPROVE_ALLOWANCE_CONTRACT, FUNGIBLE_TOKEN))
                 .when(withOpContext((spec, opLog) -> allRunFor(
@@ -672,7 +676,9 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .treasury(TOKEN_TREASURY),
                         uploadInitCode(HTS_APPROVE_ALLOWANCE_CONTRACT),
-                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT).refusingEthConversion(),
                         tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                         tokenAssociate(HTS_APPROVE_ALLOWANCE_CONTRACT, NON_FUNGIBLE_TOKEN),
                         mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("a")))
@@ -762,9 +768,12 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
                         uploadInitCode(PRETEND_PAIR),
-                        contractCreate(PRETEND_PAIR).adminKey(DEFAULT_PAYER),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(PRETEND_PAIR).adminKey(DEFAULT_PAYER).refusingEthConversion(),
                         uploadInitCode(callee),
                         contractCreate(callee)
+                                .refusingEthConversion()
                                 .adminKey(DEFAULT_PAYER)
                                 .exposingNumTo(num -> calleeMirrorAddr.set(asHexedSolidityAddress(0, 0, num))),
                         tokenAssociate(PRETEND_PAIR, FUNGIBLE_TOKEN),

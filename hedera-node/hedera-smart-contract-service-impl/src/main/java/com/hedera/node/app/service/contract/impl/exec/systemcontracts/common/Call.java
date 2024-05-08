@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.common;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
@@ -33,7 +33,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContrac
 /**
  * Encapsulates a call to the HTS system contract.
  */
-public interface HtsCall {
+public interface Call {
     /**
      * Encapsulates the result of a call to the HTS system contract. There are two elements,
      * <ol>
