@@ -81,7 +81,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      * @param storeMetricsService the store metrics service
      * @param stakingValidator the staking validator
      * @param writableStates the writable states
-     * @param customFeeTest the custom fee test
+     * @param customFeeTest a predicate for determining if a transfer has custom fees
      */
     public TokenServiceApiImpl(
             @NonNull final Configuration config,
