@@ -79,7 +79,7 @@ class EthTxDataTest {
     static final String EIP155_DEMO =
             "f86c098504a817c800825208943535353535353535353535353535353535353535880de0b6b3a76400008025a028ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276a067cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83";
     // v = 37
-    static final String EIP155_UNPROTECTED =
+    static final String EIP155_NO_CHAIN_ID =
             "f8a58085174876e800830186a08000b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222";
     // v = 27
 
@@ -262,8 +262,10 @@ class EthTxDataTest {
     }
 
     @Test
+    // EIP-155 adds chainId in order to prevent replay attacks. This test checks if the encoding works without the
+    // chainId
     void roundTrip155UnprotectedTx() {
-        final var expected = Hex.decode(EIP155_UNPROTECTED);
+        final var expected = Hex.decode(EIP155_NO_CHAIN_ID);
         final var tx155 = EthTxData.populateEthTxData(expected);
 
         assertNotNull(tx155);
