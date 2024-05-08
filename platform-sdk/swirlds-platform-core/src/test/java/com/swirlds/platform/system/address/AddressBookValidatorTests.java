@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -87,8 +88,16 @@ class AddressBookValidatorTests {
                 RandomAddressBookBuilder.create(randotron).withSize(10);
 
         final AddressBook addressBook1 = generator.build();
-        final AddressBook addressBook2 = generator.addToAddressBook(addressBook1.copy());
-        final AddressBook addressBook3 = generator.addToAddressBook(addressBook2.copy());
+
+        final AddressBook addressBook2 = addressBook1.copy();
+        addressBook2.add(RandomAddressBuilder.create(randotron)
+                .withNodeId(new NodeId(addressBook2.getNextNodeId().id() + randotron.nextInt(1, 3)))
+                .build());
+
+        final AddressBook addressBook3 = addressBook2.copy();
+        addressBook3.add(RandomAddressBuilder.create(randotron)
+                .withNodeId(new NodeId(addressBook3.getNextNodeId().id() + randotron.nextInt(1, 3)))
+                .build());
 
         assertTrue(validNextId(addressBook1, addressBook2), "should pass validation");
         assertTrue(isNextAddressBookValid(addressBook1, addressBook2), "should pass validation");

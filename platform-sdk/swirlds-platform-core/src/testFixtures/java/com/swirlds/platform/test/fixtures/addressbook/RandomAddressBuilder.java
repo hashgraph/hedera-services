@@ -40,6 +40,9 @@ public class RandomAddressBuilder {
     private SerializableX509Certificate sigCert;
     private SerializableX509Certificate agreeCert;
 
+    private long minimumWeight = 0;
+    private long maximumWeight = Long.MAX_VALUE / 1024;
+
     /**
      * Creates a new {@link RandomAddressBuilder} instance.
      *
@@ -75,7 +78,7 @@ public class RandomAddressBuilder {
         }
 
         if (weight == null) {
-            weight = random.nextLong(0, Long.MAX_VALUE);
+            weight = random.nextLong(minimumWeight, maximumWeight);
         }
 
         if (port == null) {
@@ -177,6 +180,30 @@ public class RandomAddressBuilder {
     @NonNull
     public RandomAddressBuilder withAgreeCert(@NonNull final SerializableX509Certificate agreeCert) {
         this.agreeCert = Objects.requireNonNull(agreeCert);
+        return this;
+    }
+
+    /**
+     * Sets the minimum weight. Ignored if the weight is specifically set. Default 0.
+     *
+     * @param minimumWeight the minimum weight
+     * @return this builder
+     */
+    @NonNull
+    public RandomAddressBuilder withMinimumWeight(final long minimumWeight) {
+        this.minimumWeight = minimumWeight;
+        return this;
+    }
+
+    /**
+     * Sets the maximum weight. Ignored if the weight is specifically set. Default Long.MAX_VALUE / 1024.
+     *
+     * @param maximumWeight the maximum weight
+     * @return this builder
+     */
+    @NonNull
+    public RandomAddressBuilder withMaximumWeight(final long maximumWeight) {
+        this.maximumWeight = maximumWeight;
         return this;
     }
 }

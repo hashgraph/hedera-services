@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.fixtures.addressbook;
 
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -75,12 +74,12 @@ public class RandomAddressBookBuilder {
     /**
      * The minimum weight to give to any particular address.
      */
-    private long minimumWeight = 1;
+    private long minimumWeight = 0;
 
     /**
      * The maximum weight to give to any particular address.
      */
-    private long maximumWeight = 100_000;
+    private Long maximumWeight;
 
     /**
      * the next available node id for new addresses.
@@ -108,57 +107,18 @@ public class RandomAddressBookBuilder {
     }
 
     /**
-     * Generate the next node ID.
-     */
-    private NodeId getNextNodeId() {
-        final NodeId nextId = this.nextNodeId;
-        // randomly advance between 1 and 3 steps
-        final int randomAdvance = random.nextInt(3);
-        this.nextNodeId = this.nextNodeId.getOffset(randomAdvance + 1L);
-        return nextId;
-    }
-
-    /**
-     * Generate the next weight for the next address.
-     */
-    private long getNextWeight() {
-        final long unboundedWeight;
-        switch (weightDistributionStrategy) {
-            case BALANCED -> unboundedWeight = averageWeight;
-            case GAUSSIAN -> unboundedWeight =
-                    Math.max(0, (long) (averageWeight + random.nextGaussian() * weightStandardDeviation));
-            default -> throw new IllegalStateException("Unexpected value: " + weightDistributionStrategy);
-        }
-
-        return Math.min(maximumWeight, Math.max(minimumWeight, unboundedWeight));
-    }
-
-    /**
      * Build a random address book given the provided configuration.
      */
     @NonNull
     public AddressBook build() {
         final AddressBook addressBook = new AddressBook();
-        addressBook.setNextNodeId(this.nextNodeId);
+        addressBook.setNextNodeId(nextNodeId);
         addressBook.setRound(Math.abs(random.nextLong()));
 
-        addToAddressBook(addressBook);
-        return addressBook;
-    }
-
-    // TODO remove (or at least make private)
-
-    /**
-     * Add new addresses to an address book. The number of addresses is equal to the value specified by
-     * {@link #withSize(int)}. The next candidate ID is set to be the address book's
-     * {@link AddressBook#getNextNodeId()}.
-     *
-     * @param addressBook the address book to add new addresses to
-     * @return the input address book after it has been expanded
-     */
-    @NonNull
-    public AddressBook addToAddressBook(final AddressBook addressBook) {
-        nextNodeId = addressBook.getNextNodeId();
+        if (maximumWeight == null) {
+            // We don't want the total weight to overflow a long
+            maximumWeight = Long.MAX_VALUE / size;
+        }
 
         for (int index = 0; index < size; index++) {
             addressBook.add(RandomAddressBuilder.create(random)
@@ -166,8 +126,6 @@ public class RandomAddressBookBuilder {
                     .withWeight(getNextWeight())
                     .build());
         }
-
-        CryptographyHolder.get().digestSync(addressBook);
 
         return addressBook;
     }
@@ -241,5 +199,31 @@ public class RandomAddressBookBuilder {
 
         this.weightDistributionStrategy = weightDistributionStrategy;
         return this;
+    }
+
+    /**
+     * Generate the next node ID.
+     */
+    private NodeId getNextNodeId() {
+        final NodeId nextId = nextNodeId;
+        // randomly advance between 1 and 3 steps
+        final int randomAdvance = random.nextInt(3);
+        nextNodeId = nextNodeId.getOffset(randomAdvance + 1L);
+        return nextId;
+    }
+
+    /**
+     * Generate the next weight for the next address.
+     */
+    private long getNextWeight() {
+        final long unboundedWeight;
+        switch (weightDistributionStrategy) {
+            case BALANCED -> unboundedWeight = averageWeight;
+            case GAUSSIAN -> unboundedWeight =
+                    Math.max(0, (long) (averageWeight + random.nextGaussian() * weightStandardDeviation));
+            default -> throw new IllegalStateException("Unexpected value: " + weightDistributionStrategy);
+        }
+
+        return Math.min(maximumWeight, Math.max(minimumWeight, unboundedWeight));
     }
 }
