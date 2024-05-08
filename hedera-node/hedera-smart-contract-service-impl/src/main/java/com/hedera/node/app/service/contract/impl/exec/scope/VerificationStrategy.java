@@ -22,6 +22,8 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
@@ -70,9 +72,11 @@ public interface VerificationStrategy {
      * given this strategy within the given {@link HandleContext}.
      *
      * @param context the context in which this strategy will be used
+     * @param maybeEthSenderKey the key that is the sender of the EVM message, if known
      * @return a predicate that tests whether a given key is a valid signature for a given key
      */
-    default Predicate<Key> asSignatureTestIn(@NonNull final HandleContext context) {
+    default Predicate<Key> asSignatureTestIn(
+            @NonNull final HandleContext context, @Nullable final Key maybeEthSenderKey) {
         return new Predicate<>() {
             @Override
             public boolean test(Key key) {
@@ -108,8 +112,9 @@ public interface VerificationStrategy {
                             yield switch (decideForPrimitive(key)) {
                                 case VALID -> true;
                                 case INVALID -> false;
-                                case DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION -> context.verificationFor(key)
-                                        .passed();
+                                    // Note the EthereumTransaction sender's key has necessarily signed
+                                case DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION -> Objects.equals(key, maybeEthSenderKey)
+                                        || context.verificationFor(key).passed();
                             };
                         }
                         yield false;

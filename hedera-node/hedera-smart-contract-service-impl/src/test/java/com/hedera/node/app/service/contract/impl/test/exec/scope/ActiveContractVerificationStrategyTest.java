@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ANOTHER_ED25519_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_SECP256K1_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.YET_ANOTHER_ED25519_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -136,14 +137,25 @@ class ActiveContractVerificationStrategyTest {
     }
 
     @Test
+    void signatureTestApprovesEthSenderKeyWhenDelegating() {
+        final var subject = mock(VerificationStrategy.class);
+        doCallRealMethod().when(subject).asSignatureTestIn(context, A_SECP256K1_KEY);
+        given(subject.decideForPrimitive(A_SECP256K1_KEY))
+                .willReturn(VerificationStrategy.Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION);
+
+        final var test = subject.asSignatureTestIn(context, A_SECP256K1_KEY);
+        assertTrue(test.test(A_SECP256K1_KEY));
+    }
+
+    @Test
     void signatureTestApprovesAllValidKeyLists() {
         final var subject = mock(VerificationStrategy.class);
-        doCallRealMethod().when(subject).asSignatureTestIn(context);
+        doCallRealMethod().when(subject).asSignatureTestIn(context, null);
         given(subject.decideForPrimitive(AN_ED25519_KEY)).willReturn(VerificationStrategy.Decision.VALID);
         given(subject.decideForPrimitive(ANOTHER_ED25519_KEY)).willReturn(VerificationStrategy.Decision.VALID);
         given(subject.decideForPrimitive(YET_ANOTHER_ED25519_KEY)).willReturn(VerificationStrategy.Decision.VALID);
 
-        final var test = subject.asSignatureTestIn(context);
+        final var test = subject.asSignatureTestIn(context, null);
         final var key = Key.newBuilder()
                 .keyList(KeyList.newBuilder().keys(AN_ED25519_KEY, ANOTHER_ED25519_KEY, YET_ANOTHER_ED25519_KEY))
                 .build();
@@ -153,11 +165,11 @@ class ActiveContractVerificationStrategyTest {
     @Test
     void signatureTestRejectsIncompleteKeyLists() {
         final var subject = mock(VerificationStrategy.class);
-        doCallRealMethod().when(subject).asSignatureTestIn(context);
+        doCallRealMethod().when(subject).asSignatureTestIn(context, null);
         given(subject.decideForPrimitive(AN_ED25519_KEY)).willReturn(VerificationStrategy.Decision.VALID);
         given(subject.decideForPrimitive(ANOTHER_ED25519_KEY)).willReturn(VerificationStrategy.Decision.INVALID);
 
-        final var test = subject.asSignatureTestIn(context);
+        final var test = subject.asSignatureTestIn(context, null);
         final var key = Key.newBuilder()
                 .keyList(KeyList.newBuilder().keys(AN_ED25519_KEY, ANOTHER_ED25519_KEY, YET_ANOTHER_ED25519_KEY))
                 .build();
@@ -167,12 +179,12 @@ class ActiveContractVerificationStrategyTest {
     @Test
     void signatureTestApprovesSufficientThresholdKeys() {
         final var subject = mock(VerificationStrategy.class);
-        doCallRealMethod().when(subject).asSignatureTestIn(context);
+        doCallRealMethod().when(subject).asSignatureTestIn(context, null);
         given(subject.decideForPrimitive(AN_ED25519_KEY)).willReturn(VerificationStrategy.Decision.VALID);
         given(subject.decideForPrimitive(ANOTHER_ED25519_KEY)).willReturn(VerificationStrategy.Decision.INVALID);
         given(subject.decideForPrimitive(YET_ANOTHER_ED25519_KEY)).willReturn(VerificationStrategy.Decision.VALID);
 
-        final var test = subject.asSignatureTestIn(context);
+        final var test = subject.asSignatureTestIn(context, null);
         final var key = Key.newBuilder()
                 .thresholdKey(ThresholdKey.newBuilder()
                         .threshold(2)
@@ -185,12 +197,12 @@ class ActiveContractVerificationStrategyTest {
     @Test
     void signatureTestRejectsInsufficientThresholdKeys() {
         final var subject = mock(VerificationStrategy.class);
-        doCallRealMethod().when(subject).asSignatureTestIn(context);
+        doCallRealMethod().when(subject).asSignatureTestIn(context, null);
         given(subject.decideForPrimitive(AN_ED25519_KEY)).willReturn(VerificationStrategy.Decision.VALID);
         given(subject.decideForPrimitive(ANOTHER_ED25519_KEY)).willReturn(VerificationStrategy.Decision.INVALID);
         given(subject.decideForPrimitive(YET_ANOTHER_ED25519_KEY)).willReturn(VerificationStrategy.Decision.INVALID);
 
-        final var test = subject.asSignatureTestIn(context);
+        final var test = subject.asSignatureTestIn(context, null);
         final var key = Key.newBuilder()
                 .thresholdKey(ThresholdKey.newBuilder()
                         .threshold(2)
@@ -203,11 +215,11 @@ class ActiveContractVerificationStrategyTest {
     @Test
     void unsupportedKeyTypesAreNotPrimitive() {
         final var subject = mock(VerificationStrategy.class);
-        doCallRealMethod().when(subject).asSignatureTestIn(context);
+        doCallRealMethod().when(subject).asSignatureTestIn(context, null);
 
         final var aRsa3072Key = Key.newBuilder().rsa3072(Bytes.wrap("NONSENSE")).build();
 
-        final var test = subject.asSignatureTestIn(context);
+        final var test = subject.asSignatureTestIn(context, null);
         assertFalse(test.test(aRsa3072Key));
     }
 }

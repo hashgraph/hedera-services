@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.service.contract.impl.annotations.ChildTransactionResourcePrices;
@@ -42,6 +43,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
+import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
 import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
@@ -55,6 +57,7 @@ import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.FunctionalityResourcePrices;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.HederaConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -125,6 +128,29 @@ public interface TransactionModule {
         return body.hasEthereumTransaction()
                 ? hydration.tryToHydrate(body.ethereumTransactionOrThrow(), fileStore, hederaConfig.firstUserEntity())
                 : null;
+    }
+
+    /**
+     * If the top-level transaction is an {@code EthereumTransaction}, provides an ECDSA {@link Key} with
+     * the public key of the sender address; otherwise returns {@code null}.
+     *
+     * @param ethTxSigsCache the cache of Ethereum transaction signatures
+     * @param hydratedEthTxData the hydrated Ethereum transaction data, if this is an {@code EthereumTransaction}
+     * @return the ECDSA {@link Key} with the public key of the sender address, or {@code null}
+     */
+    @Provides
+    @Nullable
+    @TransactionScope
+    static Key provideSenderEcdsaKey(
+            @NonNull final EthTxSigsCache ethTxSigsCache, @Nullable final HydratedEthTxData hydratedEthTxData) {
+        if (hydratedEthTxData != null && hydratedEthTxData.isAvailable()) {
+            final var ethTxSigs = ethTxSigsCache.computeIfAbsent(requireNonNull(hydratedEthTxData.ethTxData()));
+            return Key.newBuilder()
+                    .ecdsaSecp256k1(Bytes.wrap(ethTxSigs.publicKey()))
+                    .build();
+        } else {
+            return null;
+        }
     }
 
     @Provides
