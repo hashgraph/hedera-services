@@ -22,10 +22,7 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
@@ -197,31 +194,12 @@ public class RandomAddressBookBuilder {
     // TODO remove, this doesn't belong here
 
     /**
-     * Remove a number of addresses from an address book.
-     *
-     * @param addressBook the address book to remove from
-     * @param count       the number of addresses to remove, removes all addresses if count exceeds address book size
-     * @return the input address book
-     */
-    @NonNull
-    public AddressBook removeFromAddressBook(@NonNull final AddressBook addressBook, final int count) {
-        Objects.requireNonNull(addressBook, "AddressBook must not be null");
-        final List<NodeId> nodeIds = new ArrayList<>(addressBook.getSize());
-        addressBook.forEach((final Address address) -> nodeIds.add(address.getNodeId()));
-        Collections.shuffle(nodeIds, random);
-        for (int i = 0; i < count && i < nodeIds.size(); i++) {
-            addressBook.remove(nodeIds.get(i));
-        }
-        return addressBook;
-    }
-
-    /**
      * Build a random address using provided configuration. Address IS NOT automatically added to the address book.
      *
      * @return a random address
      */
     @NonNull
-    public Address buildNextAddress() {
+    private Address buildNextAddress() {
         return buildNextAddress(null);
     }
 

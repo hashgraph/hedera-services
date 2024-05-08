@@ -33,6 +33,8 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -148,6 +150,20 @@ class AddressBookTests {
                 "should not be able to set weight for non-existent node");
     }
 
+    /**
+     * Build an address to be added to an address book.
+     *
+     * @param random      the random number generator to use
+     * @param addressBook the address book to add the address to
+     * @return a new address
+     */
+    @NonNull
+    private static Address buildNextAddress(@NonNull final Random random, @NonNull final AddressBook addressBook) {
+        return RandomAddressBuilder.create(random)
+                .withNodeId(new NodeId(addressBook.getNextNodeId().id() + random.nextInt(0, 3)))
+                .build();
+    }
+
     @Test
     @DisplayName("Add/Remove Test")
     void addRemoveTest() {
@@ -170,7 +186,7 @@ class AddressBookTests {
                 assertNotNull(expectedAddresses.remove(nodeIdToRemove), "item to be removed should be present");
                 addressBook.remove(nodeIdToRemove);
             } else {
-                final Address newAddress = generator.buildNextAddress();
+                final Address newAddress = buildNextAddress(random, addressBook);
                 expectedAddresses.put(newAddress.getNodeId(), newAddress);
                 addressBook.add(newAddress);
             }
@@ -197,7 +213,7 @@ class AddressBookTests {
             final int indexToUpdate = random.nextInt(addressBook.getSize());
             final NodeId nodeIdToUpdate = addressBook.getNodeId(indexToUpdate);
 
-            final Address updatedAddress = generator.buildNextAddress().copySetNodeId(nodeIdToUpdate);
+            final Address updatedAddress = buildNextAddress(random, addressBook).copySetNodeId(nodeIdToUpdate);
 
             expectedAddresses.put(nodeIdToUpdate, updatedAddress);
             addressBook.add(updatedAddress);
@@ -308,11 +324,12 @@ class AddressBookTests {
     @Test
     @DisplayName("Reinsertion Test")
     void reinsertionTest() {
-        final RandomAddressBookBuilder generator = RandomAddressBookBuilder.create(getRandomPrintSeed());
+        final Randotron randotron = Randotron.create();
+
         final AddressBook addressBook = new AddressBook();
 
         for (int i = 0; i < 100; i++) {
-            addressBook.add(generator.buildNextAddress());
+            addressBook.add(buildNextAddress(randotron, addressBook));
         }
 
         validateAddressBookConsistency(addressBook);
@@ -328,14 +345,16 @@ class AddressBookTests {
     @Test
     @DisplayName("Out Of Order add() Test")
     void outOfOrderAddTest() {
+        final Randotron randotron = Randotron.create();
+
         final RandomAddressBookBuilder generator =
-                RandomAddressBookBuilder.create(getRandomPrintSeed()).withSize(100);
+                RandomAddressBookBuilder.create(randotron).withSize(100);
         final AddressBook addressBook = generator.build();
 
         // The address book has gaps. Make sure we can't insert anything into those gaps.
         for (int i = 0; i < addressBook.getNextNodeId().id(); i++) {
 
-            final Address address = generator.buildNextAddress().copySetNodeId(new NodeId(i));
+            final Address address = buildNextAddress(randotron, addressBook).copySetNodeId(new NodeId(i));
 
             if (addressBook.contains(new NodeId(i))) {
                 // It's ok to update an existing address
@@ -355,18 +374,19 @@ class AddressBookTests {
     @Test
     @DisplayName("Max Size Test")
     void maxSizeTest() {
-        final RandomAddressBookBuilder generator = RandomAddressBookBuilder.create(getRandomPrintSeed());
+        final Randotron randotron = Randotron.create();
+
         final AddressBook addressBook = new AddressBook();
 
         for (int i = 0; i < AddressBook.MAX_ADDRESSES; i++) {
-            addressBook.add(generator.buildNextAddress());
+            addressBook.add(buildNextAddress(randotron, addressBook));
         }
 
         validateAddressBookConsistency(addressBook);
 
         assertThrows(
                 IllegalStateException.class,
-                () -> addressBook.add(generator.buildNextAddress()),
+                () -> addressBook.add(buildNextAddress(randotron, addressBook)),
                 "shouldn't be able to exceed max address book size");
     }
 
