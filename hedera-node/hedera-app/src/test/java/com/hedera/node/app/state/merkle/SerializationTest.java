@@ -37,7 +37,7 @@ import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.constructable.RuntimeConstructable;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -64,7 +64,7 @@ class SerializationTest extends MerkleTestBase {
     void setUp() throws IOException {
         setupConstructableRegistry();
 
-        this.dir = TemporaryFileBuilder.buildTemporaryDirectory();
+        this.dir = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
         this.config = mock(Configuration.class);
         this.networkInfo = mock(NetworkInfo.class);
         final var hederaConfig = mock(HederaConfig.class);

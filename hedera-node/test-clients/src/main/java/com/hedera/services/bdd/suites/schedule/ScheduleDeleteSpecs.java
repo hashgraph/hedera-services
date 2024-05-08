@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.schedule;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -26,6 +27,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ADMIN;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.RECEIVER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULING_WHITELIST;
@@ -114,6 +119,31 @@ public class ScheduleDeleteSpecs extends HapiSuite {
                         .fee(ONE_HBAR)
                         .signedBy(ADMIN, DEFAULT_PAYER)
                         .hasKnownStatus(SCHEDULE_ALREADY_DELETED));
+    }
+
+    @HapiTest
+    final HapiSpec idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed(ADMIN),
+                        cryptoCreate(SENDER),
+                        scheduleCreate(VALID_SCHEDULED_TXN, cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1)))
+                                .adminKey(ADMIN))
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> scheduleDelete(VALID_SCHEDULED_TXN)
+                        .signedBy(DEFAULT_PAYER, ADMIN)));
+    }
+
+    @HapiTest
+    public HapiSpec getScheduleInfoIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("getScheduleInfoIdVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed(ADMIN),
+                        cryptoCreate(SENDER),
+                        scheduleCreate(VALID_SCHEDULED_TXN, cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1)))
+                                .adminKey(ADMIN))
+                .when()
+                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getScheduleInfo(VALID_SCHEDULED_TXN)));
     }
 
     @HapiTest

@@ -673,7 +673,7 @@ public class HapiSpecRegistry {
         return get(name, AccountID.class);
     }
 
-    public AccountID aliasIdFor(String keyName) {
+    public AccountID keyAliasIdFor(String keyName) {
         final var key = get(keyName, Key.class);
         return AccountID.newBuilder().setAlias(key.toByteString()).build();
     }
@@ -911,6 +911,10 @@ public class HapiSpecRegistry {
                 .map(entry -> String.format(
                         "%s -> %s", entry.getKey(), entry.getValue().toString()))
                 .collect(toList());
+    }
+
+    public void forgetMetadataKey(String name) {
+        remove(name + "Metadata", Key.class);
     }
 
     public void saveMetadataKey(String name, Key metadataKey) {
