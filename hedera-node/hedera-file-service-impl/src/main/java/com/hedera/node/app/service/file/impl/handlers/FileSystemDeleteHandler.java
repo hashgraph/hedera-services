@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
@@ -51,6 +52,10 @@ import javax.inject.Singleton;
 public class FileSystemDeleteHandler implements TransactionHandler {
     private final FileFeeBuilder usageEstimator;
 
+    /**
+     * Constructs a {@link FileSystemDeleteHandler} with the given {@link FileFeeBuilder}.
+     * @param usageEstimator the file fee builder to be used for fee calculation
+     */
     @Inject
     public FileSystemDeleteHandler(final FileFeeBuilder usageEstimator) {
         this.usageEstimator = usageEstimator;
