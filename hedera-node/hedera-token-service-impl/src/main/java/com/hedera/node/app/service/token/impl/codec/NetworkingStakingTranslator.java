@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.codec;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public final class NetworkingStakingTranslator {
@@ -34,7 +35,7 @@ public final class NetworkingStakingTranslator {
      * @return the {@link NetworkStakingRewards} converted from the {@link com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext}
      */
     public static NetworkStakingRewards networkStakingRewardsFromMerkleNetworkContext(
-            @NonNull final com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext merkleNetworkContext) {
+            @NonNull final MerkleNetworkContext merkleNetworkContext) {
         requireNonNull(merkleNetworkContext);
         return NetworkStakingRewards.newBuilder()
                 .stakingRewardsActivated(merkleNetworkContext.areRewardsActivated())
