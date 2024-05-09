@@ -27,9 +27,9 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.state.nexus.DefaultLatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
+import com.swirlds.platform.state.signed.DefaultStateSignatureCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
-import com.swirlds.platform.state.signed.StateSignatureCollector;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -39,7 +39,7 @@ import java.util.Optional;
  * A StateSignatureCollector that is used for unit testing. In the future, these unit tests should become small
  * integration tests that test multiple components, this class should be removed once we have achieved that.
  */
-public class StateSignatureCollectorTester extends StateSignatureCollector {
+public class StateSignatureCollectorTester extends DefaultStateSignatureCollector {
     private final LatestCompleteStateNexus latestSignedState;
     private final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer;
     private final StateLacksSignaturesConsumer stateLacksSignaturesConsumer;

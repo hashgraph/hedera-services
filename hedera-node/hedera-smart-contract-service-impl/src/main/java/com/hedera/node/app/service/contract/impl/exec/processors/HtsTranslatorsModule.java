@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.processors;
 
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.allowance.GetAllowanceTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfTranslator;
@@ -65,203 +65,202 @@ import java.util.Set;
 import javax.inject.Singleton;
 
 /**
- * Provides the {@link HtsCallTranslator} implementations for the HTS system contract.
+ * Provides the {@link CallTranslator} implementations for the HTS system contract.
  */
 @Module
 public interface HtsTranslatorsModule {
     @Provides
     @Singleton
-    static List<HtsCallTranslator> provideCallAttemptTranslators(@NonNull final Set<HtsCallTranslator> translators) {
+    static List<CallTranslator> provideCallAttemptTranslators(@NonNull final Set<CallTranslator> translators) {
         return List.copyOf(translators);
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideAssociationsTranslator(@NonNull final AssociationsTranslator translator) {
+    static CallTranslator provideAssociationsTranslator(@NonNull final AssociationsTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideErc20TransfersTranslator(@NonNull final Erc20TransfersTranslator translator) {
+    static CallTranslator provideErc20TransfersTranslator(@NonNull final Erc20TransfersTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideErc721TransferFromTranslator(
-            @NonNull final Erc721TransferFromTranslator translator) {
+    static CallTranslator provideErc721TransferFromTranslator(@NonNull final Erc721TransferFromTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideClassicTransfersTranslator(@NonNull final ClassicTransfersTranslator translator) {
+    static CallTranslator provideClassicTransfersTranslator(@NonNull final ClassicTransfersTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideMintTranslator(@NonNull final MintTranslator translator) {
+    static CallTranslator provideMintTranslator(@NonNull final MintTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideBurnTranslator(@NonNull final BurnTranslator translator) {
+    static CallTranslator provideBurnTranslator(@NonNull final BurnTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideCreateTranslator(@NonNull final CreateTranslator translator) {
+    static CallTranslator provideCreateTranslator(@NonNull final CreateTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideBalanceOfTranslator(@NonNull final BalanceOfTranslator translator) {
+    static CallTranslator provideBalanceOfTranslator(@NonNull final BalanceOfTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideIsApprovedForAllTranslator(@NonNull final IsApprovedForAllTranslator translator) {
+    static CallTranslator provideIsApprovedForAllTranslator(@NonNull final IsApprovedForAllTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideNameTranslator(@NonNull final NameTranslator translator) {
+    static CallTranslator provideNameTranslator(@NonNull final NameTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideSymbolTranslator(@NonNull final SymbolTranslator translator) {
+    static CallTranslator provideSymbolTranslator(@NonNull final SymbolTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideTotalSupplyTranslator(@NonNull final TotalSupplyTranslator translator) {
+    static CallTranslator provideTotalSupplyTranslator(@NonNull final TotalSupplyTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideOwnerOfTranslator(@NonNull final OwnerOfTranslator translator) {
+    static CallTranslator provideOwnerOfTranslator(@NonNull final OwnerOfTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideSetApprovalForAllTranslator(@NonNull final SetApprovalForAllTranslator translator) {
+    static CallTranslator provideSetApprovalForAllTranslator(@NonNull final SetApprovalForAllTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideDecimalsTranslator(@NonNull final DecimalsTranslator translator) {
+    static CallTranslator provideDecimalsTranslator(@NonNull final DecimalsTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideTokenUriTranslator(@NonNull final TokenUriTranslator translator) {
+    static CallTranslator provideTokenUriTranslator(@NonNull final TokenUriTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideGetAllowanceTranslator(@NonNull final GetAllowanceTranslator translator) {
+    static CallTranslator provideGetAllowanceTranslator(@NonNull final GetAllowanceTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideGrantApproval(@NonNull final GrantApprovalTranslator translator) {
+    static CallTranslator provideGrantApproval(@NonNull final GrantApprovalTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator providePausesTranslator(@NonNull final PausesTranslator translator) {
+    static CallTranslator providePausesTranslator(@NonNull final PausesTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideGrantRevokeKycTranslator(@NonNull final GrantRevokeKycTranslator translator) {
+    static CallTranslator provideGrantRevokeKycTranslator(@NonNull final GrantRevokeKycTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideGetApprovedTranslator(@NonNull final GetApprovedTranslator translator) {
+    static CallTranslator provideGetApprovedTranslator(@NonNull final GetApprovedTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideWipeTranslator(@NonNull final WipeTranslator translator) {
+    static CallTranslator provideWipeTranslator(@NonNull final WipeTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideIsFrozenTranslator(@NonNull final IsFrozenTranslator translator) {
+    static CallTranslator provideIsFrozenTranslator(@NonNull final IsFrozenTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideIsKycTranslator(@NonNull final IsKycTranslator translator) {
+    static CallTranslator provideIsKycTranslator(@NonNull final IsKycTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideIsTokenTranslator(@NonNull final IsTokenTranslator translator) {
+    static CallTranslator provideIsTokenTranslator(@NonNull final IsTokenTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideTokenTypeTranslator(@NonNull final TokenTypeTranslator translator) {
+    static CallTranslator provideTokenTypeTranslator(@NonNull final TokenTypeTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideDefaultFreezeStatusTranslator(
+    static CallTranslator provideDefaultFreezeStatusTranslator(
             @NonNull final DefaultFreezeStatusTranslator translator) {
         return translator;
     }
@@ -269,84 +268,84 @@ public interface HtsTranslatorsModule {
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideDefaultKycStatusTranslator(@NonNull final DefaultKycStatusTranslator translator) {
+    static CallTranslator provideDefaultKycStatusTranslator(@NonNull final DefaultKycStatusTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideFreezeUnfreezeTranslator(@NonNull final FreezeUnfreezeTranslator translator) {
+    static CallTranslator provideFreezeUnfreezeTranslator(@NonNull final FreezeUnfreezeTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideDeleteTranslator(@NonNull final DeleteTranslator translator) {
+    static CallTranslator provideDeleteTranslator(@NonNull final DeleteTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideTokenExpiryTranslator(@NonNull final TokenExpiryTranslator translator) {
+    static CallTranslator provideTokenExpiryTranslator(@NonNull final TokenExpiryTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideTokenKeyTranslator(@NonNull final TokenKeyTranslator translator) {
+    static CallTranslator provideTokenKeyTranslator(@NonNull final TokenKeyTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideUpdateTranslator(@NonNull final UpdateTranslator translator) {
+    static CallTranslator provideUpdateTranslator(@NonNull final UpdateTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideTokenCustomFeesTranslator(@NonNull final TokenCustomFeesTranslator translator) {
+    static CallTranslator provideTokenCustomFeesTranslator(@NonNull final TokenCustomFeesTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideTokenInfoTranslator(@NonNull final TokenInfoTranslator translator) {
+    static CallTranslator provideTokenInfoTranslator(@NonNull final TokenInfoTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideUpdateExpiryTranslator(@NonNull final UpdateExpiryTranslator translator) {
+    static CallTranslator provideUpdateExpiryTranslator(@NonNull final UpdateExpiryTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideFungibleTokenInfoTranslator(@NonNull final FungibleTokenInfoTranslator translator) {
+    static CallTranslator provideFungibleTokenInfoTranslator(@NonNull final FungibleTokenInfoTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideNonFungibleTokenInfoTranslator(@NonNull final NftTokenInfoTranslator translator) {
+    static CallTranslator provideNonFungibleTokenInfoTranslator(@NonNull final NftTokenInfoTranslator translator) {
         return translator;
     }
 
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideUpdateKeysTranslator(@NonNull final UpdateKeysTranslator translator) {
+    static CallTranslator provideUpdateKeysTranslator(@NonNull final UpdateKeysTranslator translator) {
         return translator;
     }
 }
