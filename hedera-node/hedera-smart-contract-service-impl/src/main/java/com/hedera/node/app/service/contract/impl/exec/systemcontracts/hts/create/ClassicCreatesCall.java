@@ -47,11 +47,13 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import com.hedera.node.app.service.contract.impl.exec.scope.EitherOrVerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.scope.SpecificCryptoVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
@@ -62,7 +64,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;
-import java.util.Collections;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -78,7 +79,6 @@ public class ClassicCreatesCall extends AbstractHtsCall {
 
     private final VerificationStrategy verificationStrategy;
     private final AccountID spenderId;
-    private long nonGasCost;
 
     public ClassicCreatesCall(
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
@@ -116,7 +116,7 @@ public class ClassicCreatesCall extends AbstractHtsCall {
                 .build();
         final var baseCost = gasCalculator.canonicalPriceInTinybars(syntheticCreateWithId, spenderId);
         // The non-gas cost is a 20% surcharge on the HAPI TokenCreate price, minus the fee taken as gas
-        this.nonGasCost = baseCost + (baseCost / 5) - gasCalculator.gasCostInTinybars(FIXED_GAS_COST);
+        long nonGasCost = baseCost + (baseCost / 5) - gasCalculator.gasCostInTinybars(FIXED_GAS_COST);
         if (frame.getValue().lessThan(Wei.of(nonGasCost))) {
             return completionWith(
                     FIXED_GAS_COST,
@@ -124,17 +124,19 @@ public class ClassicCreatesCall extends AbstractHtsCall {
                     RC_AND_ADDRESS_ENCODER.encodeElements((long) INSUFFICIENT_TX_FEE.protoOrdinal(), ZERO_ADDRESS));
         } else {
             operations().collectFee(spenderId, nonGasCost);
-            // (future) remove after differential testing
+            // (FUTURE) remove after differential testing, mono-service used the entire
+            // value in the frame for the non-gas cost even if it was only a portion
             nonGasCost = frame.getValue().toLong();
         }
 
-        final var validity = validityOfSynthOp();
+        final var op = syntheticCreate.tokenCreationOrThrow();
+        final var validity = validityOfSynth(op);
         if (validity != OK) {
             return gasOnly(revertResult(validity, FIXED_GAS_COST), validity, true);
         }
 
         // Choose a dispatch verification strategy based on whether the legacy activation address is active
-        final var dispatchVerificationStrategy = verificationStrategyFor(frame);
+        final var dispatchVerificationStrategy = verificationStrategyFor(frame, op);
         final var recordBuilder = systemContractOperations()
                 .dispatch(syntheticCreate, dispatchVerificationStrategy, spenderId, ContractCallRecordBuilder.class);
         recordBuilder.status(standardized(recordBuilder.status()));
@@ -144,8 +146,7 @@ public class ClassicCreatesCall extends AbstractHtsCall {
             return gasPlus(revertResult(recordBuilder, FIXED_GAS_COST), status, false, nonGasCost);
         } else {
             ByteBuffer encodedOutput;
-            final var op = syntheticCreate.tokenCreationOrThrow();
-            final var customFees = op.customFeesOrElse(Collections.emptyList());
+            final var customFees = op.customFees();
             if (op.tokenType() == FUNGIBLE_COMMON) {
                 if (customFees.isEmpty()) {
                     encodedOutput = CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
@@ -171,8 +172,7 @@ public class ClassicCreatesCall extends AbstractHtsCall {
         }
     }
 
-    private ResponseCodeEnum validityOfSynthOp() {
-        final var op = syntheticCreate.tokenCreationOrThrow();
+    private ResponseCodeEnum validityOfSynth(@NonNull final TokenCreateTransactionBody op) {
         if (op.symbol().isEmpty()) {
             return MISSING_TOKEN_SYMBOL;
         }
@@ -186,14 +186,21 @@ public class ClassicCreatesCall extends AbstractHtsCall {
         return OK;
     }
 
-    private VerificationStrategy verificationStrategyFor(@NonNull final MessageFrame frame) {
+    private VerificationStrategy verificationStrategyFor(
+            @NonNull final MessageFrame frame, @NonNull final TokenCreateTransactionBody op) {
         final var legacyActivation = legacyActivationIn(frame);
 
-        // Choose a dispatch verification strategy based on whether the legacy
-        // activation address is active (somewhere on the stack)
+        // If there is a crypto admin key, we need an either/or strategy to let it
+        // be activated by a top-level signature with that key
+        final var baseVerificationStrategy = hasCryptoAdminKey(op)
+                ? new EitherOrVerificationStrategy(
+                        verificationStrategy, new SpecificCryptoVerificationStrategy(op.adminKeyOrThrow()))
+                : verificationStrategy;
+        // And our final dispatch verification strategy must very depending on if
+        // a legacy activation address is active (somewhere on the stack)
         return stackIncludesActiveAddress(frame, legacyActivation.besuAddress())
                 ? new EitherOrVerificationStrategy(
-                        verificationStrategy,
+                        baseVerificationStrategy,
                         new ActiveContractVerificationStrategy(
                                 ContractID.newBuilder()
                                         .contractNum(legacyActivation.contractNum())
@@ -201,7 +208,12 @@ public class ClassicCreatesCall extends AbstractHtsCall {
                                 legacyActivation.pbjAddress(),
                                 false,
                                 UseTopLevelSigs.NO))
-                : verificationStrategy;
+                : baseVerificationStrategy;
+    }
+
+    private boolean hasCryptoAdminKey(@NonNull final TokenCreateTransactionBody op) {
+        return op.hasAdminKey()
+                && (op.adminKeyOrThrow().hasEd25519() || op.adminKeyOrThrow().hasEcdsaSecp256k1());
     }
 
     private LegacyActivation legacyActivationIn(@NonNull final MessageFrame frame) {

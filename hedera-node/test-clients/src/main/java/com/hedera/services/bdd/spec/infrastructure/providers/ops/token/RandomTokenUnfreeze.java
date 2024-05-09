@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.spec.infrastructure.providers.ops.token.Ra
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
@@ -32,7 +33,7 @@ public class RandomTokenUnfreeze implements OpProvider {
     private final RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels;
 
     private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(TOKEN_HAS_NO_FREEZE_KEY, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+            standardOutcomesAnd(TOKEN_HAS_NO_FREEZE_KEY, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, TOKEN_WAS_DELETED);
 
     public RandomTokenUnfreeze(RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels) {
         this.tokenRels = tokenRels;
