@@ -16,10 +16,11 @@
 
 package com.swirlds.platform.test.fixtures.addressbook;
 
+import static com.swirlds.common.utility.CommonUtils.nameToAlias;
+import static com.swirlds.platform.crypto.KeyCertPurpose.AGREEMENT;
 import static com.swirlds.platform.crypto.KeyCertPurpose.SIGNING;
 
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.crypto.KeyCertPurpose;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PublicStores;
 import com.swirlds.platform.crypto.SerializableX509Certificate;
@@ -227,7 +228,7 @@ public class RandomAddressBookBuilder {
      * @return this object
      */
     @NonNull
-    public RandomAddressBookBuilder withRealKeysEnabled(final boolean realKeysEnabled) { // TODO test this
+    public RandomAddressBookBuilder withRealKeysEnabled(final boolean realKeysEnabled) {
         this.realKeys = realKeysEnabled;
         return this;
     }
@@ -291,13 +292,15 @@ public class RandomAddressBookBuilder {
                 random.nextBytes(masterKey);
 
                 final KeysAndCerts keysAndCerts =
-                        KeysAndCerts.generate(nodeId.toString(), new byte[] {}, masterKey, new byte[] {}, publicStores);
+                        KeysAndCerts.generate(name, new byte[] {}, masterKey, new byte[] {}, publicStores);
                 privateKeys.put(nodeId, keysAndCerts);
 
+                final String alias = nameToAlias(name);
+
                 final SerializableX509Certificate sigCert =
-                        new SerializableX509Certificate(publicStores.getCertificate(SIGNING, name));
+                        new SerializableX509Certificate(publicStores.getCertificate(SIGNING, alias));
                 final SerializableX509Certificate agrCert =
-                        new SerializableX509Certificate(publicStores.getCertificate(KeyCertPurpose.AGREEMENT, name));
+                        new SerializableX509Certificate(publicStores.getCertificate(AGREEMENT, alias));
 
                 addressBuilder.withSigCert(sigCert).withAgreeCert(agrCert);
 
