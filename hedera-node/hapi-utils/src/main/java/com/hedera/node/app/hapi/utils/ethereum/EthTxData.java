@@ -78,6 +78,7 @@ public record EthTxData(
             return switch (rlpItem.asByte()) {
                 case 1 -> populateEip2390EthTxData(decoder.next(), data);
                 case 2 -> populateEip1559EthTxData(decoder.next(), data);
+                case 3 -> null; // We don't currently support Cancun "blob" transactions
                 default -> null;
             };
 
