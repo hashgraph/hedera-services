@@ -28,6 +28,7 @@ public interface CryptoSignatureWaivers extends SigWaivers {
      * target account being updated by the above accounts.
      *
      * @param cryptoUpdateTxn a crypto update transaction
+     * @param payer the account paying for the transaction
      * @return whether the target account's key must sign
      */
     boolean isTargetAccountSignatureWaived(TransactionBody cryptoUpdateTxn, AccountID payer);
@@ -40,6 +41,7 @@ public interface CryptoSignatureWaivers extends SigWaivers {
      * treasury account.
      *
      * @param cryptoUpdateTxn a crypto update transaction
+     * @param payer the account paying for the transaction
      * @return whether the new key from the transaction must sign
      */
     boolean isNewKeySignatureWaived(TransactionBody cryptoUpdateTxn, AccountID payer);

@@ -34,9 +34,13 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class StakePeriodManager {
-    // Sentinel value for a field that wasn't applicable to this transaction
-    public static final long NA = Long.MIN_VALUE;
+    /**
+     * The UTC time zone.
+     */
     public static final ZoneId ZONE_UTC = ZoneId.of("UTC");
+    /**
+     * The default staking period in minutes.
+     */
     public static final long DEFAULT_STAKING_PERIOD_MINS = 1440L;
 
     private final int numStoredPeriods;
@@ -44,6 +48,10 @@ public class StakePeriodManager {
     private long currentStakePeriod;
     private long prevConsensusSecs;
 
+    /**
+     * Default constructor for injection.
+     * @param configProvider the configuration provider
+     */
     @Inject
     public StakePeriodManager(@NonNull final ConfigProvider configProvider) {
         final var config = configProvider.getConfiguration().getConfigData(StakingConfig.class);
@@ -195,6 +203,10 @@ public class StakePeriodManager {
         return -1;
     }
 
+    /**
+     * Returns the consensus time of previous transaction, that is used to change the current stake period.
+     * @return the consensus time of previous transaction
+     */
     @VisibleForTesting
     public long getPrevConsensusSecs() {
         return prevConsensusSecs;

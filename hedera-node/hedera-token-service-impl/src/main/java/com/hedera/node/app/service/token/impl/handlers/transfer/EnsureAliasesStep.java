@@ -42,11 +42,17 @@ import java.util.Map;
 public class EnsureAliasesStep implements TransferStep {
     final CryptoTransferTransactionBody op;
 
-    // Temporary token transfer resolutions map containing the token transfers to alias, is needed to check if
-    // an alias is repeated. It is allowed to be repeated in multiple token transfer lists, but not in a single
-    // token transfer list
+    /**
+     * Temporary token transfer resolutions map containing the token transfers to alias, is needed to check if
+     * an alias is repeated. It is allowed to be repeated in multiple token transfer lists, but not in a single
+     * token transfer list
+     */
     private final Map<Bytes, AccountID> tokenTransferResolutions = new LinkedHashMap<>();
 
+    /**
+     * Constructs a {@link EnsureAliasesStep} instance.
+     * @param op the crypto transfer transaction body
+     */
     public EnsureAliasesStep(@NonNull final CryptoTransferTransactionBody op) {
         this.op = requireNonNull(op);
     }

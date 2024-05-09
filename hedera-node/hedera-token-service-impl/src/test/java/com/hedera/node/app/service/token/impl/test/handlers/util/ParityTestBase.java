@@ -30,6 +30,9 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
 
+/**
+ * Adds parity tests for Signature requirements from mono-service in mod-service.
+ */
 public class ParityTestBase {
     protected ReadableAccountStore readableAccountStore;
     protected WritableAccountStore writableAccountStore;
@@ -38,6 +41,9 @@ public class ParityTestBase {
     protected TokenID token = TokenID.newBuilder().tokenNum(1).build();
     protected Configuration configuration;
 
+    /**
+     * Sets up the test environment.
+     */
     @BeforeEach
     public void setUp() {
         readableAccountStore = SigReqAdapterUtils.wellKnownAccountStoreAt();

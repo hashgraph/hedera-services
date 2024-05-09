@@ -62,6 +62,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * Unit tests for {@link EndOfStakingPeriodUpdater}.
+ */
 @ExtendWith(MockitoExtension.class)
 public class EndOfStakingPeriodUpdaterTest {
     private ReadableAccountStore accountStore;
@@ -350,16 +353,32 @@ public class EndOfStakingPeriodUpdaterTest {
     private static final List<Long> REWARD_SUM_HISTORY_1 = List.of(8L, 7L, 2L);
     private static final List<Long> REWARD_SUM_HISTORY_2 = List.of(5L, 5L, 4L);
     private static final List<Long> REWARD_SUM_HISTORY_3 = List.of(4L, 2L, 1L);
+    /**
+     * Node number 1 for the test nodes.
+     */
     public static final EntityNumber NODE_NUM_1 =
             EntityNumber.newBuilder().number(1).build();
+    /**
+     * Node number 2 for the test nodes.
+     */
     public static final EntityNumber NODE_NUM_2 =
             EntityNumber.newBuilder().number(2).build();
+    /**
+     * Node number 3 for the test nodes.
+     */
     public static final EntityNumber NODE_NUM_3 =
             EntityNumber.newBuilder().number(3).build();
+    /**
+     * Node number 4 for the test nodes.
+     */
     public static final EntityNumber NODE_NUM_4 =
             EntityNumber.newBuilder().number(4).build();
+    /**
+     * Node number 8 for the test nodes.
+     */
     public static final EntityNumber NODE_NUM_8 =
             EntityNumber.newBuilder().number(8).build();
+    /** Staking info for node 1. */
     public static final StakingNodeInfo STAKING_INFO_1 = StakingNodeInfo.newBuilder()
             .nodeNumber(NODE_NUM_1.number())
             .minStake(MIN_STAKE)
@@ -373,6 +392,7 @@ public class EndOfStakingPeriodUpdaterTest {
             .deleted(false)
             .weight(0)
             .build();
+    /** Staking info for node 2. */
     public static final StakingNodeInfo STAKING_INFO_2 = StakingNodeInfo.newBuilder()
             .nodeNumber(NODE_NUM_2.number())
             .minStake(MIN_STAKE)
@@ -386,6 +406,7 @@ public class EndOfStakingPeriodUpdaterTest {
             .deleted(false)
             .weight(0)
             .build();
+    /** Staking info for node 3. */
     public static final StakingNodeInfo STAKING_INFO_3 = StakingNodeInfo.newBuilder()
             .nodeNumber(NODE_NUM_3.number())
             .minStake(MIN_STAKE)
