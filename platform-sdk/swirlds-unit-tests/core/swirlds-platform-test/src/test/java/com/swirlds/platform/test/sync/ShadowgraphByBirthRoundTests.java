@@ -110,6 +110,7 @@ class ShadowgraphByBirthRoundTests {
         emitter = factory.newStandardEmitter();
 
         shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class), new NoOpIntakeEventCounter());
+        shadowGraph.updateEventWindow(EventWindow.getGenesisEventWindow(BIRTH_ROUND_THRESHOLD));
 
         for (int i = 0; i < numEvents; i++) {
             final IndexedEvent event = emitter.emitEvent();
@@ -661,6 +662,7 @@ class ShadowgraphByBirthRoundTests {
         r1.close();
 
         shadowGraph.clear();
+        shadowGraph.updateEventWindow(EventWindow.getGenesisEventWindow(BIRTH_ROUND_THRESHOLD));
 
         assertEquals(0, shadowGraph.getTips().size(), "Shadow graph should not have any tips after being cleared.");
         for (final IndexedEvent generatedEvent : generatedEvents) {

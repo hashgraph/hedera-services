@@ -67,6 +67,7 @@ import org.junit.jupiter.api.Test;
 
 @DisplayName("IssDetector Tests")
 class IssDetectorTests extends PlatformTest {
+
     /**
      * Generates a list of events, with each event containing a signature transaction from a node for the given round.
      *

@@ -24,7 +24,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
@@ -53,10 +52,9 @@ class SwirldStateManagerTests {
                 platformContext,
                 addressBook,
                 new NodeId(0L),
-                mock(SwirldStateMetrics.class),
                 mock(StatusActionSubmitter.class),
-                initialState,
                 new BasicSoftwareVersion(1));
+        swirldStateManager.setInitialState(initialState);
     }
 
     @Test
