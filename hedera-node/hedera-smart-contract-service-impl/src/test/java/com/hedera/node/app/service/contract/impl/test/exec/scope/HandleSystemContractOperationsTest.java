@@ -195,7 +195,7 @@ class HandleSystemContractOperationsTest {
 
     @Test
     void syntheticTransactionForHtsCallTest() {
-        assertNotNull(subject.syntheticTransactionForHtsCall(Bytes.EMPTY, ContractID.DEFAULT, true));
+        assertNotNull(subject.syntheticTransactionForNativeCall(Bytes.EMPTY, ContractID.DEFAULT, true));
     }
 
     @Test

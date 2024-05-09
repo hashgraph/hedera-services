@@ -20,7 +20,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.as
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractNativeSystemContract;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -28,13 +28,13 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 @Singleton
-public class HtsSystemContract extends AbstractNativeSystemContract implements HederaSystemContract {
-    public static final String HTS_SYSTEM_CONTRACT_NAME = "HTS";
-    public static final String HTS_EVM_ADDRESS = "0x167";
-    public static final ContractID HTS_CONTRACT_ID = asNumberedContractId(Address.fromHexString(HTS_EVM_ADDRESS));
+public class HasSystemContract extends AbstractNativeSystemContract implements HederaSystemContract {
+    public static final String HAS_SYSTEM_CONTRACT_NAME = "HAS";
+    public static final String HAS_EVM_ADDRESS = "0x16a";
+    public static final ContractID HAS_CONTRACT_ID = asNumberedContractId(Address.fromHexString(HAS_EVM_ADDRESS));
 
     @Inject
-    public HtsSystemContract(@NonNull final GasCalculator gasCalculator, @NonNull final HtsCallFactory callFactory) {
-        super(HTS_SYSTEM_CONTRACT_NAME, callFactory, HTS_CONTRACT_ID, gasCalculator);
+    public HasSystemContract(@NonNull final GasCalculator gasCalculator, @NonNull final HasCallFactory callFactory) {
+        super(HAS_SYSTEM_CONTRACT_NAME, callFactory, HAS_CONTRACT_ID, gasCalculator);
     }
 }
