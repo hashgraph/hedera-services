@@ -1687,7 +1687,9 @@ public class UtilVerbs {
             final HapiSpec spec) {
         final var convertedOps = new ArrayList<HapiSpecOperation>(ops.size());
         for (final var op : ops) {
-            if (op instanceof HapiContractCall callOp && callOp.isConvertableToEthCall(spec)) {
+            if (op instanceof HapiContractCall callOp
+                    && callOp.isConvertableToEthCall()
+                    && callOp.isKeySECP256K1(spec)) {
                 // if we have function params, try to swap the long zero address with the EVM address
                 if (callOp.getParams().length > 0 && callOp.getAbi() != null) {
                     var convertedParams = tryToSwapLongZeroToEVMAddresses(callOp.getParams(), spec);
