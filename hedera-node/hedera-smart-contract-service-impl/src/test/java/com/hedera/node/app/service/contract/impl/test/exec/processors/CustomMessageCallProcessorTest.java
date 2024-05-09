@@ -284,9 +284,9 @@ class CustomMessageCallProcessorTest {
 
     private void givenHaltableFrame(@NonNull final AtomicBoolean isHalted) {
         doAnswer(invocation -> {
-            isHalted.set(true);
-            return null;
-        })
+                    isHalted.set(true);
+                    return null;
+                })
                 .when(frame)
                 .setExceptionalHaltReason(any());
         doAnswer(invocation -> isHalted.get() ? MessageFrame.State.EXCEPTIONAL_HALT : MessageFrame.State.NOT_STARTED)
