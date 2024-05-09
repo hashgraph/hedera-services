@@ -595,6 +595,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         signedStateHasherWiring.stateOutput().solderTo(hashLoggerWiring.hashLoggerInputWire());
         signedStateHasherWiring.stateOutput().solderTo(stateSignerWiring.signState());
+        stateSignerWiring
+                .stateSignature()
+                .solderTo(transactionPoolWiring.getInputWire(TransactionPool::submitSystemTransaction));
         signedStateHasherWiring
                 .stateAndRoundOutput()
                 .solderTo(issDetectorWiring.getInputWire(IssDetector::handleStateAndRound));
