@@ -166,9 +166,9 @@ If the airdrop transaction fees from the list above are covered by a separate pa
               - It is an existing one and has `max_auto_associations`, which is a positive number and there are free auto association slots and the recipient is not associated to the token →<br/>
                 Тhe token is auto associated and is directly transferred to the recipient and a `TokenTransferList` is added to the `TransactionRecord`, as well as a new `TokenAssociation` entry in the `automatic_token_associations`
               - It is an existing one and has `max_auto_associations`, which is a positive number but there are no free auto association slots and the recipient is not associated to the token →<br/>
-                Тhe token transfer is interpreted as a pending and a `TokenPendingAirdrop` entry is added to the `TransactionRecord`. In addition, the airdrop `PendingAirdropId`/`PendingAirdropValue` entry is added to the `PendingAirdrop` VirtualMap in state
+                Тhe token transfer is interpreted as a pending and a `TokenPendingAirdrop` entry is added to the `TransactionRecord`. In addition, the airdrop `PendingAirdropId`/`PendingAirdropValue` entry is added to the `PendingAirdrop` airdrop store in state
               - It is an existing one and has `max_auto_associations` set to 0 and the recipient is not associated to the token →<br/>
-                Тhe token transfer is interpreted as a pending and a `TokenPendingAirdrop` entry is added to the `TransactionRecord`. In addition, the airdrop `PendingAirdropId`/`PendingAirdropValue` entry is added to the `PendingAirdrop` VirtualMap in state
+                Тhe token transfer is interpreted as a pending and a `TokenPendingAirdrop` entry is added to the `TransactionRecord`. In addition, the airdrop `PendingAirdropId`/`PendingAirdropValue` entry is added to the `PendingAirdrop` airdrop store in state
               - It is an existing one and is associated to the token →<br/>
                 Тhe airdrop is handled as a regular crypto transfer and a `TokenTransferList` is added to the `TransactionRecord`
               - It’s not existing and the AccountID is a public `ECDSA` key →<br/>
@@ -203,4 +203,4 @@ If the airdrop transaction fees from the list above are covered by a separate pa
 * Verify that an airdrop, which fee expenses are covered by a separate payer account, but has missing payer signature fails
 * Verify that an airdrop with more than 10 entries in the `token_transfers` list fails
 * Verify that an airdrop with a duplicate entry for the same NFT in the `token_transfers` list fails with `PENDING_NFT_AIRDROP_ALREADY_EXISTS`
-* Verify that an airdrop with a duplicate entry for the same fungible token and recipient in the `token_transfers` list works correctly and the fungible token amount is aggregated in the final airdrop to the recipient
+* Verify that performing an airdrop with disabled feature flag fails with `NOT_SUPPORTED`
