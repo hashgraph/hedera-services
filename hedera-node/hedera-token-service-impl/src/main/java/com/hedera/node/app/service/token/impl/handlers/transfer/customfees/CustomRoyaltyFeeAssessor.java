@@ -47,6 +47,10 @@ public class CustomRoyaltyFeeAssessor {
 
     private final CustomFixedFeeAssessor fixedFeeAssessor;
 
+    /**
+     * Constructs a {@link CustomRoyaltyFeeAssessor} instance.
+     * @param fixedFeeAssessor the fixed fee assessor
+     */
     @Inject
     public CustomRoyaltyFeeAssessor(final CustomFixedFeeAssessor fixedFeeAssessor) {
         this.fixedFeeAssessor = fixedFeeAssessor;

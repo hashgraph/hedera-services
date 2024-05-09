@@ -42,6 +42,12 @@ public class CustomFeeAssessor extends BaseTokenHandler {
     private final CustomRoyaltyFeeAssessor royaltyFeeAssessor;
     private int initialNftChanges = 0;
 
+    /**
+     * Constructs a {@link CustomFeeAssessor} instance.
+     * @param fixedFeeAssessor the fixed fee assessor
+     * @param fractionalFeeAssessor the fractional fee assessor
+     * @param royaltyFeeAssessor the royalty fee assessor
+     */
     @Inject
     public CustomFeeAssessor(
             @NonNull final CustomFixedFeeAssessor fixedFeeAssessor,
@@ -61,6 +67,19 @@ public class CustomFeeAssessor extends BaseTokenHandler {
         return nftTransfers;
     }
 
+    /**
+     * Assesses custom fees for a given crypto transfer transaction. The fees are assessed in the following order:
+     * 1. Fixed fees
+     * 2. Fractional fees (for fungible common tokens)
+     * 3. Royalty fees (for non-fungible unique tokens)
+     * @param sender the sender account ID
+     * @param feeMeta the custom fee metadata
+     * @param receiver the receiver account ID
+     * @param result the assessment result
+     * @param tokenRelStore the token relation store
+     * @param accountStore the account store
+     * @param autoCreationTest the auto-creation test
+     */
     public void assess(
             final AccountID sender,
             final CustomFeeMeta feeMeta,
@@ -84,6 +103,16 @@ public class CustomFeeAssessor extends BaseTokenHandler {
         revalidateAssessmentResult(result, tokenRelStore, accountStore, autoCreationTest);
     }
 
+    /**
+     * Validates the assessment result after each type of fees assessment(fixed fees, fractional fees, royalty fees).
+     * The validation consists of two steps:
+     * 1. Ensures that the sender account has sufficient balance to pay the custom fee
+     * 2. Ensures that the sender account is associated with the token
+     * @param result the assessment result
+     * @param tokenRelStore the token relation store
+     * @param accountStore the account store
+     * @param autoCreationTest the auto-creation test
+     */
     private void revalidateAssessmentResult(
             final AssessmentResult result,
             final ReadableTokenRelationStore tokenRelStore,
@@ -147,6 +176,9 @@ public class CustomFeeAssessor extends BaseTokenHandler {
         initialNftChanges = numNftTransfers(op);
     }
 
+    /**
+     * Resets the initial NFT changes for the transaction.
+     */
     public void resetInitialNftChanges() {
         initialNftChanges = 0;
     }

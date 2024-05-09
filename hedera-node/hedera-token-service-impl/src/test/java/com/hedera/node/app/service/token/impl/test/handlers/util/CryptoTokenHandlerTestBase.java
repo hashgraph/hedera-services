@@ -107,6 +107,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * Base class for testing both Crypto and Token implementations.
+ */
 @ExtendWith(MockitoExtension.class)
 public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected static final Instant originalInstant = Instant.ofEpochSecond(12345678910L);
@@ -384,7 +387,9 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
     protected Configuration configuration;
     protected VersionedConfigImpl versionedConfig;
-
+    /**
+     * Sets up the test environment.
+     */
     @BeforeEach
     public void setUp() {
         handlerTestBaseInternalSetUp(true);

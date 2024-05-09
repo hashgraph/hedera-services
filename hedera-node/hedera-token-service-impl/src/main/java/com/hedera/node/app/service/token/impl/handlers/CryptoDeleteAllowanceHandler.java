@@ -65,6 +65,10 @@ import javax.inject.Singleton;
 public class CryptoDeleteAllowanceHandler implements TransactionHandler {
     private final DeleteAllowanceValidator deleteAllowanceValidator;
 
+    /**
+     * Default constructor for injection.
+     * @param validator the validator for validating a delete allowance transaction
+     */
     @Inject
     public CryptoDeleteAllowanceHandler(@NonNull final DeleteAllowanceValidator validator) {
         this.deleteAllowanceValidator = validator;

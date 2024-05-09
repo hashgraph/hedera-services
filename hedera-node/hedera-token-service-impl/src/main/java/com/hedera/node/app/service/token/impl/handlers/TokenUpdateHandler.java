@@ -79,6 +79,10 @@ import javax.inject.Singleton;
 public class TokenUpdateHandler extends BaseTokenHandler implements TransactionHandler {
     private final TokenUpdateValidator tokenUpdateValidator;
 
+    /**
+     * Create a new {@link TokenUpdateHandler} instance.
+     * @param tokenUpdateValidator The {@link TokenUpdateValidator} to use.
+     */
     @Inject
     public TokenUpdateHandler(@NonNull final TokenUpdateValidator tokenUpdateValidator) {
         this.tokenUpdateValidator = tokenUpdateValidator;
