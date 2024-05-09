@@ -36,7 +36,6 @@ import java.util.Arrays;
  * A cryptographic hash of some data.
  */
 public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Serializable {
-    private static final int SHORT_STRING_BYTES = 4;
     public static final long CLASS_ID = 0xf422da83a251741eL;
     public static final int CLASS_VERSION = 1;
 
@@ -277,10 +276,10 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
     }
 
     /**
-     * Create a short string representation of this hash.
+     * Create a hexadecimal string representation of this hash.
      */
     public String toHex() {
-        return toHex(SHORT_STRING_BYTES);
+        return toString();
     }
 
     /**
