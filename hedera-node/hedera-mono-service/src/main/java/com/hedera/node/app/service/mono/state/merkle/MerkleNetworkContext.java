@@ -82,7 +82,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     public static final long NO_PREPARED_UPDATE_FILE_NUM = -1;
     public static final byte[] NO_PREPARED_UPDATE_FILE_HASH = new byte[0];
     public static final DeterministicThrottle.UsageSnapshot NO_GAS_THROTTLE_SNAPSHOT =
-            new DeterministicThrottle.UsageSnapshot(-1, Instant.EPOCH);
+            new DeterministicThrottle.UsageSnapshot(0L, Instant.EPOCH);
     static final DeterministicThrottle.UsageSnapshot NEVER_USED_SNAPSHOT =
             new DeterministicThrottle.UsageSnapshot(0L, null);
 
