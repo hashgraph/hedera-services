@@ -292,7 +292,7 @@ public class UtilVerbs {
     public static SubmitModificationsOp submitModifiedWithFixedPayer(
             @NonNull final Function<Transaction, List<TxnModification>> modificationsFn,
             @NonNull final Supplier<HapiTxnOp<?>> txnOpSupplier) {
-        return new SubmitModificationsOp(false, txnOpSupplier, modificationsFn);
+        return new SubmitModificationsOp(txnOpSupplier, modificationsFn);
     }
 
     /**
