@@ -196,6 +196,7 @@ class EnhancedKeyStoreLoaderTest {
      */
     private Configuration configure(final Path keyDirectory) throws IOException {
         final ConfigurationBuilder builder = ConfigurationBuilder.create();
+        builder.autoDiscoverExtensions();
         readLegacySettingsFile(builder, testDataDirectory.resolve(DEFAULT_SETTINGS_FILE_NAME));
 
         builder.withValue("paths.keysDirPath", keyDirectory.toAbsolutePath().toString());
