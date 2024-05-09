@@ -84,8 +84,8 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     private HapiContractCall() {}
 
     public HapiContractCall(String contract) {
-        this.abi = FALLBACK_ABI;
-        this.params = new Object[0];
+        this.abi = Optional.of(FALLBACK_ABI);
+        this.params = Optional.of(new Object[0]);
         this.contract = contract;
     }
 
@@ -95,8 +95,8 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     }
 
     public HapiContractCall(String abi, String contract, Object... params) {
-        this.abi = abi;
-        this.params = params;
+        this.abi = Optional.of(abi);
+        this.params = Optional.of(params);
         this.contract = contract;
     }
 
@@ -173,15 +173,15 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     }
 
     public String getAbi() {
-        return abi;
+        return abi.orElse(null);
     }
 
     public Object[] getParams() {
-        return params;
+        return params.orElse(null);
     }
 
     public void setParams(Object[] params) {
-        this.params = params;
+        this.params = Optional.of(params);
     }
 
     public String getTxnName() {
@@ -282,17 +282,17 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
         if (details.isPresent()) {
             ActionableContractCall actionable = spec.registry().getActionableCall(details.get());
             contract = actionable.getContract();
-            abi = actionable.getDetails().getAbi();
-            params = actionable.getDetails().getExampleArgs();
+            abi = Optional.of(actionable.getDetails().getAbi());
+            params = Optional.of(actionable.getDetails().getExampleArgs());
         } else {
-            paramsFn.ifPresent(hapiApiSpecFunction -> params = hapiApiSpecFunction.apply(spec));
+            paramsFn.ifPresent(hapiApiSpecFunction -> params = Optional.of(hapiApiSpecFunction.apply(spec)));
         }
 
         final byte[] callData;
         if (tupleFn == null) {
             callData = initializeCallData();
         } else {
-            final var abiFunction = com.esaulpaugh.headlong.abi.Function.fromJson(abi);
+            final var abiFunction = com.esaulpaugh.headlong.abi.Function.fromJson(abi.orElse(null));
             final var inputTuple = tupleFn.apply(spec);
             callData = abiFunction.encodeCall(inputTuple).array();
         }
@@ -321,7 +321,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
         }
         if (resultObserver != null) {
             doObservedLookup(spec, txnSubmitted, txnRecord -> {
-                final var function = com.esaulpaugh.headlong.abi.Function.fromJson(abi);
+                final var function = com.esaulpaugh.headlong.abi.Function.fromJson(abi.orElse(null));
                 final var result = function.decodeReturn(txnRecord
                         .getContractCallResult()
                         .getContractCallResult()
@@ -366,6 +366,9 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        return super.toStringHelper().add("contract", contract).add("abi", abi).add("params", Arrays.toString(params));
+        return super.toStringHelper()
+                .add("contract", contract)
+                .add("abi", abi)
+                .add("params", Arrays.toString(params.orElse(null)));
     }
 }
