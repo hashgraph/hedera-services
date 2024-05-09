@@ -96,11 +96,11 @@ public class TokenServiceImpl implements TokenService {
             @NonNull final Supplier<SortedSet<Account>> treasuryAccts,
             @NonNull final Supplier<SortedSet<Account>> miscAccts,
             @NonNull final Supplier<SortedSet<Account>> blocklistAccts) {
-        this.sysAccts = sysAccts;
-        this.stakingAccts = stakingAccts;
-        this.treasuryAccts = treasuryAccts;
-        this.miscAccts = miscAccts;
-        this.blocklistAccts = blocklistAccts;
+        this.sysAccts = requireNonNull(sysAccts);
+        this.stakingAccts = requireNonNull(stakingAccts);
+        this.treasuryAccts = requireNonNull(treasuryAccts);
+        this.miscAccts = requireNonNull(miscAccts);
+        this.blocklistAccts = requireNonNull(blocklistAccts);
     }
 
     /**
