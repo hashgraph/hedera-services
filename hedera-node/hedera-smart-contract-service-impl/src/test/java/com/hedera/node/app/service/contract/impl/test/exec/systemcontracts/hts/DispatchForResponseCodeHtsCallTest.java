@@ -35,6 +35,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Optional;
@@ -46,7 +47,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class DispatchForResponseCodeHtsCallTest extends HtsCallTestBase {
+class DispatchForResponseCodeHtsCallTest extends CallTestBase {
     @Mock
     private DispatchForResponseCodeHtsCall.FailureCustomizer failureCustomizer;
 

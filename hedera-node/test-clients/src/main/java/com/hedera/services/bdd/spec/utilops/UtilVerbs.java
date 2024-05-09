@@ -87,7 +87,9 @@ import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
+import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
+import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumContractCreate;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileAppend;
@@ -158,6 +160,7 @@ import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Setting;
@@ -1678,11 +1681,14 @@ public class UtilVerbs {
                 isApproval);
     }
 
-    public static List<HapiSpecOperation> convertHapiCallsToEthereumCalls(final List<HapiSpecOperation> ops) {
+    public static List<HapiSpecOperation> convertHapiCallsToEthereumCalls(
+            final List<HapiSpecOperation> ops, final String privateKeyRef, final Key adminKey, final long defaultGas) {
         final var convertedOps = new ArrayList<HapiSpecOperation>(ops.size());
         for (final var op : ops) {
             if (op instanceof HapiContractCall callOp && callOp.isConvertableToEthCall()) {
                 convertedOps.add(new HapiEthereumCall(callOp));
+            } else if (op instanceof HapiContractCreate callOp && callOp.isConvertableToEthCreate()) {
+                convertedOps.add(new HapiEthereumContractCreate(callOp, privateKeyRef, adminKey, defaultGas));
             } else {
                 convertedOps.add(op);
             }
