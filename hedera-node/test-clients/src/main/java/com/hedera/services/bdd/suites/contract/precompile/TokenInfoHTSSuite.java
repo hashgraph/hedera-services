@@ -19,7 +19,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
@@ -52,16 +51,12 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.exposeTargetLedgerIdTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
-import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
-import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -180,7 +175,6 @@ public class TokenInfoHTSSuite extends HapiSuite {
     public List<HapiSpec> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
-
 
     List<HapiSpec> positiveSpecs() {
         return List.of(
@@ -1151,14 +1145,8 @@ public class TokenInfoHTSSuite extends HapiSuite {
     final HapiSpec happyPathUpdateTokenInfoAndGetLatestInfo() {
         final int decimals = 1;
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
-        return propertyPreservingHapiSpec("happyPathUpdateTokenInfoAndGetLatestInfo")
-                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("happyPathUpdateTokenInfoAndGetLatestInfo")
                 .given(
-                        overridingTwo(
-                                CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
-                                "ContractCall,TokenAssociateToAccount,TokenCreate,TokenUpdate",
-                                CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
-                                CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(UPDATED_TREASURY)
                                 .keyShape(ED25519_ON)
@@ -1270,14 +1258,8 @@ public class TokenInfoHTSSuite extends HapiSuite {
     final HapiSpec happyPathUpdateFungibleTokenInfoAndGetLatestInfo() {
         final int decimals = 1;
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
-        return propertyPreservingHapiSpec("happyPathUpdateFungibleTokenInfoAndGetLatestInfo")
-                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("happyPathUpdateFungibleTokenInfoAndGetLatestInfo")
                 .given(
-                        overridingTwo(
-                                CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
-                                "ContractCall,TokenAssociateToAccount,TokenCreate,TokenUpdate",
-                                CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
-                                CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(UPDATED_TREASURY).balance(0L).maxAutomaticTokenAssociations(3),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
@@ -1387,14 +1369,8 @@ public class TokenInfoHTSSuite extends HapiSuite {
         final int maxSupply = 10;
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
-        return propertyPreservingHapiSpec("happyPathUpdateNonFungibleTokenInfoAndGetLatestInfo")
-                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("happyPathUpdateNonFungibleTokenInfoAndGetLatestInfo")
                 .given(
-                        overridingTwo(
-                                CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
-                                "ContractCall,TokenAssociateToAccount,TokenCreate,TokenUpdate",
-                                CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
-                                CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(UPDATED_TREASURY)
                                 .balance(0L)
@@ -1514,14 +1490,8 @@ public class TokenInfoHTSSuite extends HapiSuite {
     @HapiTest
     final HapiSpec happyPathUpdateTokenKeysAndReadLatestInformation() {
         final String TOKEN_INFO_AS_KEY = "TOKEN_INFO_CONTRACT_KEY";
-        return propertyPreservingHapiSpec("happyPathUpdateTokenKeysAndReadLatestInformation")
-                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("happyPathUpdateTokenKeysAndReadLatestInformation")
                 .given(
-                        overridingTwo(
-                                CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
-                                "ContractCall,TokenAssociateToAccount,TokenCreate,TokenUpdate",
-                                CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
-                                CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
                         cryptoCreate(HTS_COLLECTOR),

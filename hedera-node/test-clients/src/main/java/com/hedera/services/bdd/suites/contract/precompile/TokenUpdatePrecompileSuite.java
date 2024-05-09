@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
@@ -49,14 +48,10 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
-import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
-import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF;
-import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -109,7 +104,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     private static final String NFT_TOKEN = "TokenD";
     private static final String MULTI_KEY = "multiKey";
     private static final String CONTRACT_KEY = "contractKey";
-    private static final KeyShape TRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
+    private static final KeyShape THRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
     private static final String UPDATE_KEY_FUNC = "tokenUpdateKeys";
     private static final String GET_KEY_FUNC = "getKeyFromToken";
     public static final String TOKEN_UPDATE_CONTRACT = "UpdateTokenInfoContract";
@@ -172,18 +167,17 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
         return List.of(
                 updateTokenWithInvalidKeyValues(),
                 updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey(),
-                getTokenKeyForNonFungibleNegative(),
                 updateWithTooLongNameAndSymbol(),
+                getTokenKeyForNonFungibleNegative(),
                 updateTokenWithKeysNegative());
     }
 
     @HapiTest
     final HapiSpec updateTokenWithKeysHappyPath() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        return propertyPreservingHapiSpec("updateTokenWithKeysHappyPath")
-                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        final AtomicReference<byte[]> ed25519Key = new AtomicReference<>();
+        return defaultHapiSpec("updateTokenWithKeysHappyPath")
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
@@ -193,6 +187,13 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
                         contractCreate(TOKEN_UPDATE_CONTRACT).gas(GAS_TO_OFFER),
+                        newKeyNamed(CONTRACT_KEY)
+                                .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ED25519_ON, TOKEN_UPDATE_CONTRACT)))
+                                .exposingKeyTo(k -> ed25519Key.set(k.getThresholdKey()
+                                        .getKeys()
+                                        .getKeys(0)
+                                        .getEd25519()
+                                        .toByteArray())),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
@@ -210,16 +211,15 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
+                        tokenUpdate(VANILLA_TOKEN).adminKey(CONTRACT_KEY).signedByPayerAnd(MULTI_KEY, CONTRACT_KEY),
+                        cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
                         contractCall(
                                         TOKEN_UPDATE_CONTRACT,
                                         "updateTokenWithAllFields",
                                         HapiParserUtil.asHeadlongAddress(new byte[20]),
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                        spec.registry()
-                                                .getKey(ED25519KEY)
-                                                .getEd25519()
-                                                .toByteArray(),
+                                        ed25519Key.get(),
                                         spec.registry()
                                                 .getKey(ECDSA_KEY)
                                                 .getECDSASecp256K1()
@@ -235,23 +235,17 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .via(UPDATE_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .signedBy(GENESIS, ACCOUNT)
+                                .signedBy(ACCOUNT)
+                                .payingWith(ACCOUNT)
                                 .alsoSigningWithFullPrefix(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                        newKeyNamed(CONTRACT_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_UPDATE_CONTRACT))),
-                        tokenUpdate(VANILLA_TOKEN).adminKey(CONTRACT_KEY).signedByPayerAnd(MULTI_KEY, CONTRACT_KEY),
-                        cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
-                        cryptoUpdate(ACCOUNT_TO_ASSOCIATE).key(CONTRACT_KEY),
                         contractCall(
                                         TOKEN_UPDATE_CONTRACT,
                                         "updateTokenWithAllFields",
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                        spec.registry()
-                                                .getKey(ED25519KEY)
-                                                .getEd25519()
-                                                .toByteArray(),
+                                        ed25519Key.get(),
                                         spec.registry()
                                                 .getKey(ECDSA_KEY)
                                                 .getECDSASecp256K1()
@@ -267,8 +261,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
                                 .signedBy(CONTRACT_KEY)
-                                .payingWith(CONTRACT_KEY)
-                                .alsoSigningWithFullPrefix(ACCOUNT)
+                                .payingWith(ACCOUNT)
+                                .alsoSigningWithFullPrefix(CONTRACT_KEY, ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .via("test"),
                         getTxnRecord("test").andAllChildRecords().logged(),
@@ -306,16 +300,16 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
         final var NO_ADMIN_TOKEN = "noAdminKeyToken";
         final AtomicReference<TokenID> noAdminKeyToken = new AtomicReference<>();
         final AtomicReference<TokenID> nftToken = new AtomicReference<>();
-        return propertyPreservingHapiSpec("updateNftTreasuryWithAndWithoutAdminKey")
-                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("updateNftTreasuryWithAndWithoutAdminKey")
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(newTokenTreasury).keyShape(ED25519_ON).maxAutomaticTokenAssociations(6),
                         newKeyNamed(MULTI_KEY).shape(ED25519_ON),
                         cryptoCreate(ACCOUNT).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
-                        contractCreate(TOKEN_UPDATE_CONTRACT).gas(GAS_TO_OFFER),
+                        contractCreate(TOKEN_UPDATE_CONTRACT)
+                                .autoRenewAccountId(ACCOUNT)
+                                .gas(GAS_TO_OFFER),
                         tokenCreate(NO_ADMIN_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
@@ -335,6 +329,11 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         mintToken(NO_ADMIN_TOKEN, List.of(ByteString.copyFromUtf8("nft1"))))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
+                        newKeyNamed(CONTRACT_KEY)
+                                .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ED25519_ON, TOKEN_UPDATE_CONTRACT))),
+                        tokenUpdate(VANILLA_TOKEN).adminKey(CONTRACT_KEY).signedByPayerAnd(MULTI_KEY, CONTRACT_KEY),
+                        cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
+                        cryptoUpdate(newTokenTreasury).key(CONTRACT_KEY),
                         contractCall(
                                         TOKEN_UPDATE_CONTRACT,
                                         "updateTokenTreasury",
@@ -344,7 +343,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .via("noAdminKey")
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .signedBy(GENESIS, ACCOUNT, newTokenTreasury)
+                                .signedBy(ACCOUNT, newTokenTreasury)
+                                .payingWith(ACCOUNT)
                                 .alsoSigningWithFullPrefix(ACCOUNT, newTokenTreasury)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
@@ -356,8 +356,9 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .via("tokenUpdateTxn")
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .signedBy(GENESIS, ACCOUNT, newTokenTreasury)
-                                .alsoSigningWithFullPrefix(ACCOUNT, newTokenTreasury))))
+                                .signedBy(CONTRACT_KEY)
+                                .payingWith(ACCOUNT)
+                                .alsoSigningWithFullPrefix(CONTRACT_KEY))))
                 .then(
                         childRecordsCheck(
                                 "noAdminKey",
@@ -382,10 +383,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
         final var tooLongString = "ORIGINAL" + TxnUtils.randomUppercase(101);
         final var tooLongSymbolTxn = "tooLongSymbolTxn";
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        return propertyPreservingHapiSpec("updateWithTooLongNameAndSymbol")
-                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("updateWithTooLongNameAndSymbol")
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY),
                         newKeyNamed(MULTI_KEY).shape(ED25519_ON),
                         cryptoCreate(ACCOUNT).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
@@ -402,7 +401,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
-                        newKeyNamed(CONTRACT_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_UPDATE_CONTRACT))),
+                        newKeyNamed(CONTRACT_KEY)
+                                .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_UPDATE_CONTRACT))),
                         tokenUpdate(VANILLA_TOKEN).adminKey(CONTRACT_KEY).signedByPayerAnd(MULTI_KEY, CONTRACT_KEY),
                         cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
                         contractCall(
@@ -456,10 +456,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
         final var NO_SUPPLY_KEY_TXN = "NO_SUPPLY_KEY_TXN";
         final List<AtomicReference<TokenID>> tokenList = new ArrayList<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        return propertyPreservingHapiSpec("updateTokenWithKeysNegative")
-                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("updateTokenWithKeysNegative")
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
@@ -688,10 +686,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     final HapiSpec updateOnlyTokenKeysAndGetTheUpdatedValues() {
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        return propertyPreservingHapiSpec("updateOnlyTokenKeysAndGetTheUpdatedValues")
-                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("updateOnlyTokenKeysAndGetTheUpdatedValues")
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
@@ -735,7 +731,10 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
                                 .signedBy(GENESIS, ACCOUNT)
-                                .alsoSigningWithFullPrefix(ACCOUNT),
+                                .alsoSigningWithFullPrefix(ACCOUNT)
+                                .via("test")
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        getTxnRecord("test").andAllChildRecords().logged(),
                         newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT.signedWith(TOKEN_UPDATE_CONTRACT)),
                         newKeyNamed(TOKEN_UPDATE_AS_KEY).shape(CONTRACT.signedWith(TOKEN_UPDATE_CONTRACT)),
                         contractCall(
@@ -882,10 +881,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     @HapiTest
     public HapiSpec updateOnlyKeysForNonFungibleToken() {
         final AtomicReference<TokenID> nftToken = new AtomicReference<>();
-        return propertyPreservingHapiSpec("updateOnlyKeysForNonFungibleToken")
-                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("updateOnlyKeysForNonFungibleToken")
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
@@ -953,10 +950,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     final HapiSpec updateTokenWithoutNameSymbolMemo() {
         final var updateTokenWithoutNameSymbolMemoFunc = "updateTokenWithoutNameSymbolMemo";
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        return propertyPreservingHapiSpec("updateTokenWithoutNameSymbolMemo")
-                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("updateTokenWithoutNameSymbolMemo")
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
