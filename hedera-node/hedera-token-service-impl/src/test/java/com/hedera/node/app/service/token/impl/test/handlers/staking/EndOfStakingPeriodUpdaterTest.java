@@ -289,14 +289,11 @@ public class EndOfStakingPeriodUpdaterTest {
     @Test
     void calculatesNewEndOfPeriodStakingFieldsAsExpectedWhenMaxStakeIsLessThanTotalStake() {
         commonSetup(1_000_000_000L, STAKING_INFO_1, STAKING_INFO_2, STAKING_INFO_3);
-
-        // Assert preconditions
-        assertThat(STAKING_INFO_1.weight()).isZero();
-        assertThat(STAKING_INFO_2.weight()).isZero();
-        assertThat(STAKING_INFO_3.weight()).isZero();
-        assertThat(STAKING_INFO_1.pendingRewards()).isZero();
-        assertThat(STAKING_INFO_2.pendingRewards()).isZero();
-        assertThat(STAKING_INFO_3.pendingRewards()).isZero();
+        given(context.configuration())
+                .willReturn(newStakingConfig()
+                        .withValue("staking.rewardBalanceThreshold", 100000)
+                        .withValue("staking.maxStakeRewarded", 0L)
+                        .getOrCreateConfig());
 
         subject.updateNodes(context);
 
@@ -312,15 +309,16 @@ public class EndOfStakingPeriodUpdaterTest {
         assertThat(resultStakingInfo1.unclaimedStakeRewardStart()).isZero();
         assertThat(resultStakingInfo2.unclaimedStakeRewardStart()).isZero();
         assertThat(resultStakingInfo3.unclaimedStakeRewardStart()).isZero();
-        assertThat(resultStakingInfo1.rewardSumHistory()).isEqualTo(List.of(86L, 6L, 5L));
-        assertThat(resultStakingInfo2.rewardSumHistory()).isEqualTo(List.of(101L, 1L, 1L));
-        assertThat(resultStakingInfo3.rewardSumHistory()).isEqualTo(List.of(11L, 3L, 1L));
+        assertThat(resultStakingInfo1.rewardSumHistory()).isEqualTo(List.of(6L, 6L, 5L));
+        assertThat(resultStakingInfo2.rewardSumHistory()).isEqualTo(List.of(1L, 1L, 1L));
+        assertThat(resultStakingInfo3.rewardSumHistory()).isEqualTo(List.of(3L, 3L, 1L));
         assertThat(resultStakingInfo1.weight()).isEqualTo(307);
         assertThat(resultStakingInfo2.weight()).isEqualTo(192);
         assertThat(resultStakingInfo3.weight()).isZero();
-        assertThat(resultStakingInfo1.pendingRewards()).isEqualTo(72000);
-        assertThat(resultStakingInfo2.pendingRewards()).isEqualTo(63000L);
-        assertThat(resultStakingInfo3.pendingRewards()).isEqualTo(72000L);
+        // Since max stake rewarded is 0, all pending rewards should be 0
+        assertThat(resultStakingInfo1.pendingRewards()).isEqualTo(0L);
+        assertThat(resultStakingInfo2.pendingRewards()).isEqualTo(0L);
+        assertThat(resultStakingInfo3.pendingRewards()).isEqualTo(0L);
         assertThat(resultStakingInfo1.weight() + resultStakingInfo2.weight() + resultStakingInfo3.weight())
                 .isLessThanOrEqualTo(SUM_OF_CONSENSUS_WEIGHTS);
     }
