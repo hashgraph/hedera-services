@@ -24,6 +24,7 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.crypto.CryptoConstants.PUBLIC_KEYS_FILE;
 import static com.swirlds.platform.crypto.KeyCertPurpose.SIGNING;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.platform.NodeId;
@@ -254,22 +255,22 @@ public final class CryptoStatic {
     }
 
     /**
-     * See {@link SignatureVerifier#verifySignature(byte[], byte[], PublicKey)}
+     * See {@link SignatureVerifier#verifySignature(Bytes, Bytes, PublicKey)}
      */
     public static boolean verifySignature(
-            @NonNull byte[] data, @NonNull byte[] signature, @NonNull PublicKey publicKey) {
+            @NonNull final Bytes data, @NonNull final Bytes signature, @NonNull final PublicKey publicKey) {
         Objects.requireNonNull(data);
         Objects.requireNonNull(signature);
         Objects.requireNonNull(publicKey);
         try {
             final Signature sig = Signature.getInstance(CryptoConstants.SIG_TYPE2, CryptoConstants.SIG_PROVIDER);
             sig.initVerify(publicKey);
-            sig.update(data);
-            return sig.verify(signature);
-        } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
+            data.updateSignature(sig);
+            return signature.verifySignature(sig);
+        } catch (final NoSuchAlgorithmException | NoSuchProviderException e) {
             // should never happen
             throw new CryptographyException(e);
-        } catch (InvalidKeyException | SignatureException e) {
+        } catch (final InvalidKeyException | SignatureException e) {
             logger.error(LogMarker.EXCEPTION.getMarker(), "", e);
             return false;
         }
