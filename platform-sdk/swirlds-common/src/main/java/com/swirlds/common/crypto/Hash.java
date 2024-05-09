@@ -58,7 +58,7 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
      * 		the digest type
      */
     public Hash(final DigestType digestType) {
-        this(new byte[digestType.digestLength()], digestType, true, false);
+        this(new byte[digestType.digestLength()], digestType);
     }
 
     /**
@@ -80,7 +80,22 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
      * 		the digest type
      */
     public Hash(final byte[] value, final DigestType digestType) {
-        this(value, digestType, false, false);
+        if (value == null) {
+            throw new IllegalArgumentException("value");
+        }
+
+        if (digestType == null) {
+            throw new IllegalArgumentException("digestType");
+        }
+
+        if (value.length != digestType.digestLength()) {
+            throw new IllegalArgumentException("value: " + value.length);
+        }
+
+        this.digestType = digestType;
+
+        this.value = value;
+        this.bytes = Bytes.wrap(this.value);
     }
 
     /**
@@ -110,44 +125,6 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
         this.digestType = other.digestType;
         this.value = Arrays.copyOf(other.value, other.value.length);
         this.bytes = other.bytes;
-    }
-
-    protected Hash(
-            final byte[] value,
-            final DigestType digestType,
-            final boolean bypassSafetyCheck,
-            final boolean shouldCopy) {
-        if (value == null) {
-            throw new IllegalArgumentException("value");
-        }
-
-        if (digestType == null) {
-            throw new IllegalArgumentException("digestType");
-        }
-
-        if (value.length != digestType.digestLength()) {
-            throw new IllegalArgumentException("value: " + value.length);
-        }
-
-        this.digestType = digestType;
-
-        final byte[] valuePtr = (shouldCopy) ? Arrays.copyOf(value, value.length) : value;
-
-        if (bypassSafetyCheck) {
-            this.value = valuePtr;
-        } else {
-            // Check for all zeros & stop when first non-zero byte has been encountered
-            for (byte b : value) {
-                if (b != 0) {
-                    this.value = value;
-                    return;
-                }
-            }
-
-            // We throw an exception here because the value array contained all zero bytes
-            throw new EmptyHashValueException("Hash creation failed, hash is array of zeroes");
-        }
-        this.bytes = Bytes.wrap(this.value);
     }
 
     /**

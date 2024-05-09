@@ -17,6 +17,7 @@
 package com.swirlds.common.crypto;
 
 import com.swirlds.common.constructable.ConstructableIgnored;
+import java.util.Arrays;
 
 @ConstructableIgnored
 public class ImmutableHash extends Hash {
@@ -30,14 +31,14 @@ public class ImmutableHash extends Hash {
      * {@inheritDoc}
      */
     public ImmutableHash(final byte[] value) {
-        super(value, DigestType.SHA_384, true, true);
+        super(Arrays.copyOf(value, value.length), DigestType.SHA_384);
     }
 
     /**
      * {@inheritDoc}
      */
     public ImmutableHash(final byte[] value, final DigestType digestType) {
-        super(value, digestType, true, true);
+        super(Arrays.copyOf(value, value.length), digestType);
     }
 
     /**
