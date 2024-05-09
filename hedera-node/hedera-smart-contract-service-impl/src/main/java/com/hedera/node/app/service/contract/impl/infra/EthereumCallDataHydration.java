@@ -31,6 +31,7 @@ import com.hedera.node.app.service.file.ReadableFileStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.bouncycastle.util.encoders.DecoderException;
 import org.bouncycastle.util.encoders.Hex;
 
 /**
@@ -79,7 +80,13 @@ public class EthereumCallDataHydration {
             final var contents = callDataFile.contents();
             final var offset = contents.matchesPrefix(hexPrefix) ? hexPrefix.length : 0L;
             final var len = contents.length() - offset;
-            final var callData = Hex.decode(contents.getBytes(offset, len).toByteArray());
+            final byte[] callData;
+            try {
+                callData = Hex.decode(contents.getBytes(offset, len).toByteArray());
+            } catch (final DecoderException ignore) {
+                return failureFrom(INVALID_FILE_ID);
+            }
+
             if (callData.length == 0) {
                 return failureFrom(CONTRACT_FILE_EMPTY);
             }
