@@ -113,7 +113,7 @@ public class HapiTokenReject extends HapiTxnOp<HapiTokenReject> {
                 .map(refSource -> refSource.apply(spec))
                 .toList();
         final TokenRejectTransactionBody.Builder opBuilder = TokenRejectTransactionBody.newBuilder()
-                .setAccount(TxnUtils.asId(account, spec))
+                .setOwner(TxnUtils.asId(account, spec))
                 .addAllRejections(tokenReferences);
         return b -> b.setTokenReject(opBuilder);
     }
