@@ -200,7 +200,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         final int coreCount = Runtime.getRuntime().availableProcessors();
         final int parallelism =
                 (int) Math.max(1, config.defaultPoolMultiplier() * coreCount + config.defaultPoolConstant());
-        final ForkJoinPool defaultPool = new ForkJoinPool(parallelism);
+        final ForkJoinPool defaultPool = platformContext.getExecutorFactory().createForkJoinPool(parallelism);
         logger.info(STARTUP.getMarker(), "Default platform pool parallelism: {}", parallelism);
 
         model = WiringModelBuilder.create(platformContext)

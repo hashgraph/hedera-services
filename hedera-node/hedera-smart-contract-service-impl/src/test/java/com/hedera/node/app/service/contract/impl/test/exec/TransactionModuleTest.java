@@ -16,10 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.node.app.service.contract.impl.exec.TransactionModule.provideActionSidecarContentTracer;
 import static com.hedera.node.app.service.contract.impl.exec.TransactionModule.provideHederaEvmContext;
+import static com.hedera.node.app.service.contract.impl.exec.TransactionModule.provideSenderEcdsaKey;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_SECP256K1_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_HEDERA_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_CALL_DATA;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -33,6 +37,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.TransactionModule;
 import com.hedera.node.app.service.contract.impl.exec.gas.CanonicalDispatchPrices;
@@ -46,6 +51,7 @@ import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetad
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
+import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
 import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
@@ -97,6 +103,9 @@ class TransactionModuleTest {
     private EthereumCallDataHydration hydration;
 
     @Mock
+    private EthTxSigsCache ethTxSigsCache;
+
+    @Mock
     private ReadableFileStore fileStore;
 
     @Mock
@@ -115,6 +124,26 @@ class TransactionModuleTest {
                 ProxyWorldUpdater.class,
                 TransactionModule.provideFeesOnlyUpdater(enhancement, factory).get());
         verify(hederaOperations).begin();
+    }
+
+    @Test
+    void providesNullSenderEcdsaKeyWithoutHydratedEthTxData() {
+        assertNull(provideSenderEcdsaKey(ethTxSigsCache, null));
+    }
+
+    @Test
+    void providesNullSenderEcdsaKeyWithUnavailableEthTxData() {
+        final var failedHydration = HydratedEthTxData.failureFrom(ACCOUNT_DELETED);
+        assertNull(provideSenderEcdsaKey(ethTxSigsCache, failedHydration));
+    }
+
+    @Test
+    void providesCorrespondingKeyForAvailableEthTxData() {
+        final var hydration = HydratedEthTxData.successFrom(ETH_DATA_WITH_CALL_DATA);
+        given(ethTxSigsCache.computeIfAbsent(ETH_DATA_WITH_CALL_DATA))
+                .willReturn(
+                        new EthTxSigs(A_SECP256K1_KEY.ecdsaSecp256k1OrThrow().toByteArray(), new byte[0]));
+        assertThat(provideSenderEcdsaKey(ethTxSigsCache, hydration)).isEqualTo(A_SECP256K1_KEY);
     }
 
     @Test

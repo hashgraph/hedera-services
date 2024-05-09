@@ -16,14 +16,10 @@
 
 package com.swirlds.platform.cli;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.wiring.model.diagram.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.diagram.ModelGroup;
 import com.swirlds.common.wiring.model.diagram.ModelManualLink;
@@ -116,8 +112,7 @@ public final class DiagramCommand extends AbstractCommand {
     @Override
     public Integer call() throws IOException {
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
-        final PlatformContext platformContext = new DefaultPlatformContext(
-                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
+        final PlatformContext platformContext = PlatformContext.create(configuration);
 
         final ApplicationCallbacks callbacks = new ApplicationCallbacks(x -> {}, x -> {}, x -> {});
 
