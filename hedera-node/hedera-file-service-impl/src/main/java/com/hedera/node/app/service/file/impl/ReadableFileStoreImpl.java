@@ -59,6 +59,12 @@ public class ReadableFileStoreImpl extends FileStore implements ReadableFileStor
         return file == null ? null : FileStore.fileMetaFrom(file);
     }
 
+    /**
+     * Returns the file leaf for the given file id.
+     *
+     * @param id the file id
+     * @return the file for the given file id
+     */
     public @Nullable File getFileLeaf(@NonNull FileID id) {
         return fileState.get(id);
     }

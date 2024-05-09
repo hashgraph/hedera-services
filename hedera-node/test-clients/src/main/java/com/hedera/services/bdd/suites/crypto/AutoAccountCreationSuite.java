@@ -112,6 +112,7 @@ import com.swirlds.common.utility.CommonUtils;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.tuple.Pair;
@@ -494,6 +495,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final var civilianBal = 10 * ONE_HBAR;
         final var nftTransfer = "multiNftTransfer";
         final AtomicReference<Timestamp> parentConsTime = new AtomicReference<>();
+        final AtomicBoolean hasNodeStakeUpdate = new AtomicBoolean(false);
 
         return defaultHapiSpec("canAutoCreateWithNftTransferToEvmAddress")
                 .given(
@@ -525,13 +527,18 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 .then(
                         getTxnRecord(nftTransfer)
                                 .exposingTo(record -> parentConsTime.set(record.getConsensusTimestamp()))
+                                .exposingAllTo(records -> hasNodeStakeUpdate.set(
+                                        records.size() > 1 && isEndOfStakingPeriodRecord(records.get(1))))
                                 .andAllChildRecords()
                                 .hasNonStakingChildRecordCount(1)
                                 .logged(),
                         sourcing(() -> childRecordsCheck(
                                 nftTransfer,
                                 SUCCESS,
-                                recordWith().status(SUCCESS).consensusTimeImpliedByNonce(parentConsTime.get(), -1))));
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .consensusTimeImpliedByNonce(
+                                                parentConsTime.get(), hasNodeStakeUpdate.get() ? -2 : -1))));
     }
 
     @HapiTest
