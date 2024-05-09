@@ -287,6 +287,45 @@ public class EndOfStakingPeriodUpdaterTest {
     }
 
     @Test
+    void calculatesNewEndOfPeriodStakingFieldsAsExpectedWhenMaxStakeIsLessThanTotalStake() {
+        commonSetup(1_000_000_000L, STAKING_INFO_1, STAKING_INFO_2, STAKING_INFO_3);
+
+        // Assert preconditions
+        assertThat(STAKING_INFO_1.weight()).isZero();
+        assertThat(STAKING_INFO_2.weight()).isZero();
+        assertThat(STAKING_INFO_3.weight()).isZero();
+        assertThat(STAKING_INFO_1.pendingRewards()).isZero();
+        assertThat(STAKING_INFO_2.pendingRewards()).isZero();
+        assertThat(STAKING_INFO_3.pendingRewards()).isZero();
+
+        subject.updateNodes(context);
+
+        assertThat(stakingRewardsStore.totalStakeRewardStart())
+                .isEqualTo(STAKE_TO_REWARD_1 + STAKE_TO_REWARD_2 + STAKE_TO_REWARD_3);
+        assertThat(stakingRewardsStore.totalStakedStart()).isEqualTo(130000000000L);
+        final var resultStakingInfo1 = stakingInfoStore.get(NODE_NUM_1.number());
+        final var resultStakingInfo2 = stakingInfoStore.get(NODE_NUM_2.number());
+        final var resultStakingInfo3 = stakingInfoStore.get(NODE_NUM_3.number());
+        assertThat(resultStakingInfo1.stake()).isEqualTo(80000000000L);
+        assertThat(resultStakingInfo2.stake()).isEqualTo(50000000000L);
+        assertThat(resultStakingInfo3.stake()).isZero();
+        assertThat(resultStakingInfo1.unclaimedStakeRewardStart()).isZero();
+        assertThat(resultStakingInfo2.unclaimedStakeRewardStart()).isZero();
+        assertThat(resultStakingInfo3.unclaimedStakeRewardStart()).isZero();
+        assertThat(resultStakingInfo1.rewardSumHistory()).isEqualTo(List.of(86L, 6L, 5L));
+        assertThat(resultStakingInfo2.rewardSumHistory()).isEqualTo(List.of(101L, 1L, 1L));
+        assertThat(resultStakingInfo3.rewardSumHistory()).isEqualTo(List.of(11L, 3L, 1L));
+        assertThat(resultStakingInfo1.weight()).isEqualTo(307);
+        assertThat(resultStakingInfo2.weight()).isEqualTo(192);
+        assertThat(resultStakingInfo3.weight()).isZero();
+        assertThat(resultStakingInfo1.pendingRewards()).isEqualTo(72000);
+        assertThat(resultStakingInfo2.pendingRewards()).isEqualTo(63000L);
+        assertThat(resultStakingInfo3.pendingRewards()).isEqualTo(72000L);
+        assertThat(resultStakingInfo1.weight() + resultStakingInfo2.weight() + resultStakingInfo3.weight())
+                .isLessThanOrEqualTo(SUM_OF_CONSENSUS_WEIGHTS);
+    }
+
+    @Test
     void zeroWholeHbarsStakedCaseWorks() {
         commonSetup(
                 0L,
@@ -306,11 +345,23 @@ public class EndOfStakingPeriodUpdaterTest {
         assertThat(resultStakingInfo1.rewardSumHistory()).isEqualTo(List.of(6L, 6L, 5L));
         assertThat(resultStakingInfo2.rewardSumHistory()).isEqualTo(List.of(1L, 1L, 1L));
         assertThat(resultStakingInfo3.rewardSumHistory()).isEqualTo(List.of(3L, 3L, 1L));
+    }
 
-        System.out.println(logCaptor.infoLogs());
-        //        assertThat(logCaptor.infoLogs()).contains("Total stake of all nodes is 0, which shouldn't happen
-        // (weight=0, minStake=0, maxStake=0, sumOfConsensusWeights=500)");
+    @Test
+    void returnsZeroWeightIfTotalStakeOfAllNodeIsZero() {
+        final var weight = calculateWeightFromStake(10, 0, 500);
+        assertThat(weight).isEqualTo(0);
+        assertThat(logCaptor.warnLogs()).contains("Total stake of all nodes should be greater than 0. But got 0");
+    }
 
+    @Test
+    void returnsZeroScaledUpWeightIfTotalStakeOfAllNodeIsZero() {
+        final var weight = scaleUpWeightToStake(10, 1000, 1000, 0, 500);
+        assertThat(weight).isEqualTo(0);
+        assertThat(logCaptor.warnLogs())
+                .contains(
+                        "Total stake of all nodes is 0, "
+                                + "which shouldn't happen (weight=10, minStake=1000, maxStake=1000, sumOfConsensusWeights=500)");
     }
 
     @Test
