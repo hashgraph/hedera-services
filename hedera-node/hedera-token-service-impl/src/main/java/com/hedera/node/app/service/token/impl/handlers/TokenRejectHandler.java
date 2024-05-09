@@ -70,10 +70,11 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         final var txn = context.body();
         final var op = txn.tokenRejectOrThrow();
 
-        // If account is specified, we need to verify that its valid and require it to sign the transaction.
-        if (op.hasAccount()) {
+        // If owner account is specified, verify that it's valid and require that it signs the transaction.
+        // If not specified, payer account is considered as the one rejecting the tokens.
+        if (op.hasOwner()) {
             final var accountStore = context.createStore(ReadableAccountStore.class);
-            verifySenderAndRequireKey(op.account(), context, accountStore);
+            verifySenderAndRequireKey(op.owner(), context, accountStore);
         }
     }
 
@@ -99,8 +100,8 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         final var op = txn.tokenRejectOrThrow();
 
         validateFalsePreCheck(op.rejections().isEmpty(), INVALID_TRANSACTION_BODY);
-        if (op.hasAccount()) {
-            validateAccountID(op.account(), null);
+        if (op.hasOwner()) {
+            validateAccountID(op.owner(), null);
         }
 
         var uniqueTokenReferences = new HashSet<TokenReference>();
