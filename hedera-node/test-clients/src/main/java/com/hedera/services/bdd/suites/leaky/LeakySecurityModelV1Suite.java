@@ -38,8 +38,8 @@ import com.hedera.services.bdd.suites.contract.precompile.MixedHTSPrecompileTest
 import com.hedera.services.bdd.suites.contract.precompile.PauseUnpauseTokenAccountPrecompileV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.SigningReqsV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenExpiryInfoV1SecurityModelSuite;
-import com.hedera.services.bdd.suites.contract.precompile.TokenInfoHTSV2SecurityModelSuite;
-import com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrecompileV2SecurityModelSuite;
+import com.hedera.services.bdd.suites.contract.precompile.TokenInfoHTSV1SecurityModelSuite;
+import com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrecompileV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.ethereum.EthereumV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationV1SecurityModelSpecs;
@@ -83,8 +83,8 @@ public class LeakySecurityModelV1Suite extends HapiSuite {
                 new SigningReqsV1SecurityModelSuite(),
                 new TokenAssociationV1SecurityModelSpecs(),
                 new TokenExpiryInfoV1SecurityModelSuite(),
-                new TokenInfoHTSV2SecurityModelSuite(),
-                new TokenUpdatePrecompileV2SecurityModelSuite(),
+                new TokenInfoHTSV1SecurityModelSuite(),
+                new TokenUpdatePrecompileV1SecurityModelSuite(),
                 new WipeTokenAccountPrecompileV1SecurityModelSuite());
     }
 

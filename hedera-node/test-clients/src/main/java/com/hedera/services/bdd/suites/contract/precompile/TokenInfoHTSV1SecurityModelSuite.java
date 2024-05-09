@@ -16,15 +16,11 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
-import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
-import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
-import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -33,12 +29,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFeeInheritingRoyaltyCollector;
@@ -60,10 +54,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
@@ -92,14 +83,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
-import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
-@Tag(SMART_CONTRACT)
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
-public class TokenInfoHTSV2SecurityModelSuite extends HapiSuite {
+public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
 
-    private static final Logger LOG = LogManager.getLogger(TokenInfoHTSV2SecurityModelSuite.class);
+    private static final Logger LOG = LogManager.getLogger(TokenInfoHTSV1SecurityModelSuite.class);
 
     private static final String TOKEN_INFO_CONTRACT = "TokenInfoContract";
     private static final String ADMIN_KEY = TokenKeyType.ADMIN_KEY.name();
@@ -109,8 +97,6 @@ public class TokenInfoHTSV2SecurityModelSuite extends HapiSuite {
     private static final String WIPE_KEY = TokenKeyType.WIPE_KEY.name();
     private static final String FEE_SCHEDULE_KEY = TokenKeyType.FEE_SCHEDULE_KEY.name();
     private static final String PAUSE_KEY = TokenKeyType.PAUSE_KEY.name();
-    private static final String CONTRACT_KEY = "ContractKey";
-    private static final KeyShape TRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
     private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
     private static final String FEE_DENOM = "denom";
     public static final String HTS_COLLECTOR = "denomFee";
@@ -147,7 +133,7 @@ public class TokenInfoHTSV2SecurityModelSuite extends HapiSuite {
     private static final int MAX_SUPPLY = 1000;
 
     public static void main(final String... args) {
-        new TokenInfoHTSV2SecurityModelSuite().runSuiteSync();
+        new TokenInfoHTSV1SecurityModelSuite().runSuiteSync();
     }
 
     @Override
@@ -172,7 +158,6 @@ public class TokenInfoHTSV2SecurityModelSuite extends HapiSuite {
                 happyPathUpdateTokenKeysAndReadLatestInformation());
     }
 
-    @HapiTest
     final HapiSpec happyPathUpdateTokenInfoAndGetLatestInfo() {
         final int decimals = 1;
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
@@ -233,11 +218,6 @@ public class TokenInfoHTSV2SecurityModelSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, FUNGIBLE_TOKEN_NAME))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
-                        newKeyNamed(CONTRACT_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_INFO_CONTRACT))),
-                        tokenUpdate(FUNGIBLE_TOKEN_NAME)
-                                .adminKey(CONTRACT_KEY)
-                                .signedByPayerAnd(ADMIN_KEY, CONTRACT_KEY),
-                        cryptoUpdate(UPDATED_TREASURY).key(CONTRACT_KEY),
                         contractCall(
                                         TOKEN_INFO_CONTRACT,
                                         UPDATE_INFORMATION_FOR_TOKEN_AND_GET_LATEST_INFORMATION,
@@ -284,14 +264,11 @@ public class TokenInfoHTSV2SecurityModelSuite extends HapiSuite {
                                                                     UPDATE_MEMO,
                                                                     spec.registry()
                                                                             .getAccountID(UPDATED_TREASURY),
-                                                                    spec.registry()
-                                                                            .getKey(CONTRACT_KEY),
                                                                     expirySecond,
                                                                     targetLedgerId.get()))))));
                 }));
     }
 
-    @HapiTest
     final HapiSpec happyPathUpdateFungibleTokenInfoAndGetLatestInfo() {
         final int decimals = 1;
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
@@ -349,11 +326,6 @@ public class TokenInfoHTSV2SecurityModelSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, FUNGIBLE_TOKEN_NAME))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
-                        newKeyNamed(CONTRACT_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_INFO_CONTRACT))),
-                        tokenUpdate(FUNGIBLE_TOKEN_NAME)
-                                .adminKey(CONTRACT_KEY)
-                                .signedByPayerAnd(ADMIN_KEY, CONTRACT_KEY),
-                        cryptoUpdate(UPDATED_TREASURY).key(CONTRACT_KEY),
                         contractCall(
                                         TOKEN_INFO_CONTRACT,
                                         UPDATE_INFORMATION_FOR_FUNGIBLE_TOKEN_AND_GET_LATEST_INFORMATION,
@@ -400,14 +372,11 @@ public class TokenInfoHTSV2SecurityModelSuite extends HapiSuite {
                                                                     UPDATE_MEMO,
                                                                     spec.registry()
                                                                             .getAccountID(UPDATED_TREASURY),
-                                                                    spec.registry()
-                                                                            .getKey(CONTRACT_KEY),
                                                                     expirySecond,
                                                                     targetLedgerId.get()))))));
                 }));
     }
 
-    @HapiTest
     final HapiSpec happyPathUpdateNonFungibleTokenInfoAndGetLatestInfo() {
         final int maxSupply = 10;
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
@@ -475,11 +444,6 @@ public class TokenInfoHTSV2SecurityModelSuite extends HapiSuite {
                                 .fee(ONE_HBAR))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
-                        newKeyNamed(CONTRACT_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_INFO_CONTRACT))),
-                        tokenUpdate(NON_FUNGIBLE_TOKEN_NAME)
-                                .adminKey(CONTRACT_KEY)
-                                .signedByPayerAnd(ADMIN_KEY, CONTRACT_KEY),
-                        cryptoUpdate(UPDATED_TREASURY).key(CONTRACT_KEY),
                         contractCall(
                                         TOKEN_INFO_CONTRACT,
                                         UPDATE_INFORMATION_FOR_NON_FUNGIBLE_TOKEN_AND_GET_LATEST_INFORMATION,
@@ -528,15 +492,12 @@ public class TokenInfoHTSV2SecurityModelSuite extends HapiSuite {
                                                                     UPDATE_MEMO,
                                                                     spec.registry()
                                                                             .getAccountID(UPDATED_TREASURY),
-                                                                    spec.registry()
-                                                                            .getKey(CONTRACT_KEY),
                                                                     expirySecond,
                                                                     targetLedgerId.get()))
                                                             .withNftTokenInfo(nftTokenInfo)))));
                 }));
     }
 
-    @HapiTest
     final HapiSpec happyPathUpdateTokenKeysAndReadLatestInformation() {
         final String TOKEN_INFO_AS_KEY = "TOKEN_INFO_CONTRACT_KEY";
         return propertyPreservingHapiSpec("happyPathUpdateTokenKeysAndReadLatestInformation")
@@ -569,10 +530,6 @@ public class TokenInfoHTSV2SecurityModelSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, FUNGIBLE_TOKEN_NAME))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
-                        newKeyNamed(CONTRACT_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_INFO_CONTRACT))),
-                        tokenUpdate(FUNGIBLE_TOKEN_NAME)
-                                .adminKey(CONTRACT_KEY)
-                                .signedByPayerAnd(MULTI_KEY, CONTRACT_KEY),
                         contractCall(
                                         TOKEN_INFO_CONTRACT,
                                         UPDATE_AND_GET_TOKEN_KEYS_INFO_TXN,
@@ -690,7 +647,6 @@ public class TokenInfoHTSV2SecurityModelSuite extends HapiSuite {
             final String symbol,
             final String memo,
             final AccountID treasury,
-            final Key adminKey,
             final long expirySecond,
             ByteString ledgerId) {
         final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
@@ -712,7 +668,7 @@ public class TokenInfoHTSV2SecurityModelSuite extends HapiSuite {
                 .setTotalSupply(500L)
                 .setMaxSupply(MAX_SUPPLY)
                 .addAllCustomFees(customFees)
-                .setAdminKey(adminKey)
+                .setAdminKey(getTokenKeyFromSpec(spec, TokenKeyType.ADMIN_KEY))
                 .setKycKey(getTokenKeyFromSpec(spec, TokenKeyType.KYC_KEY))
                 .setFreezeKey(getTokenKeyFromSpec(spec, TokenKeyType.FREEZE_KEY))
                 .setWipeKey(getTokenKeyFromSpec(spec, TokenKeyType.WIPE_KEY))
@@ -768,7 +724,6 @@ public class TokenInfoHTSV2SecurityModelSuite extends HapiSuite {
             final String symbol,
             final String memo,
             final AccountID treasury,
-            final Key adminKey,
             final long expirySecond,
             final ByteString ledgerId) {
         final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
@@ -788,7 +743,7 @@ public class TokenInfoHTSV2SecurityModelSuite extends HapiSuite {
                 .setTotalSupply(1L)
                 .setMaxSupply(10L)
                 .addAllCustomFees(getCustomFeeForNFT(spec))
-                .setAdminKey(adminKey)
+                .setAdminKey(getTokenKeyFromSpec(spec, TokenKeyType.ADMIN_KEY))
                 .setKycKey(getTokenKeyFromSpec(spec, TokenKeyType.KYC_KEY))
                 .setFreezeKey(getTokenKeyFromSpec(spec, TokenKeyType.FREEZE_KEY))
                 .setWipeKey(getTokenKeyFromSpec(spec, TokenKeyType.WIPE_KEY))
