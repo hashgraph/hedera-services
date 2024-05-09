@@ -913,6 +913,10 @@ public class HapiSpecRegistry {
                 .collect(toList());
     }
 
+    public void forgetMetadataKey(String name) {
+        remove(name + "Metadata", Key.class);
+    }
+
     public void saveMetadataKey(String name, Key metadataKey) {
         put(name + "Metadata", metadataKey, Key.class);
     }

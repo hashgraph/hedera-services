@@ -21,9 +21,9 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -34,10 +34,10 @@ import javax.inject.Singleton;
 
 /**
  * Translates associate and dissociate calls to the HTS system contract. There are no special cases for
- * these calls, so the returned {@link HtsCall} is simply an instance of {@link DispatchForResponseCodeHtsCall}.
+ * these calls, so the returned {@link Call} is simply an instance of {@link DispatchForResponseCodeHtsCall}.
  */
 @Singleton
-public class AssociationsTranslator extends AbstractHtsCallTranslator {
+public class AssociationsTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     public static final Function HRC_ASSOCIATE = new Function("associate()", ReturnTypes.INT);
     public static final Function ASSOCIATE_ONE = new Function("associateToken(address,address)", ReturnTypes.INT_64);
     public static final Function DISSOCIATE_ONE = new Function("dissociateToken(address,address)", ReturnTypes.INT_64);
@@ -67,7 +67,7 @@ public class AssociationsTranslator extends AbstractHtsCallTranslator {
      * {@inheritDoc}
      */
     @Override
-    public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
+    public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         return new DispatchForResponseCodeHtsCall(
                 attempt,
                 matchesHrcSelector(attempt.selector()) ? bodyForHrc(attempt) : bodyForClassic(attempt),

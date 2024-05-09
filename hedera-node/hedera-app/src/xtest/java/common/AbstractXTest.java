@@ -57,6 +57,7 @@ import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
@@ -127,6 +128,7 @@ public abstract class AbstractXTest {
 
         doScenarioOperations();
 
+        assertExpectedTokens(finalTokens());
         assertExpectedNfts(finalNfts());
         assertExpectedAliases(finalAliases());
         assertExpectedAccounts(finalAccounts());
@@ -159,12 +161,17 @@ public abstract class AbstractXTest {
             @NonNull final TransactionBody txn,
             @NonNull final ResponseCodeEnum expectedStatus) {
         final var context = component().txnContextFactory().apply(txn);
+        final var preContext = component().txnPreHandleContextFactory().apply(txn);
         var impliedStatus = OK;
         try {
+            handler.preHandle(preContext);
             handler.handle(context);
             ((SavepointStackImpl) context.savepointStack()).commitFullStack();
         } catch (HandleException e) {
             impliedStatus = e.getStatus();
+            ((SavepointStackImpl) context.savepointStack()).rollbackFullStack();
+        } catch (PreCheckException e) {
+            impliedStatus = e.responseCode();
             ((SavepointStackImpl) context.savepointStack()).rollbackFullStack();
         }
         assertEquals(expectedStatus, impliedStatus);
@@ -325,6 +332,13 @@ public abstract class AbstractXTest {
     protected void assertExpectedBytecodes(@NonNull ReadableKVState<EntityNumber, Bytecode> bytecodes) {}
 
     protected void assertExpectedTokens(@NonNull ReadableKVState<TokenID, Token> tokens) {}
+
+    private ReadableKVState<TokenID, Token> finalTokens() {
+        return component()
+                .hederaState()
+                .getReadableStates(TokenServiceImpl.NAME)
+                .get(TokenServiceImpl.TOKENS_KEY);
+    }
 
     private ReadableKVState<NftID, Nft> finalNfts() {
         return component()

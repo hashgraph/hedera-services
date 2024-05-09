@@ -20,27 +20,27 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.crypto.RunningHashable;
-import com.swirlds.common.io.OptionalSelfSerializable;
+import com.swirlds.common.crypto.SignatureType;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.platform.system.events.BaseEventHashedData.ClassVersion;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
  * An event that may or may not have reached consensus. If it has reached consensus, provides detailed consensus
  * information.
  */
-public class DetailedConsensusEvent extends AbstractSerializableHashable
-        implements OptionalSelfSerializable<EventSerializationOptions>, RunningHashable {
+public class DetailedConsensusEvent extends AbstractSerializableHashable implements SelfSerializable, RunningHashable {
 
     public static final long CLASS_ID = 0xe250a9fbdcc4b1baL;
     public static final int CLASS_VERSION = 1;
 
     /** The hashed part of a base event */
     private BaseEventHashedData baseEventHashedData;
-    /** The part of a base event which is not hashed */
-    private BaseEventUnhashedData baseEventUnhashedData;
+    /** The signature of an event */
+    private byte[] signature;
     /** Consensus data calculated for an event */
     private ConsensusData consensusData;
     /** the running hash of this event */
@@ -56,42 +56,26 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
      *
      * @param baseEventHashedData
      * 		event data that is part of the event's hash
-     * @param baseEventUnhashedData
-     * 		event data that is not part of the event's hash
+     * @param signature
+     * 		the signature for the event
      * @param consensusData
      * 		the consensus data for this event
      */
     public DetailedConsensusEvent(
-            final BaseEventHashedData baseEventHashedData,
-            final BaseEventUnhashedData baseEventUnhashedData,
-            final ConsensusData consensusData) {
+            final BaseEventHashedData baseEventHashedData, final byte[] signature, final ConsensusData consensusData) {
         this.baseEventHashedData = baseEventHashedData;
-        this.baseEventUnhashedData = baseEventUnhashedData;
+        this.signature = signature;
         this.consensusData = consensusData;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final SerializableDataOutputStream out, final EventSerializationOptions option)
-            throws IOException {
-        serialize(out, baseEventHashedData, baseEventUnhashedData, consensusData, option);
     }
 
     public static void serialize(
             final SerializableDataOutputStream out,
             final BaseEventHashedData baseEventHashedData,
-            final BaseEventUnhashedData baseEventUnhashedData,
-            final ConsensusData consensusData,
-            final EventSerializationOptions option)
+            final byte[] signature,
+            final ConsensusData consensusData)
             throws IOException {
-        out.writeOptionalSerializable(baseEventHashedData, false, option);
-        if (baseEventHashedData.getVersion() < ClassVersion.BIRTH_ROUND) {
-            out.writeSerializable(baseEventUnhashedData, false);
-        } else {
-            out.writeByteArray(baseEventUnhashedData.getSignature());
-        }
+        out.writeSerializable(baseEventHashedData, false);
+        out.writeByteArray(signature);
         out.writeSerializable(consensusData, false);
     }
 
@@ -100,7 +84,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        serialize(out, baseEventHashedData, baseEventUnhashedData, consensusData, EventSerializationOptions.FULL);
+        serialize(out, baseEventHashedData, signature, consensusData);
     }
 
     /**
@@ -109,12 +93,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         baseEventHashedData = in.readSerializable(false, BaseEventHashedData::new);
-        if (baseEventHashedData.getVersion() < ClassVersion.BIRTH_ROUND) {
-            baseEventUnhashedData = in.readSerializable(false, BaseEventUnhashedData::new);
-        } else {
-            final byte[] signature = in.readByteArray(BaseEventUnhashedData.MAX_SIG_LENGTH);
-            baseEventUnhashedData = new BaseEventUnhashedData(signature);
-        }
+        signature = in.readByteArray(SignatureType.RSA.signatureLength());
         consensusData = in.readSerializable(false, ConsensusData::new);
     }
 
@@ -131,10 +110,10 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
     }
 
     /**
-     * Returns the event data that is not part of this event's hash.
+     * @return the signature for the event
      */
-    public BaseEventUnhashedData getBaseEventUnhashedData() {
-        return baseEventUnhashedData;
+    public byte[] getSignature() {
+        return signature;
     }
 
     /**
@@ -165,7 +144,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
      */
     @Override
     public int hashCode() {
-        return Objects.hash(baseEventHashedData, baseEventUnhashedData, consensusData);
+        return Objects.hash(baseEventHashedData, signature, consensusData);
     }
 
     /**
@@ -181,7 +160,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
         }
         final DetailedConsensusEvent that = (DetailedConsensusEvent) other;
         return Objects.equals(baseEventHashedData, that.baseEventHashedData)
-                && Objects.equals(baseEventUnhashedData, that.baseEventUnhashedData)
+                && Arrays.equals(signature, that.signature)
                 && Objects.equals(consensusData, that.consensusData);
     }
 
@@ -192,7 +171,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
     public String toString() {
         return new ToStringBuilder(this)
                 .append("baseEventHashedData", baseEventHashedData)
-                .append("baseEventUnhashedData", baseEventUnhashedData)
+                .append("signature", signature)
                 .append("consensusData", consensusData)
                 .toString();
     }

@@ -87,8 +87,7 @@ public class EventStreamRoundIterator implements IOIterator<Round> {
      * @return an event impl with the same data as the detailed consensus event
      */
     private static EventImpl convertToEventImpl(final DetailedConsensusEvent event) {
-        return new EventImpl(
-                event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
+        return new EventImpl(event);
     }
 
     /**

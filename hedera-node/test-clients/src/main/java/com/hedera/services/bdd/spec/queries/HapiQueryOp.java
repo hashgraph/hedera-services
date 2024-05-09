@@ -110,7 +110,16 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 
     protected abstract boolean needsPayment();
 
+    /**
+     * Returns the modified version of the query in the context of the given spec, if a mutation
+     * is present; otherwise, returns the query as is.
+     *
+     * @param query the query to be modified
+     * @param spec the spec in which the query is to be modified
+     * @return the modified query
+     */
     protected Query maybeModified(@NonNull final Query query, @NonNull final HapiSpec spec) {
+        // Save the unmodified version of the query
         this.query = query;
         return queryMutation != null ? queryMutation.apply(query, spec) : query;
     }

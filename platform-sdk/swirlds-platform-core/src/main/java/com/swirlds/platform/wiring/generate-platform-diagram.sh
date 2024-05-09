@@ -10,7 +10,6 @@ SCRIPT_PATH="$(dirname "$(readlink -f "$0")")"
 
 pcli diagram \
     -l 'TransactionPrehandler:futures:consensusRoundHandler' \
-    -l 'gossip:get events:shadowgraph' \
     -l 'EventCreationManager:get transactions:transactionPool' \
     -l 'RunningEventHasher:future hash:consensusRoundHandler' \
     -s 'eventWindowManager:event window:🌀' \
@@ -23,8 +22,8 @@ pcli diagram \
     -s 'SelfEventSigner:non-validated events:🍎' \
     -s 'Mystery Input:mystery data:❔' \
     -s 'stateSigner:signature transactions:🖋️' \
-    -s 'issNotificationSplitter:IssNotification:💥' \
-    -s 'toStatusAction:PlatformStatusAction:💀' \
+    -s 'IssDetectorSplitter:IssNotification:💥' \
+    -s 'getStatusAction:PlatformStatusAction:💀' \
     -s 'toNotification:state written notification:📦' \
     -s 'latestCompleteStateNotifier:complete state notification:💢' \
     -s 'OrphanBufferSplitter:preconsensus signatures:🔰' \
@@ -37,12 +36,11 @@ pcli diagram \
     -g 'Consensus Engine:ConsensusEngine,ConsensusEngineSplitter,eventWindowManager,getKeystoneEventSequenceNumber,getConsensusEvents' \
     -g 'State File Manager:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction,toNotification' \
     -g 'State File Management:State File Manager,📦,📀,💾' \
-    -g 'State Signature Collector:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions,latestCompleteStateNotifier' \
+    -g 'State Signature Collector:StateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions,latestCompleteStateNotifier' \
     -g 'State Signature Collection:State Signature Collector,latestCompleteStateNexus,💢' \
     -g 'Preconsensus Event Stream:PcesSequencer,PcesWriter' \
     -g 'Event Creation:EventCreationManager,transactionPool,SelfEventSigner,🍎' \
-    -g 'Gossip:gossip,shadowgraph,InOrderLinker' \
-    -g 'ISS Detector:issDetector,issNotificationSplitter,issHandler,toStatusAction' \
+    -g 'ISS Detector:IssDetector,IssDetectorSplitter,issHandler,getStatusAction' \
     -g 'Heartbeat:heartbeat,❤️' \
     -g 'PCES Replay:pcesReplayer,✅' \
     -g 'Consensus Round Handler:consensusRoundHandler,postHandler_stateAndRoundReserver,getState,savedStateController' \

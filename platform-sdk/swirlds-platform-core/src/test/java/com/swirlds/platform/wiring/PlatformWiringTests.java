@@ -32,7 +32,6 @@ import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.hashing.EventHasher;
-import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
@@ -45,7 +44,6 @@ import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
-import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.publisher.PlatformPublisher;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
@@ -88,7 +86,6 @@ class PlatformWiringTests {
                 .withOrphanBuffer(mock(OrphanBuffer.class))
                 .withRunningEventHasher(mock(RunningEventHasher.class))
                 .withEventCreationManager(mock(EventCreationManager.class))
-                .withInOrderLinker(mock(InOrderLinker.class))
                 .withConsensusEngine(mock(ConsensusEngine.class))
                 .withConsensusEventStream(mock(ConsensusEventStream.class))
                 .withPcesSequencer(mock(PcesSequencer.class))
@@ -96,18 +93,30 @@ class PlatformWiringTests {
                 .withStatusStateMachine(mock(StatusStateMachine.class))
                 .withTransactionPrehandler(mock(TransactionPrehandler.class))
                 .withPcesWriter(mock(PcesWriter.class))
-                .withSignedStateSentinel(mock(SignedStateSentinel.class));
+                .withSignedStateSentinel(mock(SignedStateSentinel.class))
+                .withIssDetector(mock(IssDetector.class));
+
+        // Gossip is a special case, it's not like other components.
+        // Currently we just have a facade between gossip and the wiring framework.
+        // In the future when gossip is refactored to operate within the wiring
+        // framework like other components, such things will not be needed.
+        componentBuilder.withGossip(
+                (model, eventInput, eventWindowInput, eventOutput, startInput, stopInput, clearInput) -> {
+                    eventInput.bindConsumer(event -> {});
+                    eventWindowInput.bindConsumer(eventWindow -> {});
+                    startInput.bindConsumer(noInput -> {});
+                    stopInput.bindConsumer(noInput -> {});
+                    clearInput.bindConsumer(noInput -> {});
+                });
 
         wiring.bind(
                 componentBuilder,
                 mock(SignedStateFileManager.class),
                 mock(StateSigner.class),
                 mock(PcesReplayer.class),
-                mock(Shadowgraph.class),
                 mock(StateSignatureCollector.class),
                 mock(EventWindowManager.class),
                 mock(ConsensusRoundHandler.class),
-                mock(IssDetector.class),
                 mock(IssHandler.class),
                 mock(HashLogger.class),
                 mock(BirthRoundMigrationShim.class),
