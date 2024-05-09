@@ -353,6 +353,10 @@ public class Utils {
         return captureChildCreate2MetaFor(1, 0, desc, creation2, mirrorAddr, create2Addr);
     }
 
+    /**
+     * This method captures the meta information of a CREATE2 operation. It extracts the mirror and the create2 addresses.
+     * Additionally, it verifies the number of children
+     */
     public static HapiSpecOperation captureChildCreate2MetaFor(
             final int givenNumExpectedChildren,
             final int givenChildOfInterest,
