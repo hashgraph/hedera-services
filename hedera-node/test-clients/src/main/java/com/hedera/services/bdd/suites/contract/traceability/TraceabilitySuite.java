@@ -48,6 +48,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
@@ -56,7 +57,6 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-import static com.hedera.services.bdd.suites.contract.Utils.asSolidityAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.extractBytecodeUnhexed;
@@ -86,7 +86,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static org.hyperledger.besu.crypto.Hash.keccak256;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.DefaultExceptionalHaltReason.PRECOMPILE_ERROR;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
@@ -213,9 +212,9 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @Order(2)
     final HapiSpec traceabilityE2EScenario1() {
         return defaultHapiSpec(
-                        "traceabilityE2EScenario1",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                "traceabilityE2EScenario1",
+                NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
@@ -259,7 +258,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                 BigInteger.TWO,
                                 BigInteger.TWO),
                         contractCustomCreate(
-                                        TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(12))
+                                TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(12))
                                 .via(SECOND_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 SECOND_CREATE_TXN,
@@ -299,7 +298,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                 BigInteger.ZERO,
                                 BigInteger.valueOf(12)),
                         contractCustomCreate(
-                                        TRACEABILITY, THIRD, BigInteger.ZERO, BigInteger.valueOf(11), BigInteger.ZERO)
+                                TRACEABILITY, THIRD, BigInteger.ZERO, BigInteger.valueOf(11), BigInteger.ZERO)
                                 .via(THIRD_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 THIRD_CREATE_TXN,
@@ -341,10 +340,10 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        TRACEABILITY,
-                                        "eetScenario1",
-                                        asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "B", spec)),
-                                        asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "C", spec)))
+                                TRACEABILITY,
+                                "eetScenario1",
+                                asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "B", spec)),
+                                asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "C", spec)))
                                 .gas(1_000_000)
                                 .via(TRACEABILITY_TXN))))
                 .then(
@@ -587,9 +586,9 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @Order(3)
     final HapiSpec traceabilityE2EScenario2() {
         return defaultHapiSpec(
-                        "traceabilityE2EScenario2",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                "traceabilityE2EScenario2",
+                NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO)
@@ -632,7 +631,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                 BigInteger.ZERO,
                                 BigInteger.ZERO),
                         contractCustomCreate(
-                                        TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(99))
+                                TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(99))
                                 .via(SECOND_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 SECOND_CREATE_TXN,
@@ -672,7 +671,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                 BigInteger.ZERO,
                                 BigInteger.valueOf(99)),
                         contractCustomCreate(
-                                        TRACEABILITY, THIRD, BigInteger.ZERO, BigInteger.valueOf(88), BigInteger.ZERO)
+                                TRACEABILITY, THIRD, BigInteger.ZERO, BigInteger.valueOf(88), BigInteger.ZERO)
                                 .via(THIRD_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 THIRD_CREATE_TXN,
@@ -714,10 +713,10 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        TRACEABILITY,
-                                        "eetScenario2",
-                                        asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "B", spec)),
-                                        asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "C", spec)))
+                                TRACEABILITY,
+                                "eetScenario2",
+                                asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "B", spec)),
+                                asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "C", spec)))
                                 .gas(1_000_000)
                                 .via(TRACEABILITY_TXN))))
                 .then(
@@ -995,7 +994,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @Order(4)
     final HapiSpec traceabilityE2EScenario3() {
         return defaultHapiSpec(
-                        "traceabilityE2EScenario3", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
+                "traceabilityE2EScenario3", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
@@ -1039,7 +1038,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                 BigInteger.TWO,
                                 BigInteger.TWO),
                         contractCustomCreate(
-                                        TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(12))
+                                TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(12))
                                 .via(SECOND_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 SECOND_CREATE_TXN,
@@ -1079,7 +1078,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                 BigInteger.ZERO,
                                 BigInteger.valueOf(12)),
                         contractCustomCreate(
-                                        TRACEABILITY, THIRD, BigInteger.ZERO, BigInteger.valueOf(11), BigInteger.ZERO)
+                                TRACEABILITY, THIRD, BigInteger.ZERO, BigInteger.valueOf(11), BigInteger.ZERO)
                                 .via(THIRD_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 THIRD_CREATE_TXN,
@@ -1121,10 +1120,10 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        TRACEABILITY,
-                                        "eetScenario3",
-                                        asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "B", spec)),
-                                        asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "C", spec)))
+                                TRACEABILITY,
+                                "eetScenario3",
+                                asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "B", spec)),
+                                asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "C", spec)))
                                 .gas(1_000_000)
                                 .via(TRACEABILITY_TXN))))
                 .then(
@@ -1405,7 +1404,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @Order(5)
     final HapiSpec traceabilityE2EScenario4() {
         return defaultHapiSpec(
-                        "traceabilityE2EScenario4", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
+                "traceabilityE2EScenario4", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.TWO, BigInteger.valueOf(3), BigInteger.valueOf(4))
@@ -1529,10 +1528,10 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        TRACEABILITY,
-                                        "eetScenario4",
-                                        asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "B", spec)),
-                                        asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "C", spec)))
+                                TRACEABILITY,
+                                "eetScenario4",
+                                asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "B", spec)),
+                                asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "C", spec)))
                                 .gas(1_000_000)
                                 .via(TRACEABILITY_TXN))))
                 .then(
@@ -1697,7 +1696,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @HapiTest
     @Order(6)
     final HapiSpec traceabilityE2EScenario5() {
-        return defaultHapiSpec("traceabilityE2EScenario5", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec("traceabilityE2EScenario5", FULLY_NONDETERMINISTIC)
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
@@ -1741,7 +1740,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                 BigInteger.TWO,
                                 BigInteger.TWO),
                         contractCustomCreate(
-                                        TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(12))
+                                TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(12))
                                 .via(SECOND_CREATE_TXN)
                                 .gas(500_000L),
                         expectContractStateChangesSidecarFor(
@@ -1782,7 +1781,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                 BigInteger.ZERO,
                                 BigInteger.valueOf(12)),
                         contractCustomCreate(
-                                        TRACEABILITY, THIRD, BigInteger.valueOf(4), BigInteger.ONE, BigInteger.ZERO)
+                                TRACEABILITY, THIRD, BigInteger.valueOf(4), BigInteger.ONE, BigInteger.ZERO)
                                 .via(THIRD_CREATE_TXN)
                                 .gas(500_000L),
                         expectContractStateChangesSidecarFor(
@@ -1825,10 +1824,10 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        TRACEABILITY,
-                                        "eetScenario5",
-                                        asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "B", spec)),
-                                        asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "C", spec)))
+                                TRACEABILITY,
+                                "eetScenario5",
+                                asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "B", spec)),
+                                asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "C", spec)))
                                 .gas(1_000_000)
                                 .via(TRACEABILITY_TXN))))
                 .then(
@@ -2003,10 +2002,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @HapiTest
     @Order(7)
     final HapiSpec traceabilityE2EScenario6() {
-        return defaultHapiSpec(
-                        "traceabilityE2EScenario6",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("traceabilityE2EScenario6", FULLY_NONDETERMINISTIC)
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.TWO, BigInteger.valueOf(3), BigInteger.valueOf(4))
@@ -2050,7 +2046,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                 BigInteger.valueOf(3),
                                 BigInteger.valueOf(4)),
                         contractCustomCreate(
-                                        TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(3))
+                                TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(3))
                                 .via(SECOND_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 SECOND_CREATE_TXN,
@@ -2131,10 +2127,10 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        TRACEABILITY,
-                                        "eetScenario6",
-                                        asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "B", spec)),
-                                        asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "C", spec)))
+                                TRACEABILITY,
+                                "eetScenario6",
+                                asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "B", spec)),
+                                asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "C", spec)))
                                 .gas(1_000_000)
                                 .via(TRACEABILITY_TXN))))
                 .then(
@@ -2342,7 +2338,10 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @HapiTest
     @Order(8)
     final HapiSpec traceabilityE2EScenario7() {
-        return defaultHapiSpec("traceabilityE2EScenario7", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec(
+                "traceabilityE2EScenario7",
+                NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(TRACEABILITY_CALLCODE),
                         contractCreate(TRACEABILITY_CALLCODE, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
@@ -2385,11 +2384,11 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                 BigInteger.TWO,
                                 BigInteger.TWO),
                         contractCustomCreate(
-                                        TRACEABILITY_CALLCODE,
-                                        SECOND,
-                                        BigInteger.ZERO,
-                                        BigInteger.ZERO,
-                                        BigInteger.valueOf(12))
+                                TRACEABILITY_CALLCODE,
+                                SECOND,
+                                BigInteger.ZERO,
+                                BigInteger.ZERO,
+                                BigInteger.valueOf(12))
                                 .via(SECOND_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 SECOND_CREATE_TXN,
@@ -2429,11 +2428,11 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                 BigInteger.ZERO,
                                 BigInteger.valueOf(12)),
                         contractCustomCreate(
-                                        TRACEABILITY_CALLCODE,
-                                        THIRD,
-                                        BigInteger.valueOf(4),
-                                        BigInteger.ONE,
-                                        BigInteger.ZERO)
+                                TRACEABILITY_CALLCODE,
+                                THIRD,
+                                BigInteger.valueOf(4),
+                                BigInteger.ONE,
+                                BigInteger.ZERO)
                                 .via(THIRD_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 THIRD_CREATE_TXN,
@@ -2475,10 +2474,10 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        TRACEABILITY_CALLCODE,
-                                        "eetScenario7",
-                                        asHeadlongAddress(getNestedContractAddress(TRACEABILITY_CALLCODE + "B", spec)),
-                                        asHeadlongAddress(getNestedContractAddress(TRACEABILITY_CALLCODE + "C", spec)))
+                                TRACEABILITY_CALLCODE,
+                                "eetScenario7",
+                                asHeadlongAddress(getNestedContractAddress(TRACEABILITY_CALLCODE + "B", spec)),
+                                asHeadlongAddress(getNestedContractAddress(TRACEABILITY_CALLCODE + "C", spec)))
                                 .gas(1_000_000)
                                 .via(TRACEABILITY_TXN))))
                 .then(
@@ -2654,9 +2653,9 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                                 .getContractId(TRACEABILITY_CALLCODE + THIRD))
                                                         .setOutput(EMPTY)
                                                         .setInput(encodeFunctionCall(
-                                                                        TRACEABILITY_CALLCODE,
-                                                                        SET_ZERO_SLOT,
-                                                                        BigInteger.valueOf(54))
+                                                                TRACEABILITY_CALLCODE,
+                                                                SET_ZERO_SLOT,
+                                                                BigInteger.valueOf(54))
                                                                 .concat(CALL_CODE_INPUT_SUFFIX))
                                                         .build(),
                                                 ContractAction.newBuilder()
@@ -2689,7 +2688,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                                 .getContractId(TRACEABILITY_CALLCODE + THIRD))
                                                         .setOutput(uint256ReturnWithValue(BigInteger.valueOf(0)))
                                                         .setInput(encodeFunctionCall(
-                                                                        TRACEABILITY_CALLCODE, GET_FIRST_SLOT)
+                                                                TRACEABILITY_CALLCODE, GET_FIRST_SLOT)
                                                                 .concat(CALL_CODE_INPUT_SUFFIX))
                                                         .build(),
                                                 ContractAction.newBuilder()
@@ -2723,9 +2722,9 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                                 .getContractId(TRACEABILITY_CALLCODE + THIRD))
                                                         .setOutput(EMPTY)
                                                         .setInput(encodeFunctionCall(
-                                                                        TRACEABILITY_CALLCODE,
-                                                                        SET_FIRST_SLOT,
-                                                                        BigInteger.valueOf(0))
+                                                                TRACEABILITY_CALLCODE,
+                                                                SET_FIRST_SLOT,
+                                                                BigInteger.valueOf(0))
                                                                 .concat(CALL_CODE_INPUT_SUFFIX))
                                                         .build())))));
     }
@@ -2733,7 +2732,10 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @HapiTest
     @Order(9)
     final HapiSpec traceabilityE2EScenario8() {
-        return defaultHapiSpec("traceabilityE2EScenario8", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec(
+                "traceabilityE2EScenario8",
+                NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(TRACEABILITY_CALLCODE),
                         contractCreate(TRACEABILITY_CALLCODE, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
@@ -2776,11 +2778,11 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                 BigInteger.TWO,
                                 BigInteger.TWO),
                         contractCustomCreate(
-                                        TRACEABILITY_CALLCODE,
-                                        SECOND,
-                                        BigInteger.ZERO,
-                                        BigInteger.ZERO,
-                                        BigInteger.valueOf(12))
+                                TRACEABILITY_CALLCODE,
+                                SECOND,
+                                BigInteger.ZERO,
+                                BigInteger.ZERO,
+                                BigInteger.valueOf(12))
                                 .via(SECOND_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 SECOND_CREATE_TXN,
@@ -2820,11 +2822,11 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                 BigInteger.ZERO,
                                 BigInteger.valueOf(12)),
                         contractCustomCreate(
-                                        TRACEABILITY_CALLCODE,
-                                        THIRD,
-                                        BigInteger.valueOf(4),
-                                        BigInteger.ONE,
-                                        BigInteger.ZERO)
+                                TRACEABILITY_CALLCODE,
+                                THIRD,
+                                BigInteger.valueOf(4),
+                                BigInteger.ONE,
+                                BigInteger.ZERO)
                                 .via(THIRD_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 THIRD_CREATE_TXN,
@@ -2866,10 +2868,10 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        TRACEABILITY_CALLCODE,
-                                        "eetScenario8",
-                                        asHeadlongAddress(getNestedContractAddress(TRACEABILITY_CALLCODE + "B", spec)),
-                                        asHeadlongAddress(getNestedContractAddress(TRACEABILITY_CALLCODE + "C", spec)))
+                                TRACEABILITY_CALLCODE,
+                                "eetScenario8",
+                                asHeadlongAddress(getNestedContractAddress(TRACEABILITY_CALLCODE + "B", spec)),
+                                asHeadlongAddress(getNestedContractAddress(TRACEABILITY_CALLCODE + "C", spec)))
                                 .gas(1_000_000)
                                 .via(TRACEABILITY_TXN))))
                 .then(
@@ -3003,7 +3005,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                                 .getContractId(TRACEABILITY_CALLCODE + SECOND))
                                                         .setOutput(uint256ReturnWithValue(BigInteger.valueOf(2)))
                                                         .setInput(encodeFunctionCall(
-                                                                        TRACEABILITY_CALLCODE, GET_SECOND_SLOT)
+                                                                TRACEABILITY_CALLCODE, GET_SECOND_SLOT)
                                                                 .concat(CALL_CODE_INPUT_SUFFIX))
                                                         .build(),
                                                 ContractAction.newBuilder()
@@ -3037,9 +3039,9 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                                 .getContractId(TRACEABILITY_CALLCODE + SECOND))
                                                         .setOutput(EMPTY)
                                                         .setInput(encodeFunctionCall(
-                                                                        TRACEABILITY_CALLCODE,
-                                                                        SET_SECOND_SLOT,
-                                                                        BigInteger.valueOf(524))
+                                                                TRACEABILITY_CALLCODE,
+                                                                SET_SECOND_SLOT,
+                                                                BigInteger.valueOf(524))
                                                                 .concat(CALL_CODE_INPUT_SUFFIX))
                                                         .build(),
                                                 ContractAction.newBuilder()
@@ -3054,13 +3056,13 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                                 .getContractId(TRACEABILITY_CALLCODE + SECOND))
                                                         .setOutput(EMPTY)
                                                         .setInput(encodeFunctionCall(
-                                                                        TRACEABILITY_CALLCODE,
-                                                                        "callcodeAddressSetSlot0",
-                                                                        hexedSolidityAddressToHeadlongAddress(
-                                                                                getNestedContractAddress(
-                                                                                        TRACEABILITY_CALLCODE + THIRD,
-                                                                                        spec)),
-                                                                        BigInteger.valueOf(55))
+                                                                TRACEABILITY_CALLCODE,
+                                                                "callcodeAddressSetSlot0",
+                                                                hexedSolidityAddressToHeadlongAddress(
+                                                                        getNestedContractAddress(
+                                                                                TRACEABILITY_CALLCODE + THIRD,
+                                                                                spec)),
+                                                                BigInteger.valueOf(55))
                                                                 .concat(CALL_CODE_INPUT_SUFFIX))
                                                         .build(),
                                                 ContractAction.newBuilder()
@@ -3075,9 +3077,9 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                                 .getContractId(TRACEABILITY_CALLCODE + THIRD))
                                                         .setOutput(EMPTY)
                                                         .setInput(encodeFunctionCall(
-                                                                        TRACEABILITY_CALLCODE,
-                                                                        SET_ZERO_SLOT,
-                                                                        BigInteger.valueOf(55))
+                                                                TRACEABILITY_CALLCODE,
+                                                                SET_ZERO_SLOT,
+                                                                BigInteger.valueOf(55))
                                                                 .concat(CALL_CODE_INPUT_SUFFIX))
                                                         .build())))));
     }
@@ -3085,8 +3087,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @HapiTest
     @Order(10)
     final HapiSpec traceabilityE2EScenario9() {
-        return defaultHapiSpec(
-                        "traceabilityE2EScenario9", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
+        return defaultHapiSpec("traceabilityE2EScenario9", FULLY_NONDETERMINISTIC)
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
@@ -3130,7 +3131,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                 BigInteger.TWO,
                                 BigInteger.TWO),
                         contractCustomCreate(
-                                        TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(12))
+                                TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(12))
                                 .via(SECOND_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 SECOND_CREATE_TXN,
@@ -3211,10 +3212,10 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        TRACEABILITY,
-                                        "eetScenario9",
-                                        asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "B", spec)),
-                                        asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "C", spec)))
+                                TRACEABILITY,
+                                "eetScenario9",
+                                asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "B", spec)),
+                                asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "C", spec)))
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .gas(1_000_000)
                                 .via(TRACEABILITY_TXN))))
@@ -3393,7 +3394,10 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @HapiTest
     @Order(11)
     final HapiSpec traceabilityE2EScenario10() {
-        return defaultHapiSpec("traceabilityE2EScenario10", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec(
+                "traceabilityE2EScenario10",
+                NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.TWO, BigInteger.valueOf(3), BigInteger.valueOf(4))
@@ -3437,7 +3441,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                 BigInteger.valueOf(3),
                                 BigInteger.valueOf(4)),
                         contractCustomCreate(
-                                        TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(3))
+                                TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(3))
                                 .via(SECOND_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 SECOND_CREATE_TXN,
@@ -3518,10 +3522,10 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        TRACEABILITY,
-                                        "eetScenario10",
-                                        asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "B", spec)),
-                                        asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "C", spec)))
+                                TRACEABILITY,
+                                "eetScenario10",
+                                asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "B", spec)),
+                                asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "C", spec)))
                                 .gas(1_000_000)
                                 .via(TRACEABILITY_TXN))))
                 .then(
@@ -3780,7 +3784,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                 BigInteger.valueOf(3),
                                 BigInteger.valueOf(4)),
                         contractCustomCreate(
-                                        TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(3))
+                                TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(3))
                                 .via(SECOND_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 SECOND_CREATE_TXN,
@@ -3861,10 +3865,10 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        TRACEABILITY,
-                                        "eetScenario11",
-                                        asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "B", spec)),
-                                        asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "C", spec)))
+                                TRACEABILITY,
+                                "eetScenario11",
+                                asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "B", spec)),
+                                asHeadlongAddress(getNestedContractAddress(TRACEABILITY + "C", spec)))
                                 .gas(1_000_000)
                                 .via(TRACEABILITY_TXN))))
                 .then(
@@ -4048,7 +4052,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @Order(14)
     HapiSpec traceabilityE2EScenario13() {
         final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
-        return defaultHapiSpec("traceabilityE2EScenario13", NONDETERMINISTIC_ETHEREUM_DATA, NONDETERMINISTIC_NONCE)
+        return defaultHapiSpec("traceabilityE2EScenario13", FULLY_NONDETERMINISTIC)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -4091,8 +4095,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @HapiTest
     @Order(15)
     final HapiSpec traceabilityE2EScenario14() {
-        return defaultHapiSpec(
-                        "traceabilityE2EScenario14", NONDETERMINISTIC_ETHEREUM_DATA, NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("traceabilityE2EScenario14", FULLY_NONDETERMINISTIC)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -4150,10 +4153,10 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
         final AtomicReference<String> mirrorLiteralId = new AtomicReference<>();
         final String specName = "traceabilityE2EScenario15";
         return defaultHapiSpec(
-                        specName,
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_NONCE)
+                specName,
+                NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                NONDETERMINISTIC_NONCE)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract)
@@ -4177,10 +4180,10 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                         expectContractBytecodeSidecarFor(CREATE_TXN, contract, contract))
                 .when(
                         sourcing(() -> contractCallLocal(
-                                        contract,
-                                        GET_BYTECODE,
-                                        asHeadlongAddress(factoryEvmAddress.get()),
-                                        BigInteger.valueOf(salt))
+                                contract,
+                                GET_BYTECODE,
+                                asHeadlongAddress(factoryEvmAddress.get()),
+                                BigInteger.valueOf(salt))
                                 .exposingTypedResultsTo(results -> {
                                     final var tcInitcode = (byte[]) results[0];
                                     testContractInitcode.set(tcInitcode);
@@ -4189,7 +4192,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                             tcInitcode.length);
                                 })),
                         sourcing(() -> contractCallLocal(
-                                        contract, "getAddress", testContractInitcode.get(), BigInteger.valueOf(salt))
+                                contract, "getAddress", testContractInitcode.get(), BigInteger.valueOf(salt))
                                 .exposingTypedResultsTo(results -> {
                                     log.info("Contract reported address" + " results {}", results);
                                     final var expectedAddr = (Address) results[0];
@@ -4198,7 +4201,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                     expectedCreate2Address.set(hexedAddress);
                                 })),
                         sourcing(() -> contractCall(
-                                        contract, DEPLOY, testContractInitcode.get(), BigInteger.valueOf(salt))
+                                contract, DEPLOY, testContractInitcode.get(), BigInteger.valueOf(salt))
                                 .payingWith(GENESIS)
                                 .gas(4_000_000L)
                                 .sending(tcValue)
@@ -4245,7 +4248,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                             .setRecipientContract(
                                                                     spec.registry()
                                                                             .getContractId(contract))
-                                                            .setGasUsed(80135)
+                                                            .setGasUsed(80193)
                                                             .setOutput(EMPTY)
                                                             .setInput(
                                                                     encodeFunctionCall(
@@ -4260,7 +4263,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                             .setCallingContract(
                                                                     spec.registry()
                                                                             .getContractId(contract))
-                                                            .setGas(3870609)
+                                                            .setGas(3870552)
                                                             .setRecipientContract(childId)
                                                             .setGasUsed(44936)
                                                             .setValue(tcValue)
@@ -4287,10 +4290,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
         final String PRECOMPILE_CALLER = "PrecompileCaller";
         final String txn = "payTxn";
         final String toHash = "toHash";
-        return defaultHapiSpec(
-                        "traceabilityE2EScenario16",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("traceabilityE2EScenario16", FULLY_NONDETERMINISTIC)
                 .given(
                         tokenCreate("goodToken")
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -4319,10 +4319,10 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                         }),
                         expectContractBytecodeSidecarFor(txn, PRECOMPILE_CALLER, PRECOMPILE_CALLER))
                 .when(sourcing(() -> contractCall(
-                                PRECOMPILE_CALLER,
-                                "callSha256AndIsToken",
-                                toHash.getBytes(),
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                        PRECOMPILE_CALLER,
+                        "callSha256AndIsToken",
+                        toHash.getBytes(),
+                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                         .via("callTxn")))
                 .then(withOpContext((spec, opLog) -> {
                     final byte[] expectedHash =
@@ -4483,8 +4483,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
         final var RECEIVER = "RECEIVER";
         final var hbarsToSend = 1;
         final var transferTxn = "payTxn";
-        return defaultHapiSpec(
-                        "traceabilityE2EScenario19", NONDETERMINISTIC_ETHEREUM_DATA, NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("traceabilityE2EScenario19", FULLY_NONDETERMINISTIC)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RECEIVER).balance(0L),
@@ -4525,7 +4524,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @HapiTest
     @Order(21)
     final HapiSpec traceabilityE2EScenario20() {
-        return defaultHapiSpec("traceabilityE2EScenario20", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("traceabilityE2EScenario20", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(uploadInitCode(REVERTING_CONTRACT))
                 .when(contractCreate(REVERTING_CONTRACT, BigInteger.valueOf(6))
                         .via(FIRST_CREATE_TXN)
@@ -4551,7 +4550,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @HapiTest
     @Order(22)
     final HapiSpec traceabilityE2EScenario21() {
-        return defaultHapiSpec("traceabilityE2EScenario21")
+        return defaultHapiSpec("traceabilityE2EScenario21", FULLY_NONDETERMINISTIC)
                 .given(
                         uploadInitCode(REVERTING_CONTRACT),
                         contractCreate(REVERTING_CONTRACT, BigInteger.valueOf(6))
@@ -4588,7 +4587,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
                                                 .setCallOperationType(CallOperationType.OP_CALL)
                                                 .setGas(978936)
-                                                .setGasUsed(963748)
+                                                .setGasUsed(18360)
                                                 .setOutput(EMPTY)
                                                 /*
                                                    For EVM v0.34 use this code block instead:
@@ -4600,18 +4599,20 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                 .setInput(encodeFunctionCall(REVERTING_CONTRACT, "callingWrongAddress"))
                                                 .build(),
                                         ContractAction.newBuilder()
-                                                .setCallType(CALL)
+                                                .setCallType(PRECOMPILE)
                                                 .setCallingContract(
                                                         spec.registry().getContractId(REVERTING_CONTRACT))
                                                 .setCallOperationType(CallOperationType.OP_CALL)
                                                 .setCallDepth(1)
-                                                .setGas(960576)
                                                 .setInput(ByteStringUtils.wrapUnsafely(
                                                         Function.parse("boo" + "(uint256)")
                                                                 .encodeCallWithArgs(BigInteger.valueOf(234))
                                                                 .array()))
-                                                .setGasUsed(960576)
-                                                .setError(ByteString.copyFromUtf8(PRECOMPILE_ERROR.name()))
+                                                .setGas(960576)
+                                                .setRecipientContract(ContractID.newBuilder()
+                                                        .setContractNum(0)
+                                                        .build())
+                                                .setOutput(EMPTY)
                                                 /*
                                                    For EVM v0.34 use this code block instead:
 
@@ -4619,7 +4620,6 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                 .setError(ByteString.copyFromUtf8(INVALID_SOLIDITY_ADDRESS.name()))
 
                                                 */
-                                                .setTargetedAddress(ByteString.copyFrom(asSolidityAddress(0, 0, 0)))
                                                 .build())))));
     }
 
@@ -4705,9 +4705,9 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
         final String contractCreateTxn = "contractCreate";
         final var serialNumberId = MAX_UINT256_VALUE;
         return propertyPreservingHapiSpec(
-                        "ActionsShowPropagatedRevert",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                "ActionsShowPropagatedRevert",
+                NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                NONDETERMINISTIC_TRANSACTION_FEES)
                 .preserving(SIDECARS_PROP)
                 .given(
                         overriding(SIDECARS_PROP, "CONTRACT_ACTION"),
@@ -4756,11 +4756,11 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                         ByteString.copyFromUtf8("the Old Guy"))),
                         cryptoTransfer(movingUnique(tokenInQuestion, 1L).between(TOKEN_TREASURY, somebody)))
                 .when(sourcing(() -> contractCall(
-                                APPROVE_BY_DELEGATE,
-                                "doIt",
-                                asHeadlongAddress(tiqMirrorAddr.get()),
-                                asHeadlongAddress(somebodyElseMirrorAddr.get()),
-                                serialNumberId)
+                        APPROVE_BY_DELEGATE,
+                        "doIt",
+                        asHeadlongAddress(tiqMirrorAddr.get()),
+                        asHeadlongAddress(somebodyElseMirrorAddr.get()),
+                        serialNumberId)
                         .payingWith(somebody)
                         .gas(1_000_000)
                         .via(badApproval)
@@ -4840,9 +4840,9 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                             ArrayUtils.addAll(
                                                                     Arrays.copyOfRange(
                                                                             keccak256(
-                                                                                            Bytes.of(
-                                                                                                    "redirectForToken(address,bytes)"
-                                                                                                            .getBytes()))
+                                                                                    Bytes.of(
+                                                                                            "redirectForToken(address,bytes)"
+                                                                                                    .getBytes()))
                                                                                     .toArrayUnsafe(),
                                                                             0,
                                                                             4),
@@ -4882,10 +4882,11 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
         final var failedlazyCreateTxn = "payTxn2";
         final var valueToSend = FIVE_HBARS;
         return propertyPreservingHapiSpec(
-                        "ethereumLazyCreateExportsExpectedSidecars",
-                        NONDETERMINISTIC_ETHEREUM_DATA,
-                        NONDETERMINISTIC_NONCE,
-                        ALLOW_SKIPPED_ENTITY_IDS)
+                "ethereumLazyCreateExportsExpectedSidecars",
+                NONDETERMINISTIC_ETHEREUM_DATA,
+                NONDETERMINISTIC_NONCE,
+                ALLOW_SKIPPED_ENTITY_IDS,
+                NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .preserving(CHAIN_ID_PROPERTY, LAZY_CREATE_PROPERTY, "contracts.evm.version")
                 .given(
                         overridingThree(
@@ -4989,11 +4990,11 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
         final var CREATE_2_TXN = "create2Txn";
         final var specName = "hollowAccountCreate2MergeExportsExpectedSidecars";
         return propertyPreservingHapiSpec(
-                        specName,
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_NONCE)
+                specName,
+                NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                NONDETERMINISTIC_TRANSACTION_FEES,
+                NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                NONDETERMINISTIC_NONCE)
                 .preserving(LAZY_CREATE_PROPERTY, SIDECARS_PROP)
                 .given(
                         overriding(LAZY_CREATE_PROPERTY, "true"),
@@ -5011,7 +5012,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2))
                 .when(
                         sourcing(() -> contractCallLocal(
-                                        create2Factory, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), salt)
+                                create2Factory, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), salt)
                                 .exposingTypedResultsTo(results -> {
                                     final var tcInitcode = (byte[]) results[0];
                                     testContractInitcode.set(tcInitcode);
@@ -5031,14 +5032,14 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                 .payingWith(GENESIS)),
                         // Create a hollow account at the desired address
                         cryptoTransfer((spec, b) -> {
-                                    final var defaultPayerId = spec.registry().getAccountID(DEFAULT_PAYER);
-                                    b.setTransfers(TransferList.newBuilder()
-                                            .addAccountAmounts(aaWith(
-                                                    ByteString.copyFrom(
-                                                            CommonUtils.unhex(expectedCreate2Address.get())),
-                                                    +ONE_HBAR))
-                                            .addAccountAmounts(aaWith(defaultPayerId, -ONE_HBAR)));
-                                })
+                            final var defaultPayerId = spec.registry().getAccountID(DEFAULT_PAYER);
+                            b.setTransfers(TransferList.newBuilder()
+                                    .addAccountAmounts(aaWith(
+                                            ByteString.copyFrom(
+                                                    CommonUtils.unhex(expectedCreate2Address.get())),
+                                            +ONE_HBAR))
+                                    .addAccountAmounts(aaWith(defaultPayerId, -ONE_HBAR)));
+                        })
                                 .signedBy(DEFAULT_PAYER, PARTY)
                                 .fee(ONE_HBAR)
                                 .via(creation),
