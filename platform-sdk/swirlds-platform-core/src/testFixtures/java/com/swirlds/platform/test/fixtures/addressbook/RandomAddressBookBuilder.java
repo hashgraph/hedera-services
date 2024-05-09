@@ -132,7 +132,7 @@ public class RandomAddressBookBuilder {
         addressBook.setNextNodeId(nextNodeId);
         addressBook.setRound(Math.abs(random.nextLong()));
 
-        if (maximumWeight == null) {
+        if (maximumWeight == null && size > 0) {
             // We don't want the total weight to overflow a long
             maximumWeight = Long.MAX_VALUE / size;
         }
