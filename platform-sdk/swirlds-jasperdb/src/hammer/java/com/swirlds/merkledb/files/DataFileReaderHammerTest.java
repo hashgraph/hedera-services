@@ -21,10 +21,9 @@ import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LE
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.merkledb.serialize.DataItemHeader;
-import com.swirlds.merkledb.serialize.DataItemSerializer;
+import com.swirlds.merkledb.serialize.BaseSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
@@ -53,7 +52,7 @@ public class DataFileReaderHammerTest {
         final int readerThreads = 32;
         final int readIterations = 10_000;
 
-        final Path tempFile = TemporaryFileBuilder.buildTemporaryFile("interruptedReadsHammerTest");
+        final Path tempFile = LegacyTemporaryFileBuilder.buildTemporaryFile("interruptedReadsHammerTest");
         final ByteBuffer writeBuf = ByteBuffer.allocate(itemSize);
         for (int i = 0; i < itemSize; i++) {
             writeBuf.put((byte) (i % 100));
@@ -72,7 +71,7 @@ public class DataFileReaderHammerTest {
         final DataFileMetadata metadata =
                 new DataFileMetadata(itemCount, 0, Instant.now(), 0, INITIAL_COMPACTION_LEVEL);
         final DataFileReader<byte[]> dataReader =
-                new DataFileReaderPbj<>(dbConfig, tempFile, new TestDataItemSerializer(itemSize), metadata);
+                new DataFileReader<>(dbConfig, tempFile, new TestDataItemSerializer(itemSize), metadata);
         final AtomicInteger activeReaders = new AtomicInteger(readerThreads);
         final AtomicReferenceArray<Thread> threads = new AtomicReferenceArray<>(readerThreads);
         final Future<?>[] jobs = new Future[readerThreads];
@@ -126,7 +125,8 @@ public class DataFileReaderHammerTest {
         }
     }
 
-    private static class TestDataItemSerializer implements DataItemSerializer<byte[]> {
+    private static class TestDataItemSerializer implements BaseSerializer<byte[]> {
+
         private final int size;
 
         public TestDataItemSerializer(final int size) {
@@ -144,23 +144,8 @@ public class DataFileReaderHammerTest {
         }
 
         @Override
-        public int getHeaderSize() {
-            throw new UnsupportedOperationException("Not implemented");
-        }
-
-        @Override
-        public DataItemHeader deserializeHeader(ByteBuffer buffer) {
-            throw new UnsupportedOperationException("Not implemented");
-        }
-
-        @Override
         public void serialize(byte[] data, WritableSequentialData out) {
             out.writeBytes(data);
-        }
-
-        @Override
-        public void serialize(byte[] data, ByteBuffer buffer) throws IOException {
-            throw new UnsupportedOperationException("Not implemented");
         }
 
         @Override
@@ -168,11 +153,6 @@ public class DataFileReaderHammerTest {
             final byte[] r = new byte[size];
             in.readBytes(r);
             return r;
-        }
-
-        @Override
-        public byte[] deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
-            throw new UnsupportedOperationException("Not implemented");
         }
     }
 }

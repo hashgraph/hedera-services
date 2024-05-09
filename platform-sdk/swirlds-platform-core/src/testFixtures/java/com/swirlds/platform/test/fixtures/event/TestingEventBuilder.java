@@ -18,7 +18,7 @@ package com.swirlds.platform.test.fixtures.event;
 
 import static com.swirlds.platform.system.events.EventConstants.BIRTH_ROUND_UNDEFINED;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -26,7 +26,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
@@ -393,11 +392,11 @@ public class TestingEventBuilder {
         }
 
         for (int i = appTransactionCount; i < appTransactionCount + systemTransactionCount; ++i) {
-            generatedTransactions[i] = new StateSignatureTransaction(
-                    random.nextLong(0, Long.MAX_VALUE),
-                    RandomUtils.randomSignatureBytes(random),
-                    RandomUtils.randomHashBytes(random),
-                    Bytes.EMPTY);
+            generatedTransactions[i] = new StateSignatureTransaction(StateSignaturePayload.newBuilder()
+                    .round(random.nextLong(0, Long.MAX_VALUE))
+                    .signature(RandomUtils.randomSignatureBytes(random))
+                    .hash(RandomUtils.randomHashBytes(random))
+                    .build());
         }
 
         return generatedTransactions;
@@ -502,8 +501,7 @@ public class TestingEventBuilder {
         final byte[] signature = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(signature);
 
-        final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(signature);
-        final GossipEvent gossipEvent = new GossipEvent(hashedData, unhashedData);
+        final GossipEvent gossipEvent = new GossipEvent(hashedData, signature);
 
         return gossipEvent;
     }

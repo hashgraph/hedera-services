@@ -36,7 +36,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
@@ -179,14 +178,6 @@ class ContractValueTest {
     }
 
     @Test
-    void serializeUsingByteBufferWorks() throws IOException {
-        final ByteBuffer out = ByteBuffer.allocate(bytesValue.length);
-        subject.serialize(out);
-        out.rewind();
-        assertArrayEquals(out.array(), subject.getValue());
-    }
-
-    @Test
     void deserializeWorks() throws IOException {
         subject = new ContractValue();
         final var in = mock(SerializableDataInputStream.class);
@@ -212,17 +203,6 @@ class ContractValueTest {
     }
 
     @Test
-    void deserializeWithByteBufferWorks() throws IOException {
-        subject = new ContractValue();
-        final ByteBuffer byteBuffer = ByteBuffer.allocate(bytesValue.length);
-        byteBuffer.put(bytesValue).rewind();
-
-        subject.deserialize(byteBuffer, MERKLE_VERSION);
-
-        assertArrayEquals(bytesValue, subject.getValue());
-    }
-
-    @Test
     void cannotDeserializeIntoAReadOnlyContractValue() throws IOException {
         final var readOnly = subject.asReadOnly();
 
@@ -235,10 +215,5 @@ class ContractValueTest {
                 .read(subject.getValue());
 
         assertThrows(IllegalStateException.class, () -> readOnly.deserialize(in, MERKLE_VERSION));
-
-        // and when
-        final ByteBuffer byteBuffer = ByteBuffer.allocate(4);
-
-        assertThrows(IllegalStateException.class, () -> readOnly.deserialize(byteBuffer, MERKLE_VERSION));
     }
 }

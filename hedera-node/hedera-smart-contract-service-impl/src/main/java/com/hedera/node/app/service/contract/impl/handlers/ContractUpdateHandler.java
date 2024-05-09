@@ -29,6 +29,7 @@ import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
 import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
+import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -40,6 +41,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
 import com.hedera.node.app.service.mono.fees.calculation.contract.txns.ContractUpdateResourceUsage;
@@ -83,7 +85,7 @@ public class ContractUpdateHandler implements TransactionHandler {
 
         if (isAdminSigRequired(op)) {
             final var accountStore = context.createStore(ReadableAccountStore.class);
-            final var targetId = op.contractIDOrElse(ContractID.DEFAULT);
+            final var targetId = op.contractIDOrThrow();
             final var maybeContract = accountStore.getContractById(targetId);
             if (maybeContract != null && maybeContract.keyOrThrow().key().kind() == Key.KeyOneOfType.CONTRACT_ID) {
                 throw new PreCheckException(MODIFYING_IMMUTABLE_CONTRACT);
@@ -95,6 +97,16 @@ public class ContractUpdateHandler implements TransactionHandler {
         }
         if (op.hasAutoRenewAccountId() && !op.autoRenewAccountIdOrThrow().equals(AccountID.DEFAULT)) {
             context.requireKeyOrThrow(op.autoRenewAccountIdOrThrow(), INVALID_AUTORENEW_ACCOUNT);
+        }
+    }
+
+    @Override
+    public void pureChecks(@NonNull TransactionBody txn) throws PreCheckException {
+        final var op = txn.contractUpdateInstanceOrThrow();
+        mustExist(op.contractID(), INVALID_CONTRACT_ID);
+
+        if (op.hasAdminKey() && processAdminKey(op)) {
+            throw new PreCheckException(INVALID_ADMIN_KEY);
         }
     }
 
@@ -135,10 +147,6 @@ public class ContractUpdateHandler implements TransactionHandler {
             @NonNull final ReadableAccountStore accountStore) {
         validateTrue(contract != null, INVALID_CONTRACT_ID);
         validateTrue(!contract.deleted(), INVALID_CONTRACT_ID);
-
-        if (op.hasAdminKey() && processAdminKey(op)) {
-            throw new HandleException(INVALID_ADMIN_KEY);
-        }
 
         if (op.hasExpirationTime()) {
             try {
@@ -290,8 +298,11 @@ public class ContractUpdateHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
         final var op = feeContext.body();
+        final var contractId = op.contractUpdateInstanceOrThrow().contractIDOrElse(ContractID.DEFAULT);
+        final var accountStore = feeContext.readableStore(ReadableAccountStore.class);
+        final var contract = accountStore.getContractById(contractId);
         return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new ContractUpdateResourceUsage(
                         new SmartContractFeeBuilder())
-                .usageGiven(fromPbj(op), sigValueObj, null));
+                .usageGiven(fromPbj(op), sigValueObj, contract));
     }
 }

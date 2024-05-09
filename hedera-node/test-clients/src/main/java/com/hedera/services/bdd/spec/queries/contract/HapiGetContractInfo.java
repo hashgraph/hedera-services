@@ -178,7 +178,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getContractInfoQuery(spec, payment, false);
+        Query query = maybeModified(getContractInfoQuery(spec, payment, false), spec);
         response = spec.clients().getScSvcStub(targetNodeFor(spec), useTls).getContractInfo(query);
         ContractInfo contractInfo = response.getContractGetInfo().getContractInfo();
         if (verboseLoggingOn) {
@@ -198,7 +198,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
 
     @Override
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getContractInfoQuery(spec, payment, true);
+        Query query = maybeModified(getContractInfoQuery(spec, payment, true), spec);
         Response response =
                 spec.clients().getScSvcStub(targetNodeFor(spec), useTls).getContractInfo(query);
         return costFrom(response);

@@ -35,7 +35,7 @@ import java.nio.file.StandardCopyOption;
  */
 public class RolloverFileOutputStream extends OutputStream {
     protected final Path logPath;
-    private final int maxRollover;
+    private final int maxFiles;
     private final long maxFileSize;
     private final boolean append;
     private long remainingSize;
@@ -52,21 +52,21 @@ public class RolloverFileOutputStream extends OutputStream {
      *     Path logPath = Paths.get("logs", "example.log");
      *     long maxFileSize = 1024 * 1024; // 1 MB
      *     boolean append = true;
-     *     int maxRollover = 5; // Maximum number of rolling files
-     *     RolloverFileOutputStream outputStream = new RolloverFileOutputStream(logPath, maxFileSize, append, maxRollover);
+     *     int maxFiles = 5; // Maximum number of rolling files
+     *     RolloverFileOutputStream outputStream = new RolloverFileOutputStream(logPath, maxFileSize, append, maxFiles);
      * </pre>
      *
      * @param logPath     path where the logging file is located. Should contain the base dir + the name of the logging
      *                    file.
      * @param maxFileSize maximum size for the file. The limit is checked with best effort
      * @param append      if true and the file exists, appends the content to the file. if not, the file is rolled.
-     * @param maxRollover Within a rolling period, how many rolling files are allowed.
+     * @param maxFiles Within a rolling period, how many rolling files are allowed.
      */
     protected RolloverFileOutputStream(
-            final @NonNull Path logPath, final long maxFileSize, final boolean append, final int maxRollover) {
+            final @NonNull Path logPath, final long maxFileSize, final boolean append, final int maxFiles) {
         this.logPath = logPath.toAbsolutePath().getParent();
         this.append = append;
-        this.maxRollover = maxRollover;
+        this.maxFiles = maxFiles;
         this.maxFileSize = maxFileSize;
         final String baseFile = logPath.getFileName().toString();
         final int lastDotIndex = baseFile.lastIndexOf(".");
@@ -80,7 +80,7 @@ public class RolloverFileOutputStream extends OutputStream {
         }
 
         this.index = 0;
-        this.indexLength = String.valueOf(maxRollover).length();
+        this.indexLength = String.valueOf(maxFiles).length();
         try {
             this.outputStream = new FileOutputStream(logPath.toString(), this.append);
         } catch (FileNotFoundException e) {
@@ -162,19 +162,19 @@ public class RolloverFileOutputStream extends OutputStream {
      * Rolls the file
      */
     private void roll() {
-        final long maxIndex = maxRollover - 1;
+        final long maxIndex = maxFiles - 1;
         int currentIndex = index;
         Path newPath = getPathFor(currentIndex);
 
         // Start by searching a new index if current index is in use
         while (Files.exists(newPath) && currentIndex <= maxIndex) {
             currentIndex++;
-            newPath = getPathFor(currentIndex % maxRollover);
+            newPath = getPathFor(currentIndex % maxFiles);
         }
 
         if (currentIndex > maxIndex) {
             currentIndex = index;
-            newPath = getPathFor(currentIndex % maxRollover);
+            newPath = getPathFor(currentIndex % maxFiles);
         }
 
         final File file = logFilePath().toFile();

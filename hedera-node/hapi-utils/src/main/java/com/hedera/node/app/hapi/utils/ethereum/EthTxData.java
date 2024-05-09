@@ -25,6 +25,7 @@ import com.google.common.base.MoreObjects;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -59,6 +60,12 @@ public record EthTxData(
     // EIP155 note support for v = 27|28 cases in unprotected transaction cases
     static final BigInteger LEGACY_V_BYTE_SIGNATURE_0 = BigInteger.valueOf(27);
     static final BigInteger LEGACY_V_BYTE_SIGNATURE_1 = BigInteger.valueOf(28);
+
+    // The specific transaction bytes that are used to deploy the Deterministic Deployer contract
+    // see -  https://github.com/Arachnid/deterministic-deployment-proxy?tab=readme-ov-file#deployment-transaction
+    public static final byte[] DETERMINISTIC_DEPLOYER_TRANSACTION = HexFormat.of()
+            .parseHex(
+                    "f8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222");
 
     public static EthTxData populateEthTxData(byte[] data) {
         try {
@@ -192,9 +199,14 @@ public record EthTxData(
         return value.divide(WEIBARS_TO_TINYBARS).longValueExact();
     }
 
-    public BigInteger getMaxGasAsBigInteger() {
+    public BigInteger getMaxGasAsBigInteger(final long tinybarGasPrice) {
+        long multiple = 1L;
+        if (type == EthTransactionType.LEGACY_ETHEREUM && Arrays.equals(rawTx, DETERMINISTIC_DEPLOYER_TRANSACTION)) {
+            multiple = tinybarGasPrice;
+        }
         return switch (type) {
-            case LEGACY_ETHEREUM, EIP2930 -> new BigInteger(1, gasPrice);
+            case LEGACY_ETHEREUM -> new BigInteger(1, gasPrice).multiply(BigInteger.valueOf(multiple));
+            case EIP2930 -> new BigInteger(1, gasPrice);
             case EIP1559 -> new BigInteger(1, maxGas);
         };
     }
@@ -206,11 +218,12 @@ public record EthTxData(
      * <p>Clearly the latter value would always be un-payable, since the transaction would cost more
      * than the entire hbar supply. We just do this to avoid integral overflow.
      *
+     * @param tinybarGasPrice the current gas price in tinybars
      * @return the effective offered gas price
      */
-    public long effectiveOfferedGasPriceInTinybars() {
+    public long effectiveOfferedGasPriceInTinybars(final long tinybarGasPrice) {
         return BigInteger.valueOf(Long.MAX_VALUE)
-                .min(getMaxGasAsBigInteger().divide(WEIBARS_TO_TINYBARS))
+                .min(getMaxGasAsBigInteger(tinybarGasPrice).divide(WEIBARS_TO_TINYBARS))
                 .longValueExact();
     }
 

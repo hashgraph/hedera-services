@@ -24,8 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
 
 class EntityNumVirtualKeySerializerTest {
@@ -36,8 +34,6 @@ class EntityNumVirtualKeySerializerTest {
 
     @Test
     void gettersWork() {
-        final ByteBuffer bin = ByteBuffer.allocate(subject.getSerializedSize());
-
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.getSerializedSize());
         assertEquals(EntityNumVirtualKeySerializer.DATA_VERSION, subject.getCurrentDataVersion());
         assertEquals(EntityNumVirtualKeySerializer.CLASS_ID, subject.getClassId());
@@ -55,13 +51,13 @@ class EntityNumVirtualKeySerializerTest {
     }
 
     @Test
-    void deserializeUsingByteBufferWorks() throws IOException {
-        final ByteBuffer bin = ByteBuffer.allocate(subject.getSerializedSize());
-        bin.putLong(longKey);
-        bin.rewind();
+    void deserializeUsingByteBufferWorks() {
+        final BufferedData bin = BufferedData.allocate(subject.getSerializedSize());
+        bin.writeLong(longKey);
+        bin.reset();
 
         final var expectedKey = new EntityNumVirtualKey(longKey);
-        assertEquals(expectedKey, subject.deserialize(bin, 1));
+        assertEquals(expectedKey, subject.deserialize(bin));
     }
 
     @Test
@@ -80,23 +76,8 @@ class EntityNumVirtualKeySerializerTest {
         assertEquals(verify, out);
     }
 
-    void serializeUsingByteBufferWorks() throws IOException {
-        final ByteBuffer out = ByteBuffer.allocate(subject.getSerializedSize());
-        final ByteBuffer verify = ByteBuffer.allocate(subject.getSerializedSize());
-        verify.putLong(longKey);
-        verify.rewind();
-
-        final var virtualKey = new EntityNumVirtualKey(longKey);
-
-        subject.serialize(virtualKey, out);
-        assertEquals(BYTES_IN_SERIALIZED_FORM, out.position());
-        out.rewind();
-
-        assertEquals(verify, out);
-    }
-
     @Test
-    void equalsUsingBufferedDataWorks() throws IOException {
+    void equalsUsingBufferedDataWorks() {
         final var someKey = new EntityNumVirtualKey(longKey);
         final var diffNum = new EntityNumVirtualKey(otherLongKey);
 
@@ -107,20 +88,6 @@ class EntityNumVirtualKeySerializerTest {
         assertTrue(subject.equals(buf, someKey));
         buf.resetPosition();
         assertFalse(subject.equals(buf, diffNum));
-    }
-
-    @Test
-    void equalsUsingByteBufferWorks() throws IOException {
-        final var someKey = new EntityNumVirtualKey(longKey);
-        final var diffNum = new EntityNumVirtualKey(otherLongKey);
-
-        final ByteBuffer bin = ByteBuffer.allocate(subject.getSerializedSize());
-        bin.putLong(someKey.getKeyAsLong());
-        bin.rewind();
-
-        assertTrue(subject.equals(bin, 1, someKey));
-        bin.rewind();
-        assertFalse(subject.equals(bin, 1, diffNum));
     }
 
     @Test

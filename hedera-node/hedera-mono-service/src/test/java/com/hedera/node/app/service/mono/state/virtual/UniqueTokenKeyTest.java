@@ -19,12 +19,12 @@ package com.hedera.node.app.service.mono.state.virtual;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.node.app.service.mono.store.models.NftId;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -46,31 +46,35 @@ class UniqueTokenKeyTest {
         final UniqueTokenKey key3 = new UniqueTokenKey(0xFFFF, 0); // 3 bytes
         final UniqueTokenKey key4 = new UniqueTokenKey(0xFFFF_FFFF_FFFF_FFFFL, 0xFFFF_FFFF_FFFF_FFFFL); // 17 bytes
 
-        final ByteBuffer buffer1 = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
-        final ByteBuffer buffer2 = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
-        final ByteBuffer buffer3 = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
-        final ByteBuffer buffer4 = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
+        final BufferedData buffer1 = BufferedData.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
+        final BufferedData buffer2 = BufferedData.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
+        final BufferedData buffer3 = BufferedData.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
+        final BufferedData buffer4 = BufferedData.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
 
-        key1.serialize(buffer1);
-        key2.serialize(buffer2);
-        key3.serialize(buffer3);
-        key4.serialize(buffer4);
+        final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
+
+        serializer.serialize(key1, buffer1);
+        serializer.serialize(key2, buffer2);
+        serializer.serialize(key3, buffer3);
+        serializer.serialize(key4, buffer4);
 
         assertThat(buffer1.position()).isLessThan(buffer2.position());
         assertThat(buffer2.position()).isLessThan(buffer3.position());
         assertThat(buffer3.position()).isLessThan(buffer4.position());
     }
 
-    private static ByteBuffer serializeToByteBuffer(final long num, final long serial) throws IOException {
-        final ByteBuffer buffer = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
-        new UniqueTokenKey(num, serial).serialize(buffer);
-        return buffer.rewind();
+    private static BufferedData serializeToByteBuffer(final long num, final long serial) throws IOException {
+        final BufferedData buffer = BufferedData.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
+        final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
+        serializer.serialize(new UniqueTokenKey(num, serial), buffer);
+        buffer.reset();
+        return buffer;
     }
 
     private static UniqueTokenKey checkSerializeAndDeserializeByteBuffer(final long num, final long serial)
             throws IOException {
-        final UniqueTokenKey key = new UniqueTokenKey();
-        key.deserialize(serializeToByteBuffer(num, serial));
+        final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
+        final UniqueTokenKey key = serializer.deserialize(serializeToByteBuffer(num, serial));
         assertThat(key.getNum()).isEqualTo(num);
         assertThat(key.getTokenSerial()).isEqualTo(serial);
         return key;
@@ -173,10 +177,6 @@ class UniqueTokenKeyTest {
         // Check equality works
         assertThat(key1).isEqualTo(key1); // same instance
         assertThat(key3).isEqualTo(key4); // differing instances
-    }
-
-    private static ByteBuffer asByteBuffer(final int value) {
-        return ByteBuffer.wrap(new byte[] {(byte) value});
     }
 
     @Test

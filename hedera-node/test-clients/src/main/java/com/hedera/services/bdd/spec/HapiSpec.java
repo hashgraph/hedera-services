@@ -35,16 +35,18 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
-import static com.hedera.services.bdd.spec.utilops.UtilStateChange.initializeEthereumAccountForSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.createEthereumAccountForSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.isEthereumAccountCreatedForSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
 import static com.hedera.services.bdd.spec.utilops.streams.RecordAssertions.triggerAndCloseAtLeastOneFileIfNotInterrupted;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SUFFIX;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -358,16 +360,20 @@ public class HapiSpec implements Runnable {
             return;
         }
 
-        List<HapiSpecOperation> ops;
+        List<HapiSpecOperation> ops = new ArrayList<>();
 
         if (!suitePrefix.endsWith(ETH_SUFFIX)) {
-            ops = Stream.of(given, when, then).flatMap(Arrays::stream).toList();
+            ops.addAll(Stream.of(given, when, then).flatMap(Arrays::stream).toList());
         } else {
             if (!isEthereumAccountCreatedForSpec(this)) {
-                initializeEthereumAccountForSpec(this);
+                ops.addAll(createEthereumAccountForSpec(this));
             }
-            ops = UtilVerbs.convertHapiCallsToEthereumCalls(
-                    Stream.of(given, when, then).flatMap(Arrays::stream).toList());
+            final var adminKey = this.registry().getKey(DEFAULT_CONTRACT_SENDER);
+            ops.addAll(UtilVerbs.convertHapiCallsToEthereumCalls(
+                    Stream.of(given, when, then).flatMap(Arrays::stream).toList(),
+                    SECP_256K1_SOURCE_KEY,
+                    adminKey,
+                    hapiSetup.defaultCreateGas()));
         }
 
         try {

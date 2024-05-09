@@ -18,7 +18,7 @@ package com.swirlds.platform.gui.hashgraph.internal;
 
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiConstants;
 import com.swirlds.platform.gui.hashgraph.HashgraphPictureOptions;
-import com.swirlds.platform.system.events.PlatformEvent;
+import com.swirlds.platform.internal.EventImpl;
 import java.awt.Color;
 
 /**
@@ -70,7 +70,7 @@ public final class HashgraphGuiUtils {
      * 		the event to color
      * @return its color
      */
-    public static Color eventColor(final PlatformEvent event, final HashgraphPictureOptions options) {
+    public static Color eventColor(final EventImpl event, final HashgraphPictureOptions options) {
         if (options.simpleColors()) { // if checkbox checked
             return event.isConsensus() ? HashgraphGuiConstants.LIGHT_BLUE : HashgraphGuiConstants.LIGHT_GREEN;
         }

@@ -18,12 +18,17 @@ package com.hedera.services.bdd.suites.file;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -50,6 +55,31 @@ public class FileAppendSuite extends HapiSuite {
     @Override
     public boolean canRunConcurrent() {
         return true;
+    }
+
+    @HapiTest
+    public HapiSpec appendIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(fileCreate("file").contents("ABC"))
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> fileAppend("file")
+                        .content("DEF")));
+    }
+
+    @HapiTest
+    public HapiSpec getContentsIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("getContentsIdVariantsTreatedAsExpected")
+                .given(fileCreate("file").contents("ABC"))
+                .when()
+                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getFileContents("file")));
+    }
+
+    @HapiTest
+    public HapiSpec getInfoIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("getInfoIdVariantsTreatedAsExpected")
+                .given(fileCreate("file").contents("ABC"))
+                .when()
+                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getFileInfo("file")));
     }
 
     @HapiTest

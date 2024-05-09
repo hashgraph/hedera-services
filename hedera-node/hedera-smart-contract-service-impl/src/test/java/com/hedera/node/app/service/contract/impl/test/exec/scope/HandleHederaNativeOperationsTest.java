@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeO
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.HAPI_RECORD_BUILDER_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_FUNGIBLE_RELATION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_SECP256K1_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CANONICAL_ALIAS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CIVILIAN_OWNED_NFT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
@@ -121,7 +122,7 @@ class HandleHederaNativeOperationsTest {
 
     @BeforeEach
     void setUp() {
-        subject = new HandleHederaNativeOperations(context);
+        subject = new HandleHederaNativeOperations(context, A_SECP256K1_KEY);
         deletedAccount = AccountID.newBuilder().accountNum(1L).build();
         beneficiaryAccount = AccountID.newBuilder().accountNum(2L).build();
     }
@@ -251,7 +252,7 @@ class HandleHederaNativeOperationsTest {
                 .accountNum(NON_SYSTEM_CONTRACT_ID.contractNumOrThrow())
                 .build();
         given(accountStore.getAccountById(contractAccountId)).willReturn(PARANOID_SOMEBODY);
-        given(verificationStrategy.asSignatureTestIn(context)).willReturn(signatureTest);
+        given(verificationStrategy.asSignatureTestIn(context, A_SECP256K1_KEY)).willReturn(signatureTest);
         given(signatureTest.test(PARANOID_SOMEBODY.keyOrThrow())).willReturn(true);
 
         final var result = subject.transferWithReceiverSigCheck(
@@ -272,7 +273,7 @@ class HandleHederaNativeOperationsTest {
                 .accountNum(NON_SYSTEM_CONTRACT_ID.contractNumOrThrow())
                 .build();
         given(accountStore.getAccountById(contractAccountId)).willReturn(PARANOID_SOMEBODY);
-        given(verificationStrategy.asSignatureTestIn(context)).willReturn(signatureTest);
+        given(verificationStrategy.asSignatureTestIn(context, A_SECP256K1_KEY)).willReturn(signatureTest);
         given(signatureTest.test(PARANOID_SOMEBODY.keyOrThrow())).willReturn(false);
 
         final var result = subject.transferWithReceiverSigCheck(

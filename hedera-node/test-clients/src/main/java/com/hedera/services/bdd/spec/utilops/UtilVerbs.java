@@ -82,11 +82,14 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
+import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
+import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
+import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumContractCreate;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileAppend;
@@ -121,6 +124,10 @@ import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForBehindOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForFreezeOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForReconnectOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForShutdownOp;
+import com.hedera.services.bdd.spec.utilops.mod.QueryModification;
+import com.hedera.services.bdd.spec.utilops.mod.QueryModificationsOp;
+import com.hedera.services.bdd.spec.utilops.mod.SubmitModificationsOp;
+import com.hedera.services.bdd.spec.utilops.mod.TxnModification;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecSleep;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil;
 import com.hedera.services.bdd.spec.utilops.pauses.NodeLivenessTimeout;
@@ -153,6 +160,8 @@ import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -262,6 +271,56 @@ public class UtilVerbs {
     public static EnvFilterOp ifNotCi(@NonNull final HapiSpecOperation... ops) {
         requireNonNull(ops);
         return new EnvFilterOp(EnvFilterOp.EnvType.NOT_CI, ops);
+    }
+
+    /**
+     * Returns an operation that repeatedly submits a transaction from the given
+     * supplier, but each time after modifying its body with one of the
+     * {@link TxnModification}'s computed by the given function.
+     *
+     * <p>This function will be called with the <b>unmodified</b> transaction,
+     * so that the modifications are all made relative to the same initial
+     * transaction.
+     *
+     * @param modificationsFn the function that computes modifications to apply
+     * @param txnOpSupplier the supplier of the transaction to submit
+     * @return the operation that submits the modified transactions
+     */
+    public static SubmitModificationsOp submitModified(
+            @NonNull final Function<Transaction, List<TxnModification>> modificationsFn,
+            @NonNull final Supplier<HapiTxnOp<?>> txnOpSupplier) {
+        return new SubmitModificationsOp(txnOpSupplier, modificationsFn);
+    }
+
+    public static SubmitModificationsOp submitModifiedWithFixedPayer(
+            @NonNull final Function<Transaction, List<TxnModification>> modificationsFn,
+            @NonNull final Supplier<HapiTxnOp<?>> txnOpSupplier) {
+        return new SubmitModificationsOp(false, txnOpSupplier, modificationsFn);
+    }
+
+    /**
+     * Returns an operation that repeatedly sends a query from the given
+     * supplier, but each time after modifying the query with one of the
+     * {@link QueryModification}'s computed by the given function.
+     *
+     * <p>This function will be called with the <b>unmodified</b> query,
+     * so that the modifications are all made relative to the same initial
+     * query.
+     *
+     * @param modificationsFn the function that computes modifications to apply
+     * @param queryOpSupplier the supplier of the query to send
+     * @return the operation that sends the modified queries
+     */
+    public static QueryModificationsOp sendModified(
+            @NonNull final Function<Query, List<QueryModification>> modificationsFn,
+            @NonNull final Supplier<HapiQueryOp<?>> queryOpSupplier) {
+        return new QueryModificationsOp(queryOpSupplier, modificationsFn);
+    }
+
+    public static QueryModificationsOp sendModifiedWithFixedPayer(
+            @NonNull final Function<Query, List<QueryModification>> modificationsFn,
+            @NonNull final Supplier<HapiQueryOp<?>> queryOpSupplier) {
+        return new QueryModificationsOp(false, queryOpSupplier, modificationsFn);
     }
 
     public static SourcedOp sourcing(Supplier<HapiSpecOperation> source) {
@@ -1622,11 +1681,14 @@ public class UtilVerbs {
                 isApproval);
     }
 
-    public static List<HapiSpecOperation> convertHapiCallsToEthereumCalls(final List<HapiSpecOperation> ops) {
+    public static List<HapiSpecOperation> convertHapiCallsToEthereumCalls(
+            final List<HapiSpecOperation> ops, final String privateKeyRef, final Key adminKey, final long defaultGas) {
         final var convertedOps = new ArrayList<HapiSpecOperation>(ops.size());
         for (final var op : ops) {
             if (op instanceof HapiContractCall callOp && callOp.isConvertableToEthCall()) {
                 convertedOps.add(new HapiEthereumCall(callOp));
+            } else if (op instanceof HapiContractCreate callOp && callOp.isConvertableToEthCreate()) {
+                convertedOps.add(new HapiEthereumContractCreate(callOp, privateKeyRef, adminKey, defaultGas));
             } else {
                 convertedOps.add(op);
             }

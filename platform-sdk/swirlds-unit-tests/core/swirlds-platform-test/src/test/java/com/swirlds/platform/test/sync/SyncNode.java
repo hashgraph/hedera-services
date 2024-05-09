@@ -144,6 +144,7 @@ public class SyncNode {
                 .build();
 
         shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class), new NoOpIntakeEventCounter());
+        shadowGraph.updateEventWindow(EventWindow.getGenesisEventWindow(ancientMode));
         this.executor = executor;
     }
 

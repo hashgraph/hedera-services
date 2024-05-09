@@ -21,14 +21,12 @@ import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LE
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.merkledb.serialize.DataItemHeader;
-import com.swirlds.merkledb.serialize.DataItemSerializer;
+import com.swirlds.merkledb.serialize.BaseSerializer;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,11 +44,11 @@ class DataFileReaderCloseTest {
 
     private static DataFileCollection<long[]> collection;
 
-    private static final DataItemSerializer<long[]> serializer = new TwoLongSerializer();
+    private static final BaseSerializer<long[]> serializer = new TwoLongSerializer();
 
     @BeforeAll
     static void setup() throws IOException {
-        final Path dir = TemporaryFileBuilder.buildTemporaryFile("readerIsOpenTest");
+        final Path dir = LegacyTemporaryFileBuilder.buildTemporaryFile("readerIsOpenTest");
         final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
         collection = new DataFileCollection<>(dbConfig, dir, "store", serializer, null);
     }
@@ -109,19 +107,18 @@ class DataFileReaderCloseTest {
 
     @Test
     void readWhileFinishWritingTest() throws IOException {
-        final Path tmpDir = TemporaryFileBuilder.buildTemporaryDirectory("readWhileFinishWritingTest");
+        final Path tmpDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("readWhileFinishWritingTest");
         final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
         for (int i = 0; i < 100; i++) {
             Path filePath = null;
             try {
-                final DataFileWriterPbj<long[]> writer =
-                        new DataFileWriterPbj<>("test", tmpDir, i, serializer, Instant.now(), INITIAL_COMPACTION_LEVEL);
+                final DataFileWriter<long[]> writer =
+                        new DataFileWriter<>("test", tmpDir, i, serializer, Instant.now(), INITIAL_COMPACTION_LEVEL);
                 filePath = writer.getPath();
                 final DataFileMetadata metadata = writer.getMetadata();
                 final LongList index = new LongListOffHeap();
                 index.put(0, writer.storeDataItem(new long[] {i, i * 2 + 1}));
-                final DataFileReaderPbj<long[]> reader =
-                        new DataFileReaderPbj<>(dbConfig, filePath, serializer, metadata);
+                final DataFileReader<long[]> reader = new DataFileReader<>(dbConfig, filePath, serializer, metadata);
                 final int fi = i;
                 // Check the item in parallel to finish writing
                 IntStream.of(0, 1).parallel().forEach(t -> {
@@ -145,7 +142,8 @@ class DataFileReaderCloseTest {
         }
     }
 
-    private static class TwoLongSerializer implements DataItemSerializer<long[]> {
+    private static class TwoLongSerializer implements BaseSerializer<long[]> {
+
         @Override
         public long getCurrentDataVersion() {
             return 0;
@@ -157,16 +155,6 @@ class DataFileReaderCloseTest {
         }
 
         @Override
-        public int getHeaderSize() {
-            return Long.BYTES;
-        }
-
-        @Override
-        public DataItemHeader deserializeHeader(ByteBuffer buffer) {
-            return new DataItemHeader(getSerializedSize(), buffer.getLong());
-        }
-
-        @Override
         public void serialize(long[] data, WritableSequentialData out) {
             assert data.length == 2;
             out.writeLong(data[0]);
@@ -174,20 +162,8 @@ class DataFileReaderCloseTest {
         }
 
         @Override
-        public void serialize(long[] data, ByteBuffer buffer) throws IOException {
-            assert data.length == 2;
-            buffer.putLong(data[0]);
-            buffer.putLong(data[1]);
-        }
-
-        @Override
         public long[] deserialize(ReadableSequentialData in) {
             return new long[] {in.readLong(), in.readLong()};
-        }
-
-        @Override
-        public long[] deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
-            return new long[] {buffer.getLong(), buffer.getLong()};
         }
     }
 }

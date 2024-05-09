@@ -55,8 +55,8 @@ import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOp
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallAddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.SyntheticIds;
@@ -112,7 +112,7 @@ public abstract class AbstractContractXTest extends AbstractXTest {
     private ProxyWorldUpdater proxyUpdater;
 
     @Mock
-    private HtsCallAddressChecks addressChecks;
+    private CallAddressChecks addressChecks;
 
     private HtsCallFactory callAttemptFactory;
 
@@ -252,7 +252,7 @@ public abstract class AbstractContractXTest extends AbstractXTest {
             final boolean requiresDelegatePermission,
             @NonNull final org.hyperledger.besu.datatypes.Address sender,
             @NonNull final org.apache.tuweni.bytes.Bytes input,
-            @NonNull final Consumer<HtsCall.PricedResult> resultAssertions) {
+            @NonNull final Consumer<Call.PricedResult> resultAssertions) {
         final var context = component.txnContextFactory().apply(PLACEHOLDER_CALL_BODY);
         final var tinybarValues = TinybarValues.forTransactionWith(
                 context.exchangeRateInfo().activeRate(Instant.now()),
@@ -273,8 +273,8 @@ public abstract class AbstractContractXTest extends AbstractXTest {
                         component.config().getConfigData(HederaConfig.class),
                         HederaFunctionality.CONTRACT_CALL,
                         new PendingCreationMetadataRef()),
-                new HandleHederaNativeOperations(context),
-                new HandleSystemContractOperations(context));
+                new HandleHederaNativeOperations(context, null),
+                new HandleSystemContractOperations(context, null));
         given(proxyUpdater.enhancement()).willReturn(enhancement);
         given(frame.getWorldUpdater()).willReturn(proxyUpdater);
         given(frame.getSenderAddress()).willReturn(sender);
@@ -342,7 +342,7 @@ public abstract class AbstractContractXTest extends AbstractXTest {
         };
     }
 
-    private Consumer<HtsCall.PricedResult> resultOnlyAssertion(
+    private Consumer<Call.PricedResult> resultOnlyAssertion(
             @NonNull final Consumer<PrecompiledContract.PrecompileContractResult> resultAssertion) {
         return pricedResult -> {
             final var fullResult = pricedResult.fullResult();
