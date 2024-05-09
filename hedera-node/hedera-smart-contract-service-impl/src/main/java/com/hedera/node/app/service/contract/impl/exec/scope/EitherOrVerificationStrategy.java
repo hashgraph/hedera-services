@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import static com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy.Decision.INVALID;
+import static com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy.Decision.VALID;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.Key;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -35,11 +39,30 @@ public class EitherOrVerificationStrategy implements VerificationStrategy {
         this.secondStrategy = secondStrategy;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Returns {@link VerificationStrategy.Decision#INVALID} if both strategies agree the
+     * key's signature is invalid; {@link VerificationStrategy.Decision#VALID} if either strategy
+     * says the key is valid; and {@link VerificationStrategy.Decision#DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION}
+     * otherwise. (I.e., if one strategy says the key's signature is invalid but the other allows
+     * us to delegate.)
+     *
+     * @param key the key whose signature is to be verified
+     * @return the decision of the strategy
+     */
     @Override
     public Decision decideForPrimitive(@NonNull final Key key) {
-        return firstStrategy.decideForPrimitive(key) == Decision.VALID
-                        || secondStrategy.decideForPrimitive(key) == Decision.VALID
-                ? Decision.VALID
-                : Decision.INVALID;
+        requireNonNull(key);
+        final var firstDecision = firstStrategy.decideForPrimitive(key);
+        if (firstDecision == VALID) {
+            return VALID;
+        } else {
+            final var secondDecision = secondStrategy.decideForPrimitive(key);
+            if (secondDecision == VALID) {
+                return VALID;
+            }
+            return secondDecision == INVALID ? firstDecision : secondDecision;
+        }
     }
 }
