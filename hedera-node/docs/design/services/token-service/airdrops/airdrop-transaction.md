@@ -13,6 +13,7 @@ requested by the community.
 
 The main operation, which would allow airdrops to be sent is the `TokenAirdropTransaction`.
 Using it, an airdrop sender would be able to send airdrop tokens to a specific receiver, no matter if the receiver is associated with the token or not.
+In addition to token owners, spender accounts who have a token allowance, could also send airdrops from their behalf.
 
 ## Prerequisite reading
 * [HIP-904](https://hips.hedera.com/hip/hip-904)
@@ -134,13 +135,13 @@ The airdrop transaction will include several types of fees, a different set of t
 - Auto-renewal fees covering a pre-paid period for a full auto-renewal cycle
 - Fee covering auto-creation/lazy-creation of accounts, if we airdrop to an alias address of non-existing account
 
-Note that for all these fees, a given sender, which is the actual token owner, could be covered by a different payer, which is willing to pay. However, in case the receiver has not claimed an airdrop for a more than a full auto-renew cycle, the sender (token owner) would be required to continue paying future rents.
+Note that for all these fees, a given sender, which is the actual token owner or a spender with allowance, could be covered by a different payer, which is willing to pay. However, in case the receiver has not claimed an airdrop for a more than a full auto-renew cycle, the sender (token owner) would be required to continue paying future rents.
 
 An update into the `feeSchedule` file would be needed to specify the addition of the new fee values for the airdrop transaction type itself.
 
 ### Keys
 
-Since a given sender/token owner could be the payer of the airdrop transaction or they can rely on a separate payer account we have a couple of use cases related to the key verification logic.
+Since a given sender could be the payer of the airdrop transaction or they can rely on a separate payer account, we have a couple of use cases related to the key verification logic.
 
 If the sender of the airdrop is also the payer of this transaction, we would need only their key to be present in the transaction context.
 
@@ -153,10 +154,12 @@ If the airdrop transaction fees from the list above are covered by a separate pa
     - Verify that the pending airdrops list contains between 1 and 10 entries, inclusive
     - Pre-handle:
         - The transaction must be signed by the sender for each entry in the `token_transfers` list
+        - In the case where an account is a spender and has allowances for a given token, they could airdrop the token based on their allowance balance. In this case, the signature of the spender must be present and the airdrop amount would be debited from the spender's allowance.
         - In the case where the airdrop fees are covered by a separate payer, the transaction must include also the payer’s signature
     - Handle:
         - Any additional validation depending on config or state i.e. semantics checks
         - Check that the airdrop sender account is a valid account. That is an existing account, which is not deleted or expired.
+        - In the case where an account is a spender and has allowances for a given token, check that the spender has enough allowance balance to cover the airdrop amount
         - Check that the token being airdropped, does not contain a custom fee, which needs to be covered by the recipient. This includes `fractionalFees` with `net_of_transfers=false` and `royaltyFees`, including `fallbackRoyaltyFees`.
         - Such transactions should be reverted and rejected.
         - The business logic for sending pending airdrops
@@ -200,6 +203,9 @@ If the airdrop transaction fees from the list above are covered by a separate pa
 * Verify that an airdrop with an NFT and non-existing serial number fails
 * Verify that an airdrop with wrong input data (e.g. negative amount, negative serial number or missing mandatory field) fails
 * Verify that an airdrop with a missing signature of the sender fails
+* Verify that an airdrop from a sender with missing token association fails
+* Verify that an airdrop from a token owner with not enough balance fails
+* Verify that an airdrop from a token spender with not enough allowance fails
 * Verify that an airdrop, which fee expenses are covered by a separate payer account, but has missing payer signature fails
 * Verify that an airdrop with more than 10 entries in the `token_transfers` list fails
 * Verify that an airdrop with a duplicate entry for the same NFT in the `token_transfers` list fails with `PENDING_NFT_AIRDROP_ALREADY_EXISTS`
