@@ -781,7 +781,8 @@ public final class MiscUtils {
     }
 
     private static long getGasLimitFromEthTxData(final TransactionBody txn) {
-        final var ethTxData = EthTxData.populateEthTxData(txn.getEthereumTransaction().getEthereumData().toByteArray());
+        final var ethTxData = EthTxData.populateEthTxData(
+                txn.getEthereumTransaction().getEthereumData().toByteArray());
         return ethTxData != null ? ethTxData.gasLimit() : 0L;
     }
 

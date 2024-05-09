@@ -834,7 +834,8 @@ public class HandleWorkflow {
     private static long getGasLimitFromEthTxData(final TransactionBody txn) {
         final var ethTxBody = txn.ethereumTransaction();
         if (ethTxBody == null) return 0L;
-        final var ethTxData = EthTxData.populateEthTxData(ethTxBody.ethereumData().toByteArray());
+        final var ethTxData =
+                EthTxData.populateEthTxData(ethTxBody.ethereumData().toByteArray());
         return ethTxData != null ? ethTxData.gasLimit() : 0L;
     }
 

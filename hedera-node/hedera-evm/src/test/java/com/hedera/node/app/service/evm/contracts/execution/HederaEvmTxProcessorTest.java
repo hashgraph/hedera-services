@@ -36,7 +36,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -136,7 +135,8 @@ class HederaEvmTxProcessorTest {
                     mcpVersion = EVM_VERSION_0_34;
                     return new MessageCallProcessor(evm30, new PrecompileContractRegistry());
                 },
-                EVM_VERSION_0_50, () -> {
+                EVM_VERSION_0_50,
+                () -> {
                     mcpVersion = EVM_VERSION_0_50;
                     return msgCallProcessor050 = new MessageCallProcessor(evm50, new PrecompileContractRegistry());
                 });
@@ -186,7 +186,11 @@ class HederaEvmTxProcessorTest {
 
         final var spyOpTracer = new DefaultHederaTracer() {
             public MessageFrame frame;
-            @Override public void init(final MessageFrame initialFrame) {frame = initialFrame;}
+
+            @Override
+            public void init(final MessageFrame initialFrame) {
+                frame = initialFrame;
+            }
         };
         evmTxProcessor.setOperationTracer(spyOpTracer);
         evmTxProcessor.setupFields(Bytes.EMPTY, false);
