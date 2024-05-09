@@ -54,6 +54,11 @@ public class BaseCryptoHandler {
         }
     }
 
+    /**
+     * Gets the accountId from the account number provided.
+     * @param num the account number
+     * @return the accountID
+     */
     @NonNull
     public static AccountID asAccount(final long num) {
         return AccountID.newBuilder().accountNum(num).build();
@@ -61,16 +66,15 @@ public class BaseCryptoHandler {
 
     /**
      * Checks that an accountId represents one of the staking accounts
+     * @param configuration the configuration
      * @param accountID    the accountID to check
+     * @return {@code true} if the accountID represents one of the staking accounts, {@code false} otherwise
      */
     public static boolean isStakingAccount(
             @NonNull final Configuration configuration, @Nullable final AccountID accountID) {
         final var accountNum = accountID != null ? accountID.accountNum() : 0;
         final var accountsConfig = configuration.getConfigData(AccountsConfig.class);
-        if (accountNum == accountsConfig.stakingRewardAccount() || accountNum == accountsConfig.nodeRewardAccount()) {
-            return true;
-        }
-        return false;
+        return accountNum == accountsConfig.stakingRewardAccount() || accountNum == accountsConfig.nodeRewardAccount();
     }
 
     /**

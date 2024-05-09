@@ -65,7 +65,40 @@ public class TokenHandlers {
     private final TokenUpdateNftsHandler tokenUpdateNftsHandler;
 
     /**
-     * Constructor for the TokenHandlers class
+     * Constructor for the TokenHandlers.
+     * @param cryptoCreateHandler crypto create handler
+     * @param cryptoUpdateHandler crypto update handler
+     * @param cryptoTransferHandler crypto transfer handler
+     * @param cryptoDeleteHandler crypto delete handler
+     * @param cryptoApproveAllowanceHandler crypto approve allowance handler
+     * @param cryptoDeleteAllowanceHandler crypto delete allowance handler
+     * @param cryptoAddLiveHashHandler crypto add live hash handler
+     * @param cryptoDeleteLiveHashHandler crypto delete live hash handler
+     * @param tokenCreateHandler token create handler
+     * @param tokenUpdateHandler token update handler
+     * @param tokenMintHandler token mint handler
+     * @param tokenBurnHandler token burn handler
+     * @param tokenDeleteHandler token delete handler
+     * @param tokenAccountWipeHandler token account wipe handler
+     * @param tokenFreezeAccountHandler token freeze account handler
+     * @param tokenUnfreezeAccountHandler token unfreeze account handler
+     * @param tokenGrantKycToAccountHandler token grant kyc to account handler
+     * @param tokenRevokeKycFromAccountHandler token revoke kyc from account handler
+     * @param tokenAssociateToAccountHandler token associate to account handler
+     * @param tokenDissociateFromAccountHandler token dissociate from account handler
+     * @param tokenFeeScheduleUpdateHandler token fee schedule update handler
+     * @param tokenPauseHandler token pause handler
+     * @param tokenUnpauseHandler token unpause handler
+     * @param cryptoGetAccountBalanceHandler crypto get account balance handler
+     * @param cryptoGetAccountInfoHandler crypto get account info handler
+     * @param cryptoGetAccountRecordsHandler crypto get account records handler
+     * @param cryptoGetLiveHashHandler crypto get live hash handler
+     * @param cryptoGetStakersHandler crypto get stakers handler
+     * @param tokenGetInfoHandler token get info handler
+     * @param tokenGetAccountNftInfosHandler token get account nft infos handler
+     * @param tokenGetNftInfoHandler token get nft info handler
+     * @param tokenGetNftInfosHandler token get nft infos handler
+     * @param tokenUpdateNftsHandler token update nfts handler
      */
     @Inject
     public TokenHandlers(

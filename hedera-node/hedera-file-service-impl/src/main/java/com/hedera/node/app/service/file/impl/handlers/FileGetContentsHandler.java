@@ -50,6 +50,10 @@ import javax.inject.Singleton;
 public class FileGetContentsHandler extends FileQueryBase {
     private final FileFeeBuilder usageEstimator;
 
+    /**
+     * Constructs a {@link FileGetContentsHandler} with the given {@link FileFeeBuilder}.
+     * @param usageEstimator the file fee builder to be used for fee calculation
+     */
     @Inject
     public FileGetContentsHandler(final FileFeeBuilder usageEstimator) {
         this.usageEstimator = usageEstimator;

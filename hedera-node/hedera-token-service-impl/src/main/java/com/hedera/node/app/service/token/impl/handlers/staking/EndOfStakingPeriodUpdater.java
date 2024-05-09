@@ -59,6 +59,9 @@ import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Updates the stake and reward values for all nodes at the end of a staking period.
+ */
 @Singleton
 public class EndOfStakingPeriodUpdater {
     private static final Logger log = LogManager.getLogger(EndOfStakingPeriodUpdater.class);
@@ -69,6 +72,11 @@ public class EndOfStakingPeriodUpdater {
     private final HederaAccountNumbers accountNumbers;
     private final StakingRewardsHelper stakeRewardsHelper;
 
+    /**
+     * Constructs an {@link EndOfStakingPeriodUpdater} instance.
+     * @param accountNumbers the account numbers
+     * @param stakeRewardsHelper the staking rewards helper
+     */
     @Inject
     public EndOfStakingPeriodUpdater(
             @NonNull final HederaAccountNumbers accountNumbers,
@@ -262,6 +270,8 @@ public class EndOfStakingPeriodUpdater {
      * @param weight weight of the node
      * @param newMinStake min stake of the node
      * @param newMaxStake real max stake of all nodes computed by taking max(stakeOfNode1, stakeOfNode2, ...)
+     * @param totalStakeOfAllNodes total stake of all nodes at the start of new period
+     * @param sumOfConsensusWeights sum of consensus weights of all nodes
      * @return scaled weight of the node
      */
     @VisibleForTesting
@@ -314,6 +324,7 @@ public class EndOfStakingPeriodUpdater {
      *
      * @param stake the stake of current node, includes stake rewarded and non-rewarded
      * @param totalStakeOfAllNodes the total stake of all nodes at the start of new period
+     * @param sumOfConsensusWeights the sum of consensus weights of all nodes
      * @return calculated consensus weight of the node
      */
     @VisibleForTesting
@@ -335,6 +346,11 @@ public class EndOfStakingPeriodUpdater {
         return (int) Math.max(weight, 1);
     }
 
+    /**
+     * Returns the timestamp that is just before midnight of the day of the given consensus time.
+     * @param consensusTime the consensus time
+     * @return the timestamp that is just before midnight of the day of the given consensus time
+     */
     @VisibleForTesting
     public static Timestamp lastInstantOfPreviousPeriodFor(@NonNull final Instant consensusTime) {
         final var justBeforeMidNightTime = LocalDate.ofInstant(consensusTime, ZoneId.of("UTC"))
