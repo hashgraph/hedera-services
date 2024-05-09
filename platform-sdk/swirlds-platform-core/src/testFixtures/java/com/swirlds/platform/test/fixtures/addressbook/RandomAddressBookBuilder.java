@@ -100,7 +100,7 @@ public class RandomAddressBookBuilder {
     /**
      * If we are using real keys, this map will hold the private keys for each address.
      */
-    private Map<NodeId, KeysAndCerts> privateKeys = new HashMap<>();
+    private final Map<NodeId, KeysAndCerts> privateKeys = new HashMap<>();
 
     /**
      * Create a new random address book generator.
@@ -141,27 +141,7 @@ public class RandomAddressBookBuilder {
             final RandomAddressBuilder addressBuilder =
                     RandomAddressBuilder.create(random).withNodeId(nodeId).withWeight(getNextWeight());
 
-            if (realKeys) {
-                // TODO extract
-                try {
-                    final PublicStores publicStores = new PublicStores();
-                    final String name = nodeId.toString();
-                    final KeysAndCerts keysAndCerts = KeysAndCerts.generate(
-                            nodeId.toString(), new byte[] {}, new byte[] {}, new byte[] {}, publicStores);
-                    privateKeys.put(nodeId, keysAndCerts);
-
-                    final SerializableX509Certificate sigCert =
-                            new SerializableX509Certificate(publicStores.getCertificate(SIGNING, name));
-                    final SerializableX509Certificate agrCert = new SerializableX509Certificate(
-                            publicStores.getCertificate(KeyCertPurpose.AGREEMENT, name));
-
-                    addressBuilder.withSigCert(sigCert).withAgreeCert(agrCert);
-
-                } catch (final Exception e) {
-                    throw new RuntimeException();
-                }
-            }
-
+            generateKeys(nodeId, addressBuilder);
             addressBook.add(addressBuilder.build());
         }
 
@@ -296,5 +276,34 @@ public class RandomAddressBookBuilder {
         }
 
         return Math.min(maximumWeight, Math.max(minimumWeight, unboundedWeight));
+    }
+
+    /**
+     * Generate the cryptographic keys for a node.
+     */
+    private void generateKeys(@NonNull final NodeId nodeId, @NonNull final RandomAddressBuilder addressBuilder) {
+        if (realKeys) {
+            try {
+                final PublicStores publicStores = new PublicStores();
+                final String name = nodeId.toString();
+
+                final byte[] masterKey = new byte[64];
+                random.nextBytes(masterKey);
+
+                final KeysAndCerts keysAndCerts =
+                        KeysAndCerts.generate(nodeId.toString(), new byte[] {}, masterKey, new byte[] {}, publicStores);
+                privateKeys.put(nodeId, keysAndCerts);
+
+                final SerializableX509Certificate sigCert =
+                        new SerializableX509Certificate(publicStores.getCertificate(SIGNING, name));
+                final SerializableX509Certificate agrCert =
+                        new SerializableX509Certificate(publicStores.getCertificate(KeyCertPurpose.AGREEMENT, name));
+
+                addressBuilder.withSigCert(sigCert).withAgreeCert(agrCert);
+
+            } catch (final Exception e) {
+                throw new RuntimeException();
+            }
+        }
     }
 }
