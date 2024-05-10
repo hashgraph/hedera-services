@@ -18,9 +18,12 @@ package com.hedera.services.bdd.junit;
 
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
 import static com.hedera.node.app.statedumpers.accounts.AccountDumpUtils.gatherAccounts;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.Hedera;
 import com.hedera.node.app.service.mono.statedumpers.accounts.BBMHederaAccount;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
@@ -28,6 +31,7 @@ import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateCommonConfig;
+import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
@@ -40,6 +44,7 @@ import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -47,6 +52,7 @@ import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFilePath;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
+import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.virtualmap.VirtualMap;
 import java.io.IOException;
@@ -62,20 +68,16 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.identityconnectors.common.CollectionUtil;
 
 /**
- * The StateAccess class provides utility methods for accessing and processing the state of a Hedera network. It
- * includes methods for reading account information from signed state files, finding Swirlds directories, reading
- * account states from multiple nodes
+ * The StateAccess class provides utility method for accessing and processing the state of a Hedera network. It
+ * contains a method for reading accounts from signed state files.
  *
  * <p>Example usage:</p>
  * <pre>{@code
- * // Read accounts from the state of a single node
- * List<BBMHederaAccount> accounts = StateAccess.readSignedStateAccountsFromNode(nodeId);
- *
- * // Read accounts from the state of multiple nodes
- * Set<BBMHederaAccount> allAccounts = StateAccess.readAccountsFromNodesState(nodeCount);
- * }</pre>
+ * // Read accounts from the number of nodes
+ * List<BBMHederaAccount> accounts = StateAccess.readAccountsFromNodesState(int nodeCount, HapiTestEnv env);
  *
  * <p>Note: This class assumes a specific directory structure and file naming convention for the signed state
  * files.</p>
@@ -87,12 +89,77 @@ public class StateAccess {
     private static final String SIGNED_STATE_FILE_PATH = "build/hapi-test/node%d/data/saved";
 
     /**
-     * Reads BBMHederaAccount objects from the state of a single node.
+     * Reads BBMHederaAccount objects from the state of multiple nodes.
+     * If we are running tests in debug mode the nodes started will be of type InProcessHapiTestNode
+     * otherwise the type will be SubProcessHapiTestNode.
+     * For the 2 different types of nodes we have different ways of building the platform context configs
      *
-     * @param nodeId The ID of the node from which to read the state.
+     * @param nodeCount The number of nodes whose state needs to be read.
+     * @param env The hapi test environment which we will be using to build the configs that we need to read the state
+     * @return A set of BBMHederaAccount objects collected from the state of all nodes.
+     */
+    public static Set<BBMHederaAccount> readAccountsFromNodesState(int nodeCount, HapiTestEnv env) {
+        if (CollectionUtil.isEmpty(env.getNodes())) {
+            // there are no nodes present we can exit here
+            return new HashSet<>();
+        }
+
+        if (env.getNodes().get(0) instanceof InProcessHapiTestNode) {
+            PlatformContext platformContext;
+            try {
+                platformContext = buildDefaultPlatformContext();
+            } catch (IOException e) {
+                log.info("Error building platform context when reading state");
+                return new HashSet<>();
+            }
+            return readAccountsInStateFromMultipleNodes(nodeCount, platformContext);
+        } else if (env.getNodes().get(0) instanceof SubProcessHapiTestNode) {
+
+            // build platform context initially for node 0
+            // we can only build this context once, if we try for every node we will get error that the platform can only
+            // be initialized once
+            PlatformContext platformContext = null;
+            SubProcessHapiTestNode subProcessHapiTestNode = (SubProcessHapiTestNode) env.getNodes().get(0);
+            try {
+                platformContext = buildPlatformContextForSubProcessNode(0, subProcessHapiTestNode.workingDir,
+                        subProcessHapiTestNode.grpcPort);
+            } catch (IOException e) {
+                log.info("Error building platform context when reading state");
+                return new HashSet<>();
+            }
+
+            return readAccountsInStateFromMultipleNodes(nodeCount, platformContext);
+        } else {
+            // we have not covered this type of node
+            return new HashSet<>();
+        }
+    }
+
+    /**
+     * Reads BBMHederaAccount objects from the state in a number of nodes.
+     *
+     * @param nodeCount The number of node we want to read from
+     * @param platformContext The platformContext object that we need to be able to read the state
      * @return A list of BBMHederaAccount objects read from the state of the specified node.
      */
-    public static List<BBMHederaAccount> readSignedStateAccountsFromNode(int nodeId) {
+    private static Set<BBMHederaAccount> readAccountsInStateFromMultipleNodes(int nodeCount, PlatformContext platformContext)  {
+        Set<BBMHederaAccount> accounts = new HashSet<>();
+        for (int i = 0; i < nodeCount; i++) {
+            // here we might be using the platform context for node 0,
+            // but we will still be able to read the state for node 1, 2, 3 with this platform context
+            accounts.addAll(readAccountsInStateFromNode(i, platformContext));
+        }
+        return accounts;
+    }
+
+    /**
+     * Reads BBMHederaAccount objects from the state of a single InProcessHapiTestNode node.
+     *
+     * @param nodeId The ID of the node from which to read the state.
+     * @param platformContext The platformContext object that we need to be able to read the state
+     * @return A list of BBMHederaAccount objects read from the state of the specified node.
+     */
+    private static List<BBMHederaAccount> readAccountsInStateFromNode(int nodeId, PlatformContext platformContext)  {
         SignedStateFilePath state = new SignedStateFilePath(
                 new StateCommonConfig(Paths.get(String.format(SIGNED_STATE_FILE_PATH, nodeId))));
 
@@ -101,47 +168,8 @@ public class StateAccess {
         final List<SavedStateInfo> savedStates =
                 state.getSavedStateFiles(MAIN_DIRECTORY, new NodeId(nodeId), swirldsName);
 
-        PlatformContext platformContext;
-        try {
-            platformContext = buildPlatformContext();
-        } catch (IOException e) {
-            log.info("Error building platform context when reading state");
-            return new ArrayList<>();
-        }
-
-        List<BBMHederaAccount> dumpableAccounts = new ArrayList<>();
-        for (SavedStateInfo savedStateInfo : savedStates) {
-            Path stateFilePath = savedStateInfo.stateFile();
-            try {
-                DeserializedSignedState deserializedSignedState =
-                        SignedStateFileReader.readStateFile(platformContext, stateFilePath);
-                ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState();
-                SignedState signedState = reservedSignedState.get();
-                MerkleHederaState hederaState = (MerkleHederaState) signedState.getSwirldState();
-                VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accountsMap =
-                        hederaState.getChild(hederaState.findNodeIndex(TokenService.NAME, ACCOUNTS_KEY));
-                dumpableAccounts.addAll(Arrays.asList(gatherAccounts(accountsMap)));
-            } catch (IOException e) {
-                log.error("Error reading state file");
-                throw new IllegalArgumentException("Error reading state file ");
-            }
-        }
-
+        List<BBMHederaAccount> dumpableAccounts = readAccounts(savedStates, platformContext);
         return dumpableAccounts;
-    }
-
-    /**
-     * Reads BBMHederaAccount objects from the state of multiple nodes.
-     *
-     * @param nodeCount The number of nodes whose state needs to be read.
-     * @return A set of BBMHederaAccount objects collected from the state of all nodes.
-     */
-    public static Set<BBMHederaAccount> readAccountsFromNodesState(int nodeCount) {
-        Set<BBMHederaAccount> accounts = new HashSet<>();
-        for (int i = 0; i < nodeCount; i++) {
-            accounts.addAll(readSignedStateAccountsFromNode(i));
-        }
-        return accounts;
     }
 
     /**
@@ -183,12 +211,12 @@ public class StateAccess {
 
     /**
      * Builds the platform context configuration required for reading the state file. This method creates a
-     * PlatformContext instance
+     * PlatformContext instance with default values
      *
      * @return The PlatformContext instance
      * @throws IOException If an I/O error occurs during the configuration setup.
      */
-    private static PlatformContext buildPlatformContext() throws IOException {
+    private static PlatformContext buildDefaultPlatformContext() throws IOException {
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
         BootstrapUtils.setupConstructableRegistry();
 
@@ -205,4 +233,73 @@ public class StateAccess {
 
         return new DefaultPlatformContext(configuration, defaultMetrics, cryptography, Time.getCurrent());
     }
+
+    /**
+     * Builds the platform context configuration required for reading the state file.
+     * This method creates a PlatformContext with custom configurations.
+     *
+     * @param nodeId      The ID of the node.
+     * @param workingDir  The working directory path.
+     * @param grpcPort    The gRPC port.
+     * @return The PlatformContext instance.
+     * @throws IOException If an I/O error occurs during the configuration setup.
+     */
+    private static PlatformContext buildPlatformContextForSubProcessNode(long nodeId, Path workingDir, int grpcPort) throws IOException {
+        BootstrapUtils.setupConstructableRegistry();
+        final var cr = ConstructableRegistry.getInstance();
+
+        Hedera hedera = new Hedera(cr);
+
+        final PlatformBuilder builder = PlatformBuilder.create(
+                Hedera.APP_NAME,
+                Hedera.SWIRLD_NAME,
+                hedera.getSoftwareVersion(),
+                hedera::newState,
+                new NodeId(nodeId));
+
+        final ConfigurationBuilder configBuilder = ConfigurationBuilder.create()
+                .withValue("paths.settingsUsedDir", path(".", workingDir))
+                .withValue("paths.keysDirPath", path("data/keys", workingDir))
+                .withValue("paths.appsDirPath", path("data/apps", workingDir))
+                .withValue("paths.logPath", path("log4j2.xml", workingDir))
+                .withValue("metrics.csvOutputFolder", path(".", workingDir))
+                .withValue("emergencyRecoveryFileLoadDir", path("data/saved", workingDir))
+                .withValue("state.savedStateDirectory", path("data/saved", workingDir))
+                .withValue("loadKeysFromPfxFiles", "false")
+                .withValue("grpc.port", Integer.toString(grpcPort));
+
+        builder.withConfigurationBuilder(configBuilder)
+                .withSettingsPath(Path.of(path(DEFAULT_SETTINGS_FILE_NAME, workingDir)))
+                .withConfigPath(Path.of(path(DEFAULT_CONFIG_FILE_NAME, workingDir)));
+
+        final Platform platform = builder.build();
+
+        return platform.getContext();
+    }
+
+    private static List<BBMHederaAccount> readAccounts(List<SavedStateInfo> savedStates, PlatformContext platformContext) {
+        List<BBMHederaAccount> dumpableAccounts = new ArrayList<>();
+        for (SavedStateInfo savedStateInfo : savedStates) {
+            Path stateFilePath = savedStateInfo.stateFile();
+            try {
+                DeserializedSignedState deserializedSignedState =
+                        SignedStateFileReader.readStateFile(platformContext, stateFilePath);
+                ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState();
+                SignedState signedState = reservedSignedState.get();
+                MerkleHederaState hederaState = (MerkleHederaState) signedState.getSwirldState();
+                VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accountsMap =
+                        hederaState.getChild(hederaState.findNodeIndex(TokenService.NAME, ACCOUNTS_KEY));
+                dumpableAccounts.addAll(Arrays.asList(gatherAccounts(accountsMap)));
+            } catch (IOException e) {
+                log.error("Error reading state file");
+                throw new IllegalArgumentException("Error reading state file ");
+            }
+        }
+        return dumpableAccounts;
+    }
+
+    private static String path(String path, Path workingDir) {
+        return workingDir.resolve(path).toAbsolutePath().normalize().toString();
+    }
+
 }

@@ -507,7 +507,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 }
             }
 
-            Set<BBMHederaAccount> accountsFromState = StateAccess.readAccountsFromNodesState(HapiTestEngine.NODE_COUNT);
+            Set<BBMHederaAccount> accountsFromState = StateAccess.readAccountsFromNodesState(HapiTestEngine.NODE_COUNT, env);
 
             // assert validators pass
             final var streamData = data;
