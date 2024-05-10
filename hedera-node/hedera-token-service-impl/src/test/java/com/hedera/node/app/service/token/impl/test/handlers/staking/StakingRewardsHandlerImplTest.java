@@ -116,7 +116,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         noStakeChanges();
         final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), emptyMap());
         final var modifiedAccount = writableAccountStore.get(payerId);
-        assert modifiedAccount != null;
+        assertThat(modifiedAccount).isNotNull();
         assertThat(StakingUtilities.hasStakeMetaChanges(null, modifiedAccount)).isTrue();
     }
 
