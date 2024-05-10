@@ -189,6 +189,7 @@ If the airdrop transaction fees from the list above are covered by a separate pa
             - token association fee (pre-paid if account is not associated to the token)
             - auto account creation (assessed if the recipient does not exist and they are referred by their public `ECDSA` key or `evm_address`)
 - Interact with the pending airdrop state - if the recipient is not associated to the token, then the `TokenAirdropTransaction` responsibilities in term of interacting with the pending state would be to just add the airdrop information in the state
+- Add additional validation for account deletion. If an account has sent an airdrop, which is in pending state and we want to delete this account, we should first cancel this airdrop and then delete the account, so that pending state is kept clean 
 - Add this new operation type to the `ThroughputLimits` throttle bucket group, so that it's included in the throttling mechanism
 
 ## Acceptance Tests
@@ -211,4 +212,5 @@ If the airdrop transaction fees from the list above are covered by a separate pa
 * Verify that an airdrop, which fee expenses are covered by a separate payer account, but has missing payer signature fails
 * Verify that an airdrop with more than 10 entries in the `token_transfers` list fails
 * Verify that an airdrop with a duplicate entry for the same NFT in the `token_transfers` list fails with `PENDING_NFT_AIRDROP_ALREADY_EXISTS`
+* Verify that deletion of an account who has sent an airdrop that is still in pending state fails
 * Verify that performing an airdrop with disabled feature flag fails with `NOT_SUPPORTED`
