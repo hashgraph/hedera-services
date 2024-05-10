@@ -25,7 +25,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.BigIntegerType;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.Optional;
@@ -76,7 +78,17 @@ public class ExchangeRateSystemContract extends AbstractFullContract implements 
                     };
             requireNonNull(result);
             return new FullResult(PrecompileContractResult.success(result), gasRequirement, null);
-        } catch (Exception ignore) {
+        } catch (InvalidTransactionException e) {
+            ExceptionalHaltReason haltReason;
+            if (e.getResponseCode() == INVALID_FEE_SUBMITTED) {
+                haltReason = CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED;
+            } else {
+                haltReason = ExceptionalHaltReason.INVALID_OPERATION;
+            }
+
+            return new FullResult(
+                    PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(haltReason)), gasRequirement, null);
+        } catch (Exception e) {
             return new FullResult(
                     PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(ExceptionalHaltReason.INVALID_OPERATION)),
                     gasRequirement,

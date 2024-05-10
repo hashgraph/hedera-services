@@ -25,6 +25,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.common.primitives.Longs;
 import com.hedera.hapi.node.transaction.ExchangeRate;
+import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.ExchangeRateSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
@@ -130,7 +131,7 @@ class ExchangeRateSystemContractTest {
         final var result = subject.computeFully(zeroInput, frame);
 
         assertThat(result.output()).isEqualTo(Bytes.EMPTY);
-        assertThat(result.result().getHaltReason().get()).isEqualTo(ExceptionalHaltReason.INVALID_OPERATION);
+        assertThat(result.result().getHaltReason().get()).isEqualTo(CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED);
     }
 
     @Test
