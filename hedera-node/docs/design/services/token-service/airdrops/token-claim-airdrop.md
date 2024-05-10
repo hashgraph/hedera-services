@@ -122,7 +122,7 @@ An update into the `feeSchedule` file would be needed to specify that.
         - The transaction must be signed by the account referenced by a `receiver_id` for each entry in the pending airdrops list
     - Handle:
         - Confirm that for the given pending airdrops ids in the transaction there are corresponding pending transfers existing in state
-        - Check if the sender has sufficient balance to fulfill the airdrop
+        - Check if the sender has sufficient balance or has enough approved allowance to fulfill the airdrop
         - Any additional validation depending on config or state i.e. semantics checks
         - The business logic for claiming pending airdrops
             - We need to create a token association between each `receiver_id` and `token_reference`, future rents for token association slot should be paid by `receiver_id`
@@ -158,5 +158,5 @@ All of the expected behaviour described below should be present only if the new 
 - `TokenClaimAirdrop` transaction containing duplicate entries should fail
 - `TokenClaimAirdrop` transaction containing pending airdrops entries which do not exist in state should fail
 - `TokenClaimAirdrop` transaction not signed by the account referenced by a `receiver_id` for each entry in the pending airdrops list should fail
-- `TokenClaimAirdrop` transaction with a `sender_id` account that does not have sufficient balance of the claimed token should fail
+- `TokenClaimAirdrop` transaction with a `sender_id` account that does not have sufficient balance or not enough allowance of the claimed token should fail
 - Given the feature flag for `TokenClaimAirdrop` is disabled then any `TokenClaimAirdrop` transaction should fail with `NOT_SUPPORTED`
