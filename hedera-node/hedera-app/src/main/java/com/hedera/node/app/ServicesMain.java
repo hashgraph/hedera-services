@@ -183,14 +183,12 @@ public class ServicesMain implements SwirldMain {
 
         final NodeId selfId = ensureSingleNode(nodesToRun, commandLineArgs.localNodesToStart());
 
-        final var config = ConfigurationBuilder.create()
-                .withSource(SystemEnvironmentConfigSource.getInstance())
-                .withSource(SystemPropertiesConfigSource.getInstance());
-
         SoftwareVersion version = hedera.getSoftwareVersion();
         logger.info("Starting node {} with version {}", selfId, version);
 
-        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
+        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
+                .withSource(SystemEnvironmentConfigSource.getInstance())
+                .withSource(SystemPropertiesConfigSource.getInstance());
         readLegacySettingsFile(configurationBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
 
         final PlatformContext platformContext = PlatformContextBuilder.create(selfId)
