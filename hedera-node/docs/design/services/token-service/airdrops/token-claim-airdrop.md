@@ -120,13 +120,14 @@ An update into the `feeSchedule` file would be needed to specify that.
         - Verify that the pending airdrops list does not have any duplicate entries
     - Pre-handle:
         - The transaction must be signed by the account referenced by a `receiver_id` for each entry in the pending airdrops list
+    - Handle:
         - Confirm that for the given pending airdrops ids in the transaction there are corresponding pending transfers existing in state
         - Check if the sender has sufficient balance to fulfill the airdrop
-    - Handle:
         - Any additional validation depending on config or state i.e. semantics checks
         - The business logic for claiming pending airdrops
             - We need to create a token association between each `receiver_id` and `token_reference`, future rents for token association slot should be paid by `receiver_id`
               - Since we would have the signature of the receiver, even if it's an account with `receiver_sig_required=true`, the claim would implicitly work properly
+              - The token association is free at this point because the sender already paid for it when submitting the `TokenAirdrop` transaction
             - Then we should transfer the claimed tokens to each `receiver_id`
                 - We can dispatch synthetic crypto transfer for this, but we must skip the assessment of custom fees
                   - In case of a fungible token claim
@@ -163,3 +164,4 @@ All of the expected behaviour described below should be present only if the new 
 - `TokenClaimAirdrop` transaction containing pending airdrops entries which do not exist in state should fail
 - `TokenClaimAirdrop` transaction not signed by the account referenced by a `receiver_id` for each entry in the pending airdrops list should fail
 - `TokenClaimAirdrop` transaction with a `sender_id` account that does not have sufficient balance of the claimed token should fail
+- Given the feature flag for `TokenClaimAirdrop` is disabled then any `TokenClaimAirdrop` transaction should fail with `NOT_SUPPORTED`
