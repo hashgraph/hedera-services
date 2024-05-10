@@ -34,6 +34,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Provides {@link TokenServiceApi} instances.
  */
 public enum TokenServiceApiProvider implements ServiceApiProvider<TokenServiceApi> {
+    /** The singleton instance. */
     TOKEN_SERVICE_API_PROVIDER;
 
     private final StakingValidator stakingValidator = new StakingValidator();

@@ -57,7 +57,7 @@ public interface ReadableUpgradeFileStore {
     /**
      * Gets the full contents of the file from state.
      * @return The full contents of the file.
-     * @throws IOException
+     * @throws IOException if the file cannot be read.
      */
     Bytes getFull(final FileID fileID) throws IOException;
 }

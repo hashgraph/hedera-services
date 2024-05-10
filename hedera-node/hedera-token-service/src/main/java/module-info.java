@@ -1,3 +1,6 @@
+/**
+ * Provides the classes necessary to manage Hedera Token Service.
+ */
 module com.hedera.node.app.service.token {
     exports com.hedera.node.app.service.token;
     exports com.hedera.node.app.service.token.api to
