@@ -24,6 +24,8 @@ import com.google.common.base.Stopwatch;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
+import com.hedera.services.bdd.spec.queries.HapiQueryOp;
+import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.HashMap;
 import java.util.Map;
@@ -58,6 +60,7 @@ public class ProviderRun extends UtilOp {
     private LongSupplier durationSupplier = () -> DEFAULT_DURATION;
     private Supplier<TimeUnit> unitSupplier = () -> DEFAULT_UNIT;
     private IntSupplier totalOpsToSubmit = () -> DEFAULT_TOTAL_OPS_TO_SUBMIT;
+    private boolean loggingOff = false;
 
     private Map<HederaFunctionality, AtomicInteger> counts = new HashMap<>();
 
@@ -78,7 +81,12 @@ public class ProviderRun extends UtilOp {
         return this;
     }
 
-    public ProviderRun totalOpsToSumbit(IntSupplier totalOpsSupplier) {
+    public ProviderRun loggingOff() {
+        this.loggingOff = true;
+        return this;
+    }
+
+    public ProviderRun totalOpsToSubmit(IntSupplier totalOpsSupplier) {
         this.totalOpsToSubmit = totalOpsSupplier;
         return this;
     }
@@ -167,8 +175,16 @@ public class ProviderRun extends UtilOp {
                                                 : MAX_OPS_PER_SEC - opsThisSecond.get()))
                         .mapToObj(ignore -> provider.get())
                         .flatMap(Optional::stream)
-                        .filter(op -> op != Stream.empty())
-                        .peek(op -> counts.get(op.type()).getAndIncrement())
+                        .peek(op -> {
+                            counts.get(op.type()).getAndIncrement();
+                            if (loggingOff) {
+                                if (op instanceof HapiTxnOp<?> txnOp) {
+                                    txnOp.noLogging();
+                                } else if (op instanceof HapiQueryOp<?> queryOp) {
+                                    queryOp.noLogging();
+                                }
+                            }
+                        })
                         .toArray(HapiSpecOperation[]::new);
                 if (burst.length > 0) {
                     allRunFor(spec, inParallel(burst));
