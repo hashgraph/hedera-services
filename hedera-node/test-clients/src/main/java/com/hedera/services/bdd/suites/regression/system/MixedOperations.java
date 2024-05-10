@@ -114,7 +114,8 @@ public class MixedOperations {
             inParallel(IntStream.range(0, numSubmissions)
                     .mapToObj(ignore -> createTopic(TOPIC + topicId.getAndIncrement())
                             .submitKeyName(SUBMIT_KEY)
-                            .payingWith(PAYER))
+                            .payingWith(PAYER)
+                            .noLogging())
                     .toArray(HapiSpecOperation[]::new)),
             sleepFor(10000),
             inParallel(IntStream.range(0, numSubmissions)
@@ -132,6 +133,7 @@ public class MixedOperations {
                                             .array(),
                                     randomUtf8Bytes(1000)))
                             .payingWith(SENDER)
+                            .noLogging()
                             .signedBy(SENDER, SUBMIT_KEY))
                     .toArray(HapiSpecOperation[]::new)),
             sleepFor(10000),
