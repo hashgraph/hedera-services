@@ -42,6 +42,7 @@ import com.hedera.node.app.state.merkle.queue.QueueNode;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
 import com.hedera.node.app.state.merkle.singleton.StringLeaf;
 import com.hedera.node.app.state.merkle.singleton.ValueLeaf;
+import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.handle.record.MigrationContextImpl;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -72,7 +73,7 @@ import org.apache.logging.log4j.Logger;
  * then registers each and every {@link Schema} that it has. Each {@link Schema} is associated with
  * a {@link SemanticVersion}.
  *
- * <p>The Hedera application then calls {@link #migrate(MerkleHederaState, SemanticVersion, SemanticVersion, Configuration, NetworkInfo, WritableEntityIdStore)} on each {@link MerkleSchemaRegistry} instance, supplying it the
+ * <p>The Hedera application then calls {@link com.hedera.node.app.Hedera#onMigrate(MerkleHederaState, HederaSoftwareVersion, InitTrigger, Metrics)} on each {@link MerkleSchemaRegistry} instance, supplying it the
  * application version number and the newly created (or deserialized) but not yet hashed copy of the {@link
  * MerkleHederaState}. The registry determines which {@link Schema}s to apply, possibly taking multiple migration steps,
  * to transition the merkle tree from its current version to the final version.

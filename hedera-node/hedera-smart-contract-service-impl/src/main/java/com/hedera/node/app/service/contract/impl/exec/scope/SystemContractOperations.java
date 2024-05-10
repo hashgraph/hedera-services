@@ -101,7 +101,7 @@ public interface SystemContractOperations {
     Transaction syntheticTransactionForHtsCall(Bytes input, ContractID contractID, boolean isViewCall);
 
     /**
-     * Returns the {@Link ExchangeRate} for the current consensus time.  This will enable the translation from hbars
+     * Returns the {@link ExchangeRate} for the current consensus time.  This will enable the translation from hbars
      * to dollars
      *
      * @return ExchangeRate for the current consensus time

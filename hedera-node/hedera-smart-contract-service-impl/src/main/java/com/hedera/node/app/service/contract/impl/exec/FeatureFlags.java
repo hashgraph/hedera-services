@@ -71,14 +71,13 @@ public interface FeatureFlags {
      * If true calls to non-existing contract addresses will result in a successful NOOP.  If false,
      * calls such calls will result in a revert with status {@code INVALID_SOLIDITY_ADDRESS}.
      * @param config the {@link Configuration}
-     * @#param possiblyGrandFathered the account number to check for grandfathering
+     * @param possiblyGrandFatheredEntityNum the account number to check for grandfathering
      * @return true if calls to non-existing contract addresses will result in a successful NOOP.
      */
     default boolean isAllowCallsToNonContractAccountsEnabled(
             @NonNull Configuration config, @Nullable Long possiblyGrandFatheredEntityNum) {
         return false;
     }
-    ;
 
     /**
      *  If true, charge intrinsic gas for calls that fail with a pre-EVM exception.
