@@ -116,13 +116,15 @@ public class StateAccess {
         } else if (env.getNodes().get(0) instanceof SubProcessHapiTestNode) {
 
             // build platform context initially for node 0
-            // we can only build this context once, if we try for every node we will get error that the platform can only
+            // we can only build this context once, if we try for every node we will get error that the platform can
+            // only
             // be initialized once
             PlatformContext platformContext = null;
-            SubProcessHapiTestNode subProcessHapiTestNode = (SubProcessHapiTestNode) env.getNodes().get(0);
+            SubProcessHapiTestNode subProcessHapiTestNode =
+                    (SubProcessHapiTestNode) env.getNodes().get(0);
             try {
-                platformContext = buildPlatformContextForSubProcessNode(0, subProcessHapiTestNode.workingDir,
-                        subProcessHapiTestNode.grpcPort);
+                platformContext = buildPlatformContextForSubProcessNode(
+                        0, subProcessHapiTestNode.workingDir, subProcessHapiTestNode.grpcPort);
             } catch (IOException e) {
                 log.info("Error building platform context when reading state");
                 return new HashSet<>();
@@ -142,7 +144,8 @@ public class StateAccess {
      * @param platformContext The platformContext object that we need to be able to read the state
      * @return A list of BBMHederaAccount objects read from the state of the specified node.
      */
-    private static Set<BBMHederaAccount> readAccountsInStateFromMultipleNodes(int nodeCount, PlatformContext platformContext)  {
+    private static Set<BBMHederaAccount> readAccountsInStateFromMultipleNodes(
+            int nodeCount, PlatformContext platformContext) {
         Set<BBMHederaAccount> accounts = new HashSet<>();
         for (int i = 0; i < nodeCount; i++) {
             // here we might be using the platform context for node 0,
@@ -159,7 +162,7 @@ public class StateAccess {
      * @param platformContext The platformContext object that we need to be able to read the state
      * @return A list of BBMHederaAccount objects read from the state of the specified node.
      */
-    private static List<BBMHederaAccount> readAccountsInStateFromNode(int nodeId, PlatformContext platformContext)  {
+    private static List<BBMHederaAccount> readAccountsInStateFromNode(int nodeId, PlatformContext platformContext) {
         SignedStateFilePath state = new SignedStateFilePath(
                 new StateCommonConfig(Paths.get(String.format(SIGNED_STATE_FILE_PATH, nodeId))));
 
@@ -244,18 +247,15 @@ public class StateAccess {
      * @return The PlatformContext instance.
      * @throws IOException If an I/O error occurs during the configuration setup.
      */
-    private static PlatformContext buildPlatformContextForSubProcessNode(long nodeId, Path workingDir, int grpcPort) throws IOException {
+    private static PlatformContext buildPlatformContextForSubProcessNode(long nodeId, Path workingDir, int grpcPort)
+            throws IOException {
         BootstrapUtils.setupConstructableRegistry();
         final var cr = ConstructableRegistry.getInstance();
 
         Hedera hedera = new Hedera(cr);
 
         final PlatformBuilder builder = PlatformBuilder.create(
-                Hedera.APP_NAME,
-                Hedera.SWIRLD_NAME,
-                hedera.getSoftwareVersion(),
-                hedera::newState,
-                new NodeId(nodeId));
+                Hedera.APP_NAME, Hedera.SWIRLD_NAME, hedera.getSoftwareVersion(), hedera::newState, new NodeId(nodeId));
 
         final ConfigurationBuilder configBuilder = ConfigurationBuilder.create()
                 .withValue("paths.settingsUsedDir", path(".", workingDir))
@@ -277,7 +277,8 @@ public class StateAccess {
         return platform.getContext();
     }
 
-    private static List<BBMHederaAccount> readAccounts(List<SavedStateInfo> savedStates, PlatformContext platformContext) {
+    private static List<BBMHederaAccount> readAccounts(
+            List<SavedStateInfo> savedStates, PlatformContext platformContext) {
         List<BBMHederaAccount> dumpableAccounts = new ArrayList<>();
         for (SavedStateInfo savedStateInfo : savedStates) {
             Path stateFilePath = savedStateInfo.stateFile();
@@ -301,5 +302,4 @@ public class StateAccess {
     private static String path(String path, Path workingDir) {
         return workingDir.resolve(path).toAbsolutePath().normalize().toString();
     }
-
 }
