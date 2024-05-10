@@ -18,4 +18,7 @@ plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Hedera Scheduled Service API"
 
-testModuleInfo { requires("org.assertj.core") }
+testModuleInfo {
+    requires("org.assertj.core")
+    requires("org.junit.jupiter.api")
+}
