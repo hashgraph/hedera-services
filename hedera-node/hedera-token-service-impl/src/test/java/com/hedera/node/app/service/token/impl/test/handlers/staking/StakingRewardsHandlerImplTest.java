@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUti
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -107,7 +106,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
             constructor.newInstance();
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();
-            assertEquals(UnsupportedOperationException.class, cause.getClass());
+            assertThat(cause.getClass()).isEqualTo(UnsupportedOperationException.class);
         }
     }
 
