@@ -26,12 +26,13 @@ import org.hyperledger.besu.evm.code.CodeV0;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.Builder;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
-public class MockHederaEvmTxProcessor extends HederaEvmTxProcessor {
+public class SpyHederaEvmTxProcessor extends HederaEvmTxProcessor {
 
-    protected MockHederaEvmTxProcessor(
+    protected SpyHederaEvmTxProcessor(
             final HederaEvmMutableWorldState worldState,
             final PricesAndFeesProvider livePricesSource,
             final EvmProperties dynamicProperties,
@@ -57,5 +58,9 @@ public class MockHederaEvmTxProcessor extends HederaEvmTxProcessor {
                 .inputData(payload)
                 .code(CodeV0.EMPTY_CODE)
                 .build();
+    }
+
+    public AbstractMessageProcessor getMessageCallProcessor() {
+        return messageCallProcessor;
     }
 }
