@@ -79,47 +79,71 @@ class NetworkAdminHandlersTest {
 
     @Test
     void freezeHandlerReturnsCorrectInstance() {
-        assertEquals(freezeHandler, networkAdminHandlers.freezeHandler(), "freezeHandler does not return correct instance");
+        assertEquals(
+                freezeHandler, networkAdminHandlers.freezeHandler(), "freezeHandler does not return correct instance");
     }
 
     @Test
     void networkGetAccountDetailsHandlerReturnsCorrectInstance() {
-        assertEquals(networkGetAccountDetailsHandler, networkAdminHandlers.networkGetAccountDetailsHandler(), "networkGetAccountDetailsHandler does not return correct instance");
+        assertEquals(
+                networkGetAccountDetailsHandler,
+                networkAdminHandlers.networkGetAccountDetailsHandler(),
+                "networkGetAccountDetailsHandler does not return correct instance");
     }
 
     @Test
     void networkGetByKeyHandlerReturnsCorrectInstance() {
-        assertEquals(networkGetByKeyHandler, networkAdminHandlers.networkGetByKeyHandler(), "networkGetByKeyHandler does not return correct instance");
+        assertEquals(
+                networkGetByKeyHandler,
+                networkAdminHandlers.networkGetByKeyHandler(),
+                "networkGetByKeyHandler does not return correct instance");
     }
 
     @Test
     void networkGetExecutionTimeHandlerReturnsCorrectInstance() {
-        assertEquals(networkGetExecutionTimeHandler, networkAdminHandlers.networkGetExecutionTimeHandler(), "networkGetExecutionTimeHandler does not return correct instance");
+        assertEquals(
+                networkGetExecutionTimeHandler,
+                networkAdminHandlers.networkGetExecutionTimeHandler(),
+                "networkGetExecutionTimeHandler does not return correct instance");
     }
 
     @Test
     void networkGetVersionInfoHandlerReturnsCorrectInstance() {
-        assertEquals(networkGetVersionInfoHandler, networkAdminHandlers.networkGetVersionInfoHandler(), "networkGetVersionInfoHandler does not return correct instance");
+        assertEquals(
+                networkGetVersionInfoHandler,
+                networkAdminHandlers.networkGetVersionInfoHandler(),
+                "networkGetVersionInfoHandler does not return correct instance");
     }
 
     @Test
     void networkTransactionGetReceiptHandlerReturnsCorrectInstance() {
-        assertEquals(networkTransactionGetReceiptHandler, networkAdminHandlers.networkTransactionGetReceiptHandler(), "networkTransactionGetReceiptHandler does not return correct instance");
+        assertEquals(
+                networkTransactionGetReceiptHandler,
+                networkAdminHandlers.networkTransactionGetReceiptHandler(),
+                "networkTransactionGetReceiptHandler does not return correct instance");
     }
 
     @Test
     void networkTransactionGetRecordHandlerReturnsCorrectInstance() {
-        assertEquals(networkTransactionGetRecordHandler, networkAdminHandlers.networkTransactionGetRecordHandler(), "networkTransactionGetRecordHandler does not return correct instance");
+        assertEquals(
+                networkTransactionGetRecordHandler,
+                networkAdminHandlers.networkTransactionGetRecordHandler(),
+                "networkTransactionGetRecordHandler does not return correct instance");
     }
 
     @Test
     void networkTransactionGetFastRecordHandlerReturnsCorrectInstance() {
         assertEquals(
-                networkTransactionGetFastRecordHandler, networkAdminHandlers.networkTransactionGetFastRecordHandler(), "networkTransactionGetFastRecordHandler does not return correct instance");
+                networkTransactionGetFastRecordHandler,
+                networkAdminHandlers.networkTransactionGetFastRecordHandler(),
+                "networkTransactionGetFastRecordHandler does not return correct instance");
     }
 
     @Test
     void networkUncheckedSubmitHandlerReturnsCorrectInstance() {
-        assertEquals(networkUncheckedSubmitHandler, networkAdminHandlers.networkUncheckedSubmitHandler(), "networkUncheckSubmitHandler does not return correct instance");
+        assertEquals(
+                networkUncheckedSubmitHandler,
+                networkAdminHandlers.networkUncheckedSubmitHandler(),
+                "networkUncheckSubmitHandler does not return correct instance");
     }
 }
