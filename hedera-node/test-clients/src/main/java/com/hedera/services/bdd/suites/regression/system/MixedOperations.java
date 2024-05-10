@@ -80,7 +80,7 @@ public class MixedOperations {
             inParallel(IntStream.range(0, 2 * numSubmissions)
                     .mapToObj(ignore -> cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L))
                             .payingWith(PAYER)
-                            .logging()
+                            .noLogging()
                             .signedBy(SENDER, PAYER))
                     .toArray(HapiSpecOperation[]::new)),
             sleepFor(10000),
@@ -95,7 +95,7 @@ public class MixedOperations {
                             .adminKey(ADMIN_KEY)
                             .supplyKey(SUPPLY_KEY)
                             .payingWith(PAYER)
-                            .logging())
+                            .noLogging())
                     .toArray(HapiSpecOperation[]::new)),
             sleepFor(10000),
             inParallel(IntStream.range(0, numSubmissions)
@@ -107,13 +107,13 @@ public class MixedOperations {
                             .adminKey(ADMIN_KEY)
                             .supplyKey(SUPPLY_KEY)
                             .payingWith(PAYER)
-                            .logging())
+                            .noLogging())
                     .toArray(HapiSpecOperation[]::new)),
             sleepFor(10000),
             inParallel(IntStream.range(0, numSubmissions)
                     .mapToObj(i -> tokenAssociate(SENDER, TOKEN + i)
                             .payingWith(PAYER)
-                            .logging()
+                            .noLogging()
                             .signedBy(SENDER, PAYER))
                     .toArray(HapiSpecOperation[]::new)),
             sleepFor(10000),
@@ -140,13 +140,13 @@ public class MixedOperations {
                             .payingWith(PAYER)
                             .signedBy(SENDER, PAYER)
                             .adminKey(SENDER)
-                            .logging())
+                            .noLogging())
                     .toArray(HapiSpecOperation[]::new)),
             sleepFor(10000),
             inParallel(IntStream.range(0, 100)
                     .mapToObj(ignore -> contractCreate(CONTRACT_NAME_PREFIX + contractId.getAndIncrement())
                             .bytecode(SOME_BYTE_CODE)
-                            .logging())
+                            .noLogging())
                     .toArray(HapiSpecOperation[]::new))
         };
     }

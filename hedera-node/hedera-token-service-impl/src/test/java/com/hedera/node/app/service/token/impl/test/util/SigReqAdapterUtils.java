@@ -90,6 +90,7 @@ import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
@@ -114,6 +115,9 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * Provides utility methods for testing signature requirements in the token service.
+ */
 @ExtendWith(MockitoExtension.class)
 public class SigReqAdapterUtils {
     private static final String TOKENS_KEY = "TOKENS";
@@ -121,7 +125,9 @@ public class SigReqAdapterUtils {
     private static final Configuration CONFIGURATION = HederaTestConfigBuilder.createConfig();
 
     protected final Bytes metadata = Bytes.wrap(new byte[] {1, 2, 3, 4});
-
+    /**
+     * Represents an unset staked ID.
+     */
     public static final OneOf<Account.StakedIdOneOfType> UNSET_STAKED_ID =
             new OneOf<>(Account.StakedIdOneOfType.UNSET, null);
 
@@ -195,6 +201,11 @@ public class SigReqAdapterUtils {
         return new MapWritableKVState<>("TOKENS", destination);
     }
 
+    /**
+     * Returns the {@link WritableTokenRelationStore} containing the "well-known" token relations that exist in a
+     * {@code SigRequirementsTest} scenario.
+     * @return the well-known token relation store
+     */
     public static WritableTokenRelationStore wellKnownTokenRelStoreAt() {
         final var destination = new HashMap<EntityIDPair, TokenRelation>();
         destination.put(
@@ -235,11 +246,21 @@ public class SigReqAdapterUtils {
                 mock(StoreMetricsService.class));
     }
 
+    /**
+     * Returns the {@link ReadableAccountStore} containing the "well-known" accounts that exist in a
+     * {@code SigRequirementsTest} scenario.
+     * @return the well-known account store
+     */
     public static ReadableAccountStoreImpl wellKnownAccountStoreAt() {
         return new ReadableAccountStoreImpl(
                 mockStates(Map.of(ACCOUNTS_KEY, wrappedAccountState(), ALIASES_KEY, wellKnownAliasState())));
     }
 
+    /**
+     * Returns the {@link WritableAccountStore} containing the "well-known" accounts that exist in a
+     * {@code SigRequirementsTest} scenario.
+     * @return the well-known account store
+     */
     public static WritableAccountStore wellKnownWritableAccountStoreAt() {
         return new WritableAccountStore(
                 mockWritableStates(Map.of(ACCOUNTS_KEY, wrappedAccountState(), ALIASES_KEY, wellKnownAliasState())),
@@ -385,6 +406,11 @@ public class SigReqAdapterUtils {
         return dummyScenario.tokenStore();
     }
 
+    /**
+     * Returns a {@link TransactionBody} from a {@link TxnHandlingScenario}.
+     * @param scenario the scenario
+     * @return the transaction body
+     */
     public static TransactionBody txnFrom(final TxnHandlingScenario scenario) {
         try {
             return toPbj(scenario.platformTxn().getTxn());
