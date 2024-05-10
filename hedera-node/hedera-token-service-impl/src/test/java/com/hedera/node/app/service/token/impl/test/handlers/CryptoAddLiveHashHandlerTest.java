@@ -21,9 +21,11 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.CryptoAddLiveHashHandler;
+import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -46,6 +48,7 @@ class CryptoAddLiveHashHandlerTest {
 
     @Test
     void pureChecksDoesNothing() throws PreCheckException {
+        // Verify no exception is thrown
         subject.pureChecks(TransactionBody.newBuilder().build());
     }
 
@@ -65,6 +68,7 @@ class CryptoAddLiveHashHandlerTest {
 
     @Test
     void calculateFeesFree() {
-        assertThat(subject.calculateFees(null)).isEqualTo(Fees.FREE);
+        final var result = subject.calculateFees(mock(FeeContext.class));
+        assertThat(result).isEqualTo(Fees.FREE);
     }
 }
