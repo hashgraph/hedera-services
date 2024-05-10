@@ -123,6 +123,17 @@ class ExchangeRateSystemContractTest {
     }
 
     @Test
+    void valueShouldNotBeSentToThePrecompile() {
+        given(frame.getValue()).willReturn(Wei.MAX_WEI);
+
+        final var zeroInput = tinycentsInput(0);
+        final var result = subject.computeFully(zeroInput, frame);
+
+        assertThat(result.output()).isEqualTo(Bytes.EMPTY);
+        assertThat(result.result().getHaltReason().get()).isEqualTo(ExceptionalHaltReason.INVALID_OPERATION);
+    }
+
+    @Test
     void selectorMustBeFullyPresent() {
         final var fragmentSelector = Bytes.of(0xab);
         final var result = subject.computeFully(fragmentSelector, frame);
