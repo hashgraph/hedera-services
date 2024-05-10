@@ -39,6 +39,7 @@ import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalH
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.AbstractFullContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -55,7 +56,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
  * {@link com.hedera.node.app.service.contract.impl.exec.systemcontracts.HasSystemContract}.
  */
 @Singleton
-public class AbstractNativeSystemContract extends AbstractFullContract implements HederaSystemContract {
+public abstract class AbstractNativeSystemContract extends AbstractFullContract implements HederaSystemContract {
     private static final Logger log = LogManager.getLogger(AbstractNativeSystemContract.class);
     private final CallFactory callFactory;
     private final ContractID contractID;
@@ -183,4 +184,7 @@ public class AbstractNativeSystemContract extends AbstractFullContract implement
         }
         throw handleException;
     }
+
+    //
+    protected abstract FrameUtils.CallType callTypeOf(final MessageFrame frame);
 }

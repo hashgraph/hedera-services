@@ -86,7 +86,7 @@ public class HtsCallAttempt extends AbstractCallAttempt {
                 callTranslators,
                 isStaticCall,
                 REDIRECT_FOR_TOKEN);
-        if (this.isRedirect) {
+        if (isRedirect()) {
             this.redirectToken = linkedToken(redirectAddress);
         } else {
             redirectToken = null;
@@ -102,7 +102,7 @@ public class HtsCallAttempt extends AbstractCallAttempt {
      * @throws IllegalStateException if this is not a valid call
      */
     public boolean isTokenRedirect() {
-        return isRedirect;
+        return isRedirect();
     }
 
     /**
@@ -112,7 +112,7 @@ public class HtsCallAttempt extends AbstractCallAttempt {
      * @throws IllegalStateException if this is not a token redirect
      */
     public @Nullable Token redirectToken() {
-        if (!isRedirect) {
+        if (!isRedirect()) {
             throw new IllegalStateException("Not a token redirect");
         }
         return redirectToken;
@@ -125,7 +125,7 @@ public class HtsCallAttempt extends AbstractCallAttempt {
      * @throws IllegalStateException if this is not a token redirect
      */
     public @Nullable TokenID redirectTokenId() {
-        if (!isRedirect) {
+        if (!isRedirect()) {
             throw new IllegalStateException("Not a token redirect");
         }
         return redirectToken == null ? null : redirectToken.tokenId();
@@ -138,7 +138,7 @@ public class HtsCallAttempt extends AbstractCallAttempt {
      * @throws IllegalStateException if this is not a token redirect
      */
     public @Nullable TokenType redirectTokenType() {
-        if (!isRedirect) {
+        if (!isRedirect()) {
             throw new IllegalStateException("Not a token redirect");
         }
         return redirectToken == null ? null : redirectToken.tokenType();

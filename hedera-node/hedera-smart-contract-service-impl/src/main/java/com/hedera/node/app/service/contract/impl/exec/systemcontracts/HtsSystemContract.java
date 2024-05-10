@@ -21,10 +21,12 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.as
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractNativeSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 @Singleton
@@ -36,5 +38,10 @@ public class HtsSystemContract extends AbstractNativeSystemContract implements H
     @Inject
     public HtsSystemContract(@NonNull final GasCalculator gasCalculator, @NonNull final HtsCallFactory callFactory) {
         super(HTS_SYSTEM_CONTRACT_NAME, callFactory, HTS_CONTRACT_ID, gasCalculator);
+    }
+
+    @Override
+    protected FrameUtils.CallType callTypeOf(MessageFrame frame) {
+        return FrameUtils.callTypeOf(frame);
     }
 }

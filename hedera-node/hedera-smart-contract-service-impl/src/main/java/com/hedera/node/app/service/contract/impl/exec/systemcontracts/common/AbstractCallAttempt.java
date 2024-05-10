@@ -42,7 +42,6 @@ import org.hyperledger.besu.datatypes.Address;
 public class AbstractCallAttempt {
     private final byte[] selector;
     protected Bytes input;
-    protected boolean isRedirect;
     private final Address authorizingAddress;
     // The id of the sender in the EVM frame
     protected final AccountID senderId;
@@ -55,8 +54,11 @@ public class AbstractCallAttempt {
     private final SystemContractGasCalculator gasCalculator;
     private final List<CallTranslator> callTranslators;
     private final boolean isStaticCall;
-    // a common address used when redirecting calls to a token or an account
-    protected final Address redirectAddress;
+
+    // If non-null, the address of a non-contract entity (e.g., account or token) whose
+    // "bytecode" redirects all calls to a system contract address, and was determined
+    // to be the redirecting entity for this call attempt
+    protected @Nullable final Address redirectAddress;
 
     // too many parameters
     @SuppressWarnings("java:S107")
@@ -85,8 +87,7 @@ public class AbstractCallAttempt {
         this.verificationStrategies = requireNonNull(verificationStrategies);
         this.onlyDelegatableContractKeysActive = onlyDelegatableContractKeysActive;
 
-        this.isRedirect = isRedirect(redirectFunction.selector(), input.toArrayUnsafe());
-        if (this.isRedirect) {
+        if (isRedirectSelector(redirectFunction.selector(), input.toArrayUnsafe())) {
             Tuple abiCall = null;
             try {
                 // First try to decode the redirect with standard ABI encoding using a 32-byte address
@@ -94,7 +95,6 @@ public class AbstractCallAttempt {
             } catch (IllegalArgumentException | BufferUnderflowException | IndexOutOfBoundsException ignore) {
                 // Otherwise use the "packed" encoding with a 20-byte address
             }
-            final Address tokenAddress;
             if (abiCall != null) {
                 this.redirectAddress = Address.fromHexString(abiCall.get(0).toString());
                 this.input = Bytes.wrap((byte[]) abiCall.get(1));
@@ -238,7 +238,11 @@ public class AbstractCallAttempt {
         return isStaticCall;
     }
 
-    private boolean isRedirect(final byte[] functionSelector, final byte[] input) {
+    public boolean isRedirect() {
+        return redirectAddress != null;
+    }
+
+    private boolean isRedirectSelector(final byte[] functionSelector, final byte[] input) {
         return Arrays.equals(input, 0, functionSelector.length, functionSelector, 0, functionSelector.length);
     }
 }

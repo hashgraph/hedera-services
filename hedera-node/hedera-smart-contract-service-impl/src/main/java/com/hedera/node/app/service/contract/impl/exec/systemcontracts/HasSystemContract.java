@@ -21,10 +21,12 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.as
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractNativeSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallFactory;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 @Singleton
@@ -36,5 +38,11 @@ public class HasSystemContract extends AbstractNativeSystemContract implements H
     @Inject
     public HasSystemContract(@NonNull final GasCalculator gasCalculator, @NonNull final HasCallFactory callFactory) {
         super(HAS_SYSTEM_CONTRACT_NAME, callFactory, HAS_CONTRACT_ID, gasCalculator);
+    }
+
+    // Call type is not relevant for the HAS system contracts
+    @Override
+    protected FrameUtils.CallType callTypeOf(MessageFrame frame) {
+        return null;
     }
 }

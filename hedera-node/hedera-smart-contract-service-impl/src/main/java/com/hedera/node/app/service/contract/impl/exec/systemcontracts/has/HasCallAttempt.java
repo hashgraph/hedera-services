@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.has;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static java.util.Objects.requireNonNull;
 
@@ -77,7 +78,7 @@ public class HasCallAttempt extends AbstractCallAttempt {
                 isStaticCall,
                 REDIRECT_FOR_ACCOUNT);
 
-        if (this.isRedirect) {
+        if (isRedirect()) {
             this.redirectAccount = linkedAccount(redirectAddress);
         } else {
             redirectAccount = null;
@@ -91,7 +92,7 @@ public class HasCallAttempt extends AbstractCallAttempt {
      * @throws IllegalStateException if this is not a valid call
      */
     public boolean isAccountRedirect() {
-        return isRedirect;
+        return isRedirect();
     }
 
     /**
@@ -101,7 +102,7 @@ public class HasCallAttempt extends AbstractCallAttempt {
      * @throws IllegalStateException if this is not an account redirect
      */
     public @Nullable Account redirectAccount() {
-        if (!isRedirect) {
+        if (!isRedirect()) {
             throw new IllegalStateException("Not an account redirect");
         }
         return redirectAccount;
@@ -114,7 +115,7 @@ public class HasCallAttempt extends AbstractCallAttempt {
      * @throws IllegalStateException if this is not an account redirect
      */
     public @Nullable AccountID redirectAccountId() {
-        if (!isRedirect) {
+        if (!isRedirect()) {
             throw new IllegalStateException("Not a account redirect");
         }
         return redirectAccount == null ? null : redirectAccount.accountId();
@@ -139,6 +140,13 @@ public class HasCallAttempt extends AbstractCallAttempt {
      */
     public @Nullable Account linkedAccount(@NonNull final byte[] evmAddress) {
         requireNonNull(evmAddress);
-        return enhancement.nativeOperations().getAccount(numberOfLongZero(evmAddress));
+        if (isLongZeroAddress(evmAddress)) {
+            return enhancement.nativeOperations().getAccount(numberOfLongZero(evmAddress));
+        } else {
+            final var addressNum = enhancement
+                    .nativeOperations()
+                    .resolveAlias(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(evmAddress));
+            return enhancement.nativeOperations().getAccount(addressNum);
+        }
     }
 }
