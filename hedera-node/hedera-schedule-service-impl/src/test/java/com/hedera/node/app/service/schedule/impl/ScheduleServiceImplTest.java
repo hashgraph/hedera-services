@@ -69,7 +69,7 @@ class ScheduleServiceImplTest {
     }
 
     @Test
-    void triesToSetStateWithoutRegisteredTokenSchema() {
+    void triesToSetStateWithoutRegisteredScheduleSchema() {
         final ScheduleServiceImpl subject = new ScheduleServiceImpl();
         final var input = mock(MerkleScheduledTransactions.class);
         Assertions.assertThatThrownBy(() -> subject.setFs(input)).isInstanceOf(NullPointerException.class);
