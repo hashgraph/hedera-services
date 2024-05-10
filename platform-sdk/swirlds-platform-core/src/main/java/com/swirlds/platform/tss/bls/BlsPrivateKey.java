@@ -16,4 +16,4 @@
 
 package com.swirlds.platform.tss.bls;
 
-public interface BlsPrivateKey {}
+public record BlsPrivateKey(byte[] share) {}

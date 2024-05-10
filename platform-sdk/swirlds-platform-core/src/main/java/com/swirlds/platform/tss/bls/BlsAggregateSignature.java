@@ -16,4 +16,4 @@
 
 package com.swirlds.platform.tss.bls;
 
-public interface BlsAggregateSignature {}
+public record BlsAggregateSignature(byte[] groupElement) {}

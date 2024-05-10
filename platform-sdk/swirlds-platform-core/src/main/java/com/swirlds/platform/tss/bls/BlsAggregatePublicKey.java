@@ -16,4 +16,4 @@
 
 package com.swirlds.platform.tss.bls;
 
-public interface BlsAggregatePublicKey {}
+public record BlsAggregatePublicKey(byte[] commitment) {}
