@@ -29,10 +29,8 @@ import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
-import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyFactory;
@@ -234,7 +232,7 @@ public class StateAccess {
         // maybe change this since it uses deprecated class
         final Cryptography cryptography = CryptographyFactory.create(configuration);
 
-        return new DefaultPlatformContext(configuration, defaultMetrics, cryptography, Time.getCurrent());
+        return PlatformContext.create(configuration, defaultMetrics, cryptography);
     }
 
     /**
