@@ -28,9 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
@@ -38,6 +36,7 @@ import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
@@ -119,8 +118,11 @@ class PcesFileReaderTests {
 
         final TestFileSystemManager fileSystemManager = new TestFileSystemManager(testDirectory);
         fileSystemManager.setBin(TestRecycleBin.getInstance());
-        return new DefaultPlatformContext(
-                configuration, metrics, CryptographyHolder.get(), Time.getCurrent(), fileSystemManager);
+        return TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .withMetrics(metrics)
+                .withFileSystemManager((m, t) -> fileSystemManager)
+                .build();
     }
 
     private PlatformContext buildContext(
@@ -139,8 +141,12 @@ class PcesFileReaderTests {
 
         final TestFileSystemManager fileSystemManager = new TestFileSystemManager(testDirectory);
         fileSystemManager.setBin(recycleBinProvider.apply(metrics, Time.getCurrent()));
-        return new DefaultPlatformContext(
-                configuration, metrics, CryptographyHolder.get(), Time.getCurrent(), fileSystemManager);
+
+        return TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .withMetrics(metrics)
+                .withFileSystemManager((m, t) -> fileSystemManager)
+                .build();
     }
 
     protected static Stream<Arguments> buildArguments() {

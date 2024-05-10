@@ -75,6 +75,14 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     private final StakingConfig stakingConfig;
     private final Predicate<CryptoTransferTransactionBody> customFeeTest;
 
+    /**
+     * Constructs a {@link TokenServiceApiImpl}
+     * @param config the configuration
+     * @param storeMetricsService the store metrics service
+     * @param stakingValidator the staking validator
+     * @param writableStates the writable states
+     * @param customFeeTest a predicate for determining if a transfer has custom fees
+     */
     public TokenServiceApiImpl(
             @NonNull final Configuration config,
             @NonNull final StoreMetricsService storeMetricsService,

@@ -126,7 +126,7 @@ public class HevmTransactionFactory {
         this.tokenServiceApi = requireNonNull(tokenServiceApi);
         this.expiryValidator = requireNonNull(expiryValidator);
         this.attributeValidator = requireNonNull(attributeValidator);
-        this.ethereumSignatures = ethereumSignatures;
+        this.ethereumSignatures = requireNonNull(ethereumSignatures);
         this.hederaEvmContext = requireNonNull(hederaEvmContext);
     }
 
