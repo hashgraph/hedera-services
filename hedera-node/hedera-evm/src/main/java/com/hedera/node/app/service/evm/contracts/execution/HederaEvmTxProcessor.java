@@ -23,7 +23,9 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -136,6 +138,7 @@ public abstract class HederaEvmTxProcessor {
                 .initialGas(gasAvailable)
                 .originator(senderEvmAddress)
                 .gasPrice(Wei.of(gasPrice))
+                .blobGasPrice((Wei.ONE))
                 .sender(senderEvmAddress)
                 .value(valueAsWei)
                 .apparentValue(valueAsWei)
@@ -144,6 +147,7 @@ public abstract class HederaEvmTxProcessor {
                 .isStatic(isStatic)
                 .miningBeneficiary(coinbase)
                 .blockHashLookup(blockMetaSource::getBlockHash)
+                .versionedHashes(Optional.of(List.of()))
                 .contextVariables(Map.of("HederaFunctionality", getFunctionType()));
 
         this.initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload, value);
@@ -218,7 +222,7 @@ public abstract class HederaEvmTxProcessor {
         executor.process(frame, operationTracer);
     }
 
-    private AbstractMessageProcessor getMessageProcessor(final MessageFrame.Type type) {
+    protected AbstractMessageProcessor getMessageProcessor(final MessageFrame.Type type) {
         return switch (type) {
             case MESSAGE_CALL -> messageCallProcessor;
             case CONTRACT_CREATION -> contractCreationProcessor;

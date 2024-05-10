@@ -57,6 +57,10 @@ import java.util.List;
 public class AssociateTokenRecipientsStep extends BaseTokenHandler implements TransferStep {
     private final CryptoTransferTransactionBody op;
 
+    /**
+     * Constructs the step with the operation.
+     * @param op the operation
+     */
     public AssociateTokenRecipientsStep(@NonNull final CryptoTransferTransactionBody op) {
         this.op = requireNonNull(op);
     }

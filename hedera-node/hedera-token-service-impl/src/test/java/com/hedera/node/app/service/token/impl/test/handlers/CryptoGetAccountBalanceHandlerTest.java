@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ACCOUNTS;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.TOKENS;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.TOKEN_RELS;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;

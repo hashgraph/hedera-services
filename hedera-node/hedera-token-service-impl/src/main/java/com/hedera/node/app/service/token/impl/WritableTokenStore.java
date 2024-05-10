@@ -79,6 +79,7 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
      * Returns the {@link Token} with the given number using {@link WritableKVState#getForModify}.
      * If no such token exists, returns {@code Optional.empty()}
      * @param tokenId - the id of the token to be retrieved.
+     * @return the token with the given tokenId, or {@code Optional.empty()} if no such token exists.
      */
     @NonNull
     public Optional<Token> getForModify(final TokenID tokenId) {
@@ -117,6 +118,10 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
         return tokenState.getOriginalValue(tokenId);
     }
 
+    /**
+     * Checks if the given tokenId is not the default tokenId. If it is, throws an {@link IllegalArgumentException}.
+     * @param tokenId The tokenId to check.
+     */
     public static void requireNotDefault(@NonNull final TokenID tokenId) {
         if (tokenId.equals(TokenID.DEFAULT)) {
             throw new IllegalArgumentException("Token ID cannot be default");

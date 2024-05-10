@@ -1,3 +1,6 @@
+/**
+ * Module that provides the implementation of the Hedera Token Service.
+ */
 module com.hedera.node.app.service.token.impl {
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.service.mono;

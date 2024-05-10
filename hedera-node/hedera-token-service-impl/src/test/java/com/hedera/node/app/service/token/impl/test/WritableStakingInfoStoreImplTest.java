@@ -30,7 +30,13 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Unit tests for {@link WritableStakingInfoStore}.
+ */
 public class WritableStakingInfoStoreImplTest {
+    /**
+     * Node ID 1.
+     */
     public static final EntityNumber NODE_ID_1 =
             EntityNumber.newBuilder().number(1L).build();
 
