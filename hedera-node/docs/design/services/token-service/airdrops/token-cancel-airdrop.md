@@ -14,7 +14,7 @@ We want to provide the option for an airdrop sender to cancel an airdrop that ha
 
 ## Architecture
 
-The implementation related to the new `TokenCancelAirdrop` transaction will be gated behind a feature flag.
+The implementation related to the new `TokenCancelAirdrop` transaction will be gated behind a `tokens.airdrops.cancel.enabled` feature flag.
 
 ### HAPI updates
 
