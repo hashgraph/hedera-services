@@ -73,6 +73,7 @@ public class MixedOperations {
             final AtomicInteger nftId,
             final AtomicInteger scheduleId,
             final AtomicInteger contractId,
+            final AtomicInteger topicId,
             final Random r) {
         return () -> new HapiSpecOperation[] {
             // Submit some mixed operations
@@ -111,6 +112,12 @@ public class MixedOperations {
                     .toArray(HapiSpecOperation[]::new)),
             sleepFor(10000),
             inParallel(IntStream.range(0, numSubmissions)
+                    .mapToObj(ignore -> createTopic(TOPIC + topicId.getAndIncrement())
+                            .submitKeyName(SUBMIT_KEY)
+                            .payingWith(PAYER))
+                    .toArray(HapiSpecOperation[]::new)),
+            sleepFor(10000),
+            inParallel(IntStream.range(0, numSubmissions)
                     .mapToObj(i -> tokenAssociate(SENDER, TOKEN + i)
                             .payingWith(PAYER)
                             .noLogging()
@@ -118,12 +125,7 @@ public class MixedOperations {
                     .toArray(HapiSpecOperation[]::new)),
             sleepFor(10000),
             inParallel(IntStream.range(0, numSubmissions)
-                    .mapToObj(i ->
-                            createTopic(TOPIC + i).submitKeyName(SUBMIT_KEY).payingWith(PAYER))
-                    .toArray(HapiSpecOperation[]::new)),
-            sleepFor(10000),
-            inParallel(IntStream.range(0, numSubmissions)
-                    .mapToObj(i -> submitMessageTo(TOPIC + i)
+                    .mapToObj(ignore -> submitMessageTo(TOPIC + topicId.getAndDecrement())
                             .message(ArrayUtils.addAll(
                                     ByteBuffer.allocate(8)
                                             .putLong(Instant.now().toEpochMilli())

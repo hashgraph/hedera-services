@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -31,6 +32,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.startAllNodes;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToBecomeActive;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToFreeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToShutDown;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablement;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.ADMIN_KEY;
@@ -92,9 +94,10 @@ public class MixedOpsRestartTest extends HapiSuite {
         AtomicInteger scheduleId = new AtomicInteger(0);
         AtomicInteger contractId = new AtomicInteger(0);
         AtomicInteger nftId = new AtomicInteger(0);
+        AtomicInteger topicId = new AtomicInteger(1);
         Random r = new Random(38582L);
         Supplier<HapiSpecOperation[]> mixedOpsBurst =
-                new MixedOperations(NUM_SUBMISSIONS).mixedOps(tokenId, nftId, scheduleId, contractId, r);
+                new MixedOperations(NUM_SUBMISSIONS).mixedOps(tokenId, nftId, scheduleId, contractId, topicId, r);
         return defaultHapiSpec("RestartMixedOps")
                 .given(
                         newKeyNamed(SUBMIT_KEY),
@@ -109,7 +112,7 @@ public class MixedOpsRestartTest extends HapiSuite {
                         createTopic(TOPIC).submitKeyName(SUBMIT_KEY).payingWith(PAYER),
                         fileCreate(SOME_BYTE_CODE)
                                 .path(HapiSpecSetup.getDefaultInstance().defaultContractPath()),
-                        inParallel(mixedOpsBurst.get()),
+                        withOpContext((spec, log) -> allRunFor(spec, mixedOpsBurst.get())),
                         sleepFor(10000),
                         inParallel(IntStream.range(0, NUM_SUBMISSIONS)
                                 .mapToObj(ignore -> mintToken(
@@ -144,6 +147,6 @@ public class MixedOpsRestartTest extends HapiSuite {
                         createTopic(TOPIC).submitKeyName(SUBMIT_KEY).payingWith(PAYER),
                         fileCreate(SOME_BYTE_CODE)
                                 .path(HapiSpecSetup.getDefaultInstance().defaultContractPath()),
-                        inParallel(mixedOpsBurst.get()));
+                        withOpContext((spec, log) -> allRunFor(spec, mixedOpsBurst.get())));
     }
 }
