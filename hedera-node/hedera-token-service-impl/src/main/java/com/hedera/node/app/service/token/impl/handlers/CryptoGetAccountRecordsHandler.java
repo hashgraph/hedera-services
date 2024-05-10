@@ -52,6 +52,10 @@ import javax.inject.Singleton;
 public class CryptoGetAccountRecordsHandler extends PaidQueryHandler {
     private final RecordCache recordCache;
 
+    /**
+     * Default constructor for injection.
+     * @param recordCache the record cache to use to get the records
+     */
     @Inject
     public CryptoGetAccountRecordsHandler(@NonNull final RecordCache recordCache) {
         // Exists for injection
