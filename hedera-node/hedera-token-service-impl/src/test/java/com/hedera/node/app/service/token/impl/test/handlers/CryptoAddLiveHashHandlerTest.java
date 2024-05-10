@@ -18,10 +18,13 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mock.Strictness.LENIENT;
 
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.CryptoAddLiveHashHandler;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -42,6 +45,11 @@ class CryptoAddLiveHashHandlerTest {
     private final CryptoAddLiveHashHandler subject = new CryptoAddLiveHashHandler();
 
     @Test
+    void pureChecksDoesNothing() throws PreCheckException {
+        subject.pureChecks(TransactionBody.newBuilder().build());
+    }
+
+    @Test
     void preHandleThrowsUnsupported() {
         assertThatThrownBy(() -> subject.preHandle(preHandleContext))
                 .isInstanceOf(PreCheckException.class)
@@ -53,5 +61,10 @@ class CryptoAddLiveHashHandlerTest {
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(NOT_SUPPORTED));
+    }
+
+    @Test
+    void calculateFeesFree() {
+        assertThat(subject.calculateFees(null)).isEqualTo(Fees.FREE);
     }
 }
