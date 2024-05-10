@@ -116,8 +116,8 @@ An update into the `feeSchedule` file would be needed to specify that.
         - Verify that the pending airdrops list does not have any duplicate entries
     - Pre-handle:
         - The transaction must be signed by the account referenced by a `sender_id` for each entry in the pending airdrops list
-        - Confirm that for the given pending airdrops ids in the transaction there are corresponding pending transfers existing in state
     - Handle:
+        - Confirm that for the given pending airdrops ids in the transaction there are corresponding pending transfers existing in state
         - Any additional validation depending on config or state i.e. semantics checks
         - The business logic for cancelling pending airdrops
             - Should boil down to clearing up the pending airdrops entries from the pending airdrops state
@@ -138,3 +138,4 @@ All of the expected behaviour described below should be present only if the new 
 - `TokenCancelAirdrop` transaction with more than 10 airdrops entries should fail
 - `TokenCancelAirdrop` transaction containing duplicate entries should fail
 - `TokenCancelAirdrop` transaction not signed by the account referenced by a `sender_id` for each entry in the pending airdrops list should fail
+- Given the feature flag for `TokenCancelAirdrop` is disabled then any `TokenCancelAirdrop` transaction should fail with `NOT_SUPPORTED`
