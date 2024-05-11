@@ -80,7 +80,7 @@ public class CustomFixedFeeAssessorTest {
         final var hbarFee = withFixedFee(hbarFixedFee, otherCollector);
         final var feeMeta = withCustomFeeMeta(List.of(hbarFee), TokenType.FUNGIBLE_COMMON);
 
-        subject.assessFixedFee(feeMeta, payer, hbarFee, result);
+        subject.assessFixedFees(feeMeta, payer, result);
         assertThat(result.getAssessedCustomFees()).isNotEmpty();
         assertThat(result.getAssessedCustomFees()).contains(hbarAssessedFee);
     }
@@ -91,7 +91,7 @@ public class CustomFixedFeeAssessorTest {
         final var hbarFee = withFixedFee(htsFixedFee, otherCollector);
         final var feeMeta = withCustomFeeMeta(List.of(hbarFee), TokenType.FUNGIBLE_COMMON);
 
-        subject.assessFixedFee(feeMeta, payer, hbarFee, result);
+        subject.assessFixedFees(feeMeta, payer, result);
         assertThat(result.getAssessedCustomFees()).isNotEmpty();
         assertThat(result.getAssessedCustomFees()).contains(htsAssessedFee);
     }
@@ -102,7 +102,17 @@ public class CustomFixedFeeAssessorTest {
         final var hbarFee = withFixedFee(htsFixedFee, payer);
         final var feeMeta = withCustomFeeMeta(List.of(hbarFee), TokenType.FUNGIBLE_COMMON);
 
-        subject.assessFixedFee(feeMeta, payer, hbarFee, result);
+        subject.assessFixedFees(feeMeta, payer, result);
+        assertThat(result.getAssessedCustomFees()).isEmpty();
+    }
+
+    @Test
+    void exemptsAssessmentWhenSenderSameAsCollector() {
+        result = new AssessmentResult(List.of(nftTransferList), List.of());
+        final var hbarFee = withFixedFee(htsFixedFee, payer);
+        final var feeMeta = withCustomFeeMeta(List.of(hbarFee), TokenType.FUNGIBLE_COMMON);
+
+        subject.assessFixedFees(feeMeta, payer, result);
         assertThat(result.getAssessedCustomFees()).isEmpty();
     }
 
