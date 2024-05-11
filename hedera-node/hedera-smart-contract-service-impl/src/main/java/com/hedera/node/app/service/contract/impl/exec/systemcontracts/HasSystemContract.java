@@ -43,6 +43,6 @@ public class HasSystemContract extends AbstractNativeSystemContract implements H
     // Call type is not relevant for the HAS system contracts
     @Override
     protected FrameUtils.CallType callTypeOf(MessageFrame frame) {
-        return null;
+        return FrameUtils.callTypeForAccountOf(frame);
     }
 }
