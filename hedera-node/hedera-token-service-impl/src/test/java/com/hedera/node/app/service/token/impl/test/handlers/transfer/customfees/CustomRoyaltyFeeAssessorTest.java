@@ -47,7 +47,6 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.Custo
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomRoyaltyFeeAssessor;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
-
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -90,9 +89,7 @@ public class CustomRoyaltyFeeAssessorTest {
             .feeCollectorAccountId(targetCollector)
             .build();
 
-    final FixedFee hbarFallbackFee = FixedFee.newBuilder()
-            .amount(33)
-            .build();
+    final FixedFee hbarFallbackFee = FixedFee.newBuilder().amount(33).build();
     final FixedFee htsFallbackFee = FixedFee.newBuilder()
             .amount(33)
             .denominatingTokenId(firstFungibleTokenId)
@@ -102,10 +99,8 @@ public class CustomRoyaltyFeeAssessorTest {
             .amount(1)
             .build();
     final RoyaltyFee royaltyFee = RoyaltyFee.newBuilder()
-            .exchangeValueFraction(Fraction.newBuilder()
-                    .numerator(1)
-                    .denominator(2)
-                    .build())
+            .exchangeValueFraction(
+                    Fraction.newBuilder().numerator(1).denominator(2).build())
             .build();
 
     @BeforeEach
@@ -118,9 +113,7 @@ public class CustomRoyaltyFeeAssessorTest {
         result = new AssessmentResult(List.of(nftTransferList), List.of());
 
         final CustomFeeMeta feeMeta = withCustomFeeMeta(
-                List.of(
-                        withFixedFee(fixedFee, otherCollector),
-                        withRoyaltyFee(royaltyFee, targetCollector)),
+                List.of(withFixedFee(fixedFee, otherCollector), withRoyaltyFee(royaltyFee, targetCollector)),
                 NON_FUNGIBLE_UNIQUE);
 
         subject.assessRoyaltyFees(feeMeta, payer, funding, result);
@@ -137,147 +130,155 @@ public class CustomRoyaltyFeeAssessorTest {
     void chargesHbarFallbackAsExpected() {
         result = new AssessmentResult(List.of(nftTransferList), List.of());
 
-        final var royaltyCustomFee =  withRoyaltyFee(royaltyFee.copyBuilder().fallbackFee(hbarFallbackFee).build(), targetCollector);
+        final var royaltyCustomFee = withRoyaltyFee(
+                royaltyFee.copyBuilder().fallbackFee(hbarFallbackFee).build(), targetCollector);
         final var royaltyFixedFee = withFixedFee(fixedFee, otherCollector);
 
-        final CustomFeeMeta feeMeta = withCustomFeeMeta(List.of(royaltyFixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
+        final CustomFeeMeta feeMeta =
+                withCustomFeeMeta(List.of(royaltyFixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
 
         subject.assessRoyaltyFees(feeMeta, payer, funding, result);
 
         assertThat(result.getAssessedCustomFees()).isEmpty();
         // receiver will pay the fallback fee
-        verify(fixedFeeAssessor).assessFixedFee(feeMeta, funding, withFixedFee(hbarFallbackFee, targetCollector), result);
+        verify(fixedFeeAssessor)
+                .assessFixedFee(feeMeta, funding, withFixedFee(hbarFallbackFee, targetCollector), result);
 
         // We add to the set of royalties paid to track the royalties paid. It should have an entry with receiver
         assertThat(result.getRoyaltiesPaid()).contains(Pair.of(funding, feeMeta.tokenId()));
     }
 
+    @Test
+    void chargesHtsFallbackAsExpected() {
+        result = new AssessmentResult(List.of(nftTransferList), List.of());
 
-        @Test
-        void chargesHtsFallbackAsExpected() {
-            result = new AssessmentResult(List.of(nftTransferList), List.of());
+        final var royaltyCustomFee = withRoyaltyFee(
+                royaltyFee.copyBuilder().fallbackFee(htsFallbackFee).build(), targetCollector);
+        final var royaltyFixedFee = withFixedFee(fixedFee, otherCollector);
 
-            final var royaltyCustomFee =  withRoyaltyFee(royaltyFee.copyBuilder().fallbackFee(htsFallbackFee).build(), targetCollector);
-            final var royaltyFixedFee = withFixedFee(fixedFee, otherCollector);
+        final CustomFeeMeta feeMeta =
+                withCustomFeeMeta(List.of(royaltyFixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
 
-            final CustomFeeMeta feeMeta = withCustomFeeMeta(List.of(royaltyFixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
+        subject.assessRoyaltyFees(feeMeta, payer, funding, result);
 
-            subject.assessRoyaltyFees(feeMeta, payer, funding, result);
+        assertThat(result.getAssessedCustomFees()).isEmpty();
+        // receiver will pay the fallback fee
+        verify(fixedFeeAssessor)
+                .assessFixedFee(feeMeta, funding, withFixedFee(htsFallbackFee, targetCollector), result);
 
-            assertThat(result.getAssessedCustomFees()).isEmpty();
-            // receiver will pay the fallback fee
-            verify(fixedFeeAssessor).assessFixedFee(feeMeta, funding, withFixedFee(htsFallbackFee, targetCollector), result);
+        // We add to the set of royalties paid to track the royalties paid. It should have an entry with receiver
+        assertThat(result.getRoyaltiesPaid()).contains(Pair.of(funding, feeMeta.tokenId()));
+    }
 
-            // We add to the set of royalties paid to track the royalties paid. It should have an entry with receiver
-            assertThat(result.getRoyaltiesPaid()).contains(Pair.of(funding, feeMeta.tokenId()));
+    @Test
+    void doesntFailIfFallbackNftTransferredToUnknownAlias() {
+        result = new AssessmentResult(List.of(nftTransferListWithAlias), List.of());
 
-        }
+        final var royaltyCustomFee = withRoyaltyFee(
+                royaltyFee.copyBuilder().fallbackFee(htsFallbackFee).build(), targetCollector);
+        final var fixedFee = withFixedFee(this.fixedFee, otherCollector);
 
-        @Test
-        void doesntFailIfFallbackNftTransferredToUnknownAlias() {
-            result = new AssessmentResult(List.of(nftTransferListWithAlias), List.of());
+        final CustomFeeMeta feeMeta = withCustomFeeMeta(List.of(fixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
 
-            final var royaltyCustomFee =  withRoyaltyFee(royaltyFee.copyBuilder().fallbackFee(htsFallbackFee).build(), targetCollector);
-            final var fixedFee = withFixedFee(this.fixedFee, otherCollector);
+        subject.assessRoyaltyFees(feeMeta, payer, funding, result);
 
-            final CustomFeeMeta feeMeta = withCustomFeeMeta(List.of(fixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
+        assertThat(result.getAssessedCustomFees()).isEmpty();
+        // receiver will pay the fallback fee
+        verify(fixedFeeAssessor)
+                .assessFixedFee(feeMeta, funding, withFixedFee(htsFallbackFee, targetCollector), result);
 
-            subject.assessRoyaltyFees(feeMeta, payer, funding, result);
+        // We add to the set of royalties paid to track the royalties paid. It should have an entry with receiver
+        assertThat(result.getRoyaltiesPaid()).contains(Pair.of(funding, feeMeta.tokenId()));
+    }
 
-            assertThat(result.getAssessedCustomFees()).isEmpty();
-            // receiver will pay the fallback fee
-            verify(fixedFeeAssessor).assessFixedFee(feeMeta, funding, withFixedFee(htsFallbackFee, targetCollector), result);
+    @Test
+    void skipsIfRoyaltyAlreadyPaid() {
+        result = new AssessmentResult(List.of(nftTransferListWithAlias), List.of());
+        // Include royalty already paid
+        result.addToRoyaltiesPaid(Pair.of(funding, firstFungibleTokenId));
 
-            // We add to the set of royalties paid to track the royalties paid. It should have an entry with receiver
-            assertThat(result.getRoyaltiesPaid()).contains(Pair.of(funding, feeMeta.tokenId()));
-        }
+        final var royaltyCustomFee = withRoyaltyFee(
+                royaltyFee.copyBuilder().fallbackFee(htsFallbackFee).build(), targetCollector);
+        final var fixedFee = withFixedFee(this.fixedFee, otherCollector);
 
-        @Test
-        void skipsIfRoyaltyAlreadyPaid() {
-            result = new AssessmentResult(List.of(nftTransferListWithAlias), List.of());
-            // Include royalty already paid
-            result.addToRoyaltiesPaid(Pair.of(funding, firstFungibleTokenId));
+        final CustomFeeMeta feeMeta = withCustomFeeMeta(List.of(fixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
 
-            final var royaltyCustomFee =  withRoyaltyFee(royaltyFee.copyBuilder().fallbackFee(htsFallbackFee).build(), targetCollector);
-            final var fixedFee = withFixedFee(this.fixedFee, otherCollector);
+        subject.assessRoyaltyFees(feeMeta, payer, funding, result);
 
-            final CustomFeeMeta feeMeta = withCustomFeeMeta(List.of(fixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
+        assertThat(result.getAssessedCustomFees()).isEmpty();
 
-            subject.assessRoyaltyFees(feeMeta, payer, funding, result);
+        verify(fixedFeeAssessor, never()).assessFixedFee(any(), any(), any(), any());
+    }
 
-            assertThat(result.getAssessedCustomFees()).isEmpty();
+    @Test
+    void reclaimsFromExchangeValueWhenAvailable() {
+        final var accountAmounts = List.of(AccountAmount.newBuilder()
+                .accountID(payer)
+                .amount(originalUnits)
+                .build());
+        result = new AssessmentResult(
+                List.of(
+                        nftTransferList,
+                        htsPayerTokenTransferList
+                                .copyBuilder()
+                                .transfers(accountAmounts)
+                                .build()),
+                accountAmounts);
 
-            verify(fixedFeeAssessor, never()).assessFixedFee(any(), any(), any(), any());
-        }
+        final var royaltyCustomFee = withRoyaltyFee(
+                royaltyFee.copyBuilder().fallbackFee(htsFallbackFee).build(), targetCollector);
+        final var royaltyFixedFee = withFixedFee(fixedFee, otherCollector);
 
-        @Test
-        void reclaimsFromExchangeValueWhenAvailable() {
-        final var accountAmounts = List.of(AccountAmount.newBuilder().accountID(payer).amount(originalUnits).build());
-            result = new AssessmentResult(List.of(nftTransferList,
-                    htsPayerTokenTransferList.copyBuilder().transfers(accountAmounts).build()),
-                    accountAmounts);
+        final CustomFeeMeta feeMeta =
+                withCustomFeeMeta(List.of(royaltyFixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
 
-            final var royaltyCustomFee =  withRoyaltyFee(royaltyFee.copyBuilder().fallbackFee(htsFallbackFee).build(), targetCollector);
-            final var royaltyFixedFee = withFixedFee(fixedFee, otherCollector);
+        subject.assessRoyaltyFees(feeMeta, payer, funding, result);
 
-            final CustomFeeMeta feeMeta = withCustomFeeMeta(List.of(royaltyFixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
+        assertThat(result.getAssessedCustomFees()).isNotEmpty();
+        assertThat(result.getAssessedCustomFees()).contains(hbarAssessedFee);
+        assertThat(result.getAssessedCustomFees()).contains(htsAssessedFee);
+        // sender will pay from exchange credits
+        verify(fixedFeeAssessor, never()).assessFixedFees(any(), any(), any());
 
-            subject.assessRoyaltyFees(feeMeta, payer, funding, result);
+        // We add to the set of royalties paid to track the royalties paid. It should have an entry with sender
+        assertThat(result.getRoyaltiesPaid()).contains(Pair.of(payer, feeMeta.tokenId()));
+    }
 
-            assertThat(result.getAssessedCustomFees()).isNotEmpty();
-            assertThat(result.getAssessedCustomFees()).contains(hbarAssessedFee);
-            assertThat(result.getAssessedCustomFees()).contains(htsAssessedFee);
-            // sender will pay from exchange credits
-            verify(fixedFeeAssessor, never()).assessFixedFees(any(), any(), any());
+    @Test
+    void doesntCollectRoyaltyIfOriginalPayerIsExempt() {
+        final var accountAmounts = List.of(AccountAmount.newBuilder()
+                .accountID(payer)
+                .amount(originalUnits)
+                .build());
+        result = new AssessmentResult(
+                List.of(
+                        nftTransferList,
+                        htsPayerTokenTransferList
+                                .copyBuilder()
+                                .transfers(accountAmounts)
+                                .build()),
+                accountAmounts);
 
-            // We add to the set of royalties paid to track the royalties paid. It should have an entry with sender
-            assertThat(result.getRoyaltiesPaid()).contains(Pair.of(payer, feeMeta.tokenId()));
-        }
+        final var royaltyCustomFee = withRoyaltyFee(
+                royaltyFee.copyBuilder().fallbackFee(htsFallbackFee).build(), payer);
+        final var royaltyFixedFee = withFixedFee(fixedFee, payer);
 
-        @Test
-        void doesntCollectRoyaltyIfOriginalPayerIsExempt() {
-            final var accountAmounts = List.of(AccountAmount.newBuilder().accountID(payer).amount(originalUnits).build());
-            result = new AssessmentResult(List.of(nftTransferList,
-                    htsPayerTokenTransferList.copyBuilder().transfers(accountAmounts).build()),
-                    accountAmounts);
+        final CustomFeeMeta feeMeta =
+                withCustomFeeMeta(List.of(royaltyFixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
 
-            final var royaltyCustomFee =  withRoyaltyFee(royaltyFee.copyBuilder().fallbackFee(htsFallbackFee).build(), payer);
-            final var royaltyFixedFee = withFixedFee(fixedFee, payer);
+        subject.assessRoyaltyFees(feeMeta, payer, funding, result);
 
-            final CustomFeeMeta feeMeta = withCustomFeeMeta(List.of(royaltyFixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
+        assertThat(result.getAssessedCustomFees()).isNotEmpty();
+        assertThat(result.getAssessedCustomFees()).contains(hbarAssessedFee);
+        assertThat(result.getAssessedCustomFees()).contains(htsAssessedFee);
+        // sender will pay from exchange credits
+        verify(fixedFeeAssessor, never()).assessFixedFees(any(), any(), any());
 
-            subject.assessRoyaltyFees(feeMeta, payer, funding, result);
+        // We add to the set of royalties paid to track the royalties paid. It should have an entry with sender
+        assertThat(result.getRoyaltiesPaid()).contains(Pair.of(payer, feeMeta.tokenId()));
+    }
 
-            assertThat(result.getAssessedCustomFees()).isNotEmpty();
-            assertThat(result.getAssessedCustomFees()).contains(hbarAssessedFee);
-            assertThat(result.getAssessedCustomFees()).contains(htsAssessedFee);
-            // sender will pay from exchange credits
-            verify(fixedFeeAssessor, never()).assessFixedFees(any(), any(), any());
-
-            // We add to the set of royalties paid to track the royalties paid. It should have an entry with sender
-            assertThat(result.getRoyaltiesPaid()).contains(Pair.of(payer, feeMeta.tokenId()));
-        }
-    //
-    //    @Test
-    //    void abortsWhenCreditsNotAvailable() {
-    //        // setup:
-    //        final CustomFeeMeta feeMeta = newRoyaltyCustomFeeMeta(List.of(
-    //                FcCustomFee.fixedFee(1, null, otherCollector, false),
-    //                FcCustomFee.royaltyFee(1, 2, null, targetCollector, false),
-    //                FcCustomFee.royaltyFee(1, 2, null, targetCollector, false)));
-    //        // and:
-    //        final var reclaimable = changesNoLongerWithOriginalUnits();
-    //
-    //        given(changeManager.fungibleCreditsInCurrentLevel(payer)).willReturn(reclaimable);
-    //
-    //        // when:
-    //        final var result = subject.assessAllRoyalties(trigger, feeMeta, changeManager, accumulator);
-    //
-    //        // then:
-    //        assertEquals(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE, result);
-    //    }
-
-    private CustomFeeMeta withCustomFeeMeta(List<CustomFee> customFees, TokenType tokenType) {
+    public CustomFeeMeta withCustomFeeMeta(List<CustomFee> customFees, TokenType tokenType) {
         return new CustomFeeMeta(firstFungibleTokenId, minter, customFees, tokenType);
     }
 }

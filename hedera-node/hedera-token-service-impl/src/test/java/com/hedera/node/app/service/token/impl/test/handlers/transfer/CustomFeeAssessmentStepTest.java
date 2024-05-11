@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
-import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWith;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,14 +38,10 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.CustomFeeAssessm
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
-import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AssessmentResult;
-import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -300,21 +295,23 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         assertThatTransfersContains(givenOp.transfers().accountAmounts(), expectedGivenOpHbarTransfers);
     }
 
-//    @Test
-//    void abortsWithNecessaryResponseCodeIfNoCounterpartyId() {
-//        result = new AssessmentResult(List.of(htsPayerTokenTransferList), List.of());
-//
-//        final var royaltyCustomFee =  withRoyaltyFee(royaltyFee.copyBuilder().fallbackFee(fallbackFee).build(), targetCollector);
-//        final var royaltyFixedFee = withFixedFee(fixedFee, otherCollector);
-//
-//        final CustomFeeMeta feeMeta = newRoyaltyCustomFeeMeta(List.of(royaltyFixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
-//
-//        subject.assessRoyaltyFees(feeMeta, payer, funding, result);
-//
-//        assertThat(result.getAssessedCustomFees()).isNotEmpty();
-//        // We add to the set of royalties paid to track the royalties paid. It should have an entry with receiver
-//        assertThat(result.getRoyaltiesPaid()).contains(Pair.of(funding, feeMeta.tokenId()));
-//    }
+    //    @Test
+    //    void abortsWithNecessaryResponseCodeIfNoCounterpartyId() {
+    //        result = new AssessmentResult(List.of(htsPayerTokenTransferList), List.of());
+    //
+    //        final var royaltyCustomFee =  withRoyaltyFee(royaltyFee.copyBuilder().fallbackFee(fallbackFee).build(),
+    // targetCollector);
+    //        final var royaltyFixedFee = withFixedFee(fixedFee, otherCollector);
+    //
+    //        final CustomFeeMeta feeMeta = newRoyaltyCustomFeeMeta(List.of(royaltyFixedFee, royaltyCustomFee),
+    // NON_FUNGIBLE_UNIQUE);
+    //
+    //        subject.assessRoyaltyFees(feeMeta, payer, funding, result);
+    //
+    //        assertThat(result.getAssessedCustomFees()).isNotEmpty();
+    //        // We add to the set of royalties paid to track the royalties paid. It should have an entry with receiver
+    //        assertThat(result.getRoyaltiesPaid()).contains(Pair.of(funding, feeMeta.tokenId()));
+    //    }
 
     @Test
     @DisplayName("Transfer which triggers hts fixed fee with self denomination, fractional fee "

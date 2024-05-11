@@ -107,7 +107,8 @@ public class CustomRoyaltyFeeAssessor {
                 if (!isPayerExempt(feeMeta, fee, sender)) {
                     chargeRoyalty(exchangedValue, fee, result);
                     // We don't want to charge the fallback fee for each nft transfer, if the receiver has already
-                    // paid it for this token, so track that royalty is paid once. Here, Sender effectively pays percent royalties
+                    // paid it for this token, so track that royalty is paid once. Here, Sender effectively pays percent
+                    // royalties
                     result.addToRoyaltiesPaid(Pair.of(sender, tokenId));
                 }
             }
