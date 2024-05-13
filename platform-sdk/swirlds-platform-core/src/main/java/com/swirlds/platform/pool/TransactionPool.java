@@ -14,25 +14,28 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.signing;
+package com.swirlds.platform.pool;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Signs self events.
+ * Coordinates and manages a pool of transactions waiting to be submitted.
  */
-public interface SelfEventSigner {
+public interface TransactionPool {
 
     /**
-     * Signs an event and then returns it.
+     * Submit a system transaction to the transaction pool. Transaction will be included in a future event, if
+     * possible.
      *
-     * @param event the event to sign
-     * @return the signed event
+     * @param transaction the system transaction to submit
      */
-    @InputWireLabel("self events")
-    @NonNull
-    GossipEvent signEvent(@NonNull BaseEventHashedData event);
+    @InputWireLabel("submit transaction")
+    void submitSystemTransaction(@NonNull ConsensusTransactionImpl transaction);
+
+    /**
+     * Clear the transaction pool.
+     */
+    void clear();
 }

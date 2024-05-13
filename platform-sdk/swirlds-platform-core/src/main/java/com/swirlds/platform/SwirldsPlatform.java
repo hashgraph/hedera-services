@@ -31,7 +31,6 @@ import static com.swirlds.platform.system.InitTrigger.RESTART;
 import static com.swirlds.platform.system.SoftwareVersion.NO_VERSION;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.base.utility.Pair;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -42,8 +41,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.common.utility.Clearable;
-import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.builder.PlatformBuildingBlocks;
@@ -58,7 +55,6 @@ import com.swirlds.platform.components.appcomm.DefaultLatestCompleteStateNotifie
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.TransactionConfig;
-import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
@@ -70,11 +66,11 @@ import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.EventConfig;
-import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.metrics.TransactionMetrics;
+import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.publisher.DefaultPlatformPublisher;
 import com.swirlds.platform.publisher.PlatformPublisher;
 import com.swirlds.platform.state.PlatformState;
@@ -120,7 +116,6 @@ import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -173,11 +168,6 @@ public class SwirldsPlatform implements Platform {
      * Checks the validity of transactions and submits valid ones to the transaction pool
      */
     private final SwirldTransactionSubmitter transactionSubmitter;
-
-    /**
-     * clears all pipelines to prepare for a reconnect
-     */
-    private final Clearable clearAllPipelines;
 
     /**
      * For passing notifications between the platform and the application.
@@ -250,10 +240,7 @@ public class SwirldsPlatform implements Platform {
 
         currentAddressBook = initialState.getAddressBook();
 
-        final Consumer<GossipEvent> preconsensusEventConsumer = blocks.preconsensusEventConsumer();
-        final Consumer<ConsensusSnapshot> snapshotOverrideConsumer = blocks.snapshotOverrideConsumer();
-        platformWiring = new PlatformWiring(
-                platformContext, preconsensusEventConsumer != null, snapshotOverrideConsumer != null);
+        platformWiring = new PlatformWiring(platformContext, blocks.applicationCallbacks());
 
         final Metrics metrics = platformContext.getMetrics();
 
@@ -331,8 +318,6 @@ public class SwirldsPlatform implements Platform {
         blocks.intakeQueueSizeSupplierSupplier().set(intakeQueueSizeSupplier);
         blocks.isInFreezePeriodReference().set(swirldStateManager::isInFreezePeriod);
 
-        platformWiring.wireExternalComponents(blocks.transactionPool());
-
         final IssHandler issHandler = new IssHandler(
                 stateConfig, this::haltRequested, SystemExitUtils::handleFatalError, blocks.issScratchpad());
 
@@ -346,8 +331,7 @@ public class SwirldsPlatform implements Platform {
 
         final AppNotifier appNotifier = new DefaultAppNotifier(blocks.notificationEngine());
 
-        final PlatformPublisher publisher =
-                new DefaultPlatformPublisher(preconsensusEventConsumer, snapshotOverrideConsumer);
+        final PlatformPublisher publisher = new DefaultPlatformPublisher(blocks.applicationCallbacks());
 
         platformWiring.bind(
                 builder,
@@ -390,11 +374,11 @@ public class SwirldsPlatform implements Platform {
             platformWiring.getPcesMinimumGenerationToStoreInput().inject(minimumGenerationNonAncientForOldestState);
         }
 
-        final TransactionPool transactionPool = blocks.transactionPool();
+        final TransactionPoolNexus transactionPoolNexus = blocks.transactionPoolNexus();
         transactionSubmitter = new SwirldTransactionSubmitter(
                 statusNexus,
                 transactionConfig,
-                transaction -> transactionPool.submitTransaction(transaction, false),
+                transaction -> transactionPoolNexus.submitTransaction(transaction, false),
                 new TransactionMetrics(metrics));
 
         final boolean startedFromGenesis = initialState.isGenesisState();
@@ -430,14 +414,10 @@ public class SwirldsPlatform implements Platform {
             platformWiring.overrideIssDetectorState(initialState.reserve("initialize issDetector"));
         }
 
-        clearAllPipelines = new LoggingClearables(
-                RECONNECT.getMarker(),
-                List.of(Pair.of(platformWiring, "platformWiring"), Pair.of(transactionPool, "transactionPool")));
-
         blocks.getLatestCompleteStateReference()
                 .set(() -> latestCompleteStateNexus.getState("get latest complete state for reconnect"));
         blocks.loadReconnectStateReference().set(this::loadReconnectState);
-        blocks.clearAllPipelinesForReconnectReference().set(clearAllPipelines::clear);
+        blocks.clearAllPipelinesForReconnectReference().set(platformWiring::clear);
         blocks.latestImmutableStateProviderReference().set(latestImmutableStateNexus::getState);
     }
 
@@ -619,7 +599,7 @@ public class SwirldsPlatform implements Platform {
         } catch (final RuntimeException e) {
             logger.debug(RECONNECT.getMarker(), "`loadReconnectState` : FAILED, reason: {}", e.getMessage());
             // if the loading fails for whatever reason, we clear all data again in case some of it has been loaded
-            clearAllPipelines.clear();
+            platformWiring.clear();
             throw e;
         }
     }
