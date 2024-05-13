@@ -26,7 +26,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
@@ -502,8 +501,7 @@ public class TestingEventBuilder {
         final byte[] signature = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(signature);
 
-        final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(signature);
-        final GossipEvent gossipEvent = new GossipEvent(hashedData, unhashedData);
+        final GossipEvent gossipEvent = new GossipEvent(hashedData, signature);
 
         return gossipEvent;
     }

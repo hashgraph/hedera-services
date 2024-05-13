@@ -130,7 +130,8 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
                         tokenAssociate("feeCollector", "t"))
                 .when()
                 .then(submitModified(withSuccessivelyVariedBodyIds(), () -> tokenFeeScheduleUpdate("t")
-                        .withCustom(fixedHbarFee(1, "feeCollector"))));
+                        .withCustom(fixedHbarFee(1, "feeCollector"))
+                        .fee(ONE_HBAR)));
     }
 
     @HapiTest

@@ -30,8 +30,10 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -44,10 +46,10 @@ import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Manages the call attempted by a {@link Bytes} payload received by the {@link HtsSystemContract}.
- * Translates a valid attempt into an appropriate {@link HtsCall} subclass, giving the {@link HtsCall}
+ * Translates a valid attempt into an appropriate {@link Call} subclass, giving the {@link Call}
  * everything it will need to execute.
  */
-public class HtsCallAttempt {
+public class HtsCallAttempt extends AbstractCallAttempt {
     public static final Function REDIRECT_FOR_TOKEN = new Function("redirectForToken(address,bytes)");
     private static final byte[] REDIRECT_FOR_TOKEN_SELECTOR = REDIRECT_FOR_TOKEN.selector();
 
@@ -77,7 +79,7 @@ public class HtsCallAttempt {
     private final AddressIdConverter addressIdConverter;
     private final VerificationStrategies verificationStrategies;
     private final SystemContractGasCalculator gasCalculator;
-    private final List<HtsCallTranslator> callTranslators;
+    private final List<CallTranslator> callTranslators;
     private final boolean isStaticCall;
     // too many parameters
     @SuppressWarnings("java:S107")
@@ -91,7 +93,7 @@ public class HtsCallAttempt {
             @NonNull final AddressIdConverter addressIdConverter,
             @NonNull final VerificationStrategies verificationStrategies,
             @NonNull final SystemContractGasCalculator gasCalculator,
-            @NonNull final List<HtsCallTranslator> callTranslators,
+            @NonNull final List<CallTranslator> callTranslators,
             final boolean isStaticCall) {
         requireNonNull(input);
         this.callTranslators = requireNonNull(callTranslators);
@@ -172,11 +174,11 @@ public class HtsCallAttempt {
     }
 
     /**
-     * Tries to translate this call attempt into a {@link HtsCall} from the given sender address.
+     * Tries to translate this call attempt into a {@link Call} from the given sender address.
      *
      * @return the executable call, or null if this attempt can't be translated to one
      */
-    public @Nullable HtsCall asExecutableCall() {
+    public @Nullable Call asExecutableCall() {
         for (final var translator : callTranslators) {
             final var call = translator.translateCallAttempt(this);
             if (call != null) {

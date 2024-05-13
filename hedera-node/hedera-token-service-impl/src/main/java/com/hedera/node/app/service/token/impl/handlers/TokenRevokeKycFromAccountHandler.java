@@ -53,9 +53,13 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
-
+    /**
+     * Default constructor for injection.
+     */
     @Inject
-    public TokenRevokeKycFromAccountHandler() {}
+    public TokenRevokeKycFromAccountHandler() {
+        // No-op
+    }
 
     /**
      * This method is called during the pre-handle workflow.

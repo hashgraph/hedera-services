@@ -26,7 +26,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -73,10 +72,6 @@ public abstract class DetGenerateUtils {
                 generateRandomInstant(random, DEFAULT_MAX_EPOCH), // timeCreated
                 generateTransactions(DEFAULT_TRANSACTION_NUMBER, DEFAULT_TRANSACTION_MAX_SIZE, random)
                         .toArray(new ConsensusTransactionImpl[0])); // transactions
-    }
-
-    public static BaseEventUnhashedData generateBaseEventUnhashedData(final Random random) {
-        return new BaseEventUnhashedData(generateRandomByteArray(random, DEFAULT_SIGNATURE_SIZE));
     }
 
     public static ConsensusData generateConsensusEventData(final Random random) {
