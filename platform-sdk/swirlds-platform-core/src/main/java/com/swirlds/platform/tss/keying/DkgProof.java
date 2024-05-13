@@ -14,6 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.bls;
+package com.swirlds.platform.tss.keying;
 
-public record BlsAggregateSignature(byte[] groupElement) {}
+import edu.umd.cs.findbugs.annotations.NonNull;
+
+public record DkgProof(
+        @NonNull GroupElement f,
+        @NonNull GroupElement a,
+        @NonNull GroupElement y,
+        @NonNull FieldElement z_r,
+        @NonNull FieldElement z_a) {}

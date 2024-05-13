@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.bls;
+package com.swirlds.platform.tss.keying;
 
-public record BlsAggregatePublicKey(byte[] commitment) {}
+public record DkgPolynomialCommitment(GroupElement[] coefficientCommitments) {
+    // length is threshold
+}

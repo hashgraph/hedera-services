@@ -17,7 +17,6 @@
 package com.swirlds.platform.tss.bls;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Map;
 
 /**
  * Cryptographic operations for BLS TSS signatures.
@@ -44,38 +43,4 @@ public interface BlsCryptography {
      */
     boolean verifySignature(
             @NonNull BlsPublicKey publicKey, @NonNull BlsSignature signature, @NonNull final byte[] message);
-
-
-    /**
-     * Verify a aggregate signed message with the known aggregated public key.
-     *
-     * @param publicKey the public key to verify with
-     * @param signature the signature to verify
-     * @param message   the message that was signed
-     * @return true if the signature is valid, false otherwise
-     */
-    boolean verifySignature(
-            @NonNull BlsAggregatePublicKey publicKey, @NonNull BlsAggregateSignature signature, @NonNull final byte[] message);
-
-    /**
-     * Aggregate a list of BLS signatures into a single signature.
-     *
-     * @param signatures the signatures to aggregate
-     * @return the aggregate signature
-     */
-    @NonNull
-    BlsAggregateSignature aggregateSignature(@NonNull final Map<Integer, BlsSignature> signatures);
-
-    /**
-     * Verify an aggregate BLS signature.
-     *
-     * @param signature the signature to verify
-     * @param publicKey the public key to verify with
-     * @param message   the message that was signed
-     * @return true if the signature is valid, false otherwise
-     */
-    boolean verifyAggregateSignature(
-            @NonNull final BlsAggregateSignature signature,
-            @NonNull final BlsAggregatePublicKey publicKey,
-            @NonNull final byte[] message);
 }

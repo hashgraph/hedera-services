@@ -16,7 +16,11 @@
 
 package com.swirlds.platform.tss.keying;
 
-/**
- * Maps keys to nodes.
- */
-public interface KeyMap {}
+import edu.umd.cs.findbugs.annotations.NonNull;
+import org.bouncycastle.cms.SignerId;
+
+public record DkgMessage(
+        @NonNull SignerId signerId,
+        @NonNull DkgCipherText cipherText,
+        @NonNull DkgPolynomialCommitment polynomialCommitment,
+        @NonNull DkgProof proof) {}

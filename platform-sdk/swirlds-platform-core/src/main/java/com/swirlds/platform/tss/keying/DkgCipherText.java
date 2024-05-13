@@ -16,9 +16,10 @@
 
 package com.swirlds.platform.tss.keying;
 
-import com.swirlds.platform.tss.bls.BlsPrivateKey;
-import com.swirlds.platform.tss.bls.BlsPublicKey;
+import com.swirlds.platform.tss.TssShareId;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 
-public record TssResults(@NonNull List<BlsPublicKey> publicKeys, @NonNull List<BlsPrivateKey> myPrivateKeys) {}
+public record DkgCipherText(@NonNull GroupElement[] c1, @NonNull Map<TssShareId, GroupElement[]> c2) {
+    // The length of the above arrays must be CHUNKS_PER_SHARE
+    public static final int CHUNKS_PER_SHARE = 16;
+}

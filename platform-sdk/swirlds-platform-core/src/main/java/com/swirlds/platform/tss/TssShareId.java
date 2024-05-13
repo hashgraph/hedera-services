@@ -14,16 +14,6 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.keying;
+package com.swirlds.platform.tss;
 
-import com.swirlds.common.platform.NodeId;
-import edu.umd.cs.findbugs.annotations.NonNull;
-
-public interface DistributedKeyShare { // in slide show "DKG"
-
-    /**
-     * The ID of the node that sent this distributed key share.
-     */
-    @NonNull
-    NodeId senderId();
-}
+public record TssShareId(FieldElement id) {}
