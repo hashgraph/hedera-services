@@ -2241,6 +2241,33 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
+    final HapiSpec testTransferToAcc() {
+        final var transferContract = "CryptoTransfer";
+        final var senderAccount = "detachedSenderAccount";
+        return defaultHapiSpec("testTransferToAcc", EXPECT_STREAMLINED_INGEST_RECORDS)
+                .given(
+                        cryptoCreate(senderAccount).balance(ONE_HUNDRED_HBARS),
+                        uploadInitCode(transferContract),
+                        contractCreate(transferContract).balance(ONE_HBAR))
+                //                        tokenCreate(HBAR_TOKEN_SENTINEL)
+                //                                .treasury(senderAccount)
+                //                                .initialSupply(Long.MAX_VALUE),
+                //                        cryptoCreate(PARTY).maxAutomaticTokenAssociations(1))
+                //                .when(
+                //                        tokenAssociate(PARTY, HBAR_TOKEN_SENTINEL),
+                //                        cryptoTransfer(moving(1L, HBAR_TOKEN_SENTINEL).between(senderAccount, PARTY))
+                //                                .payingWith(senderAccount)
+                .when(contractCall(
+                                transferContract,
+                                "sendViaTransferWithAmount",
+                                mirrorAddrWith(359L),
+                                BigInteger.valueOf(1))
+                        .payingWith(senderAccount)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
+                .then(getAccountBalance(transferContract, true).hasTinyBars(ONE_HBAR));
+    }
+
+    @HapiTest
     final HapiSpec transferInvalidTokenIdWithDecimals() {
         return defaultHapiSpec("transferInvalidTokenIdWithDecimals", FULLY_NONDETERMINISTIC)
                 .given(cryptoCreate(TREASURY), withOpContext((spec, opLog) -> {
