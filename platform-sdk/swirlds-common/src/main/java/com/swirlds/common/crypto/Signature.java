@@ -24,6 +24,7 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
@@ -82,7 +83,7 @@ public class Signature implements SelfSerializable {
     /**
      * @return the bytes of this signature in an immutable instance
      */
-    public Bytes getBytes() {
+    public @NonNull Bytes getBytes() {
         return Bytes.wrap(signatureBytes);
     }
 
