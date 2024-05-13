@@ -2346,6 +2346,8 @@ public class CryptoTransferSuite extends HapiSuite {
                 .then(cryptoTransfer(moving(1L, "ft").between(PARTY, COUNTERPARTY))
                         .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
     }
+
+
     
 
     @Override
