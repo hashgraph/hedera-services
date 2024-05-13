@@ -295,24 +295,6 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         assertThatTransfersContains(givenOp.transfers().accountAmounts(), expectedGivenOpHbarTransfers);
     }
 
-    //    @Test
-    //    void abortsWithNecessaryResponseCodeIfNoCounterpartyId() {
-    //        result = new AssessmentResult(List.of(htsPayerTokenTransferList), List.of());
-    //
-    //        final var royaltyCustomFee =  withRoyaltyFee(royaltyFee.copyBuilder().fallbackFee(fallbackFee).build(),
-    // targetCollector);
-    //        final var royaltyFixedFee = withFixedFee(fixedFee, otherCollector);
-    //
-    //        final CustomFeeMeta feeMeta = newRoyaltyCustomFeeMeta(List.of(royaltyFixedFee, royaltyCustomFee),
-    // NON_FUNGIBLE_UNIQUE);
-    //
-    //        subject.assessRoyaltyFees(feeMeta, payer, funding, result);
-    //
-    //        assertThat(result.getAssessedCustomFees()).isNotEmpty();
-    //        // We add to the set of royalties paid to track the royalties paid. It should have an entry with receiver
-    //        assertThat(result.getRoyaltiesPaid()).contains(Pair.of(funding, feeMeta.tokenId()));
-    //    }
-
     @Test
     @DisplayName("Transfer which triggers hts fixed fee with self denomination, fractional fee "
             + "with netOfTransfers is true and royalty fee with fall back hbar fixed fee")
