@@ -203,7 +203,7 @@ public class TokenTransferBasicLoadTest extends LoadTest {
                                                 + 10, // 10s as buffering
                                         // time
                                         () -> TimeUnit.SECONDS)
-                                .totalOpsToSumbit(() -> (int)
+                                .totalOpsToSubmit(() -> (int)
                                         Math.ceil((double) (settings.getTotalTokens()) / settings.getTotalClients()))
                                 .maxOpsPerSec(() -> (EXPECTED_MAX_OPS_PER_SEC / settings.getTotalClients()))
                                 .maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)),
@@ -215,7 +215,7 @@ public class TokenTransferBasicLoadTest extends LoadTest {
                                                 + 30, // 30s as buffering
                                         // time
                                         () -> TimeUnit.SECONDS)
-                                .totalOpsToSumbit(() -> (int) Math.ceil(
+                                .totalOpsToSubmit(() -> (int) Math.ceil(
                                                 (double) (settings.getTotalTokens()) / settings.getTotalClients())
                                         * settings.getTotalTestTokenAccounts())
                                 .maxOpsPerSec(() -> (EXPECTED_MAX_OPS_PER_SEC / settings.getTotalClients()))

@@ -205,7 +205,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 
     @Override
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getTopicInfoQuery(spec, payment, true);
+        Query query = maybeModified(getTopicInfoQuery(spec, payment, true), spec);
         Response response =
                 spec.clients().getConsSvcStub(targetNodeFor(spec), useTls).getTopicInfo(query);
         return costFrom(response);

@@ -614,6 +614,30 @@ public class TxnVerbs {
         });
     }
 
+    /**
+     *  This method enables uploading a contract bytecode with the constructor parameters (if present) appended at the end of the file
+     *  Used for ethereum create conversion when we need to pass constructor arguments
+     * @param contractName
+     * @param abi
+     * @param args
+     * @return
+     */
+    public static HapiSpecOperation updateInitCodeWithConstructorArgs(
+            final Optional<String> payer, final String contractName, final String abi, final Object... args) {
+        return withOpContext((spec, ctxLog) -> {
+            List<HapiSpecOperation> ops = new ArrayList<>();
+
+            final var path = getResourcePath(contractName, ".bin");
+
+            // concatenate bytecode with params
+            final var bytecode = extractByteCode(path).concat(TxnUtils.constructorArgsToByteString(abi, args));
+            final var updatedFile = updateLargeFile(payer.orElse(GENESIS), contractName, bytecode);
+            ops.add(updatedFile);
+
+            allRunFor(spec, ops);
+        });
+    }
+
     public static HapiSpecOperation uploadSingleInitCode(
             final String contractName, final long expiry, final String payingWith, final LongConsumer exposingTo) {
         return withOpContext((spec, ctxLog) -> {

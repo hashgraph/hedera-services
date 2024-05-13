@@ -160,7 +160,7 @@ class DependencyMigrationTest extends MerkleTestBase {
             }
         };
         final DependentService dsService = new DependentService();
-        Set.of(entityService, dsService).forEach(service -> servicesRegistry.register(service, VERSION));
+        Set.of(entityService, dsService).forEach(service -> servicesRegistry.register(service));
 
         // When: the migrations are run
         final var subject = new OrderedServiceMigrator(servicesRegistry);
@@ -264,8 +264,7 @@ class DependencyMigrationTest extends MerkleTestBase {
             }
         };
         // Intentionally register the services in a different order than the expected migration order
-        List.of(dsService, serviceA, entityIdService, serviceB)
-                .forEach(service -> servicesRegistry.register(service, VERSION));
+        List.of(dsService, serviceA, entityIdService, serviceB).forEach(service -> servicesRegistry.register(service));
 
         // When: the migrations are run
         final var subject = new OrderedServiceMigrator(servicesRegistry);

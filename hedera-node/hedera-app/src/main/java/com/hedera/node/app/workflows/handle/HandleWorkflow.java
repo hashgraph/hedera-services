@@ -317,8 +317,8 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
-        // Determine if this is the first transaction after startup. This needs to be determined BEFORE starting the
-        // user transaction
+        // (FUTURE) We actually want consider exporting synthetic transactions on every
+        // first post-upgrade transaction, not just the first transaction after genesis.
         final var consTimeOfLastHandledTxn = blockRecordManager.consTimeOfLastHandledTxn();
         final var isFirstTransaction = !consTimeOfLastHandledTxn.isAfter(Instant.EPOCH);
 
@@ -826,11 +826,17 @@ public class HandleWorkflow {
         return switch (function) {
             case CONTRACT_CREATE -> txnBody.contractCreateInstance().gas();
             case CONTRACT_CALL -> txnBody.contractCall().gas();
-            case ETHEREUM_TRANSACTION -> EthTxData.populateEthTxData(
-                            txnBody.ethereumTransaction().ethereumData().toByteArray())
-                    .gasLimit();
+            case ETHEREUM_TRANSACTION -> getGasLimitFromEthTxData(txnBody);
             default -> 0L;
         };
+    }
+
+    private static long getGasLimitFromEthTxData(final TransactionBody txn) {
+        final var ethTxBody = txn.ethereumTransaction();
+        if (ethTxBody == null) return 0L;
+        final var ethTxData =
+                EthTxData.populateEthTxData(ethTxBody.ethereumData().toByteArray());
+        return ethTxData != null ? ethTxData.gasLimit() : 0L;
     }
 
     private ValidationResult validate(

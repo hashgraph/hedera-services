@@ -546,7 +546,8 @@ public class PlatformTestingToolMain implements SwirldMain {
             state.initControlStructures(this::handleMessageQuorum);
 
             // FUTURE WORK implement mirrorNode
-            final String myName = platform.getSelfAddress().getSelfName();
+            final String myName =
+                    platform.getAddressBook().getAddress(platform.getSelfId()).getSelfName();
 
             // Parameters[0]: JSON file for test config
             String jsonFileName = null;
