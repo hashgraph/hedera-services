@@ -93,8 +93,7 @@
             "TokenRevokeKycFromAccount",
             "TokenPause",
             "TokenUnpause",
-            "TokenUpdateNfts",
-            "TokenReject"
+            "TokenUpdateNfts"
           ]
         }
       ]
