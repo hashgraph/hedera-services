@@ -591,7 +591,7 @@ public class SignedState implements SignedStateInfo {
         }
 
         return signatureVerifier.verifySignature(
-                state.getHash().getBytes(), Bytes.wrap(signature.getSignatureBytes()), address.getSigPublicKey());
+                state.getHash().getBytes(), signature.getBytes(), address.getSigPublicKey());
     }
 
     /**
