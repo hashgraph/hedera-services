@@ -192,10 +192,29 @@ public class CustomRoyaltyFeeAssessorTest {
     }
 
     @Test
-    void skipsIfRoyaltyAlreadyPaid() {
+    void skipsIfRoyaltyAlreadyPaidByReceiver() {
         result = new AssessmentResult(List.of(nftTransferListWithAlias), List.of());
         // Include royalty already paid
         result.addToRoyaltiesPaid(Pair.of(funding, firstFungibleTokenId));
+
+        final var royaltyCustomFee = withRoyaltyFee(
+                royaltyFee.copyBuilder().fallbackFee(htsFallbackFee).build(), targetCollector);
+        final var fixedFee = withFixedFee(this.fixedFee, otherCollector);
+
+        final CustomFeeMeta feeMeta = withCustomFeeMeta(List.of(fixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
+
+        subject.assessRoyaltyFees(feeMeta, payer, funding, result);
+
+        assertThat(result.getAssessedCustomFees()).isEmpty();
+
+        verify(fixedFeeAssessor, never()).assessFixedFee(any(), any(), any(), any());
+    }
+
+    @Test
+    void assessRoyaltyOnlyOncePerTokenType() {
+        result = new AssessmentResult(List.of(nftTransferListWithAlias), List.of());
+        // Include royalty already paid by sender
+        result.addToRoyaltiesPaid(Pair.of(payer, firstFungibleTokenId));
 
         final var royaltyCustomFee = withRoyaltyFee(
                 royaltyFee.copyBuilder().fallbackFee(htsFallbackFee).build(), targetCollector);
