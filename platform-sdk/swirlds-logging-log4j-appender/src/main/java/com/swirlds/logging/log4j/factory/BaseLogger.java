@@ -1,9 +1,16 @@
 package com.swirlds.logging.log4j.factory;
 
+import com.swirlds.logging.api.extensions.event.LogEvent;
+import com.swirlds.logging.api.extensions.event.LogEventConsumer;
+import com.swirlds.logging.api.extensions.event.LogEventFactory;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.Serial;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogBuilder;
 import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.ThreadContext;
 import org.apache.logging.log4j.message.Message;
 import org.apache.logging.log4j.message.MessageFactory;
 import org.apache.logging.log4j.spi.AbstractLogger;
@@ -16,16 +23,21 @@ public class BaseLogger extends AbstractLogger {
     private static final long serialVersionUID = 1L;
     private static final ThreadLocal<BaseLoggingBuilder> logBuilder = ThreadLocal.withInitial(BaseLoggingBuilder::new);
 
-    private final com.swirlds.logging.api.Logger logger;
+    private final LogEventConsumer logEventConsumer;
+    private final LogEventFactory logEventFactory;
 
-    public BaseLogger(final String name, final MessageFactory messageFactory, final com.swirlds.logging.api.Logger logger) {
+
+    public BaseLogger(final String name, final MessageFactory messageFactory, final LogEventConsumer logEventConsumer,
+            final LogEventFactory logEventFactory) {
         super(name, messageFactory);
-        this.logger = logger;
+        this.logEventConsumer = logEventConsumer;
+        this.logEventFactory = logEventFactory;
     }
 
-    public BaseLogger(final String name, final com.swirlds.logging.api.Logger logger) {
+    public BaseLogger(final String name, final LogEventConsumer logEventConsumer, final LogEventFactory logEventFactory) {
         super(name);
-        this.logger = logger;
+        this.logEventConsumer = logEventConsumer;
+        this.logEventFactory = logEventFactory;
     }
 
     private com.swirlds.logging.api.Level convertLevel(final Level level) {
@@ -40,46 +52,40 @@ public class BaseLogger extends AbstractLogger {
 
     @Override
     public Level getLevel() {
-        if (logger.isTraceEnabled()) {
+        if (logEventConsumer.isEnabled(getName(), com.swirlds.logging.api.Level.TRACE, null)) {
             return Level.TRACE;
         }
-        if (logger.isDebugEnabled()) {
+        if (logEventConsumer.isEnabled(getName(), com.swirlds.logging.api.Level.DEBUG, null)) {
             return Level.DEBUG;
         }
-        if (logger.isInfoEnabled()) {
+        if (logEventConsumer.isEnabled(getName(), com.swirlds.logging.api.Level.INFO, null)) {
             return Level.INFO;
         }
-        if (logger.isWarnEnabled()) {
+        if (logEventConsumer.isEnabled(getName(), com.swirlds.logging.api.Level.WARN, null)) {
             return Level.WARN;
         }
-        if (logger.isErrorEnabled()) {
+        if (logEventConsumer.isEnabled(getName(), com.swirlds.logging.api.Level.ERROR, null)) {
             return Level.ERROR;
         }
-        // Option: throw new IllegalStateException("Unknown SLF4JLevel");
-        // Option: return Level.ALL;
+
         return Level.OFF;
     }
 
-    public com.swirlds.logging.api.Logger getLogger() {
-        return logger;
-    }
-
-    private static String getMarker(final Marker marker) {
+    @Nullable
+    private static com.swirlds.logging.api.Marker getMarker(@Nullable final Marker marker) {
         // No marker is provided in the common case, small methods
         // are optimized more effectively.
         return marker == null ? null : convertMarker(marker);
     }
 
-    private static String convertMarker(final Marker marker) {
-        final StringBuilder slf4jMarker = new StringBuilder();
-        final Marker[] parents = marker.getParents();
-        if (parents != null) {
-            for (final Marker parent : parents) {
-                final String slf4jParent = getMarker(parent);
-                slf4jMarker.append(",").append(slf4jParent);
-            }
+    private static com.swirlds.logging.api.Marker convertMarker(final Marker marker) {
+        if (marker.getParents() != null) {
+            final List<Marker> parents = new ArrayList<>(List.of(marker.getParents()));
+            final Marker parent = parents.getFirst();
+            parents.removeFirst();
+            return new com.swirlds.logging.api.Marker(marker.getName(), convertMarker(parent));
         }
-        return slf4jMarker.toString();
+        return new com.swirlds.logging.api.Marker(marker.getName(), null);
     }
 
     @Override
@@ -181,16 +187,18 @@ public class BaseLogger extends AbstractLogger {
     }
 
     private boolean isEnabledFor(final Level level, final Marker marker) {
-        final String slf4jMarker = getMarker(marker);
-        return logger.isEnabled(convertLevel(level), slf4jMarker);
+        final com.swirlds.logging.api.Marker baseMarker = getMarker(marker);
+        return logEventConsumer.isEnabled(getName(), convertLevel(level), baseMarker);
     }
 
     @Override
     public void logMessage(final String fqcn, final Level level, final Marker marker, final Message message, final Throwable t) {
-        final String slf4jMarker = getMarker(marker);
-        final String formattedMessage = message.getFormattedMessage();
+        final com.swirlds.logging.api.Marker baseMarker = getMarker(marker);
+        final Log4JMessage log4JMessage = new Log4JMessage(message);
 
-        logger.log(convertLevel(level), slf4jMarker, formattedMessage, t);
+        final LogEvent event = logEventFactory.createLogEvent(convertLevel(level), getName(), log4JMessage, t, baseMarker,
+                ThreadContext.getImmutableContext());
+        logEventConsumer.accept(event);
     }
 
     @Override

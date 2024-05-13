@@ -1,4 +1,6 @@
+import com.swirlds.logging.api.extensions.provider.LogProviderFactory;
 import com.swirlds.logging.log4j.factory.BaseLoggingProvider;
+import com.swirlds.logging.log4j.factory.Log4JProviderFactory;
 import org.apache.logging.log4j.spi.Provider;
 
 module com.swirlds.logging.log4j.appender {
@@ -11,6 +13,9 @@ module com.swirlds.logging.log4j.appender {
 
     provides Provider with
             BaseLoggingProvider;
+
+    provides LogProviderFactory with
+            Log4JProviderFactory;
 
     exports com.swirlds.logging.log4j.factory;
 }

@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.logging.api.Level;
+import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.legacy.LogMarker;
 import java.nio.file.Files;
@@ -33,7 +34,6 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.apache.logging.log4j.ThreadContext;
-import org.apache.logging.log4j.core.LoggerContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,9 +76,10 @@ class SwirldsLogAppenderTest {
         log4jLogger.info("This is an info message");
         log4jLogger.debug("This is a debug message");
         log4jLogger.trace("This is a trace message");
-        loggingSystem.stopAndFinalize();
+        loggingSystem.getHandlers().forEach(LogHandler::flush);
 
         // then
+        assertThat(filePath).exists();
         final List<String> logLines = Files.lines(filePath).toList();
 
         assertThat(logLines).hasSize(expectedSize);
@@ -157,9 +158,6 @@ class SwirldsLogAppenderTest {
 
     @AfterEach
     void tearDown() throws Exception {
-        final LoggerContext loggerContext = (LoggerContext) LogManager.getContext(false);
-        loggerContext.reconfigure();
-
         ThreadContext.clearAll();
         ThreadContext.putAll(oldContext);
     }

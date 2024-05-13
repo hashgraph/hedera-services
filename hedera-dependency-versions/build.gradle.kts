@@ -89,7 +89,6 @@ moduleInfo {
     version("org.apache.commons.math3", "3.2")
     version("org.apache.commons.compress", "1.26.0")
     version("org.apache.logging.log4j", log4jVersion)
-    version("org.apache.logging.log4j.core", log4jVersion)
     version("org.apache.logging.log4j.slf4j", log4jVersion)
     version("org.assertj.core", "3.23.1")
     version("org.bouncycastle.pkix", bouncycastleVersion)
