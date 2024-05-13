@@ -61,7 +61,7 @@ public abstract class AbstractLogHandler implements LogHandler {
     public AbstractLogHandler(@NonNull final String configKey, @NonNull final Configuration configuration) {
         this.configKey = Objects.requireNonNull(configKey, "configKey must not be null");
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
-        this.loggingLevelConfig = new AtomicReference<>(HandlerLoggingLevelConfig.create(configuration, configKey));
+        this.loggingLevelConfig = new AtomicReference<>(null);
     }
 
     @Override
@@ -92,5 +92,11 @@ public abstract class AbstractLogHandler implements LogHandler {
     @NonNull
     protected Configuration getConfiguration() {
         return configuration;
+    }
+
+    @NonNull
+    @Override
+    public String getName() {
+        return this.configKey;
     }
 }
