@@ -78,6 +78,8 @@ public class DetailedConsensusEventTest {
         BaseEventHashedData hashedData = DetGenerateUtils.generateBaseEventHashedData(random);
         ConsensusData consensusData = DetGenerateUtils.generateConsensusEventData(random);
         return new DetailedConsensusEvent(
-                hashedData, Bytes.wrap(generateRandomByteArray(random, SignatureType.RSA.signatureLength())), consensusData);
+                hashedData,
+                Bytes.wrap(generateRandomByteArray(random, SignatureType.RSA.signatureLength())),
+                consensusData);
     }
 }

@@ -75,7 +75,7 @@ public final class ConsensusUtils {
         for (final EventImpl w : judges) { // calculate the whitening byte array
             if (w != null) {
                 final Bytes sig = w.getBaseEvent().getSignature();
-                final int mn = Math.min(whitening.length, (int)sig.length());
+                final int mn = Math.min(whitening.length, (int) sig.length());
                 for (int i = 0; i < mn; i++) {
                     whitening[i] ^= sig.getByte(i);
                 }

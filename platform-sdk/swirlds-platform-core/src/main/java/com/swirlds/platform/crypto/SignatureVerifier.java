@@ -36,5 +36,6 @@ public interface SignatureVerifier {
      * 		the claimed public key used to generate that signature
      * @return true if the signature is valid
      */
-    boolean verifySignature(@NonNull final Bytes data, @NonNull final Bytes signature, @NonNull final PublicKey publicKey);
+    boolean verifySignature(
+            @NonNull final Bytes data, @NonNull final Bytes signature, @NonNull final PublicKey publicKey);
 }
