@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.eventhandling;
+package com.swirlds.platform.pool;
 
-import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.config.TransactionConfig;
+import com.swirlds.platform.eventhandling.TransactionPoolMetrics;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
@@ -35,7 +34,7 @@ import java.util.Queue;
  * Store a list of transactions created by self, both system and non-system, for wrapping in the next event to be
  * created.
  */
-public class TransactionPool implements TransactionSupplier, Clearable {
+public class TransactionPoolNexus implements TransactionSupplier {
 
     /**
      * A list of transactions created by this node waiting to be put into a self-event.
@@ -74,7 +73,7 @@ public class TransactionPool implements TransactionSupplier, Clearable {
      *
      * @param platformContext the platform context
      */
-    public TransactionPool(@NonNull final PlatformContext platformContext) {
+    public TransactionPoolNexus(@NonNull final PlatformContext platformContext) {
         Objects.requireNonNull(platformContext);
 
         final TransactionConfig transactionConfig =
@@ -208,15 +207,6 @@ public class TransactionPool implements TransactionSupplier, Clearable {
     }
 
     /**
-     * This method takes a StateSignaturePayload protobuf record as an argument and submits it to the pool.
-     * Same as {@link #submitTransaction(ConsensusTransactionImpl, boolean)} but with priority set to true.
-     * This method has no return since system transactions are never rejected.
-     */
-    public synchronized void submitPayload(@NonNull final StateSignaturePayload transaction) {
-        submitTransaction(new StateSignatureTransaction(transaction), true);
-    }
-
-    /**
      * get the number of buffered transactions
      *
      * @return the number of transactions
@@ -237,8 +227,7 @@ public class TransactionPool implements TransactionSupplier, Clearable {
     /**
      * Clear all the transactions
      */
-    @Override
-    public synchronized void clear() {
+    synchronized void clear() {
         bufferedTransactions.clear();
         priorityBufferedTransactions.clear();
         bufferedSignatureTransactionCount = 0;

@@ -14,25 +14,26 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.signing;
+package com.swirlds.platform.event.stale;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 
 /**
- * Signs self events.
+ * A simple utility responsible for resubmitting stale transactions.
  */
-public interface SelfEventSigner {
+public interface TransactionResubmitter {
 
     /**
-     * Signs an event and then returns it.
+     * Resubmit transactions that have gone stale.
      *
-     * @param event the event to sign
-     * @return the signed event
+     * @param event the event that has gone stale
+     * @return a list of transactions that should be resubmitted
      */
-    @InputWireLabel("self events")
+    @InputWireLabel("stale events")
     @NonNull
-    GossipEvent signEvent(@NonNull BaseEventHashedData event);
+    List<ConsensusTransactionImpl> resubmitStaleTransactions(@NonNull GossipEvent event);
 }
