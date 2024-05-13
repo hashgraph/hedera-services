@@ -113,6 +113,7 @@ class CryptoCreateValidatorTest {
 
     @Test
     void checkTooManyAutoAssociations() {
+        testConfigBuilder = testConfigBuilder.withValue("entities.unlimitedAutoAssociations", false);
         configuration = testConfigBuilder.getOrCreateConfig();
         getConfigs(configuration);
         assertTrue(subject.tooManyAutoAssociations(5001, ledgerConfig, entitiesConfig, tokensConfig));
