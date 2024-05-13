@@ -47,7 +47,6 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -188,14 +187,12 @@ public class TokenCreateValidator {
     public void validateAssociation(
             @NonNull final EntitiesConfig entitiesConfig,
             @NonNull final TokensConfig tokensConfig,
-            @NonNull final ContractsConfig contractsConfig,
             @NonNull final Account account,
             @NonNull final Token token,
             @NonNull final WritableTokenRelationStore tokenRelStore) {
         validateFalse(
                 (entitiesConfig.limitTokenAssociations()
-                                && account.numberAssociations() + 1 > tokensConfig.maxPerAccount())
-                        || !contractsConfig.unlimitedAutoAssociations(),
+                        && account.numberAssociations() + 1 > tokensConfig.maxPerAccount()),
                 TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
         validateTrue(

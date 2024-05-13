@@ -81,7 +81,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.AccountsConfig;
-import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.CryptoCreateWithAliasConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -310,7 +309,6 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var accountConfig = context.configuration().getConfigData(AccountsConfig.class);
-        final var contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
         final var alias = op.alias();
 
         // We have a limit on the total maximum number of entities that can be created on the network, for different
@@ -346,11 +344,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         // additional ledger-wide limits we need to check as well.
         validateFalse(
                 cryptoCreateValidator.tooManyAutoAssociations(
-                        op.maxAutomaticTokenAssociations(),
-                        ledgerConfig,
-                        entitiesConfig,
-                        tokensConfig,
-                        contractsConfig),
+                        op.maxAutomaticTokenAssociations(), ledgerConfig, entitiesConfig, tokensConfig),
                 REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
 
         // This proxy field has been deprecated. We do not allow people to use it.

@@ -67,7 +67,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.AutoRenewConfig;
-import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
@@ -256,7 +255,6 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
-        final var contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
 
         // validate expiry metadata
         final var currentMetadata = new ExpiryMeta(
