@@ -61,6 +61,8 @@ import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.state.hasher.DefaultStateHasher;
+import com.swirlds.platform.state.hasher.StateHasher;
 import com.swirlds.platform.state.iss.DefaultIssDetector;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssScratchpad;
@@ -121,6 +123,7 @@ public class PlatformComponentBuilder {
     private PcesWriter pcesWriter;
     private IssDetector issDetector;
     private Gossip gossip;
+    private StateHasher stateHasher;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -891,5 +894,36 @@ public class PlatformComponentBuilder {
                     blocks.intakeEventCounter());
         }
         return gossip;
+    }
+
+    /**
+     * Provide a state hasher in place of the platform's default state hasher.
+     *
+     * @param stateHasher the state hasher to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withStateHasher(@NonNull final StateHasher stateHasher) {
+        throwIfAlreadyUsed();
+        if (this.stateHasher != null) {
+            throw new IllegalStateException("Signed state hasher has already been set");
+        }
+        this.stateHasher = Objects.requireNonNull(stateHasher);
+        return this;
+    }
+
+    /**
+     * Build the state hasher if it has not yet been built. If one has been provided via
+     * {@link #withStateHasher(StateHasher)}, that hasher will be used. If this method is called more than once, only
+     * the first call will build the state hasher. Otherwise, the default hasher will be created and returned.
+     *
+     * @return the signed state hasher
+     */
+    @NonNull
+    public StateHasher buildStateHasher() {
+        if (stateHasher == null) {
+            stateHasher = new DefaultStateHasher(blocks.platformContext());
+        }
+        return stateHasher;
     }
 }

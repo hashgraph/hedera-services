@@ -33,7 +33,6 @@ import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
-import com.swirlds.platform.state.signed.SignedStateHasher;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.StateAndRound;
@@ -54,7 +53,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param issHandlerScheduler                       the scheduler for the iss handler
  * @param hashLoggerScheduler                       the scheduler for the hash logger
  * @param latestCompleteStateNotifierScheduler      the scheduler for the latest complete state notifier
- * @param stateHasherScheduler                      the scheduler for the state hasher
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
@@ -66,8 +64,7 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<RunningEventHashOverride> runningHashUpdateScheduler,
         @NonNull TaskScheduler<Void> issHandlerScheduler,
         @NonNull TaskScheduler<Void> hashLoggerScheduler,
-        @NonNull TaskScheduler<Void> latestCompleteStateNotifierScheduler,
-        @NonNull TaskScheduler<StateAndRound> stateHasherScheduler) {
+        @NonNull TaskScheduler<Void> latestCompleteStateNotifierScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -154,14 +151,6 @@ public record PlatformSchedulers(
                         .withType(TaskSchedulerType.SEQUENTIAL_THREAD)
                         .withUnhandledTaskCapacity(config.completeStateNotifierUnhandledCapacity())
                         .withUnhandledTaskMetricEnabled(true)
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("stateHasher")
-                        .withType(config.stateHasherSchedulerType())
-                        .withUnhandledTaskCapacity(config.stateHasherUnhandledCapacity())
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(SignedStateHasher.class))
-                        .withFlushingEnabled(true)
                         .build()
                         .cast());
     }

@@ -16,35 +16,31 @@
 
 package com.swirlds.platform.state.signed;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.platform.state.hasher.DefaultStateHasher;
+import com.swirlds.platform.state.hasher.StateHasher;
 import com.swirlds.platform.wiring.components.StateAndRound;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for {@link DefaultSignedStateHasher}
+ * Unit tests for {@link DefaultStateHasher}
  */
-public class DefaultSignedStateHasherTests {
+public class DefaultStateHasherTests {
     @Test
     @DisplayName("Normal operation")
     void normalOperation() {
-        // mock metrics
-        final RunningAverageMetric hashingTimeMetric = mock(RunningAverageMetric.class);
-        final SignedStateMetrics signedStateMetrics = mock(SignedStateMetrics.class);
-        when(signedStateMetrics.getSignedStateHashingTimeMetric()).thenReturn(hashingTimeMetric);
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
 
         // create the hasher
-        final AtomicBoolean fatalErrorConsumer = new AtomicBoolean();
-        final SignedStateHasher hasher =
-                new DefaultSignedStateHasher(signedStateMetrics, (a, b, c) -> fatalErrorConsumer.set(true));
+        final StateHasher hasher = new DefaultStateHasher(platformContext);
 
         // mock a state
         final SignedState signedState = mock(SignedState.class);
@@ -56,9 +52,5 @@ public class DefaultSignedStateHasherTests {
         // do the test
         final StateAndRound result = hasher.hashState(stateAndRound);
         assertNotEquals(null, result, "The hasher should return a new StateAndRound");
-
-        // hashing time metric should get updated
-        verify(signedStateMetrics).getSignedStateHashingTimeMetric();
-        assertFalse(fatalErrorConsumer.get(), "There should be no fatal errors");
     }
 }
