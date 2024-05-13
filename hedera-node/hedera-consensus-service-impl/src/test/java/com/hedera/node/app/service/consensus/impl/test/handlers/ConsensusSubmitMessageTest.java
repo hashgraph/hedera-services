@@ -72,7 +72,6 @@ import com.hedera.test.utils.TxnUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
-import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
@@ -219,23 +218,22 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
     @DisplayName("Handle throws IOException")
     void handleThrowsIOException() {
         givenValidTopic();
-        subject = new ConsensusSubmitMessageHandler(){
+        subject = new ConsensusSubmitMessageHandler() {
             @Override
             public Topic updateRunningHashAndSequenceNumber(
                     @NonNull final TransactionBody txn, @NonNull final Topic topic, @Nullable Instant consensusNow)
                     throws IOException {
                 throw new IOException();
-        }};
+            }
+        };
 
         final var txn = newSubmitMessageTxn(topicEntityNum, "");
         given(handleContext.body()).willReturn(txn);
 
         given(handleContext.consensusNow()).willReturn(consensusTimestamp);
 
-
-        final var msg = assertThrows(HandleException.class,() -> subject.handle(handleContext));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertThat(msg.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_TRANSACTION);
-
     }
 
     @Test
@@ -365,7 +363,6 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
         verify(feeCalc).addBytesPerTransaction(28);
         verify(feeCalc).addNetworkRamByteSeconds(10080);
     }
-
 
     /* ----------------- Helper Methods ------------------- */
 
