@@ -51,7 +51,7 @@ abstract class GitClone : DefaultTask() {
                     commandLine(
                         "git",
                         "clone",
-                        "https://github.com/hashgraph/hedera-protobufs.git",
+                        "https://github.com/LimeChain/hedera-protobufs.git",
                         "-q"
                     )
                 } else {
