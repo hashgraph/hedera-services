@@ -41,6 +41,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class FileQueriesStressTests extends HapiSuite {
@@ -55,14 +56,13 @@ public class FileQueriesStressTests extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            getFileInfoStress(), getFileContentsStress(),
-        });
+    public List<DynamicTest> getSpecsInSuite() {
+        return List.of(
+            getFileInfoStress(), getFileContentsStress());
     }
 
     @HapiTest
-    final HapiSpec getFileContentsStress() {
+    final DynamicTest getFileContentsStress() {
         return defaultHapiSpec("getFileContentsStress")
                 .given()
                 .when()
@@ -74,7 +74,7 @@ public class FileQueriesStressTests extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getFileInfoStress() {
+    final DynamicTest getFileInfoStress() {
         return defaultHapiSpec("getFileInfoStress")
                 .given()
                 .when()

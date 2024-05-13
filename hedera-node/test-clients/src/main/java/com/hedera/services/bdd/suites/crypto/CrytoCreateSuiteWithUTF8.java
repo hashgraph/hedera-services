@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -46,16 +47,16 @@ public class CrytoCreateSuiteWithUTF8 extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(positiveTests());
     }
 
-    private List<HapiSpec> positiveTests() {
+    private List<DynamicTest> positiveTests() {
         return Arrays.asList(createCryptoTxvWithUTF8Memo(), cryptoCreateTxnCustomSpec());
     }
 
     @HapiTest
-    final HapiSpec createCryptoTxvWithUTF8Memo() {
+    final DynamicTest createCryptoTxvWithUTF8Memo() {
         return defaultHapiSpec("CreateCryptoTxvWithUTF8Memo")
                 .given(cryptoCreate("UTF8MemoTestAccount").via("utf8MemoTxn"))
                 .when()
@@ -63,7 +64,7 @@ public class CrytoCreateSuiteWithUTF8 extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cryptoCreateTxnCustomSpec() {
+    final DynamicTest cryptoCreateTxnCustomSpec() {
         return customHapiSpec("UTF8CustomSpecMemoTxn")
                 .withProperties(Map.of("default.useMemoUTF8", utf8Mode.toString()))
                 .given(cryptoCreate("UTF8CustomSpecTestAccount").via("utf8CustomSpecMemoTxn"))

@@ -63,11 +63,11 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiSuite {
     private static final String FEES_FILE_REGISTRY = "FeeSchedulesInRegistry";
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runTransfersBeforeReconnect(), updateAllProtectedFilesDuringReconnect());
     }
 
-    final HapiSpec updateAllProtectedFilesDuringReconnect() {
+    final DynamicTest updateAllProtectedFilesDuringReconnect() {
         final String fileInfoRegistry = "apiPermissionsReconnect";
         final String nonUpdatableFile = "nonUpdatableFile";
 

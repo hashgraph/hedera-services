@@ -55,6 +55,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -91,11 +92,11 @@ public class ContractBurnHTSSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiSpec> negativeSpecs() {
+    List<DynamicTest> negativeSpecs() {
         return List.of(
                 burnFungibleV1andV2WithZeroAndNegativeValues(),
                 burnNonFungibleV1andV2WithNegativeValues(),
@@ -106,12 +107,12 @@ public class ContractBurnHTSSuite extends HapiSuite {
                 burnWithInvalidSerials());
     }
 
-    List<HapiSpec> positiveSpecs() {
+    List<DynamicTest> positiveSpecs() {
         return List.of();
     }
 
     @HapiTest
-    final HapiSpec burnFungibleV1andV2WithZeroAndNegativeValues() {
+    final DynamicTest burnFungibleV1andV2WithZeroAndNegativeValues() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         return defaultHapiSpec("burnFungibleV1andV2WithZeroAndNegativeValues", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
@@ -175,7 +176,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec burnNonFungibleV1andV2WithNegativeValues() {
+    final DynamicTest burnNonFungibleV1andV2WithNegativeValues() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         return defaultHapiSpec(
                         "burnNonFungibleV1andV2WithNegativeValues",
@@ -226,7 +227,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec burnWithNegativeAmount() {
+    final DynamicTest burnWithNegativeAmount() {
         final var negativeBurnFungible = "negativeBurnFungible";
         final var negativeBurnNFT = "negativeBurnNFT";
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
@@ -280,7 +281,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec burnWithExtremeAmount() {
+    final DynamicTest burnWithExtremeAmount() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         final AtomicReference<Address> nftAddress = new AtomicReference<>();
         final var fungibleExtremeAmount = "fungibleExtremeAmounts";
@@ -331,7 +332,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec burnWithZeroAddress() {
+    final DynamicTest burnWithZeroAddress() {
         return defaultHapiSpec("burnWithZeroAddress")
                 .given(uploadInitCode(NEGATIVE_BURN_CONTRACT), contractCreate(NEGATIVE_BURN_CONTRACT))
                 .when(
@@ -357,7 +358,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec burnWithInvalidAddress() {
+    final DynamicTest burnWithInvalidAddress() {
         return defaultHapiSpec("burnWithInvalidAddress")
                 .given(uploadInitCode(NEGATIVE_BURN_CONTRACT), contractCreate(NEGATIVE_BURN_CONTRACT))
                 .when(
@@ -384,7 +385,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec burnWithInvalidSerials() {
+    final DynamicTest burnWithInvalidSerials() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         final AtomicReference<Address> nftAddress = new AtomicReference<>();
         final var negativeBurnFungible = "negativeBurnFungible";

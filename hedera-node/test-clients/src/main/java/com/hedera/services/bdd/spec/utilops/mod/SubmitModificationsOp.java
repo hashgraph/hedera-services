@@ -67,7 +67,7 @@ public class SubmitModificationsOp extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
+    protected boolean submitOp(@NonNull final DynamicTest spec) throws Throwable {
         final List<TxnModification> modifications = new ArrayList<>();
         allRunFor(
                 spec,

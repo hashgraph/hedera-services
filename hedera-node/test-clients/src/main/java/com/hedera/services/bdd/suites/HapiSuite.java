@@ -39,7 +39,10 @@ import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public abstract class HapiSuite {
     // The first 0 refers to the shard of the target network.
@@ -70,14 +73,22 @@ public abstract class HapiSuite {
 
     protected abstract Logger getResultsLogger();
 
-    public abstract List<HapiSpec> getSpecsInSuite();
+    public abstract List<DynamicTest> getSpecsInSuite();
+
+    private List<HapiSpec> getHapiSpecsInSuite() {
+        return getSpecsInSuite().stream().map(HapiSuite::specFrom).toList();
+    }
 
     public List<HapiSpec> getSpecsInSuiteWithOverrides() {
-        final var specs = getSpecsInSuite();
+        final var specs = getHapiSpecsInSuite();
         if (!overrides.isEmpty()) {
             specs.forEach(spec -> spec.addOverrideProperties(overrides));
         }
         return specs;
+    }
+
+    private static HapiSpec specFrom(@NonNull final DynamicTest test) {
+        return (HapiSpec) test.getExecutable();
     }
 
     public static final Key EMPTY_KEY =
@@ -258,7 +269,7 @@ public abstract class HapiSuite {
             getResultsLogger().info(STARTING_SUITE, name());
         }
 
-        List<HapiSpec> specs = getSpecsInSuite();
+        var specs = getHapiSpecsInSuite();
         boolean autoSnapshotManagementOn = false;
         for (final var spec : specs) {
             autoSnapshotManagementOn |= spec.setup().autoSnapshotManagement();
@@ -299,7 +310,7 @@ public abstract class HapiSuite {
     }
 
     @SafeVarargs
-    protected final List<HapiSpec> allOf(final List<HapiSpec>... specLists) {
+    protected final List<DynamicTest> allOf(final List<DynamicTest>... specLists) {
         return Arrays.stream(specLists).flatMap(List::stream).toList();
     }
 

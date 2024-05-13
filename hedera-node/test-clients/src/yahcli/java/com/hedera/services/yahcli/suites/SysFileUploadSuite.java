@@ -85,12 +85,12 @@ public class SysFileUploadSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         uploadData = appropriateContents(sysFileId);
         return isDryRun ? Collections.emptyList() : List.of(uploadSysFiles());
     }
 
-    private HapiSpec uploadSysFiles() {
+    final DynamicTest uploadSysFiles() {
         final var name = String.format("UploadSystemFile-%s", sysFileId);
         final var fileId = String.format("0.0.%d", sysFileId);
         final var isSpecial = isSpecialFile(sysFileId);

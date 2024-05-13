@@ -38,13 +38,13 @@ public class RecordStreamValidation extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             recordStreamSanityChecks(),
         });
     }
 
-    final HapiSpec recordStreamSanityChecks() {
+    final DynamicTest recordStreamSanityChecks() {
         AtomicReference<String> pathToStreams = new AtomicReference<>(PATH_TO_LOCAL_STREAMS);
 
         return defaultHapiSpec("RecordStreamSanityChecks")

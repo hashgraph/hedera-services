@@ -74,13 +74,13 @@ public class OnePendingSigScheduledXfersLoad extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             runOnePendingSigXfers(),
         });
     }
 
-    final HapiSpec runOnePendingSigXfers() {
+    final DynamicTest runOnePendingSigXfers() {
         return defaultHapiSpec("RunOnePendingSigXfers")
                 .given(stdMgmtOf(duration, unit, maxOpsPerSec))
                 .when(runWithProvider(pendingSigsFactory())

@@ -76,7 +76,7 @@ public class TokenTransferBasicLoadTest extends LoadTest {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runTokenTransferBasicLoadTest());
     }
 
@@ -189,7 +189,7 @@ public class TokenTransferBasicLoadTest extends LoadTest {
         };
     }
 
-    final HapiSpec runTokenTransferBasicLoadTest() {
+    final DynamicTest runTokenTransferBasicLoadTest() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         Supplier<HapiSpecOperation[]> tokenTransferBurst =
                 () -> new HapiSpecOperation[] {opSupplier(settings).get()};

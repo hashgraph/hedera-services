@@ -60,6 +60,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class AssociatePrecompileV1SecurityModelSuite extends HapiSuite {
 
@@ -88,20 +89,20 @@ public class AssociatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiSpec> negativeSpecs() {
+    List<DynamicTest> negativeSpecs() {
         return List.of();
     }
 
-    List<HapiSpec> positiveSpecs() {
+    List<DynamicTest> positiveSpecs() {
         return List.of(nestedAssociateWorksAsExpected(), multipleAssociatePrecompileWithSignatureWorksForFungible());
     }
 
     /* -- HSCS-PREC-006 from HTS Precompile Test Plan -- */
-    final HapiSpec multipleAssociatePrecompileWithSignatureWorksForFungible() {
+    final DynamicTest multipleAssociatePrecompileWithSignatureWorksForFungible() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
         final AtomicReference<TokenID> unfrozenTokenID = new AtomicReference<>();
@@ -184,7 +185,7 @@ public class AssociatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     /* -- HSCS-PREC-010 from HTS Precompile Test Plan -- */
-    final HapiSpec nestedAssociateWorksAsExpected() {
+    final DynamicTest nestedAssociateWorksAsExpected() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 

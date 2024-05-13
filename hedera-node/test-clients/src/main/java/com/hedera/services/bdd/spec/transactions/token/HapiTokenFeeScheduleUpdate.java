@@ -81,7 +81,7 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+    protected long feeFor(final DynamicTest spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         try {
             final TokenInfo info = lookupInfo(spec, token, log, loggingOff);
             final FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> usageEstimate(_txn, svo, info);
@@ -92,7 +92,7 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final DynamicTest spec) throws Throwable {
         final var id = TxnUtils.asTokenId(token, spec);
         final var opBody = spec.txns()
                 .<TokenFeeScheduleUpdateTransactionBody, TokenFeeScheduleUpdateTransactionBody.Builder>body(
@@ -119,12 +119,12 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final DynamicTest spec) {
         return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::updateTokenFeeSchedule;
     }
 
     @Override
-    protected void updateStateOf(final HapiSpec spec) {
+    protected void updateStateOf(final DynamicTest spec) {
         /* No-op */
     }
 
@@ -150,7 +150,7 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
     }
 
     static TokenInfo lookupInfo(
-            final HapiSpec spec, final String token, final Logger scopedLog, final boolean loggingOff)
+            final DynamicTest spec, final String token, final Logger scopedLog, final boolean loggingOff)
             throws Throwable {
         final HapiGetTokenInfo subOp = getTokenInfo(token).noLogging();
         final Optional<Throwable> error = subOp.execFor(spec);

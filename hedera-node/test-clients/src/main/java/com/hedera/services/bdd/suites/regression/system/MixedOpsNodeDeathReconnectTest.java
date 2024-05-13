@@ -82,12 +82,12 @@ public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(reconnectMixedOps());
     }
 
     @HapiTest
-    private HapiSpec reconnectMixedOps() {
+    final DynamicTest reconnectMixedOps() {
         final AtomicInteger tokenId = new AtomicInteger(0);
         final AtomicInteger scheduleId = new AtomicInteger(0);
         final AtomicInteger contractId = new AtomicInteger(0);

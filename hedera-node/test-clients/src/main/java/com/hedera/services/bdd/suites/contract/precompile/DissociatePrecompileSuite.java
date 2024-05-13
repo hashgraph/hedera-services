@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -79,16 +80,16 @@ public class DissociatePrecompileSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(negativeSpecs());
     }
 
-    List<HapiSpec> negativeSpecs() {
+    List<DynamicTest> negativeSpecs() {
         return List.of(dissociateTokensNegativeScenarios(), dissociateTokenNegativeScenarios());
     }
 
     @HapiTest
-    final HapiSpec dissociateTokensNegativeScenarios() {
+    final DynamicTest dissociateTokensNegativeScenarios() {
         final AtomicReference<Address> tokenAddress1 = new AtomicReference<>();
         final AtomicReference<Address> tokenAddress2 = new AtomicReference<>();
         final AtomicReference<Address> accountAddress = new AtomicReference<>();
@@ -207,7 +208,7 @@ public class DissociatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec dissociateTokenNegativeScenarios() {
+    final DynamicTest dissociateTokenNegativeScenarios() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         final AtomicReference<Address> accountAddress = new AtomicReference<>();
         final var nonExistingAccount = "nonExistingAccount";

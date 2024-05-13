@@ -58,6 +58,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class MixedHTSPrecompileTestsV1SecurityModelSuite extends HapiSuite {
 
@@ -83,13 +84,13 @@ public class MixedHTSPrecompileTestsV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 hscsPrec021TryCatchConstructOnlyRollsBackTheFailedPrecompile(),
                 createTokenWithFixedFeeThenTransferAndAssessFee());
     }
 
-    final HapiSpec hscsPrec021TryCatchConstructOnlyRollsBackTheFailedPrecompile() {
+    final DynamicTest hscsPrec021TryCatchConstructOnlyRollsBackTheFailedPrecompile() {
         final var theAccount = "anybody";
         final var token = "Token";
         final var outerContract = "AssociateTryCatch";
@@ -139,7 +140,7 @@ public class MixedHTSPrecompileTestsV1SecurityModelSuite extends HapiSuite {
                                 .hasKnownStatus(SUCCESS));
     }
 
-    final HapiSpec createTokenWithFixedFeeThenTransferAndAssessFee() {
+    final DynamicTest createTokenWithFixedFeeThenTransferAndAssessFee() {
         final var createTokenNum = new AtomicLong();
         final var CONTRACT_ADMIN_KEY = "contractAdminKey";
         final var FEE_COLLECTOR = "feeCollector";

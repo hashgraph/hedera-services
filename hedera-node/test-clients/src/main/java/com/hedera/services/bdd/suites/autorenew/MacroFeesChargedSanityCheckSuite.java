@@ -70,7 +70,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 feesChargedMatchNumberOfRenewals(),
                 renewalCappedByAffordablePeriod(),
@@ -78,7 +78,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S125")
-    final HapiSpec renewalCappedByAffordablePeriod() {
+    final DynamicTest renewalCappedByAffordablePeriod() {
         final long briefAutoRenew = 10L;
         final long normalAutoRenew = THREE_MONTHS_IN_SECONDS;
         final long threeHoursInSeconds = 3 * 3600L;
@@ -130,7 +130,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    final HapiSpec feesChargedMatchNumberOfRenewals() {
+    final DynamicTest feesChargedMatchNumberOfRenewals() {
         final long reqAutoRenew = 2L;
         final long startBalance = ONE_HUNDRED_HBARS;
         final var target = "czar";
@@ -213,7 +213,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiSuite {
         };
     }
 
-    private RenewalFeeComponents autoRenewFeesFor(final HapiSpec spec, final ExtantCryptoContext extantCtx) {
+    private RenewalFeeComponents autoRenewFeesFor(final DynamicTest spec, final ExtantCryptoContext extantCtx) {
         @SuppressWarnings("java:S1874")
         final var prices = spec.ratesProvider().currentSchedule().getTransactionFeeScheduleList().stream()
                 .filter(tfs -> tfs.getHederaFunctionality() == CryptoAccountAutoRenew)
@@ -229,7 +229,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiSuite {
         return new RenewalFeeComponents(inTinybars(constantPrice, rates), inTinybars(variablePrice, rates));
     }
 
-    final HapiSpec macroFeesChargedSanityCheckSuiteCleanup() {
+    final DynamicTest macroFeesChargedSanityCheckSuiteCleanup() {
         return defaultHapiSpec("MacroFeesChargedSanityCheckSuiteCleanup")
                 .given()
                 .when()

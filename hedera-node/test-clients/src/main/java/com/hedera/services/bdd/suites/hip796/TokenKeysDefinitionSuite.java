@@ -43,6 +43,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * A suite for user stories Keys-1 through Keys-4 from HIP-796.
@@ -52,7 +53,7 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenKeysDefinitionSuite.class);
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 manageLockKeyCapabilities(),
                 managePartitionKeyCapabilities(),
@@ -68,7 +69,7 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final HapiSpec manageLockKeyCapabilities() {
+    final DynamicTest manageLockKeyCapabilities() {
         return defaultHapiSpec("ManageLockKeyCapabilities")
                 .given(fungibleTokenWithFeatures(ADMIN_CONTROL, LOCKING), newKeyNamed("newLockKey"))
                 .when(
@@ -90,7 +91,7 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final HapiSpec managePartitionKeyCapabilities() {
+    final DynamicTest managePartitionKeyCapabilities() {
         return defaultHapiSpec("ManagePartitionKeyCapabilities")
                 .given(fungibleTokenWithFeatures(ADMIN_CONTROL, PARTITIONING), newKeyNamed("newPartitionKey"))
                 .when(
@@ -112,7 +113,7 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final HapiSpec managePartitionMoveKeyCapabilities() {
+    final DynamicTest managePartitionMoveKeyCapabilities() {
         return defaultHapiSpec("ManagePartitionMoveKeyCapabilities")
                 .given(
                         fungibleTokenWithFeatures(ADMIN_CONTROL, INTER_PARTITION_MANAGEMENT),
@@ -136,7 +137,7 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final HapiSpec manageKeysViaSmartContract() {
+    final DynamicTest manageKeysViaSmartContract() {
         return defaultHapiSpec("ManageKeysViaSmartContract")
                 .given(
                         fungibleTokenWithFeatures(ADMIN_CONTROL, LOCKING, PARTITIONING, INTER_PARTITION_MANAGEMENT)

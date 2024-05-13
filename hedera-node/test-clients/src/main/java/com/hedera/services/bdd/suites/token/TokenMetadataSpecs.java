@@ -103,7 +103,7 @@ public class TokenMetadataSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec rejectsMetadataTooLong() {
+    final DynamicTest rejectsMetadataTooLong() {
         String metadataStringTooLong = TxnUtils.nAscii(101);
         return defaultHapiSpec("validatesMetadataLength")
                 .given()
@@ -112,7 +112,7 @@ public class TokenMetadataSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec creationDoesNotHaveRequiredSigs() {
+    final DynamicTest creationDoesNotHaveRequiredSigs() {
         return defaultHapiSpec("CreationRequiresAppropriateSigs")
                 .given(
                         cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
@@ -136,7 +136,7 @@ public class TokenMetadataSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec creationRequiresAppropriateSigsHappyPath() {
+    final DynamicTest creationRequiresAppropriateSigsHappyPath() {
         return defaultHapiSpec("CreationRequiresAppropriateSigsHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate(PAYER), cryptoCreate(TOKEN_TREASURY).balance(0L), newKeyNamed(ADMIN_KEY))
                 .when()
@@ -149,7 +149,7 @@ public class TokenMetadataSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec fungibleCreationHappyPath() {
+    final DynamicTest fungibleCreationHappyPath() {
         String memo = "JUMP";
         String metadata = "metadata";
         String saltedName = salted(PRIMARY);
@@ -216,7 +216,7 @@ public class TokenMetadataSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec nonFungibleCreationHappyPath() {
+    final DynamicTest nonFungibleCreationHappyPath() {
         String metadata = "metadata";
         return defaultHapiSpec("NonFungibleCreationHappyPath", NONDETERMINISTIC_TOKEN_NAMES)
                 .given(
@@ -267,7 +267,7 @@ public class TokenMetadataSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updatingMetadataWorksWithMetadataKey() {
+    final DynamicTest updatingMetadataWorksWithMetadataKey() {
         String memo = "JUMP";
         String metadata = "metadata";
         String saltedName = salted(PRIMARY);
@@ -293,7 +293,7 @@ public class TokenMetadataSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updatingMetadataWorksWithAdminKey() {
+    final DynamicTest updatingMetadataWorksWithAdminKey() {
         String memo = "JUMP";
         String metadata = "metadata";
         String saltedName = salted(PRIMARY);
@@ -323,7 +323,7 @@ public class TokenMetadataSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotUpdateMetadataWithoutAdminOrMetadataKeySignature() {
+    final DynamicTest cannotUpdateMetadataWithoutAdminOrMetadataKeySignature() {
         String memo = "JUMP";
         String metadata = "metadata";
         String saltedName = salted(PRIMARY);
@@ -355,7 +355,7 @@ public class TokenMetadataSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotUpdateMetadataOnImmutableToken() {
+    final DynamicTest cannotUpdateMetadataOnImmutableToken() {
         String memo = "JUMP";
         String metadata = "metadata";
         String saltedName = salted(PRIMARY);

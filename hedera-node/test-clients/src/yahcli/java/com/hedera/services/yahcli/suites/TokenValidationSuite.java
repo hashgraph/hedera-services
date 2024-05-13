@@ -42,13 +42,13 @@ public class TokenValidationSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             validateTokens(),
         });
     }
 
-    private HapiSpec validateTokens() {
+    final DynamicTest validateTokens() {
         AtomicLong initialTreasuryBalance = new AtomicLong();
         return HapiSpec.customHapiSpec("validateTokens")
                 .withProperties(specConfig)

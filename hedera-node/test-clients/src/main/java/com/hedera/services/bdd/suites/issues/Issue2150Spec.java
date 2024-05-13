@@ -35,6 +35,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class Issue2150Spec extends HapiSuite {
@@ -47,14 +48,12 @@ public class Issue2150Spec extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            multiKeyNonPayerEntityVerifiedAsync(),
-        });
+    public List<DynamicTest> getSpecsInSuite() {
+        return List.of(multiKeyNonPayerEntityVerifiedAsync());
     }
 
     @HapiTest
-    final HapiSpec multiKeyNonPayerEntityVerifiedAsync() {
+    final DynamicTest multiKeyNonPayerEntityVerifiedAsync() {
         KeyShape LARGE_THRESH_SHAPE = KeyShape.threshOf(1, 10);
         SigControl firstOnly = LARGE_THRESH_SHAPE.signedWith(sigs(ON, OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF));
 

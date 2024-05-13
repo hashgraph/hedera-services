@@ -85,11 +85,11 @@ public class UmbrellaReduxWithCustomNodes extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runUmbrellaReduxWithCustomNodes(), messageSubmissionSimple());
     }
 
-    final HapiSpec messageSubmissionSimple() {
+    final DynamicTest messageSubmissionSimple() {
         return HapiSpec.customHapiSpec(MESSAGE_SUBMISSION_SIMPLE)
                 .withProperties(Map.of(
                         "default.topic.runningHash.version", topic_running_hash_version,
@@ -110,7 +110,7 @@ public class UmbrellaReduxWithCustomNodes extends HapiSuite {
                                         .checkTopicRunningHashVersion(topic_running_hash_version)));
     }
 
-    final HapiSpec runUmbrellaReduxWithCustomNodes() {
+    final DynamicTest runUmbrellaReduxWithCustomNodes() {
         return HapiSpec.customHapiSpec("RunUmbrellaReduxWithCustomNodes")
                 .withProperties(Map.of(
                         "status.wait.timeout.ms",

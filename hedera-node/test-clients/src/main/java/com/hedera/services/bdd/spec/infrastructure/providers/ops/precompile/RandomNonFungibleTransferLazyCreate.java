@@ -33,7 +33,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import java.util.Optional;
 
 public class RandomNonFungibleTransferLazyCreate implements OpProvider {
-    private final HapiSpecRegistry registry;
+    private final DynamicTestRegistry registry;
     private static final long GAS_TO_OFFER = 5_000_000L;
 
     private final EntityNameProvider<Key> keys;

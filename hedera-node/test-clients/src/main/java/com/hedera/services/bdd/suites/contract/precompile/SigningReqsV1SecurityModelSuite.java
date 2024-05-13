@@ -52,6 +52,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 // Some of the test cases cannot be converted to use eth calls,
 // since they use admin keys, which are held by the txn payer.
@@ -80,7 +81,7 @@ public class SigningReqsV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 newAutoRenewAccountMustSignUpdate(),
                 newTreasuryAccountMustSignUpdate(),
@@ -90,7 +91,7 @@ public class SigningReqsV1SecurityModelSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960") // "assertions should not be used in production code" - not production
-    final HapiSpec selfDenominatedFixedCollectorMustSign() {
+    final DynamicTest selfDenominatedFixedCollectorMustSign() {
         final var fcKey = "fcKey";
         final var arKey = AR_KEY;
         final var feeCollector = "feeCollector";
@@ -163,7 +164,7 @@ public class SigningReqsV1SecurityModelSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960") // "assertions should not be used in production code" - not production
-    final HapiSpec fractionalFeeCollectorMustSign() {
+    final DynamicTest fractionalFeeCollectorMustSign() {
         final var fcKey = "fcKey";
         final var arKey = AR_KEY;
         final var feeCollector = "feeCollector";
@@ -232,7 +233,7 @@ public class SigningReqsV1SecurityModelSuite extends HapiSuite {
                                 })));
     }
 
-    final HapiSpec autoRenewAccountMustSignCreation() {
+    final DynamicTest autoRenewAccountMustSignCreation() {
         final var arKey = AR_KEY;
         final var autoRenew = AUTO_RENEW;
         final AtomicReference<Address> autoRenewAlias = new AtomicReference<>();
@@ -292,7 +293,7 @@ public class SigningReqsV1SecurityModelSuite extends HapiSuite {
                                 getTokenInfo(asTokenString(createdToken.get())).hasAutoRenewAccount(autoRenew)));
     }
 
-    final HapiSpec newTreasuryAccountMustSignUpdate() {
+    final DynamicTest newTreasuryAccountMustSignUpdate() {
         final var ft = "fungibleToken";
         final var ntKey = "ntKey";
         final var updateTxn = "updateTxn";
@@ -346,7 +347,7 @@ public class SigningReqsV1SecurityModelSuite extends HapiSuite {
                         getTokenInfo(ft).hasTreasury(TOKEN_TREASURY));
     }
 
-    final HapiSpec newAutoRenewAccountMustSignUpdate() {
+    final DynamicTest newAutoRenewAccountMustSignUpdate() {
         final var ft = "fungibleToken";
         final var narKey = "narKey";
         final var adminKey = "adminKey";

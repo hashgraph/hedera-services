@@ -36,7 +36,7 @@ import java.util.Optional;
 public class RandomHbarTransferLazyCreate implements OpProvider {
     private static final String TRANSFER_TXN = "transferTxn";
 
-    private final HapiSpecRegistry registry;
+    private final DynamicTestRegistry registry;
     private static final long GAS_TO_OFFER = 5_000_000L;
     private static final Tuple[] EMPTY_TUPLE_ARRAY = new Tuple[] {};
     private final EntityNameProvider<Key> keys;

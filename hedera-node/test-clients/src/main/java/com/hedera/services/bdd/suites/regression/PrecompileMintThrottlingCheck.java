@@ -69,12 +69,12 @@ public class PrecompileMintThrottlingCheck extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(precompileNftMintsAreLimitedByConsThrottle());
     }
 
     @SuppressWarnings("java:S5960")
-    final HapiSpec precompileNftMintsAreLimitedByConsThrottle() {
+    final DynamicTest precompileNftMintsAreLimitedByConsThrottle() {
         var mainnetLimits = protoDefsFromResource("testSystemFiles/mainnet-throttles.json");
         return propertyPreservingHapiSpec("PrecompileNftMintsAreLimitedByConsThrottle")
                 .preserving("contracts.throttle.throttleByGas")

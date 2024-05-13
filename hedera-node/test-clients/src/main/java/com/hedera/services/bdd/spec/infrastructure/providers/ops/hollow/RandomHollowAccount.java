@@ -45,7 +45,7 @@ public class RandomHollowAccount implements OpProvider {
     public static final long INITIAL_BALANCE = 1_000_000_000L;
     public static final String LAZY_CREATE = "LAZY_CREATE";
     private int ceilingNum = DEFAULT_CEILING_NUM;
-    private final HapiSpecRegistry registry;
+    private final DynamicTestRegistry registry;
 
     private final RegistrySourcedNameProvider<Key> keys;
     private final RegistrySourcedNameProvider<AccountID> accounts;

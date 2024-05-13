@@ -45,6 +45,7 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -69,21 +70,17 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            /* Dissociated Account */
+    public List<DynamicTest> getSpecsInSuite() {
+        return List.of(
             uniqueTokenOperationsFailForDissociatedAccount(),
-            /* Frozen Account */
             uniqueTokenOperationsFailForFrozenAccount(),
-            /* Account Without KYC */
             uniqueTokenOperationsFailForKycRevokedAccount(),
-            /* Deleted Account */
-            uniqueTokenOperationsFailForDeletedAccount(),
-        });
+            uniqueTokenOperationsFailForDeletedAccount()
+        );
     }
 
     @HapiTest
-    final HapiSpec uniqueTokenOperationsFailForDeletedAccount() {
+    final DynamicTest uniqueTokenOperationsFailForDeletedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForDeletedAccount")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -117,7 +114,7 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec uniqueTokenOperationsFailForKycRevokedAccount() {
+    final DynamicTest uniqueTokenOperationsFailForKycRevokedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForKycRevokedAccount")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -154,7 +151,7 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec uniqueTokenOperationsFailForFrozenAccount() {
+    final DynamicTest uniqueTokenOperationsFailForFrozenAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForFrozenAccount")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -191,7 +188,7 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec uniqueTokenOperationsFailForDissociatedAccount() {
+    final DynamicTest uniqueTokenOperationsFailForDissociatedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForDissociatedAccount")
                 .given(
                         newKeyNamed(SUPPLY_KEY),

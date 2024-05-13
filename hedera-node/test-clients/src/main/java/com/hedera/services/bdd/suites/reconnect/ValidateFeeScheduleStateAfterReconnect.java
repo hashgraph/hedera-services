@@ -43,11 +43,11 @@ public class ValidateFeeScheduleStateAfterReconnect extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(validateFeeScheduleStateAfterReconnect());
     }
 
-    final HapiSpec validateFeeScheduleStateAfterReconnect() {
+    final DynamicTest validateFeeScheduleStateAfterReconnect() {
         return customHapiSpec("validateFeeScheduleStateAfterReconnect")
                 .withProperties(Map.of("txn.start.offset.secs", "-5"))
                 .given(

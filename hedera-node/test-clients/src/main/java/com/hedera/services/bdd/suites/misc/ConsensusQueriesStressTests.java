@@ -40,6 +40,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class ConsensusQueriesStressTests extends HapiSuite {
@@ -54,14 +55,12 @@ public class ConsensusQueriesStressTests extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            getTopicInfoStress(),
-        });
+    public List<DynamicTest> getSpecsInSuite() {
+        return List.of(getTopicInfoStress());
     }
 
     @HapiTest
-    final HapiSpec getTopicInfoStress() {
+    final DynamicTest getTopicInfoStress() {
         return defaultHapiSpec("GetTopicInfoStress")
                 .given()
                 .when()

@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class ExchangeRateControlSuite extends HapiSuite {
@@ -46,15 +47,15 @@ public class ExchangeRateControlSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(positiveTests(), negativeTests());
     }
 
-    private List<HapiSpec> positiveTests() {
+    private List<DynamicTest> positiveTests() {
         return Arrays.asList(midnightRateChangesWhenAcct50UpdatesFile112(), acct57CanMakeSmallChanges());
     }
 
-    private List<HapiSpec> negativeTests() {
+    private List<DynamicTest> negativeTests() {
         return Arrays.asList(anonCantUpdateRates(), acct57CantMakeLargeChanges());
     }
 
@@ -64,7 +65,7 @@ public class ExchangeRateControlSuite extends HapiSuite {
             .contents(spec -> spec.ratesProvider().rateSetWith(1, 12).toByteString());
 
     @HapiTest
-    final HapiSpec acct57CanMakeSmallChanges() {
+    final DynamicTest acct57CanMakeSmallChanges() {
         return defaultHapiSpec("Acct57CanMakeSmallChanges")
                 .given(
                         resetRatesOp,
@@ -85,7 +86,7 @@ public class ExchangeRateControlSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec midnightRateChangesWhenAcct50UpdatesFile112() {
+    final DynamicTest midnightRateChangesWhenAcct50UpdatesFile112() {
         return defaultHapiSpec("MidnightRateChangesWhenAcct50UpdatesFile112")
                 .given(
                         resetRatesOp,
@@ -139,7 +140,7 @@ public class ExchangeRateControlSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec anonCantUpdateRates() {
+    final DynamicTest anonCantUpdateRates() {
         return defaultHapiSpec("AnonCantUpdateRates")
                 .given(resetRatesOp, cryptoCreate("randomAccount"))
                 .when()
@@ -150,7 +151,7 @@ public class ExchangeRateControlSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec acct57CantMakeLargeChanges() {
+    final DynamicTest acct57CantMakeLargeChanges() {
         return defaultHapiSpec("Acct57CantMakeLargeChanges")
                 .given(
                         resetRatesOp,

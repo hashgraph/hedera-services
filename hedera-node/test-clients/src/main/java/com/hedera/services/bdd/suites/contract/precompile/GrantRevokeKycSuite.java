@@ -58,6 +58,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -92,20 +93,20 @@ public class GrantRevokeKycSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiSpec> negativeSpecs() {
+    List<DynamicTest> negativeSpecs() {
         return List.of(grantRevokeKycFail());
     }
 
-    List<HapiSpec> positiveSpecs() {
+    List<DynamicTest> positiveSpecs() {
         return List.of(grantRevokeKycSpecWithAliasLocalCall());
     }
 
     @HapiTest
-    final HapiSpec grantRevokeKycFail() {
+    final DynamicTest grantRevokeKycFail() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<AccountID> secondAccountID = new AtomicReference<>();
@@ -282,7 +283,7 @@ public class GrantRevokeKycSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec grantRevokeKycSpecWithAliasLocalCall() {
+    final DynamicTest grantRevokeKycSpecWithAliasLocalCall() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<String> autoCreatedAccountId = new AtomicReference<>();
         final String accountAlias = "accountAlias";

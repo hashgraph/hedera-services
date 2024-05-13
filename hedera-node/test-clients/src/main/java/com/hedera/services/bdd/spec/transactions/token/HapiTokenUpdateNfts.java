@@ -84,7 +84,7 @@ public class HapiTokenUpdateNfts extends HapiTxnOp<HapiTokenUpdateNfts> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final DynamicTest spec) throws Throwable {
         var txnId = TxnUtils.asTokenId(token, spec);
         final TokenUpdateNftsTransactionBody opBody = spec.txns()
                 .<TokenUpdateNftsTransactionBody, TokenUpdateNftsTransactionBody.Builder>body(
@@ -128,7 +128,7 @@ public class HapiTokenUpdateNfts extends HapiTxnOp<HapiTokenUpdateNfts> {
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+    protected long feeFor(final DynamicTest spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
                         HederaFunctionality.TokenUpdateNfts, subType, this::usageEstimate, txn, numPayerKeys);

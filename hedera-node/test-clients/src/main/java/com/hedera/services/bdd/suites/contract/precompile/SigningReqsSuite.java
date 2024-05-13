@@ -43,6 +43,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 import org.apache.logging.log4j.*;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 // Some of the test cases cannot be converted to use eth calls,
@@ -73,12 +74,12 @@ public class SigningReqsSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(autoRenewAccountCanUseLegacySigActivationIfConfigured());
     }
 
     @HapiTest
-    final HapiSpec autoRenewAccountCanUseLegacySigActivationIfConfigured() {
+    final DynamicTest autoRenewAccountCanUseLegacySigActivationIfConfigured() {
         final var autoRenew = AUTO_RENEW;
         final AtomicReference<Address> autoRenewMirrorAddr = new AtomicReference<>();
         final AtomicLong contractId = new AtomicLong();

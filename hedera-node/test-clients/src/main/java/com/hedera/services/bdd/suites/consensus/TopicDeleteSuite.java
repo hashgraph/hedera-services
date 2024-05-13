@@ -54,7 +54,7 @@ public class TopicDeleteSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 pureCheckFails(),
                 cannotDeleteAccountAsTopic(),
@@ -66,7 +66,7 @@ public class TopicDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
+    final DynamicTest idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(newKeyNamed("adminKey"))
                 .when(createTopic("topic").adminKeyName("adminKey"))
@@ -74,7 +74,7 @@ public class TopicDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec pureCheckFails() {
+    final DynamicTest pureCheckFails() {
         return defaultHapiSpec("CannotDeleteAccountAsTopic")
                 .given(cryptoCreate("nonTopicId"))
                 .when()
@@ -85,7 +85,7 @@ public class TopicDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotDeleteAccountAsTopic() {
+    final DynamicTest cannotDeleteAccountAsTopic() {
         return defaultHapiSpec("CannotDeleteAccountAsTopic")
                 .given(cryptoCreate("nonTopicId"))
                 .when()
@@ -94,7 +94,7 @@ public class TopicDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec topicIdIsValidated() {
+    final DynamicTest topicIdIsValidated() {
         // Fully non-deterministic for fuzzy matching because the test uses an absolute entity number (i.e.
         // 100.232.4534)
         // but fuzzy matching compares relative entity numbers
@@ -108,7 +108,7 @@ public class TopicDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec noAdminKeyCannotDelete() {
+    final DynamicTest noAdminKeyCannotDelete() {
         return defaultHapiSpec("noAdminKeyCannotDelete")
                 .given(createTopic("testTopic"))
                 .when(deleteTopic("testTopic").hasKnownStatus(UNAUTHORIZED))
@@ -116,7 +116,7 @@ public class TopicDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec deleteWithAdminKey() {
+    final DynamicTest deleteWithAdminKey() {
         return defaultHapiSpec("deleteWithAdminKey")
                 .given(newKeyNamed("adminKey"), createTopic("testTopic").adminKeyName("adminKey"))
                 .when(deleteTopic("testTopic").hasPrecheck(ResponseCodeEnum.OK))
@@ -124,7 +124,7 @@ public class TopicDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec deleteFailedWithWrongKey() {
+    final DynamicTest deleteFailedWithWrongKey() {
         long PAYER_BALANCE = 1_999_999_999L;
         return defaultHapiSpec("deleteFailedWithWrongKey")
                 .given(
@@ -140,7 +140,7 @@ public class TopicDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec feeAsExpected() {
+    final DynamicTest feeAsExpected() {
         return defaultHapiSpec("feeAsExpected")
                 .given(cryptoCreate("payer"), createTopic("testTopic").adminKeyName("payer"))
                 .when(deleteTopic("testTopic").blankMemo().payingWith("payer").via("topicDelete"))

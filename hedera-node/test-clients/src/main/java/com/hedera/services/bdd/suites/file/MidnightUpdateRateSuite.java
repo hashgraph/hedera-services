@@ -31,6 +31,7 @@ import java.text.ParseException;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 // The test in this suite was extracted from ExchangeRateControlSuite. It has to be run shortly
 // before midnight, which is not practical. Either we add functionality to mock time in e2e-test
@@ -47,11 +48,11 @@ public class MidnightUpdateRateSuite extends HapiSuite {
             .contents(spec -> spec.ratesProvider().rateSetWith(1, 12).toByteString());
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of();
     }
 
-    final HapiSpec acct57UpdatesMidnightRateAtMidNight() throws ParseException {
+    final DynamicTest acct57UpdatesMidnightRateAtMidNight() throws ParseException {
         return defaultHapiSpec("Acct57UpdatesMidnightRateAtMidNight")
                 .given(resetRatesOp, cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, ADEQUATE_FUNDS)))
                 .when(

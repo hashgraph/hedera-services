@@ -63,6 +63,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -110,11 +111,11 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(negativeCases());
     }
 
-    List<HapiSpec> negativeCases() {
+    List<DynamicTest> negativeCases() {
         return List.of(
                 updateTokenWithInvalidKeyValues(),
                 updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey(),
@@ -122,7 +123,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateTokenWithInvalidKeyValues() {
+    final DynamicTest updateTokenWithInvalidKeyValues() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("updateTokenWithInvalidKeyValues")
                 .given(
@@ -171,7 +172,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey() {
+    final DynamicTest updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey() {
         final AtomicReference<TokenID> nftToken = new AtomicReference<>();
         return defaultHapiSpec("updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey")
                 .given(
@@ -252,7 +253,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec getTokenKeyForNonFungibleNegative() {
+    final DynamicTest getTokenKeyForNonFungibleNegative() {
         final AtomicReference<TokenID> nftToken = new AtomicReference<>();
         return defaultHapiSpec("getTokenKeyForNonFungibleNegative")
                 .given(

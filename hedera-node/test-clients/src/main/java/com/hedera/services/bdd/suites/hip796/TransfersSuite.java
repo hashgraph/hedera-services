@@ -34,6 +34,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * A suite for user stories Transfers-1 through Transfers-3 from HIP-796.
@@ -43,7 +44,7 @@ public class TransfersSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TransfersSuite.class);
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of();
     }
 
@@ -54,7 +55,7 @@ public class TransfersSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    public HapiSpec canTransferTokensToSamePartitionUser() {
+    final DynamicTest canTransferTokensToSamePartitionUser() {
         return defaultHapiSpec("CanTransferTokensToSamePartitionUser")
                 .given(fungibleTokenWithFeatures(PARTITIONING)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION)
@@ -73,7 +74,7 @@ public class TransfersSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    public HapiSpec canTransferTokensToUserWithAutoAssociation() {
+    final DynamicTest canTransferTokensToUserWithAutoAssociation() {
         return defaultHapiSpec("CanTransferTokensToUserWithAutoAssociation")
                 .given(fungibleTokenWithFeatures(PARTITIONING)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION)
@@ -98,7 +99,7 @@ public class TransfersSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    public HapiSpec canTransferTokensToUserAfterUnlock() {
+    final DynamicTest canTransferTokensToUserAfterUnlock() {
         return defaultHapiSpec("CanTransferTokensToUserPostUnlock")
                 .given(fungibleTokenWithFeatures(PARTITIONING, LOCKING)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION)

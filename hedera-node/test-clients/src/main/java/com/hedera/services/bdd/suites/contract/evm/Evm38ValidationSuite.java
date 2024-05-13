@@ -73,6 +73,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.Hash;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -100,7 +101,7 @@ public class Evm38ValidationSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 invalidContractCall(),
                 cannotSendValueToTokenAccount(),
@@ -119,7 +120,7 @@ public class Evm38ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec invalidContractCall() {
+    final DynamicTest invalidContractCall() {
         final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
 
         return propertyPreservingHapiSpec("InvalidContract")
@@ -138,7 +139,7 @@ public class Evm38ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cannotSendValueToTokenAccount() {
+    final DynamicTest cannotSendValueToTokenAccount() {
         final var multiKey = "multiKey";
         final var nonFungibleToken = "NFT";
         final var contract = "ManyChildren";
@@ -182,7 +183,7 @@ public class Evm38ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec verifiesExistenceOfAccountsAndContracts() {
+    final DynamicTest verifiesExistenceOfAccountsAndContracts() {
         final var contract = "BalanceChecker";
         final var BALANCE = 10L;
         final var ACCOUNT = "test";
@@ -239,7 +240,7 @@ public class Evm38ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec verifiesExistenceForCallCodeOperation() {
+    final DynamicTest verifiesExistenceForCallCodeOperation() {
         final var contract = "CallOperationsChecker";
         final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
         return propertyPreservingHapiSpec("verifiesExistenceForCallCodeOperation")
@@ -266,7 +267,7 @@ public class Evm38ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec verifiesExistenceForCallOperation() {
+    final DynamicTest verifiesExistenceForCallOperation() {
         final var contract = "CallOperationsChecker";
         final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
         final var ACCOUNT = "account";
@@ -298,7 +299,7 @@ public class Evm38ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec verifiesExistenceForCallOperationInternal() {
+    final DynamicTest verifiesExistenceForCallOperationInternal() {
         final var contract = "CallingContract";
         final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
         return propertyPreservingHapiSpec("verifiesExistenceForCallOperationInternal")
@@ -321,7 +322,7 @@ public class Evm38ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec verifiesExistenceForDelegateCallOperation() {
+    final DynamicTest verifiesExistenceForDelegateCallOperation() {
         final var contract = "CallOperationsChecker";
         final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
         return propertyPreservingHapiSpec("verifiesExistenceForDelegateCallOperation")
@@ -349,7 +350,7 @@ public class Evm38ValidationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    HapiSpec verifiesExistenceForExtCodeOperation() {
+    final DynamicTest verifiesExistenceForExtCodeOperation() {
         final var contract = "ExtCodeOperationsChecker";
         final var invalidAddress = "0x0000000000000000000000000000000000123456";
         final var emptyBytecode = ByteString.EMPTY;
@@ -414,7 +415,7 @@ public class Evm38ValidationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    HapiSpec verifiesExistenceForExtCodeSize() {
+    final DynamicTest verifiesExistenceForExtCodeSize() {
         final var contract = "ExtCodeOperationsChecker";
         final var invalidAddress = "0x0000000000000000000000000000000000123456";
         final var sizeOf = "sizeOf";
@@ -478,7 +479,7 @@ public class Evm38ValidationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    HapiSpec verifiesExistenceForExtCodeHash() {
+    final DynamicTest verifiesExistenceForExtCodeHash() {
         final var contract = "ExtCodeOperationsChecker";
         final var invalidAddress = "0x0000000000000000000000000000000000123456";
         final var expectedAccountHash =
@@ -541,7 +542,7 @@ public class Evm38ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec verifiesExistenceForStaticCall() {
+    final DynamicTest verifiesExistenceForStaticCall() {
         final var contract = "CallOperationsChecker";
         final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
 
@@ -573,7 +574,7 @@ public class Evm38ValidationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5669")
     @HapiTest
-    private HapiSpec canInternallyCallAliasedAddressesOnlyViaCreate2Address() {
+    final DynamicTest canInternallyCallAliasedAddressesOnlyViaCreate2Address() {
         final var contract = "AddressValueRet";
         final var aliasCall = "aliasCall";
         final var mirrorCall = "mirrorCall";
@@ -634,7 +635,7 @@ public class Evm38ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec callingDestructedContractReturnsStatusDeleted() {
+    final DynamicTest callingDestructedContractReturnsStatusDeleted() {
         final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
         return propertyPreservingHapiSpec("callingDestructedContractReturnsStatusDeleted")
                 .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY, EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS)
@@ -659,7 +660,7 @@ public class Evm38ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec factoryAndSelfDestructInConstructorContract() {
+    final DynamicTest factoryAndSelfDestructInConstructorContract() {
         final var contract = "FactorySelfDestructConstructor";
 
         final var sender = "sender";

@@ -58,13 +58,13 @@ public class TokenPuvSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             cleanupIfNecessary(), initialAssociation(), initialFunding(),
         });
     }
 
-    final HapiSpec initialFunding() {
+    final DynamicTest initialFunding() {
         return HapiSpec.customHapiSpec("InitialFunding")
                 .withProperties(targetInfo.toCustomProperties(miscConfig))
                 .given(
@@ -94,7 +94,7 @@ public class TokenPuvSuite extends HapiSuite {
                                         .balance(Amounts.BESTOWED_CAT_TOKENS)));
     }
 
-    final HapiSpec initialAssociation() {
+    final DynamicTest initialAssociation() {
         return HapiSpec.customHapiSpec("InitialAssociation")
                 .withProperties(targetInfo.toCustomProperties(miscConfig))
                 .given(
@@ -112,7 +112,7 @@ public class TokenPuvSuite extends HapiSuite {
                                         .kyc(TokenKycStatus.KycNotApplicable)));
     }
 
-    final HapiSpec cleanupIfNecessary() {
+    final DynamicTest cleanupIfNecessary() {
         return HapiSpec.customHapiSpec("CleanupIfNecessary")
                 .withProperties(targetInfo.toCustomProperties(miscConfig))
                 .given()

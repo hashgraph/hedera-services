@@ -90,7 +90,7 @@ public class RecordCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec submittingNodeStillPaidIfServiceFeesOmitted() {
+    final DynamicTest submittingNodeStillPaidIfServiceFeesOmitted() {
         final String comfortingMemo = THIS_IS_OK_IT_S_FINE_IT_S_WHATEVER;
         final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
 
@@ -148,7 +148,7 @@ public class RecordCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec submittingNodeChargedNetworkFeeForLackOfDueDiligence() {
+    final DynamicTest submittingNodeChargedNetworkFeeForLackOfDueDiligence() {
         final String comfortingMemo = THIS_IS_OK_IT_S_FINE_IT_S_WHATEVER;
         final String disquietingMemo = "\u0000his is ok, it's fine, it's whatever.";
         final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
@@ -204,7 +204,7 @@ public class RecordCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness() {
+    final DynamicTest submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness() {
         final String comfortingMemo = THIS_IS_OK_IT_S_FINE_IT_S_WHATEVER;
         final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
 
@@ -260,7 +260,7 @@ public class RecordCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec payerRecordCreationSanityChecks() {
+    final DynamicTest payerRecordCreationSanityChecks() {
         return defaultHapiSpec("PayerRecordCreationSanityChecks")
                 .given(cryptoCreate(PAYER))
                 .when(
@@ -289,7 +289,7 @@ public class RecordCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec accountsGetPayerRecordsIfSoConfigured() {
+    final DynamicTest accountsGetPayerRecordsIfSoConfigured() {
         final var txn = "ofRecord";
 
         return defaultHapiSpec("AccountsGetPayerRecordsIfSoConfigured")

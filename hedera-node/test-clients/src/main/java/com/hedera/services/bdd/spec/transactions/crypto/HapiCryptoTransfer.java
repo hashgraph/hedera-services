@@ -442,7 +442,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final DynamicTest spec) throws Throwable {
         final CryptoTransferTransactionBody opBody = spec.txns()
                 .<CryptoTransferTransactionBody, CryptoTransferTransactionBody.Builder>body(
                         CryptoTransferTransactionBody.class, b -> {
@@ -467,7 +467,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
         return builder -> builder.setCryptoTransfer(opBody);
     }
 
-    private void misconfigureIfRequested(final CryptoTransferTransactionBody.Builder b, final HapiSpec spec) {
+    private void misconfigureIfRequested(final CryptoTransferTransactionBody.Builder b, final DynamicTest spec) {
         if (tokenWithEmptyTransferAmounts.isPresent()) {
             final var empty = tokenWithEmptyTransferAmounts.get();
             final var emptyToken = TxnUtils.asTokenId(empty, spec);
@@ -503,7 +503,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+    protected long feeFor(final DynamicTest spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         if (feesObserver.isPresent()) {
             return spec.fees()
                     .forActivityBasedOpWithDetails(
@@ -545,7 +545,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final DynamicTest spec) {
         return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::cryptoTransfer;
     }
 
@@ -611,13 +611,13 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
         };
     }
 
-    private List<TokenTransferList> transfersAllFor(final HapiSpec spec) {
+    private List<TokenTransferList> transfersAllFor(final DynamicTest spec) {
         return Stream.concat(transfersFor(spec).stream(), transfersForNft(spec).stream())
                 .sorted(TOKEN_TRANSFER_LIST_COMPARATOR)
                 .toList();
     }
 
-    private List<TokenTransferList> transfersFor(final HapiSpec spec) {
+    private List<TokenTransferList> transfersFor(final DynamicTest spec) {
         final Map<TokenID, Pair<Integer, List<AccountAmount>>> aggregated;
         if (fullyAggregateTokenTransfers) {
             aggregated = fullyAggregateTokenTransfersList(spec);
@@ -640,7 +640,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
                 .toList();
     }
 
-    private Map<TokenID, Pair<Integer, List<AccountAmount>>> aggregateOnTokenIds(final HapiSpec spec) {
+    private Map<TokenID, Pair<Integer, List<AccountAmount>>> aggregateOnTokenIds(final DynamicTest spec) {
         final Map<TokenID, Pair<Integer, List<AccountAmount>>> map = new HashMap<>();
         for (final TokenMovement tm : tokenAwareProviders) {
             if (tm.isFungibleToken()) {
@@ -662,7 +662,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
         return map;
     }
 
-    private Map<TokenID, Pair<Integer, List<AccountAmount>>> fullyAggregateTokenTransfersList(final HapiSpec spec) {
+    private Map<TokenID, Pair<Integer, List<AccountAmount>>> fullyAggregateTokenTransfersList(final DynamicTest spec) {
         final Map<TokenID, Pair<Integer, List<AccountAmount>>> map = new HashMap<>();
         for (final TokenMovement xfer : tokenAwareProviders) {
             if (xfer.isFungibleToken()) {
@@ -713,7 +713,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
                 .toList();
     }
 
-    private List<TokenTransferList> transfersForNft(final HapiSpec spec) {
+    private List<TokenTransferList> transfersForNft(final DynamicTest spec) {
         final var uniqueCount = tokenAwareProviders.stream()
                 .filter(Predicate.not(TokenMovement::isFungibleToken))
                 .map(TokenMovement::getToken)
@@ -747,7 +747,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     }
 
     @Override
-    protected void updateStateOf(final HapiSpec spec) throws Throwable {
+    protected void updateStateOf(final DynamicTest spec) throws Throwable {
         if (logResolvedStatus) {
             log.info("Resolved to {}", actualStatus);
         }

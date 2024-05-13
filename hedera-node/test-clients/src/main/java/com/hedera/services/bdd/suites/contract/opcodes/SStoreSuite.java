@@ -47,6 +47,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -69,16 +70,16 @@ public class SStoreSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(multipleSStoreOpsSucceed(), benchmarkSingleSetter(), childStorage());
     }
 
     // This test is failing with CONSENSUS_GAS_EXHAUSTED prior the refactor.
     @HapiTest
-    HapiSpec multipleSStoreOpsSucceed() {
+    final DynamicTest multipleSStoreOpsSucceed() {
         final var contract = "GrowArray";
         final var GAS_TO_OFFER = 6_000_000L;
-        return HapiSpec.defaultHapiSpec(
+        return defaultHapiSpec(
                         "multipleSStoreOpsSucceed", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when(withOpContext((spec, opLog) -> {
@@ -111,7 +112,7 @@ public class SStoreSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec childStorage() {
+    final DynamicTest childStorage() {
         // Successfully exceeds deprecated max contract storage of 1 KB
         final var contract = "ChildStorage";
         return defaultHapiSpec("ChildStorage", HIGHLY_NON_DETERMINISTIC_FEES)
@@ -175,7 +176,7 @@ public class SStoreSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5669")
     @HapiTest
-    final HapiSpec benchmarkSingleSetter() {
+    final DynamicTest benchmarkSingleSetter() {
         final var contract = "Benchmark";
         final var GAS_LIMIT = 1_000_000;
         var value = Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000005")

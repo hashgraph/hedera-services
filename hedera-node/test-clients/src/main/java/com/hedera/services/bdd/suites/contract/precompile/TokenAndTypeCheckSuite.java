@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -80,12 +81,12 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(checkTokenAndTypeStandardCases(), checkTokenAndTypeNegativeCases());
     }
 
     @HapiTest
-    final HapiSpec checkTokenAndTypeStandardCases() {
+    final DynamicTest checkTokenAndTypeStandardCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
         return defaultHapiSpec("checkTokenAndTypeStandardCases")
@@ -127,7 +128,7 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
 
     // Should just return false on isToken() check for missing token type
     @HapiTest
-    final HapiSpec checkTokenAndTypeNegativeCases() {
+    final DynamicTest checkTokenAndTypeNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var notAnAddress = new byte[20];
 

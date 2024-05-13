@@ -60,11 +60,11 @@ public class StakeSetupSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(startStakingAndExportCreatedStakers());
     }
 
-    private HapiSpec startStakingAndExportCreatedStakers() {
+    final DynamicTest startStakingAndExportCreatedStakers() {
         return HapiSpec.customHapiSpec("StartStakingAndExportCreatedStakers")
                 .withProperties(specConfig)
                 .given(

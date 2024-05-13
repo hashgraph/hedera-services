@@ -63,13 +63,13 @@ public class SimpleXfersAvoidingHotspot extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             runSimpleXfers(),
         });
     }
 
-    final HapiSpec runSimpleXfers() {
+    final DynamicTest runSimpleXfers() {
         return HapiSpec.customHapiSpec("RunTokenTransfers")
                 .withProperties(Map.of(
                         //				"default.keyAlgorithm", "SECP256K1"

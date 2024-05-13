@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -62,7 +63,7 @@ public class ContractGetInfoSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(getInfoWorks(), invalidContractFromCostAnswer(), invalidContractFromAnswerOnly());
     }
 
@@ -72,7 +73,7 @@ public class ContractGetInfoSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
+    final DynamicTest idVariantsTreatedAsExpected() {
         final var contract = "Multipurpose";
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(
@@ -83,7 +84,7 @@ public class ContractGetInfoSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getInfoWorks() {
+    final DynamicTest getInfoWorks() {
         final var contract = "Multipurpose";
         final var MEMO = "This is a test.";
         final var canonicalUsdPrice = 0.0001;
@@ -117,7 +118,7 @@ public class ContractGetInfoSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidContractFromCostAnswer() {
+    final DynamicTest invalidContractFromCostAnswer() {
         return defaultHapiSpec("InvalidContractFromCostAnswer")
                 .given()
                 .when()
@@ -126,7 +127,7 @@ public class ContractGetInfoSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidContractFromAnswerOnly() {
+    final DynamicTest invalidContractFromAnswerOnly() {
         return defaultHapiSpec("InvalidContractFromAnswerOnly")
                 .given()
                 .when()

@@ -50,6 +50,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -82,11 +83,11 @@ public class PrngPrecompileSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiSpec> negativeSpecs() {
+    List<DynamicTest> negativeSpecs() {
         return List.of(
                 functionCallWithLessThanFourBytesFailsGracefully(),
                 nonSupportedAbiCallGracefullyFails(),
@@ -94,12 +95,12 @@ public class PrngPrecompileSuite extends HapiSuite {
                 emptyInputCallFails());
     }
 
-    List<HapiSpec> positiveSpecs() {
+    List<DynamicTest> positiveSpecs() {
         return List.of(prngPrecompileHappyPathWorks(), multipleCallsHaveIndependentResults());
     }
 
     @HapiTest
-    final HapiSpec multipleCallsHaveIndependentResults() {
+    final DynamicTest multipleCallsHaveIndependentResults() {
         final var prng = THE_PRNG_CONTRACT;
         final var gasToOffer = 400_000;
         final var numCalls = 5;
@@ -147,7 +148,7 @@ public class PrngPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec emptyInputCallFails() {
+    final DynamicTest emptyInputCallFails() {
         final var prng = THE_PRNG_CONTRACT;
         final var emptyInputCall = "emptyInputCall";
         return defaultHapiSpec("emptyInputCallFails", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -175,7 +176,7 @@ public class PrngPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidLargeInputFails() {
+    final DynamicTest invalidLargeInputFails() {
         final var prng = THE_PRNG_CONTRACT;
         final var largeInputCall = "largeInputCall";
         return defaultHapiSpec("invalidLargeInputFails", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -203,7 +204,7 @@ public class PrngPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec nonSupportedAbiCallGracefullyFails() {
+    final DynamicTest nonSupportedAbiCallGracefullyFails() {
         final var prng = THE_GRACEFULLY_FAILING_PRNG_CONTRACT;
         final var failedCall = "failedCall";
         return defaultHapiSpec("nonSupportedAbiCallGracefullyFails", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -226,7 +227,7 @@ public class PrngPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec functionCallWithLessThanFourBytesFailsGracefully() {
+    final DynamicTest functionCallWithLessThanFourBytesFailsGracefully() {
         final var lessThan4Bytes = "lessThan4Bytes";
         return defaultHapiSpec("functionCallWithLessThanFourBytesFailsGracefully", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate(BOB), uploadInitCode(THE_PRNG_CONTRACT), contractCreate(THE_PRNG_CONTRACT))
@@ -254,7 +255,7 @@ public class PrngPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec prngPrecompileHappyPathWorks() {
+    final DynamicTest prngPrecompileHappyPathWorks() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
         return defaultHapiSpec(
@@ -279,7 +280,7 @@ public class PrngPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec prngPrecompileInvalidFeeSubmitted() {
+    final DynamicTest prngPrecompileInvalidFeeSubmitted() {
         final var TX = "TX";
         return defaultHapiSpec(
                         "prngPrecompileInvalidFeeSubmitted",
@@ -299,7 +300,7 @@ public class PrngPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec prngPrecompileInsufficientGas() {
+    final DynamicTest prngPrecompileInsufficientGas() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileInsufficientGas")

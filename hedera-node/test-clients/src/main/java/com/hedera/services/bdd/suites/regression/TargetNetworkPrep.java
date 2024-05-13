@@ -70,12 +70,12 @@ public class TargetNetworkPrep extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(ensureSystemStateAsExpectedWithSystemDefaultFiles());
     }
 
     @HapiTest
-    final HapiSpec ensureSystemStateAsExpectedWithSystemDefaultFiles() {
+    final DynamicTest ensureSystemStateAsExpectedWithSystemDefaultFiles() {
         final var emptyKey =
                 Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
         final var snapshot800 = "800startBalance";

@@ -55,6 +55,7 @@ import java.nio.file.Path;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class FileCreateSuite extends HapiSuite {
@@ -73,7 +74,7 @@ public class FileCreateSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 createWithMemoWorks(),
                 createFailsWithMissingSigs(),
@@ -83,7 +84,7 @@ public class FileCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec exchangeRateControlAccountIsntCharged() {
+    final DynamicTest exchangeRateControlAccountIsntCharged() {
         return defaultHapiSpec("ExchangeRateControlAccountIsntCharged")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, 1_000_000_000_000L)),
@@ -96,7 +97,7 @@ public class FileCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createFailsWithExcessiveLifetime() {
+    final DynamicTest createFailsWithExcessiveLifetime() {
         return defaultHapiSpec("CreateFailsWithExcessiveLifetime")
                 .given()
                 .when()
@@ -106,7 +107,7 @@ public class FileCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
+    final DynamicTest idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given()
                 .when()
@@ -115,7 +116,7 @@ public class FileCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createWithMemoWorks() {
+    final DynamicTest createWithMemoWorks() {
         String memo = "Really quite something!";
 
         return defaultHapiSpec("createWithMemoWorks")
@@ -128,7 +129,7 @@ public class FileCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createFailsWithMissingSigs() {
+    final DynamicTest createFailsWithMissingSigs() {
         KeyShape shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
         SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
         SigControl invalidSig = shape.signedWith(sigs(OFF, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
@@ -154,7 +155,7 @@ public class FileCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createFailsWithPayerAccountNotFound() {
+    final DynamicTest createFailsWithPayerAccountNotFound() {
         KeyShape shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
         SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
 

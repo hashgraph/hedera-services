@@ -37,13 +37,13 @@ public class AddWellKnownEntities extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             instantiateEntities(),
         });
     }
 
-    final HapiSpec instantiateEntities() {
+    final DynamicTest instantiateEntities() {
         return HapiSpec.customHapiSpec("AddWellKnownEntities")
                 .withProperties(Map.of(
                         "fees.useFixedOffer", "true",

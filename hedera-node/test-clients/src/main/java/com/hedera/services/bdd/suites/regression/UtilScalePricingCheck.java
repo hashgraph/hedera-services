@@ -51,12 +51,12 @@ public class UtilScalePricingCheck extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(nftPriceScalesWithUtilization());
     }
 
     @HapiTest
-    final HapiSpec nftPriceScalesWithUtilization() {
+    final DynamicTest nftPriceScalesWithUtilization() {
         final var civilian = "civilian";
         final var maxAllowed = 100;
         final IntFunction<String> mintOp = i -> "mint" + i;

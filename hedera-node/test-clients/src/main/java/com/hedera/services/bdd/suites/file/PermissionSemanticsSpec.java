@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class PermissionSemanticsSpec extends HapiSuite {
@@ -68,7 +69,7 @@ public class PermissionSemanticsSpec extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 allowsDeleteWithOneTopLevelSig(),
                 supportsImmutableFiles(),
@@ -76,7 +77,7 @@ public class PermissionSemanticsSpec extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec addressBookAdminExemptFromFeesGivenAuthorizedOps() {
+    final DynamicTest addressBookAdminExemptFromFeesGivenAuthorizedOps() {
         long amount = 100 * 100_000_000L;
         AtomicReference<byte[]> origContents = new AtomicReference<>();
         return defaultHapiSpec("AddressBookAdminExemptFromFeesGivenAuthorizedOps")
@@ -100,7 +101,7 @@ public class PermissionSemanticsSpec extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec supportsImmutableFiles() {
+    final DynamicTest supportsImmutableFiles() {
         long extensionSecs = 666L;
         AtomicLong approxExpiry = new AtomicLong();
 
@@ -142,7 +143,7 @@ public class PermissionSemanticsSpec extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec allowsDeleteWithOneTopLevelSig() {
+    final DynamicTest allowsDeleteWithOneTopLevelSig() {
         KeyShape wacl = KeyShape.listOf(KeyShape.SIMPLE, KeyShape.listOf(2));
 
         var deleteSig = wacl.signedWith(sigs(ON, sigs(OFF, OFF)));

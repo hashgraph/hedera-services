@@ -66,7 +66,7 @@ public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+    protected long feeFor(final DynamicTest spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         return spec.fees().forActivityBasedOp(HederaFunctionality.TokenDelete, this::usageEstimate, txn, numPayerKeys);
     }
 
@@ -76,7 +76,7 @@ public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final DynamicTest spec) throws Throwable {
         final var tId = TxnUtils.asTokenId(token, spec);
         final TokenDeleteTransactionBody opBody = spec.txns()
                 .<TokenDeleteTransactionBody, TokenDeleteTransactionBody.Builder>body(
@@ -91,12 +91,12 @@ public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final DynamicTest spec) {
         return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::deleteToken;
     }
 
     @Override
-    protected void updateStateOf(final HapiSpec spec) {
+    protected void updateStateOf(final DynamicTest spec) {
         if (!shouldPurge || actualStatus != SUCCESS) {
             return;
         }

@@ -51,6 +51,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -76,7 +77,7 @@ public class DefaultTokenStatusSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(getTokenDefaultFreezeStatus(), getTokenDefaultKycStatus());
     }
 
@@ -86,7 +87,7 @@ public class DefaultTokenStatusSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getTokenDefaultFreezeStatus() {
+    final DynamicTest getTokenDefaultFreezeStatus() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var notAnAddress = new byte[20];
 
@@ -154,7 +155,7 @@ public class DefaultTokenStatusSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getTokenDefaultKycStatus() {
+    final DynamicTest getTokenDefaultKycStatus() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var notAnAddress = new byte[20];
 

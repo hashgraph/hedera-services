@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class TokenAssociationV1SecurityModelSpecs extends HapiSuite {
 
@@ -63,7 +64,7 @@ public class TokenAssociationV1SecurityModelSpecs extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(multiAssociationWithSameRepeatedTokenAsExpected());
     }
 
@@ -72,7 +73,7 @@ public class TokenAssociationV1SecurityModelSpecs extends HapiSuite {
         return false;
     }
 
-    final HapiSpec multiAssociationWithSameRepeatedTokenAsExpected() {
+    final DynamicTest multiAssociationWithSameRepeatedTokenAsExpected() {
         final var nfToken = "nfToken";
         final var civilian = "civilian";
         final var multiAssociate = "multiAssociate";

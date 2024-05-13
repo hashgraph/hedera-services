@@ -53,6 +53,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class GrantRevokeKycV1SecurityModelSuite extends HapiSuite {
@@ -83,19 +84,19 @@ public class GrantRevokeKycV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiSpec> negativeSpecs() {
+    List<DynamicTest> negativeSpecs() {
         return List.of();
     }
 
-    List<HapiSpec> positiveSpecs() {
+    List<DynamicTest> positiveSpecs() {
         return List.of(grantRevokeKycSpec());
     }
 
-    final HapiSpec grantRevokeKycSpec() {
+    final DynamicTest grantRevokeKycSpec() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<AccountID> secondAccountID = new AtomicReference<>();

@@ -28,6 +28,7 @@ import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTest;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class CryptoTransferThenFreezeTest extends CryptoTransferLoadTest {
     private static final Logger log = LogManager.getLogger(CryptoTransferThenFreezeTest.class);
@@ -40,11 +41,11 @@ public class CryptoTransferThenFreezeTest extends CryptoTransferLoadTest {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runCryptoTransfers(), freezeAfterTransfers());
     }
 
-    final HapiSpec freezeAfterTransfers() {
+    final DynamicTest freezeAfterTransfers() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         return defaultHapiSpec("FreezeAfterTransfers")
                 .given(

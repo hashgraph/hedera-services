@@ -50,6 +50,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -74,7 +75,7 @@ public class TokenDeleteSpecs extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 deletionValidatesMissingAdminKey(),
                 deletionWorksAsExpected(),
@@ -84,7 +85,7 @@ public class TokenDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec treasuryBecomesDeletableAfterTokenDelete() {
+    final DynamicTest treasuryBecomesDeletableAfterTokenDelete() {
         return defaultHapiSpec("TreasuryBecomesDeletableAfterTokenDelete")
                 .given(
                         newKeyNamed(TOKEN_ADMIN),
@@ -102,7 +103,7 @@ public class TokenDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec deletionValidatesAlreadyDeletedToken() {
+    final DynamicTest deletionValidatesAlreadyDeletedToken() {
         return defaultHapiSpec("DeletionValidatesAlreadyDeletedToken")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -114,7 +115,7 @@ public class TokenDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
+    final DynamicTest idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(newKeyNamed("adminKey"), tokenCreate("t").adminKey("adminKey"))
                 .when()
@@ -122,7 +123,7 @@ public class TokenDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec deletionValidatesMissingAdminKey() {
+    final DynamicTest deletionValidatesMissingAdminKey() {
         return defaultHapiSpec("DeletionValidatesMissingAdminKey")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -137,7 +138,7 @@ public class TokenDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec deletionWorksAsExpected() {
+    final DynamicTest deletionWorksAsExpected() {
         return defaultHapiSpec("DeletionWorksAsExpected", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -177,7 +178,7 @@ public class TokenDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec deletionValidatesRef() {
+    final DynamicTest deletionValidatesRef() {
         return defaultHapiSpec("DeletionValidatesRef")
                 .given(cryptoCreate(PAYER))
                 .when()

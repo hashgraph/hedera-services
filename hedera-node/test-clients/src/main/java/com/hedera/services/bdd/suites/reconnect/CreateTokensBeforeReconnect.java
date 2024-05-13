@@ -52,7 +52,7 @@ public class CreateTokensBeforeReconnect extends HapiSuite {
     private static final AtomicInteger tokenNumber = new AtomicInteger(0);
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runCreateTopics());
     }
 
@@ -69,7 +69,7 @@ public class CreateTokensBeforeReconnect extends HapiSuite {
                 .deferStatusResolution();
     }
 
-    final HapiSpec runCreateTopics() {
+    final DynamicTest runCreateTopics() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings(
                 TOKEN_CREATION_RECONNECT_TPS,
                 DEFAULT_MINS_FOR_RECONNECT_TESTS,

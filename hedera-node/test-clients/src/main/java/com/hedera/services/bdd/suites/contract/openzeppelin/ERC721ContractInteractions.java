@@ -38,6 +38,7 @@ import java.math.BigInteger;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -56,7 +57,7 @@ public class ERC721ContractInteractions extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(callsERC721ContractInteractions());
     }
 
@@ -66,7 +67,7 @@ public class ERC721ContractInteractions extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec callsERC721ContractInteractions() {
+    final DynamicTest callsERC721ContractInteractions() {
         final var CONTRACT = "GameItem";
         final var nftId = BigInteger.ONE;
         final var CREATE_TX = "create";

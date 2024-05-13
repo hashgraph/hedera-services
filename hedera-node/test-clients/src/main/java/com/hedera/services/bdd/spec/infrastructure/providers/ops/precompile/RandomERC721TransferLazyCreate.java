@@ -34,7 +34,7 @@ import java.math.BigInteger;
 import java.util.Optional;
 
 public class RandomERC721TransferLazyCreate implements OpProvider {
-    private final HapiSpecRegistry registry;
+    private final DynamicTestRegistry registry;
     private static final long GAS_TO_OFFER = 5_000_000L;
     private static final String TRANSFER_FROM_ACCOUNT_TXN = "transferFromAccountTxn";
     private static final String TRANSFER_FROM = "transferFrom";

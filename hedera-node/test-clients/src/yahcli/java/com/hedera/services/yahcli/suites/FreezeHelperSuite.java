@@ -42,11 +42,11 @@ public class FreezeHelperSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {doFreeze()});
     }
 
-    private HapiSpec doFreeze() {
+    final DynamicTest doFreeze() {
         return HapiSpec.customHapiSpec("DoFreeze")
                 .withProperties(specConfig)
                 .given()

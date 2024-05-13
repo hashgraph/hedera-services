@@ -45,11 +45,11 @@ public class ValidateAppPropertiesStateAfterReconnect extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(validateAppPropertiesStateAfterReconnect());
     }
 
-    final HapiSpec validateAppPropertiesStateAfterReconnect() {
+    final DynamicTest validateAppPropertiesStateAfterReconnect() {
         return customHapiSpec("validateAppPropertiesStateAfterReconnect")
                 .withProperties(Map.of("txn.start.offset.secs", "-5"))
                 .given(

@@ -48,6 +48,7 @@ import java.util.Map;
 import java.util.OptionalLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * Client that creates a state with at least one of every type of blob; and a bit of diversity
@@ -98,7 +99,7 @@ public final class DiverseStateCreation extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         try {
             SMALL_CONTENTS = Files.newInputStream(Paths.get(SMALL_CONTENTS_LOC)).readAllBytes();
             MEDIUM_CONTENTS =
@@ -111,7 +112,7 @@ public final class DiverseStateCreation extends HapiSuite {
         return List.of(createDiverseState());
     }
 
-    final HapiSpec createDiverseState() {
+    final DynamicTest createDiverseState() {
         final KeyShape SMALL_SHAPE = listOf(threshOf(1, 3));
         final KeyShape MEDIUM_SHAPE = listOf(SIMPLE, threshOf(2, 3));
         final KeyShape LARGE_SHAPE = listOf(

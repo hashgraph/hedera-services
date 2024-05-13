@@ -51,7 +51,7 @@ public class CreateAccountsBeforeReconnect extends HapiSuite {
     private static final AtomicInteger accountNumber = new AtomicInteger(0);
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runCreateAccounts());
     }
 
@@ -68,7 +68,7 @@ public class CreateAccountsBeforeReconnect extends HapiSuite {
                 .deferStatusResolution();
     }
 
-    final HapiSpec runCreateAccounts() {
+    final DynamicTest runCreateAccounts() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings(
                 ACCOUNT_CREATION_RECONNECT_TPS, DEFAULT_MINS_FOR_RECONNECT_TESTS, DEFAULT_THREADS_FOR_RECONNECT_TESTS);
 

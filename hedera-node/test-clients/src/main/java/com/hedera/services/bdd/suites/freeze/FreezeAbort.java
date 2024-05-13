@@ -38,11 +38,11 @@ public final class FreezeAbort extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {freezeAbort()});
     }
 
-    final HapiSpec freezeAbort() {
+    final DynamicTest freezeAbort() {
         return defaultHapiSpec("FreezeAbort")
                 .given()
                 .when(UtilVerbs.freezeAbort().payingWith(GENESIS))

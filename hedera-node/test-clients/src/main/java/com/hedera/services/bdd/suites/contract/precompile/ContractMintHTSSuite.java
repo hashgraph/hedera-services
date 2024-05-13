@@ -83,6 +83,7 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -123,23 +124,23 @@ public class ContractMintHTSSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiSpec> negativeSpecs() {
+    List<DynamicTest> negativeSpecs() {
         return List.of(
                 rollbackOnFailedMintAfterFungibleTransfer(),
                 mintTokensWithExtremeValues(),
                 mintTokensWithInvalidValues());
     }
 
-    List<HapiSpec> positiveSpecs() {
+    List<DynamicTest> positiveSpecs() {
         return List.of(transferNftAfterNestedMint());
     }
 
     @HapiTest
-    final HapiSpec mintTokensWithExtremeValues() {
+    final DynamicTest mintTokensWithExtremeValues() {
         var mintExtremeValue = "mintExtremeValue";
         var mintInvalidAddressType = "mintInvalidAddressType";
 
@@ -249,7 +250,7 @@ public class ContractMintHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec mintTokensWithInvalidValues() {
+    final DynamicTest mintTokensWithInvalidValues() {
         var mintToken = "mintToken";
 
         var fungibleMintWithMetadataTest = "fungibleMintWithMetadataTest";
@@ -359,7 +360,7 @@ public class ContractMintHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferNftAfterNestedMint() {
+    final DynamicTest transferNftAfterNestedMint() {
         final var nestedTransferTxn = "nestedTransferTxn";
         final var v2SecuritySendNftAfterNestedMint = "v2SecuritySendNftAfterNestedMint";
 
@@ -489,7 +490,7 @@ public class ContractMintHTSSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5669")
     @HapiTest
-    final HapiSpec rollbackOnFailedMintAfterFungibleTransfer() {
+    final DynamicTest rollbackOnFailedMintAfterFungibleTransfer() {
         final var failedMintTxn = "failedMintTxn";
 
         return defaultHapiSpec(

@@ -62,7 +62,7 @@ public class DuplicateManagementTest extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 usesUnclassifiableIfNoClassifiableAvailable(),
                 hasExpectedDuplicates(),
@@ -71,7 +71,7 @@ public class DuplicateManagementTest extends HapiSuite {
 
     @HapiTest
     @SuppressWarnings("java:S5960")
-    final HapiSpec hasExpectedDuplicates() {
+    final DynamicTest hasExpectedDuplicates() {
         return defaultHapiSpec("HasExpectedDuplicates")
                 .given(
                         cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
@@ -131,7 +131,7 @@ public class DuplicateManagementTest extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec usesUnclassifiableIfNoClassifiableAvailable() {
+    final DynamicTest usesUnclassifiableIfNoClassifiableAvailable() {
         return defaultHapiSpec("UsesUnclassifiableIfNoClassifiableAvailable")
                 .given(
                         newKeyNamed("wrongKey"),
@@ -154,7 +154,7 @@ public class DuplicateManagementTest extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec classifiableTakesPriorityOverUnclassifiable() {
+    final DynamicTest classifiableTakesPriorityOverUnclassifiable() {
         return defaultHapiSpec("ClassifiableTakesPriorityOverUnclassifiable")
                 .given(
                         cryptoCreate(CIVILIAN).balance(100 * 100_000_000L),

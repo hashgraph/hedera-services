@@ -54,7 +54,7 @@ public class HapiUncheckedSubmit<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiU
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final DynamicTest spec) throws Throwable {
         final var subOpBytes = subOp.serializeSignedTxnFor(spec);
         if (verboseLoggingOn) {
             log.info("Submitting unchecked: {}", CommonUtils.extractTransactionBody(Transaction.parseFrom(subOpBytes)));
@@ -66,12 +66,12 @@ public class HapiUncheckedSubmit<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiU
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final DynamicTest spec) {
         return spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls)::uncheckedSubmit;
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) {
+    protected long feeFor(final DynamicTest spec, final Transaction txn, final int numPayerKeys) {
         return 0L;
     }
 

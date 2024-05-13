@@ -42,7 +42,7 @@ public class HollowAccountFuzzing extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hollowAccountFuzzing() {
+    final DynamicTest hollowAccountFuzzing() {
         return defaultHapiSpec("HollowAccountFuzzing")
                 .given(initOperations())
                 .when()
@@ -55,7 +55,7 @@ public class HollowAccountFuzzing extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(hollowAccountFuzzing());
     }
 }

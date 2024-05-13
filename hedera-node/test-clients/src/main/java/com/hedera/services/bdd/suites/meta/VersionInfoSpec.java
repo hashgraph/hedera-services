@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class VersionInfoSpec extends HapiSuite {
@@ -56,13 +57,13 @@ public class VersionInfoSpec extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(discoversExpectedVersions());
     }
 
     @BddTestNameDoesNotMatchMethodName
     @HapiTest
-    final HapiSpec discoversExpectedVersions() {
+    final DynamicTest discoversExpectedVersions() {
         if (specConfig != null) {
             return customHapiSpec("getVersionInfo")
                     .withProperties(specConfig)
@@ -78,7 +79,7 @@ public class VersionInfoSpec extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
+    final DynamicTest idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given()
                 .when()

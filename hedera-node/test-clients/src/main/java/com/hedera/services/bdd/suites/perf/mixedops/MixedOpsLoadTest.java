@@ -95,7 +95,7 @@ public class MixedOpsLoadTest extends LoadTest {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runMixedOps());
     }
 

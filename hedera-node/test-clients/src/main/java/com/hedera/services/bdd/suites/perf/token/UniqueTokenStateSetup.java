@@ -103,13 +103,13 @@ public class UniqueTokenStateSetup extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             createNfts(),
         });
     }
 
-    final HapiSpec createNfts() {
+    final DynamicTest createNfts() {
         return defaultHapiSpec("CreateNfts")
                 .given(
                         stdMgmtOf(duration, unit, maxOpsPerSec, "mint_"),

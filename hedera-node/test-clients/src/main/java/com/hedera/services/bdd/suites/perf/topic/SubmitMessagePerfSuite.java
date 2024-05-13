@@ -42,7 +42,7 @@ public class SubmitMessagePerfSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return Arrays.asList(submitMessagePerf());
     }
 
@@ -51,7 +51,7 @@ public class SubmitMessagePerfSuite extends HapiSuite {
         return false;
     }
 
-    final HapiSpec submitMessagePerf() {
+    final DynamicTest submitMessagePerf() {
         final int NUM_SUBMISSIONS = 100_000;
 
         return defaultHapiSpec("submitMessagePerf")

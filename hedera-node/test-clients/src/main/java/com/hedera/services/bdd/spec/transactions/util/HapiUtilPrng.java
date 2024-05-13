@@ -68,7 +68,7 @@ public class HapiUtilPrng extends HapiTxnOp<HapiUtilPrng> {
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+    protected long feeFor(final DynamicTest spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         return spec.fees().forActivityBasedOp(HederaFunctionality.UtilPrng, this::usageEstimate, txn, numPayerKeys);
     }
 
@@ -81,7 +81,7 @@ public class HapiUtilPrng extends HapiTxnOp<HapiUtilPrng> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final DynamicTest spec) throws Throwable {
         final UtilPrngTransactionBody opBody = spec.txns()
                 .<UtilPrngTransactionBody, UtilPrngTransactionBody.Builder>body(UtilPrngTransactionBody.class, b -> {
                     if (range.isPresent()) {
@@ -97,7 +97,7 @@ public class HapiUtilPrng extends HapiTxnOp<HapiUtilPrng> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final DynamicTest spec) {
         return spec.clients().getUtilSvcStub(targetNodeFor(spec), useTls)::prng;
     }
 

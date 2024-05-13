@@ -46,6 +46,7 @@ import java.util.function.LongUnaryOperator;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * A helper suite that,
@@ -139,11 +140,11 @@ public class StartStaking extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(startStakingAndExportCreatedStakers());
     }
 
-    final HapiSpec startStakingAndExportCreatedStakers() {
+    final DynamicTest startStakingAndExportCreatedStakers() {
         final var baseStakerName = "baseStaker";
         return customHapiSpec("StartStakingAndExportCreatedStakers")
                 .withProperties(Map.of(

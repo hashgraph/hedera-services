@@ -66,11 +66,11 @@ public class ValidateTokensStateAfterReconnect extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runTransfersBeforeReconnect(), validateTokensAfterReconnect());
     }
 
-    final HapiSpec validateTokensAfterReconnect() {
+    final DynamicTest validateTokensAfterReconnect() {
         String tokenToBeQueried = "token-1";
         String anotherToken = "token-2";
         String anotherAccount = "account";

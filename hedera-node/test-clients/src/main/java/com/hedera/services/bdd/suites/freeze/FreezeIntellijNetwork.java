@@ -33,13 +33,13 @@ public class FreezeIntellijNetwork extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             justFreeze(),
         });
     }
 
-    final HapiSpec justFreeze() {
+    final DynamicTest justFreeze() {
         return defaultHapiSpec("JustFreeze")
                 .given()
                 .when()

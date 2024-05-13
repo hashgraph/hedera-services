@@ -44,7 +44,7 @@ public class CreateTopicPerfSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return Arrays.asList(createTopicPerf());
     }
 
@@ -53,7 +53,7 @@ public class CreateTopicPerfSuite extends HapiSuite {
         return false;
     }
 
-    final HapiSpec createTopicPerf() {
+    final DynamicTest createTopicPerf() {
         final int NUM_TOPICS = 100000;
 
         KeyShape submitKeyShape = threshOf(2, SIMPLE, SIMPLE, listOf(2));

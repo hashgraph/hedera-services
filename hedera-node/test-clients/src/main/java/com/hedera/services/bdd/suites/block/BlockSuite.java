@@ -64,13 +64,13 @@ public class BlockSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(blck001And002And003And004ReturnsCorrectBlockProperties(), blck003ReturnsTimestampOfTheBlock());
     }
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    final HapiSpec blck003ReturnsTimestampOfTheBlock() {
+    final DynamicTest blck003ReturnsTimestampOfTheBlock() {
         final var contract = "EmitBlockTimestamp";
         final var firstCall = "firstCall";
         final var secondCall = "secondCall";
@@ -146,7 +146,7 @@ public class BlockSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec blck001And002And003And004ReturnsCorrectBlockProperties() {
+    final DynamicTest blck001And002And003And004ReturnsCorrectBlockProperties() {
         final var contract = "EmitBlockTimestamp";
         final var firstBlock = "firstBlock";
         final var secondBlock = "secondBlock";

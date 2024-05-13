@@ -43,6 +43,7 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -65,7 +66,7 @@ public class GlobalPropertiesSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(chainIdWorks(), baseFeeWorks(), coinbaseWorks(), gasLimitWorks());
     }
 
@@ -75,7 +76,7 @@ public class GlobalPropertiesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec chainIdWorks() {
+    final DynamicTest chainIdWorks() {
         final var defaultChainId = BigInteger.valueOf(295L);
         final var devChainId = BigInteger.valueOf(298L);
         final Set<Object> acceptableChainIds = Set.of(devChainId, defaultChainId);
@@ -99,7 +100,7 @@ public class GlobalPropertiesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec baseFeeWorks() {
+    final DynamicTest baseFeeWorks() {
         final var expectedBaseFee = BigInteger.valueOf(0);
         return defaultHapiSpec("baseFeeWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
@@ -123,7 +124,7 @@ public class GlobalPropertiesSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    final HapiSpec coinbaseWorks() {
+    final DynamicTest coinbaseWorks() {
         return defaultHapiSpec("coinbaseWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "getCoinbase").via("coinbase"))
@@ -146,7 +147,7 @@ public class GlobalPropertiesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec gasLimitWorks() {
+    final DynamicTest gasLimitWorks() {
         final var gasLimit = Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("contracts.maxGasPerSec"));
         return defaultHapiSpec("gasLimitWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))

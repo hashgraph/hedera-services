@@ -43,7 +43,7 @@ public class FileRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             fileCreateRecordSanityChecks(),
             fileDeleteRecordSanityChecks(),
@@ -53,7 +53,7 @@ public class FileRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec fileAppendRecordSanityChecks() {
+    final DynamicTest fileAppendRecordSanityChecks() {
         return defaultHapiSpec("FileAppendRecordSanityChecks")
                 .given(flattened(
                         fileCreate("test"),
@@ -66,7 +66,7 @@ public class FileRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec fileCreateRecordSanityChecks() {
+    final DynamicTest fileCreateRecordSanityChecks() {
         return defaultHapiSpec("FileCreateRecordSanityChecks")
                 .given(takeBalanceSnapshots(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER))
                 .when(fileCreate("test").via("txn"))
@@ -77,7 +77,7 @@ public class FileRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec fileDeleteRecordSanityChecks() {
+    final DynamicTest fileDeleteRecordSanityChecks() {
         return defaultHapiSpec("FileDeleteRecordSanityChecks")
                 .given(flattened(
                         fileCreate("test"),
@@ -90,7 +90,7 @@ public class FileRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec fileUpdateRecordSanityChecks() {
+    final DynamicTest fileUpdateRecordSanityChecks() {
         return defaultHapiSpec("FileUpdateRecordSanityChecks")
                 .given(flattened(
                         fileCreate("test"),

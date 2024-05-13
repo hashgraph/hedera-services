@@ -30,6 +30,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class Issue1648Suite extends HapiSuite {
@@ -40,12 +41,12 @@ public class Issue1648Suite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(recordStorageFeeIncreasesWithNumTransfers());
     }
 
     @HapiTest
-    public static HapiSpec recordStorageFeeIncreasesWithNumTransfers() {
+    final DynamicTest recordStorageFeeIncreasesWithNumTransfers() {
         return defaultHapiSpec("RecordStorageFeeIncreasesWithNumTransfers")
                 .given(
                         cryptoCreate("civilian").balance(10 * ONE_HUNDRED_HBARS),

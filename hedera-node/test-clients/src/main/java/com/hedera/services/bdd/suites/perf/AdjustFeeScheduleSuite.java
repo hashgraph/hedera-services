@@ -44,11 +44,11 @@ public class AdjustFeeScheduleSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(updateFeesFor());
     }
 
-    final HapiSpec updateFeesFor() {
+    final DynamicTest updateFeesFor() {
         final var fixedFee = ONE_HUNDRED_HBARS;
         return customHapiSpec("updateFees")
                 .withProperties(Map.of("fees.useFixedOffer", "true", "fees.fixedOffer", "" + fixedFee))

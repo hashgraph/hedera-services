@@ -57,11 +57,11 @@ public class SendSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(doSend());
     }
 
-    private HapiSpec doSend() {
+    final DynamicTest doSend() {
         var transfer = denomination == null
                 ? (HapiTxnOp<?>) TxnVerbs.cryptoTransfer(
                                 HapiCryptoTransfer.tinyBarsFromTo(HapiSuite.DEFAULT_PAYER, beneficiary, unitsToSend))

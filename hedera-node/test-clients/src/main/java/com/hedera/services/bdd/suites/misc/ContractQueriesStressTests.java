@@ -50,6 +50,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class ContractQueriesStressTests extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractQueriesStressTests.class);
@@ -66,13 +67,12 @@ public class ContractQueriesStressTests extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            contractCallLocalStress(), getContractRecordsStress(), getContractBytecodeStress(), getContractInfoStress(),
-        });
+    public List<DynamicTest> getSpecsInSuite() {
+        return List.of(
+            contractCallLocalStress(), getContractRecordsStress(), getContractBytecodeStress(), getContractInfoStress());
     }
 
-    final HapiSpec getContractInfoStress() {
+    final DynamicTest getContractInfoStress() {
         return defaultHapiSpec("GetContractInfoStress")
                 .given()
                 .when()
@@ -83,7 +83,7 @@ public class ContractQueriesStressTests extends HapiSuite {
                                 .maxOpsPerSec(maxOpsPerSec::get));
     }
 
-    final HapiSpec getContractBytecodeStress() {
+    final DynamicTest getContractBytecodeStress() {
         return defaultHapiSpec("GetAccountRecordsStress")
                 .given()
                 .when()
@@ -94,7 +94,7 @@ public class ContractQueriesStressTests extends HapiSuite {
                                 .maxOpsPerSec(maxOpsPerSec::get));
     }
 
-    final HapiSpec contractCallLocalStress() {
+    final DynamicTest contractCallLocalStress() {
         return defaultHapiSpec("ContractCallLocalStress")
                 .given()
                 .when()
@@ -105,7 +105,7 @@ public class ContractQueriesStressTests extends HapiSuite {
                                 .maxOpsPerSec(maxOpsPerSec::get));
     }
 
-    final HapiSpec getContractRecordsStress() {
+    final DynamicTest getContractRecordsStress() {
         return defaultHapiSpec("GetContractRecordsStress")
                 .given()
                 .when()

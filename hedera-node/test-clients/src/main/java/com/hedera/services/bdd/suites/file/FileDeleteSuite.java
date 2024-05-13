@@ -40,6 +40,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class FileDeleteSuite extends HapiSuite {
@@ -50,12 +51,12 @@ public class FileDeleteSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(getDeletedFileInfo(), canDeleteWithAnyOneOfTopLevelKeyList());
     }
 
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
+    final DynamicTest idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(fileCreate("file").contents("ABC"))
                 .when()
@@ -63,7 +64,7 @@ public class FileDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec canDeleteWithAnyOneOfTopLevelKeyList() {
+    final DynamicTest canDeleteWithAnyOneOfTopLevelKeyList() {
         KeyShape shape = listOf(SIMPLE, threshOf(1, 2), listOf(2));
         SigControl deleteSigs = shape.signedWith(sigs(ON, sigs(OFF, OFF), sigs(ON, OFF)));
 
@@ -74,7 +75,7 @@ public class FileDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getDeletedFileInfo() {
+    final DynamicTest getDeletedFileInfo() {
         return defaultHapiSpec("getDeletedFileInfo")
                 .given(fileCreate("deletedFile").logged())
                 .when(fileDelete("deletedFile").logged())

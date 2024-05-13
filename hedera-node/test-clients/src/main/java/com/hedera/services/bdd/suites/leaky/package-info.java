@@ -7,7 +7,6 @@
  * </ol>
  *
  * <p>An example of the first kind is a test like {@link
- * com.hedera.services.bdd.suites.file.FileUpdateSuite#chainIdChangesDynamically(), {@link
  * com.hedera.services.bdd.suites.leaky.LeakyEthereumTestsSuite#legacyUnprotectedEtxBeforeEIP155() and {@link
  * com.hedera.services.bdd.suites.leaky.LeakyEthereumTestsSuite#legacyEtxAfterEIP155()}}} that changes the
  * network's EVM {@code chainid} to a non-standard value. Any concurrent {@code EthereumCall} that

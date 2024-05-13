@@ -35,7 +35,7 @@ public class ParallelSpecOps extends UtilOp {
     private static final Logger log = LogManager.getLogger(HapiSpecOperation.class);
 
     private boolean failOnErrors = false;
-    private final HapiSpecOperation[] subs;
+    private final DynamicTestOperation[] subs;
     private final Map<String, Throwable> subErrors = new HashMap<>();
 
     public ParallelSpecOps(HapiSpecOperation... subs) {
@@ -68,7 +68,7 @@ public class ParallelSpecOps extends UtilOp {
 
     @Override
     @SuppressWarnings("java:S5960")
-    protected void assertExpectationsGiven(final HapiSpec spec) throws Throwable {
+    protected void assertExpectationsGiven(final DynamicTest spec) throws Throwable {
         if (failOnErrors && subErrors.size() > 0) {
             Assertions.fail(describeSubErrors());
         }

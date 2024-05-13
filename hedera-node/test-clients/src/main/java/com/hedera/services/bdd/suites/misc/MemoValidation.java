@@ -45,6 +45,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public final class MemoValidation extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MemoValidation.class);
@@ -73,17 +74,12 @@ public final class MemoValidation extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         setUpByteArrays();
-        return List.of(
-                //				cryptoOps(),
-                //				topicOps(),
-                //				scheduleOps(),
-                //				tokenOps(),
-                contractOps());
+        return List.of(contractOps());
     }
 
-    final HapiSpec contractOps() {
+    final DynamicTest contractOps() {
         final var contract = "CreateTrivial";
         return defaultHapiSpec("MemoValidationsOnContractOps")
                 .given(uploadInitCode(contract), contractCreate(contract).omitAdminKey())
@@ -109,7 +105,7 @@ public final class MemoValidation extends HapiSuite {
                                 .hasPrecheck(MEMO_TOO_LONG));
     }
 
-    final HapiSpec tokenOps() {
+    final DynamicTest tokenOps() {
         return defaultHapiSpec("MemoValidationsOnTokenOps")
                 .given(
                         cryptoCreate("firstUser"),
@@ -150,7 +146,7 @@ public final class MemoValidation extends HapiSuite {
                                 .hasPrecheck(MEMO_TOO_LONG));
     }
 
-    final HapiSpec scheduleOps() {
+    final DynamicTest scheduleOps() {
         final String defaultWhitelist = HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST);
         final var toScheduleOp1 = cryptoCreate("test");
         final var toScheduleOp2 = cryptoCreate("test").balance(1L);
@@ -189,7 +185,7 @@ public final class MemoValidation extends HapiSuite {
                         overriding(SCHEDULING_WHITELIST, defaultWhitelist));
     }
 
-    final HapiSpec topicOps() {
+    final DynamicTest topicOps() {
         return defaultHapiSpec("MemoValidationsOnTopicOps")
                 .given(
                         newKeyNamed(ADMIN_KEY),
@@ -219,7 +215,7 @@ public final class MemoValidation extends HapiSuite {
                                 .hasKnownStatus(MEMO_TOO_LONG));
     }
 
-    final HapiSpec cryptoOps() {
+    final DynamicTest cryptoOps() {
         return defaultHapiSpec("MemoValidationsOnCryptoOps")
                 .given(cryptoCreate(primary).blankMemo())
                 .when(

@@ -36,6 +36,7 @@ import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class ContractCallLoadTest extends LoadTest {
     private static final Logger log = LogManager.getLogger(ContractCallLoadTest.class);
@@ -50,11 +51,11 @@ public class ContractCallLoadTest extends LoadTest {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runContractCalls());
     }
 
-    final HapiSpec runContractCalls() {
+    final DynamicTest runContractCalls() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         final AtomicInteger submittedSoFar = new AtomicInteger(0);
         final String DEPOSIT_MEMO = "So we out-danced thought, body perfection brought...";

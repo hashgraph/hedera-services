@@ -116,7 +116,7 @@ public class CustomFeeSpecs {
         return spec -> buildIncompleteCustomFee(collector, spec);
     }
 
-    static CustomFee buildIncompleteCustomFee(final String collector, final HapiSpec spec) {
+    static CustomFee buildIncompleteCustomFee(final String collector, final DynamicTest spec) {
         final var collectorId =
                 isIdLiteral(collector) ? asAccount(collector) : spec.registry().getAccountID(collector);
         return CustomFee.newBuilder().setFeeCollectorAccountId(collectorId).build();

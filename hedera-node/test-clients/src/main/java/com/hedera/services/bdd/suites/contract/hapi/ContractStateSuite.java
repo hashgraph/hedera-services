@@ -40,6 +40,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -55,12 +56,12 @@ public class ContractStateSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(stateChangesSpec());
     }
 
     @HapiTest
-    HapiSpec stateChangesSpec() {
+    final DynamicTest stateChangesSpec() {
         final var iterations = 2;
         final var integralTypes = Map.ofEntries(
                 Map.entry("Uint8", 0x01),

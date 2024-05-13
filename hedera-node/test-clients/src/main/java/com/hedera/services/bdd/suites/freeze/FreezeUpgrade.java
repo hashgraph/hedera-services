@@ -43,11 +43,11 @@ public final class FreezeUpgrade extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {freezeUpgrade()});
     }
 
-    final HapiSpec freezeUpgrade() {
+    final DynamicTest freezeUpgrade() {
         return defaultHapiSpec("FreezeUpgrade")
                 .given(initializeSettings())
                 .when(sourcing(() -> UtilVerbs.freezeUpgrade()

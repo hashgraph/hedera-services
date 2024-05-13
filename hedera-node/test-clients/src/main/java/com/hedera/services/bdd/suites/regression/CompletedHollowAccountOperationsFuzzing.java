@@ -44,12 +44,12 @@ public class CompletedHollowAccountOperationsFuzzing extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(completedHollowAccountOperationsFuzzing());
     }
 
     @HapiTest
-    final HapiSpec completedHollowAccountOperationsFuzzing() {
+    final DynamicTest completedHollowAccountOperationsFuzzing() {
         return defaultHapiSpec("CompletedHollowAccountOperationsFuzzing")
                 .given(initOperations())
                 .when()

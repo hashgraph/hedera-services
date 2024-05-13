@@ -70,6 +70,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class ContractKeysHTSV1SecurityModelSuite extends HapiSuite {
 
@@ -106,14 +107,14 @@ public class ContractKeysHTSV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 delegateCallForTransferWithContractKey(),
                 transferWithKeyAsPartOf2OfXThreshold(),
                 burnTokenWithFullPrefixAndPartialPrefixKeys());
     }
 
-    final HapiSpec transferWithKeyAsPartOf2OfXThreshold() {
+    final DynamicTest transferWithKeyAsPartOf2OfXThreshold() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> receiverID = new AtomicReference<>();
@@ -178,7 +179,7 @@ public class ContractKeysHTSV1SecurityModelSuite extends HapiSuite {
                         getAccountBalance(RECEIVER).hasTokenBalance(VANILLA_TOKEN, 1));
     }
 
-    final HapiSpec delegateCallForTransferWithContractKey() {
+    final DynamicTest delegateCallForTransferWithContractKey() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> receiverID = new AtomicReference<>();
@@ -240,7 +241,7 @@ public class ContractKeysHTSV1SecurityModelSuite extends HapiSuite {
                         getAccountBalance(RECEIVER).hasTokenBalance(VANILLA_TOKEN, 0));
     }
 
-    final HapiSpec burnTokenWithFullPrefixAndPartialPrefixKeys() {
+    final DynamicTest burnTokenWithFullPrefixAndPartialPrefixKeys() {
         final var firstBurnTxn = "firstBurnTxn";
         final var secondBurnTxn = "secondBurnTxn";
         final var amount = 99L;

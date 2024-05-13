@@ -47,6 +47,7 @@ import java.util.HashSet;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -76,21 +77,21 @@ public class PrngSeedOperationSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiSpec> negativeSpecs() {
+    List<DynamicTest> negativeSpecs() {
         return List.of();
     }
 
-    List<HapiSpec> positiveSpecs() {
+    List<DynamicTest> positiveSpecs() {
         return List.of(
                 prngPrecompileHappyPathWorks(), multipleCallsHaveIndependentResults(), prngPrecompileDisabledInV030());
     }
 
     @HapiTest
-    final HapiSpec multipleCallsHaveIndependentResults() {
+    final DynamicTest multipleCallsHaveIndependentResults() {
         final var prng = THE_PRNG_CONTRACT;
         final var gasToOffer = 400_000;
         final var numCalls = 5;
@@ -143,7 +144,7 @@ public class PrngSeedOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec prngPrecompileHappyPathWorks() {
+    final DynamicTest prngPrecompileHappyPathWorks() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
         return propertyPreservingHapiSpec(
@@ -171,7 +172,7 @@ public class PrngSeedOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec prngPrecompileDisabledInV030() {
+    final DynamicTest prngPrecompileDisabledInV030() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
         return propertyPreservingHapiSpec("prngPrecompileDisabledInV_0_30")

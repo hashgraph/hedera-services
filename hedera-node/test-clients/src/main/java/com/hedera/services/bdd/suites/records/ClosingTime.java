@@ -43,12 +43,12 @@ public class ClosingTime extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(closeLastStreamFileWithNoBalanceImpact());
     }
 
     @HapiTest
-    final HapiSpec closeLastStreamFileWithNoBalanceImpact() {
+    final DynamicTest closeLastStreamFileWithNoBalanceImpact() {
         return customHapiSpec("CloseLastStreamFileWithNoBalanceImpact")
                 .withProperties(Map.of(
                         "fees.useFixedOffer", "true",

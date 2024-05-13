@@ -43,6 +43,7 @@ import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -73,7 +74,7 @@ public class NftTransferSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(transferNfts());
     }
 
@@ -196,7 +197,7 @@ public class NftTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferNfts() {
+    final DynamicTest transferNfts() {
         return defaultHapiSpec("TransferNfts")
                 .given(setupNftTest(), transferInitial())
                 .when(seqFor(0, NUM_ROUNDS, NftTransferSuite::transferRound))

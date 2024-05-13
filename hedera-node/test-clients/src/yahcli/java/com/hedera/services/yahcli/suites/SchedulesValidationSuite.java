@@ -50,7 +50,7 @@ public class SchedulesValidationSuite extends HapiSuite {
         });
     }
 
-    private HapiSpec validateScheduling() {
+    final DynamicTest validateScheduling() {
         String inSpecSchedule = "forImmediateExecution";
         AtomicLong seqNo = new AtomicLong();
 

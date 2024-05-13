@@ -32,7 +32,7 @@ public class PresenceTrackingListener<T> implements RegistryChangeListener<T> {
 
     private final Class<T> type;
     private final HashSet<String> present = new HashSet<>();
-    private final HapiSpecRegistry registry;
+    private final DynamicTestRegistry registry;
     private final Predicate<RegistryChangeContext<T>> filter;
 
     public PresenceTrackingListener(

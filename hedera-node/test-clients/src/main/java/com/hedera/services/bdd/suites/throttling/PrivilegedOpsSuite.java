@@ -65,7 +65,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 superusersAreNeverThrottledOnTransfers(),
                 superusersAreNeverThrottledOnMiscTxns(),
@@ -100,7 +100,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
             .toArray(HapiSpecOperation[]::new);
 
     @HapiTest
-    final HapiSpec freezeAdminPrivilegesAsExpected() {
+    final DynamicTest freezeAdminPrivilegesAsExpected() {
         return defaultHapiSpec("freezeAdminPrivilegesAsExpected")
                 .given(
                         cryptoCreate(CIVILIAN),
@@ -147,7 +147,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec systemAccountUpdatePrivilegesAsExpected() {
+    final DynamicTest systemAccountUpdatePrivilegesAsExpected() {
         final var tmpTreasury = "tmpTreasury";
         return defaultHapiSpec("systemAccountUpdatePrivilegesAsExpected")
                 .given(newKeyNamed(tmpTreasury), newKeyNamed(NEW_88), cryptoCreate(CIVILIAN))
@@ -201,7 +201,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec superusersAreNeverThrottledOnTransfers() {
+    final DynamicTest superusersAreNeverThrottledOnTransfers() {
         return defaultHapiSpec("superusersAreNeverThrottledOnTransfers")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L))
@@ -222,7 +222,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec superusersAreNeverThrottledOnMiscTxns() {
+    final DynamicTest superusersAreNeverThrottledOnMiscTxns() {
         return defaultHapiSpec("superusersAreNeverThrottledOnMiscTxns")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L))
@@ -243,7 +243,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec superusersAreNeverThrottledOnHcsTxns() {
+    final DynamicTest superusersAreNeverThrottledOnHcsTxns() {
         return defaultHapiSpec("superusersAreNeverThrottledOnHcsTxns")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
@@ -261,7 +261,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec superusersAreNeverThrottledOnMiscQueries() {
+    final DynamicTest superusersAreNeverThrottledOnMiscQueries() {
         return defaultHapiSpec("superusersAreNeverThrottledOnMiscQueries")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
@@ -279,7 +279,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec superusersAreNeverThrottledOnHcsQueries() {
+    final DynamicTest superusersAreNeverThrottledOnHcsQueries() {
         return defaultHapiSpec("superusersAreNeverThrottledOnHcsQueries")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),

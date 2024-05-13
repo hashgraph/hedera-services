@@ -93,13 +93,13 @@ public class JrsRestartTestTemplate extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             enableHSS(), jrsRestartTemplate(),
         });
     }
 
-    final HapiSpec enableHSS() {
+    final DynamicTest enableHSS() {
         return defaultHapiSpec("enableHSS")
                 .given(
                         // Directly puting this request in the customHapiSpec before
@@ -109,7 +109,7 @@ public class JrsRestartTestTemplate extends HapiSuite {
                 .then();
     }
 
-    final HapiSpec jrsRestartTemplate() {
+    final DynamicTest jrsRestartTemplate() {
         return customHapiSpec("JrsRestartTemplate")
                 .withProperties(Map.of("persistentEntities.dir.path", ENTITIES_DIR))
                 .given(expectedEntitiesExist())

@@ -72,6 +72,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -110,11 +111,11 @@ public class AssociatePrecompileSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiSpec> negativeSpecs() {
+    List<DynamicTest> negativeSpecs() {
         return List.of(
                 functionCallWithLessThanFourBytesFailsWithinSingleContractCall(),
                 nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls(),
@@ -126,13 +127,13 @@ public class AssociatePrecompileSuite extends HapiSuite {
                 associateTokenNegativeScenarios());
     }
 
-    List<HapiSpec> positiveSpecs() {
+    List<DynamicTest> positiveSpecs() {
         return List.of(associateWithMissingEvmAddressHasSaneTxnAndRecord());
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     @HapiTest
-    final HapiSpec functionCallWithLessThanFourBytesFailsWithinSingleContractCall() {
+    final DynamicTest functionCallWithLessThanFourBytesFailsWithinSingleContractCall() {
         return defaultHapiSpec("functionCallWithLessThanFourBytesFailsWithinSingleContractCall")
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
                 .when(contractCall(
@@ -148,7 +149,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     @HapiTest
-    final HapiSpec invalidAbiCallGracefullyFailsWithinSingleContractCall() {
+    final DynamicTest invalidAbiCallGracefullyFailsWithinSingleContractCall() {
         return defaultHapiSpec("invalidAbiCallGracefullyFailsWithinSingleContractCall")
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
                 .when(contractCall(
@@ -166,7 +167,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-26 from HTS Precompile Test Plan -- */
     @HapiTest
-    final HapiSpec nonSupportedAbiCallGracefullyFailsWithinSingleContractCall() {
+    final DynamicTest nonSupportedAbiCallGracefullyFailsWithinSingleContractCall() {
         return defaultHapiSpec(
                         "nonSupportedAbiCallGracefullyFailsWithinSingleContractCall", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
@@ -182,7 +183,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-26 from HTS Precompile Test Plan -- */
     @HapiTest
-    final HapiSpec nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls() {
+    final DynamicTest nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
@@ -235,7 +236,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     @HapiTest
-    final HapiSpec invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls() {
+    final DynamicTest invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var invalidAbiArgument = new byte[20];
@@ -297,7 +298,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec associateWithMissingEvmAddressHasSaneTxnAndRecord() {
+    final DynamicTest associateWithMissingEvmAddressHasSaneTxnAndRecord() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         final var missingAddress =
                 Address.wrap(Address.toChecksumAddress("0xabababababababababababababababababababab"));
@@ -327,7 +328,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     @HapiTest
-    final HapiSpec invalidSingleAbiCallConsumesAllProvidedGas() {
+    final DynamicTest invalidSingleAbiCallConsumesAllProvidedGas() {
         return defaultHapiSpec("invalidSingleAbiCallConsumesAllProvidedGas", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
                 .when(
@@ -349,7 +350,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec associateTokensNegativeScenarios() {
+    final DynamicTest associateTokensNegativeScenarios() {
         final AtomicReference<Address> tokenAddress1 = new AtomicReference<>();
         final AtomicReference<Address> tokenAddress2 = new AtomicReference<>();
         final AtomicReference<Address> accountAddress = new AtomicReference<>();
@@ -466,7 +467,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec associateTokenNegativeScenarios() {
+    final DynamicTest associateTokenNegativeScenarios() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         final AtomicReference<Address> accountAddress = new AtomicReference<>();
         final var nonExistingAccount = "nonExistingAccount";

@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -61,12 +62,12 @@ public class RandomOps extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {freezeDemo(), retryLimitDemo(), getAccountDetailsDemo()});
+    public List<DynamicTest> getSpecsInSuite() {
+        return List.of(freezeDemo(), retryLimitDemo(), getAccountDetailsDemo());
     }
 
     @HapiTest
-    final HapiSpec getAccountDetailsDemo() {
+    final DynamicTest getAccountDetailsDemo() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -139,7 +140,7 @@ public class RandomOps extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec retryLimitDemo() {
+    final DynamicTest retryLimitDemo() {
         return defaultHapiSpec("RetryLimitDemo")
                 .given()
                 .when()
@@ -152,7 +153,7 @@ public class RandomOps extends HapiSuite {
     }
 
     @BddMethodIsNotATest
-    final HapiSpec freezeDemo() {
+    final DynamicTest freezeDemo() {
         return customHapiSpec("FreezeDemo")
                 .withProperties(Map.of("nodes", "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"))
                 .given()

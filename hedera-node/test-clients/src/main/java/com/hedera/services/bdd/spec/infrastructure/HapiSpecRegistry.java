@@ -71,7 +71,7 @@ public class HapiSpecRegistry {
     static final Logger log = LogManager.getLogger(HapiSpecRegistry.class);
 
     private final Map<String, Object> registry = new HashMap<>();
-    private final HapiSpecSetup setup;
+    private final DynamicTestSetup setup;
     private final List<OpObs> obs = new ArrayList<>();
     private final List<ThroughputObs> throughputObs = new ArrayList<>();
     private Map<Class, List<RegistryChangeListener>> listenersByType = new HashMap<>();

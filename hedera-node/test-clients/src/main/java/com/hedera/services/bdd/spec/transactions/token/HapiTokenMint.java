@@ -100,7 +100,7 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+    protected long feeFor(final DynamicTest spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         try {
             info = lookupInfo(spec, token, log, loggingOff);
         } catch (final Throwable ignore) {
@@ -135,7 +135,7 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final DynamicTest spec) throws Throwable {
         final var tId = TxnUtils.asTokenId(token, spec);
         final TokenMintTransactionBody opBody = spec.txns()
                 .<TokenMintTransactionBody, TokenMintTransactionBody.Builder>body(TokenMintTransactionBody.class, b -> {
@@ -153,12 +153,12 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final DynamicTest spec) {
         return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::mintToken;
     }
 
     @Override
-    public void updateStateOf(final HapiSpec spec) throws Throwable {
+    public void updateStateOf(final DynamicTest spec) throws Throwable {
         if (rememberingNothing || actualStatus != SUCCESS) {
             return;
         }

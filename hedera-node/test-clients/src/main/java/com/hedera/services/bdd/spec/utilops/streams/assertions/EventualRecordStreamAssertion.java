@@ -73,7 +73,7 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
         return new EventualRecordStreamAssertion(assertionFactory, true);
     }
 
-    public static String recordStreamLocFor(@NonNull final HapiSpec spec) {
+    public static String recordStreamLocFor(@NonNull final DynamicTest spec) {
         Objects.requireNonNull(spec);
         return switch (spec.targetNetworkType()) {
             case HAPI_TEST_NETWORK -> HAPI_TEST_STREAMS_LOC_TEST_NETWORK;
@@ -83,7 +83,7 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
     }
 
     @Override
-    protected boolean submitOp(final HapiSpec spec) throws Throwable {
+    protected boolean submitOp(final DynamicTest spec) throws Throwable {
         final var locToUse = recordStreamLocFor(spec);
         final var validatingListener = RECORD_STREAM_ACCESS.getValidatingListener(locToUse);
         assertion = Objects.requireNonNull(assertionFactory.apply(spec));

@@ -59,6 +59,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -95,7 +96,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 hrcNftAndFungibleTokenAssociateFromEOA(),
                 hrcNFTAndFungibleTokenAssociateFromContract(),
@@ -106,7 +107,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hrcNftAndFungibleTokenAssociateFromEOA() {
+    final DynamicTest hrcNftAndFungibleTokenAssociateFromEOA() {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
         final AtomicReference<String> nonfungibleTokenNum = new AtomicReference<>();
 
@@ -218,7 +219,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hrcNFTAndFungibleTokenAssociateFromContract() {
+    final DynamicTest hrcNFTAndFungibleTokenAssociateFromContract() {
         return defaultHapiSpec(
                         "hrcNFTAndFungibleTokenAssociateFromContract",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -329,7 +330,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hrcTokenAssociateFromSameEOATwiceShouldFail() {
+    final DynamicTest hrcTokenAssociateFromSameEOATwiceShouldFail() {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
 
         return defaultHapiSpec(
@@ -398,7 +399,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hrcTokenDissociateWhenNotAssociatedShouldFail() {
+    final DynamicTest hrcTokenDissociateWhenNotAssociatedShouldFail() {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
 
         return defaultHapiSpec("hrcTokenDissociateWhenNotAssociatedShouldFail", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -446,7 +447,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hrcTokenDissociateWhenBalanceNotZeroShouldFail() {
+    final DynamicTest hrcTokenDissociateWhenBalanceNotZeroShouldFail() {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
 
         return defaultHapiSpec(
@@ -517,7 +518,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hrcTooManyTokenAssociateShouldFail() {
+    final DynamicTest hrcTooManyTokenAssociateShouldFail() {
         final AtomicReference<String> fungibleTokenNum1 = new AtomicReference<>();
         final AtomicReference<String> fungibleTokenNum2 = new AtomicReference<>();
         final AtomicReference<String> fungibleTokenNum3 = new AtomicReference<>();

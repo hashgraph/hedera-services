@@ -35,6 +35,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 /**
@@ -57,19 +58,18 @@ public class TxnRecordRegression extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
+    public List<DynamicTest> getSpecsInSuite() {
+        return List.of(
             returnsInvalidForUnspecifiedTxnId(),
             recordNotFoundIfNotInPayerState(),
             recordUnavailableIfRejectedInPrecheck(),
             recordUnavailableBeforeConsensus(),
-            recordsStillQueryableWithDeletedPayerId(),
-        });
+            recordsStillQueryableWithDeletedPayerId());
     }
 
     // FUTURE: revisit this test, which isn't passing in modular or mono code (even with a 3 second TTL)
     @HapiTest
-    final HapiSpec recordsStillQueryableWithDeletedPayerId() {
+    final DynamicTest recordsStillQueryableWithDeletedPayerId() {
         return defaultHapiSpec("DeletedAccountRecordsUnavailableAfterTtl")
                 .given(
                         cryptoCreate("toBeDeletedPayer"),
@@ -81,7 +81,7 @@ public class TxnRecordRegression extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec returnsInvalidForUnspecifiedTxnId() {
+    final DynamicTest returnsInvalidForUnspecifiedTxnId() {
         return defaultHapiSpec("ReturnsInvalidForUnspecifiedTxnId")
                 .given()
                 .when()
@@ -89,7 +89,7 @@ public class TxnRecordRegression extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec recordNotFoundIfNotInPayerState() {
+    final DynamicTest recordNotFoundIfNotInPayerState() {
         return defaultHapiSpec("RecordNotFoundIfNotInPayerState")
                 .given(
                         cryptoCreate("misc").via("success"),
@@ -99,7 +99,7 @@ public class TxnRecordRegression extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec recordUnavailableBeforeConsensus() {
+    final DynamicTest recordUnavailableBeforeConsensus() {
         return defaultHapiSpec("RecordUnavailableBeforeConsensus")
                 .given()
                 .when()
@@ -109,7 +109,7 @@ public class TxnRecordRegression extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec recordUnavailableIfRejectedInPrecheck() {
+    final DynamicTest recordUnavailableIfRejectedInPrecheck() {
         return defaultHapiSpec("RecordUnavailableIfRejectedInPrecheck")
                 .given(
                         cryptoCreate("misc").balance(1000L),

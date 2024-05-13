@@ -62,6 +62,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 // Some of the test cases cannot be converted to use eth calls,
 // since they use admin keys, which are held by the txn payer.
@@ -104,11 +105,11 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
 
     // TODO: Fix contract name in TokenCreateContract.sol
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiSpec> positiveSpecs() {
+    List<DynamicTest> positiveSpecs() {
         return List.of(
                 fungibleTokenCreateHappyPath(),
                 nonFungibleTokenCreateHappyPath(),
@@ -119,13 +120,13 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
                 createTokenWithDefaultExpiryAndEmptyKeys());
     }
 
-    List<HapiSpec> negativeSpecs() {
+    List<DynamicTest> negativeSpecs() {
         // TODO: Where are the security model v1 _negative_ tests?
         return List.of();
     }
 
     // TEST-001
-    final HapiSpec fungibleTokenCreateHappyPath() {
+    final DynamicTest fungibleTokenCreateHappyPath() {
         final var tokenCreateContractAsKeyDelegate = "tokenCreateContractAsKeyDelegate";
         final var createTokenNum = new AtomicLong();
         return propertyPreservingHapiSpec("fungibleTokenCreateHappyPath")
@@ -232,7 +233,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
 
     // TEST-002
 
-    final HapiSpec inheritsSenderAutoRenewAccountIfAnyForNftCreate() {
+    final DynamicTest inheritsSenderAutoRenewAccountIfAnyForNftCreate() {
         final var createdNftTokenNum = new AtomicLong();
         return propertyPreservingHapiSpec("inheritsSenderAutoRenewAccountIfAnyForNftCreate")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -298,7 +299,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
                 }));
     }
 
-    final HapiSpec inheritsSenderAutoRenewAccountForTokenCreate() {
+    final DynamicTest inheritsSenderAutoRenewAccountForTokenCreate() {
         final var createTokenNum = new AtomicLong();
         return propertyPreservingHapiSpec("inheritsSenderAutoRenewAccountForTokenCreate")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -368,7 +369,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     // TEST-003 & TEST-019
-    final HapiSpec nonFungibleTokenCreateHappyPath() {
+    final DynamicTest nonFungibleTokenCreateHappyPath() {
         final var createdTokenNum = new AtomicLong();
         return propertyPreservingHapiSpec("nonFungibleTokenCreateHappyPath")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -460,7 +461,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     // TEST-005
-    final HapiSpec fungibleTokenCreateThenQueryAndTransfer() {
+    final DynamicTest fungibleTokenCreateThenQueryAndTransfer() {
         final var createdTokenNum = new AtomicLong();
         return propertyPreservingHapiSpec("fungibleTokenCreateThenQueryAndTransfer")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -542,7 +543,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     // TEST-006
-    final HapiSpec nonFungibleTokenCreateThenQuery() {
+    final DynamicTest nonFungibleTokenCreateThenQuery() {
         final var createdTokenNum = new AtomicLong();
         return propertyPreservingHapiSpec("nonFungibleTokenCreateThenQuery")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -609,7 +610,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
                                 .logged()));
     }
 
-    final HapiSpec createTokenWithDefaultExpiryAndEmptyKeys() {
+    final DynamicTest createTokenWithDefaultExpiryAndEmptyKeys() {
         final var tokenCreateContractAsKeyDelegate = "createTokenWithDefaultExpiryAndEmptyKeys";
         final var createTokenNum = new AtomicLong();
         return propertyPreservingHapiSpec("createTokenWithDefaultExpiryAndEmptyKeys")

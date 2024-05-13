@@ -58,13 +58,13 @@ public class SplittingThrottlesWorks extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             setNewLimits(), tryCreations(),
         });
     }
 
-    final HapiSpec setNewLimits() {
+    final DynamicTest setNewLimits() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/split-throttles.json");
 
         return defaultHapiSpec("SetNewLimits")
@@ -75,7 +75,7 @@ public class SplittingThrottlesWorks extends HapiSuite {
                         .contents(artificialLimits.toByteArray()));
     }
 
-    final HapiSpec tryCreations() {
+    final DynamicTest tryCreations() {
         return defaultHapiSpec("TryCreations")
                 .given()
                 .when(runWithProvider(cryptoCreateOps())

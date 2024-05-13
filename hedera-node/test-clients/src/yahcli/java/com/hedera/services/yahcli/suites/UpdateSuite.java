@@ -51,11 +51,11 @@ public class UpdateSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(doUpdate());
     }
 
-    private HapiSpec doUpdate() {
+    final DynamicTest doUpdate() {
         Key newList = Key.newBuilder()
                 .setKeyList(KeyList.newBuilder().addAllKeys(keys))
                 .build();

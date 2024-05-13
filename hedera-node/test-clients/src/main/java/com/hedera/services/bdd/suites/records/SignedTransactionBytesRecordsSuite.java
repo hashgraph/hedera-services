@@ -48,7 +48,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             transactionsWithOnlySigMap(),
             transactionsWithSignedTxnBytesAndSigMap(),
@@ -62,7 +62,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transactionsWithOnlySigMap() {
+    final DynamicTest transactionsWithOnlySigMap() {
         final var contract = "BalanceLookup";
         return defaultHapiSpec("TransactionsWithOnlySigMap")
                 .given(
@@ -87,7 +87,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transactionsWithSignedTxnBytesAndSigMap() {
+    final DynamicTest transactionsWithSignedTxnBytesAndSigMap() {
         return defaultHapiSpec("TransactionsWithSignedTxnBytesAndSigMap")
                 .given()
                 .when(createTopic("testTopic")
@@ -98,7 +98,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transactionsWithSignedTxnBytesAndBodyBytes() {
+    final DynamicTest transactionsWithSignedTxnBytesAndBodyBytes() {
         return defaultHapiSpec("TransactionsWithSignedTxnBytesAndBodyBytes")
                 .given()
                 .when(cryptoCreate("testAccount")

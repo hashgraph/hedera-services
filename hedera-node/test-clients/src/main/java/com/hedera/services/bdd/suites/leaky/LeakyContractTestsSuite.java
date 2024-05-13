@@ -264,6 +264,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -339,7 +340,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 transferToCaller(),
                 resultSizeAffectsFees(),
@@ -391,7 +392,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
     @SuppressWarnings("java:S5960")
     @HapiTest
     @Order(37)
-    final HapiSpec canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor() {
+    final DynamicTest canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor() {
         final var tcValue = 1_234L;
         final var contract = "Create2SelfDestructContract";
         final var creation = CREATION;
@@ -494,7 +495,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(27)
-    final HapiSpec transferErc20TokenFromErc721TokenFails() {
+    final DynamicTest transferErc20TokenFromErc721TokenFails() {
         return propertyPreservingHapiSpec(
                         "transferErc20TokenFromErc721TokenFails",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -540,7 +541,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(26)
-    final HapiSpec transferErc20TokenFromContractWithApproval() {
+    final DynamicTest transferErc20TokenFromContractWithApproval() {
         final var transferFromOtherContractWithSignaturesTxn = "transferFromOtherContractWithSignaturesTxn";
         final var nestedContract = "NestedERC20Contract";
 
@@ -673,7 +674,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(25)
-    final HapiSpec transferDontWorkWithoutTopLevelSignatures() {
+    final DynamicTest transferDontWorkWithoutTopLevelSignatures() {
         final var transferTokenTxn = "transferTokenTxn";
         final var transferTokensTxn = "transferTokensTxn";
         final var transferNFTTxn = "transferNFTTxn";
@@ -818,7 +819,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
     }
 
     // Requires legacy security model, cannot be enabled as @HapiTest without refactoring to use contract keys
-    final HapiSpec transferWorksWithTopLevelSignatures() {
+    final DynamicTest transferWorksWithTopLevelSignatures() {
         final var transferTokenTxn = "transferTokenTxn";
         final var transferTokensTxn = "transferTokensTxn";
         final var transferNFTTxn = "transferNFTTxn";
@@ -985,7 +986,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(24)
-    final HapiSpec transferFailsWithIncorrectAmounts() {
+    final DynamicTest transferFailsWithIncorrectAmounts() {
         final var transferTokenWithNegativeAmountTxn = "transferTokenWithNegativeAmountTxn";
         final var contract = TOKEN_TRANSFER_CONTRACT;
 
@@ -1043,7 +1044,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(35)
-    final HapiSpec getErc20TokenNameExceedingLimits() {
+    final DynamicTest getErc20TokenNameExceedingLimits() {
         final var REDUCED_NETWORK_FEE = 1L;
         final var REDUCED_NODE_FEE = 1L;
         final var REDUCED_SERVICE_FEE = 1L;
@@ -1106,7 +1107,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(2)
-    HapiSpec payerCannotOverSendValue() {
+    final DynamicTest payerCannotOverSendValue() {
         final var payerBalance = 666 * ONE_HBAR;
         final var overdraftAmount = payerBalance + ONE_HBAR;
         final var overAmbitiousPayer = "overAmbitiousPayer";
@@ -1138,7 +1139,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(9)
-    final HapiSpec createTokenWithInvalidFeeCollector() {
+    final DynamicTest createTokenWithInvalidFeeCollector() {
         // Fully non-deterministic for fuzzy matching because the test uses an absolute account number (i.e. 15252L)
         // but fuzzy matching compares relative account numbers
         return propertyPreservingHapiSpec("createTokenWithInvalidFeeCollector", FULLY_NONDETERMINISTIC)
@@ -1188,7 +1189,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
     }
 
     // Requires legacy security model, cannot be enabled as @HapiTest without refactoring to use contract keys
-    final HapiSpec createTokenWithInvalidFixedFeeWithERC721Denomination() {
+    final DynamicTest createTokenWithInvalidFixedFeeWithERC721Denomination() {
         final String feeCollector = ACCOUNT_2;
         final String someARAccount = "someARAccount";
         return propertyPreservingHapiSpec(
@@ -1249,7 +1250,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
     }
 
     // Requires legacy security model, cannot be enabled as @HapiTest without refactoring to use contract keys
-    final HapiSpec createTokenWithInvalidRoyaltyFee() {
+    final DynamicTest createTokenWithInvalidRoyaltyFee() {
         final String feeCollector = ACCOUNT_2;
         AtomicReference<String> existingToken = new AtomicReference<>();
         final String treasuryAndFeeCollectorKey = "treasuryAndFeeCollectorKey";
@@ -1314,7 +1315,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
     }
 
     // Requires legacy security model, cannot be enabled as @HapiTest without refactoring to use contract keys
-    final HapiSpec nonFungibleTokenCreateWithFeesHappyPath() {
+    final DynamicTest nonFungibleTokenCreateWithFeesHappyPath() {
         final var createTokenNum = new AtomicLong();
         final var feeCollector = ACCOUNT_2;
         final var treasuryAndFeeCollectorKey = "treasuryAndFeeCollectorKey";
@@ -1406,7 +1407,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
     }
 
     // Requires legacy security model, cannot be enabled as @HapiTest without refactoring to use contract keys
-    final HapiSpec fungibleTokenCreateWithFeesHappyPath() {
+    final DynamicTest fungibleTokenCreateWithFeesHappyPath() {
         final var createdTokenNum = new AtomicLong();
         final var feeCollector = "feeCollector";
         final var arEd25519Key = "arEd25519Key";
@@ -1496,7 +1497,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(15)
-    final HapiSpec etx026AccountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation() {
+    final DynamicTest etx026AccountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation() {
         final String ACCOUNT = "account";
         return propertyPreservingHapiSpec(
                         "etx026AccountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation", NONDETERMINISTIC_NONCE)
@@ -1519,7 +1520,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(0)
-    final HapiSpec transferToCaller() {
+    final DynamicTest transferToCaller() {
         final var transferTxn = TRANSFER_TXN;
         final var sender = "sender";
         return defaultHapiSpec("transferToCaller", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
@@ -1562,7 +1563,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(14)
-    final HapiSpec maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
+    final DynamicTest maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
         return defaultHapiSpec(
                         "MaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -1592,7 +1593,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
     @HapiTest
     @Order(13)
     @SuppressWarnings("java:S5960")
-    final HapiSpec contractCreationStoragePriceMatchesFinalExpiry() {
+    final DynamicTest contractCreationStoragePriceMatchesFinalExpiry() {
         final var toyMaker = "ToyMaker";
         final var createIndirectly = "CreateIndirectly";
         final var normalPayer = "normalPayer";
@@ -1639,7 +1640,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(10)
-    final HapiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
+    final DynamicTest gasLimitOverMaxGasLimitFailsPrecheck() {
         return defaultHapiSpec(
                         "GasLimitOverMaxGasLimitFailsPrecheck",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -1658,7 +1659,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(12)
-    final HapiSpec createGasLimitOverMaxGasLimitFailsPrecheck() {
+    final DynamicTest createGasLimitOverMaxGasLimitFailsPrecheck() {
         return defaultHapiSpec(
                         "CreateGasLimitOverMaxGasLimitFailsPrecheck",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -1672,7 +1673,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(5)
-    final HapiSpec transferZeroHbarsToCaller() {
+    final DynamicTest transferZeroHbarsToCaller() {
         final var transferTxn = TRANSFER_TXN;
         return defaultHapiSpec("transferZeroHbarsToCaller", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
                 .given(
@@ -1716,7 +1717,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(1)
-    final HapiSpec resultSizeAffectsFees() {
+    final DynamicTest resultSizeAffectsFees() {
         final var contract = "VerboseDeposit";
         final var TRANSFER_AMOUNT = 1_000L;
         BiConsumer<TransactionRecord, Logger> resultSizeFormatter = (rcd, txnLog) -> {
@@ -1770,7 +1771,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(8)
-    final HapiSpec autoAssociationSlotsAppearsInInfo() {
+    final DynamicTest autoAssociationSlotsAppearsInInfo() {
         final int maxAutoAssociations = 100;
         final String CONTRACT = "Multipurpose";
 
@@ -1789,7 +1790,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(16)
-    final HapiSpec createMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
+    final DynamicTest createMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
         return defaultHapiSpec(
                         "CreateMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -1814,7 +1815,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(11)
-    final HapiSpec createMinChargeIsTXGasUsedByContractCreate() {
+    final DynamicTest createMinChargeIsTXGasUsedByContractCreate() {
         return defaultHapiSpec(
                         "CreateMinChargeIsTXGasUsedByContractCreate",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -1839,7 +1840,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(3)
-    HapiSpec propagatesNestedCreations() {
+    final DynamicTest propagatesNestedCreations() {
         final var call = "callTxn";
         final var creation = "createTxn";
         final var contract = "NestedCreations";
@@ -1922,7 +1923,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(4)
-    HapiSpec temporarySStoreRefundTest() {
+    final DynamicTest temporarySStoreRefundTest() {
         final var contract = "TemporarySStoreRefund";
         return defaultHapiSpec("TemporarySStoreRefundTest", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
                 .given(
@@ -1962,7 +1963,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(6)
-    final HapiSpec canCallPendingContractSafely() {
+    final DynamicTest canCallPendingContractSafely() {
         final var numSlots = 64L;
         final var createBurstSize = 500;
         final long[] targets = {19, 24};
@@ -2007,7 +2008,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(17)
-    final HapiSpec lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled() {
+    final DynamicTest lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled() {
         final var CONTRACT = CRYPTO_TRANSFER;
         final var SENDER = "sender";
         final var FUNGIBLE_TOKEN = "fungibleToken";
@@ -2077,7 +2078,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(18)
-    final HapiSpec evmLazyCreateViaSolidityCall() {
+    final DynamicTest evmLazyCreateViaSolidityCall() {
         final var LAZY_CREATE_CONTRACT = "NestedLazyCreateContract";
         final var ECDSA_KEY = "ECDSAKey";
         final var callLazyCreateFunction = "nestedLazyCreateThenSendMore";
@@ -2200,7 +2201,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
     }
 
     // Requires legacy security model, cannot be enabled as @HapiTest without refactoring to use contract keys
-    final HapiSpec requiresTopLevelSignatureOrApprovalDependingOnControllingProperty() {
+    final DynamicTest requiresTopLevelSignatureOrApprovalDependingOnControllingProperty() {
         final var ignoredTopLevelSigTransfer = "ignoredTopLevelSigTransfer";
         final var ignoredApprovalTransfer = "ignoredApprovalTransfer";
         final var approvedTransfer = "approvedTransfer";
@@ -2328,7 +2329,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(19)
-    final HapiSpec evmLazyCreateViaSolidityCallTooManyCreatesFails() {
+    final DynamicTest evmLazyCreateViaSolidityCallTooManyCreatesFails() {
         final var LAZY_CREATE_CONTRACT = "NestedLazyCreateContract";
         final var ECDSA_KEY = "ECDSAKey";
         final var ECDSA_KEY2 = "ECDSAKey2";
@@ -2385,7 +2386,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(21)
-    final HapiSpec rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled() {
+    final DynamicTest rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled() {
         return propertyPreservingHapiSpec(
                         "rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -2406,7 +2407,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(20)
-    final HapiSpec erc20TransferFromDoesNotWorkIfFlagIsDisabled() {
+    final DynamicTest erc20TransferFromDoesNotWorkIfFlagIsDisabled() {
         return defaultHapiSpec(
                         "erc20TransferFromDoesNotWorkIfFlagIsDisabled",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -2456,7 +2457,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(22)
-    final HapiSpec whitelistPositiveCase() {
+    final DynamicTest whitelistPositiveCase() {
         final AtomicLong whitelistedCalleeMirrorNum = new AtomicLong();
         final AtomicReference<TokenID> tokenID = new AtomicReference<>();
         final AtomicReference<String> attackerMirrorAddr = new AtomicReference<>();
@@ -2513,7 +2514,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(23)
-    final HapiSpec whitelistNegativeCases() {
+    final DynamicTest whitelistNegativeCases() {
         final AtomicLong unlistedCalleeMirrorNum = new AtomicLong();
         final AtomicLong whitelistedCalleeMirrorNum = new AtomicLong();
         final AtomicReference<TokenID> tokenID = new AtomicReference<>();
@@ -2593,7 +2594,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(28)
-    final HapiSpec contractCreateNoncesExternalizationHappyPath() {
+    final DynamicTest contractCreateNoncesExternalizationHappyPath() {
         final var contract = "NoncesExternalization";
         final var contractCreateTxn = "contractCreateTxn";
 
@@ -2644,7 +2645,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(29)
-    final HapiSpec contractCreateFollowedByContractCallNoncesExternalization() {
+    final DynamicTest contractCreateFollowedByContractCallNoncesExternalization() {
         final var contract = "NoncesExternalization";
         final var payer = "payer";
 
@@ -2750,7 +2751,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(30)
-    final HapiSpec shouldReturnNullWhenContractsNoncesExternalizationFlagIsDisabled() {
+    final DynamicTest shouldReturnNullWhenContractsNoncesExternalizationFlagIsDisabled() {
         final var contract = "NoncesExternalization";
         final var payer = "payer";
 
@@ -2779,7 +2780,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(31)
-    HapiSpec someErc721GetApprovedScenariosPass() {
+    final DynamicTest someErc721GetApprovedScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
@@ -2896,7 +2897,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(33)
-    HapiSpec someErc721BalanceOfScenariosPass() {
+    final DynamicTest someErc721BalanceOfScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> bCivilianMirrorAddr = new AtomicReference<>();
@@ -2984,7 +2985,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(32)
-    HapiSpec someErc721OwnerOfScenariosPass() {
+    final DynamicTest someErc721OwnerOfScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
@@ -3086,7 +3087,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(34)
-    HapiSpec callToNonExistingContractFailsGracefully() {
+    final DynamicTest callToNonExistingContractFailsGracefully() {
         return propertyPreservingHapiSpec(
                         "callToNonExistingContractFailsGracefully",
                         NONDETERMINISTIC_ETHEREUM_DATA,
@@ -3121,7 +3122,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @Order(36)
     @HapiTest
-    HapiSpec relayerFeeAsExpectedIfSenderCoversGas() {
+    final DynamicTest relayerFeeAsExpectedIfSenderCoversGas() {
         final var canonicalTxn = "canonical";
         final long depositAmount = 20_000L;
 
@@ -3164,7 +3165,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(38)
-    HapiSpec invalidContract() {
+    final DynamicTest invalidContract() {
         final var function = getABIFor(FUNCTION, "getIndirect", "CreateTrivial");
 
         return propertyPreservingHapiSpec("InvalidContract")
@@ -3184,7 +3185,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
 
     @Order(39)
     @HapiTest
-    final HapiSpec htsTransferFromForNFTViaContractCreateLazyCreate() {
+    final DynamicTest htsTransferFromForNFTViaContractCreateLazyCreate() {
         final var depositAmount = 1000;
 
         return defaultHapiSpec(

@@ -59,6 +59,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * Client that validates the blobs mentioned in a JSON metadata file created by {@link
@@ -79,7 +80,7 @@ public final class DiverseStateValidation extends HapiSuite {
     private final AtomicReference<Map<String, String>> hexedBytecode = new AtomicReference<>();
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         try {
             SMALL_CONTENTS = Files.newInputStream(Paths.get(SMALL_CONTENTS_LOC)).readAllBytes();
             LARGE_CONTENTS = Files.newInputStream(Paths.get(LARGE_CONTENTS_LOC)).readAllBytes();
@@ -91,7 +92,7 @@ public final class DiverseStateValidation extends HapiSuite {
     }
 
     @SuppressWarnings("unchecked")
-    final HapiSpec validateDiverseState() {
+    final DynamicTest validateDiverseState() {
         return defaultHapiSpec("ValidateDiverseState")
                 .given(withOpContext((spec, opLog) -> {
                     final var om = new ObjectMapper();

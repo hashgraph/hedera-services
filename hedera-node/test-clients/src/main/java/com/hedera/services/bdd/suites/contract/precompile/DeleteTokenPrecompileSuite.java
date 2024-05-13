@@ -64,6 +64,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -92,12 +93,12 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(deleteFungibleToken(), deleteNftToken());
     }
 
     @HapiTest
-    final HapiSpec deleteFungibleToken() {
+    final DynamicTest deleteFungibleToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final var tokenAlreadyDeletedTxn = "tokenAlreadyDeletedTxn";
@@ -157,7 +158,7 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec deleteNftToken() {
+    final DynamicTest deleteNftToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final var notAnAdminTxn = "notAnAdminTxn";

@@ -41,13 +41,13 @@ public class PayerFundingSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             fundPayer(),
         });
     }
 
-    private HapiSpec fundPayer() {
+    final DynamicTest fundPayer() {
         return HapiSpec.customHapiSpec("FundPayer")
                 .withProperties(specConfig)
                 .given(UtilVerbs.withOpContext((spec, opLog) -> {

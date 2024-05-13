@@ -75,7 +75,7 @@ public class HapiTokenKycGrant extends HapiTxnOp<HapiTokenKycGrant> {
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+    protected long feeFor(final DynamicTest spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(HederaFunctionality.TokenGrantKycToAccount, this::usageEstimate, txn, numPayerKeys);
     }
@@ -86,7 +86,7 @@ public class HapiTokenKycGrant extends HapiTxnOp<HapiTokenKycGrant> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final DynamicTest spec) throws Throwable {
         AccountID aId;
         if (referenceType == ReferenceType.REGISTRY_NAME) {
             aId = TxnUtils.asId(account, spec);
@@ -111,12 +111,12 @@ public class HapiTokenKycGrant extends HapiTxnOp<HapiTokenKycGrant> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final DynamicTest spec) {
         return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::grantKycToTokenAccount;
     }
 
     @Override
-    protected void updateStateOf(final HapiSpec spec) {}
+    protected void updateStateOf(final DynamicTest spec) {}
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {

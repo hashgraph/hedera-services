@@ -57,11 +57,11 @@ public class CryptoTransferPerfSuiteWOpProvider extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runMixedTransferAndSubmits());
     }
 
-    final HapiSpec runMixedTransferAndSubmits() {
+    final DynamicTest runMixedTransferAndSubmits() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         return defaultHapiSpec("CryptoTransferPerfSuiteWOpProvider")
                 .given(

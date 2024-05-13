@@ -36,7 +36,7 @@ import java.util.Optional;
  * Operation getting a random account key and signing transaction with it, completing hollow accounts in the process.
  */
 abstract class RandomOperationSignedBy<T extends HapiTxnOp<T>> implements OpProvider {
-    private final HapiSpecRegistry registry;
+    private final DynamicTestRegistry registry;
 
     private final RegistrySourcedNameProvider<AccountID> accounts;
 

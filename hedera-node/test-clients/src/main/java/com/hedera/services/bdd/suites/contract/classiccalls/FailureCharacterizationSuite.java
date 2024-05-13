@@ -118,7 +118,7 @@ public class FailureCharacterizationSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(characterizeClassicFailureModes(
                 List.of(
                         new IsKycFailableCall(),
@@ -178,7 +178,7 @@ public class FailureCharacterizationSuite extends HapiSuite {
 
     // assertions in production code, repeated string literals
     @SuppressWarnings({"java:S5960", "java:S1192"})
-    final HapiSpec characterizeClassicFailureModes(
+    final DynamicTest characterizeClassicFailureModes(
             @NonNull final List<FailableClassicCall> calls, @NonNull final CharacterizationMode characterizationMode) {
         if (characterizationMode == CharacterizationMode.RECORD_SNAPSHOT) {
             CALL_RESULTS_SNAPSHOT.begin();
@@ -301,7 +301,7 @@ public class FailureCharacterizationSuite extends HapiSuite {
                         .toArray(HapiSpecOperation[]::new)));
     }
 
-    private void saveClassicContractControlledKey(@NonNull final HapiSpec spec) {
+    private void saveClassicContractControlledKey(@NonNull final DynamicTest spec) {
         final var registry = spec.registry();
         final var failableControlKey = Key.newBuilder()
                 .setThresholdKey(ThresholdKey.newBuilder()

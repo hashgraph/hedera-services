@@ -44,13 +44,13 @@ public class BalanceSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         List<HapiSpec> specToRun = new ArrayList<>();
         accounts.forEach(s -> specToRun.add(getBalance(s)));
         return specToRun;
     }
 
-    private HapiSpec getBalance(String accountID) {
+    final DynamicTest getBalance(String accountID) {
         return HapiSpec.customHapiSpec("getBalance")
                 .withProperties(specConfig)
                 .given()

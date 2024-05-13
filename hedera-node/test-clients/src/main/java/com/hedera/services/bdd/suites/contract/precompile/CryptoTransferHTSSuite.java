@@ -101,6 +101,7 @@ import java.util.List;
 import java.util.OptionalLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -160,7 +161,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
                 nonNestedCryptoTransferForNonFungibleToken(),
@@ -180,7 +181,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hapiTransferFromForFungibleToken() {
+    final DynamicTest hapiTransferFromForFungibleToken() {
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";
         final var successfulTransferFromTxn2 = "txn2";
@@ -363,7 +364,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hapiTransferFromForFungibleTokenToSystemAccountsFails() {
+    final DynamicTest hapiTransferFromForFungibleTokenToSystemAccountsFails() {
         final var UPPER_BOUND_SYSTEM_ADDRESS = 750L;
         final var ADDRESS_ONE = 1L;
         final var NON_EXISTING_SYSTEM_ADDRESS = 345L;
@@ -485,7 +486,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hapiTransferFromForNFTWithInvalidAddressesFails() {
+    final DynamicTest hapiTransferFromForNFTWithInvalidAddressesFails() {
         final var NON_EXISTING_ADDRESS = "0x0000000000000000000000000000000000123456";
         final var TXN_TO_NON_EXISTING_ADDRESS = "TXN_TO_NON_EXISTING_ADDRESS";
         final var TXN_FROM_NON_EXISTING_ADDRESS = "TXN_FROM_NON_EXISTING_ADDRESS";
@@ -572,7 +573,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hapiTransferFromForFungibleTokenWithInvalidAddressesFails() {
+    final DynamicTest hapiTransferFromForFungibleTokenWithInvalidAddressesFails() {
         final var NON_EXISTING_ADDRESS = "0x0000000000000000000000000000000000123456";
         final var TXN_TO_NON_EXISTING_ADDRESS = "TXN_TO_NON_EXISTING_ADDRESS";
         final var TXN_FROM_NON_EXISTING_ADDRESS = "TXN_FROM_NON_EXISTING_ADDRESS";
@@ -652,7 +653,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hapiTransferFromForFungibleTokenWithInvalidAmountsFails() {
+    final DynamicTest hapiTransferFromForFungibleTokenWithInvalidAmountsFails() {
         final var TXN_WITH_AMOUNT_BIGGER_THAN_BALANCE = "TXN_WITH_AMOUNT_BIGGER_THAN_BALANCE";
         final var TXN_WITH_AMOUNT_BIGGER_THAN_ALLOWANCE = "TXN_WITH_AMOUNT_BIGGER_THAN_ALLOWANCE";
         final var TXN_WITH_AMOUNT_UNDERFLOW_UINT = "TXN_WITH_AMOUNT_UNDERFLOW_UINT";
@@ -762,7 +763,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hapiTransferFromForNFT() {
+    final DynamicTest hapiTransferFromForNFT() {
         final var successfulTransferFromTxn = "txn";
         final var revertingTransferFromTxn = "revertWhenMoreThanAllowance";
         return defaultHapiSpec(
@@ -862,7 +863,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec repeatedTokenIdsAreAutomaticallyConsolidated() {
+    final DynamicTest repeatedTokenIdsAreAutomaticallyConsolidated() {
         final var repeatedIdsPrecompileXferTxn = "repeatedIdsPrecompileXfer";
         final var senderStartBalance = 200L;
         final var receiverStartBalance = 0L;
@@ -942,7 +943,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers() {
+    final DynamicTest nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return defaultHapiSpec(
@@ -1015,7 +1016,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec nonNestedCryptoTransferForNonFungibleToken() {
+    final DynamicTest nonNestedCryptoTransferForNonFungibleToken() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return defaultHapiSpec(
@@ -1085,7 +1086,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec nonNestedCryptoTransferForMultipleNonFungibleTokens() {
+    final DynamicTest nonNestedCryptoTransferForMultipleNonFungibleTokens() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return defaultHapiSpec(
@@ -1172,7 +1173,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec nonNestedCryptoTransferForFungibleAndNonFungibleToken() {
+    final DynamicTest nonNestedCryptoTransferForFungibleAndNonFungibleToken() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return defaultHapiSpec(
@@ -1279,7 +1280,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens() {
+    final DynamicTest nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return defaultHapiSpec(
@@ -1403,7 +1404,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hapiTransferFromForNFTWithCustomFeesWithoutApproveFails() {
+    final DynamicTest hapiTransferFromForNFTWithCustomFeesWithoutApproveFails() {
         return defaultHapiSpec(
                         "HapiTransferFromForNFTWithCustomFeesWithoutApproveFails",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -1550,7 +1551,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails() {
+    final DynamicTest hapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails() {
         final var FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE = "fungibleTokenWithFixedHbarFee";
         final var FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE = "fungibleTokenWithFixedTokenFee";
         final var FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE = "fungibleTokenWithFractionalTokenFee";
@@ -1650,7 +1651,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender() {
+    final DynamicTest hapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender() {
         final var FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE = "fungibleTokenWithFixedHbarFee";
         final var FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE = "fungibleTokenWithFixedTokenFee";
         final var FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE = "fungibleTokenWithFractionalTokenFee";

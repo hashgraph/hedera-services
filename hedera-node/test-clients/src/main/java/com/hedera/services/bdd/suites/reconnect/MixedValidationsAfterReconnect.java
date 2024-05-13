@@ -50,11 +50,11 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(getAccountBalanceFromAllNodes(), validateTopicInfo(), validateFileInfo());
     }
 
-    final HapiSpec getAccountBalanceFromAllNodes() {
+    final DynamicTest getAccountBalanceFromAllNodes() {
         // Since https://github.com/hashgraph/hedera-services/pull/5799, the nodes will create
         // 299 "blocklist" accounts with EVM addresses commonly used in HardHat test environments,
         // to protect developers from accidentally sending hbar to those addresses
@@ -96,7 +96,7 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot("lastlyCreatedAccountBalance", 0)));
     }
 
-    final HapiSpec validateTopicInfo() {
+    final DynamicTest validateTopicInfo() {
         final byte[] emptyRunningHash = new byte[48];
         return defaultHapiSpec("ValidateTopicInfo")
                 .given(getTopicInfo(TOPIC_ID_WITH_MESSAGE_SUBMITTED_TO).logged().saveRunningHash())
@@ -117,7 +117,7 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
                                 .hasRunningHash(TOPIC_ID_WITH_MESSAGE_SUBMITTED_TO));
     }
 
-    final HapiSpec validateFileInfo() {
+    final DynamicTest validateFileInfo() {
         return defaultHapiSpec("ValidateFileInfo")
                 .given()
                 .when()

@@ -31,6 +31,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class QueryFailuresSpec extends HapiSuite {
@@ -46,12 +47,12 @@ public class QueryFailuresSpec extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(getsExpectedRejections());
     }
 
     @HapiTest
-    final HapiSpec getsExpectedRejections() {
+    final DynamicTest getsExpectedRejections() {
         return defaultHapiSpec("getsExpectedRejections")
                 .given(fileCreate("tbd"), fileDelete("tbd"))
                 .when()

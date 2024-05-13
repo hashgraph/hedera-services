@@ -39,6 +39,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -52,7 +53,7 @@ public class RecordsSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(bigCall(), txRecordsContainValidTransfers());
     }
 
@@ -62,7 +63,7 @@ public class RecordsSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec bigCall() {
+    final DynamicTest bigCall() {
         final var contract = "BigBig";
         final var txName = "BigCall";
         final long byteArraySize = (long) (87.5 * 1_024);
@@ -80,7 +81,7 @@ public class RecordsSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec txRecordsContainValidTransfers() {
+    final DynamicTest txRecordsContainValidTransfers() {
         final var contract = "ParentChildTransfer";
 
         return defaultHapiSpec("TXRecordsContainValidTransfers", NONDETERMINISTIC_TRANSACTION_FEES)

@@ -113,7 +113,7 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
     }
 
     @Override
-    protected void updateStateOf(final HapiSpec spec) {
+    protected void updateStateOf(final DynamicTest spec) {
         if (actualStatus != ResponseCodeEnum.SUCCESS) {
             return;
         }
@@ -140,7 +140,7 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final DynamicTest spec) throws Throwable {
         newAdminKeyName.ifPresent(
                 name -> newAdminKey = Optional.of(spec.registry().getKey(name)));
         newSubmitKeyName.ifPresent(
@@ -182,12 +182,12 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final DynamicTest spec) {
         return spec.clients().getConsSvcStub(targetNodeFor(spec), useTls)::updateTopic;
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+    protected long feeFor(final DynamicTest spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         if (!spec.registry().hasTopicMeta(topic)) {
             return spec.fees().maxFeeTinyBars();
         } else {

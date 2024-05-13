@@ -258,7 +258,7 @@ public class ValidationScenarios extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         var specs = Stream.of(
                         Optional.of(recordPayerBalance(startingBalance::set)),
                         ofNullable(skipScenarioPayer() ? null : ensureScenarioPayer()),

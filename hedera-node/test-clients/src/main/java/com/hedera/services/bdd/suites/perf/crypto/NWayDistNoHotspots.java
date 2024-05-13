@@ -71,13 +71,13 @@ public class NWayDistNoHotspots extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             runDistributions(),
         });
     }
 
-    final HapiSpec runDistributions() {
+    final DynamicTest runDistributions() {
         return customHapiSpec("runCreations")
                 .withProperties(Map.of("default.keyAlgorithm", "ED25519"))
                 .given(logIt("Creating at least "

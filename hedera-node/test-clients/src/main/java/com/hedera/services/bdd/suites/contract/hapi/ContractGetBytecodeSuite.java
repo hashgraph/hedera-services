@@ -49,6 +49,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -69,7 +70,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(getByteCodeWorks(), invalidContractFromCostAnswer(), invalidContractFromAnswerOnly());
     }
 
@@ -79,7 +80,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
+    final DynamicTest idVariantsTreatedAsExpected() {
         final var contract = "Multipurpose";
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(
@@ -90,7 +91,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getByteCodeWorks() {
+    final DynamicTest getByteCodeWorks() {
         final var contract = "EmptyConstructor";
         final var canonicalUsdFee = 0.05;
         final var canonicalQueryFeeAtActiveRate = new AtomicLong();
@@ -136,7 +137,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidContractFromCostAnswer() {
+    final DynamicTest invalidContractFromCostAnswer() {
         return defaultHapiSpec("InvalidContractFromCostAnswer")
                 .given()
                 .when()
@@ -145,7 +146,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidContractFromAnswerOnly() {
+    final DynamicTest invalidContractFromAnswerOnly() {
         return defaultHapiSpec("InvalidContractFromAnswerOnly")
                 .given()
                 .when()

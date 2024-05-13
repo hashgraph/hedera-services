@@ -64,12 +64,12 @@ public class UpgradeHelperSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {doStagingAction()});
     }
 
-    private HapiSpec doStagingAction() {
-        final HapiSpecOperation op;
+    final DynamicTest doStagingAction() {
+        final DynamicTestOperation op;
 
         if (startTime == null) {
             op = UtilVerbs.prepareUpgrade()

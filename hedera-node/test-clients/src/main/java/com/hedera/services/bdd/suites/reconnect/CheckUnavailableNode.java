@@ -33,11 +33,11 @@ public class CheckUnavailableNode extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(checkUnavailableNode());
     }
 
-    final HapiSpec checkUnavailableNode() {
+    final DynamicTest checkUnavailableNode() {
         return defaultHapiSpec("CheckUnavailableNode")
                 .given()
                 .when()

@@ -72,6 +72,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 
 @SuppressWarnings("java:S5960")
 public class EthereumV1SecurityModelSuite extends HapiSuite {
@@ -96,7 +97,7 @@ public class EthereumV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 etx007FungibleTokenCreateWithFeesHappyPath(),
                 etx012PrecompileCallSucceedsWhenNeededSignatureInEthTxn(),
@@ -104,7 +105,7 @@ public class EthereumV1SecurityModelSuite extends HapiSuite {
                 setApproveForAllUsingLocalNodeSetupPasses());
     }
 
-    final HapiSpec setApproveForAllUsingLocalNodeSetupPasses() {
+    final DynamicTest setApproveForAllUsingLocalNodeSetupPasses() {
         final AtomicReference<String> spenderAutoCreatedAccountId = new AtomicReference<>();
         final AtomicReference<String> tokenCreateContractID = new AtomicReference<>();
         final AtomicReference<String> erc721ContractID = new AtomicReference<>();
@@ -310,7 +311,7 @@ public class EthereumV1SecurityModelSuite extends HapiSuite {
                 .then(withOpContext((spec, opLog) -> {}));
     }
 
-    final HapiSpec etx012PrecompileCallSucceedsWhenNeededSignatureInEthTxn() {
+    final DynamicTest etx012PrecompileCallSucceedsWhenNeededSignatureInEthTxn() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = TOKEN;
         final String mintTxn = MINT_TXN;
@@ -365,7 +366,7 @@ public class EthereumV1SecurityModelSuite extends HapiSuite {
                                                 spec.registry().getBytes(ETH_HASH_KEY)))))));
     }
 
-    final HapiSpec etx013PrecompileCallSucceedsWhenNeededSignatureInHederaTxn() {
+    final DynamicTest etx013PrecompileCallSucceedsWhenNeededSignatureInHederaTxn() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = TOKEN;
         final String mintTxn = MINT_TXN;
@@ -423,7 +424,7 @@ public class EthereumV1SecurityModelSuite extends HapiSuite {
                                                 spec.registry().getBytes(ETH_HASH_KEY)))))));
     }
 
-    final HapiSpec etx007FungibleTokenCreateWithFeesHappyPath() {
+    final DynamicTest etx007FungibleTokenCreateWithFeesHappyPath() {
         final var createdTokenNum = new AtomicLong();
         final var feeCollectorAndAutoRenew = "feeCollectorAndAutoRenew";
         final var contract = "TokenCreateContract";

@@ -42,6 +42,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 /**
@@ -72,7 +73,7 @@ public class AutoAccountUpdateSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(updateKeyOnAutoCreatedAccount(), modifySigRequiredAfterAutoAccountCreation());
     }
 
@@ -82,7 +83,7 @@ public class AutoAccountUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec modifySigRequiredAfterAutoAccountCreation() {
+    final DynamicTest modifySigRequiredAfterAutoAccountCreation() {
         return defaultHapiSpec("modifySigRequiredAfterAutoAccountCreation")
                 .given(newKeyNamed(ALIAS), cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
@@ -125,7 +126,7 @@ public class AutoAccountUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateKeyOnAutoCreatedAccount() {
+    final DynamicTest updateKeyOnAutoCreatedAccount() {
         final var complexKey = "complexKey";
 
         SigControl ENOUGH_UNIQUE_SIGS = KeyShape.threshSigs(

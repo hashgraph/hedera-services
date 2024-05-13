@@ -68,6 +68,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -112,7 +113,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 noTokenIdReverts(),
                 noAccountKeyReverts(),
@@ -123,7 +124,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec pauseFungibleToken() {
+    final DynamicTest pauseFungibleToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("PauseFungibleToken")
                 .given(
@@ -194,7 +195,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec unpauseFungibleToken() {
+    final DynamicTest unpauseFungibleToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("unpauseFungibleToken")
                 .given(
@@ -246,7 +247,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec pauseNonFungibleToken() {
+    final DynamicTest pauseNonFungibleToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("pauseNonFungibleToken")
                 .given(
@@ -319,7 +320,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec unpauseNonFungibleToken() {
+    final DynamicTest unpauseNonFungibleToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("unpauseNonFungibleToken")
                 .given(
@@ -373,7 +374,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec noTokenIdReverts() {
+    final DynamicTest noTokenIdReverts() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("noTokenIdReverts")
                 .given(
@@ -417,7 +418,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec noAccountKeyReverts() {
+    final DynamicTest noAccountKeyReverts() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec(

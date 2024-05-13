@@ -41,6 +41,7 @@ import java.util.List;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -54,7 +55,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 invalidNodeAccount(),
                 invalidTransactionBody(),
@@ -71,7 +72,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidTransactionBody() {
+    final DynamicTest invalidTransactionBody() {
         return defaultHapiSpec("InvalidTransactionBody")
                 .given()
                 .when()
@@ -93,7 +94,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidNodeAccount() {
+    final DynamicTest invalidNodeAccount() {
         return defaultHapiSpec("InvalidNodeAccount")
                 .given()
                 .when()
@@ -108,7 +109,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidTransactionDuration() {
+    final DynamicTest invalidTransactionDuration() {
         return defaultHapiSpec("InvalidTransactionDuration")
                 .given()
                 .when()
@@ -124,7 +125,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidTransactionMemoTooLong() {
+    final DynamicTest invalidTransactionMemoTooLong() {
         return defaultHapiSpec("InvalidTransactionMemoTooLong")
                 .given()
                 .when()
@@ -144,7 +145,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidTransactionPayerAccountNotFound() {
+    final DynamicTest invalidTransactionPayerAccountNotFound() {
         return defaultHapiSpec("InvalidTransactionDuration")
                 .given()
                 .when()
@@ -160,7 +161,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidTransactionStartTime() {
+    final DynamicTest invalidTransactionStartTime() {
         return defaultHapiSpec("InvalidTransactionStartTime")
                 .given()
                 .when()

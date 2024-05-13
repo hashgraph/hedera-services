@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 @SuppressWarnings("java:S1192")
@@ -100,15 +101,15 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
         return true;
     }
 
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiSpec> positiveSpecs() {
+    List<DynamicTest> positiveSpecs() {
         return List.of(V2Security004FungibleTokenBurnPositive(), V2Security005NonFungibleTokenBurnPositive());
     }
 
-    List<HapiSpec> negativeSpecs() {
+    List<DynamicTest> negativeSpecs() {
         return List.of(
                 V2Security004FungibleTokenBurnNegative(),
                 V2Security004NonFungibleTokenBurnNegative(),
@@ -117,7 +118,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security004FungibleTokenBurnPositive() {
+    final DynamicTest V2Security004FungibleTokenBurnPositive() {
         final var initialAmount = 20L;
         final var amountToBurn = 5L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
@@ -217,7 +218,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security005NonFungibleTokenBurnPositive() {
+    final DynamicTest V2Security005NonFungibleTokenBurnPositive() {
         final var amountToBurn = 1L;
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
         final var serialNumber1 = new long[] {1L};
@@ -296,7 +297,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security004FungibleTokenBurnNegative() {
+    final DynamicTest V2Security004FungibleTokenBurnNegative() {
         final var initialAmount = 20L;
         final var amountToBurn = 5L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
@@ -397,7 +398,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security004NonFungibleTokenBurnNegative() {
+    final DynamicTest V2Security004NonFungibleTokenBurnNegative() {
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
         final var serialNumber1 = new long[] {1L};
 
@@ -503,7 +504,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security039NonFungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall() {
+    final DynamicTest V2Security039NonFungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall() {
         final var serialNumber1 = new long[] {1L};
         return defaultHapiSpec("V2Security035NonFungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall")
                 .given(
@@ -592,7 +593,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security039FungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall() {
+    final DynamicTest V2Security039FungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall() {
         final var initialAmount = 20L;
         return defaultHapiSpec("V2Security035FungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall")
                 .given(

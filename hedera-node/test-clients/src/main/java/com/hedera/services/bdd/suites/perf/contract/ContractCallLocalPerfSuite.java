@@ -27,6 +27,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class ContractCallLocalPerfSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractCallLocalPerfSuite.class);
@@ -36,7 +37,7 @@ public class ContractCallLocalPerfSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(contractCallLocalPerf());
     }
 
@@ -45,7 +46,7 @@ public class ContractCallLocalPerfSuite extends HapiSuite {
         return false;
     }
 
-    HapiSpec contractCallLocalPerf() {
+    final DynamicTest contractCallLocalPerf() {
         final int NUM_CALLS = 1_000;
         final var contract = "BalanceLookup";
 

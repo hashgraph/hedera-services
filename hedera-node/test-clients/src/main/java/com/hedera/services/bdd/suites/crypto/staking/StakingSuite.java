@@ -51,7 +51,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKIN
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -66,6 +65,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
@@ -108,7 +108,7 @@ public class StakingSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 setUp(),
                 losingEvenAZeroBalanceStakerTriggersStakeeRewardSituation(),
@@ -125,9 +125,7 @@ public class StakingSuite extends HapiSuite {
     }
 
     @HapiTest
-    @Order(1)
-    @BeforeAll
-    final HapiSpec setUp() {
+    final DynamicTest setUp() {
         return defaultHapiSpec("setUp")
                 .given(
                         overriding(STAKING_START_THRESHOLD, "" + 10 * ONE_HBAR),
@@ -145,7 +143,7 @@ public class StakingSuite extends HapiSuite {
      */
     @HapiTest
     @Order(12)
-    final HapiSpec zeroStakeAccountsHaveMetadataResetOnFirstDayTheyReceiveFunds() {
+    final DynamicTest zeroStakeAccountsHaveMetadataResetOnFirstDayTheyReceiveFunds() {
         final var zeroStakeAccount = "zeroStakeAccount";
         final var numZeroStakeAccounts = 10;
         final var stakePeriodMins = 1L;
@@ -195,7 +193,7 @@ public class StakingSuite extends HapiSuite {
      */
     @HapiTest
     @Order(11)
-    final HapiSpec stakeIsManagedCorrectlyInTxnsAroundPeriodBoundaries() {
+    final DynamicTest stakeIsManagedCorrectlyInTxnsAroundPeriodBoundaries() {
         final var alice = "alice";
         final var baldwin = "baldwin";
         final var stakePeriodMins = 1L;
@@ -275,7 +273,7 @@ public class StakingSuite extends HapiSuite {
      */
     @HapiTest
     @Order(10)
-    final HapiSpec autoRenewalsCanTriggerStakingRewards() {
+    final DynamicTest autoRenewalsCanTriggerStakingRewards() {
         final var initBalance = ONE_HBAR * 1000;
         final var minimalLifetime = 3;
         final var creation = "creation";
@@ -308,7 +306,7 @@ public class StakingSuite extends HapiSuite {
 
     @HapiTest
     @Order(8)
-    final HapiSpec canBeRewardedWithoutMinStakeIfSoConfigured() {
+    final DynamicTest canBeRewardedWithoutMinStakeIfSoConfigured() {
         final var patientlyWaiting = "patientlyWaiting";
 
         return defaultHapiSpec("CanBeRewardedWithoutMinStakeIfSoConfigured")
@@ -337,7 +335,7 @@ public class StakingSuite extends HapiSuite {
     // HERE
     @HapiTest
     @Order(5)
-    final HapiSpec secondOrderRewardSituationsWork() {
+    final DynamicTest secondOrderRewardSituationsWork() {
         final long totalStakeStartCase1 = 3 * ONE_HUNDRED_HBARS;
         final long rewardSumHistoryCase1 = SOME_REWARD_RATE / (totalStakeStartCase1 / TINY_PARTS_PER_WHOLE) / 100;
         final long alicePendingRewardsCase1 = rewardSumHistoryCase1 * (2 * ONE_HUNDRED_HBARS / TINY_PARTS_PER_WHOLE);
@@ -404,7 +402,7 @@ public class StakingSuite extends HapiSuite {
 
     @HapiTest
     @Order(13)
-    final HapiSpec pendingRewardsPaidBeforeStakedToMeUpdates() {
+    final DynamicTest pendingRewardsPaidBeforeStakedToMeUpdates() {
         return defaultHapiSpec("PendingRewardsPaidBeforeStakedToMeUpdates")
                 .given(
                         overriding(STAKING_START_THRESHOLD, "" + 10 * ONE_HBAR),
@@ -462,7 +460,7 @@ public class StakingSuite extends HapiSuite {
 
     @HapiTest
     @Order(3)
-    final HapiSpec evenOneTinybarChangeInIndirectStakingAccountTriggersStakeeRewardSituation() {
+    final DynamicTest evenOneTinybarChangeInIndirectStakingAccountTriggersStakeeRewardSituation() {
         return defaultHapiSpec("EvenOneTinybarChangeInIndirectStakingAccountTriggersStakeeRewardSituation")
                 .given()
                 .when(
@@ -482,7 +480,7 @@ public class StakingSuite extends HapiSuite {
 
     @HapiTest
     @Order(9)
-    final HapiSpec zeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP() {
+    final DynamicTest zeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP() {
         return defaultHapiSpec("ZeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP")
                 .given(
                         cryptoCreate("helpfulStaker").stakedNodeId(0).balance(ONE_MILLION_HBARS),
@@ -501,7 +499,7 @@ public class StakingSuite extends HapiSuite {
 
     @HapiTest
     @Order(2)
-    final HapiSpec losingEvenAZeroBalanceStakerTriggersStakeeRewardSituation() {
+    final DynamicTest losingEvenAZeroBalanceStakerTriggersStakeeRewardSituation() {
         return defaultHapiSpec("LosingEvenAZeroBalanceStakerTriggersStakeeRewardSituation")
                 .given()
                 .when(
@@ -522,7 +520,7 @@ public class StakingSuite extends HapiSuite {
 
     @HapiTest
     @Order(4)
-    final HapiSpec stakingMetadataUpdateIsRewardOpportunity() {
+    final DynamicTest stakingMetadataUpdateIsRewardOpportunity() {
         return defaultHapiSpec("stakingMetadataUpdateIsRewardOpportunity")
                 .given()
                 .when(
@@ -586,7 +584,7 @@ public class StakingSuite extends HapiSuite {
 
     @HapiTest
     @Order(6)
-    final HapiSpec endOfStakingPeriodRecTest() {
+    final DynamicTest endOfStakingPeriodRecTest() {
         return defaultHapiSpec("EndOfStakingPeriodRecTest")
                 .given(
                         cryptoCreate("a1").balance(ONE_MILLION_HBARS).stakedNodeId(0),
@@ -625,7 +623,7 @@ public class StakingSuite extends HapiSuite {
 
     @HapiTest
     @Order(7)
-    final HapiSpec rewardsOfDeletedAreRedirectedToBeneficiary() {
+    final DynamicTest rewardsOfDeletedAreRedirectedToBeneficiary() {
         final var bob = "bob";
         final var deletion = "deletion";
         return defaultHapiSpec("RewardsOfDeletedAreRedirectedToBeneficiary")

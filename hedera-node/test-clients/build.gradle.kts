@@ -23,7 +23,10 @@ plugins {
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
 
-mainModuleInfo { runtimeOnly("org.junit.platform.launcher") }
+mainModuleInfo {
+    runtimeOnly("org.junit.jupiter.engine")
+    runtimeOnly("org.junit.platform.launcher")
+}
 
 itestModuleInfo {
     requires("com.hedera.node.test.clients")
@@ -49,6 +52,23 @@ sourceSets {
 
     create("rcdiff")
     create("yahcli")
+}
+
+tasks.register<Test>("hederaTest") {
+    testClassesDirs = sourceSets.main.get().output.classesDirs
+    classpath = sourceSets.main.get().runtimeClasspath
+
+    useJUnitPlatform {
+        excludeEngines("hapi-suite-test")
+        includeEngines("junit-jupiter")
+    }
+
+    // Limit heap and number of processors
+    maxHeapSize = "8g"
+    jvmArgs("-XX:ActiveProcessorCount=6")
+
+    // Do not yet run things on the '--module-path'
+    modularity.inferModulePath.set(false)
 }
 
 // The following tasks run the 'HapiTestEngine' tests (residing in src/main/java).

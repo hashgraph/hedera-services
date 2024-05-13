@@ -42,6 +42,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * A suite for user stories Move-1 through Move-5 from HIP-796.
@@ -51,7 +52,7 @@ public class InterPartitionMovementSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(InterPartitionMovementSuite.class);
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 partitionMoveWithoutUserSignature(),
                 partitionMoveWithUserSignature(),
@@ -69,7 +70,7 @@ public class InterPartitionMovementSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final HapiSpec partitionMoveWithoutUserSignature() {
+    final DynamicTest partitionMoveWithoutUserSignature() {
         return defaultHapiSpec("PartitionMoveWithoutUserSignature")
                 .given(fungibleTokenWithFeatures(INTER_PARTITION_MANAGEMENT)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION, GREEN_PARTITION)
@@ -95,7 +96,7 @@ public class InterPartitionMovementSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final HapiSpec partitionMoveWithUserSignature() {
+    final DynamicTest partitionMoveWithUserSignature() {
         return defaultHapiSpec("PartitionMoveWithUserSignature")
                 .given(fungibleTokenWithFeatures(INTER_PARTITION_MANAGEMENT)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION, GREEN_PARTITION)
@@ -126,7 +127,7 @@ public class InterPartitionMovementSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    public HapiSpec moveNftsBetweenUserPartitionsWithoutUserSignature() {
+    final DynamicTest moveNftsBetweenUserPartitionsWithoutUserSignature() {
         return defaultHapiSpec("MoveNftsBetweenUserPartitionsWithoutUserSignature")
                 .given(nonFungibleTokenWithFeatures(INTER_PARTITION_MANAGEMENT)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION, GREEN_PARTITION)
@@ -150,7 +151,7 @@ public class InterPartitionMovementSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    public HapiSpec moveNftsBetweenPartitionsWithUserSignature() {
+    final DynamicTest moveNftsBetweenPartitionsWithUserSignature() {
         return defaultHapiSpec("MoveNftsBetweenPartitionsWithUserSignature")
                 .given(nonFungibleTokenWithFeatures(INTER_PARTITION_MANAGEMENT)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION, GREEN_PARTITION)
@@ -187,7 +188,7 @@ public class InterPartitionMovementSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    public HapiSpec moveTokensViaSmartContractAsPartitionMoveKey() {
+    final DynamicTest moveTokensViaSmartContractAsPartitionMoveKey() {
         return defaultHapiSpec("MoveTokensViaSmartContractAsPartitionMoveKey")
                 .given(fungibleTokenWithFeatures(INTER_PARTITION_MANAGEMENT)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION, GREEN_PARTITION)

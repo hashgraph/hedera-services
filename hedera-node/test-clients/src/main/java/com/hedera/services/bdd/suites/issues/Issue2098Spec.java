@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class Issue2098Spec extends HapiSuite {
@@ -48,17 +49,16 @@ public class Issue2098Spec extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
+    public List<DynamicTest> getSpecsInSuite() {
+        return List.of(
             queryApiPermissionsChangeImmediately(),
             txnApiPermissionsChangeImmediately(),
             adminsCanQueryNoMatterPermissions(),
-            adminsCanTransactNoMatterPermissions(),
-        });
+            adminsCanTransactNoMatterPermissions());
     }
 
     @HapiTest
-    final HapiSpec txnApiPermissionsChangeImmediately() {
+    final DynamicTest txnApiPermissionsChangeImmediately() {
         return defaultHapiSpec("TxnApiPermissionsChangeImmediately")
                 .given(cryptoCreate(CIVILIAN))
                 .when(fileUpdate(API_PERMISSIONS)
@@ -76,7 +76,7 @@ public class Issue2098Spec extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec queryApiPermissionsChangeImmediately() {
+    final DynamicTest queryApiPermissionsChangeImmediately() {
         return defaultHapiSpec("QueryApiPermissionsChangeImmediately")
                 .given(cryptoCreate(CIVILIAN), createTopic("misc"))
                 .when(fileUpdate(API_PERMISSIONS)
@@ -91,7 +91,7 @@ public class Issue2098Spec extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec adminsCanQueryNoMatterPermissions() {
+    final DynamicTest adminsCanQueryNoMatterPermissions() {
         return defaultHapiSpec("AdminsCanQueryNoMatterPermissions")
                 .given(cryptoCreate(CIVILIAN), createTopic("misc"))
                 .when(fileUpdate(API_PERMISSIONS)
@@ -106,7 +106,7 @@ public class Issue2098Spec extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec adminsCanTransactNoMatterPermissions() {
+    final DynamicTest adminsCanTransactNoMatterPermissions() {
         return defaultHapiSpec("AdminsCanTransactNoMatterPermissions")
                 .given(cryptoCreate(CIVILIAN))
                 .when(fileUpdate(API_PERMISSIONS)

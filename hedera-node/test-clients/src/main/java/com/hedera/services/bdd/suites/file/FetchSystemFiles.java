@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class FetchSystemFiles extends HapiSuite {
@@ -45,13 +46,13 @@ public class FetchSystemFiles extends HapiSuite {
     private static final String TARGET_DIR = "./remote-system-files";
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(fetchFiles());
     }
 
     /** Fetches the system files from a running network and saves them to the local file system. */
     @HapiTest
-    final HapiSpec fetchFiles() {
+    final DynamicTest fetchFiles() {
         return customHapiSpec("FetchFiles")
                 .withProperties(Map.of(
                         "fees.useFixedOffer", "true",

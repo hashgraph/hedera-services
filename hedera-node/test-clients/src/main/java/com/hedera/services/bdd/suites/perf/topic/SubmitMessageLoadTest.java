@@ -109,7 +109,7 @@ public class SubmitMessageLoadTest extends LoadTest {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runSubmitMessages());
     }
 

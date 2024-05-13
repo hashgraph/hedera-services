@@ -111,7 +111,7 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 setArtificialLimits(),
                 checkTps("Xfers", EXPECTED_XFER_TPS, xferOps()),
@@ -124,7 +124,7 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
 
     @HapiTest
     @Order(1)
-    final HapiSpec setArtificialLimits() {
+    final DynamicTest setArtificialLimits() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits.json");
 
         return defaultHapiSpec("SetArtificialLimits")
@@ -137,37 +137,37 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
 
     @HapiTest
     @Order(2)
-    final HapiSpec checkXfersTps() {
+    final DynamicTest checkXfersTps() {
         return checkTps("Xfers", EXPECTED_XFER_TPS, xferOps());
     }
 
     @HapiTest
     @Order(3)
-    final HapiSpec checkFungibleMintsTps() {
+    final DynamicTest checkFungibleMintsTps() {
         return checkTps("FungibleMints", EXPECTED_FUNGIBLE_MINT_TPS, fungibleMintOps());
     }
 
     @HapiTest
     @Order(4)
-    final HapiSpec checkContractCallsTps() {
+    final DynamicTest checkContractCallsTps() {
         return checkTps("ContractCalls", EXPECTED_CONTRACT_CALL_TPS, scCallOps());
     }
 
     @HapiTest
     @Order(5)
-    final HapiSpec checkCryptoCreatesTps() {
+    final DynamicTest checkCryptoCreatesTps() {
         return checkTps("CryptoCreates", EXPECTED_CRYPTO_CREATE_TPS, cryptoCreateOps());
     }
 
     @HapiTest
     @Order(6)
-    final HapiSpec checkBalanceQps() {
+    final DynamicTest checkBalanceQps() {
         return checkBalanceQps(50, EXPECTED_GET_BALANCE_QPS);
     }
 
     @HapiTest
     @Order(7)
-    final HapiSpec restoreDevLimits() {
+    final DynamicTest restoreDevLimits() {
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         return defaultHapiSpec("RestoreDevLimits")
                 .given()
@@ -182,7 +182,7 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
     }
 
     @BddMethodIsNotATest
-    final HapiSpec checkTps(String txn, double expectedTps, Function<HapiSpec, OpProvider> provider) {
+    final DynamicTest checkTps(String txn, double expectedTps, Function<HapiSpec, OpProvider> provider) {
         return checkCustomNetworkTps(txn, expectedTps, provider, Collections.emptyMap());
     }
 
@@ -201,7 +201,7 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
      */
     @BddMethodIsNotATest
     @SuppressWarnings("java:S5960")
-    final HapiSpec checkCustomNetworkTps(
+    final DynamicTest checkCustomNetworkTps(
             String txn, double expectedTps, Function<HapiSpec, OpProvider> provider, Map<String, String> custom) {
         final var name = "Throttles" + txn + "AsExpected";
         final var baseSpec =
@@ -226,7 +226,7 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
     }
 
     @BddMethodIsNotATest
-    final HapiSpec checkBalanceQps(int burstSize, double expectedQps) {
+    final DynamicTest checkBalanceQps(int burstSize, double expectedQps) {
         return defaultHapiSpec("CheckBalanceQps")
                 .given(cryptoCreate("curious").payingWith(GENESIS))
                 .when()

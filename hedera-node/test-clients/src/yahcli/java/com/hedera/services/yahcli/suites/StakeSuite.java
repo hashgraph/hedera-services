@@ -64,7 +64,7 @@ public class StakeSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(doStake());
     }
 
@@ -85,7 +85,7 @@ public class StakeSuite extends HapiSuite {
         return Long.parseLong(id.substring(id.lastIndexOf(".") + 1));
     }
 
-    private HapiSpec doStake() {
+    final DynamicTest doStake() {
         final var toUpdate = stakingAccount == null ? HapiSuite.DEFAULT_PAYER : stakingAccount;
         return HapiSpec.customHapiSpec("DoStake")
                 .withProperties(specConfig)

@@ -43,11 +43,11 @@ public class ValidateExchangeRateStateAfterReconnect extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(validateExchangeRateStateAfterReconnect());
     }
 
-    final HapiSpec validateExchangeRateStateAfterReconnect() {
+    final DynamicTest validateExchangeRateStateAfterReconnect() {
         final String transactionid = "authorizedTxn";
         final long oldFee = 13_299_075L;
         final long newFee = 159_588_904;

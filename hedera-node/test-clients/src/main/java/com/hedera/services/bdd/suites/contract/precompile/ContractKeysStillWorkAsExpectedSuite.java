@@ -78,6 +78,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -101,7 +102,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 contractKeysStillHaveSpecificityNoMatterTopLevelSignatures(),
                 canStillTransferByVirtueOfContractIdInEOAThreshold(),
@@ -109,7 +110,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec approvalFallbacksRequiredWithoutTopLevelSigAccess() {
+    final DynamicTest approvalFallbacksRequiredWithoutTopLevelSigAccess() {
         final AtomicReference<Address> fungibleTokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> nonFungibleTokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> aSenderAddr = new AtomicReference<>();
@@ -341,7 +342,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec canStillTransferByVirtueOfContractIdInEOAThreshold() {
+    final DynamicTest canStillTransferByVirtueOfContractIdInEOAThreshold() {
         final var fungibleToken = "token";
         final var managementContract = "DoTokenManagement";
         final AtomicReference<Address> tokenMirrorAddr = new AtomicReference<>();
@@ -405,7 +406,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec contractKeysStillHaveSpecificityNoMatterTopLevelSignatures() {
+    final DynamicTest contractKeysStillHaveSpecificityNoMatterTopLevelSignatures() {
         final var fungibleToken = "token";
         final var managementContract = "DoTokenManagement";
         final var otherContractAsKey = "otherContractAsKey";

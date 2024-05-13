@@ -49,6 +49,7 @@ module com.hedera.node.test.clients {
     requires transitive org.junit.jupiter.api;
     requires transitive org.junit.platform.commons;
     requires transitive org.junit.platform.engine;
+    requires transitive org.junit.platform.launcher;
     requires transitive org.testcontainers;
     requires transitive org.yaml.snakeyaml;
     requires transitive tuweni.bytes;

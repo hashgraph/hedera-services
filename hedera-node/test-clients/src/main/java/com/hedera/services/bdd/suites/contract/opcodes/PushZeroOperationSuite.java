@@ -40,6 +40,7 @@ import java.math.BigInteger;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -64,20 +65,20 @@ public class PushZeroOperationSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiSpec> negativeSpecs() {
+    List<DynamicTest> negativeSpecs() {
         return List.of();
     }
 
-    List<HapiSpec> positiveSpecs() {
+    List<DynamicTest> positiveSpecs() {
         return List.of(pushZeroHappyPathWorks(), pushZeroDisabledInV034());
     }
 
     @HapiTest
-    final HapiSpec pushZeroHappyPathWorks() {
+    final DynamicTest pushZeroHappyPathWorks() {
         final var pushZeroContract = CONTRACT;
         final var pushResult = "pushResult";
         return defaultHapiSpec("pushZeroHappyPathWorks", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -103,7 +104,7 @@ public class PushZeroOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec pushZeroDisabledInV034() {
+    final DynamicTest pushZeroDisabledInV034() {
         final var pushZeroContract = CONTRACT;
         final var pushResult = "pushResult";
         return propertyPreservingHapiSpec("pushZeroDisabledInV034", NONDETERMINISTIC_TRANSACTION_FEES)

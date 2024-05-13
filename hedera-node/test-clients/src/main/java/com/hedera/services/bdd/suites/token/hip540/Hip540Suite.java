@@ -41,12 +41,12 @@ public class Hip540Suite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(allScenariosAsExpected());
     }
 
     @HapiTest
-    public final HapiSpec allScenariosAsExpected() {
+    public final DynamicTest allScenariosAsExpected() {
         return defaultHapiSpec("allScenariosAsExpected")
                 .given()
                 .when()

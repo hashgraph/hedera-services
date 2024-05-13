@@ -51,12 +51,12 @@ public class FileUpdateLoadTest extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runFileUpdates());
     }
 
     @HapiTest
-    final HapiSpec runFileUpdates() {
+    final DynamicTest runFileUpdates() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         final AtomicInteger submittedSoFar = new AtomicInteger(0);
         final byte[] NEW_CONTENTS = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);

@@ -378,7 +378,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     }
 
     @Override
-    protected void updateStateOf(final HapiSpec spec) throws Throwable {
+    protected void updateStateOf(final DynamicTest spec) throws Throwable {
         if (actualPrecheck == OK) {
             spec.incrementNonce(privateKeyRef);
         }
@@ -413,7 +413,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     }
 
     static void doGasLookup(
-            final LongConsumer gasObserver, final HapiSpec spec, final Transaction txn, final boolean isCreate)
+            final LongConsumer gasObserver, final DynamicTest spec, final Transaction txn, final boolean isCreate)
             throws Throwable {
         doObservedLookup(spec, txn, rcd -> {
             final var gasUsed = isCreate
@@ -423,7 +423,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         });
     }
 
-    static void doObservedLookup(final HapiSpec spec, final Transaction txn, Consumer<TransactionRecord> observer)
+    static void doObservedLookup(final DynamicTest spec, final Transaction txn, Consumer<TransactionRecord> observer)
             throws Throwable {
         final var txnId = extractTxnId(txn);
         final var lookup = getTxnRecord(txnId)

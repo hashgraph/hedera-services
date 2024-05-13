@@ -42,11 +42,11 @@ public final class PrepareUpgrade extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {prepareUpgrade()});
     }
 
-    final HapiSpec prepareUpgrade() {
+    final DynamicTest prepareUpgrade() {
         return defaultHapiSpec("PrepareUpgrade")
                 .given(initializeSettings())
                 .when(sourcing(() -> UtilVerbs.prepareUpgrade()

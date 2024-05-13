@@ -51,6 +51,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -64,7 +65,7 @@ public class ExtCodeSizeOperationSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(verifiesExistence(), testExtCodeSizeWithSystemAccounts());
     }
 
@@ -75,7 +76,7 @@ public class ExtCodeSizeOperationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    HapiSpec verifiesExistence() {
+    final DynamicTest verifiesExistence() {
         final var contract = "ExtCodeOperationsChecker";
         final var invalidAddress = "0x0000000000000000000000000000000000123456";
         final var sizeOf = "sizeOf";
@@ -132,11 +133,11 @@ public class ExtCodeSizeOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec testExtCodeSizeWithSystemAccounts() {
+    final DynamicTest testExtCodeSizeWithSystemAccounts() {
         final var contract = "ExtCodeOperationsChecker";
         final var sizeOf = "sizeOf";
         final var account = "account";
-        final HapiSpecOperation[] opsArray = new HapiSpecOperation[systemAccounts.size() * 2];
+        final var opsArray = new HapiSpecOperation[systemAccounts.size() * 2];
 
         for (int i = 0; i < systemAccounts.size(); i++) {
             // add contract call for all accounts in the list

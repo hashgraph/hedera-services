@@ -35,6 +35,7 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * When running JRS regression tests using SuiteRunner we need to create unique payer accounts for
@@ -64,12 +65,12 @@ public class CryptoCreateForSuiteRunner extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(createAccount());
     }
 
     @SuppressWarnings({"java:S5960", "java:S1141", "java:S1135"})
-    final HapiSpec createAccount() {
+    final DynamicTest createAccount() {
         int maxRetries = 5;
         return customHapiSpec("CreatePayerAccountForEachClient")
                 .withProperties(Map.of("nodes", nodes, "default.node", "0.0." + defaultNode))

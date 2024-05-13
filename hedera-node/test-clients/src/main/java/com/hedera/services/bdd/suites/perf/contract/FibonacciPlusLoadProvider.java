@@ -68,6 +68,7 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class FibonacciPlusLoadProvider extends HapiSuite {
 
@@ -153,11 +154,11 @@ public class FibonacciPlusLoadProvider extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(justDoOne(), addFibNums());
     }
 
-    final HapiSpec addFibNums() {
+    final DynamicTest addFibNums() {
         return defaultHapiSpec("AddFibNums")
                 .given(
                         stdMgmtOf(duration, unit, maxOpsPerSec, SUITE_PROPS_PREFIX),
@@ -355,7 +356,7 @@ public class FibonacciPlusLoadProvider extends HapiSuite {
         gasUsed.addAndGet(gas);
     }
 
-    final HapiSpec justDoOne() {
+    final DynamicTest justDoOne() {
         final var civilian = "civilian";
         final int[] firstTargets = {19, 24};
         final int[] secondTargets = {30, 31};

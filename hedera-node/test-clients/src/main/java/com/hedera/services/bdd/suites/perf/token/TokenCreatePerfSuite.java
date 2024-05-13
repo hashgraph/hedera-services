@@ -38,11 +38,11 @@ public class TokenCreatePerfSuite extends LoadTest {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runTokenCreates());
     }
 
-    final HapiSpec runTokenCreates() {
+    final DynamicTest runTokenCreates() {
         final int NUM_CREATES = 100000;
         return defaultHapiSpec("tokenCreatePerf")
                 .given()

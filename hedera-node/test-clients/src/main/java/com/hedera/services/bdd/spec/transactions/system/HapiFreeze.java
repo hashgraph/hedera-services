@@ -125,7 +125,7 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final DynamicTest spec) throws Throwable {
         final var opBody = spec.txns()
                 .<FreezeTransactionBody, FreezeTransactionBody.Builder>body(FreezeTransactionBody.class, b -> {
                     b.setFreezeType(action);

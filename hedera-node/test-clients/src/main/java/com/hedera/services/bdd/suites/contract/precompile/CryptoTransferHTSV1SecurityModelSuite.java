@@ -78,6 +78,7 @@ import java.math.BigInteger;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class CryptoTransferHTSV1SecurityModelSuite extends HapiSuite {
@@ -132,7 +133,7 @@ public class CryptoTransferHTSV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 nonNestedCryptoTransferForFungibleToken(),
                 activeContractInFrameIsVerifiedWithoutNeedForSignature(),
@@ -141,7 +142,7 @@ public class CryptoTransferHTSV1SecurityModelSuite extends HapiSuite {
                 hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender());
     }
 
-    final HapiSpec nonNestedCryptoTransferForFungibleToken() {
+    final DynamicTest nonNestedCryptoTransferForFungibleToken() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return propertyPreservingHapiSpec("nonNestedCryptoTransferForFungibleToken")
@@ -216,7 +217,7 @@ public class CryptoTransferHTSV1SecurityModelSuite extends HapiSuite {
                                                 .including(FUNGIBLE_TOKEN, RECEIVER, 50))));
     }
 
-    final HapiSpec activeContractInFrameIsVerifiedWithoutNeedForSignature() {
+    final DynamicTest activeContractInFrameIsVerifiedWithoutNeedForSignature() {
         final var revertedFungibleTransferTxn = "revertedFungibleTransferTxn";
         final var successfulFungibleTransferTxn = "successfulFungibleTransferTxn";
         final var revertedNftTransferTxn = "revertedNftTransferTxn";
@@ -390,7 +391,7 @@ public class CryptoTransferHTSV1SecurityModelSuite extends HapiSuite {
                                                 .including(NFT_TOKEN, CONTRACT, RECEIVER, 2L))));
     }
 
-    final HapiSpec cryptoTransferNFTsWithCustomFeesMixedScenario() {
+    final DynamicTest cryptoTransferNFTsWithCustomFeesMixedScenario() {
         final var SPENDER_SIGNATURE = "spenderSignature";
         return propertyPreservingHapiSpec("cryptoTransferNFTsWithCustomFeesMixedScenario")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -532,7 +533,7 @@ public class CryptoTransferHTSV1SecurityModelSuite extends HapiSuite {
                 .then();
     }
 
-    final HapiSpec hapiTransferFromForNFTWithCustomFeesWithApproveForAll() {
+    final DynamicTest hapiTransferFromForNFTWithCustomFeesWithApproveForAll() {
         return propertyPreservingHapiSpec("hapiTransferFromForNFTWithCustomFeesWithApproveForAll")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
@@ -692,7 +693,7 @@ public class CryptoTransferHTSV1SecurityModelSuite extends HapiSuite {
                 .then();
     }
 
-    final HapiSpec hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender() {
+    final DynamicTest hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender() {
         return propertyPreservingHapiSpec("hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(

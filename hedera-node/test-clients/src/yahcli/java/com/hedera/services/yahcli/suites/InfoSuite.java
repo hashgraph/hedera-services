@@ -43,13 +43,13 @@ public class InfoSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         List<HapiSpec> specToRun = new ArrayList<>();
         accounts.forEach(s -> specToRun.add(getInfo(s)));
         return specToRun;
     }
 
-    private HapiSpec getInfo(String accountID) {
+    final DynamicTest getInfo(String accountID) {
         return HapiSpec.customHapiSpec("getInfo")
                 .withProperties(specConfig)
                 .given()

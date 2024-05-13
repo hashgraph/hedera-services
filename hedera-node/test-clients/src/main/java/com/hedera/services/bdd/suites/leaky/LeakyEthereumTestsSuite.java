@@ -64,6 +64,7 @@ import java.util.List;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -89,7 +90,7 @@ public class LeakyEthereumTestsSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return Stream.of(legacyUnprotectedEtxBeforeEIP155(), legacyEtxAfterEIP155(), callHtsSystemContractTest())
                 .toList();
     }
@@ -100,7 +101,7 @@ public class LeakyEthereumTestsSuite extends HapiSuite {
     // and so `v` is calculated -> v = {0,1} + 27
     // source: https://eips.ethereum.org/EIPS/eip-155
     @HapiTest
-    HapiSpec legacyUnprotectedEtxBeforeEIP155() {
+    final DynamicTest legacyUnprotectedEtxBeforeEIP155() {
         final String DEPOSIT = "deposit";
         final long depositAmount = 20_000L;
         final Integer chainId = 0;
@@ -148,7 +149,7 @@ public class LeakyEthereumTestsSuite extends HapiSuite {
     // and so `v` is calculated -> v = {0,1} + CHAIN_ID * 2 + 35
     // source: https://eips.ethereum.org/EIPS/eip-155
     @HapiTest
-    HapiSpec legacyEtxAfterEIP155() {
+    final DynamicTest legacyEtxAfterEIP155() {
         final String DEPOSIT = "deposit";
         final long depositAmount = 20_000L;
         final Integer chainId = 1;
@@ -189,7 +190,7 @@ public class LeakyEthereumTestsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec callHtsSystemContractTest() {
+    final DynamicTest callHtsSystemContractTest() {
         final var callHtsSystemContractTxn = "callHtsSystemContractTxn";
         final var function = getABIFor(FUNCTION, "transferToken", "IHederaTokenService");
         final var HTS_SYSTEM_CONTRACT = "hts";

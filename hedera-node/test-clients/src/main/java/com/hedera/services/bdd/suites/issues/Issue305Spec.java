@@ -56,6 +56,7 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class Issue305Spec extends HapiSuite {
@@ -67,7 +68,7 @@ public class Issue305Spec extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         final var repeatedSpecs = new ArrayList<>(IntStream.range(0, 5)
                 .mapToObj(ignore -> createDeleteInSameRoundWorks())
                 .toList());
@@ -76,7 +77,7 @@ public class Issue305Spec extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createDeleteInSameRoundWorks() {
+    final DynamicTest createDeleteInSameRoundWorks() {
         AtomicReference<String> nextFileId = new AtomicReference<>();
         return defaultHapiSpec("CreateDeleteInSameRoundWorks")
                 .given(
@@ -99,7 +100,7 @@ public class Issue305Spec extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec congestionMultipliersRefreshOnPropertyUpdate() {
+    final DynamicTest congestionMultipliersRefreshOnPropertyUpdate() {
         final var civilian = "civilian";
         final var preCongestionTxn = "preCongestionTxn";
         final var multipurposeContract = "Multipurpose";

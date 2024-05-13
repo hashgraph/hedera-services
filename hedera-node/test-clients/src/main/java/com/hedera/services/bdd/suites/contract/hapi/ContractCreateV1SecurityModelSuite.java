@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class ContractCreateV1SecurityModelSuite extends HapiSuite {
@@ -49,7 +50,7 @@ public class ContractCreateV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix());
     }
 
@@ -58,7 +59,7 @@ public class ContractCreateV1SecurityModelSuite extends HapiSuite {
         return false;
     }
 
-    final HapiSpec receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix() {
+    final DynamicTest receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix() {
         final var sendInternalAndDelegateContract = "SendInternalAndDelegate";
         final var justSendContract = "JustSend";
         final var beneficiary = "civilian";

@@ -63,7 +63,7 @@ public class SpecKeyFromEcdsaFile extends UtilOp {
     }
 
     static void createAndLinkEcdsaKey(
-            final HapiSpec spec,
+            final DynamicTest spec,
             final byte[] pubKey,
             final PrivateKey privateKey,
             final String name,
@@ -86,7 +86,7 @@ public class SpecKeyFromEcdsaFile extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(final HapiSpec spec) throws Throwable {
+    protected boolean submitOp(final DynamicTest spec) throws Throwable {
         final var params = ECNamedCurveTable.getParameterSpec("secp256k1");
         final var keySpec = new ECPrivateKeySpec(s, params);
         final KeyFactory kf = KeyFactory.getInstance("EC", BOUNCYCASTLE_PROVIDER);

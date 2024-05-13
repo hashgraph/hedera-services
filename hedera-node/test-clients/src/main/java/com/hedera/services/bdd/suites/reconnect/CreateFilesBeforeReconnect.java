@@ -67,7 +67,7 @@ public class CreateFilesBeforeReconnect extends HapiSuite {
                 .deferStatusResolution();
     }
 
-    final HapiSpec runCreateFiles() {
+    final DynamicTest runCreateFiles() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings(
                 FILE_CREATION_RECONNECT_TPS, DEFAULT_MINS_FOR_RECONNECT_TESTS, DEFAULT_THREADS_FOR_RECONNECT_TESTS);
 

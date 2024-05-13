@@ -113,7 +113,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
     }
 
     @Override
-    protected Key lookupKey(final HapiSpec spec, final String name) {
+    protected Key lookupKey(final DynamicTest spec, final String name) {
         if (submitKey.isPresent() && (topic + "Submit").equals(name)) {
             return submitKey.get();
         } else {
@@ -132,7 +132,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final DynamicTest spec) throws Throwable {
         genKeysFor(spec);
         final ConsensusCreateTopicTransactionBody opBody = spec.txns()
                 .<ConsensusCreateTopicTransactionBody, ConsensusCreateTopicTransactionBody.Builder>body(
@@ -151,7 +151,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
         return b -> b.setConsensusCreateTopic(opBody);
     }
 
-    private void genKeysFor(final HapiSpec spec) {
+    private void genKeysFor(final DynamicTest spec) {
         if (adminKeyName.isPresent() || adminKeyShape.isPresent()) {
             adminKey = netOf(spec, adminKeyName, adminKeyShape, Optional.of(this::effectiveKeyGen));
         }
@@ -171,7 +171,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
     }
 
     @Override
-    protected void updateStateOf(final HapiSpec spec) {
+    protected void updateStateOf(final DynamicTest spec) {
         if (actualStatus != SUCCESS) {
             return;
         }
@@ -198,12 +198,12 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final DynamicTest spec) {
         return spec.clients().getConsSvcStub(targetNodeFor(spec), useTls)::createTopic;
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+    protected long feeFor(final DynamicTest spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
                         ConsensusCreateTopic,

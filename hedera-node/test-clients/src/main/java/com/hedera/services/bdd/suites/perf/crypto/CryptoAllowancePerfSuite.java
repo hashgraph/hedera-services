@@ -41,11 +41,11 @@ public class CryptoAllowancePerfSuite extends LoadTest {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runCryptoCreatesAndTokenCreates(), runCryptoAllowances());
     }
 
-    final HapiSpec runCryptoCreatesAndTokenCreates() {
+    final DynamicTest runCryptoCreatesAndTokenCreates() {
         final int NUM_CREATES = 5000;
         return defaultHapiSpec("runCryptoCreatesAndTokenCreates")
                 .given()
@@ -96,7 +96,7 @@ public class CryptoAllowancePerfSuite extends LoadTest {
                                         .deferStatusResolution())));
     }
 
-    final HapiSpec runCryptoAllowances() {
+    final DynamicTest runCryptoAllowances() {
         final int NUM_ALLOWANCES = 5000;
         return defaultHapiSpec("runCryptoAllowances")
                 .given()

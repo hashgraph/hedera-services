@@ -40,11 +40,11 @@ public class SpecialFileHashSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(getSpecialFileHash());
     }
 
-    private HapiSpec getSpecialFileHash() {
+    final DynamicTest getSpecialFileHash() {
         long target = Utils.rationalized(specialFile);
 
         return HapiSpec.customHapiSpec("GetSpecialFileHash")

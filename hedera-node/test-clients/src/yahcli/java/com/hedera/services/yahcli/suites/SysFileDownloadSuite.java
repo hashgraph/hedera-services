@@ -46,13 +46,13 @@ public class SysFileDownloadSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             downloadSysFiles(),
         });
     }
 
-    private HapiSpec downloadSysFiles() {
+    final DynamicTest downloadSysFiles() {
         long[] targets = Utils.rationalized(sysFilesToDownload);
 
         return HapiSpec.customHapiSpec("downloadSysFiles")

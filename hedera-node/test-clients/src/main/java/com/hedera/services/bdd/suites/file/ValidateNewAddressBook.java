@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class ValidateNewAddressBook extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ValidateNewAddressBook.class);
@@ -39,11 +40,11 @@ public class ValidateNewAddressBook extends HapiSuite {
     final String TARGET_DIR = "./remote-system-files";
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(fetchFiles());
     }
 
-    final HapiSpec fetchFiles() {
+    final DynamicTest fetchFiles() {
         return defaultHapiSpec("ValidateNewAddressBook")
                 .given()
                 .when()

@@ -46,6 +46,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -59,7 +60,7 @@ public class ExtCodeCopyOperationSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(verifiesExistence(), testExtCodeCopyWithSystemAccounts());
     }
 
@@ -70,7 +71,7 @@ public class ExtCodeCopyOperationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    HapiSpec verifiesExistence() {
+    final DynamicTest verifiesExistence() {
         final var contract = "ExtCodeOperationsChecker";
         final var invalidAddress = "0x0000000000000000000000000000000000123456";
         final var emptyBytecode = ByteString.EMPTY;
@@ -128,7 +129,7 @@ public class ExtCodeCopyOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec testExtCodeCopyWithSystemAccounts() {
+    final DynamicTest testExtCodeCopyWithSystemAccounts() {
         final var contract = "ExtCodeOperationsChecker";
         final var emptyBytecode = ByteString.EMPTY;
         final var codeCopyOf = "codeCopyOf";

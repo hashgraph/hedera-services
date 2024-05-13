@@ -42,7 +42,7 @@ public class AutoAccountCreationsBeforeReconnect extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(createAccountsUsingAlias());
     }
 
@@ -50,7 +50,7 @@ public class AutoAccountCreationsBeforeReconnect extends HapiSuite {
         new AutoAccountCreationsBeforeReconnect().runSuiteSync();
     }
 
-    final HapiSpec createAccountsUsingAlias() {
+    final DynamicTest createAccountsUsingAlias() {
         return defaultHapiSpec("createAccountsUsingAlias").given().when().then(withOpContext((spec, opLog) -> {
             List<HapiSpecOperation> ops = new ArrayList<>();
             for (int i = 0; i < TOTAL_ACCOUNTS; i++) {

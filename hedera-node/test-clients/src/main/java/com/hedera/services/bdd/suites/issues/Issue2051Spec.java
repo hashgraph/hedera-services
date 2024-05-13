@@ -37,11 +37,11 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class Issue2051Spec extends HapiSuite {
     private static final Logger log = LogManager.getLogger(Issue2051Spec.class);
-    private static final String TRANSFER_CONTRACT = "transferContract";
     private static final String TRANSFER = "transfer";
     private static final String PAYER = "payer";
     private static final String SNAPSHOT = "snapshot";
@@ -52,16 +52,15 @@ public class Issue2051Spec extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
+    public List<DynamicTest> getSpecsInSuite() {
+        return List.of(
             transferAccountCannotBeDeletedForContractTarget(),
             transferAccountCannotBeDeleted(),
-            tbdCanPayForItsOwnDeletion(),
-        });
+            tbdCanPayForItsOwnDeletion());
     }
 
     @HapiTest
-    final HapiSpec tbdCanPayForItsOwnDeletion() {
+    final DynamicTest tbdCanPayForItsOwnDeletion() {
         return defaultHapiSpec("TbdCanPayForItsOwnDeletion")
                 .given(cryptoCreate("tbd"), cryptoCreate(TRANSFER))
                 .when()
@@ -74,7 +73,7 @@ public class Issue2051Spec extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferAccountCannotBeDeleted() {
+    final DynamicTest transferAccountCannotBeDeleted() {
         return defaultHapiSpec("TransferAccountCannotBeDeleted")
                 .given(cryptoCreate(PAYER), cryptoCreate(TRANSFER), cryptoCreate("tbd"))
                 .when(cryptoDelete(TRANSFER))
@@ -90,7 +89,7 @@ public class Issue2051Spec extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferAccountCannotBeDeletedForContractTarget() {
+    final DynamicTest transferAccountCannotBeDeletedForContractTarget() {
         return defaultHapiSpec("TransferAccountCannotBeDeletedForContractTarget")
                 .given(
                         uploadInitCode("CreateTrivial"),

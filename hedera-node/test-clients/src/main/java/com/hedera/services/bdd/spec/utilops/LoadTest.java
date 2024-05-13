@@ -38,6 +38,7 @@ import java.util.OptionalLong;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class LoadTest extends HapiSuite {
     private static final Logger log = LogManager.getLogger(LoadTest.class);
@@ -185,7 +186,7 @@ public class LoadTest extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return null;
     }
 }

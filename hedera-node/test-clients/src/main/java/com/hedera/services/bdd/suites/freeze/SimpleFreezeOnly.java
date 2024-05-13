@@ -41,7 +41,7 @@ public class SimpleFreezeOnly extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(positiveTests());
     }
 
@@ -54,7 +54,7 @@ public class SimpleFreezeOnly extends HapiSuite {
         return true;
     }
 
-    final HapiSpec simpleFreezeWithTimestamp() {
+    final DynamicTest simpleFreezeWithTimestamp() {
         return defaultHapiSpec("SimpleFreezeWithTimeStamp")
                 .given(freezeOnly().payingWith(GENESIS).startingAt(Instant.now().plusSeconds(10)))
                 .when(sleepFor(40000))

@@ -34,6 +34,7 @@ import java.math.BigInteger;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class ContractCallPerfSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractCallPerfSuite.class);
@@ -43,7 +44,7 @@ public class ContractCallPerfSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(contractCallPerf());
     }
 
@@ -52,7 +53,7 @@ public class ContractCallPerfSuite extends HapiSuite {
         return false;
     }
 
-    HapiSpec contractCallPerf() {
+    final DynamicTest contractCallPerf() {
         final int NUM_CALLS = 1_000;
         final long ENDING_BALANCE = NUM_CALLS * (NUM_CALLS + 1) / 2;
         final String DEPOSIT_MEMO = "So we out-danced thought, body perfection brought...";

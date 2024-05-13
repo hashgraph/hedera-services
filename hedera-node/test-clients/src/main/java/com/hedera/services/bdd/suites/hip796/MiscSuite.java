@@ -62,6 +62,7 @@ import com.hedera.services.bdd.suites.hip796.operations.TokenFeature;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * A suite for user stories Misc-1 through Misc-6 from HIP-796.
@@ -74,7 +75,7 @@ public class MiscSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MiscSuite.class);
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 tokenOpsUnchangedWithPartitionDefinitions(),
                 rentNotYetChargedForPartitionAndDefinitions(),
@@ -94,7 +95,7 @@ public class MiscSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    public HapiSpec tokenOpsUnchangedWithPartitionDefinitions() {
+    final DynamicTest tokenOpsUnchangedWithPartitionDefinitions() {
         return defaultHapiSpec("TokenOpsUnchangedWithPartitionDefinitions")
                 .given(
                         // Create a partitioned token with all features
@@ -142,7 +143,7 @@ public class MiscSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    public HapiSpec rentNotYetChargedForPartitionAndDefinitions() {
+    final DynamicTest rentNotYetChargedForPartitionAndDefinitions() {
         return propertyPreservingHapiSpec("RentNotYetChargedForPartitionAndDefinitions")
                 .preserving("ledger.autoRenewPeriod.minDuration")
                 .given(
@@ -183,7 +184,7 @@ public class MiscSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    public HapiSpec approvalAllowanceSpecificPartition() {
+    final DynamicTest approvalAllowanceSpecificPartition() {
         return defaultHapiSpec("ApprovalAllowanceSpecificPartition")
                 .given(
                         fungibleTokenWithFeatures(PARTITIONING)
@@ -243,7 +244,7 @@ public class MiscSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    public HapiSpec accountExpiryAndReclamationIsNotEnabled() {
+    final DynamicTest accountExpiryAndReclamationIsNotEnabled() {
         return propertyPreservingHapiSpec("AccountExpiryAndReclamationIsNotEnabled")
                 .preserving("ledger.autoRenewPeriod.minDuration")
                 .given(
@@ -280,7 +281,7 @@ public class MiscSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    public HapiSpec accountDeletionWithTokenHoldings() {
+    final DynamicTest accountDeletionWithTokenHoldings() {
         return defaultHapiSpec("AccountDeletionWithTokenHoldings")
                 .given(fungibleTokenWithFeatures(PARTITIONING, WIPING)
                         .withPartitions(RED_PARTITION)
@@ -305,7 +306,7 @@ public class MiscSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    public HapiSpec customFeesAtTokenDefinitionLevel() {
+    final DynamicTest customFeesAtTokenDefinitionLevel() {
         return defaultHapiSpec("CustomFeesAtTokenDefinitionLevel")
                 .given(fungibleTokenWithFeatures(PARTITIONING, CUSTOM_FEE_SCHEDULE_MANAGEMENT)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION)

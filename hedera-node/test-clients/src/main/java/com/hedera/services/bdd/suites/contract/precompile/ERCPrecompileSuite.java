@@ -99,6 +99,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -174,11 +175,11 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(erc20(), erc721());
     }
 
-    List<HapiSpec> erc20() {
+    List<DynamicTest> erc20() {
         return List.of(
                 getErc20TokenName(),
                 getErc20TokenSymbol(),
@@ -200,7 +201,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                 transferErc20TokenFromContractWithNoApproval());
     }
 
-    List<HapiSpec> erc721() {
+    List<DynamicTest> erc721() {
         return List.of(
                 getErc721TokenName(),
                 getErc721Symbol(),
@@ -223,7 +224,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc20TokenName() {
+    final DynamicTest getErc20TokenName() {
         return defaultHapiSpec(
                         "getErc20TokenName", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
@@ -263,7 +264,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc20TokenSymbol() {
+    final DynamicTest getErc20TokenSymbol() {
         final var tokenSymbol = "F";
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
@@ -310,7 +311,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc20TokenDecimals() {
+    final DynamicTest getErc20TokenDecimals() {
         final var decimals = 10;
         final var decimalsTxn = "decimalsTxn";
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
@@ -362,7 +363,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc20TotalSupply() {
+    final DynamicTest getErc20TotalSupply() {
         final var totalSupply = 50;
         final var supplyTxn = "supplyTxn";
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
@@ -409,7 +410,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc20BalanceOfAccount() {
+    final DynamicTest getErc20BalanceOfAccount() {
         final var balanceTxn = "balanceTxn";
         final var zeroBalanceTxn = "zBalanceTxn";
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
@@ -487,7 +488,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferErc20Token() {
+    final DynamicTest transferErc20Token() {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
         final AtomicReference<String> accountAddr = new AtomicReference<>();
 
@@ -577,7 +578,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferErc20TokenFailWithAccount() {
+    final DynamicTest transferErc20TokenFailWithAccount() {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
         final AtomicReference<String> accountAddr = new AtomicReference<>();
 
@@ -625,7 +626,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferErc20TokenReceiverContract() {
+    final DynamicTest transferErc20TokenReceiverContract() {
         final var nestedContract = NESTED_ERC_20_CONTRACT;
 
         return defaultHapiSpec(
@@ -703,7 +704,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferErc20TokenFromContractWithNoApproval() {
+    final DynamicTest transferErc20TokenFromContractWithNoApproval() {
         final var transferFromOtherContractWithSignaturesTxn = "transferFromOtherContractWithSignaturesTxn";
         final var nestedContract = NESTED_ERC_20_CONTRACT;
 
@@ -775,7 +776,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec erc20Allowance() {
+    final DynamicTest erc20Allowance() {
         return defaultHapiSpec(
                         "erc20Allowance", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
@@ -830,7 +831,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec erc20Approve() {
+    final DynamicTest erc20Approve() {
         final var approveTxn = "approveTxn";
 
         return defaultHapiSpec(
@@ -875,7 +876,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc20TokenDecimalsFromErc721TokenFails() {
+    final DynamicTest getErc20TokenDecimalsFromErc721TokenFails() {
         final var invalidDecimalsTxn = "decimalsFromErc721Txn";
 
         return defaultHapiSpec(
@@ -911,7 +912,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc721TokenName() {
+    final DynamicTest getErc721TokenName() {
         return defaultHapiSpec(
                         "getErc721TokenName", HIGHLY_NON_DETERMINISTIC_FEES, NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
@@ -951,7 +952,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc721Symbol() {
+    final DynamicTest getErc721Symbol() {
         final var tokenSymbol = "N";
 
         return defaultHapiSpec(
@@ -993,7 +994,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc721TokenURI() {
+    final DynamicTest getErc721TokenURI() {
         final var tokenURITxn = "tokenURITxn";
         final var nonExistingTokenURITxn = "nonExistingTokenURITxn";
         final var ERC721MetadataNonExistingToken = "ERC721Metadata: URI query for nonexistent token";
@@ -1057,7 +1058,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc721TotalSupply() {
+    final DynamicTest getErc721TotalSupply() {
         return defaultHapiSpec(
                         "getErc721TotalSupply", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
@@ -1096,7 +1097,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc721BalanceOf() {
+    final DynamicTest getErc721BalanceOf() {
         final var zeroBalanceOfTxn = "zbalanceOfTxn";
 
         return defaultHapiSpec(
@@ -1163,7 +1164,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc721OwnerOf() {
+    final DynamicTest getErc721OwnerOf() {
         final var ownerOfTxn = "ownerOfTxn";
         final AtomicReference<byte[]> ownerAddr = new AtomicReference<>();
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
@@ -1225,7 +1226,7 @@ public class ERCPrecompileSuite extends HapiSuite {
 
     // Expects revert
     @HapiTest
-    final HapiSpec getErc721TokenURIFromErc20TokenFails() {
+    final DynamicTest getErc721TokenURIFromErc20TokenFails() {
         final var invalidTokenURITxn = "tokenURITxnFromErc20";
 
         return defaultHapiSpec(
@@ -1260,7 +1261,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc721OwnerOfFromErc20TokenFails() {
+    final DynamicTest getErc721OwnerOfFromErc20TokenFails() {
         final var invalidOwnerOfTxn = "ownerOfTxnFromErc20Token";
 
         return defaultHapiSpec(
@@ -1297,7 +1298,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec directCallsWorkForErc20() {
+    final DynamicTest directCallsWorkForErc20() {
         final AtomicReference<String> tokenNum = new AtomicReference<>();
 
         final var tokenSymbol = "FDFGF";
@@ -1448,7 +1449,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec someErc721NegativeTransferFromScenariosPass() {
+    final DynamicTest someErc721NegativeTransferFromScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
@@ -1562,7 +1563,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec someErc721ApproveAndRemoveScenariosPass() {
+    final DynamicTest someErc721ApproveAndRemoveScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> bCivilianMirrorAddr = new AtomicReference<>();
@@ -1763,7 +1764,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec someErc20ApproveAllowanceScenariosPass() {
+    final DynamicTest someErc20ApproveAllowanceScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
@@ -1919,7 +1920,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec someErc20NegativeTransferFromScenariosPass() {
+    final DynamicTest someErc20NegativeTransferFromScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
@@ -2051,7 +2052,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec someErc20ApproveAllowanceScenarioInOneCall() {
+    final DynamicTest someErc20ApproveAllowanceScenarioInOneCall() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
@@ -2110,7 +2111,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec directCallsWorkForErc721() {
+    final DynamicTest directCallsWorkForErc721() {
 
         final AtomicReference<String> tokenNum = new AtomicReference<>();
 
@@ -2253,7 +2254,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec someErc721IsApprovedForAllScenariosPass() {
+    final DynamicTest someErc721IsApprovedForAllScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
@@ -2383,7 +2384,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec someErc721SetApprovedForAllScenariosPass() {
+    final DynamicTest someErc721SetApprovedForAllScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
@@ -2516,7 +2517,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc721IsApprovedForAll() {
+    final DynamicTest getErc721IsApprovedForAll() {
         final var notApprovedTxn = "notApprovedTxn";
         final var approvedForAllTxn = "approvedForAllTxn";
 
@@ -2607,7 +2608,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec erc721TokenApprove() {
+    final DynamicTest erc721TokenApprove() {
         return defaultHapiSpec(
                         "erc721TokenApprove",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -2649,7 +2650,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec erc721GetApproved() {
+    final DynamicTest erc721GetApproved() {
         final var theSpender2 = "spender2";
 
         return defaultHapiSpec(
@@ -2711,7 +2712,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec erc20TransferFromAllowance() {
+    final DynamicTest erc20TransferFromAllowance() {
         final var allowanceTxn2 = "allowanceTxn2";
 
         return defaultHapiSpec(
@@ -2811,7 +2812,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec erc20TransferFromSelf() {
+    final DynamicTest erc20TransferFromSelf() {
         return defaultHapiSpec("erc20TransferFromSelf", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -2857,7 +2858,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec erc721TransferFromWithApproval() {
+    final DynamicTest erc721TransferFromWithApproval() {
         return defaultHapiSpec(
                         "erc721TransferFromWithApproval",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -2940,7 +2941,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec erc721TransferFromWithApproveForAll() {
+    final DynamicTest erc721TransferFromWithApproveForAll() {
         return defaultHapiSpec(
                         "erc721TransferFromWithApproveForAll",
                         NONDETERMINISTIC_TRANSACTION_FEES,

@@ -36,11 +36,11 @@ public class CryptoCreatePerfSuite extends LoadTest {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runCryptoCreates());
     }
 
-    final HapiSpec runCryptoCreates() {
+    final DynamicTest runCryptoCreates() {
         final int NUM_CREATES = 1000000;
         return defaultHapiSpec("cryptoCreatePerf")
                 .given()

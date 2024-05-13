@@ -32,6 +32,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -49,14 +50,12 @@ public class UnsupportedQueriesRegression extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            verifyUnsupportedOps(),
-        });
+    public List<DynamicTest> getSpecsInSuite() {
+        return List.of(verifyUnsupportedOps());
     }
 
     @HapiTest
-    final HapiSpec verifyUnsupportedOps() {
+    final DynamicTest verifyUnsupportedOps() {
         return defaultHapiSpec("VerifyUnsupportedOps")
                 .given()
                 .when()

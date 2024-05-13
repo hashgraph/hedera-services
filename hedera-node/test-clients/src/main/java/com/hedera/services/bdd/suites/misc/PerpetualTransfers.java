@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.misc;
 
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
@@ -38,6 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class PerpetualTransfers extends HapiSuite {
@@ -52,15 +54,13 @@ public class PerpetualTransfers extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            canTransferBackAndForthForever(),
-        });
+    public List<DynamicTest> getSpecsInSuite() {
+        return List.of( canTransferBackAndForthForever());
     }
 
     @HapiTest
-    final HapiSpec canTransferBackAndForthForever() {
-        return HapiSpec.defaultHapiSpec("CanTransferBackAndForthForever")
+    final DynamicTest canTransferBackAndForthForever() {
+        return defaultHapiSpec("CanTransferBackAndForthForever")
                 .given()
                 .when()
                 .then(runWithProvider(transfersFactory())

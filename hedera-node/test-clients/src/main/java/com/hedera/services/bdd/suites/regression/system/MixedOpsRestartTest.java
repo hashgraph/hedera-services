@@ -82,12 +82,12 @@ public class MixedOpsRestartTest extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(restartMixedOps());
     }
 
     @HapiTest
-    final HapiSpec restartMixedOps() {
+    final DynamicTest restartMixedOps() {
         AtomicInteger tokenId = new AtomicInteger(0);
         AtomicInteger scheduleId = new AtomicInteger(0);
         AtomicInteger contractId = new AtomicInteger(0);

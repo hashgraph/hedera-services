@@ -91,7 +91,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return withAndWithoutLongTermEnabled(() -> List.of(
                 /* Stateful specs from ScheduleExecutionSpecs */
                 suiteSetup(),
@@ -105,14 +105,14 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
 
     @HapiTest
     @Order(1)
-    final HapiSpec suiteSetup() {
+    final DynamicTest suiteSetup() {
         // Managing whitelist for these is error-prone, so just whitelist everything by default.
         return defaultHapiSpec("suiteSetup").given().when().then(addAllToWhitelist());
     }
 
     @HapiTest
     @Order(4)
-    final HapiSpec scheduledBurnWithInvalidTokenThrowsUnresolvableSigners() {
+    final DynamicTest scheduledBurnWithInvalidTokenThrowsUnresolvableSigners() {
         return defaultHapiSpec("ScheduledBurnWithInvalidTokenThrowsUnresolvableSigners")
                 .given(cryptoCreate(SCHEDULE_PAYER))
                 .when(scheduleCreate(VALID_SCHEDULE, burnToken("0.0.123231", List.of(1L, 2L)))
@@ -123,7 +123,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
 
     @HapiTest
     @Order(2)
-    final HapiSpec scheduledUniqueMintFailsWithNftsDisabled() {
+    final DynamicTest scheduledUniqueMintFailsWithNftsDisabled() {
         return defaultHapiSpec("ScheduledUniqueMintFailsWithNftsDisabled")
                 .given(
                         cryptoCreate(TREASURY),
@@ -155,7 +155,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
 
     @HapiTest
     @Order(3)
-    final HapiSpec scheduledUniqueBurnFailsWithNftsDisabled() {
+    final DynamicTest scheduledUniqueBurnFailsWithNftsDisabled() {
         return defaultHapiSpec("ScheduledUniqueBurnFailsWithNftsDisabled")
                 .given(
                         cryptoCreate(TREASURY),
@@ -187,7 +187,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
 
     @HapiTest
     @Order(5)
-    public HapiSpec executionWithTransferListWrongSizedFails() {
+    final DynamicTest executionWithTransferListWrongSizedFails() {
         long transferAmount = 1L;
         long senderBalance = 1000L;
         long payingAccountBalance = 1_000_000L;
@@ -235,7 +235,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
 
     @HapiTest
     @Order(6)
-    final HapiSpec executionWithTokenTransferListSizeExceedFails() {
+    final DynamicTest executionWithTokenTransferListSizeExceedFails() {
         String xToken = "XXX";
         String invalidSchedule = "withMaxTokenTransfer";
         String schedulePayer = "somebody", xTreasury = "xt", civilianA = "xa", civilianB = "xb";
@@ -272,7 +272,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
 
     @HapiTest
     @Order(7)
-    final HapiSpec suiteCleanup() {
+    final DynamicTest suiteCleanup() {
         return defaultHapiSpec("suiteCleanup")
                 .given()
                 .when()

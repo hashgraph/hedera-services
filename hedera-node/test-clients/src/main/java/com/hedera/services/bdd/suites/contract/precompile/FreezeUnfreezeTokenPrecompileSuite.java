@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -86,12 +87,12 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(isFrozenHappyPathWithAliasLocalCall(), noTokenIdReverts());
     }
 
     @HapiTest
-    final HapiSpec noTokenIdReverts() {
+    final DynamicTest noTokenIdReverts() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         return defaultHapiSpec("noTokenIdReverts", NONDETERMINISTIC_FUNCTION_PARAMETERS)
@@ -142,7 +143,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec isFrozenHappyPathWithAliasLocalCall() {
+    final DynamicTest isFrozenHappyPathWithAliasLocalCall() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<String> autoCreatedAccountId = new AtomicReference<>();
         final String accountAlias = "accountAlias";

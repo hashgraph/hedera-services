@@ -36,11 +36,11 @@ public class TransactionBodyValidation extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(validateTransactionBodySet());
     }
 
-    final HapiSpec validateTransactionBodySet() {
+    final DynamicTest validateTransactionBodySet() {
         return defaultHapiSpec("TransactionBodyValidation")
                 .given()
                 .when()

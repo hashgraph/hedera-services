@@ -64,14 +64,14 @@ public class UmbrellaRedux extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             umbrellaRedux(),
         });
     }
 
     @HapiTest
-    final HapiSpec umbrellaRedux() {
+    final DynamicTest umbrellaRedux() {
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         return defaultHapiSpec("UmbrellaRedux")
                 .given(

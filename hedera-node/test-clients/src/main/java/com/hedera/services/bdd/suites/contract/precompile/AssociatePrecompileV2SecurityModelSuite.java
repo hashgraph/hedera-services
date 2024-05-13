@@ -69,6 +69,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -108,16 +109,16 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiSpec> negativeSpecs() {
+    List<DynamicTest> negativeSpecs() {
         return List.of(
                 v2Security006TokenAssociateNegativeTests(), V2Security041TokenAssociateFromStaticcallAndCallcode());
     }
 
-    List<HapiSpec> positiveSpecs() {
+    List<DynamicTest> positiveSpecs() {
         return List.of(
                 v2Security031AssociateSingleTokenWithDelegateContractKey(),
                 v2Security010NestedAssociateNftAndNonFungibleTokens(),
@@ -125,7 +126,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec v2Security031AssociateSingleTokenWithDelegateContractKey() {
+    final DynamicTest v2Security031AssociateSingleTokenWithDelegateContractKey() {
 
         return defaultHapiSpec("v2Security031AssociateSingleTokenWithDelegateContractKey")
                 .given(
@@ -251,7 +252,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec v2Security006TokenAssociateNegativeTests() {
+    final DynamicTest v2Security006TokenAssociateNegativeTests() {
         return defaultHapiSpec("v2Security006TokenAssociateNegativeTests")
                 .given(
                         newKeyNamed(FREEZE_KEY),
@@ -448,7 +449,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec v2Security010NestedAssociateNftAndNonFungibleTokens() {
+    final DynamicTest v2Security010NestedAssociateNftAndNonFungibleTokens() {
 
         return defaultHapiSpec("v2Security010NestedAssociateNftAndNonFungibleTokens")
                 .given(
@@ -536,7 +537,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security036TokenAssociateFromDelegateCallWithDelegateContractId() {
+    final DynamicTest V2Security036TokenAssociateFromDelegateCallWithDelegateContractId() {
 
         return defaultHapiSpec("v2Security010NestedAssociateNftAndNonFungibleTokens")
                 .given(
@@ -624,7 +625,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security041TokenAssociateFromStaticcallAndCallcode() {
+    final DynamicTest V2Security041TokenAssociateFromStaticcallAndCallcode() {
 
         return defaultHapiSpec("V2Security041TokenAssociateFromStaticcallAndCallcode")
                 .given(

@@ -282,7 +282,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+    protected long feeFor(final DynamicTest spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         final var txnSubType = getTxnSubType(CommonUtils.extractTransactionBody(txn));
         return spec.fees()
                 .forActivityBasedOp(
@@ -312,7 +312,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final DynamicTest spec) throws Throwable {
         if (symbolFn.isPresent()) {
             symbol = Optional.of(symbolFn.get().apply(spec));
         }
@@ -407,12 +407,12 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final DynamicTest spec) {
         return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::createToken;
     }
 
     @Override
-    protected void updateStateOf(final HapiSpec spec) {
+    protected void updateStateOf(final DynamicTest spec) {
         if (actualStatus != SUCCESS) {
             return;
         }

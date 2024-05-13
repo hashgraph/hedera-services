@@ -38,6 +38,7 @@ import java.math.BigInteger;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -64,12 +65,12 @@ public class LogsSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(log0Works(), log1Works(), log2Works(), log3Works(), log4Works());
     }
 
     @HapiTest
-    final HapiSpec log0Works() {
+    final DynamicTest log0Works() {
         return defaultHapiSpec("log0Works", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log0", BigInteger.valueOf(15))
@@ -83,7 +84,7 @@ public class LogsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec log1Works() {
+    final DynamicTest log1Works() {
         return defaultHapiSpec("log1Works", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log1", BigInteger.valueOf(15))
@@ -100,7 +101,7 @@ public class LogsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec log2Works() {
+    final DynamicTest log2Works() {
         return defaultHapiSpec("log2Works", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log2", BigInteger.ONE, BigInteger.TWO)
@@ -119,7 +120,7 @@ public class LogsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec log3Works() {
+    final DynamicTest log3Works() {
         return defaultHapiSpec("log3Works", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log3", BigInteger.ONE, BigInteger.TWO, BigInteger.valueOf(3))
@@ -139,7 +140,7 @@ public class LogsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec log4Works() {
+    final DynamicTest log4Works() {
         return defaultHapiSpec("log4Works", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(

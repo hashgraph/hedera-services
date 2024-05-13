@@ -67,6 +67,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -100,12 +101,12 @@ public class DelegatePrecompileSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(delegateCallForTransfer(), delegateCallForBurn(), delegateCallForMint());
     }
 
     @HapiTest
-    final HapiSpec delegateCallForTransfer() {
+    final DynamicTest delegateCallForTransfer() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> receiverID = new AtomicReference<>();
@@ -166,7 +167,7 @@ public class DelegatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec delegateCallForBurn() {
+    final DynamicTest delegateCallForBurn() {
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
         return defaultHapiSpec(
@@ -219,7 +220,7 @@ public class DelegatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec delegateCallForMint() {
+    final DynamicTest delegateCallForMint() {
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
         return defaultHapiSpec(

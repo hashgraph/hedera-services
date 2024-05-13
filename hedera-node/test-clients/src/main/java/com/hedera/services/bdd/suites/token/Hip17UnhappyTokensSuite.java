@@ -64,6 +64,7 @@ import java.util.List;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -105,7 +106,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 canStillGetNftInfoWhenDeleted(),
                 cannotWipeNftWhenDeleted(),
@@ -128,7 +129,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec canStillGetNftInfoWhenDeleted() {
+    final DynamicTest canStillGetNftInfoWhenDeleted() {
         return defaultHapiSpec("canStillGetNftInfoWhenDeleted")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -147,7 +148,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotTransferNftWhenDeleted() {
+    final DynamicTest cannotTransferNftWhenDeleted() {
         return defaultHapiSpec("cannotTransferNftWhenDeleted")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -172,7 +173,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotUnfreezeNftWhenDeleted() {
+    final DynamicTest cannotUnfreezeNftWhenDeleted() {
         return defaultHapiSpec("cannotUnfreezeNftWhenDeleted")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -192,7 +193,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotFreezeNftWhenDeleted() {
+    final DynamicTest cannotFreezeNftWhenDeleted() {
         return defaultHapiSpec("cannotFreezeNftWhenDeleted")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -211,7 +212,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotDissociateNftWhenDeleted() {
+    final DynamicTest cannotDissociateNftWhenDeleted() {
         return defaultHapiSpec("cannotDissociateNftWhenDeleted")
                 .given(
                         newKeyNamed(ADMIN_KEY),
@@ -231,7 +232,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotAssociateNftWhenDeleted() {
+    final DynamicTest cannotAssociateNftWhenDeleted() {
         return defaultHapiSpec("cannotAssociateNftWhenDeleted")
                 .given(
                         newKeyNamed(ADMIN_KEY),
@@ -250,7 +251,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
     }
 
     @HapiTest // transferList differ
-    public HapiSpec cannotUpdateNftWhenDeleted() {
+    final DynamicTest cannotUpdateNftWhenDeleted() {
         return defaultHapiSpec("cannotUpdateNftWhenDeleted")
                 .given(
                         fileUpdate(APP_PROPERTIES)
@@ -327,7 +328,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotUpdateNftFeeScheduleWhenDeleted() {
+    final DynamicTest cannotUpdateNftFeeScheduleWhenDeleted() {
         final var origHbarFee = 1_234L;
         final var newHbarFee = 4_321L;
         final var hbarCollector = "hbarFee";
@@ -354,7 +355,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotMintNftWhenDeleted() {
+    final DynamicTest cannotMintNftWhenDeleted() {
         return defaultHapiSpec("cannotMintNftWhenDeleted")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -375,7 +376,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotBurnNftWhenDeleted() {
+    final DynamicTest cannotBurnNftWhenDeleted() {
         return defaultHapiSpec("cannotBurnNftWhenDeleted")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -406,7 +407,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotWipeNftWhenDeleted() {
+    final DynamicTest cannotWipeNftWhenDeleted() {
         return defaultHapiSpec("cannotWipeNftWhenDeleted")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -438,7 +439,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotGetNftInfoWhenExpired() {
+    final DynamicTest cannotGetNftInfoWhenExpired() {
         return defaultHapiSpec("cannotGetNftInfoWhenExpired")
                 .given(
                         tokenOpsEnablement(),
@@ -460,7 +461,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotGetNftInfoWhenAutoRemoved() {
+    final DynamicTest cannotGetNftInfoWhenAutoRemoved() {
         return defaultHapiSpec("cannotGetNftInfoWhenAutoRemoved")
                 .given(
                         tokenOpsEnablement(),
@@ -500,7 +501,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec autoRemovalCasesSuiteCleanup() {
+    final DynamicTest autoRemovalCasesSuiteCleanup() {
         return defaultHapiSpec("AutoRemovalCasesSuiteCleanup")
                 .given()
                 .when()

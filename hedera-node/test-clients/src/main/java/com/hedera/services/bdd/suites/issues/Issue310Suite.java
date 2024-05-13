@@ -33,6 +33,7 @@ import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class Issue310Suite extends HapiSuite {
@@ -43,7 +44,7 @@ public class Issue310Suite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 duplicatedTxnsSameTypeDetected(),
                 duplicatedTxnsDifferentTypesDetected(),
@@ -52,7 +53,7 @@ public class Issue310Suite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec duplicatedTxnsSameTypeDetected() {
+    final DynamicTest duplicatedTxnsSameTypeDetected() {
         long initialBalance = 10_000L;
 
         return defaultHapiSpec("duplicatedTxnsSameTypeDetected")
@@ -69,7 +70,7 @@ public class Issue310Suite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec duplicatedTxnsDifferentTypesDetected() {
+    final DynamicTest duplicatedTxnsDifferentTypesDetected() {
         return defaultHapiSpec("duplicatedTxnsDifferentTypesDetected")
                 .given(
                         cryptoCreate("acct2").via("txnId2"),
@@ -85,7 +86,7 @@ public class Issue310Suite extends HapiSuite {
 
     // This test requires multiple nodes
     @HapiTest
-    final HapiSpec duplicatedTxnsSameTypeDifferentNodesDetected() {
+    final DynamicTest duplicatedTxnsSameTypeDifferentNodesDetected() {
 
         return defaultHapiSpec("duplicatedTxnsSameTypeDifferentNodesDetected")
                 .given(
@@ -101,7 +102,7 @@ public class Issue310Suite extends HapiSuite {
 
     // This test requires multiple nodes
     @HapiTest
-    final HapiSpec duplicatedTxnsDifferentTypesDifferentNodesDetected() {
+    final DynamicTest duplicatedTxnsDifferentTypesDifferentNodesDetected() {
         return defaultHapiSpec("duplicatedTxnsDifferentTypesDifferentNodesDetected")
                 .given(
                         cryptoCreate("acct4").via("txnId4").setNode("0.0.3"),

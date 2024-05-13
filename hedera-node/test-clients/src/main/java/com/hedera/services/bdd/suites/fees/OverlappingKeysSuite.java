@@ -38,6 +38,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class OverlappingKeysSuite extends HapiSuite {
@@ -48,20 +49,12 @@ public class OverlappingKeysSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return allOf(positiveTests(), negativeTests());
-    }
-
-    private List<HapiSpec> positiveTests() {
-        return Arrays.asList(feeCalcUsesNumPayerKeys());
-    }
-
-    private List<HapiSpec> negativeTests() {
-        return Arrays.asList();
+    public List<DynamicTest> getSpecsInSuite() {
+        return List.of(feeCalcUsesNumPayerKeys());
     }
 
     @HapiTest
-    final HapiSpec feeCalcUsesNumPayerKeys() {
+    final DynamicTest feeCalcUsesNumPayerKeys() {
         SigControl SHAPE = threshSigs(2, threshSigs(2, ANY, ANY, ANY), threshSigs(2, ANY, ANY, ANY));
         KeyLabel ONE_UNIQUE_KEY = complex(complex("X", "X", "X"), complex("X", "X", "X"));
         SigControl SIGN_ONCE = threshSigs(2, threshSigs(3, ON, OFF, OFF), threshSigs(3, OFF, OFF, OFF));

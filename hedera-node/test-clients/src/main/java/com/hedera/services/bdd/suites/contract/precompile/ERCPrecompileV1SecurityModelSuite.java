@@ -51,6 +51,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class ERCPrecompileV1SecurityModelSuite extends HapiSuite {
 
@@ -73,19 +74,19 @@ public class ERCPrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(erc20(), erc721());
     }
 
-    List<HapiSpec> erc20() {
+    List<DynamicTest> erc20() {
         return List.of(transferErc20TokenAliasedSender());
     }
 
-    List<HapiSpec> erc721() {
+    List<DynamicTest> erc721() {
         return List.of();
     }
 
-    final HapiSpec transferErc20TokenAliasedSender() {
+    final DynamicTest transferErc20TokenAliasedSender() {
         final var aliasedTransferTxn = "aliasedTransferTxn";
         final var addLiquidityTxn = "addLiquidityTxn";
         final var create2Txn = "create2Txn";

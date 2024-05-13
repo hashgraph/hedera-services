@@ -57,6 +57,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class PauseUnpauseTokenAccountPrecompileV1SecurityModelSuite extends HapiSuite {
@@ -97,7 +98,7 @@ public class PauseUnpauseTokenAccountPrecompileV1SecurityModelSuite extends Hapi
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 pauseFungibleTokenHappyPath(),
                 unpauseFungibleTokenHappyPath(),
@@ -105,7 +106,7 @@ public class PauseUnpauseTokenAccountPrecompileV1SecurityModelSuite extends Hapi
                 unpauseNonFungibleTokenHappyPath());
     }
 
-    HapiSpec pauseFungibleTokenHappyPath() {
+    final DynamicTest pauseFungibleTokenHappyPath() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return propertyPreservingHapiSpec("PauseFungibleTokenHappyPath")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -178,7 +179,7 @@ public class PauseUnpauseTokenAccountPrecompileV1SecurityModelSuite extends Hapi
                                                         htsPrecompileResult().withStatus(TOKEN_WAS_DELETED)))));
     }
 
-    HapiSpec unpauseFungibleTokenHappyPath() {
+    final DynamicTest unpauseFungibleTokenHappyPath() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return propertyPreservingHapiSpec("UnpauseFungibleTokenHappyPath")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -231,7 +232,7 @@ public class PauseUnpauseTokenAccountPrecompileV1SecurityModelSuite extends Hapi
                         getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Unpaused));
     }
 
-    HapiSpec pauseNonFungibleTokenHappyPath() {
+    final DynamicTest pauseNonFungibleTokenHappyPath() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return propertyPreservingHapiSpec("PauseNonFungibleTokenHappyPath")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -306,7 +307,7 @@ public class PauseUnpauseTokenAccountPrecompileV1SecurityModelSuite extends Hapi
                                                         htsPrecompileResult().withStatus(TOKEN_WAS_DELETED)))));
     }
 
-    HapiSpec unpauseNonFungibleTokenHappyPath() {
+    final DynamicTest unpauseNonFungibleTokenHappyPath() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return propertyPreservingHapiSpec("UnpauseNonFungibleTokenHappyPath")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)

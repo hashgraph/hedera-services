@@ -46,6 +46,7 @@ import java.math.BigInteger;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class ZeroStakeNodeTest extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ZeroStakeNodeTest.class);
@@ -55,10 +56,8 @@ public class ZeroStakeNodeTest extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            zeroStakeBehavesAsExpectedJRS(),
-        });
+    public List<DynamicTest> getSpecsInSuite() {
+        return List.of(zeroStakeBehavesAsExpectedJRS());
     }
 
     /**
@@ -66,7 +65,7 @@ public class ZeroStakeNodeTest extends HapiSuite {
      * node ids of the network with zero stake nodes. Assumes that node 0.0.7 and node 0.0.8 are
      * started with zero stake in a 6 node network.
      */
-    final HapiSpec zeroStakeBehavesAsExpectedJRS() {
+    final DynamicTest zeroStakeBehavesAsExpectedJRS() {
         return defaultHapiSpec("zeroStakeBehavesAsExpectedJRS")
                 .given(
                         cryptoCreate("sponsor"),

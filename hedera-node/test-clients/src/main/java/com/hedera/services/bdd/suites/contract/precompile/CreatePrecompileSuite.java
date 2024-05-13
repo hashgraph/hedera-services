@@ -58,6 +58,7 @@ import java.util.List;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 // Some of the test cases cannot be converted to use eth calls,
@@ -103,17 +104,17 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TODO: Fix contract name in TokenCreateContract.sol
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiSpec> positiveSpecs() {
+    List<DynamicTest> positiveSpecs() {
         return List.of(
                 // TODO: where are the security model V2 _positive_ tests?
                 );
     }
 
-    List<HapiSpec> negativeSpecs() {
+    List<DynamicTest> negativeSpecs() {
         return List.of(
                 tokenCreateWithEmptyKeysReverts(),
                 tokenCreateWithKeyWithMultipleKeyValuesReverts(),
@@ -128,7 +129,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     // TEST-007 & TEST-016
     // Should fail on insufficient value sent
     @HapiTest
-    final HapiSpec tokenCreateWithEmptyKeysReverts() {
+    final DynamicTest tokenCreateWithEmptyKeysReverts() {
         return defaultHapiSpec(
                         "tokenCreateWithEmptyKeysReverts",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -177,7 +178,7 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TEST-008
     @HapiTest
-    final HapiSpec tokenCreateWithKeyWithMultipleKeyValuesReverts() {
+    final DynamicTest tokenCreateWithKeyWithMultipleKeyValuesReverts() {
         return defaultHapiSpec(
                         "tokenCreateWithKeyWithMultipleKeyValuesReverts",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -209,7 +210,7 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TEST-009
     @HapiTest
-    final HapiSpec tokenCreateWithFixedFeeWithMultiplePaymentsReverts() {
+    final DynamicTest tokenCreateWithFixedFeeWithMultiplePaymentsReverts() {
         return defaultHapiSpec(
                         "tokenCreateWithFixedFeeWithMultiplePaymentsReverts",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -249,7 +250,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     // TEST-010 & TEST-017
     // Should fail on insufficient value sent
     @HapiTest
-    final HapiSpec createTokenWithEmptyTokenStruct() {
+    final DynamicTest createTokenWithEmptyTokenStruct() {
         return defaultHapiSpec("createTokenWithEmptyTokenStruct", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS), uploadInitCode(TOKEN_CREATE_CONTRACT))
                 .when(withOpContext((spec, opLog) ->
@@ -297,7 +298,7 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TEST-011
     @HapiTest
-    final HapiSpec createTokenWithInvalidExpiry() {
+    final DynamicTest createTokenWithInvalidExpiry() {
         return defaultHapiSpec(
                         "createTokenWithInvalidExpiry",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -336,7 +337,7 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TEST-013
     @HapiTest
-    final HapiSpec createTokenWithInvalidTreasury() {
+    final DynamicTest createTokenWithInvalidTreasury() {
         return defaultHapiSpec(
                         "createTokenWithInvalidTreasury",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -382,7 +383,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     // TEST-018
     // Should fail on insufficient value sent
     @HapiTest
-    final HapiSpec createTokenWithInsufficientValueSent() {
+    final DynamicTest createTokenWithInsufficientValueSent() {
         return defaultHapiSpec(
                         "createTokenWithInsufficientValueSent",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -444,7 +445,7 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TEST-020
     @HapiTest
-    final HapiSpec delegateCallTokenCreateFails() {
+    final DynamicTest delegateCallTokenCreateFails() {
         return defaultHapiSpec(
                         "delegateCallTokenCreateFails",
                         NONDETERMINISTIC_TRANSACTION_FEES,

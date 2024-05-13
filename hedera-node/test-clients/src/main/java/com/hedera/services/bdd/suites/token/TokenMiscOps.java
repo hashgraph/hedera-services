@@ -41,7 +41,7 @@ public class TokenMiscOps extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(List.of(new HapiSpec[] {
             //								wellKnownAccountsHaveTokens(),
             //								someLowNumAccountsHaveTokens(),
@@ -50,7 +50,7 @@ public class TokenMiscOps extends HapiSuite {
         }));
     }
 
-    public HapiSpec someLowNumAccountsHaveTokens() {
+    final DynamicTest someLowNumAccountsHaveTokens() {
         long aSupply = 666L, bSupply = 777L;
 
         return defaultHapiSpec("SomeLowNumAccountsHaveTokens")
@@ -64,11 +64,11 @@ public class TokenMiscOps extends HapiSuite {
                 .then(getAccountInfo(GENESIS).logged(), getAccountInfo("0.0.3").logged());
     }
 
-    public HapiSpec theCreation() {
+    final DynamicTest theCreation() {
         return defaultHapiSpec("TheCreation").given().when().then(cryptoCreate("adam"));
     }
 
-    public HapiSpec someInfoQueries() {
+    final DynamicTest someInfoQueries() {
         return defaultHapiSpec("SomeInfoQueries")
                 .given()
                 .when()
@@ -79,7 +79,7 @@ public class TokenMiscOps extends HapiSuite {
                         getTokenInfo("0.0.1003").logged());
     }
 
-    public HapiSpec wellKnownAccountsHaveTokens() {
+    final DynamicTest wellKnownAccountsHaveTokens() {
         return defaultHapiSpec("WellKnownAccountsHaveTokens")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),

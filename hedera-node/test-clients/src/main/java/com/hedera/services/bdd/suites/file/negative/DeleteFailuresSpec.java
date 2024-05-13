@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class DeleteFailuresSpec extends HapiSuite {
@@ -38,12 +39,12 @@ public class DeleteFailuresSpec extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(handleRejectsMissingFile(), handleRejectsDeletedFile());
     }
 
     @HapiTest
-    final HapiSpec handleRejectsMissingFile() {
+    final DynamicTest handleRejectsMissingFile() {
         return defaultHapiSpec("handleRejectsMissingFile")
                 .given()
                 .when()
@@ -51,7 +52,7 @@ public class DeleteFailuresSpec extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec handleRejectsDeletedFile() {
+    final DynamicTest handleRejectsDeletedFile() {
         return defaultHapiSpec("handleRejectsDeletedFile")
                 .given(fileCreate("tbd"))
                 .when(fileDelete("tbd"))

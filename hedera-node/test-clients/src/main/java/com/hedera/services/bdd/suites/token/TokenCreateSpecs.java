@@ -116,6 +116,7 @@ import java.util.stream.IntStream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 /**
@@ -159,7 +160,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 creationValidatesNonFungiblePrechecks(),
                 creationValidatesMaxSupply(),
@@ -193,7 +194,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec getInfoIdVariantsTreatedAsExpected() {
+    final DynamicTest getInfoIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("getInfoIdVariantsTreatedAsExpected")
                 .given(tokenCreate("something"))
                 .when()
@@ -201,7 +202,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
+    final DynamicTest idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(
                         newKeyNamed("supplyKey"),
@@ -231,7 +232,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec canHandleInvalidTokenCreateTransactions() {
+    final DynamicTest canHandleInvalidTokenCreateTransactions() {
         final String alice = "ALICE";
         return defaultHapiSpec("canHandleInvalidTokenCreateTransactions")
                 .given(cryptoCreate(alice))
@@ -260,7 +261,7 @@ public class TokenCreateSpecs extends HapiSuite {
      * automatic associations limit defined by https://hips.hedera.com/hip/hip-23.
      */
     @HapiTest
-    final HapiSpec validateNewTokenAssociations() {
+    final DynamicTest validateNewTokenAssociations() {
         final String notToBeToken = "notToBeToken";
         final String hbarCollector = "hbarCollector";
         final String fractionalCollector = "fractionalCollector";
@@ -344,7 +345,7 @@ public class TokenCreateSpecs extends HapiSuite {
      * Validates the default values for a {@code TokenCreate}'s token type (fungible) and supply type (infinite).
      */
     @HapiTest
-    final HapiSpec createsFungibleInfiniteByDefault() {
+    final DynamicTest createsFungibleInfiniteByDefault() {
         return defaultHapiSpec("CreatesFungibleInfiniteByDefault")
                 .given()
                 .when(tokenCreate("DefaultFungible"))
@@ -354,7 +355,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec worksAsExpectedWithDefaultTokenId() {
+    final DynamicTest worksAsExpectedWithDefaultTokenId() {
         return defaultHapiSpec("WorksAsExpectedWithDefaultTokenId")
                 .given()
                 .when()
@@ -362,7 +363,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec cannotCreateWithExcessiveLifetime() {
+    final DynamicTest cannotCreateWithExcessiveLifetime() {
         final var smallBuffer = 12_345L;
         final var okExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() - smallBuffer;
         final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
@@ -375,7 +376,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec autoRenewValidationWorks() {
+    final DynamicTest autoRenewValidationWorks() {
         final var deletingAccount = "deletingAccount";
         return defaultHapiSpec("AutoRenewValidationWorks")
                 .given(
@@ -403,7 +404,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationYieldsExpectedToken() {
+    final DynamicTest creationYieldsExpectedToken() {
         return defaultHapiSpec("CreationYieldsExpectedToken")
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L), newKeyNamed("freeze"))
                 .when(tokenCreate(PRIMARY)
@@ -416,7 +417,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationSetsExpectedName() {
+    final DynamicTest creationSetsExpectedName() {
         String saltedName = salted(PRIMARY);
         return defaultHapiSpec("CreationSetsExpectedName", NONDETERMINISTIC_TOKEN_NAMES)
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
@@ -425,7 +426,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationWithoutKYCSetsCorrectStatus() {
+    final DynamicTest creationWithoutKYCSetsCorrectStatus() {
         String saltedName = salted(PRIMARY);
         return defaultHapiSpec(
                         "CreationWithoutKYCSetsCorrectStatus",
@@ -439,7 +440,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec baseCreationsHaveExpectedPrices() {
+    final DynamicTest baseCreationsHaveExpectedPrices() {
         final var civilian = "NonExemptPayer";
 
         final var expectedCommonNoCustomFeesPriceUsd = 1.00;
@@ -525,7 +526,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationHappyPath() {
+    final DynamicTest creationHappyPath() {
         String memo = "JUMP";
         String saltedName = salted(PRIMARY);
         final var secondCreation = "secondCreation";
@@ -627,7 +628,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec missingTreasurySignatureFails() {
+    final DynamicTest missingTreasurySignatureFails() {
         String memo = "JUMP";
         String saltedName = salted(PRIMARY);
         final var pauseKey = "pauseKey";
@@ -716,7 +717,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationSetsCorrectExpiry() {
+    final DynamicTest creationSetsCorrectExpiry() {
         return defaultHapiSpec("CreationSetsCorrectExpiry")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -740,7 +741,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationValidatesExpiry() {
+    final DynamicTest creationValidatesExpiry() {
         return defaultHapiSpec("CreationValidatesExpiry")
                 .given()
                 .when()
@@ -748,7 +749,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationValidatesFreezeDefaultWithNoFreezeKey() {
+    final DynamicTest creationValidatesFreezeDefaultWithNoFreezeKey() {
         return defaultHapiSpec("CreationValidatesFreezeDefaultWithNoFreezeKey")
                 .given()
                 .when()
@@ -756,7 +757,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationValidatesMemo() {
+    final DynamicTest creationValidatesMemo() {
         return defaultHapiSpec("CreationValidatesMemo")
                 .given()
                 .when()
@@ -764,7 +765,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationValidatesNonFungiblePrechecks() {
+    final DynamicTest creationValidatesNonFungiblePrechecks() {
         return defaultHapiSpec("CreationValidatesNonFungiblePrechecks")
                 .given()
                 .when()
@@ -787,7 +788,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationValidatesMaxSupply() {
+    final DynamicTest creationValidatesMaxSupply() {
         return defaultHapiSpec("CreationValidatesMaxSupply")
                 .given()
                 .when()
@@ -810,7 +811,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec onlyValidCustomFeeScheduleCanBeCreated() {
+    final DynamicTest onlyValidCustomFeeScheduleCanBeCreated() {
         return defaultHapiSpec("OnlyValidCustomFeeScheduleCanBeCreated")
                 .given(
                         newKeyNamed(customFeesKey),
@@ -984,7 +985,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec feeCollectorSigningReqsWorkForTokenCreate() {
+    final DynamicTest feeCollectorSigningReqsWorkForTokenCreate() {
         return defaultHapiSpec("feeCollectorSigningReqsWorkForTokenCreate", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(customFeesKey),
@@ -1044,7 +1045,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationValidatesName() {
+    final DynamicTest creationValidatesName() {
         AtomicInteger maxUtf8Bytes = new AtomicInteger();
 
         return defaultHapiSpec("CreationValidatesName", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -1064,7 +1065,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationValidatesSymbol() {
+    final DynamicTest creationValidatesSymbol() {
         AtomicInteger maxUtf8Bytes = new AtomicInteger();
 
         return defaultHapiSpec("CreationValidatesSymbol")
@@ -1088,7 +1089,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationRequiresAppropriateSigs() {
+    final DynamicTest creationRequiresAppropriateSigs() {
         return defaultHapiSpec("CreationRequiresAppropriateSigs")
                 .given(
                         cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
@@ -1112,7 +1113,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationRequiresAppropriateSigsHappyPath() {
+    final DynamicTest creationRequiresAppropriateSigsHappyPath() {
         return defaultHapiSpec("CreationRequiresAppropriateSigsHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate(PAYER), cryptoCreate(TOKEN_TREASURY).balance(0L), newKeyNamed(ADMIN_KEY))
                 .when()
@@ -1125,7 +1126,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationValidatesTreasuryAccount() {
+    final DynamicTest creationValidatesTreasuryAccount() {
         return defaultHapiSpec("CreationValidatesTreasuryAccount")
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(cryptoDelete(TOKEN_TREASURY))
@@ -1135,7 +1136,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec initialSupplyMustBeSane() {
+    final DynamicTest initialSupplyMustBeSane() {
         return defaultHapiSpec("InitialSupplyMustBeSane")
                 .given()
                 .when()
@@ -1149,7 +1150,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec treasuryHasCorrectBalance() {
+    final DynamicTest treasuryHasCorrectBalance() {
         String token = salted("myToken");
 
         int decimals = 1;
@@ -1166,7 +1167,7 @@ public class TokenCreateSpecs extends HapiSuite {
     // FULLY_NONDETERMINISTIC because in mono-service zero amount token transfers will create a tokenTransferLists
     // with a just tokenNum, in mono-service the tokenTransferLists will be empty
     @HapiTest
-    final HapiSpec prechecksWork() {
+    final DynamicTest prechecksWork() {
         return defaultHapiSpec("PrechecksWork", HIGHLY_NON_DETERMINISTIC_FEES, FULLY_NONDETERMINISTIC)
                 .given(
                         cryptoCreate(TOKEN_TREASURY)

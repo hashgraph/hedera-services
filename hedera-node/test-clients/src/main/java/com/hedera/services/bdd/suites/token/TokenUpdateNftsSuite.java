@@ -44,6 +44,7 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -69,12 +70,12 @@ public class TokenUpdateNftsSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(updateMetadataOfNfts(), failsIfTokenHasNoMetadataKey(), updateSingleNftFeeChargedAsExpected());
     }
 
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
+    final DynamicTest idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(
                         newKeyNamed("multiKey"),
@@ -93,7 +94,7 @@ public class TokenUpdateNftsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec failsIfTokenHasNoMetadataKey() {
+    final DynamicTest failsIfTokenHasNoMetadataKey() {
         return defaultHapiSpec("failsIfTokenHasNoMetadataKey")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -115,7 +116,7 @@ public class TokenUpdateNftsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateMetadataOfNfts() {
+    final DynamicTest updateMetadataOfNfts() {
         return defaultHapiSpec("updateMetadataOfNfts")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -157,7 +158,7 @@ public class TokenUpdateNftsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateSingleNftFeeChargedAsExpected() {
+    final DynamicTest updateSingleNftFeeChargedAsExpected() {
         final var expectedNftUpdatePriceUsd = 0.001;
         final var nftUpdateTxn = "nftUpdateTxn";
 
@@ -195,7 +196,7 @@ public class TokenUpdateNftsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateMultipleNftsFeeChargedAsExpected() {
+    final DynamicTest updateMultipleNftsFeeChargedAsExpected() {
         final var expectedNftUpdatePriceUsd = 0.005;
         final var nftUpdateTxn = "nftUpdateTxn";
 

@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class ContractPerformanceSuite extends HapiSuite {
     private static final Logger LOG = LogManager.getLogger(ContractPerformanceSuite.class);
@@ -87,7 +88,7 @@ public class ContractPerformanceSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         List<String> perfTests;
         try {
             perfTests =
@@ -98,7 +99,7 @@ public class ContractPerformanceSuite extends HapiSuite {
         } catch (IOException e) {
             return List.of();
         }
-        List<HapiSpec> hapiSpecs = new ArrayList<>();
+        List<DynamicTest> hapiSpecs = new ArrayList<>();
         for (String line : perfTests) {
             String[] values = line.split(",", 2);
             String test = values[0];

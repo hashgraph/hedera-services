@@ -61,6 +61,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class TokenExpiryInfoV1SecurityModelSuite extends HapiSuite {
 
@@ -93,13 +94,13 @@ public class TokenExpiryInfoV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(updateExpiryInfoForToken(), updateExpiryInfoForTokenAndReadLatestInfo());
     }
 
     @SuppressWarnings({"java:S5960", "java:S1192"
     }) // using `assertThat` in production code - except this isn't production code
-    final HapiSpec updateExpiryInfoForToken() {
+    final DynamicTest updateExpiryInfoForToken() {
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> updatedAutoRenewAccountID = new AtomicReference<>();
@@ -251,7 +252,7 @@ public class TokenExpiryInfoV1SecurityModelSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S1192") // "use already defined const instead of copying its value here" - not this time
-    final HapiSpec updateExpiryInfoForTokenAndReadLatestInfo() {
+    final DynamicTest updateExpiryInfoForTokenAndReadLatestInfo() {
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> updatedAutoRenewAccountID = new AtomicReference<>();

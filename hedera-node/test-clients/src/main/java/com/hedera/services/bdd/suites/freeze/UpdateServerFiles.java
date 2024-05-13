@@ -66,7 +66,7 @@ public class UpdateServerFiles extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(postiveTests());
     }
 
@@ -76,7 +76,7 @@ public class UpdateServerFiles extends HapiSuite {
 
     // Zip all files under target directory and add an unzip and launch script to it
     // then send to server to update server
-    final HapiSpec uploadGivenDirectory() {
+    final DynamicTest uploadGivenDirectory() {
 
         log.info("Creating zip file from {}", uploadPath);
         // create directory if uploadPath doesn't exist

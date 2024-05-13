@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class MixedOpsTransactionsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MixedOpsTransactionsSuite.class);
@@ -49,20 +50,12 @@ public class MixedOpsTransactionsSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {createStateWithMixedOps()
-            //						triggerSavedScheduleTxn(),
-        });
+    public List<DynamicTest> getSpecsInSuite() {
+        return List.of(createStateWithMixedOps());
     }
 
-    final HapiSpec triggerSavedScheduleTxn() {
-        return HapiSpec.defaultHapiSpec("triggerSavedScheduleTxn")
-                .given(getAccountBalance("0.0.1002").hasTinyBars(0L))
-                .when(scheduleSign("0.0.1016").logged().alsoSigningWith(GENESIS))
-                .then(getAccountBalance("0.0.1002").hasTinyBars(1L));
-    }
     // Used to generate state with mixed operations
-    final HapiSpec createStateWithMixedOps() {
+    final DynamicTest createStateWithMixedOps() {
         long ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
         int numScheduledTxns = 10;
         return HapiSpec.defaultHapiSpec("createStateWithMixedOps")

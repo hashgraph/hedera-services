@@ -29,6 +29,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class Issue1742Suite extends HapiSuite {
@@ -39,7 +40,7 @@ public class Issue1742Suite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(cryptoTransferListShowsOnlyFeesAfterIAB());
     }
 
@@ -49,7 +50,7 @@ public class Issue1742Suite extends HapiSuite {
     }
 
     @HapiTest
-    public static HapiSpec cryptoTransferListShowsOnlyFeesAfterIAB() {
+    final DynamicTest cryptoTransferListShowsOnlyFeesAfterIAB() {
         final long PAYER_BALANCE = 1_000_000L;
 
         return defaultHapiSpec("CryptoTransferListShowsOnlyFeesAfterIAB")

@@ -107,7 +107,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 cannotPauseWithInvalidPauseKey(),
                 cannotChangePauseStatusIfMissingPauseKey(),
@@ -125,7 +125,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotAddPauseKeyViaTokenUpdate() {
+    final DynamicTest cannotAddPauseKeyViaTokenUpdate() {
         return defaultHapiSpec("CannotAddPauseKeyViaTokenUpdate")
                 .given(newKeyNamed(PAUSE_KEY), newKeyNamed(ADMIN_KEY))
                 .when(tokenCreate(PRIMARY), tokenCreate(SECONDARY).adminKey(ADMIN_KEY))
@@ -138,7 +138,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotPauseWithInvalidPauseKey() {
+    final DynamicTest cannotPauseWithInvalidPauseKey() {
         return defaultHapiSpec("cannotPauseWithInvalidPauseKey")
                 .given(newKeyNamed(PAUSE_KEY), newKeyNamed(OTHER_KEY))
                 .when(tokenCreate(PRIMARY).pauseKey(PAUSE_KEY))
@@ -191,7 +191,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec unpauseWorks() {
+    final DynamicTest unpauseWorks() {
         final String firstUser = FIRST_USER;
         final String token = PRIMARY;
 
@@ -226,7 +226,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec pausedNonFungibleUniqueCannotBeUsed() {
+    final DynamicTest pausedNonFungibleUniqueCannotBeUsed() {
         final String uniqueToken = "nonFungibleUnique";
         final String firstUser = FIRST_USER;
         final String secondUser = SECOND_USER;
@@ -311,7 +311,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec pausedFungibleTokenCannotBeUsed() {
+    final DynamicTest pausedFungibleTokenCannotBeUsed() {
         final String token = PRIMARY;
         final String otherToken = SECONDARY;
         final String firstUser = FIRST_USER;
@@ -394,7 +394,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotChangePauseStatusIfMissingPauseKey() {
+    final DynamicTest cannotChangePauseStatusIfMissingPauseKey() {
         return defaultHapiSpec("CannotChangePauseStatusIfMissingPauseKey")
                 .given(cryptoCreate(TOKEN_TREASURY))
                 .when(
@@ -424,7 +424,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec basePauseAndUnpauseHaveExpectedPrices() {
+    final DynamicTest basePauseAndUnpauseHaveExpectedPrices() {
         final var expectedBaseFee = 0.001;
         final var token = "token";
         final var tokenPauseTransaction = "tokenPauseTxn";
@@ -464,7 +464,7 @@ public final class TokenPauseSpecs extends HapiSuite {
 
         @Override
         @SuppressWarnings("java:S5960")
-        public ErroringAsserts<List<TokenTransferList>> assertsFor(final HapiSpec spec) {
+        public ErroringAsserts<List<TokenTransferList>> assertsFor(final DynamicTest spec) {
             return tokenTransfers -> {
                 final var registry = spec.registry();
                 try {

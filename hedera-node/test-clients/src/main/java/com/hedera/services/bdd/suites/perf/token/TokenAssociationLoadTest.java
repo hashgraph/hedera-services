@@ -36,13 +36,13 @@ public class TokenAssociationLoadTest extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             runTokenAssociationLoadTest(),
         });
     }
 
-    final HapiSpec runTokenAssociationLoadTest() {
+    final DynamicTest runTokenAssociationLoadTest() {
         return HapiSpec.defaultHapiSpec("RunTokenAssociationLoadTest")
                 .given(overridingTwo(
                         "tokens.maxPerAccount", "10",

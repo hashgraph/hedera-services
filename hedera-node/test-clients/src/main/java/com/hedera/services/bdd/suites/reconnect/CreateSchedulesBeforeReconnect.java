@@ -63,7 +63,7 @@ public class CreateSchedulesBeforeReconnect extends HapiSuite {
     private static final AtomicInteger scheduleNumber = new AtomicInteger(0);
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runCreateSchedules());
     }
 
@@ -86,7 +86,7 @@ public class CreateSchedulesBeforeReconnect extends HapiSuite {
                 .advertisingCreation();
     }
 
-    final HapiSpec runCreateSchedules() {
+    final DynamicTest runCreateSchedules() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings(
                 SCHEDULE_CREATION_RECONNECT_TPS, DEFAULT_MINS_FOR_RECONNECT_TESTS, DEFAULT_THREADS_FOR_RECONNECT_TESTS);
 

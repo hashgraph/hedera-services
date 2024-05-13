@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class Issue1744Suite extends HapiSuite {
@@ -44,12 +45,12 @@ public class Issue1744Suite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(keepsRecordOfPayerIBE());
     }
 
     @HapiTest
-    public HapiSpec keepsRecordOfPayerIBE() {
+    final DynamicTest keepsRecordOfPayerIBE() {
         return defaultHapiSpec("KeepsRecordOfPayerIBE")
                 .given(
                         cryptoCreate(CIVILIAN_PAYER),

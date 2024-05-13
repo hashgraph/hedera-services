@@ -35,15 +35,15 @@ public class TopicAutoRenewalSuite extends HapiSuite {
     // TODO : just added empty shells for now.
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(topicAutoRemoval(), topicAutoRenewal());
     }
 
-    final HapiSpec topicAutoRemoval() {
+    final DynamicTest topicAutoRemoval() {
         return defaultHapiSpec("").given().when().then();
     }
 
-    final HapiSpec topicAutoRenewal() {
+    final DynamicTest topicAutoRenewal() {
         return defaultHapiSpec("").given().when().then();
     }
 

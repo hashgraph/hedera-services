@@ -56,11 +56,11 @@ public class MixedTransferCallAndSubmitLoadTest extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runMixedTransferCallAndSubmits());
     }
 
-    final HapiSpec runMixedTransferCallAndSubmits() {
+    final DynamicTest runMixedTransferCallAndSubmits() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         final AtomicInteger submittedSoFar = new AtomicInteger(0);
 

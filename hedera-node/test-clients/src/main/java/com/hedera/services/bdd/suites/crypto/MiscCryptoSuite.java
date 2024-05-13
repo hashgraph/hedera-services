@@ -51,6 +51,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -63,26 +64,26 @@ public class MiscCryptoSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(
                 positiveTests()
                 //				negativeTests()
                 );
     }
 
-    private List<HapiSpec> positiveTests() {
+    private List<DynamicTest> positiveTests() {
         return Arrays.asList(
                 //				transferChangesBalance()
                 //				getsGenesisBalance()
                 reduceTransferFee(), sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign());
     }
 
-    private List<HapiSpec> negativeTests() {
+    private List<DynamicTest> negativeTests() {
         return List.of(updateWithOutOfDateKeyFails());
     }
 
     @HapiTest
-    final HapiSpec unsupportedAndUnauthorizedTransactionsAreNotThrottled() {
+    final DynamicTest unsupportedAndUnauthorizedTransactionsAreNotThrottled() {
         return defaultHapiSpec("unsupportedAndUnauthorizedTransactionsAreNotThrottled")
                 .given()
                 .when()
@@ -90,7 +91,7 @@ public class MiscCryptoSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
+    final DynamicTest sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
         String sysAccount = "0.0.977";
         String randomAccountA = "randomAccountA";
         String randomAccountB = "randomAccountB";
@@ -121,7 +122,7 @@ public class MiscCryptoSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec reduceTransferFee() {
+    final DynamicTest reduceTransferFee() {
         final long REDUCED_NODE_FEE = 2L;
         final long REDUCED_NETWORK_FEE = 3L;
         final long REDUCED_SERVICE_FEE = 3L;
@@ -146,7 +147,7 @@ public class MiscCryptoSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getsGenesisBalance() {
+    final DynamicTest getsGenesisBalance() {
         return defaultHapiSpec("GetsGenesisBalance")
                 .given()
                 .when()
@@ -154,7 +155,7 @@ public class MiscCryptoSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec getBalanceIdVariantsTreatedAsExpected() {
+    final DynamicTest getBalanceIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("getBalanceIdVariantsTreatedAsExpected")
                 .given()
                 .when()
@@ -162,7 +163,7 @@ public class MiscCryptoSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec getDetailsIdVariantsTreatedAsExpected() {
+    final DynamicTest getDetailsIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("getDetailsIdVariantsTreatedAsExpected")
                 .given()
                 .when()
@@ -172,7 +173,7 @@ public class MiscCryptoSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec getRecordsIdVariantsTreatedAsExpected() {
+    final DynamicTest getRecordsIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("getRecordsIdVariantsTreatedAsExpected")
                 .given()
                 .when()
@@ -180,7 +181,7 @@ public class MiscCryptoSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec getInfoIdVariantsTreatedAsExpected() {
+    final DynamicTest getInfoIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("getInfoIdVariantsTreatedAsExpected")
                 .given()
                 .when()
@@ -188,7 +189,7 @@ public class MiscCryptoSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec getRecordAndReceiptIdVariantsTreatedAsExpected() {
+    final DynamicTest getRecordAndReceiptIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("getRecordIdVariantsTreatedAsExpected")
                 .given(cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1)).via("spot"))
                 .when()
@@ -198,7 +199,7 @@ public class MiscCryptoSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferChangesBalance() {
+    final DynamicTest transferChangesBalance() {
         return defaultHapiSpec("TransferChangesBalance")
                 .given(cryptoCreate("newPayee").balance(0L))
                 .when(cryptoTransfer(tinyBarsFromTo(GENESIS, "newPayee", 1_000_000_000L)))
@@ -206,7 +207,7 @@ public class MiscCryptoSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateWithOutOfDateKeyFails() {
+    final DynamicTest updateWithOutOfDateKeyFails() {
         return defaultHapiSpec("UpdateWithOutOfDateKeyFails")
                 .given(
                         newKeyNamed("originalKey"),

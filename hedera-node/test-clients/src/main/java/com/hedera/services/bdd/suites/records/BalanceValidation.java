@@ -55,11 +55,11 @@ public class BalanceValidation extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(validateBalances());
     }
 
-    final HapiSpec validateBalances() {
+    final DynamicTest validateBalances() {
         return customHapiSpec("ValidateBalances")
                 .withProperties(Map.of(
                         "fees.useFixedOffer", "true",

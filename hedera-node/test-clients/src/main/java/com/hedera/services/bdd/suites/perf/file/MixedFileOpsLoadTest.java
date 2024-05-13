@@ -50,7 +50,7 @@ public class MixedFileOpsLoadTest extends LoadTest {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runMixedFileOps());
     }
 

@@ -42,11 +42,11 @@ public class ValidatePermissionStateAfterReconnect extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(validateApiPermissionStateAfterReconnect());
     }
 
-    final HapiSpec validateApiPermissionStateAfterReconnect() {
+    final DynamicTest validateApiPermissionStateAfterReconnect() {
         return customHapiSpec("validateApiPermissionStateAfterReconnect")
                 .withProperties(Map.of("txn.start.offset.secs", "-5"))
                 .given(

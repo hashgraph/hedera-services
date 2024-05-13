@@ -83,6 +83,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.DynamicTest;
 
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
@@ -142,15 +143,15 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiSpec> negativeSpecs() {
+    List<DynamicTest> negativeSpecs() {
         return List.of();
     }
 
-    List<HapiSpec> positiveSpecs() {
+    List<DynamicTest> positiveSpecs() {
         return List.of(
                 happyPathUpdateTokenInfoAndGetLatestInfo(),
                 happyPathUpdateFungibleTokenInfoAndGetLatestInfo(),
@@ -158,7 +159,7 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
                 happyPathUpdateTokenKeysAndReadLatestInformation());
     }
 
-    final HapiSpec happyPathUpdateTokenInfoAndGetLatestInfo() {
+    final DynamicTest happyPathUpdateTokenInfoAndGetLatestInfo() {
         final int decimals = 1;
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
         return propertyPreservingHapiSpec("happyPathUpdateTokenInfoAndGetLatestInfo")
@@ -269,7 +270,7 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
                 }));
     }
 
-    final HapiSpec happyPathUpdateFungibleTokenInfoAndGetLatestInfo() {
+    final DynamicTest happyPathUpdateFungibleTokenInfoAndGetLatestInfo() {
         final int decimals = 1;
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
         return propertyPreservingHapiSpec("happyPathUpdateFungibleTokenInfoAndGetLatestInfo")
@@ -377,7 +378,7 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
                 }));
     }
 
-    final HapiSpec happyPathUpdateNonFungibleTokenInfoAndGetLatestInfo() {
+    final DynamicTest happyPathUpdateNonFungibleTokenInfoAndGetLatestInfo() {
         final int maxSupply = 10;
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
@@ -498,7 +499,7 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
                 }));
     }
 
-    final HapiSpec happyPathUpdateTokenKeysAndReadLatestInformation() {
+    final DynamicTest happyPathUpdateTokenKeysAndReadLatestInformation() {
         final String TOKEN_INFO_AS_KEY = "TOKEN_INFO_CONTRACT_KEY";
         return propertyPreservingHapiSpec("happyPathUpdateTokenKeysAndReadLatestInformation")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)

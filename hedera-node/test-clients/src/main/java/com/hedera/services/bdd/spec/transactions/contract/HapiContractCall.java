@@ -333,7 +333,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     }
 
     static void doGasLookup(
-            final LongConsumer gasObserver, final HapiSpec spec, final Transaction txn, final boolean isCreate)
+            final LongConsumer gasObserver, final DynamicTest spec, final Transaction txn, final boolean isCreate)
             throws Throwable {
         doObservedLookup(spec, txn, txnRecord -> {
             final var gasUsed = isCreate
@@ -343,7 +343,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
         });
     }
 
-    static void doObservedLookup(final HapiSpec spec, final Transaction txn, Consumer<TransactionRecord> observer)
+    static void doObservedLookup(final DynamicTest spec, final Transaction txn, Consumer<TransactionRecord> observer)
             throws Throwable {
         final var txnId = extractTxnId(txn);
         final var lookup = getTxnRecord(txnId)

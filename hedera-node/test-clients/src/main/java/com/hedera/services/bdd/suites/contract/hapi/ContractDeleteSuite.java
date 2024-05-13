@@ -83,6 +83,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -106,7 +107,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 rejectsWithoutProperSig(),
                 systemCannotDeleteOrUndeleteContracts(),
@@ -121,7 +122,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
+    final DynamicTest idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(
                         newKeyNamed("adminKey"),
@@ -139,7 +140,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotUseMoreThanChildContractLimit() {
+    final DynamicTest cannotUseMoreThanChildContractLimit() {
         final var illegalNumChildren =
                 HapiSpecSetup.getDefaultNodeProps().getInteger("consensus.handle.maxFollowingRecords") + 1;
         final var fungible = "fungible";
@@ -188,7 +189,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotSendValueToTokenAccount() {
+    final DynamicTest cannotSendValueToTokenAccount() {
         final var multiKey = "multiKey";
         final var nonFungibleToken = "NFT";
         final var contract = "ManyChildren";
@@ -228,7 +229,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec cannotDeleteOrSelfDestructTokenTreasury() {
+    final DynamicTest cannotDeleteOrSelfDestructTokenTreasury() {
         final var someToken = "someToken";
         final var selfDestructCallable = "SelfDestructCallable";
         final var multiKey = "multi";
@@ -263,7 +264,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec cannotDeleteOrSelfDestructContractWithNonZeroBalance() {
+    final DynamicTest cannotDeleteOrSelfDestructContractWithNonZeroBalance() {
         final var someToken = "someToken";
         final var multiKey = "multi";
         final var selfDestructableContract = "SelfDestructCallable";
@@ -300,7 +301,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec rejectsWithoutProperSig() {
+    final DynamicTest rejectsWithoutProperSig() {
         return defaultHapiSpec("rejectsWithoutProperSig")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when()
@@ -308,7 +309,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec systemCannotDeleteOrUndeleteContracts() {
+    final DynamicTest systemCannotDeleteOrUndeleteContracts() {
         return defaultHapiSpec("SystemCannotDeleteOrUndeleteContracts")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when()
@@ -323,7 +324,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec deleteWorksWithMutableContract() {
+    final DynamicTest deleteWorksWithMutableContract() {
         final var tbdFile = "FTBD";
         final var tbdContract = "CTBD";
         return defaultHapiSpec("DeleteWorksWithMutableContract")
@@ -341,7 +342,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec deleteFailsWithImmutableContract() {
+    final DynamicTest deleteFailsWithImmutableContract() {
         return defaultHapiSpec("DeleteFailsWithImmutableContract")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).omitAdminKey())
                 .when()
@@ -349,7 +350,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec deleteTransfersToAccount() {
+    final DynamicTest deleteTransfersToAccount() {
         return defaultHapiSpec("DeleteTransfersToAccount")
                 .given(
                         cryptoCreate(RECEIVER_CONTRACT_NAME).balance(0L),
@@ -360,7 +361,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec deleteTransfersToContract() {
+    final DynamicTest deleteTransfersToContract() {
         final var suffix = "Receiver";
 
         return defaultHapiSpec("DeleteTransfersToContract")
@@ -373,7 +374,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec localCallToDeletedContract() {
+    final DynamicTest localCallToDeletedContract() {
         return defaultHapiSpec("LocalCallToDeletedContract")
                 .given(uploadInitCode(SIMPLE_STORAGE_CONTRACT), contractCreate(SIMPLE_STORAGE_CONTRACT))
                 .when(

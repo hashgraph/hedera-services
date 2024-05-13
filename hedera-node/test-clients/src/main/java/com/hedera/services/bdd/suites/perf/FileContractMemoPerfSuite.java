@@ -63,7 +63,7 @@ public class FileContractMemoPerfSuite extends LoadTest {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(RunMixedFileContractMemoOps());
     }
 

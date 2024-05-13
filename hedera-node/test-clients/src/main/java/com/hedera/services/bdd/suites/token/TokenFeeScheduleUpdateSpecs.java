@@ -55,6 +55,7 @@ import java.util.Map;
 import java.util.OptionalLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -68,14 +69,13 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            onlyValidCustomFeeScheduleCanBeUpdated(), baseOperationIsChargedExpectedFee(),
-        });
+    public List<DynamicTest> getSpecsInSuite() {
+        return List.of(
+            onlyValidCustomFeeScheduleCanBeUpdated(), baseOperationIsChargedExpectedFee());
     }
 
     @HapiTest
-    final HapiSpec baseOperationIsChargedExpectedFee() {
+    final DynamicTest baseOperationIsChargedExpectedFee() {
         final var htsAmount = 2_345L;
         final var targetToken = "immutableToken";
         final var feeDenom = "denom";
@@ -102,7 +102,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
+    final DynamicTest idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(
                         newKeyNamed("feeScheduleKey"),
@@ -116,7 +116,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec onlyValidCustomFeeScheduleCanBeUpdated() {
+    final DynamicTest onlyValidCustomFeeScheduleCanBeUpdated() {
         final var hbarAmount = 1_234L;
         final var htsAmount = 2_345L;
         final var numerator = 1;

@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class NewContractRecordExists extends HapiSuite {
     private static final String EMPTY_CONTRACT = "EmptyConstructor";
@@ -44,11 +45,11 @@ public class NewContractRecordExists extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(newContractIsReflectedInRecordStream());
     }
 
-    final HapiSpec newContractIsReflectedInRecordStream() {
+    final DynamicTest newContractIsReflectedInRecordStream() {
         final var creation = "creation";
         final AtomicReference<Instant> consensusTime = new AtomicReference<>();
         return defaultHapiSpec(EMPTY_CONTRACT)

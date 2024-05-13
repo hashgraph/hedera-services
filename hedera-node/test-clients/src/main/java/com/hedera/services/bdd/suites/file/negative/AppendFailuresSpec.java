@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class AppendFailuresSpec extends HapiSuite {
@@ -41,12 +42,12 @@ public class AppendFailuresSpec extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(handleRejectsOversized());
     }
 
     @HapiTest
-    final HapiSpec handleRejectsOversized() {
+    final DynamicTest handleRejectsOversized() {
         byte[] BYTES_3K_MINUS1 = new byte[3 * 1024 - 1];
         Arrays.fill(BYTES_3K_MINUS1, (byte) 0xAB);
         byte[] BYTES_1 = new byte[] {(byte) 0xAB};

@@ -64,6 +64,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class WipeTokenAccountPrecompileV1SecurityModelSuite extends HapiSuite {
 
@@ -93,11 +94,11 @@ public class WipeTokenAccountPrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(wipeFungibleTokenScenarios(), wipeNonFungibleTokenScenarios());
     }
 
-    final HapiSpec wipeFungibleTokenScenarios() {
+    final DynamicTest wipeFungibleTokenScenarios() {
         final AtomicReference<AccountID> adminAccountID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<AccountID> secondAccountID = new AtomicReference<>();
@@ -221,7 +222,7 @@ public class WipeTokenAccountPrecompileV1SecurityModelSuite extends HapiSuite {
                         getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 490));
     }
 
-    final HapiSpec wipeNonFungibleTokenScenarios() {
+    final DynamicTest wipeNonFungibleTokenScenarios() {
         final AtomicReference<AccountID> adminAccountID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();

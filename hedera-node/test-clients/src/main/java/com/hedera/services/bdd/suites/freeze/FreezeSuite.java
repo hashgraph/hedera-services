@@ -52,11 +52,11 @@ public class FreezeSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(uploadNewFile());
     }
 
-    final HapiSpec uploadNewFile() {
+    final DynamicTest uploadNewFile() {
         String uploadFile = UPDATE_NEW_FILE;
         if (uploadPath != null) {
             log.info("Creating zip file from {}", uploadPath);

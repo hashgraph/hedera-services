@@ -93,7 +93,7 @@ public class UpgradeSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             precheckRejectsUnknownFreezeType(),
             freezeOnlyPrecheckRejectsInvalid(),
@@ -106,14 +106,14 @@ public class UpgradeSuite extends HapiSuite {
         });
     }
 
-    final HapiSpec precheckRejectsUnknownFreezeType() {
+    final DynamicTest precheckRejectsUnknownFreezeType() {
         return defaultHapiSpec("PrejeckRejectsUnknownFreezeType")
                 .given()
                 .when()
                 .then(freeze().hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY));
     }
 
-    final HapiSpec freezeOnlyPrecheckRejectsInvalid() {
+    final DynamicTest freezeOnlyPrecheckRejectsInvalid() {
         return defaultHapiSpec("freezeOnlyPrecheckRejectsInvalid")
                 .given()
                 .when()
@@ -125,7 +125,7 @@ public class UpgradeSuite extends HapiSuite {
                         freezeOnly().startingIn(-60).minutes().hasPrecheck(FREEZE_START_TIME_MUST_BE_FUTURE));
     }
 
-    final HapiSpec freezeUpgradeValidationRejectsInvalid() {
+    final DynamicTest freezeUpgradeValidationRejectsInvalid() {
         return defaultHapiSpec("freezeUpgradeValidationRejectsInvalid")
                 .given()
                 .when()
@@ -153,14 +153,14 @@ public class UpgradeSuite extends HapiSuite {
                                 .hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY));
     }
 
-    final HapiSpec freezeAbortIsIdempotent() {
+    final DynamicTest freezeAbortIsIdempotent() {
         return defaultHapiSpec("FreezeAbortIsIdempotent")
                 .given()
                 .when()
                 .then(freezeAbort().hasKnownStatus(SUCCESS), freezeAbort().hasKnownStatus(SUCCESS));
     }
 
-    final HapiSpec prepareUpgradeValidationRejectsInvalid() {
+    final DynamicTest prepareUpgradeValidationRejectsInvalid() {
         return defaultHapiSpec("PrepareUpgradeValidationRejectsInvalid")
                 .given(
                         fileUpdate(standardUpdateFile)
@@ -220,7 +220,7 @@ public class UpgradeSuite extends HapiSuite {
                         freezeAbort());
     }
 
-    final HapiSpec telemetryUpgradeValidationRejectsInvalid() {
+    final DynamicTest telemetryUpgradeValidationRejectsInvalid() {
         return defaultHapiSpec("TelemetryUpgradeValidationRejectsInvalid")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FREEZE_ADMIN, ONE_HUNDRED_HBARS)),
@@ -254,7 +254,7 @@ public class UpgradeSuite extends HapiSuite {
                         .hasKnownStatus(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH));
     }
 
-    final HapiSpec canFreezeUpgradeWithPreparedUpgrade() {
+    final DynamicTest canFreezeUpgradeWithPreparedUpgrade() {
         return defaultHapiSpec("CanFreezeUpgradeWithPreparedUpgrade")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FREEZE_ADMIN, ONE_HUNDRED_HBARS)),
@@ -284,7 +284,7 @@ public class UpgradeSuite extends HapiSuite {
                         freezeAbort());
     }
 
-    final HapiSpec canTelemetryUpgradeWithValid() {
+    final DynamicTest canTelemetryUpgradeWithValid() {
         return defaultHapiSpec("CanTelemetryUpgradeWithValid")
                 .given(cryptoTransfer(tinyBarsFromTo(GENESIS, FREEZE_ADMIN, ONE_HUNDRED_HBARS)))
                 .when(

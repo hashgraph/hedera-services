@@ -50,12 +50,12 @@ public class ChunkingSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(chunkNumberIsValidated(), chunkTransactionIDIsValidated(), longMessageIsFragmentedIntoChunks());
     }
 
     @HapiTest
-    final HapiSpec chunkNumberIsValidated() {
+    final DynamicTest chunkNumberIsValidated() {
         return defaultHapiSpec("chunkNumberIsValidated")
                 .given(createTopic("testTopic"))
                 .when()
@@ -78,7 +78,7 @@ public class ChunkingSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec chunkTransactionIDIsValidated() {
+    final DynamicTest chunkTransactionIDIsValidated() {
         return defaultHapiSpec("chunkTransactionIDIsValidated")
                 .given(cryptoCreate("initialTransactionPayer"), createTopic("testTopic"))
                 .when()
@@ -119,7 +119,7 @@ public class ChunkingSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec longMessageIsFragmentedIntoChunks() {
+    final DynamicTest longMessageIsFragmentedIntoChunks() {
         String fileForLongMessage = "src/main/resource/RandomLargeBinary.bin";
         return defaultHapiSpec("longMessageIsFragmentedIntoChunks")
                 .given(cryptoCreate("payer"), createTopic("testTopic"))

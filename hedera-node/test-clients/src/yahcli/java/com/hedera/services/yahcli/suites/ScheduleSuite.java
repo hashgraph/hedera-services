@@ -36,11 +36,11 @@ public class ScheduleSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(doSchedule());
     }
 
-    private HapiSpec doSchedule() {
+    final DynamicTest doSchedule() {
         var schedule = new HapiScheduleSign(HapiSuite.DEFAULT_SHARD_REALM + scheduleId);
         return HapiSpec.customHapiSpec("DoSchedule")
                 .withProperties(specConfig)

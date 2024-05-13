@@ -125,8 +125,10 @@ import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.function.Executable;
 
-public class HapiSpec implements Runnable {
+public class HapiSpec implements Runnable, Executable {
     private static final long FIRST_NODE_ACCOUNT_NUM = 3L;
     private static final int NUM_IN_USE_NODE_ACCOUNTS = 4;
     private static final TransferList DEFAULT_NODE_BALANCE_FUNDING = TransferList.newBuilder()
@@ -267,7 +269,7 @@ public class HapiSpec implements Runnable {
         return targetNetworkType;
     }
 
-    public HapiSpec setTargetNetworkType(TargetNetworkType targetNetworkType) {
+    final HapiSpec setTargetNetworkType(TargetNetworkType targetNetworkType) {
         this.targetNetworkType = targetNetworkType;
         return this;
     }
@@ -352,6 +354,14 @@ public class HapiSpec implements Runnable {
 
     public static boolean notOk(HapiSpec spec) {
         return !ok(spec);
+    }
+
+    @Override
+    public void execute() throws Throwable {
+        run();
+        if (failure != null) {
+            throw failure.cause;
+        }
     }
 
     @Override
@@ -991,7 +1001,8 @@ public class HapiSpec implements Runnable {
     public static Def.Setup hapiSpec(
             String name, List<String> propertiesToPreserve, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
         return setup -> given -> when ->
-                then -> new HapiSpec(name, false, setup, given, when, then, propertiesToPreserve, snapshotMatchModes);
+                then -> DynamicTest.dynamicTest(name,
+                        new HapiSpec(name, false, setup, given, when, then, propertiesToPreserve, snapshotMatchModes));
     }
 
     public static Def.Setup onlyHapiSpec(
@@ -999,10 +1010,12 @@ public class HapiSpec implements Runnable {
             final List<String> propertiesToPreserve,
             @NonNull final SnapshotMatchMode... snapshotMatchModes) {
         return setup -> given -> when ->
-                then -> new HapiSpec(name, true, setup, given, when, then, propertiesToPreserve, snapshotMatchModes);
+                then -> DynamicTest.dynamicTest(
+                        name,
+                        new HapiSpec(name, true, setup, given, when, then, propertiesToPreserve, snapshotMatchModes));
     }
 
-    private HapiSpec(
+    public HapiSpec(
             String name,
             boolean onlySpecToRunInSuite,
             HapiSpecSetup hapiSetup,
@@ -1063,7 +1076,7 @@ public class HapiSpec implements Runnable {
 
         @FunctionalInterface
         interface Then {
-            HapiSpec then(HapiSpecOperation... ops);
+            DynamicTest then(HapiSpecOperation... ops);
         }
     }
 

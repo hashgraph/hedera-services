@@ -100,6 +100,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -159,7 +160,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 erc20TransferLazyCreate(),
                 erc20TransferFromLazyCreate(),
@@ -171,7 +172,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec resourceLimitExceededRevertsAllRecords() {
+    final DynamicTest resourceLimitExceededRevertsAllRecords() {
         final var n = 4; // preceding child record limit is 3
         final var nft = "nft";
         final var nftKey = NFT_KEY;
@@ -242,7 +243,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec autoCreationFailsWithMirrorAddress() {
+    final DynamicTest autoCreationFailsWithMirrorAddress() {
         final var nft = "nft";
         final var nftKey = "nftKeyHere";
         final var creationAttempt = CREATION_ATTEMPT;
@@ -285,7 +286,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec erc20TransferLazyCreate() {
+    final DynamicTest erc20TransferLazyCreate() {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
         return defaultHapiSpec(
@@ -368,7 +369,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
 
     // Expected INSUFFICIENT_GAS but was REVERTED_SUCCESS
     @HapiTest
-    final HapiSpec erc20TransferFromLazyCreate() {
+    final DynamicTest erc20TransferFromLazyCreate() {
         return defaultHapiSpec(
                         "erc20TransferFromLazyCreate",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -483,7 +484,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec erc721TransferFromLazyCreate() {
+    final DynamicTest erc721TransferFromLazyCreate() {
         return defaultHapiSpec(
                         "erc721TransferFromLazyCreate",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -578,7 +579,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec htsTransferFromFungibleTokenLazyCreate() {
+    final DynamicTest htsTransferFromFungibleTokenLazyCreate() {
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";
         return defaultHapiSpec(
@@ -656,7 +657,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec htsTransferFromForNFTLazyCreate() {
+    final DynamicTest htsTransferFromForNFTLazyCreate() {
         return defaultHapiSpec(
                         "htsTransferFromForNFTLazyCreate",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -725,7 +726,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec revertedAutoCreationRollsBackEvenIfTopLevelSucceeds() {
+    final DynamicTest revertedAutoCreationRollsBackEvenIfTopLevelSucceeds() {
         return defaultHapiSpec(
                         "revertedAutoCreationRollsBackEvenIfTopLevelSucceeds",
                         NONDETERMINISTIC_TRANSACTION_FEES,

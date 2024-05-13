@@ -56,12 +56,12 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {checkTokenTotalSupplyAfterMintAndBurn(), totalSupplyAfterWipe()});
     }
 
     @HapiTest
-    public HapiSpec checkTokenTotalSupplyAfterMintAndBurn() {
+    final DynamicTest checkTokenTotalSupplyAfterMintAndBurn() {
         String tokenName = "tokenToTest";
         return defaultHapiSpec(
                         "checkTokenTotalSupplyAfterMintAndBurn", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
@@ -91,7 +91,7 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec totalSupplyAfterWipe() {
+    final DynamicTest totalSupplyAfterWipe() {
         var tokenToWipe = "tokenToWipe";
 
         return defaultHapiSpec("totalSupplyAfterWipe")

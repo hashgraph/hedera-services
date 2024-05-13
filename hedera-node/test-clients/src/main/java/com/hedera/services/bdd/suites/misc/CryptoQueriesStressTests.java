@@ -46,6 +46,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class CryptoQueriesStressTests extends HapiSuite {
@@ -60,14 +61,13 @@ public class CryptoQueriesStressTests extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            getAccountInfoStress(), getAccountBalanceStress(),
-        });
+    public List<DynamicTest> getSpecsInSuite() {
+        return List.of(
+            getAccountInfoStress(), getAccountBalanceStress());
     }
 
     @HapiTest
-    final HapiSpec getAccountBalanceStress() {
+    final DynamicTest getAccountBalanceStress() {
         return defaultHapiSpec("getAccountBalanceStress")
                 .given()
                 .when()
@@ -79,7 +79,7 @@ public class CryptoQueriesStressTests extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getAccountInfoStress() {
+    final DynamicTest getAccountInfoStress() {
         return defaultHapiSpec("getAccountInfoStress")
                 .given()
                 .when()
@@ -91,7 +91,7 @@ public class CryptoQueriesStressTests extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getAccountRecordsStress() {
+    final DynamicTest getAccountRecordsStress() {
         return defaultHapiSpec("getAccountRecordsStress")
                 .given()
                 .when()

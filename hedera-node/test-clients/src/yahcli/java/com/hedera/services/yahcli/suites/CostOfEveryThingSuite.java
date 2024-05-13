@@ -80,7 +80,7 @@ public class CostOfEveryThingSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return Stream.of(
                         Optional.ofNullable(
                                 ServiceTypes.contains(Utils.ServiceType.CRYPTO) ? canonicalCryptoOps() : null),

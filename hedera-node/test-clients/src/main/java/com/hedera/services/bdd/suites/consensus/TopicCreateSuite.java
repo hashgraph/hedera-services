@@ -54,7 +54,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 signingRequirementsEnforced(),
                 autoRenewPeriodIsValidated(),
@@ -73,7 +73,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec adminKeyIsValidated() {
+    final DynamicTest adminKeyIsValidated() {
         return defaultHapiSpec("AdminKeyIsValidated")
                 .given()
                 .when()
@@ -85,7 +85,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec submitKeyIsValidated() {
+    final DynamicTest submitKeyIsValidated() {
         return defaultHapiSpec("SubmitKeyIsValidated")
                 .given()
                 .when()
@@ -96,7 +96,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec autoRenewAccountIsValidated() {
+    final DynamicTest autoRenewAccountIsValidated() {
         return defaultHapiSpec("AutoRenewAccountIsValidated")
                 .given()
                 .when()
@@ -107,7 +107,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec autoRenewAccountIdNeedsAdminKeyToo() {
+    final DynamicTest autoRenewAccountIdNeedsAdminKeyToo() {
         return defaultHapiSpec("autoRenewAccountIdNeedsAdminKeyToo")
                 .given(cryptoCreate("payer"), cryptoCreate("autoRenewAccount"))
                 .when()
@@ -120,7 +120,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
+    final DynamicTest idVariantsTreatedAsExpected() {
         final var autoRenewAccount = "autoRenewAccount";
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(cryptoCreate(autoRenewAccount), newKeyNamed("adminKey"))
@@ -131,7 +131,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec autoRenewPeriodIsValidated() {
+    final DynamicTest autoRenewPeriodIsValidated() {
         final var tooShortAutoRenewPeriod = "tooShortAutoRenewPeriod";
         final var tooLongAutoRenewPeriod = "tooLongAutoRenewPeriod";
         return defaultHapiSpec("autoRenewPeriodIsValidated")
@@ -147,7 +147,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec noAutoRenewPeriod() {
+    final DynamicTest noAutoRenewPeriod() {
         return defaultHapiSpec("noAutoRenewPeriod")
                 .given()
                 .when()
@@ -158,7 +158,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec signingRequirementsEnforced() {
+    final DynamicTest signingRequirementsEnforced() {
         long PAYER_BALANCE = 1_999_999_999L;
         final var contractWithAdminKey = "nonCryptoAccount";
 
@@ -237,7 +237,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec allFieldsSetHappyCase() {
+    final DynamicTest allFieldsSetHappyCase() {
         return defaultHapiSpec("AllFieldsSetHappyCase", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(newKeyNamed("adminKey"), newKeyNamed("submitKey"), cryptoCreate("autoRenewAccount"))
                 .when()
@@ -249,7 +249,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec feeAsExpected() {
+    final DynamicTest feeAsExpected() {
         return defaultHapiSpec("feeAsExpected")
                 .given(
                         newKeyNamed("adminKey"),

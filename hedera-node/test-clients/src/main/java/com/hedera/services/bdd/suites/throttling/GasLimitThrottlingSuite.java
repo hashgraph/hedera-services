@@ -51,7 +51,7 @@ public class GasLimitThrottlingSuite extends HapiSuite {
     public static final String PAYER_ACCOUNT = "payerAccount";
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(txsUnderGasLimitAllowed(), txOverGasLimitThrottled());
     }
 
@@ -60,7 +60,7 @@ public class GasLimitThrottlingSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec txsUnderGasLimitAllowed() {
+    final DynamicTest txsUnderGasLimitAllowed() {
         final var NUM_CALLS = 10;
         final Map<String, String> startingProps = new HashMap<>();
         return defaultHapiSpec("TXsUnderGasLimitAllowed")
@@ -98,7 +98,7 @@ public class GasLimitThrottlingSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec txOverGasLimitThrottled() {
+    final DynamicTest txOverGasLimitThrottled() {
         final Map<String, String> startingProps = new HashMap<>();
         final var MAX_GAS_PER_SECOND = 1_000_001L;
         return defaultHapiSpec("TXOverGasLimitThrottled")

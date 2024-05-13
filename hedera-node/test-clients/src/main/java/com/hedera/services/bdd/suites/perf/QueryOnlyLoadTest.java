@@ -79,7 +79,7 @@ public class QueryOnlyLoadTest extends LoadTest {
         return List.of(new HapiSpec[] {runQueryLoadTest()});
     }
 
-    final HapiSpec runQueryLoadTest() {
+    final DynamicTest runQueryLoadTest() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
         Supplier<HapiSpecOperation[]> mixedQueries = () -> new HapiSpecOperation[] {

@@ -68,11 +68,11 @@ public class CreateSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(doCreate());
     }
 
-    private HapiSpec doCreate() {
+    final DynamicTest doCreate() {
         if (!novelTarget.endsWith(NOVELTY + ".pem")) {
             throw new IllegalArgumentException("Only accepts tentative new key material named 'novel.pem'");
         }

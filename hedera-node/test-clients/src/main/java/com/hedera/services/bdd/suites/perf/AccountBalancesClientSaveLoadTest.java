@@ -109,11 +109,11 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runAccountBalancesClientSaveLoadTest());
     }
 
-    final HapiSpec runAccountBalancesClientSaveLoadTest() {
+    final DynamicTest runAccountBalancesClientSaveLoadTest() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         var throttlesForJRS = protoDefsFromResource("testSystemFiles/throttles-for-acct-balances-tests.json");
         return defaultHapiSpec("AccountBalancesClientSaveLoadTest")

@@ -54,7 +54,7 @@ public class AutoRemovalCasesSuite extends HapiSuite {
 
     @Override
     @SuppressWarnings("java:S3878")
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             ignoresExpiredDeletedContracts(),
             displacesTokenUnitsAsExpected(),
@@ -63,7 +63,7 @@ public class AutoRemovalCasesSuite extends HapiSuite {
         });
     }
 
-    final HapiSpec ignoresExpiredDeletedContracts() {
+    final DynamicTest ignoresExpiredDeletedContracts() {
         final var adminKey = "tac";
         final var tbd = "dead";
 
@@ -79,7 +79,7 @@ public class AutoRemovalCasesSuite extends HapiSuite {
                 .then(getContractInfo(tbd).hasCostAnswerPrecheck(INVALID_CONTRACT_ID));
     }
 
-    final HapiSpec immediatelyRemovesDeletedAccountOnExpiry() {
+    final DynamicTest immediatelyRemovesDeletedAccountOnExpiry() {
         final var tbd = "dead";
         final var onlyDetached = "gone";
 
@@ -95,7 +95,7 @@ public class AutoRemovalCasesSuite extends HapiSuite {
                 .then(getAccountInfo(onlyDetached), getAccountInfo(tbd).hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
     }
 
-    final HapiSpec displacesTokenUnitsAsExpected() {
+    final DynamicTest displacesTokenUnitsAsExpected() {
         final long startSupply = 10;
         final long displacedSupply = 1;
         final var adminKey = "tak";
@@ -137,7 +137,7 @@ public class AutoRemovalCasesSuite extends HapiSuite {
                                 .hasTokenBalance(anotherLiveToken, startSupply));
     }
 
-    final HapiSpec autoRemovalCasesSuiteCleanup() {
+    final DynamicTest autoRemovalCasesSuiteCleanup() {
         return defaultHapiSpec("AutoRemovalCasesSuiteCleanup")
                 .given()
                 .when()

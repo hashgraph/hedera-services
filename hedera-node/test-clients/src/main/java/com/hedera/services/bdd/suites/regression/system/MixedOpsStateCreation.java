@@ -81,12 +81,12 @@ public class MixedOpsStateCreation extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(createState());
     }
 
     @HapiTest
-    final HapiSpec createState() {
+    final DynamicTest createState() {
         AtomicInteger tokenId = new AtomicInteger(0);
         AtomicInteger nftId = new AtomicInteger(0);
         AtomicInteger scheduleId = new AtomicInteger(0);

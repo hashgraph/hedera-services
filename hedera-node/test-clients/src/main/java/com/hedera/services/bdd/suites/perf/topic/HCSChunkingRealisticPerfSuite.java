@@ -57,7 +57,7 @@ public class HCSChunkingRealisticPerfSuite extends LoadTest {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(fragmentLongMessageIntoChunks());
     }
 

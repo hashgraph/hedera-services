@@ -65,7 +65,7 @@ public class ScheduleDeleteSpecs extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return withAndWithoutLongTermEnabled(() -> List.of(
                 deleteWithNoAdminKeyFails(),
                 unauthorizedDeletionFails(),
@@ -75,7 +75,7 @@ public class ScheduleDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec deleteWithNoAdminKeyFails() {
+    final DynamicTest deleteWithNoAdminKeyFails() {
         return defaultHapiSpec("DeleteWithNoAdminKeyFails")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
@@ -87,7 +87,7 @@ public class ScheduleDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec unauthorizedDeletionFails() {
+    final DynamicTest unauthorizedDeletionFails() {
         return defaultHapiSpec("UnauthorizedDeletionFails")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
@@ -104,7 +104,7 @@ public class ScheduleDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec deletingAlreadyDeletedIsObvious() {
+    final DynamicTest deletingAlreadyDeletedIsObvious() {
         return defaultHapiSpec("DeletingAlreadyDeletedIsObvious")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
@@ -122,7 +122,7 @@ public class ScheduleDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec idVariantsTreatedAsExpected() {
+    final DynamicTest idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(
                         newKeyNamed(ADMIN),
@@ -135,7 +135,7 @@ public class ScheduleDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec getScheduleInfoIdVariantsTreatedAsExpected() {
+    final DynamicTest getScheduleInfoIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("getScheduleInfoIdVariantsTreatedAsExpected")
                 .given(
                         newKeyNamed(ADMIN),
@@ -147,7 +147,7 @@ public class ScheduleDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec deletingNonExistingFails() {
+    final DynamicTest deletingNonExistingFails() {
         return defaultHapiSpec("DeletingNonExistingFails")
                 .given()
                 .when()
@@ -157,7 +157,7 @@ public class ScheduleDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec deletingExecutedIsPointless() {
+    final DynamicTest deletingExecutedIsPointless() {
         return defaultHapiSpec("DeletingExecutedIsPointless")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate,ConsensusSubmitMessage"),

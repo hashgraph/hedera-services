@@ -42,7 +42,7 @@ public class SubmitMessagesForReconnect extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runSubmitMessages());
     }
 
@@ -56,7 +56,7 @@ public class SubmitMessagesForReconnect extends HapiSuite {
                 .deferStatusResolution();
     }
 
-    final HapiSpec runSubmitMessages() {
+    final DynamicTest runSubmitMessages() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
         Supplier<HapiSpecOperation[]> submitBurst = () -> new HapiSpecOperation[] {submitToTestTopic(settings)};

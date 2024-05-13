@@ -42,11 +42,11 @@ public class UpdatePermissionsDuringReconnect extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(updateApiPermissionsDuringReconnect());
     }
 
-    final HapiSpec updateApiPermissionsDuringReconnect() {
+    final DynamicTest updateApiPermissionsDuringReconnect() {
         final String fileInfoRegistry = "apiPermissionsReconnect";
         return defaultHapiSpec("updateApiPermissionsDuringReconnect")
                 .given(

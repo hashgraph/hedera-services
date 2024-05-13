@@ -54,13 +54,13 @@ public class RunTransfers extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             runTransfers(),
         });
     }
 
-    final HapiSpec runTransfers() {
+    final DynamicTest runTransfers() {
         return defaultHapiSpec("RunTransfers")
                 .given()
                 .when()

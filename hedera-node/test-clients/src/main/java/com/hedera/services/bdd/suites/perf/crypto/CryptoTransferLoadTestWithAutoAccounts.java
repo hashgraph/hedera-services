@@ -65,7 +65,7 @@ public class CryptoTransferLoadTestWithAutoAccounts extends LoadTest {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runCryptoTransfers());
     }
 

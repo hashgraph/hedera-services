@@ -65,13 +65,13 @@ public class ReadyToRunScheduledXfersLoad extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public java.util.List<com.hedera.services.bdd.spec.HapiSpec> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             runReadyToRunXfers(),
         });
     }
 
-    final HapiSpec runReadyToRunXfers() {
+    final DynamicTest runReadyToRunXfers() {
         return defaultHapiSpec("RunReadyToRunXfers")
                 .given(stdMgmtOf(duration, unit, maxOpsPerSec))
                 .when(runWithProvider(readyToRunXfersFactory())

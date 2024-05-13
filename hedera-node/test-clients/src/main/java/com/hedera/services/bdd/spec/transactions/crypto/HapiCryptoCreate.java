@@ -107,7 +107,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     }
 
     @Override
-    protected Key lookupKey(final HapiSpec spec, final String name) {
+    protected Key lookupKey(final DynamicTest spec, final String name) {
         return name.equals(account) ? key : spec.registry().getKey(name);
     }
 
@@ -256,7 +256,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+    protected long feeFor(final DynamicTest spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         return spec.fees().forActivityBasedOp(HederaFunctionality.CryptoCreate, this::usageEstimate, txn, numPayerKeys);
     }
 
@@ -269,7 +269,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final DynamicTest spec) throws Throwable {
         key = key != null ? key : netOf(spec, keyName, keyShape, keyType, Optional.of(this::effectiveKeyGen));
         final long amount = balanceFn.map(fn -> fn.apply(spec)).orElse(initialBalance.orElse(-1L));
         initialBalance = (amount >= 0) ? Optional.of(amount) : Optional.empty();
@@ -325,12 +325,12 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final DynamicTest spec) {
         return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::createAccount;
     }
 
     @Override
-    protected void updateStateOf(final HapiSpec spec) {
+    protected void updateStateOf(final DynamicTest spec) {
         if (actualStatus != SUCCESS || forgettingEverything) {
             return;
         }

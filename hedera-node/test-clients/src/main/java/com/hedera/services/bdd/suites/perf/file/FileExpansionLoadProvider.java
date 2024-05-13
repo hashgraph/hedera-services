@@ -91,12 +91,12 @@ public class FileExpansionLoadProvider extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runFileExpansions());
     }
 
     @HapiTest
-    final HapiSpec runFileExpansions() {
+    final DynamicTest runFileExpansions() {
         return HapiSpec.defaultHapiSpec("RunFileExpansions")
                 .given(
                         overriding(MAX_FILE_SIZE_KB_PROP, OVERRIDE_MAX_FILE_SIZE_KB),

@@ -84,6 +84,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -112,7 +113,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 treasuryAssociationIsAutomatic(),
                 dissociateHasExpectedSemantics(),
@@ -133,7 +134,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec canHandleInvalidAssociateTransactions() {
+    final DynamicTest canHandleInvalidAssociateTransactions() {
         final String alice = "ALICE";
         final String bob = "BOB";
         final String unknownID = "0.0." + Long.MAX_VALUE;
@@ -168,7 +169,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
+    final DynamicTest idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
@@ -182,7 +183,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec canLimitMaxTokensPerAccountTransactions() {
+    final DynamicTest canLimitMaxTokensPerAccountTransactions() {
         final String alice = "ALICE";
         final String treasury2 = "TREASURY_2";
         return propertyPreservingHapiSpec("CanHandleInvalidAssociateTransactions")
@@ -200,7 +201,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec handlesUseOfDefaultTokenId() {
+    final DynamicTest handlesUseOfDefaultTokenId() {
         return defaultHapiSpec("HandlesUseOfDefaultTokenId", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given()
                 .when()
@@ -208,7 +209,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec canDeleteNonFungibleTokenTreasuryAfterUpdate() {
+    final DynamicTest canDeleteNonFungibleTokenTreasuryAfterUpdate() {
         return defaultHapiSpec("canDeleteNonFungibleTokenTreasuryAfterUpdate")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -234,7 +235,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec canDeleteNonFungibleTokenTreasuryBurnsAndTokenDeletion() {
+    final DynamicTest canDeleteNonFungibleTokenTreasuryBurnsAndTokenDeletion() {
         final var firstTbdToken = "firstTbdToken";
         final var secondTbdToken = "secondTbdToken";
         final var treasuryWithoutAllPiecesBurned = "treasuryWithoutAllPiecesBurned";
@@ -277,7 +278,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec associatedContractsMustHaveAdminKeys() {
+    final DynamicTest associatedContractsMustHaveAdminKeys() {
         String misc = "someToken";
         String contract = "defaultContract";
 
@@ -288,7 +289,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec contractInfoQueriesAsExpected() {
+    final DynamicTest contractInfoQueriesAsExpected() {
         final var contract = "contract";
         return defaultHapiSpec("ContractInfoQueriesAsExpected")
                 .given(
@@ -316,7 +317,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec accountInfoQueriesAsExpected() {
+    final DynamicTest accountInfoQueriesAsExpected() {
         final var account = "account";
         return defaultHapiSpec("accountInfoQueriesAsExpected")
                 .given(
@@ -344,7 +345,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec expiredAndDeletedTokensStillAppearInContractInfo() {
+    final DynamicTest expiredAndDeletedTokensStillAppearInContractInfo() {
         final String contract = "Fuse";
         final String treasury = "something";
         final String expiringToken = "expiringToken";
@@ -388,7 +389,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury() {
+    final DynamicTest canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury() {
         final String aNonTreasuryAcquaintance = "aNonTreasuryAcquaintance";
         final String bNonTreasuryAcquaintance = "bNonTreasuryAcquaintance";
         final long initialSupply = 100L;
@@ -434,7 +435,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec dissociateHasExpectedSemanticsForDeletedTokens() {
+    final DynamicTest dissociateHasExpectedSemanticsForDeletedTokens() {
         final String tbdUniqToken = "UniqToBeDeleted";
         final String zeroBalanceFrozen = "0bFrozen";
         final String zeroBalanceUnfrozen = "0bUnfrozen";
@@ -505,7 +506,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec dissociateHasExpectedSemantics() {
+    final DynamicTest dissociateHasExpectedSemantics() {
         return defaultHapiSpec("DissociateHasExpectedSemantics")
                 .given(basicKeysAndTokens())
                 .when(
@@ -529,7 +530,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec dissociateHasExpectedSemanticsForDissociatedContracts() {
+    final DynamicTest dissociateHasExpectedSemanticsForDissociatedContracts() {
         final var uniqToken = "UniqToken";
         final var contract = "Fuse";
         final var firstMeta = ByteString.copyFrom("FIRST".getBytes(StandardCharsets.UTF_8));
@@ -555,7 +556,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec treasuryAssociationIsAutomatic() {
+    final DynamicTest treasuryAssociationIsAutomatic() {
         return defaultHapiSpec("TreasuryAssociationIsAutomatic")
                 .given(basicKeysAndTokens())
                 .when()
@@ -587,7 +588,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec associateAndDissociateNeedsValidAccountAndToken() {
+    final DynamicTest associateAndDissociateNeedsValidAccountAndToken() {
         final var account = "account";
         return defaultHapiSpec("dissociationNeedsAccount")
                 .given(

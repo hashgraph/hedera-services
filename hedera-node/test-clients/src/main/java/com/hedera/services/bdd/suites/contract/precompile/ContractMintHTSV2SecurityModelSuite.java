@@ -66,6 +66,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -133,11 +134,11 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
         return true;
     }
 
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiSpec> negativeSpecs() {
+    List<DynamicTest> negativeSpecs() {
         return List.of(
                 V2Security002FungibleTokenMintInTreasuryNegative(),
                 V2Security003NonFungibleTokenMintInTreasuryNegative(),
@@ -146,14 +147,14 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                 V2Security040TokenWithDelegateContractKeyCanNotMintFromCallcode());
     }
 
-    List<HapiSpec> positiveSpecs() {
+    List<DynamicTest> positiveSpecs() {
         return List.of(
                 V2Security002FungibleTokenMintInTreasuryPositive(),
                 V2Security003NonFungibleTokenMintInTreasuryPositive());
     }
 
     @HapiTest
-    final HapiSpec V2Security002FungibleTokenMintInTreasuryPositive() {
+    final DynamicTest V2Security002FungibleTokenMintInTreasuryPositive() {
         final var amount = 10L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
 
@@ -285,7 +286,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security003NonFungibleTokenMintInTreasuryPositive() {
+    final DynamicTest V2Security003NonFungibleTokenMintInTreasuryPositive() {
         final var amount = 1;
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
 
@@ -422,7 +423,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security002FungibleTokenMintInTreasuryNegative() {
+    final DynamicTest V2Security002FungibleTokenMintInTreasuryNegative() {
         final var amount = 10L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
 
@@ -538,7 +539,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security003NonFungibleTokenMintInTreasuryNegative() {
+    final DynamicTest V2Security003NonFungibleTokenMintInTreasuryNegative() {
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
 
         return defaultHapiSpec("V2Security003NonFungibleTokenMintNegative")
@@ -653,7 +654,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security035TokenWithDelegateContractKeyCanNotMintFromDelegatecall() {
+    final DynamicTest V2Security035TokenWithDelegateContractKeyCanNotMintFromDelegatecall() {
         return defaultHapiSpec("V2Security035TokenWithDelegateContractKeyCanNotMintFromDelegatecal")
                 .given(
                         overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
@@ -802,7 +803,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security040TokenWithDelegateContractKeyCanNotMintFromStaticcall() {
+    final DynamicTest V2Security040TokenWithDelegateContractKeyCanNotMintFromStaticcall() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
 
@@ -886,7 +887,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security040TokenWithDelegateContractKeyCanNotMintFromCallcode() {
+    final DynamicTest V2Security040TokenWithDelegateContractKeyCanNotMintFromCallcode() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
         final String precompileAddress = "0000000000000000000000000000000000000167";

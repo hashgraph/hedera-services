@@ -52,6 +52,7 @@ import java.time.Instant;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class OneOfEveryTransaction extends HapiSuite {
     private static final Logger log = LogManager.getLogger(OneOfEveryTransaction.class);
@@ -61,13 +62,11 @@ public class OneOfEveryTransaction extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            doThings(),
-        });
+    public List<DynamicTest> getSpecsInSuite() {
+        return List.of(doThings());
     }
 
-    final HapiSpec doThings() {
+    final DynamicTest doThings() {
         /* Crypto signing */
         var complex = KeyShape.threshOf(1, KeyShape.listOf(3), KeyShape.threshOf(1, 3));
         /* File signing */

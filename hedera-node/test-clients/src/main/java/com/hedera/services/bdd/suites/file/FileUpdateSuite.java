@@ -111,6 +111,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * NOTE: 1. This test suite covers the test08UpdateFile() test scenarios from the legacy
@@ -170,7 +171,7 @@ public class FileUpdateSuite extends HapiSuite {
 
     @Override
     @SuppressWarnings("java:S3878")
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 vanillaUpdateSucceeds(),
                 updateFeesCompatibleWithCreates(),
@@ -191,7 +192,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
+    final DynamicTest idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(fileCreate("file").contents("ABC"))
                 .when()
@@ -200,7 +201,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec associateHasExpectedSemantics() {
+    final DynamicTest associateHasExpectedSemantics() {
         return propertyPreservingHapiSpec("AssociateHasExpectedSemantics")
                 .preserving("tokens.maxRelsPerInfoQuery")
                 .given(flattened((Object[]) TokenAssociationSpecs.basicKeysAndTokens()))
@@ -240,7 +241,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec notTooManyFeeScheduleCanBeCreated() {
+    final DynamicTest notTooManyFeeScheduleCanBeCreated() {
         final var denom = "fungible";
         final var token = "token";
         return defaultHapiSpec("OnlyValidCustomFeeScheduleCanBeCreated")
@@ -256,7 +257,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec optimisticSpecialFileUpdate() {
+    final DynamicTest optimisticSpecialFileUpdate() {
         final var appendsPerBurst = 128;
         final var specialFile = "0.0.159";
         final var contents = randomUtf8Bytes(64 * BYTES_4K);
@@ -274,7 +275,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec apiPermissionsChangeDynamically() {
+    final DynamicTest apiPermissionsChangeDynamically() {
         final var civilian = CIVILIAN;
         return defaultHapiSpec("ApiPermissionsChangeDynamically")
                 .given(
@@ -299,7 +300,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateFeesCompatibleWithCreates() {
+    final DynamicTest updateFeesCompatibleWithCreates() {
         final long origLifetime = 7_200_000L;
         final long extension = 700_000L;
         final byte[] old2k = randomUtf8Bytes(BYTES_4K / 2);
@@ -345,7 +346,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec vanillaUpdateSucceeds() {
+    final DynamicTest vanillaUpdateSucceeds() {
         final byte[] old4K = randomUtf8Bytes(BYTES_4K);
         final byte[] new4k = randomUtf8Bytes(BYTES_4K);
         final String firstMemo = "Originally";
@@ -365,7 +366,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec cannotUpdateImmutableFile() {
+    final DynamicTest cannotUpdateImmutableFile() {
         final String file1 = "FILE_1";
         final String file2 = "FILE_2";
         return defaultHapiSpec("CannotUpdateImmutableFile")
@@ -385,7 +386,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotUpdateExpirationPastMaxLifetime() {
+    final DynamicTest cannotUpdateExpirationPastMaxLifetime() {
         return defaultHapiSpec("CannotUpdateExpirationPastMaxLifetime")
                 .given(fileCreate("test"))
                 .when()
@@ -395,7 +396,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec maxRefundIsEnforced() {
+    final DynamicTest maxRefundIsEnforced() {
         return propertyPreservingHapiSpec("MaxRefundIsEnforced")
                 .preserving(MAX_REFUND_GAS_PROP)
                 .given(overriding(MAX_REFUND_GAS_PROP, "5"), uploadInitCode(CONTRACT), contractCreate(CONTRACT))
@@ -407,7 +408,7 @@ public class FileUpdateSuite extends HapiSuite {
 
     // C.f. https://github.com/hashgraph/hedera-services/pull/8908
     @HapiTest
-    final HapiSpec allUnusedGasIsRefundedIfSoConfigured() {
+    final DynamicTest allUnusedGasIsRefundedIfSoConfigured() {
         return propertyPreservingHapiSpec("AllUnusedGasIsRefundedIfSoConfigured")
                 .preserving(MAX_REFUND_GAS_PROP)
                 .given(
@@ -421,7 +422,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
+    final DynamicTest gasLimitOverMaxGasLimitFailsPrecheck() {
         return propertyPreservingHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
                 .preserving(CONS_MAX_GAS_PROP)
                 .given(
@@ -436,7 +437,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec kvLimitsEnforced() {
+    final DynamicTest kvLimitsEnforced() {
         final var contract = "User";
         final var gasToOffer = 1_000_000;
 
@@ -499,7 +500,7 @@ public class FileUpdateSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    final HapiSpec serviceFeeRefundedIfConsGasExhausted() {
+    final DynamicTest serviceFeeRefundedIfConsGasExhausted() {
         final var contract = "User";
         final var gasToOffer = Long.parseLong(DEFAULT_MAX_CONS_GAS);
         final var civilian = "payer";
@@ -552,7 +553,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec chainIdChangesDynamically() {
+    final DynamicTest chainIdChangesDynamically() {
         final var chainIdUser = "ChainIdUser";
         final var otherChainId = 0xABCDL;
         final var firstCallTxn = "firstCallTxn";
@@ -588,7 +589,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec entitiesNotCreatableAfterUsageLimitsReached() {
+    final DynamicTest entitiesNotCreatableAfterUsageLimitsReached() {
         final var notToBe = "ne'erToBe";
         return propertyPreservingHapiSpec("EntitiesNotCreatableAfterUsageLimitsReached")
                 .preserving(
@@ -621,7 +622,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @BddMethodIsNotATest
-    final HapiSpec rentItemizedAsExpectedWithOverridePriceTiers() {
+    final DynamicTest rentItemizedAsExpectedWithOverridePriceTiers() {
         final var slotUser = "SlotUser";
         final var creation = "creation";
         final var aSet = "aSet";
@@ -711,7 +712,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec messageSubmissionSizeChange() {
+    final DynamicTest messageSubmissionSizeChange() {
         final var defaultMaxBytesAllowed = 1024;
         final var longMessage = TxnUtils.randomUtf8Bytes(defaultMaxBytesAllowed);
 

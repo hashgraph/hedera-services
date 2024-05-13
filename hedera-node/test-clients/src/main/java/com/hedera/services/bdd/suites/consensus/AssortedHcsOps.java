@@ -59,7 +59,7 @@ public class AssortedHcsOps extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             //						runMisc(),
             testRechargingPayer(),
@@ -69,7 +69,7 @@ public class AssortedHcsOps extends HapiSuite {
 
     final String TARGET_DIR = "./dev-system-files";
 
-    final HapiSpec testRechargingPayer() {
+    final DynamicTest testRechargingPayer() {
         long startingBalance = 1_000_000L;
 
         return defaultHapiSpec("testRechargingPayer")
@@ -83,14 +83,14 @@ public class AssortedHcsOps extends HapiSuite {
                         .toArray(HapiSpecOperation[]::new));
     }
 
-    final HapiSpec infoLookup() {
+    final DynamicTest infoLookup() {
         return defaultHapiSpec("infoLookup")
                 .given()
                 .when()
                 .then(QueryVerbs.getTopicInfo("0.0.1161").logged());
     }
 
-    final HapiSpec runMisc() {
+    final DynamicTest runMisc() {
         final int SUBMIT_BURST_SIZE = 10;
 
         AtomicReference<String> vanillaTopic = new AtomicReference<>();

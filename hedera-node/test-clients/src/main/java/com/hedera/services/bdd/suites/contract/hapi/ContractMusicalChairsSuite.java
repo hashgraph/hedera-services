@@ -45,6 +45,7 @@ import java.util.Random;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class ContractMusicalChairsSuite extends HapiSuite {
@@ -61,12 +62,12 @@ public class ContractMusicalChairsSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(playGame());
     }
 
     @HapiTest
-    final HapiSpec playGame() {
+    final DynamicTest playGame() {
         final var dj = "dj";
         final var players = IntStream.range(1, 30).mapToObj(i -> "Player" + i).toList();
         final var contract = "MusicalChairs";

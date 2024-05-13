@@ -64,6 +64,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class TokenUnhappyAccountsSuite extends HapiSuite {
 
@@ -87,18 +88,15 @@ public class TokenUnhappyAccountsSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            /* Expired Account */
+    public List<DynamicTest> getSpecsInSuite() {
+        return List.of(
             uniqueTokenOperationsFailForExpiredAccount(),
-            /* AutoRemoved Account */
             uniqueTokenOperationsFailForAutoRemovedAccount(),
-            /* Expired Token */
             dissociationFromExpiredTokensAsExpected()
-        });
+       );
     }
 
-    final HapiSpec uniqueTokenOperationsFailForAutoRemovedAccount() {
+    final DynamicTest uniqueTokenOperationsFailForAutoRemovedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForAutoRemovedAccount")
                 .given(
                         fileUpdate(APP_PROPERTIES)
@@ -138,7 +136,7 @@ public class TokenUnhappyAccountsSuite extends HapiSuite {
                         wipeTokenAccount(UNIQUE_TOKEN_A, CLIENT_1, List.of(1L)).hasKnownStatus(INVALID_ACCOUNT_ID));
     }
 
-    final HapiSpec uniqueTokenOperationsFailForExpiredAccount() {
+    final DynamicTest uniqueTokenOperationsFailForExpiredAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForExpiredAccount")
                 .given(
                         fileUpdate(APP_PROPERTIES)
@@ -186,7 +184,7 @@ public class TokenUnhappyAccountsSuite extends HapiSuite {
 
     // Enable when token expiration is implemented
     // @HapiTest
-    public HapiSpec dissociationFromExpiredTokensAsExpected() {
+    final DynamicTest dissociationFromExpiredTokensAsExpected() {
         final String treasury = "accountA";
         final String frozenAccount = "frozen";
         final String unfrozenAccount = "unfrozen";

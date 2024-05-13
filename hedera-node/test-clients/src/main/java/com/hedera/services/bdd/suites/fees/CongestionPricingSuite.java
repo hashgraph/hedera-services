@@ -43,6 +43,7 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class CongestionPricingSuite extends HapiSuite {
@@ -64,12 +65,12 @@ public class CongestionPricingSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {canUpdateMultipliersDynamically(), canUpdateMultipliersDynamically2()});
+    public List<DynamicTest> getSpecsInSuite() {
+        return List.of(canUpdateMultipliersDynamically(), canUpdateMultipliersDynamically2());
     }
 
     @HapiTest
-    final HapiSpec canUpdateMultipliersDynamically() {
+    final DynamicTest canUpdateMultipliersDynamically() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-congestion.json");
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         var contract = "Multipurpose";
@@ -157,7 +158,7 @@ public class CongestionPricingSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec canUpdateMultipliersDynamically2() {
+    final DynamicTest canUpdateMultipliersDynamically2() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-congestion.json");
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         String tmpMinCongestionPeriod = "1";

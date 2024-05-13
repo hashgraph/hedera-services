@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class Issue1758Suite extends HapiSuite {
@@ -43,12 +44,12 @@ public class Issue1758Suite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(allowsCryptoCreatePayerToHaveLessThanTwiceFee());
     }
 
     @HapiTest
-    public static HapiSpec allowsCryptoCreatePayerToHaveLessThanTwiceFee() {
+    final DynamicTest allowsCryptoCreatePayerToHaveLessThanTwiceFee() {
         return defaultFailingHapiSpec("AllowsCryptoCreatePayerToHaveLessThanTwiceFee")
                 .given(
                         cryptoCreate("payer").via("referenceTxn").balance(0L),

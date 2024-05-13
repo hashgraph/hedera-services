@@ -50,7 +50,7 @@ public class CreateTopicsBeforeReconnect extends HapiSuite {
     private static final AtomicInteger topicNumber = new AtomicInteger(0);
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runCreateTopics());
     }
 
@@ -66,7 +66,7 @@ public class CreateTopicsBeforeReconnect extends HapiSuite {
                 .deferStatusResolution();
     }
 
-    final HapiSpec runCreateTopics() {
+    final DynamicTest runCreateTopics() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings(
                 TOPIC_CREATION_RECONNECT_TPS, DEFAULT_MINS_FOR_RECONNECT_TESTS, DEFAULT_THREADS_FOR_RECONNECT_TESTS);
 

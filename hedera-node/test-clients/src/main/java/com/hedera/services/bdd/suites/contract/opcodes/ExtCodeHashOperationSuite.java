@@ -50,6 +50,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.Hash;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -63,7 +64,7 @@ public class ExtCodeHashOperationSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(verifiesExistence(), testExtCodeHashWithSystemAccounts());
     }
 
@@ -74,7 +75,7 @@ public class ExtCodeHashOperationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    HapiSpec verifiesExistence() {
+    final DynamicTest verifiesExistence() {
         final var contract = "ExtCodeOperationsChecker";
         final var invalidAddress = "0x0000000000000000000000000000000000123456";
         final var expectedAccountHash =
@@ -131,7 +132,7 @@ public class ExtCodeHashOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec testExtCodeHashWithSystemAccounts() {
+    final DynamicTest testExtCodeHashWithSystemAccounts() {
         final var contract = "ExtCodeOperationsChecker";
         final var hashOf = "hashOf";
         final String account = "account";

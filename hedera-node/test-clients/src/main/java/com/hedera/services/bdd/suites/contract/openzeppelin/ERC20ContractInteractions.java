@@ -51,6 +51,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -79,12 +80,12 @@ public class ERC20ContractInteractions extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(callsERC20ContractInteractions());
     }
 
     @HapiTest
-    final HapiSpec callsERC20ContractInteractions() {
+    final DynamicTest callsERC20ContractInteractions() {
         final var CONTRACT = "GLDToken";
         final var CREATE_TX = "create";
         final var APPROVE_TX = "approve";

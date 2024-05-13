@@ -420,7 +420,7 @@ public class HapiSpecSetup {
         return props.get("exchange.rates.controlAccount.name");
     }
 
-    public HapiSpec.SpecStatus expectedFinalStatus() {
+    final HapiSpec.SpecStatus expectedFinalStatus() {
         return props.getSpecStatus("expected.final.status");
     }
 

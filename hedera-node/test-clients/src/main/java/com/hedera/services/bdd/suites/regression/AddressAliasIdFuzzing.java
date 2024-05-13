@@ -60,12 +60,12 @@ public class AddressAliasIdFuzzing extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(addressAliasIdFuzzing(), transferToKeyFuzzing());
     }
 
     @HapiTest
-    final HapiSpec addressAliasIdFuzzing() {
+    final DynamicTest addressAliasIdFuzzing() {
         final Map<String, String> existingProps = new LinkedHashMap<>();
         return propertyPreservingHapiSpec("AddressAliasIdFuzzing")
                 .preserving(
@@ -86,7 +86,7 @@ public class AddressAliasIdFuzzing extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferToKeyFuzzing() {
+    final DynamicTest transferToKeyFuzzing() {
         return defaultHapiSpec("TransferToKeyFuzzing")
                 .given(cryptoCreate(UNIQUE_PAYER_ACCOUNT)
                         .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)

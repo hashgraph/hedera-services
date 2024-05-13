@@ -57,13 +57,13 @@ public class PerpetualLocalCalls extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             localCallsForever(),
         });
     }
 
-    final HapiSpec localCallsForever() {
+    final DynamicTest localCallsForever() {
         return defaultHapiSpec("LocalCallsForever")
                 .given()
                 .when()

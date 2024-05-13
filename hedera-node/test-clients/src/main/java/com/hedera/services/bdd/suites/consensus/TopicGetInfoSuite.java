@@ -53,7 +53,7 @@ public class TopicGetInfoSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(allFieldsSetHappyCase());
     }
 
@@ -63,7 +63,7 @@ public class TopicGetInfoSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
+    final DynamicTest idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(createTopic("topic"))
                 .when()
@@ -71,7 +71,7 @@ public class TopicGetInfoSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec allFieldsSetHappyCase() {
+    final DynamicTest allFieldsSetHappyCase() {
         // sequenceNumber should be 0 and runningHash should be 48 bytes all 0s.
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
         return defaultHapiSpec("AllFieldsSetHappyCase")

@@ -62,7 +62,7 @@ public class TokenManagementSpecsStateful extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             /* Stateful specs from TokenManagementSpecs */
             freezeMgmtFailureCasesWork(),
@@ -70,7 +70,7 @@ public class TokenManagementSpecsStateful extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec freezeMgmtFailureCasesWork() {
+    final DynamicTest freezeMgmtFailureCasesWork() {
         var unfreezableToken = "without";
         var freezableToken = "withPlusDefaultTrue";
 
@@ -110,7 +110,7 @@ public class TokenManagementSpecsStateful extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec nftMintingCapIsEnforced() {
+    final DynamicTest nftMintingCapIsEnforced() {
         return defaultHapiSpec("NftMintingCapIsEnforced")
                 .given(
                         newKeyNamed("supplyKey"),

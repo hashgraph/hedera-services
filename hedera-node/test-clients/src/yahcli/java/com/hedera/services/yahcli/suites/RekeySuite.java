@@ -49,11 +49,11 @@ public class RekeySuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(rekey());
     }
 
-    private HapiSpec rekey() {
+    final DynamicTest rekey() {
         final var replKey = "replKey";
         final var newKeyLoc = replTarget.endsWith(".pem") ? replTarget : replTarget.replace(".pem", ".words");
         final var newKeyPass = TxnUtils.randomAlphaNumeric(12);

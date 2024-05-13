@@ -74,7 +74,7 @@ public class MixedOpsMemoPerfSuite extends LoadTest {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runMixedMemoOps());
     }
 

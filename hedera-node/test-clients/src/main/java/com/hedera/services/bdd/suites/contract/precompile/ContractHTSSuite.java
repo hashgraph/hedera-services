@@ -64,6 +64,7 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -105,11 +106,11 @@ public class ContractHTSSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiSpec> negativeSpecs() {
+    List<DynamicTest> negativeSpecs() {
         return List.of(
                 nonZeroTransfersFail(),
                 shouldFailWhenTransferringTokensWithInvalidParametersAndConditions(),
@@ -118,12 +119,12 @@ public class ContractHTSSuite extends HapiSuite {
                 shouldFailOnInvalidTokenTransferParametersAndConditions());
     }
 
-    List<HapiSpec> positiveSpecs() {
+    List<DynamicTest> positiveSpecs() {
         return List.of();
     }
 
     @HapiTest
-    final HapiSpec nonZeroTransfersFail() {
+    final DynamicTest nonZeroTransfersFail() {
         final var theSecondReceiver = "somebody2";
         return defaultHapiSpec(
                         "NonZeroTransfersFail",
@@ -186,7 +187,7 @@ public class ContractHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec shouldFailWhenTransferringTokensWithInvalidParametersAndConditions() {
+    final DynamicTest shouldFailWhenTransferringTokensWithInvalidParametersAndConditions() {
         final var TXN_WITH_EMPTY_AMOUNTS_ARRAY = "TXN_WITH_EMPTY_AMOUNTS_ARRAY";
         final var TXN_WITH_EMPTY_ACCOUNTS_ARRAY = "TXN_WITH_EMPTY_ACCOUNTS_ARRAY";
         final var TXN_WITH_NOT_LENGTH_MATCHING_ACCOUNTS_AND_AMOUNTS =
@@ -322,7 +323,7 @@ public class ContractHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec shouldFailOnInvalidTokenTransferParametersAndConditions() {
+    final DynamicTest shouldFailOnInvalidTokenTransferParametersAndConditions() {
         final var TXN_WITH_INVALID_TOKEN_ADDRESS = "TXN_WITH_INVALID_TOKEN_ADDRESS";
         final var TXN_WITH_INVALID_RECEIVER_ADDRESS = "TXN_WITH_INVALID_RECEIVER_ADDRESS";
         final var TXN_WITH_INVALID_SENDER_ADDRESS = "TXN_WITH_INVALID_SENDER_ADDRESS";
@@ -440,7 +441,7 @@ public class ContractHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec shouldFailWhenTransferringMultipleNFTsWithInvalidParametersAndConditions() {
+    final DynamicTest shouldFailWhenTransferringMultipleNFTsWithInvalidParametersAndConditions() {
         final var TXN_WITH_INVALID_TOKEN_ADDRESS = "TXN_WITH_INVALID_TOKEN_ADDRESS";
         final var TXN_WITH_EMPTY_SENDER_ARRAY = "TXN_WITH_EMPTY_SENDER_ARRAY";
         final var TXN_WITH_EMPTY_RECEIVER_ARRAY = "TXN_WITH_EMPTY_RECEIVER_ARRAY";
@@ -598,7 +599,7 @@ public class ContractHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec shouldFailOnInvalidNFTTransferParametersAndConditions() {
+    final DynamicTest shouldFailOnInvalidNFTTransferParametersAndConditions() {
         final var TXN_WITH_INVALID_TOKEN_ADDRESS = "TXN_WITH_INVALID_TOKEN_ADDRESS";
         final var TXN_WITH_INVALID_RECEIVER_ADDRESS = "TXN_WITH_INVALID_RECEIVER_ADDRESS";
         final var TXN_WITH_INVALID_SENDER_ADDRESS = "TXN_WITH_INVALID_SENDER_ADDRESS";

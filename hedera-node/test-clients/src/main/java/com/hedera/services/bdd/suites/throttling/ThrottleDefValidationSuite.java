@@ -55,7 +55,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             throttleDefsRejectUnauthorizedPayers(),
             throttleUpdateRejectsMultiGroupAssignment(),
@@ -66,7 +66,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateWithMissingTokenMintFails() {
+    final DynamicTest updateWithMissingTokenMintFails() {
         var missingMintThrottles = protoDefsFromResource("testSystemFiles/throttles-sans-mint.json");
 
         return defaultHapiSpec("updateWithMissingTokenMintFails")
@@ -80,7 +80,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
 
     @HapiTest
     @Order(100) // this needs to be executed after all other tests
-    final HapiSpec ensureDefaultsRestored() {
+    final DynamicTest ensureDefaultsRestored() {
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
 
         return defaultHapiSpec("EnsureDefaultsRestored")
@@ -97,7 +97,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec throttleUpdateWithZeroGroupOpsPerSecFails() {
+    final DynamicTest throttleUpdateWithZeroGroupOpsPerSecFails() {
         var zeroOpsPerSecThrottles = protoDefsFromResource("testSystemFiles/zero-ops-group.json");
 
         return defaultHapiSpec("ThrottleUpdateWithZeroGroupOpsPerSecFails")
@@ -110,7 +110,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec throttleUpdateRejectsMultiGroupAssignment() {
+    final DynamicTest throttleUpdateRejectsMultiGroupAssignment() {
         var multiGroupThrottles = protoDefsFromResource("testSystemFiles/duplicated-operation.json");
 
         return defaultHapiSpec("ThrottleUpdateRejectsMultiGroupAssignment")
@@ -123,7 +123,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec throttleDefsRejectUnauthorizedPayers() {
+    final DynamicTest throttleDefsRejectUnauthorizedPayers() {
         return defaultHapiSpec("ThrottleDefsRejectUnauthorizedPayers")
                 .given(
                         cryptoCreate("civilian"),

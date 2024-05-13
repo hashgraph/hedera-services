@@ -72,7 +72,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 pureCheckFails(),
                 topicIdIsValidated(),
@@ -87,7 +87,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec pureCheckFails() {
+    final DynamicTest pureCheckFails() {
         return defaultHapiSpec("testTopic")
                 .given(cryptoCreate("nonTopicId"))
                 .when()
@@ -98,7 +98,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
+    final DynamicTest idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(createTopic("testTopic"))
                 .when()
@@ -107,7 +107,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec topicIdIsValidated() {
+    final DynamicTest topicIdIsValidated() {
         return defaultHapiSpec("topicIdIsValidated")
                 .given(cryptoCreate("nonTopicId"))
                 .when()
@@ -122,7 +122,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec messageIsValidated() {
+    final DynamicTest messageIsValidated() {
         return defaultHapiSpec("messageIsValidated")
                 .given(createTopic("testTopic"))
                 .when()
@@ -138,7 +138,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec messageSubmissionSimple() {
+    final DynamicTest messageSubmissionSimple() {
         return defaultHapiSpec("messageSubmissionSimple")
                 .given(
                         newKeyNamed("submitKey"),
@@ -152,7 +152,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec messageSubmissionIncreasesSeqNo() {
+    final DynamicTest messageSubmissionIncreasesSeqNo() {
         KeyShape submitKeyShape = threshOf(2, SIMPLE, SIMPLE, listOf(2));
 
         return defaultHapiSpec("messageSubmissionIncreasesSeqNo")
@@ -164,7 +164,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec messageSubmissionWithSubmitKey() {
+    final DynamicTest messageSubmissionWithSubmitKey() {
         KeyShape submitKeyShape = threshOf(2, SIMPLE, SIMPLE, listOf(2));
 
         SigControl validSig = submitKeyShape.signedWith(sigs(ON, OFF, sigs(ON, ON)));
@@ -187,7 +187,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec messageSubmissionMultiple() {
+    final DynamicTest messageSubmissionMultiple() {
         final int numMessages = 10;
 
         return defaultHapiSpec("messageSubmissionMultiple")
@@ -199,7 +199,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec messageSubmissionOverSize() {
+    final DynamicTest messageSubmissionOverSize() {
         final byte[] messageBytes = new byte[4096]; // 4k
         Arrays.fill(messageBytes, (byte) 0b1);
 
@@ -216,7 +216,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec feeAsExpected() {
+    final DynamicTest feeAsExpected() {
         final byte[] messageBytes = new byte[100]; // 4k
         Arrays.fill(messageBytes, (byte) 0b1);
         return defaultHapiSpec("feeAsExpected")
@@ -233,7 +233,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec messageSubmissionCorrectlyUpdatesRunningHash() {
+    final DynamicTest messageSubmissionCorrectlyUpdatesRunningHash() {
         String topic = "testTopic";
         String message1 = "Hello world!";
         String message2 = "Hello world again!";

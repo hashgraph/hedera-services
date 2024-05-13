@@ -95,7 +95,7 @@ public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowan
         return b -> b.setCryptoDeleteAllowance(opBody);
     }
 
-    private void calculateAllowances(final HapiSpec spec, final List<NftRemoveAllowance> nftallowances) {
+    private void calculateAllowances(final DynamicTest spec, final List<NftRemoveAllowance> nftallowances) {
         for (var entry : nftAllowances) {
             final var builder = NftRemoveAllowance.newBuilder()
                     .setTokenId(spec.registry().getTokenID(entry.token()))

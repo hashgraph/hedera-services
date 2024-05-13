@@ -49,12 +49,12 @@ public final class UpdateFileForUpgrade extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {updateFileForUpgrade()});
     }
 
     @HapiTest
-    final HapiSpec updateFileForUpgrade() {
+    final DynamicTest updateFileForUpgrade() {
         return defaultHapiSpec("UpdateFileForUpgrade")
                 .given(initializeSettings())
                 .when(sourcing(() -> {

@@ -44,7 +44,7 @@ import org.yaml.snakeyaml.constructor.Constructor;
 public class EntityManager {
     static final Logger log = LogManager.getLogger(EntityManager.class);
 
-    private final HapiSpec spec;
+    private final DynamicTest spec;
 
     public EntityManager(HapiSpec spec) {
         this.spec = spec;

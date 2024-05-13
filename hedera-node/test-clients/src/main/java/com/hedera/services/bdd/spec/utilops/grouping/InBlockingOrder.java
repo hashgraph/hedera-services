@@ -23,7 +23,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 
 public class InBlockingOrder extends UtilOp {
-    private final HapiSpecOperation[] ops;
+    private final DynamicTestOperation[] ops;
 
     public InBlockingOrder(HapiSpecOperation... ops) {
         this.ops = ops;

@@ -35,6 +35,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class InvalidgRPCValuesTest extends HapiSuite {
@@ -45,12 +46,12 @@ public class InvalidgRPCValuesTest extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {invalidIdCheck()});
+    public List<DynamicTest> getSpecsInSuite() {
+        return List.of(invalidIdCheck());
     }
 
     @HapiTest
-    final HapiSpec invalidIdCheck() {
+    final DynamicTest invalidIdCheck() {
         final long MAX_NUM_ALLOWED = 0xFFFFFFFFL;
         final String invalidMaxId = MAX_NUM_ALLOWED + 1 + ".2.3";
         return defaultHapiSpec("TransferWithInvalidAccount")

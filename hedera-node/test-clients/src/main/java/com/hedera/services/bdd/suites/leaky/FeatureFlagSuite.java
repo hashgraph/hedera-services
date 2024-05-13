@@ -66,6 +66,7 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class FeatureFlagSuite extends HapiSuite {
@@ -76,14 +77,14 @@ public class FeatureFlagSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 disableAllFeatureFlagsAndConfirmNotSupported(),
                 enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting());
     }
 
     @HapiTest
-    final HapiSpec disableAllFeatureFlagsAndConfirmNotSupported() {
+    final DynamicTest disableAllFeatureFlagsAndConfirmNotSupported() {
         return defaultHapiSpec("disableAllFeatureFlagsAndConfirmNotSupported")
                 .given(overridingAllOf(FeatureFlags.FEATURE_FLAGS.allDisabled()))
                 .when()
@@ -95,7 +96,7 @@ public class FeatureFlagSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting() {
+    final DynamicTest enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting() {
         return defaultHapiSpec("enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting")
                 .given()
                 .when()

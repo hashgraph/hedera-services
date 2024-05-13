@@ -68,6 +68,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class DissociatePrecompileV1SecurityModelSuite extends HapiSuite {
@@ -94,7 +95,7 @@ public class DissociatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 dissociatePrecompileHasExpectedSemanticsForDeletedTokens(),
                 nestedDissociateWorksAsExpected(),
@@ -102,7 +103,7 @@ public class DissociatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     /* -- Not specifically required in the HTS Precompile Test Plan -- */
-    public HapiSpec dissociatePrecompileHasExpectedSemanticsForDeletedTokens() {
+    final DynamicTest dissociatePrecompileHasExpectedSemanticsForDeletedTokens() {
         final var tbdUniqToken = "UniqToBeDeleted";
         final var zeroBalanceFrozen = "0bFrozen";
         final var zeroBalanceUnfrozen = "0bUnfrozen";
@@ -274,7 +275,7 @@ public class DissociatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     /* -- Not specifically required in the HTS Precompile Test Plan -- */
-    final HapiSpec nestedDissociateWorksAsExpected() {
+    final DynamicTest nestedDissociateWorksAsExpected() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
@@ -323,7 +324,7 @@ public class DissociatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     /* -- HSCS-PREC-007 from HTS Precompile Test Plan -- */
-    public HapiSpec multiplePrecompileDissociationWithSigsForFungibleWorks() {
+    final DynamicTest multiplePrecompileDissociationWithSigsForFungibleWorks() {
         final AtomicReference<TokenID> knowableTokenTokenID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();

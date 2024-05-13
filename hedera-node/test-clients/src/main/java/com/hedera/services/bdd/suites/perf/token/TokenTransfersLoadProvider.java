@@ -72,13 +72,13 @@ public class TokenTransfersLoadProvider extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             runTokenTransfers(),
         });
     }
 
-    final HapiSpec runTokenTransfers() {
+    final DynamicTest runTokenTransfers() {
         return HapiSpec.defaultHapiSpec("RunTokenTransfers")
                 .given(
                         getAccountBalance(DEFAULT_PAYER).logged(),

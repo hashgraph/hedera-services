@@ -41,11 +41,11 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runTransfersBeforeReconnect(), validateDuplicateTransactionAfterReconnect());
     }
 
-    final HapiSpec validateDuplicateTransactionAfterReconnect() {
+    final DynamicTest validateDuplicateTransactionAfterReconnect() {
         final String transactionId = "specialTransactionId";
         return customHapiSpec("validateDuplicateTransactionAfterReconnect")
                 .withProperties(Map.of("txn.start.offset.secs", "-5"))

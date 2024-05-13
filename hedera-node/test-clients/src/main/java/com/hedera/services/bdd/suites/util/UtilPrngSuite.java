@@ -48,7 +48,7 @@ public class UtilPrngSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return allOf(positiveTests());
     }
 
@@ -57,7 +57,7 @@ public class UtilPrngSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec usdFeeAsExpected() {
+    final DynamicTest usdFeeAsExpected() {
         double baseFee = 0.001;
         double plusRangeFee = 0.0010010316;
 
@@ -85,7 +85,7 @@ public class UtilPrngSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec failsInPreCheckForNegativeRange() {
+    final DynamicTest failsInPreCheckForNegativeRange() {
         return defaultHapiSpec("failsInPreCheckForNegativeRange")
                 .given(
                         overridingAllOf(Map.of(PRNG_IS_ENABLED, "true")),
@@ -101,7 +101,7 @@ public class UtilPrngSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
+    final DynamicTest idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given()
                 .when()
@@ -109,7 +109,7 @@ public class UtilPrngSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec happyPathWorksForRangeAndBitString() {
+    final DynamicTest happyPathWorksForRangeAndBitString() {
         final var rangeTxn = "prngWithRange";
         final var rangeTxn1 = "prngWithRange1";
         final var prngWithoutRange = "prngWithoutRange";

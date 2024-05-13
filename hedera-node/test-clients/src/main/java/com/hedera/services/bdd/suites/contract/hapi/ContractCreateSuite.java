@@ -115,6 +115,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes32;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -141,7 +142,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 createDeterministicDeployer(),
                 createEmptyConstructor(),
@@ -175,7 +176,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createDeterministicDeployer() {
+    final DynamicTest createDeterministicDeployer() {
         final var creatorAddress = ByteString.copyFrom(CommonUtils.unhex(DEPLOYMENT_SIGNER));
         final var transaction = ByteString.copyFrom(CommonUtils.unhex(DEPLOYMENT_TRANSACTION));
         final var systemFileId = FileID.newBuilder().setFileNum(159).build();
@@ -195,7 +196,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec createContractWithStakingFields() {
+    final DynamicTest createContractWithStakingFields() {
         final var contract = "CreateTrivial";
         return defaultHapiSpec("createContractWithStakingFields", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
@@ -256,7 +257,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec insufficientPayerBalanceUponCreation() {
+    final DynamicTest insufficientPayerBalanceUponCreation() {
         return defaultHapiSpec("InsufficientPayerBalanceUponCreation", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate("bankrupt").balance(0L), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
@@ -266,7 +267,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec disallowCreationsOfEmptyInitCode() {
+    final DynamicTest disallowCreationsOfEmptyInitCode() {
         final var contract = "EmptyContract";
         return defaultHapiSpec("allowCreationsOfEmptyContract")
                 .given(
@@ -281,7 +282,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec cannotSendToNonExistentAccount() {
+    final DynamicTest cannotSendToNonExistentAccount() {
         final var contract = "Multipurpose";
         Object[] donationArgs = new Object[] {666666L, "Hey, Ma!"};
 
@@ -292,7 +293,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec invalidSystemInitcodeFileFailsWithInvalidFileId() {
+    final DynamicTest invalidSystemInitcodeFileFailsWithInvalidFileId() {
         final var neverToBe = "NeverToBe";
         final var systemFileId = FileID.newBuilder().setFileNum(159).build();
         return defaultHapiSpec("InvalidSystemInitcodeFileFailsWithInvalidFileId")
@@ -313,7 +314,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createsVanillaContractAsExpectedWithOmittedAdminKey() {
+    final DynamicTest createsVanillaContractAsExpectedWithOmittedAdminKey() {
         return defaultHapiSpec("createsVanillaContractAsExpectedWithOmittedAdminKey")
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
@@ -325,7 +326,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec childCreationsHaveExpectedKeysWithOmittedAdminKey() {
+    final DynamicTest childCreationsHaveExpectedKeysWithOmittedAdminKey() {
         final AtomicLong firstStickId = new AtomicLong();
         final AtomicLong secondStickId = new AtomicLong();
         final AtomicLong thirdStickId = new AtomicLong();
@@ -367,7 +368,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createEmptyConstructor() {
+    final DynamicTest createEmptyConstructor() {
         return defaultHapiSpec("createEmptyConstructor", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
@@ -375,7 +376,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createCallInConstructor() {
+    final DynamicTest createCallInConstructor() {
         final var txn = "txn";
         return defaultHapiSpec("callInConstructor")
                 .given(uploadInitCode("CallInConstructor"))
@@ -397,7 +398,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec revertedTryExtCallHasNoSideEffects() {
+    final DynamicTest revertedTryExtCallHasNoSideEffects() {
         final var balance = 3_000;
         final int sendAmount = balance / 3;
         final var contract = "RevertingSendTry";
@@ -430,7 +431,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createFailsIfMissingSigs() {
+    final DynamicTest createFailsIfMissingSigs() {
         final var shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
         final var validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
         final var invalidSig = shape.signedWith(sigs(OFF, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
@@ -450,7 +451,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec rejectsInsufficientGas() {
+    final DynamicTest rejectsInsufficientGas() {
         return defaultHapiSpec("RejectsInsufficientGas", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
@@ -458,7 +459,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec rejectsInvalidMemo() {
+    final DynamicTest rejectsInvalidMemo() {
         return defaultHapiSpec("RejectsInvalidMemo")
                 .given()
                 .when()
@@ -473,7 +474,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec rejectsInsufficientFee() {
+    final DynamicTest rejectsInsufficientFee() {
         return defaultHapiSpec("RejectsInsufficientFee", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate(PAYER), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
@@ -484,7 +485,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec rejectsInvalidBytecode() {
+    final DynamicTest rejectsInvalidBytecode() {
         final var contract = "InvalidBytecode";
         return defaultHapiSpec("RejectsInvalidBytecode")
                 .given(uploadInitCode(contract))
@@ -493,7 +494,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec revertsNonzeroBalance() {
+    final DynamicTest revertsNonzeroBalance() {
         return defaultHapiSpec("RevertsNonzeroBalance", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
@@ -501,7 +502,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec delegateContractIdRequiredForTransferInDelegateCall() {
+    final DynamicTest delegateContractIdRequiredForTransferInDelegateCall() {
         final var justSendContract = "JustSend";
         final var sendInternalAndDelegateContract = "SendInternalAndDelegate";
 
@@ -555,7 +556,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotCreateTooLargeContract() {
+    final DynamicTest cannotCreateTooLargeContract() {
         ByteString contents;
         try {
             contents = ByteString.copyFrom(Files.readAllBytes(Path.of(bytecodePath("CryptoKitties"))));
@@ -585,7 +586,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec blockTimestampChangesWithinFewSeconds() {
+    final DynamicTest blockTimestampChangesWithinFewSeconds() {
         final var contract = "EmitBlockTimestamp";
         final var firstBlock = "firstBlock";
         final var timeLoggingTxn = "timeLoggingTxn";
@@ -649,7 +650,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec vanillaSuccess() {
+    final DynamicTest vanillaSuccess() {
         final var contract = "CreateTrivial";
         return defaultHapiSpec(
                         "VanillaSuccess",
@@ -687,7 +688,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec newAccountsCanUsePureContractIdKey() {
+    final DynamicTest newAccountsCanUsePureContractIdKey() {
         final var contract = "CreateTrivial";
         final var contractControlled = "contractControlled";
         return defaultHapiSpec("NewAccountsCanUsePureContractIdKey", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -708,7 +709,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
+    final DynamicTest idVariantsTreatedAsExpected() {
         final var autoRenewAccount = "autoRenewAccount";
         final var creationNumber = new AtomicLong();
         final var contract = "CreateTrivial";
@@ -722,7 +723,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec contractWithAutoRenewNeedSignatures() {
+    final DynamicTest contractWithAutoRenewNeedSignatures() {
         final var contract = "CreateTrivial";
         final var autoRenewAccount = "autoRenewAccount";
         return defaultHapiSpec("contractWithAutoRenewNeedSignatures", HIGHLY_NON_DETERMINISTIC_FEES)
@@ -748,7 +749,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cannotSetMaxAutomaticAssociations() {
+    final DynamicTest cannotSetMaxAutomaticAssociations() {
         return defaultHapiSpec("cannotSetMaxAutomaticAssociations")
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()

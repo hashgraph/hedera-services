@@ -61,11 +61,11 @@ public class SchedulesExpiryDuringReconnect extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runTransfersBeforeReconnect(), suiteSetup(), expireSchedulesDuringReconnect());
     }
 
-    final HapiSpec expireSchedulesDuringReconnect() {
+    final DynamicTest expireSchedulesDuringReconnect() {
         String soonToBeExpiredSchedule = "schedule-1";
         String longLastingSchedule = "schedule-2";
         String oneOtherSchedule = "schedule-3";
@@ -169,7 +169,7 @@ public class SchedulesExpiryDuringReconnect extends HapiSuite {
                                 .hasCostAnswerPrecheck(INVALID_SCHEDULE_ID));
     }
 
-    final HapiSpec suiteSetup() {
+    final DynamicTest suiteSetup() {
         return defaultHapiSpec("suiteSetup")
                 .given()
                 .when()
