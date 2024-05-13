@@ -31,6 +31,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -47,9 +48,11 @@ class CryptoAddLiveHashHandlerTest {
     private final CryptoAddLiveHashHandler subject = new CryptoAddLiveHashHandler();
 
     @Test
-    void pureChecksDoesNothing() throws PreCheckException {
+    void pureChecksDoesNothing() {
         // Verify no exception is thrown
-        subject.pureChecks(TransactionBody.newBuilder().build());
+        Assertions.assertThatNoException()
+                .isThrownBy(
+                        () -> subject.pureChecks(TransactionBody.newBuilder().build()));
     }
 
     @Test
@@ -68,7 +71,8 @@ class CryptoAddLiveHashHandlerTest {
 
     @Test
     void calculateFeesFree() {
-        final var result = subject.calculateFees(mock(FeeContext.class));
+        final var feeCtx = mock(FeeContext.class);
+        final var result = subject.calculateFees(feeCtx);
         assertThat(result).isEqualTo(Fees.FREE);
     }
 }
