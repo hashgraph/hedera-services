@@ -49,6 +49,9 @@ import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * This handler manages the paying staking rewards for the accounts.
+ */
 @Singleton
 public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
     private static final Logger log = LogManager.getLogger(StakingRewardsHandlerImpl.class);
@@ -56,6 +59,12 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
     private final StakePeriodManager stakePeriodManager;
     private final StakeInfoHelper stakeInfoHelper;
 
+    /**
+     * Default constructor for injection.
+     * @param rewardsPayer the rewards payer
+     * @param stakePeriodManager the stake period manager
+     * @param stakeInfoHelper the stake info helper
+     */
     @Inject
     public StakingRewardsHandlerImpl(
             @NonNull final StakingRewardsDistributor rewardsPayer,

@@ -61,6 +61,10 @@ import javax.inject.Singleton;
 public class FileGetInfoHandler extends FileQueryBase {
     private final FileOpsUsage fileOpsUsage;
 
+    /**
+     * Constructs a {@link FileGetInfoHandler} with the given {@link FileOpsUsage}.
+     * @param fileOpsUsage the file operations usage to be used for fee calculation
+     */
     @Inject
     public FileGetInfoHandler(final FileOpsUsage fileOpsUsage) {
         this.fileOpsUsage = fileOpsUsage;
@@ -138,7 +142,7 @@ public class FileGetInfoHandler extends FileQueryBase {
      * Provides information about a file.
      * @param fileID the file to get information about
      * @param fileStore the file store
-     * @param ledgerConfig
+     * @param ledgerConfig Ledger configuration properties
      * @return the information about the file
      */
     @SuppressWarnings("java:S5738") // Suppress the warning that we are using deprecated class(CryptographyHolder)

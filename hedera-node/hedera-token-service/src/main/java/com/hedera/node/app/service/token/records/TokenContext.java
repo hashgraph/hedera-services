@@ -100,6 +100,7 @@ public interface TokenContext {
 
     /**
      * Indicate whether this is the first transaction since node startup
+     * @return true if this is the first transaction since node startup
      */
     boolean isFirstTransaction();
 
