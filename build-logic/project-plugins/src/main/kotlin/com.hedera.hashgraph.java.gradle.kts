@@ -88,7 +88,11 @@ sourceSets.all {
     // Remove 'classes' tasks from 'build' group to keep it cleaned up
     tasks.named(classesTaskName) { group = null }
 
-    configurations.getByName(compileClasspathConfigurationName) { extendsFrom(internal.get()) }
+    configurations.getByName(compileClasspathConfigurationName) {
+        extendsFrom(internal.get())
+        @Suppress("UnstableApiUsage")
+        shouldResolveConsistentlyWith(configurations.getByName(runtimeClasspathConfigurationName))
+    }
     configurations.getByName(runtimeClasspathConfigurationName) { extendsFrom(internal.get()) }
 
     dependencies {

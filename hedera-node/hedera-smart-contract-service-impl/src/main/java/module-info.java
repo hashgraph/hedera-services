@@ -10,6 +10,7 @@ module com.hedera.node.app.service.contract.impl {
     requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.config.api;
+    requires transitive com.swirlds.state.api;
     requires transitive dagger;
     requires transitive headlong;
     requires transitive javax.inject;
@@ -24,6 +25,7 @@ module com.hedera.node.app.service.contract.impl {
     requires com.hedera.evm;
     requires com.swirlds.base;
     requires com.swirlds.common;
+    requires com.swirlds.platform.core;
     requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;
     requires static java.compiler; // javax.annotation.processing.Generated
