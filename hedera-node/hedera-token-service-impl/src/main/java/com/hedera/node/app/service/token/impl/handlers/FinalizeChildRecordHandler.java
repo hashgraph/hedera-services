@@ -44,6 +44,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class FinalizeChildRecordHandler extends RecordFinalizerBase implements ChildRecordFinalizer {
+    /**
+     * Constructs a {@link FinalizeChildRecordHandler} instance.
+     */
     @Inject
     public FinalizeChildRecordHandler() {
         // For Dagger Injection

@@ -29,7 +29,6 @@ import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedSt
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RESTART;
 import static com.swirlds.platform.system.SoftwareVersion.NO_VERSION;
-import static com.swirlds.platform.system.UptimeData.NO_ROUND;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
@@ -69,7 +68,6 @@ import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
-import com.swirlds.platform.listeners.StateLoadedFromDiskNotification;
 import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.metrics.TransactionMetrics;
 import com.swirlds.platform.pool.TransactionPoolNexus;
@@ -99,7 +97,6 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.SystemExitUtils;
-import com.swirlds.platform.system.UptimeData;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
@@ -111,7 +108,6 @@ import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.platform.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.util.HashLogger;
-import com.swirlds.platform.util.ThingsToStart;
 import com.swirlds.platform.wiring.PlatformWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -120,14 +116,11 @@ import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class SwirldsPlatform implements Platform {
-
-    public static final String PLATFORM_THREAD_POOL_NAME = "platform-core";
 
     private static final Logger logger = LogManager.getLogger(SwirldsPlatform.class);
 
@@ -140,8 +133,6 @@ public class SwirldsPlatform implements Platform {
      * the current nodes in the network and their information
      */
     private final AddressBook currentAddressBook;
-
-    private final Metrics metrics;
 
     /**
      * the object that contains all key pairs and CSPRNG state for this member
@@ -179,11 +170,6 @@ public class SwirldsPlatform implements Platform {
     private final SwirldTransactionSubmitter transactionSubmitter;
 
     /**
-     * All things that need to be started when the platform is started.
-     */
-    private final ThingsToStart thingsToStart;
-
-    /**
      * For passing notifications between the platform and the application.
      */
     private final NotificationEngine notificationEngine;
@@ -199,12 +185,6 @@ public class SwirldsPlatform implements Platform {
     private final PcesFileTracker initialPcesFiles;
 
     /**
-     * The round of the most recent reconnect state received, or {@link UptimeData#NO_ROUND} if no reconnect state has
-     * been received since startup.
-     */
-    private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);
-
-    /**
      * Controls which states are saved to disk
      */
     private final SavedStateController savedStateController;
@@ -213,8 +193,6 @@ public class SwirldsPlatform implements Platform {
      * Encapsulated wiring for the platform.
      */
     private final PlatformWiring platformWiring;
-
-    private final AncientMode ancientMode;
 
     /**
      * Constructor.
@@ -226,7 +204,7 @@ public class SwirldsPlatform implements Platform {
         final PlatformBuildingBlocks blocks = builder.getBuildingBlocks();
         platformContext = blocks.platformContext();
 
-        ancientMode = platformContext
+        final AncientMode ancientMode = platformContext
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
@@ -254,8 +232,6 @@ public class SwirldsPlatform implements Platform {
         selfId = blocks.selfId();
         initialPcesFiles = blocks.initialPcesFiles();
 
-        thingsToStart = new ThingsToStart();
-
         final ThreadManager threadManager = getStaticThreadManager();
         notificationEngine = blocks.notificationEngine();
 
@@ -264,11 +240,9 @@ public class SwirldsPlatform implements Platform {
 
         currentAddressBook = initialState.getAddressBook();
 
-        platformWiring = thingsToStart.add(new PlatformWiring(platformContext, blocks.applicationCallbacks()));
+        platformWiring = new PlatformWiring(platformContext, blocks.applicationCallbacks());
 
-        thingsToStart.add(platformContext.getFileSystemManager());
-
-        metrics = platformContext.getMetrics();
+        final Metrics metrics = platformContext.getMetrics();
 
         registerAddressBookMetrics(metrics, currentAddressBook, selfId);
 
@@ -350,7 +324,7 @@ public class SwirldsPlatform implements Platform {
         final HashLogger hashLogger =
                 new HashLogger(platformContext.getConfiguration().getConfigData(StateConfig.class));
 
-        final BirthRoundMigrationShim birthRoundMigrationShim = buildBirthRoundMigrationShim(initialState);
+        final BirthRoundMigrationShim birthRoundMigrationShim = buildBirthRoundMigrationShim(initialState, ancientMode);
 
         final SignedStateHasher signedStateHasher =
                 new DefaultSignedStateHasher(signedStateMetrics, SystemExitUtils::handleFatalError);
@@ -438,16 +412,6 @@ public class SwirldsPlatform implements Platform {
                     initialAncientThreshold,
                     AncientMode.getAncientMode(platformContext)));
             platformWiring.overrideIssDetectorState(initialState.reserve("initialize issDetector"));
-
-            // We don't want to send this notification until after we are starting up.
-            thingsToStart.add(() -> {
-                // If we loaded from disk then call the appropriate dispatch.
-                // Let the app know that a state was loaded.
-                platformWiring
-                        .getNotifierWiring()
-                        .getInputWire(AppNotifier::sendStateLoadedFromDiskNotification)
-                        .put(new StateLoadedFromDiskNotification());
-            });
         }
 
         blocks.getLatestCompleteStateReference()
@@ -461,10 +425,12 @@ public class SwirldsPlatform implements Platform {
      * Builds the birth round migration shim if necessary.
      *
      * @param initialState the initial state
+     * @param ancientMode  the ancient mode
      * @return the birth round migration shim, or null if it is not needed
      */
     @Nullable
-    private BirthRoundMigrationShim buildBirthRoundMigrationShim(@NonNull final SignedState initialState) {
+    private BirthRoundMigrationShim buildBirthRoundMigrationShim(
+            @NonNull final SignedState initialState, @NonNull final AncientMode ancientMode) {
 
         if (ancientMode == AncientMode.GENERATION_THRESHOLD) {
             // We don't need the shim if we haven't migrated to birth round mode.
@@ -578,9 +544,6 @@ public class SwirldsPlatform implements Platform {
             AddressBookUtils.verifyReconnectAddressBooks(getAddressBook(), signedState.getAddressBook());
 
             swirldStateManager.loadFromSignedState(signedState);
-
-            latestReconnectRound.set(signedState.getRound());
-
             // kick off transition to RECONNECT_COMPLETE before beginning to save the reconnect state to disk
             // this guarantees that the platform statusp will be RECONNECT_COMPLETE before the state is saved
             platformWiring
@@ -605,6 +568,11 @@ public class SwirldsPlatform implements Platform {
                     .inject(new AddressBookUpdate(
                             signedState.getState().getPlatformState().getPreviousAddressBook(),
                             signedState.getState().getPlatformState().getAddressBook()));
+
+            final AncientMode ancientMode = platformContext
+                    .getConfiguration()
+                    .getConfigData(EventConfig.class)
+                    .getAncientMode();
 
             platformWiring.updateEventWindow(new EventWindow(
                     signedState.getRound(),
@@ -654,9 +622,9 @@ public class SwirldsPlatform implements Platform {
         logger.info(STARTUP.getMarker(), "Starting platform {}", selfId);
         platformWiring.getModel().preventJvmExit();
 
-        thingsToStart.start();
-
-        metrics.start();
+        platformContext.getFileSystemManager().start();
+        platformContext.getMetrics().start();
+        platformWiring.start();
 
         replayPreconsensusEvents();
         platformWiring.startGossip();
@@ -672,7 +640,9 @@ public class SwirldsPlatform implements Platform {
      * </ul>
      */
     public void performPcesRecovery() {
-        thingsToStart.start();
+        platformContext.getFileSystemManager().start();
+        platformContext.getMetrics().start();
+        platformWiring.start();
 
         replayPreconsensusEvents();
         try (final ReservedSignedState reservedState = latestImmutableStateNexus.getState("Get PCES recovery state")) {

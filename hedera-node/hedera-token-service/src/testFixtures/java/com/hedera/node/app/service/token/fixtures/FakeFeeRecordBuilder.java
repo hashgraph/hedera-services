@@ -19,6 +19,9 @@ package com.hedera.node.app.service.token.fixtures;
 import com.hedera.node.app.service.token.api.FeeRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * A fake implementation of {@link FeeRecordBuilder} for testing purposes.
+ */
 public class FakeFeeRecordBuilder implements FeeRecordBuilder {
     private long transactionFee;
 

@@ -30,12 +30,12 @@ module com.hedera.node.app {
     requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.app.service.consensus;
     requires com.hedera.node.app.service.contract;
-    requires com.hedera.node.app.service.evm;
     requires com.hedera.node.app.service.file;
     requires com.hedera.node.app.service.network.admin;
     requires com.hedera.node.app.service.util;
     requires com.google.common;
     requires com.google.protobuf;
+    requires com.hedera.evm;
     requires com.swirlds.base;
     requires com.swirlds.config.extensions;
     requires com.swirlds.fcqueue;

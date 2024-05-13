@@ -42,6 +42,10 @@ import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * Functionality needed for auto-creating accounts when a CryptoTransfer transaction sends hbar or tokens to an
+ * alias that does not yet have an account.
+ */
 public class AutoAccountCreator {
     private WritableAccountStore accountStore;
     private HandleContext handleContext;
@@ -49,6 +53,10 @@ public class AutoAccountCreator {
             CryptoUpdateTransactionBody.newBuilder()
                     .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY).build());
 
+    /**
+     * Constructs an {@link AutoAccountCreator} with the given {@link HandleContext}.
+     * @param handleContext the context to use for the creation
+     */
     public AutoAccountCreator(@NonNull final HandleContext handleContext) {
         this.handleContext = requireNonNull(handleContext);
         this.accountStore = handleContext.writableStore(WritableAccountStore.class);
@@ -59,6 +67,7 @@ public class AutoAccountCreator {
      *
      * @param alias                  the alias to create the account for
      * @param maxAutoAssociations   the maxAutoAssociations to set on the account
+     * @return the account ID of the created account
      */
     public AccountID create(@NonNull final Bytes alias, int maxAutoAssociations) {
         requireNonNull(alias);
