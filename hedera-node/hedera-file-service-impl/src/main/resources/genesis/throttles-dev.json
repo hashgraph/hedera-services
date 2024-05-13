@@ -70,8 +70,7 @@
 			"TokenUnfreezeAccount",
 			"TokenGrantKycToAccount",
 			"TokenRevokeKycFromAccount",
-			"TokenUpdateNfts",
-			"TokenReject"
+			  "TokenUpdateNfts"
 		  ]
 		}
 	  ]
