@@ -14,27 +14,28 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics.platform;
+package com.swirlds.metrics.impl;
 
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.metrics.api.DoubleGauge;
-import com.swirlds.metrics.impl.AtomicDouble;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.impl.Snapshot.SnapshotEntry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
- * Platform-implementation of {@link DoubleGauge}
+ * Platform-implementation of {@link Counter}
  */
-public class DefaultDoubleGauge extends DefaultMetric implements DoubleGauge {
+public class DefaultCounter extends DefaultMetric implements Counter {
 
-    private final AtomicDouble value;
+    private static final String INCREASE_ONLY_ERROR_MESSAGE = "The value of a a Counter can only be increased";
 
-    public DefaultDoubleGauge(final DoubleGauge.Config config) {
+    private final LongAdder adder = new LongAdder();
+
+    public DefaultCounter(final Config config) {
         super(config);
-        value = new AtomicDouble(config.getInitialValue());
     }
 
     /**
@@ -50,16 +51,27 @@ public class DefaultDoubleGauge extends DefaultMetric implements DoubleGauge {
      * {@inheritDoc}
      */
     @Override
-    public double get() {
-        return value.get();
+    public long get() {
+        return adder.sum();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void set(final double newValue) {
-        this.value.set(newValue);
+    public void add(final long value) {
+        if (value <= 0) {
+            throw new IllegalArgumentException(INCREASE_ONLY_ERROR_MESSAGE);
+        }
+        adder.add(value);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void increment() {
+        adder.increment();
     }
 
     /**
@@ -69,7 +81,7 @@ public class DefaultDoubleGauge extends DefaultMetric implements DoubleGauge {
     public String toString() {
         return new ToStringBuilder(this)
                 .appendSuper(super.toString())
-                .append("value", value.get())
+                .append("value", adder.sum())
                 .toString();
     }
 }

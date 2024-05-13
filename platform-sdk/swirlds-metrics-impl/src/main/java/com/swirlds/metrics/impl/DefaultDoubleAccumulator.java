@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics.platform;
+package com.swirlds.metrics.impl;
 
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.metrics.api.DoubleAccumulator;
-import com.swirlds.metrics.impl.AtomicDouble;
+import com.swirlds.metrics.impl.Snapshot.SnapshotEntry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.DoubleBinaryOperator;

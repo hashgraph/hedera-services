@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics.platform;
+package com.swirlds.metrics.impl;
 
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metric.ValueType;
@@ -29,8 +29,7 @@ public record Snapshot(Metric metric, List<SnapshotEntry> entries) {
     /**
      * Create a {@code Snapshot} of a {@link DefaultMetric}
      *
-     * @param metric
-     * 		The source metric
+     * @param metric The source metric
      * @return the {@code Snapshot}
      * @throws NullPointerException in case {@code metric} parameter is {@code null}
      */
@@ -56,10 +55,8 @@ public record Snapshot(Metric metric, List<SnapshotEntry> entries) {
     /**
      * As single entry within a {@code Snapshot}
      *
-     * @param valueType
-     * 		the {@link Metric.ValueType} of this entry
-     * @param value
-     * 		the actual value
+     * @param valueType the {@link ValueType} of this entry
+     * @param value     the actual value
      */
-    public record SnapshotEntry(Metric.ValueType valueType, Object value) {}
+    public record SnapshotEntry(ValueType valueType, Object value) {}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,27 +14,27 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics.platform;
+package com.swirlds.metrics.impl;
 
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.metrics.api.DoubleGauge;
-import com.swirlds.metrics.impl.AtomicDouble;
+import com.swirlds.metrics.api.LongGauge;
+import com.swirlds.metrics.impl.Snapshot.SnapshotEntry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Platform-implementation of {@link DoubleGauge}
+ * Platform-implementation of {@link LongGauge}
  */
-public class DefaultDoubleGauge extends DefaultMetric implements DoubleGauge {
+public class DefaultLongGauge extends DefaultMetric implements LongGauge {
 
-    private final AtomicDouble value;
+    private final AtomicLong value;
 
-    public DefaultDoubleGauge(final DoubleGauge.Config config) {
+    public DefaultLongGauge(final Config config) {
         super(config);
-        value = new AtomicDouble(config.getInitialValue());
+        this.value = new AtomicLong(config.getInitialValue());
     }
 
     /**
@@ -50,7 +50,7 @@ public class DefaultDoubleGauge extends DefaultMetric implements DoubleGauge {
      * {@inheritDoc}
      */
     @Override
-    public double get() {
+    public long get() {
         return value.get();
     }
 
@@ -58,8 +58,8 @@ public class DefaultDoubleGauge extends DefaultMetric implements DoubleGauge {
      * {@inheritDoc}
      */
     @Override
-    public void set(final double newValue) {
-        this.value.set(newValue);
+    public void set(final long newValue) {
+        value.set(newValue);
     }
 
     /**

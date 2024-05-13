@@ -14,60 +14,58 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics.platform;
+package com.swirlds.metrics.impl;
 
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.metrics.api.DoubleAccumulator;
-import com.swirlds.metrics.impl.AtomicDouble;
+import com.swirlds.metrics.api.IntegerAccumulator;
+import com.swirlds.metrics.impl.Snapshot.SnapshotEntry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import java.util.function.DoubleBinaryOperator;
-import java.util.function.DoubleSupplier;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntBinaryOperator;
+import java.util.function.IntSupplier;
 
 /**
- * Platform-implementation of {@link DoubleAccumulator}
+ * Platform-implementation of {@link IntegerAccumulator}
  */
-public class DefaultDoubleAccumulator extends DefaultMetric implements DoubleAccumulator {
+public class DefaultIntegerAccumulator extends DefaultMetric implements IntegerAccumulator {
 
-    private final @NonNull AtomicDouble container;
-    private final @NonNull DoubleBinaryOperator accumulator;
-    private final @NonNull DoubleSupplier initializer;
+    private final AtomicInteger container;
+    private final IntBinaryOperator accumulator;
+    private final IntSupplier initializer;
 
-    public DefaultDoubleAccumulator(@NonNull final Config config) {
+    public DefaultIntegerAccumulator(final Config config) {
         super(config);
-        final double initialValue = config.getInitialValue();
-        final DoubleSupplier configInitializer = config.getInitializer();
-
         this.accumulator = config.getAccumulator();
-        this.initializer = configInitializer != null ? configInitializer : () -> initialValue;
-        this.container = new AtomicDouble(this.initializer.getAsDouble());
+        final int initialValue = config.getInitialValue();
+        this.initializer = config.getInitializer() != null ? config.getInitializer() : () -> initialValue;
+        this.container = new AtomicInteger(this.initializer.getAsInt());
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public double getInitialValue() {
-        return initializer.getAsDouble();
+    public int getInitialValue() {
+        return initializer.getAsInt();
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override
     @NonNull
+    @Override
     public List<SnapshotEntry> takeSnapshot() {
-        return List.of(new SnapshotEntry(VALUE, container.getAndSet(initializer.getAsDouble())));
+        return List.of(new SnapshotEntry(VALUE, container.getAndSet(initializer.getAsInt())));
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public double get() {
+    public int get() {
         return container.get();
     }
 
@@ -75,13 +73,16 @@ public class DefaultDoubleAccumulator extends DefaultMetric implements DoubleAcc
      * {@inheritDoc}
      */
     @Override
-    public void update(final double other) {
+    public void update(final int other) {
         container.accumulateAndGet(other, accumulator);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void reset() {
-        container.set(initializer.getAsDouble());
+        container.set(initializer.getAsInt());
     }
 
     /**

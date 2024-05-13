@@ -14,27 +14,28 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics.platform;
+package com.swirlds.metrics.impl;
 
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.metrics.api.DoubleGauge;
-import com.swirlds.metrics.impl.AtomicDouble;
+import com.swirlds.metrics.api.IntegerGauge;
+import com.swirlds.metrics.impl.Snapshot.SnapshotEntry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Platform-implementation of {@link DoubleGauge}
+ * Platform-implementation of {@link IntegerGauge}
  */
-public class DefaultDoubleGauge extends DefaultMetric implements DoubleGauge {
+public class DefaultIntegerGauge extends DefaultMetric implements IntegerGauge {
 
-    private final AtomicDouble value;
+    private final AtomicInteger value;
 
-    public DefaultDoubleGauge(final DoubleGauge.Config config) {
+    public DefaultIntegerGauge(final Config config) {
         super(config);
-        value = new AtomicDouble(config.getInitialValue());
+        this.value = new AtomicInteger(config.getInitialValue());
     }
 
     /**
@@ -50,7 +51,7 @@ public class DefaultDoubleGauge extends DefaultMetric implements DoubleGauge {
      * {@inheritDoc}
      */
     @Override
-    public double get() {
+    public int get() {
         return value.get();
     }
 
@@ -58,7 +59,7 @@ public class DefaultDoubleGauge extends DefaultMetric implements DoubleGauge {
      * {@inheritDoc}
      */
     @Override
-    public void set(final double newValue) {
+    public void set(final int newValue) {
         this.value.set(newValue);
     }
 

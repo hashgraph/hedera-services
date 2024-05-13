@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics.platform;
+package com.swirlds.metrics.impl;
 
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.metrics.api.DoubleGauge;
-import com.swirlds.metrics.impl.AtomicDouble;
+import com.swirlds.metrics.impl.Snapshot.SnapshotEntry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -32,7 +31,7 @@ public class DefaultDoubleGauge extends DefaultMetric implements DoubleGauge {
 
     private final AtomicDouble value;
 
-    public DefaultDoubleGauge(final DoubleGauge.Config config) {
+    public DefaultDoubleGauge(final Config config) {
         super(config);
         value = new AtomicDouble(config.getInitialValue());
     }
