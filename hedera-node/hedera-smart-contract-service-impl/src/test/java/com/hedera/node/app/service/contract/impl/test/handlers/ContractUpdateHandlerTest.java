@@ -363,7 +363,6 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(entitiesConfig.limitTokenAssociations()).thenReturn(true);
         when(tokensConfig.maxPerAccount()).thenReturn(maxAutomaticTokenAssociations - 1);
         when(context.configuration()).thenReturn(configuration);
-        when(entitiesConfig.unlimitedAutoAssociations()).thenReturn(false);
 
         when(contract.maxAutoAssociations()).thenReturn(maxAutomaticTokenAssociations - 1);
         when(accountStore.getContractById(targetContract)).thenReturn(contract);
