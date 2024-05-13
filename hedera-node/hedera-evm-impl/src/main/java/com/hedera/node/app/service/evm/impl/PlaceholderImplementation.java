@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.evm.impl;
+package com.hedera.evm.impl;
 
 import com.hedera.node.app.service.evm.PlaceholderApi;
 

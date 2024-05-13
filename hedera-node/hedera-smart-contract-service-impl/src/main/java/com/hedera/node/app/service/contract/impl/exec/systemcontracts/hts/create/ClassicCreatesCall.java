@@ -18,7 +18,6 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.creat
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
@@ -28,8 +27,8 @@ import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExcep
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasPlus;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasPlus;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.RC_AND_ADDRESS_ENCODER;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.standardized;
@@ -55,7 +54,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerifi
 import com.hedera.node.app.service.contract.impl.exec.scope.EitherOrVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.SpecificCryptoVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
@@ -68,7 +67,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
-public class ClassicCreatesCall extends AbstractHtsCall {
+public class ClassicCreatesCall extends AbstractCall {
     /**
      * The mono-service stipulated gas cost for a token creation (remaining fee is collected by sent value)
      */
@@ -179,9 +178,6 @@ public class ClassicCreatesCall extends AbstractHtsCall {
         final var treasuryAccount = nativeOperations().getAccount(op.treasuryOrThrow());
         if (treasuryAccount == null) {
             return INVALID_ACCOUNT_ID;
-        }
-        if (op.autoRenewAccount() == null) {
-            return INVALID_EXPIRATION_TIME;
         }
         return OK;
     }

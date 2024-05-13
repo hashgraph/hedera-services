@@ -1,8 +1,8 @@
 /** Provides the core interfaces for the Hedera EVM implementation. */
-module com.hedera.node.app.service.evm {
-    requires transitive com.hedera.node.hapi;
+module com.hedera.evm {
     requires transitive com.github.benmanes.caffeine;
     requires transitive com.google.protobuf;
+    requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.common;
     requires transitive dagger;

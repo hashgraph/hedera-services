@@ -28,11 +28,12 @@ import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
 import com.swirlds.platform.wiring.components.StateHasherWiring;
-import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
@@ -57,7 +58,7 @@ public class PlatformCoordinator {
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
     private final ComponentWiring<EventCreationManager, BaseEventHashedData> eventCreationManagerWiring;
     private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
-    private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
+    private final ComponentWiring<StateSignatureCollector, List<ReservedSignedState>> stateSignatureCollectorWiring;
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
     private final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring;
     private final StateHasherWiring stateHasherWiring;
@@ -89,7 +90,9 @@ public class PlatformCoordinator {
             @NonNull final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring,
             @NonNull final ComponentWiring<EventCreationManager, BaseEventHashedData> eventCreationManagerWiring,
             @NonNull final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring,
-            @NonNull final StateSignatureCollectorWiring stateSignatureCollectorWiring,
+            @NonNull
+                    final ComponentWiring<StateSignatureCollector, List<ReservedSignedState>>
+                            stateSignatureCollectorWiring,
             @NonNull final ConsensusRoundHandlerWiring consensusRoundHandlerWiring,
             @NonNull final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring,
             @NonNull final StateHasherWiring stateHasherWiring) {
@@ -178,7 +181,9 @@ public class PlatformCoordinator {
         eventDeduplicatorWiring.getInputWire(EventDeduplicator::clear).inject(NoInput.getInstance());
         orphanBufferWiring.getInputWire(OrphanBuffer::clear).inject(NoInput.getInstance());
         gossipWiring.getClearInput().inject(NoInput.getInstance());
-        stateSignatureCollectorWiring.getClearInput().inject(NoInput.getInstance());
+        stateSignatureCollectorWiring
+                .getInputWire(StateSignatureCollector::clear)
+                .inject(NoInput.getInstance());
         eventCreationManagerWiring.getInputWire(EventCreationManager::clear).inject(NoInput.getInstance());
         roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::clear).inject(NoInput.getInstance());
     }

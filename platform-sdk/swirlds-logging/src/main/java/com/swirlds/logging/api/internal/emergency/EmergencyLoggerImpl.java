@@ -42,7 +42,8 @@ import java.util.function.Supplier;
  * The logger is defined as a singleton.
  */
 public class EmergencyLoggerImpl implements EmergencyLogger {
-    private static class InstanceHolder {
+
+    private static final class InstanceHolder {
         /**
          * The singleton instance of the logger.
          */

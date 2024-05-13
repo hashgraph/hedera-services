@@ -54,9 +54,14 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
 
+/**
+ * A validator for the crypto transfer transaction.
+ */
 @Singleton
 public class CryptoTransferValidator {
-
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public CryptoTransferValidator() {
         // For Dagger injection

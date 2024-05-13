@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.context;
+package com.swirlds.common.context.internal;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.concurrent.ExecutorFactory;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
@@ -35,50 +37,47 @@ public final class DefaultPlatformContext implements PlatformContext {
     private final Metrics metrics;
     private final Cryptography cryptography;
     private final Time time;
+
+    private final ExecutorFactory executorFactory;
+
     private final FileSystemManager fileSystemManager;
 
     /**
      * Constructor.
      *
-     * @param configuration     the configuration
-     * @param metrics           the metrics
-     * @param cryptography      the cryptography
-     * @param time              the time
-     */
-    public DefaultPlatformContext(
-            @NonNull final Configuration configuration,
-            @NonNull final Metrics metrics,
-            @NonNull final Cryptography cryptography,
-            @NonNull final Time time) {
-
-        this(
-                configuration,
-                metrics,
-                cryptography,
-                time,
-                FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, metrics));
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param configuration     the configuration
-     * @param metrics           the metrics
-     * @param cryptography      the cryptography
-     * @param time              the time
-     * @param fileSystemManager the fileSystemManager
+     * @param configuration the configuration
+     * @param metrics       the metrics
+     * @param cryptography  the cryptography
+     * @param time          the time
+     * @param executorFactory the executor factory
      */
     public DefaultPlatformContext(
             @NonNull final Configuration configuration,
             @NonNull final Metrics metrics,
             @NonNull final Cryptography cryptography,
             @NonNull final Time time,
-            @NonNull final FileSystemManager fileSystemManager) {
+            @NonNull final ExecutorFactory executorFactory) {
+        this(
+                configuration,
+                metrics,
+                cryptography,
+                time,
+                executorFactory,
+                FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, metrics));
+    }
 
+    public DefaultPlatformContext(
+            @NonNull final Configuration configuration,
+            @NonNull final Metrics metrics,
+            @NonNull final Cryptography cryptography,
+            @NonNull final Time time,
+            @NonNull final ExecutorFactory executorFactory,
+            @NonNull final FileSystemManager fileSystemManager) {
         this.configuration = Objects.requireNonNull(configuration);
         this.metrics = Objects.requireNonNull(metrics);
         this.cryptography = Objects.requireNonNull(cryptography);
         this.time = Objects.requireNonNull(time);
+        this.executorFactory = Objects.requireNonNull(executorFactory);
         this.fileSystemManager = Objects.requireNonNull(fileSystemManager);
     }
 
@@ -118,12 +117,15 @@ public final class DefaultPlatformContext implements PlatformContext {
         return time;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @NonNull
     @Override
     public FileSystemManager getFileSystemManager() {
         return fileSystemManager;
+    }
+
+    @Override
+    @NonNull
+    public ExecutorFactory getExecutorFactory() {
+        return executorFactory;
     }
 }

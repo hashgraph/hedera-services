@@ -30,6 +30,9 @@ import java.util.Set;
  */
 @SuppressWarnings("java:S6548")
 public final class FileServiceDefinition implements RpcServiceDefinition {
+    /**
+     * The singleton instance of the file service definition.
+     */
     public static final FileServiceDefinition INSTANCE = new FileServiceDefinition();
 
     private static final Set<RpcMethodDefinition<?, ?>> methods = Set.of(

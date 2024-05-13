@@ -5,6 +5,7 @@
 The Ethereum "Cancun" hardfork introduces a number of changes to the EVM that will need to be implemented to maintain EVM
 Equivalence. There are four different HIPs covering this feature (tracked in  
   epic [#11697](https://github.com/hashgraph/hedera-services/issues/11697):
+
 * [HIP-865](https://hips.hedera.com/hip/hip-865): Add EVM Support for transient storage and memory 
   copy Cancun opcodes (issue [#11699](https://github.com/hashgraph/hedera-services/issues/11699))
 * [HIP-866](https://hips.hedera.com/hip/hip-866): Add EVM compatibility for non-supported Cancun blob features
@@ -78,12 +79,14 @@ following features:
 ### Upgrade to latest Besu `GasCalculator`
 
 Update `CustomGasCalculator` to inherit from Besu's `CancunGasCalculator`.
+
 * (This needs to be part of the regular EVM module upgrade - it was last updated for the London
 release, wasn't done for Shanghai.)
 
 ### KZG precompile initialization
 
 The KZG precompiles needs to be set up properly:
+
 * A native library loaded
 * The trusted setup ([big file of community generated constants](https://github.com/ethereum/c-kzg-4844/blob/main/src/trusted_setup.txt))
   loaded from a file and processed
@@ -113,6 +116,7 @@ sufficient.
 
 The current Hedera override class, `CustomSelfDestructOperation`, will be updated so that it registers, 
 with the frame, the executing contract for deletion if either:
+
 * pre-Cancun semantics, or
 * post-Cancun semantics and the contract was created in the same frame
   * the latter information is available in the frame itself

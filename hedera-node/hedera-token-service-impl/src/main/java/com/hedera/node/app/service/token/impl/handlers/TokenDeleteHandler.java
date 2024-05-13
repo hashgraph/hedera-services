@@ -52,6 +52,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenDeleteHandler implements TransactionHandler {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenDeleteHandler() {}
 
@@ -100,6 +103,12 @@ public class TokenDeleteHandler implements TransactionHandler {
         record.tokenType(updatedToken.tokenType());
     }
 
+    /**
+     * Validates the semantics of the token to be deleted.
+     * @param tokenId the token to be deleted
+     * @param tokenStore the token store
+     * @return the token to be deleted
+     */
     @NonNull
     public Token validateSemantics(@NonNull final TokenID tokenId, @NonNull final ReadableTokenStore tokenStore) {
         final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);

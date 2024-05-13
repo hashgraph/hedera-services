@@ -33,7 +33,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
@@ -46,7 +45,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -79,7 +77,6 @@ import org.apache.logging.log4j.Logger;
 public class CreatePrecompileV2SecurityModelSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CreatePrecompileV2SecurityModelSuite.class);
 
-    public static final String ACCOUNT_2 = "account2";
     public static final String CONTRACT_ADMIN_KEY = "contractAdminKey";
     public static final String ACCOUNT_TO_ASSOCIATE = "account3";
     public static final String ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
@@ -97,7 +94,6 @@ public class CreatePrecompileV2SecurityModelSuite extends HapiSuite {
     public static final long DEFAULT_AMOUNT_TO_SEND = 20 * ONE_HBAR;
     public static final String ED25519KEY = "ed25519key";
     public static final String ECDSA_KEY = "ecdsa";
-    private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
     public static final String EXPLICIT_CREATE_RESULT = "Explicit create result is {}";
     private static final String CREATE_NFT_WITH_KEYS_AND_EXPIRY_FUNCTION = "createNFTTokenWithKeysAndExpiry";
     private static final KeyShape THRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
@@ -126,8 +122,8 @@ public class CreatePrecompileV2SecurityModelSuite extends HapiSuite {
                 fungibleTokenCreateThenQueryAndTransfer(),
                 nonFungibleTokenCreateThenQuery(),
                 inheritsSenderAutoRenewAccountIfAnyForNftCreate(),
-                inheritsSenderAutoRenewAccountForTokenCreate());
-        //                createTokenWithDefaultExpiryAndEmptyKeys());
+                inheritsSenderAutoRenewAccountForTokenCreate(),
+                createTokenWithDefaultExpiryAndEmptyKeys());
     }
 
     List<HapiSpec> negativeSpecs() {
@@ -589,7 +585,9 @@ public class CreatePrecompileV2SecurityModelSuite extends HapiSuite {
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
-                        contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER),
+                        contractCreate(TOKEN_CREATE_CONTRACT)
+                                .autoRenewAccountId(ACCOUNT)
+                                .gas(GAS_TO_OFFER),
                         newKeyNamed(THRESHOLD_KEY)
                                 .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_CREATE_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(THRESHOLD_KEY))
@@ -652,40 +650,32 @@ public class CreatePrecompileV2SecurityModelSuite extends HapiSuite {
                                 .logged()));
     }
 
-        @HapiTest
-        final HapiSpec createTokenWithDefaultExpiryAndEmptyKeys() {
-            final var tokenCreateContractAsKeyDelegate = "createTokenWithDefaultExpiryAndEmptyKeys";
-            final var createTokenNum = new AtomicLong();
-            return defaultHapiSpec("createTokenWithDefaultExpiryAndEmptyKeys")
-                    .given(
-                            uploadInitCode(TOKEN_CREATE_CONTRACT),
-                            contractCreate(TOKEN_CREATE_CONTRACT)
-                                    .gas(GAS_TO_OFFER),
-                            newKeyNamed(THRESHOLD_KEY)
-                                    .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ED25519_ON, TOKEN_CREATE_CONTRACT))),
-                            cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(THRESHOLD_KEY)
-                                    .maxAutomaticTokenAssociations(1))
-                    .when(withOpContext((spec, opLog) -> allRunFor(
-                            spec,
-                            contractCall(TOKEN_CREATE_CONTRACT, tokenCreateContractAsKeyDelegate)
-                                    .via(FIRST_CREATE_TXN)
-                                    .gas(GAS_TO_OFFER)
-                                    .sending(DEFAULT_AMOUNT_TO_SEND)
-                                    .payingWith(ACCOUNT)
-                                    .signedBy(ACCOUNT)
-                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                    .refusingEthConversion())))
-    //                                .exposingResultTo(result -> {
-    //                                    log.info(EXPLICIT_CREATE_RESULT, result[0]);
-    //                                    final var res = (Address) result[0];
-    //                                    createTokenNum.set(res.value().longValueExact());
-    //                                }))))
-                    .then(
-//                            getContractInfo(TOKEN_CREATE_CONTRACT)
-//                                    .has(ContractInfoAsserts.contractWith().autoRenewAccountId(ACCOUNT))
-//                                    .logged(),
-                            getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged());
-        }
+    @HapiTest
+    final HapiSpec createTokenWithDefaultExpiryAndEmptyKeys() {
+        final var tokenCreateContractAsKeyDelegate = "createTokenWithDefaultExpiryAndEmptyKeys";
+        final var createTokenNum = new AtomicLong();
+        return defaultHapiSpec("createTokenWithDefaultExpiryAndEmptyKeys")
+                .given(
+                        uploadInitCode(TOKEN_CREATE_CONTRACT),
+                        contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER),
+                        newKeyNamed(THRESHOLD_KEY)
+                                .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ED25519_ON, TOKEN_CREATE_CONTRACT))),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(THRESHOLD_KEY))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(TOKEN_CREATE_CONTRACT, tokenCreateContractAsKeyDelegate)
+                                .via(FIRST_CREATE_TXN)
+                                .gas(GAS_TO_OFFER)
+                                .sending(DEFAULT_AMOUNT_TO_SEND)
+                                .payingWith(ACCOUNT)
+                                .exposingResultTo(result -> {
+                                    log.info(EXPLICIT_CREATE_RESULT, result[0]);
+                                    final var res = (Address) result[0];
+                                    createTokenNum.set(res.value().longValueExact());
+                                })
+                                .hasKnownStatus(SUCCESS))))
+                .then(getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged());
+    }
 
     @Override
     protected Logger getResultsLogger() {

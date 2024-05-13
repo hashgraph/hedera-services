@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStaki
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.computeNextStake;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.readableNonZeroHistory;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.transactionWith;
+import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.Fraction;
@@ -58,6 +59,9 @@ import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Updates the stake and reward values for all nodes at the end of a staking period.
+ */
 @Singleton
 public class EndOfStakingPeriodUpdater {
     private static final Logger log = LogManager.getLogger(EndOfStakingPeriodUpdater.class);
@@ -68,6 +72,11 @@ public class EndOfStakingPeriodUpdater {
     private final HederaAccountNumbers accountNumbers;
     private final StakingRewardsHelper stakeRewardsHelper;
 
+    /**
+     * Constructs an {@link EndOfStakingPeriodUpdater} instance.
+     * @param accountNumbers the account numbers
+     * @param stakeRewardsHelper the staking rewards helper
+     */
     @Inject
     public EndOfStakingPeriodUpdater(
             @NonNull final HederaAccountNumbers accountNumbers,
@@ -119,7 +128,7 @@ public class EndOfStakingPeriodUpdater {
         final Map<Long, StakingNodeInfo> updatedNodeInfos = new HashMap<>();
         final Map<Long, Long> newPendingRewardRates = new HashMap<>();
         for (final var nodeNum : nodeIds.stream().sorted().toList()) {
-            var currStakingInfo = stakingInfoStore.getForModify(nodeNum);
+            var currStakingInfo = requireNonNull(stakingInfoStore.getForModify(nodeNum));
 
             // The return value here includes both the new reward sum history, and the reward rate
             // (tinybars-per-hbar-staked-to-reward) that will be paid to all accounts who had staked-to-reward for this
@@ -136,7 +145,8 @@ public class EndOfStakingPeriodUpdater {
                     .rewardSumHistory(newRewardSumHistory.rewardSumHistory())
                     .build();
             log.info(
-                    "   > Non-zero reward sum history is now {}",
+                    "Non-zero reward sum history for node number {} is now {}",
+                    () -> nodeNum,
                     () -> readableNonZeroHistory(newRewardSumHistory.rewardSumHistory()));
 
             final var oldStakeRewardStart = currStakingInfo.stakeRewardStart();
@@ -260,6 +270,8 @@ public class EndOfStakingPeriodUpdater {
      * @param weight weight of the node
      * @param newMinStake min stake of the node
      * @param newMaxStake real max stake of all nodes computed by taking max(stakeOfNode1, stakeOfNode2, ...)
+     * @param totalStakeOfAllNodes total stake of all nodes at the start of new period
+     * @param sumOfConsensusWeights sum of consensus weights of all nodes
      * @return scaled weight of the node
      */
     @VisibleForTesting
@@ -312,6 +324,7 @@ public class EndOfStakingPeriodUpdater {
      *
      * @param stake the stake of current node, includes stake rewarded and non-rewarded
      * @param totalStakeOfAllNodes the total stake of all nodes at the start of new period
+     * @param sumOfConsensusWeights the sum of consensus weights of all nodes
      * @return calculated consensus weight of the node
      */
     @VisibleForTesting
@@ -333,9 +346,13 @@ public class EndOfStakingPeriodUpdater {
         return (int) Math.max(weight, 1);
     }
 
+    /**
+     * Returns the timestamp that is just before midnight of the day of the given consensus time.
+     * @param consensusTime the consensus time
+     * @return the timestamp that is just before midnight of the day of the given consensus time
+     */
     @VisibleForTesting
-    public static com.hedera.hapi.node.base.Timestamp lastInstantOfPreviousPeriodFor(
-            @NonNull final Instant consensusTime) {
+    public static Timestamp lastInstantOfPreviousPeriodFor(@NonNull final Instant consensusTime) {
         final var justBeforeMidNightTime = LocalDate.ofInstant(consensusTime, ZoneId.of("UTC"))
                 .atStartOfDay()
                 .minusNanos(1); // give out the timestamp that is just before midnight
@@ -414,8 +431,7 @@ public class EndOfStakingPeriodUpdater {
     }
 
     private long getRewardsBalance(@NonNull final ReadableAccountStore accountStore) {
-        return accountStore
-                .getAccountById(asAccount(accountNumbers.stakingRewardAccount()))
+        return requireNonNull(accountStore.getAccountById(asAccount(accountNumbers.stakingRewardAccount())))
                 .tinybarBalance();
     }
 
@@ -455,9 +471,9 @@ public class EndOfStakingPeriodUpdater {
      * @return the transaction builder with the {@code NodeStakeUpdateTransactionBody} set
      */
     private static TransactionBody.Builder newNodeStakeUpdateBuilder(
-            final com.hedera.hapi.node.base.Timestamp stakingPeriodEnd,
-            final List<NodeStake> nodeStakes,
-            final StakingConfig stakingConfig,
+            final Timestamp stakingPeriodEnd,
+            @NonNull final List<NodeStake> nodeStakes,
+            @NonNull final StakingConfig stakingConfig,
             final long totalStakedRewardStart,
             final long maxPerHbarRewardRate,
             final long reservedStakingRewards,
@@ -468,7 +484,7 @@ public class EndOfStakingPeriodUpdater {
         final var stakingPeriod = stakingConfig.periodMins();
         final var stakingPeriodsStored = stakingConfig.rewardHistoryNumStoredPeriods();
 
-        final var nodeRewardFeeFraction = com.hedera.hapi.node.base.Fraction.newBuilder()
+        final var nodeRewardFeeFraction = Fraction.newBuilder()
                 .numerator(stakingConfig.feesNodeRewardPercentage())
                 .denominator(100L)
                 .build();

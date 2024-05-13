@@ -17,14 +17,12 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
-import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -45,12 +43,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileV2SecurityModelSuite.AUTO_RENEW_PERIOD;
-import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileV2SecurityModelSuite.ED25519KEY;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -152,27 +147,45 @@ public class MixedHTSPrecompileTestsV1SecurityModelSuite extends HapiSuite {
                                 .hasKnownStatus(SUCCESS));
     }
 
-//    @HapiTest
+    @HapiTest
     final HapiSpec createTokenWithFixedFeeThenTransferAndAssessFee() {
         final var createTokenNum = new AtomicLong();
+        final var CONTRACT_ADMIN_KEY = "contractAdminKey";
         final var FEE_COLLECTOR = "feeCollector";
         final var RECIPIENT = "recipient";
         final var SECOND_RECIPIENT = "secondRecipient";
-        final var TREASURY = "treasury";
-        return defaultHapiSpec("createTokenWithFixedFeeThenTransferAndAssessFee")
+        final var FEE_COLLECTOR_KEY = "feeCollectorKey";
+        final var RECIPIENT_KEY = "recipientKey";
+        final var SECOND_RECIPIENT_KEY = "secondRecipientKey";
+        return propertyPreservingHapiSpec("createTokenWithFixedFeeThenTransferAndAssessFee")
+                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
+                        newKeyNamed(FEE_COLLECTOR_KEY),
+                        newKeyNamed(RECIPIENT_KEY),
+                        newKeyNamed(SECOND_RECIPIENT_KEY),
+                        newKeyNamed(CONTRACT_ADMIN_KEY),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(RECIPIENT).balance(ONE_HUNDRED_HBARS).key(RECIPIENT_KEY),
+                        cryptoCreate(SECOND_RECIPIENT).key(SECOND_RECIPIENT_KEY),
+                        cryptoCreate(FEE_COLLECTOR).balance(0L).key(FEE_COLLECTOR_KEY),
                         uploadInitCode(TOKEN_MISC_OPERATIONS_CONTRACT),
                         contractCreate(TOKEN_MISC_OPERATIONS_CONTRACT)
-                                .gas(GAS_TO_OFFER),
+                                .gas(GAS_TO_OFFER)
+                                .adminKey(CONTRACT_ADMIN_KEY)
+                                .autoRenewAccountId(ACCOUNT)
+                                .signedBy(CONTRACT_ADMIN_KEY, DEFAULT_PAYER, ACCOUNT),
+                        cryptoTransfer(TokenMovement.movingHbar(ONE_HUNDRED_HBARS)
+                                .between(GENESIS, TOKEN_MISC_OPERATIONS_CONTRACT)),
+                        getContractInfo(TOKEN_MISC_OPERATIONS_CONTRACT)
+                                .has(ContractInfoAsserts.contractWith().autoRenewAccountId(ACCOUNT))
+                                .logged(),
                         newKeyNamed(THRESHOLD_KEY)
-                                .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ED25519_ON, TOKEN_MISC_OPERATIONS_CONTRACT))),
-                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(THRESHOLD_KEY),
-                        cryptoCreate(RECIPIENT).key(THRESHOLD_KEY),
-                        cryptoCreate(SECOND_RECIPIENT).key(THRESHOLD_KEY))
-
-//                        getContractInfo(TOKEN_MISC_OPERATIONS_CONTRACT)
-//                                .has(ContractInfoAsserts.contractWith().autoRenewAccountId(ACCOUNT))
-//                                .logged())
+                                .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_MISC_OPERATIONS_CONTRACT))),
+                        cryptoUpdate(ACCOUNT).key(THRESHOLD_KEY),
+                        cryptoUpdate(FEE_COLLECTOR).key(THRESHOLD_KEY),
+                        cryptoUpdate(RECIPIENT).key(THRESHOLD_KEY),
+                        cryptoUpdate(SECOND_RECIPIENT).key(THRESHOLD_KEY))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
@@ -180,7 +193,7 @@ public class MixedHTSPrecompileTestsV1SecurityModelSuite extends HapiSuite {
                                         "createTokenWithHbarsFixedFeeAndTransferIt",
                                         10L,
                                         HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                                asAddress(spec.registry().getAccountID(FEE_COLLECTOR))),
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getAccountID(RECIPIENT))),
                                         HapiParserUtil.asHeadlongAddress(
@@ -191,39 +204,36 @@ public class MixedHTSPrecompileTestsV1SecurityModelSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
                                 .payingWith(ACCOUNT)
-                                .signedBy(THRESHOLD_KEY)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
-//                                .alsoSigningWithFullPrefix(
-//                                        TREASURY_KEY, FEE_COLLECTOR_KEY, RECIPIENT_KEY, SECOND_RECIPIENT_KEY)
-//                                .exposingResultTo(result -> {
-//                                    log.info(EXPLICIT_CREATE_RESULT, result[0]);
-//                                    final var res = (Address) result[0];
-//                                    createTokenNum.set(res.value().longValueExact());
-//                                }))))
+                                .exposingResultTo(result -> {
+                                    log.info(EXPLICIT_CREATE_RESULT, result[0]);
+                                    final var res = (Address) result[0];
+                                    createTokenNum.set(res.value().longValueExact());
+                                })
+                                .hasKnownStatus(SUCCESS))))
                 .then(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         getTxnRecord(CREATE_AND_TRANSFER_TXN)
                                 .andAllChildRecords()
-                                .logged())));
-//                        getAccountBalance(RECIPIENT)
-//                                .hasTokenBalance(
-//                                        asTokenString(TokenID.newBuilder()
-//                                                .setTokenNum(createTokenNum.get())
-//                                                .build()),
-//                                        0L),
-//                        getAccountBalance(SECOND_RECIPIENT)
-//                                .hasTokenBalance(
-//                                        asTokenString(TokenID.newBuilder()
-//                                                .setTokenNum(createTokenNum.get())
-//                                                .build()),
-//                                        1L),
-//                        getAccountBalance(TREASURY)
-//                                .hasTokenBalance(
-//                                        asTokenString(TokenID.newBuilder()
-//                                                .setTokenNum(createTokenNum.get())
-//                                                .build()),
-//                                        199L),
-//                        getAccountBalance(FEE_COLLECTOR).hasTinyBars(10L))));
+                                .logged(),
+                        getAccountBalance(RECIPIENT)
+                                .hasTokenBalance(
+                                        asTokenString(TokenID.newBuilder()
+                                                .setTokenNum(createTokenNum.get())
+                                                .build()),
+                                        0L),
+                        getAccountBalance(SECOND_RECIPIENT)
+                                .hasTokenBalance(
+                                        asTokenString(TokenID.newBuilder()
+                                                .setTokenNum(createTokenNum.get())
+                                                .build()),
+                                        1L),
+                        getAccountBalance(ACCOUNT)
+                                .hasTokenBalance(
+                                        asTokenString(TokenID.newBuilder()
+                                                .setTokenNum(createTokenNum.get())
+                                                .build()),
+                                        199L),
+                        getAccountBalance(FEE_COLLECTOR).hasTinyBars(10L))));
     }
 
     @Override

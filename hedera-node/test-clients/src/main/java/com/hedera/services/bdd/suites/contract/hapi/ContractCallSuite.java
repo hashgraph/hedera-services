@@ -97,6 +97,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -364,7 +365,7 @@ public class ContractCallSuite extends HapiSuite {
         final var TEST_CONTRACT = "TestContract";
         final var somebody = "somebody";
         final var account = "0.0.1";
-        return defaultHapiSpec("LowLevelEcrecCallBehavior", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("LowLevelEcrecCallBehavior", FULLY_NONDETERMINISTIC)
                 .given(
                         uploadInitCode(TEST_CONTRACT),
                         contractCreate(
@@ -384,14 +385,14 @@ public class ContractCallSuite extends HapiSuite {
                                 .hasKnownStatus(SUCCESS),
                         contractCall(TEST_CONTRACT, "lowLevelECRECWithValue")
                                 .payingWith(somebody)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                .hasKnownStatus(INVALID_FEE_SUBMITTED),
                         cryptoUpdate(account).receiverSigRequired(false).signedBy(GENESIS),
                         contractCall(TEST_CONTRACT, "lowLevelECREC")
                                 .payingWith(somebody)
                                 .hasKnownStatus(SUCCESS),
                         contractCall(TEST_CONTRACT, "lowLevelECRECWithValue")
                                 .payingWith(somebody)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                .hasKnownStatus(INVALID_FEE_SUBMITTED),
                         getAccountBalance(account).hasTinyBars(changeFromSnapshot("start", +0)));
     }
 
@@ -420,7 +421,7 @@ public class ContractCallSuite extends HapiSuite {
         final var failedResult = Bytes32.repeat((byte) 0);
         final ContractCallResult unsuccessfulResult = () -> failedResult;
         final ContractCallResult successfulResult = () -> failedResult.or(Bytes.of(1));
-        return defaultHapiSpec("callsToSystemEntityNumsAreTreatedAsPrecompileCalls", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("callsToSystemEntityNumsAreTreatedAsPrecompileCalls", FULLY_NONDETERMINISTIC)
                 .given(
                         uploadInitCode(TEST_CONTRACT),
                         contractCreate(
@@ -431,6 +432,7 @@ public class ContractCallSuite extends HapiSuite {
                                         BigInteger.ONE)
                                 .balance(ONE_HBAR))
                 .when(
+                        balanceSnapshot("initialBalance", TEST_CONTRACT),
                         // call to 0x0
                         contractCall(
                                         TEST_CONTRACT,
@@ -449,7 +451,7 @@ public class ContractCallSuite extends HapiSuite {
                                                 .build()))
                                 .sending(500L)
                                 .via(zeroAddressWithValueTxn)
-                                .hasKnownStatus(SUCCESS),
+                                .hasKnownStatus(INVALID_FEE_SUBMITTED),
                         // call to existing account in the 0-750 range, without precompile collision on the same address
                         contractCall(
                                         TEST_CONTRACT,
@@ -469,7 +471,7 @@ public class ContractCallSuite extends HapiSuite {
                                                 .build()))
                                 .via(existingSystemEntityWithValueTxn)
                                 .sending(500L)
-                                .hasKnownStatus(SUCCESS),
+                                .hasKnownStatus(INVALID_FEE_SUBMITTED),
                         // call to existing account in the 0-750 range, WITH precompile collision
                         contractCall(
                                         TEST_CONTRACT,
@@ -488,7 +490,7 @@ public class ContractCallSuite extends HapiSuite {
                                                 .build()))
                                 .via(existingNumAndPrecompileWithValueTxn)
                                 .sending(500L)
-                                .hasKnownStatus(SUCCESS),
+                                .hasKnownStatus(INVALID_FEE_SUBMITTED),
                         // call to non-existing account in the 0-750 range
                         contractCall(
                                         TEST_CONTRACT,
@@ -507,7 +509,7 @@ public class ContractCallSuite extends HapiSuite {
                                                 .build()))
                                 .via(nonExistingSystemEntityWithValueTxn)
                                 .sending(500L)
-                                .hasKnownStatus(SUCCESS),
+                                .hasKnownStatus(INVALID_FEE_SUBMITTED),
                         // delegate call to collision address (0.0.1)
                         contractCall(
                                         TEST_CONTRACT,
@@ -535,7 +537,7 @@ public class ContractCallSuite extends HapiSuite {
                                                 .build()))
                                 .via(delegateCallNonExistingPrecompile)
                                 .hasKnownStatus(SUCCESS),
-                        // self destruct with beneficiary in the 0-750 range
+                        // self-destruct with beneficiary in the 0-750 range
                         contractCall(
                                         TEST_CONTRACT,
                                         "selfDestructWithBeneficiary",
@@ -555,36 +557,31 @@ public class ContractCallSuite extends HapiSuite {
                                 .hasKnownStatus(SUCCESS))
                 .then(
                         getTxnRecord(zeroAddressTxn)
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                .hasPriority(recordWith().status(SUCCESS))
                                 .logged(),
                         getTxnRecord(zeroAddressWithValueTxn)
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                .hasPriority(recordWith().status(INVALID_FEE_SUBMITTED))
                                 .logged(),
                         getTxnRecord(existingSystemEntityTxn)
                                 .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                        .contractCallResult(resultWith().contractCallResult(successfulResult)))
                                 .logged(),
                         getTxnRecord(existingSystemEntityWithValueTxn)
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                .hasPriority(recordWith().status(INVALID_FEE_SUBMITTED))
                                 .logged(),
                         getTxnRecord(existingNumAndPrecompileTxn)
                                 .hasPriority(recordWith()
                                         .contractCallResult(resultWith().contractCallResult(successfulResult)))
                                 .logged(),
                         getTxnRecord(existingNumAndPrecompileWithValueTxn)
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                .hasPriority(recordWith().status(INVALID_FEE_SUBMITTED))
                                 .logged(),
                         getTxnRecord(nonExistingSystemEntityTxn)
                                 .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                        .contractCallResult(resultWith().contractCallResult(successfulResult)))
                                 .logged(),
                         getTxnRecord(nonExistingSystemEntityWithValueTxn)
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                .hasPriority(recordWith().status(INVALID_FEE_SUBMITTED))
                                 .logged(),
                         getTxnRecord(existingNumAndPrecompileDelegateCallTxn)
                                 .hasPriority(recordWith()
@@ -592,11 +589,11 @@ public class ContractCallSuite extends HapiSuite {
                                 .logged(),
                         getTxnRecord(delegateCallNonExistingPrecompile)
                                 .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                        .contractCallResult(resultWith().contractCallResult(successfulResult)))
                                 .logged(),
                         getTxnRecord(delegateCallExistingAccountNonExistingPrecompile)
                                 .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                        .contractCallResult(resultWith().contractCallResult(successfulResult)))
                                 .logged(),
                         getTxnRecord(selfDestructToSystemAccountTxn)
                                 .hasPriority(recordWith()
@@ -604,9 +601,9 @@ public class ContractCallSuite extends HapiSuite {
                                 .logged(),
                         getTxnRecord(balanceOfSystemAccountTxn)
                                 .hasPriority(recordWith()
-                                        .contractCallResult(
-                                                resultWith().contractCallResult(() -> Bytes32.repeat((byte) 0))))
-                                .logged());
+                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                .logged(),
+                        getAccountBalance(TEST_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
     @HapiTest
@@ -807,15 +804,20 @@ public class ContractCallSuite extends HapiSuite {
                                 .getAccountInfo(DEFAULT_CONTRACT_SENDER)
                                 .getContractAccountID())))),
                         uploadInitCode(addressBook, jurisdictions),
+                        // refusingEthConversion because the minters contract has placeholders that the
+                        // HapiEthereumContractCreate doesn't
+                        // support
                         contractCreate(addressBook)
                                 .gas(1_000_000L)
                                 .exposingNumTo(num -> addressBookMirror.set(asHexedSolidityAddress(0, 0, num)))
-                                .payingWith(DEFAULT_CONTRACT_SENDER),
+                                .payingWith(DEFAULT_CONTRACT_SENDER)
+                                .refusingEthConversion(),
                         contractCreate(jurisdictions)
                                 .gas(1_000_000L)
                                 .exposingNumTo(num -> jurisdictionMirror.set(asHexedSolidityAddress(0, 0, num)))
                                 .withExplicitParams(() -> EXPLICIT_JURISDICTION_CONS_PARAMS)
-                                .payingWith(DEFAULT_CONTRACT_SENDER),
+                                .payingWith(DEFAULT_CONTRACT_SENDER)
+                                .refusingEthConversion(),
                         sourcing(() -> createLargeFile(
                                 DEFAULT_CONTRACT_SENDER,
                                 minters,
@@ -824,7 +826,8 @@ public class ContractCallSuite extends HapiSuite {
                                 .gas(2_000_000L)
                                 .withExplicitParams(
                                         () -> String.format(EXPLICIT_MINTER_CONS_PARAMS_TPL, jurisdictionMirror.get()))
-                                .payingWith(DEFAULT_CONTRACT_SENDER))
+                                .payingWith(DEFAULT_CONTRACT_SENDER)
+                                .refusingEthConversion())
                 .when(
                         contractCall(minters)
                                 .withExplicitParams(() ->
@@ -1210,6 +1213,7 @@ public class ContractCallSuite extends HapiSuite {
                                 .gas(250_000L)
                                 .payingWith(TOKEN_ISSUER)
                                 .via("tokenCreateTxn")
+                                .refusingEthConversion()
                                 .logged())
                 .when(assertionsHold((spec, ctxLog) -> {
                     final var issuerEthAddress = spec.registry()
@@ -1532,7 +1536,12 @@ public class ContractCallSuite extends HapiSuite {
                 .given(
                         cryptoCreate(BENEFICIARY).balance(initBalance),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-                        contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
+                        contractCreate(PAY_RECEIVABLE_CONTRACT)
+                                .adminKey(THRESHOLD)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion())
                 .when(contractCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(DEPOSIT_AMOUNT))
                         .via(PAY_TXN)
                         .sending(DEPOSIT_AMOUNT))
@@ -1593,7 +1602,8 @@ public class ContractCallSuite extends HapiSuite {
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT)
                                 .adminKey(THRESHOLD)
-                                .gas(1_000_000),
+                                .gas(1_000_000)
+                                .refusingEthConversion(),
                         cryptoCreate(payer).balance(ONE_MILLION_HBARS).payingWith(GENESIS))
                 .when(ifHapiTest(withOpContext((spec, ignore) -> {
                     final var subop1 = balanceSnapshot("balanceBefore0", payer);
@@ -1601,7 +1611,8 @@ public class ContractCallSuite extends HapiSuite {
                             .via(PAY_TXN)
                             .payingWith(payer)
                             .sending(-DEPOSIT_AMOUNT)
-                            .hasKnownStatus(CONTRACT_NEGATIVE_VALUE);
+                            .hasKnownStatus(CONTRACT_NEGATIVE_VALUE)
+                            .refusingEthConversion();
                     final var subop3 = getTxnRecord(PAY_TXN).logged();
                     allRunFor(spec, subop1, subop2, subop3);
                     final var delta = subop3.getResponseRecord()
@@ -1660,6 +1671,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     // This test disabled for modularization service
+    // Adding refusingEthConversion() due to fee differences
     @HapiTest
     HapiSpec smartContractFailFirst() {
         final var civilian = "civilian";
@@ -1675,7 +1687,8 @@ public class ContractCallSuite extends HapiSuite {
                                     .payingWith(civilian)
                                     .gas(1)
                                     .hasKnownStatus(INSUFFICIENT_GAS)
-                                    .via(FAIL_INSUFFICIENT_GAS);
+                                    .via(FAIL_INSUFFICIENT_GAS)
+                                    .refusingEthConversion();
                             final var subop3 = getTxnRecord(FAIL_INSUFFICIENT_GAS);
                             allRunFor(spec, subop1, subop2, subop3);
                             final var delta = subop3.getResponseRecord().getTransactionFee();
@@ -1690,7 +1703,8 @@ public class ContractCallSuite extends HapiSuite {
                                     .payingWith(civilian)
                                     .gas(250_000L)
                                     .via(FAIL_INVALID_INITIAL_BALANCE)
-                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                    .refusingEthConversion();
                             final var subop3 = getTxnRecord(FAIL_INVALID_INITIAL_BALANCE);
                             allRunFor(spec, subop1, subop2, subop3);
                             final var delta = subop3.getResponseRecord().getTransactionFee();
@@ -1705,7 +1719,8 @@ public class ContractCallSuite extends HapiSuite {
                                     .payingWith(civilian)
                                     .gas(250_000L)
                                     .hasKnownStatus(SUCCESS)
-                                    .via(SUCCESS_WITH_ZERO_INITIAL_BALANCE);
+                                    .via(SUCCESS_WITH_ZERO_INITIAL_BALANCE)
+                                    .refusingEthConversion();
                             final var subop3 = getTxnRecord(SUCCESS_WITH_ZERO_INITIAL_BALANCE);
                             allRunFor(spec, subop1, subop2, subop3);
                             final var delta = subop3.getResponseRecord().getTransactionFee();
@@ -1772,6 +1787,7 @@ public class ContractCallSuite extends HapiSuite {
     @HapiTest
     HapiSpec payTestSelfDestructCall() {
         final var contract = "PayTestSelfDestruct";
+        final AtomicReference<Address> tokenCreateContractAddress = new AtomicReference<>();
 
         return defaultHapiSpec(
                         "payTestSelfDestructCall",
@@ -1781,7 +1797,9 @@ public class ContractCallSuite extends HapiSuite {
                         cryptoCreate(PAYER).balance(1_000_000_000_000L).logged(),
                         cryptoCreate(RECEIVER).balance(1_000L),
                         uploadInitCode(contract),
-                        contractCreate(contract))
+                        contractCreate(contract),
+                        getContractInfo(contract)
+                                .exposingEvmAddress(cb -> tokenCreateContractAddress.set(asHeadlongAddress(cb))))
                 .when(withOpContext((spec, opLog) -> {
                     final var subop1 = contractCall(contract, DEPOSIT, BigInteger.valueOf(1_000L))
                             .payingWith(PAYER)
@@ -1794,8 +1812,7 @@ public class ContractCallSuite extends HapiSuite {
                             .gas(300_000L)
                             .via(GET_BALANCE);
 
-                    final var contractAccountId = asId(contract, spec);
-                    final var subop3 = contractCall(contract, KILL_ME, asHeadlongAddress(asAddress(contractAccountId)))
+                    final var subop3 = contractCall(contract, KILL_ME, tokenCreateContractAddress.get())
                             .payingWith(PAYER)
                             .gas(300_000L)
                             .hasKnownStatus(OBTAINER_SAME_CONTRACT_ID);
@@ -1919,8 +1936,16 @@ public class ContractCallSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(topLevelContract, subLevelContract))
                 .when(
-                        contractCreate(topLevelContract).payingWith(ACCOUNT).balance(INITIAL_CONTRACT_BALANCE),
-                        contractCreate(subLevelContract).payingWith(ACCOUNT).balance(INITIAL_CONTRACT_BALANCE))
+                        contractCreate(topLevelContract)
+                                .payingWith(ACCOUNT)
+                                .balance(INITIAL_CONTRACT_BALANCE)
+                                // Adding refusingEthConversion() due to fee differences
+                                .refusingEthConversion(),
+                        contractCreate(subLevelContract)
+                                .payingWith(ACCOUNT)
+                                .balance(INITIAL_CONTRACT_BALANCE)
+                                // Adding refusingEthConversion() due to fee differences
+                                .refusingEthConversion())
                 .then(
                         contractCall(topLevelContract).sending(10).payingWith(ACCOUNT),
                         getAccountBalance(topLevelContract).hasTinyBars(INITIAL_CONTRACT_BALANCE + 10L),
@@ -1978,9 +2003,12 @@ public class ContractCallSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(TRANSFERRING_CONTRACT),
                         contractCreate(TRANSFERRING_CONTRACT).balance(10_000L).payingWith(ACCOUNT),
+                        // refuse eth conversion because we can't call contract by contract num
+                        // when it has EVM address alias (isNotPriority check fails)
                         contractCustomCreate(TRANSFERRING_CONTRACT, to)
                                 .balance(10_000L)
-                                .payingWith(ACCOUNT),
+                                .payingWith(ACCOUNT)
+                                .refusingEthConversion(),
                         getContractInfo(TRANSFERRING_CONTRACT).saveToRegistry(CONTRACT_FROM),
                         getContractInfo(TRANSFERRING_CONTRACT + to).saveToRegistry("contract_to"),
                         getAccountInfo(ACCOUNT).savingSnapshot(ACCOUNT_INFO))
@@ -2042,6 +2070,7 @@ public class ContractCallSuite extends HapiSuite {
                 }));
     }
 
+    // Adding refusingEthConversion() due to fee differences
     @HapiTest
     final HapiSpec hscsEvm010MultiSignatureAccounts() {
         final var ACC = "acc";
@@ -2067,12 +2096,14 @@ public class ContractCallSuite extends HapiSuite {
                                 .payingWith(ACC)
                                 .signedBy(PAYER_KEY)
                                 .adminKey(KEY_LIST)
-                                .hasPrecheck(INVALID_SIGNATURE),
+                                .hasPrecheck(INVALID_SIGNATURE)
+                                .refusingEthConversion(),
                         contractCreate(TRANSFERRING_CONTRACT)
                                 .payingWith(ACC)
                                 .signedBy(PAYER_KEY, OTHER_KEY)
                                 .balance(10)
-                                .adminKey(KEY_LIST))
+                                .adminKey(KEY_LIST)
+                                .refusingEthConversion())
                 .then(withOpContext((spec, log) -> {
                     final var acc = spec.registry().getAccountInfo(ACC_INFO).getContractAccountID();
                     final var assertionWithOnlyOneKey = contractCall(
@@ -2289,10 +2320,16 @@ public class ContractCallSuite extends HapiSuite {
 
                     final var nestedTransferringUpload =
                             uploadInitCode(NESTED_TRANSFERRING_CONTRACT, NESTED_TRANSFER_CONTRACT);
-                    final var createFirstNestedContract =
-                            contractCustomCreate(NESTED_TRANSFER_CONTRACT, "1").balance(10_000L);
-                    final var createSecondNestedContract =
-                            contractCustomCreate(NESTED_TRANSFER_CONTRACT, "2").balance(10_000L);
+                    final var createFirstNestedContract = contractCustomCreate(NESTED_TRANSFER_CONTRACT, "1")
+                            .balance(10_000L)
+
+                            // Adding refusingEthConversion() due to fee differences
+                            .refusingEthConversion();
+                    final var createSecondNestedContract = contractCustomCreate(NESTED_TRANSFER_CONTRACT, "2")
+                            .balance(10_000L)
+
+                            // Adding refusingEthConversion() due to fee differences
+                            .refusingEthConversion();
                     final var transfer2 = cryptoTransfer(
                             TokenMovement.movingHbar(10_000_000L).between(GENESIS, DEFAULT_CONTRACT_RECEIVER));
                     final var saveSnapshot = getAccountInfo(DEFAULT_CONTRACT_RECEIVER)
@@ -2317,7 +2354,10 @@ public class ContractCallSuite extends HapiSuite {
                                         asHeadlongAddress(
                                                 getNestedContractAddress(NESTED_TRANSFER_CONTRACT + "2", spec)))
                                 .balance(10_000L)
-                                .payingWith(GENESIS),
+                                .payingWith(GENESIS)
+
+                                // Adding refusingEthConversion() due to fee differences
+                                .refusingEthConversion(),
                         contractCall(
                                         NESTED_TRANSFERRING_CONTRACT,
                                         "transferToCallerFromDifferentAddresses",
@@ -2413,6 +2453,7 @@ public class ContractCallSuite extends HapiSuite {
                                 .has(contractWith().balance(10_000 - 60L))));
     }
 
+    // Adding refusingEthConversion() due to fee differences
     @HapiTest
     final HapiSpec transferNegativeAmountOfHbarsFails() {
         return defaultHapiSpec(
@@ -2423,7 +2464,10 @@ public class ContractCallSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(10_000L),
                         uploadInitCode(TRANSFERRING_CONTRACT),
-                        contractCreate(TRANSFERRING_CONTRACT).balance(10_000L).payingWith(ACCOUNT),
+                        contractCreate(TRANSFERRING_CONTRACT)
+                                .balance(10_000L)
+                                .payingWith(ACCOUNT)
+                                .refusingEthConversion(),
                         getAccountInfo(RECEIVER).savingSnapshot(RECEIVER_INFO))
                 .when(withOpContext((spec, log) -> {
                     var receiverAddr =
@@ -2458,7 +2502,8 @@ public class ContractCallSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(10_000L),
                         uploadInitCode(TRANSFERRING_CONTRACT),
-                        contractCreate(TRANSFERRING_CONTRACT).balance(10_000L),
+                        // Adding refusingEthConversion() due to fee differences
+                        contractCreate(TRANSFERRING_CONTRACT).balance(10_000L).refusingEthConversion(),
                         getAccountInfo(RECEIVER).savingSnapshot(RECEIVER_INFO))
                 .when(withOpContext((spec, log) -> {
                     var receiverAddr =

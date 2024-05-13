@@ -44,6 +44,8 @@ public class BlocklistParser {
      * Makes sure that all blocked accounts contained in the blocklist resource are present in state, and creates their definitions (if necessary).
      *
      * <p><b>Note: this method assumes that blocklists are enabled</b> – it does not check that config property
+     * @param blocklistResourceName the blocklist resource
+     * @return a list of blocked account info records
      */
     public List<BlockedInfo> parse(@NonNull final String blocklistResourceName) {
         final List<String> fileLines = readFileLines(blocklistResourceName);
