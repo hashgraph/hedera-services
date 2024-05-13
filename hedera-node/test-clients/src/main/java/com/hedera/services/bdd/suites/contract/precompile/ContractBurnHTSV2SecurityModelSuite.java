@@ -702,8 +702,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
         final var amount = 99L;
         final AtomicLong fungibleNum = new AtomicLong();
 
-        return propertyPreservingHapiSpec("burnTokenWithFullPrefixAndPartialPrefixKeys")
-                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("burnTokenWithFullPrefixAndPartialPrefixKeys")
                 .given(
                         newKeyNamed(SIGNER),
                         uploadInitCode(ORDINARY_CALLS_CONTRACT),
@@ -784,8 +783,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
         final var SUPPLY_KEY = "SUPPLY_KEY";
         final var ADMIN_KEY = "ADMIN_KEY";
 
-        return propertyPreservingHapiSpec("hscsPreC020RollbackBurnThatFailsAfterAPrecompileTransfer")
-                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("hscsPreC020RollbackBurnThatFailsAfterAPrecompileTransfer")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(ADMIN_KEY).balance(ONE_HUNDRED_HBARS),
@@ -867,8 +865,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
         final var CREATION_TX = "CREATION_TX";
         final var MULTI_KEY = "MULTI_KEY";
 
-        return propertyPreservingHapiSpec("V2SecurityHscsPrec004TokenBurnOfFungibleTokenUnits")
-                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("V2SecurityHscsPrec004TokenBurnOfFungibleTokenUnits")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(ADMIN_KEY),
@@ -955,8 +952,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
         final var CREATION_TX = "CREATION_TX";
         final var BURN_AFTER_NESTED_MINT_TX = "burnAfterNestedMint";
 
-        return propertyPreservingHapiSpec("V2SecurityHscsPrec011BurnAfterNestedMint")
-                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("V2SecurityHscsPrec011BurnAfterNestedMint")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(ADMIN_KEY),
@@ -1031,8 +1027,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     final HapiSpec V2SecurityHscsPrec005TokenBurnOfNft() {
         final var gasUsed = 14085;
         final var CREATION_TX = "CREATION_TX";
-        return propertyPreservingHapiSpec("V2SecurityHscsPrec005TokenBurnOfNft")
-                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("V2SecurityHscsPrec005TokenBurnOfNft")
                 .given(
                         newKeyNamed(ADMIN_KEY),
                         newKeyNamed(SUPPLY_KEY),
