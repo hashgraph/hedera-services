@@ -155,6 +155,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final AccountID feeCollectorId = transferAccountId;
     protected final AccountID stakingRewardId =
             AccountID.newBuilder().accountNum(800).build();
+    protected final AccountID zeroAccountId =
+            AccountID.newBuilder().accountNum(0).build();
 
     /* ---------- Account Numbers ---------- */
     protected final Long accountNum = payerId.accountNum();
@@ -368,6 +370,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected Account stakingRewardAccount;
     protected Account tokenReceiverAccount;
     protected Account hbarReceiverAccount;
+    protected Account zeroAccount;
 
     /* ---------- Maps for updating both readable and writable stores ---------- */
     private Map<AccountID, Account> accountsMap;
@@ -420,6 +423,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         accountsMap.put(delegatingSpenderId, delegatingSpenderAccount);
         accountsMap.put(spenderId, spenderAccount);
         accountsMap.put(treasuryId, treasuryAccount);
+        accountsMap.put(zeroAccountId, zeroAccount);
         accountsMap.put(stakingRewardId, stakingRewardAccount);
 
         tokensMap = new HashMap<>();
@@ -795,6 +799,10 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .tinybarBalance(Long.MAX_VALUE)
                 .headNftId((NftID) null)
                 .headNftSerialNumber(0L)
+                .build();
+        zeroAccount = givenValidAccountBuilder()
+                .accountId(zeroAccountId)
+                .key(EMPTY_KEYLIST)
                 .build();
     }
 
