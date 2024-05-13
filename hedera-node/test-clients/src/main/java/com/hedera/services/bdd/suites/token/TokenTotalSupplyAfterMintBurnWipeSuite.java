@@ -41,6 +41,7 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -57,7 +58,7 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
 
     @Override
     public List<DynamicTest> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {checkTokenTotalSupplyAfterMintAndBurn(), totalSupplyAfterWipe()});
+        return List.of(checkTokenTotalSupplyAfterMintAndBurn(), totalSupplyAfterWipe());
     }
 
     @HapiTest

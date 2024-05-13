@@ -37,6 +37,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 
 public class UpdateServerFiles extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UpdateServerFiles.class);
@@ -70,7 +71,7 @@ public class UpdateServerFiles extends HapiSuite {
         return allOf(postiveTests());
     }
 
-    private List<HapiSpec> postiveTests() {
+    private List<DynamicTest> postiveTests() {
         return Arrays.asList(uploadGivenDirectory());
     }
 

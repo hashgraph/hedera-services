@@ -52,6 +52,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class MixedOpsMemoPerfSuite extends LoadTest {
     private static final Logger log = LogManager.getLogger(MixedOpsMemoPerfSuite.class);
@@ -80,7 +81,7 @@ public class MixedOpsMemoPerfSuite extends LoadTest {
 
     // perform cryptoCreate, cryptoUpdate, TokenCreate, TokenUpdate, FileCreate, FileUpdate txs with
     // entity memo set.
-    protected HapiSpec runMixedMemoOps() {
+    final DynamicTest runMixedMemoOps() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         final AtomicInteger createdSoFar = new AtomicInteger(0);
         Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[] {
@@ -150,19 +151,6 @@ public class MixedOpsMemoPerfSuite extends LoadTest {
                         logIt(ignore -> settings.toString()),
                         tokenOpsEnablement())
                 .when(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(Map.of(
-                                        "hapi.throttling.buckets.fastOpBucket.capacity",
-                                        "1300000.0",
-                                        "hapi.throttling.ops.consensusUpdateTopic.capacityRequired",
-                                        "1.0",
-                                        "hapi.throttling.ops.consensusGetTopicInfo.capacityRequired",
-                                        "1.0",
-                                        "hapi.throttling.ops.consensusSubmitMessage.capacityRequired",
-                                        "1.0",
-                                        "tokens.maxPerAccount",
-                                        "10000000")),
                         sleepFor(5000),
                         newKeyNamed("adminKey"),
                         logIt(ignore -> settings.toString()),

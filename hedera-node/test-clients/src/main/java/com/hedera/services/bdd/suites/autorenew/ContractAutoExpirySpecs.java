@@ -70,6 +70,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class ContractAutoExpirySpecs extends HapiSuite {
 
@@ -90,7 +91,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 renewsUsingContractFundsIfNoAutoRenewAccount(),
                 renewalFeeDistributedToStakingAccounts(),

@@ -106,7 +106,7 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
     }
 
     @Override
-    protected long feeFor(final DynamicTest spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
                         HederaFunctionality.TokenAccountWipe, subType, this::usageEstimate, txn, numPayerKeys);
@@ -123,7 +123,7 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final DynamicTest spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final var tId = TxnUtils.asTokenId(token, spec);
         AccountID aId;
         if (referenceType == ReferenceType.REGISTRY_NAME) {
@@ -150,12 +150,12 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final DynamicTest spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
         return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::wipeTokenAccount;
     }
 
     @Override
-    protected void updateStateOf(final DynamicTest spec) {
+    protected void updateStateOf(final HapiSpec spec) {
         /* no-op. */
     }
 

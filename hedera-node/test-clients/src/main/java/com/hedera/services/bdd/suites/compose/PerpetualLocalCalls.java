@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class PerpetualLocalCalls extends HapiSuite {
 
@@ -58,9 +59,7 @@ public class PerpetualLocalCalls extends HapiSuite {
 
     @Override
     public List<DynamicTest> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            localCallsForever(),
-        });
+        return List.of( localCallsForever());
     }
 
     final DynamicTest localCallsForever() {

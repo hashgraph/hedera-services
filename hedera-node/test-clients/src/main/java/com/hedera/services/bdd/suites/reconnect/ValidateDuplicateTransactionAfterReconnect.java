@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class ValidateDuplicateTransactionAfterReconnect extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ValidateDuplicateTransactionAfterReconnect.class);

@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class TopicUpdateSuite extends HapiSuite {

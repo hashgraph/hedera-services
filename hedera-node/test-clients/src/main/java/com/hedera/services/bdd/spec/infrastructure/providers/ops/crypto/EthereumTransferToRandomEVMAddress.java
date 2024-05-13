@@ -33,7 +33,7 @@ import java.util.Optional;
 
 public class EthereumTransferToRandomEVMAddress implements OpProvider {
     private final EntityNameProvider<Key> keys;
-    private final DynamicTestRegistry registry;
+    private final HapiSpecRegistry registry;
     private static int nonce = 0;
 
     public EthereumTransferToRandomEVMAddress(HapiSpecRegistry registry, EntityNameProvider<Key> keys) {

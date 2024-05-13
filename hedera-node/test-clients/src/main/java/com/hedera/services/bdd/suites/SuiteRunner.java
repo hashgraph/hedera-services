@@ -208,9 +208,9 @@ public class SuiteRunner {
     private static final Logger log = LogManager.getLogger(SuiteRunner.class);
     public static final int SUITE_NAME_WIDTH = 32;
 
-    private static final DynamicTestSetup.TlsConfig DEFAULT_TLS_CONFIG = OFF;
-    private static final DynamicTestSetup.TxnProtoStructure DEFAULT_TXN_CONFIG = HapiSpecSetup.TxnProtoStructure.ALTERNATE;
-    private static final DynamicTestSetup.NodeSelection DEFAULT_NODE_SELECTOR = FIXED;
+    private static final HapiSpecSetup.TlsConfig DEFAULT_TLS_CONFIG = OFF;
+    private static final HapiSpecSetup.TxnProtoStructure DEFAULT_TXN_CONFIG = HapiSpecSetup.TxnProtoStructure.ALTERNATE;
+    private static final HapiSpecSetup.NodeSelection DEFAULT_NODE_SELECTOR = FIXED;
     private static final int EXPECTED_CI_NETWORK_SIZE = 4;
     private static final String DEFAULT_PAYER_ID = "0.0.2";
 

@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class TokenAssociationLoadTest extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenAssociationLoadTest.class);
@@ -37,9 +38,8 @@ public class TokenAssociationLoadTest extends HapiSuite {
 
     @Override
     public List<DynamicTest> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            runTokenAssociationLoadTest(),
-        });
+        return List.of(
+            runTokenAssociationLoadTest());
     }
 
     final DynamicTest runTokenAssociationLoadTest() {

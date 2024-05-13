@@ -24,6 +24,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class FreezeIntellijNetwork extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FreezeIntellijNetwork.class);
@@ -34,9 +35,7 @@ public class FreezeIntellijNetwork extends HapiSuite {
 
     @Override
     public List<DynamicTest> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            justFreeze(),
-        });
+        return List.of( justFreeze());
     }
 
     final DynamicTest justFreeze() {

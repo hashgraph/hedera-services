@@ -55,6 +55,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class RecordCreationSuite extends HapiSuite {
@@ -80,7 +81,7 @@ public class RecordCreationSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(
                 payerRecordCreationSanityChecks(),
                 accountsGetPayerRecordsIfSoConfigured(),

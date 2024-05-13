@@ -78,7 +78,7 @@ public class HapiTokenBurn extends HapiTxnOp<HapiTokenBurn> {
     }
 
     @Override
-    protected long feeFor(final DynamicTest spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(HederaFunctionality.TokenBurn, subType, this::usageEstimate, txn, numPayerKeys);
     }
@@ -94,7 +94,7 @@ public class HapiTokenBurn extends HapiTxnOp<HapiTokenBurn> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final DynamicTest spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final var tId = TxnUtils.asTokenId(token, spec);
         final TokenBurnTransactionBody opBody = spec.txns()
                 .<TokenBurnTransactionBody, TokenBurnTransactionBody.Builder>body(TokenBurnTransactionBody.class, b -> {
@@ -112,12 +112,12 @@ public class HapiTokenBurn extends HapiTxnOp<HapiTokenBurn> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final DynamicTest spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
         return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::burnToken;
     }
 
     @Override
-    protected void updateStateOf(final DynamicTest spec) {}
+    protected void updateStateOf(final HapiSpec spec) {}
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {

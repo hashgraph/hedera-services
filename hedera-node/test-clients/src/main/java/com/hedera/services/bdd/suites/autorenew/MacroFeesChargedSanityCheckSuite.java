@@ -60,6 +60,7 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 
 public class MacroFeesChargedSanityCheckSuite extends HapiSuite {
 
@@ -213,7 +214,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiSuite {
         };
     }
 
-    private RenewalFeeComponents autoRenewFeesFor(final DynamicTest spec, final ExtantCryptoContext extantCtx) {
+    private RenewalFeeComponents autoRenewFeesFor(final HapiSpec spec, final ExtantCryptoContext extantCtx) {
         @SuppressWarnings("java:S1874")
         final var prices = spec.ratesProvider().currentSchedule().getTransactionFeeScheduleList().stream()
                 .filter(tfs -> tfs.getHederaFunctionality() == CryptoAccountAutoRenew)

@@ -218,7 +218,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
     }
 
     public static void assertTinybarAmountIsApproxUsd(
-            final DynamicTest spec,
+            final HapiSpec spec,
             final double expectedFractionalUsd,
             final long actualTinybars,
             final double allowedPercentDiff) {

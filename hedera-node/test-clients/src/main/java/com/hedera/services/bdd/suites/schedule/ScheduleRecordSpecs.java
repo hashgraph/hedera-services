@@ -82,6 +82,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class ScheduleRecordSpecs extends HapiSuite {
@@ -105,7 +106,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
+    final DynamicTest canonicalScheduleOpsHaveExpectedUsdFees() {
         return defaultHapiSpec("CanonicalScheduleOpsHaveExpectedUsdFees")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,ContractCall"),

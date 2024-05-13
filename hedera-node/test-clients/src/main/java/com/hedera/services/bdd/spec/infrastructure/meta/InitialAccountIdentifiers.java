@@ -71,7 +71,7 @@ public record InitialAccountIdentifiers(@Nullable Key key, @Nullable byte[] alia
 
     private static final int NUM_CHOICES = ALL_COMBINATIONS.size();
 
-    public static InitialAccountIdentifiers fuzzedFrom(final DynamicTest spec, final Key key) {
+    public static InitialAccountIdentifiers fuzzedFrom(final HapiSpec spec, final Key key) {
         throwIfNotEcdsa(key);
         return ALL_COMBINATIONS.get(RANDOM.nextInt(NUM_CHOICES)).apply(spec, key);
     }

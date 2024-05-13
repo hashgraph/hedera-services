@@ -109,7 +109,7 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final DynamicTest spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         if (contentsSupplier.isPresent()) {
             contents = Optional.of(contentsSupplier.get().get());
         } else if (path.isPresent()) {
@@ -127,12 +127,12 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final DynamicTest spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
         return spec.clients().getFileSvcStub(targetNodeFor(spec), useTls)::appendContent;
     }
 
     @Override
-    protected long feeFor(final DynamicTest spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         final var expiry =
                 payer.isPresent() ? currExpiry(file, spec, payerToUse(payer.get(), spec)) : currExpiry(file, spec);
         final FeeCalculator.ActivityMetrics metricsCalc =
@@ -147,7 +147,7 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
     }
 
     @Override
-    protected void updateStateOf(final DynamicTest spec) throws Throwable {
+    protected void updateStateOf(final HapiSpec spec) throws Throwable {
         postAppendCb.ifPresent(cb -> cb.accept(actualStatus));
         if (actualStatus == SUCCESS && uploadProgress != null) {
             uploadProgress.markFinished(appendNum);
@@ -164,11 +164,11 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
         return super.toStringHelper().add("fileName", file);
     }
 
-    private String payerToUse(final String designated, final DynamicTest spec) {
+    private String payerToUse(final String designated, final HapiSpec spec) {
         return isPrivileged(designated, spec) ? spec.setup().genesisAccountName() : designated;
     }
 
-    private boolean isPrivileged(final String account, final DynamicTest spec) {
+    private boolean isPrivileged(final String account, final HapiSpec spec) {
         return account.equals(spec.setup().addressBookControlName())
                 || account.equals(spec.setup().exchangeRatesControlName())
                 || account.equals(spec.setup().feeScheduleControlName())

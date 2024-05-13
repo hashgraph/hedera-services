@@ -48,6 +48,7 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class ReadyToRunScheduledXfersLoad extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ReadyToRunScheduledXfersLoad.class);
@@ -65,10 +66,8 @@ public class ReadyToRunScheduledXfersLoad extends HapiSuite {
     }
 
     @Override
-    public java.util.List<com.hedera.services.bdd.spec.HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            runReadyToRunXfers(),
-        });
+    public List<DynamicTest> getSpecsInSuite() {
+        return List.of(runReadyToRunXfers());
     }
 
     final DynamicTest runReadyToRunXfers() {

@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 
 public class TrieSigMapGenerator implements SigMapGenerator {
     private static final Logger log = LogManager.getLogger(TrieSigMapGenerator.class);
@@ -79,7 +80,7 @@ public class TrieSigMapGenerator implements SigMapGenerator {
     }
 
     @Override
-    public SignatureMap forPrimitiveSigs(final DynamicTest spec, final List<Map.Entry<byte[], byte[]>> keySigs) {
+    public SignatureMap forPrimitiveSigs(final HapiSpec spec, final List<Map.Entry<byte[], byte[]>> keySigs) {
         Set<ByteString> keys = keySigs.stream()
                 .map(Map.Entry::getKey)
                 .map(ByteString::copyFrom)
@@ -115,7 +116,7 @@ public class TrieSigMapGenerator implements SigMapGenerator {
                         l -> SignatureMap.newBuilder().addAllSigPair(l).build()));
     }
 
-    private Set<ByteString> fullPrefixSetFor(final DynamicTest spec) {
+    private Set<ByteString> fullPrefixSetFor(final HapiSpec spec) {
         final var registry = spec.registry();
         final var fullPrefixSet = new HashSet<ByteString>();
         for (final var key : fullPrefixKeys) {

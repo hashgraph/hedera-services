@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class FileContractMemoPerfSuite extends LoadTest {
     private static final Logger log = LogManager.getLogger(FileContractMemoPerfSuite.class);
@@ -69,7 +70,7 @@ public class FileContractMemoPerfSuite extends LoadTest {
 
     // perform cryptoCreate, cryptoUpdate, TokenCreate, TokenUpdate, FileCreate, FileUpdate txs with
     // entity memo set.
-    protected HapiSpec RunMixedFileContractMemoOps() {
+    final DynamicTest RunMixedFileContractMemoOps() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         final AtomicInteger createdSoFar = new AtomicInteger(0);
         Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[] {

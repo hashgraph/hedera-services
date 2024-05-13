@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class RecordStreamValidation extends HapiSuite {
     private static final Logger log = LogManager.getLogger(RecordStreamValidation.class);
@@ -39,9 +40,7 @@ public class RecordStreamValidation extends HapiSuite {
 
     @Override
     public List<DynamicTest> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            recordStreamSanityChecks(),
-        });
+        return List.of(recordStreamSanityChecks());
     }
 
     final DynamicTest recordStreamSanityChecks() {

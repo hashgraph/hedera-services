@@ -71,11 +71,12 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
 @Tag(TOKEN)
-public final class TokenPauseSpecs extends HapiSuite {
+public class TokenPauseSpecs extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(TokenPauseSpecs.class);
     public static final String LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION = "ledger.autoRenewPeriod.minDuration";
@@ -146,7 +147,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec pausedTokenInCustomFeeCaseStudy() {
+    final DynamicTest pausedTokenInCustomFeeCaseStudy() {
         return defaultHapiSpec("PausedTokenInCustomFeeCaseStudy", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
@@ -464,7 +465,7 @@ public final class TokenPauseSpecs extends HapiSuite {
 
         @Override
         @SuppressWarnings("java:S5960")
-        public ErroringAsserts<List<TokenTransferList>> assertsFor(final DynamicTest spec) {
+        public ErroringAsserts<List<TokenTransferList>> assertsFor(final HapiSpec spec) {
             return tokenTransfers -> {
                 final var registry = spec.registry();
                 try {

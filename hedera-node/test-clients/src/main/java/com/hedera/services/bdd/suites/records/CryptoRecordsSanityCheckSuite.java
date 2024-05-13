@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class CryptoRecordsSanityCheckSuite extends HapiSuite {
@@ -63,15 +64,14 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
 
     @Override
     public List<DynamicTest> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
+        return List.of(
             cryptoCreateRecordSanityChecks(),
             cryptoDeleteRecordSanityChecks(),
             cryptoTransferRecordSanityChecks(),
             cryptoUpdateRecordSanityChecks(),
             insufficientAccountBalanceRecordSanityChecks(),
             invalidPayerSigCryptoTransferRecordSanityChecks(),
-            ownershipChangeShowsInRecord(),
-        });
+            ownershipChangeShowsInRecord());
     }
 
     @HapiTest

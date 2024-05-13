@@ -46,6 +46,7 @@ import java.util.Random;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * This test needs sequential distribution of entity ids for accounts, topics, tokens, and scheduled
@@ -75,8 +76,8 @@ public class QueryOnlyLoadTest extends LoadTest {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {runQueryLoadTest()});
+    public List<DynamicTest> getSpecsInSuite() {
+        return List.of(runQueryLoadTest());
     }
 
     final DynamicTest runQueryLoadTest() {

@@ -46,6 +46,7 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class NWayDistNoHotspots extends HapiSuite {
     private static final Logger log = LogManager.getLogger(NWayDistNoHotspots.class);
@@ -72,9 +73,7 @@ public class NWayDistNoHotspots extends HapiSuite {
 
     @Override
     public List<DynamicTest> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            runDistributions(),
-        });
+        return List.of(runDistributions());
     }
 
     final DynamicTest runDistributions() {

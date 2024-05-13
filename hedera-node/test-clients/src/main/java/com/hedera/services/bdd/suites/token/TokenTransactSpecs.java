@@ -98,6 +98,7 @@ import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -2116,7 +2117,7 @@ public class TokenTransactSpecs extends HapiSuite {
                 .tokenType(tokenType)
                 .withCustom(feeFactory.apply(Boolean.TRUE))
                 .withCustom(feeFactory.apply(Boolean.FALSE));
-        final DynamicTestOperation finisher;
+        final HapiSpecOperation finisher;
         if (tokenType == NON_FUNGIBLE_UNIQUE) {
             creationOp.initialSupply(0L);
             finisher = blockingOrder(

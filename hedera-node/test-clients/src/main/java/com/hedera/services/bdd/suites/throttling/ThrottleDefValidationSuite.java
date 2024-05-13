@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -56,13 +57,12 @@ public class ThrottleDefValidationSuite extends HapiSuite {
 
     @Override
     public List<DynamicTest> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
+        return List.of(
             throttleDefsRejectUnauthorizedPayers(),
             throttleUpdateRejectsMultiGroupAssignment(),
             throttleUpdateWithZeroGroupOpsPerSecFails(),
             updateWithMissingTokenMintFails(),
-            ensureDefaultsRestored()
-        });
+            ensureDefaultsRestored());
     }
 
     @HapiTest

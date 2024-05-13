@@ -53,6 +53,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * This restart test uses the named entities under
@@ -94,9 +95,8 @@ public class JrsRestartTestTemplate extends HapiSuite {
 
     @Override
     public List<DynamicTest> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            enableHSS(), jrsRestartTemplate(),
-        });
+        return List.of(
+            enableHSS(), jrsRestartTemplate());
     }
 
     final DynamicTest enableHSS() {

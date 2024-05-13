@@ -109,6 +109,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class FailureCharacterizationSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FailureCharacterizationSuite.class);
@@ -301,7 +302,7 @@ public class FailureCharacterizationSuite extends HapiSuite {
                         .toArray(HapiSpecOperation[]::new)));
     }
 
-    private void saveClassicContractControlledKey(@NonNull final DynamicTest spec) {
+    private void saveClassicContractControlledKey(@NonNull final HapiSpec spec) {
         final var registry = spec.registry();
         final var failableControlKey = Key.newBuilder()
                 .setThresholdKey(ThresholdKey.newBuilder()

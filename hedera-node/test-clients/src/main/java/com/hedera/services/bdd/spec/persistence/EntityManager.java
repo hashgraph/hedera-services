@@ -25,6 +25,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.validation.YamlHelper;
 import java.io.File;
 import java.io.IOException;
@@ -44,7 +45,7 @@ import org.yaml.snakeyaml.constructor.Constructor;
 public class EntityManager {
     static final Logger log = LogManager.getLogger(EntityManager.class);
 
-    private final DynamicTest spec;
+    private final HapiSpec spec;
 
     public EntityManager(HapiSpec spec) {
         this.spec = spec;

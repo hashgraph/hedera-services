@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class FreezeDockerNetwork extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FreezeDockerNetwork.class);
@@ -35,9 +36,7 @@ public class FreezeDockerNetwork extends HapiSuite {
 
     @Override
     public List<DynamicTest> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            justFreeze(),
-        });
+        return List.of(justFreeze());
     }
 
     final DynamicTest justFreeze() {

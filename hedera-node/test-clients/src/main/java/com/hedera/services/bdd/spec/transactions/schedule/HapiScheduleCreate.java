@@ -224,7 +224,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
         return b -> b.setScheduleCreate(opBody);
     }
 
-    public static Timestamp getRelativeExpiry(final DynamicTest spec, final String txnId, final Long relative) {
+    public static Timestamp getRelativeExpiry(final HapiSpec spec, final String txnId, final Long relative) {
         if (!spec.registry().hasTransactionRecord(txnId)) {
             var createTxn = getTxnRecord(txnId).saveTxnRecordToRegistry(txnId);
             allRunFor(spec, createTxn);

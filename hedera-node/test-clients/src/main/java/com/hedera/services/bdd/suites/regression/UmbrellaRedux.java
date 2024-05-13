@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class UmbrellaRedux extends HapiSuite {
@@ -65,9 +66,7 @@ public class UmbrellaRedux extends HapiSuite {
 
     @Override
     public List<DynamicTest> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            umbrellaRedux(),
-        });
+        return List.of(umbrellaRedux());
     }
 
     @HapiTest

@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -63,10 +64,9 @@ public class TokenManagementSpecsStateful extends HapiSuite {
 
     @Override
     public List<DynamicTest> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
+        return List.of(
             /* Stateful specs from TokenManagementSpecs */
-            freezeMgmtFailureCasesWork(),
-        });
+            freezeMgmtFailureCasesWork());
     }
 
     @HapiTest

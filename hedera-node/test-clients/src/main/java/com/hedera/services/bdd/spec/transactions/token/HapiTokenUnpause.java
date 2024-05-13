@@ -61,7 +61,7 @@ public class HapiTokenUnpause extends HapiTxnOp<HapiTokenUnpause> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final DynamicTest spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final var tId = TxnUtils.asTokenId(token, spec);
         final TokenUnpauseTransactionBody opBody = spec.txns()
                 .<TokenUnpauseTransactionBody, TokenUnpauseTransactionBody.Builder>body(
@@ -70,7 +70,7 @@ public class HapiTokenUnpause extends HapiTxnOp<HapiTokenUnpause> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final DynamicTest spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
         return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::unpauseToken;
     }
 
@@ -81,7 +81,7 @@ public class HapiTokenUnpause extends HapiTxnOp<HapiTokenUnpause> {
     }
 
     @Override
-    protected long feeFor(final DynamicTest spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         return spec.fees().forActivityBasedOp(HederaFunctionality.TokenUnpause, this::usageEstimate, txn, numPayerKeys);
     }
 

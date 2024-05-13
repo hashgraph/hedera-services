@@ -123,7 +123,7 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final DynamicTest spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final TopicID id = resolveTopicId(spec);
         final ConsensusSubmitMessageTransactionBody opBody = spec.txns()
                 .<ConsensusSubmitMessageTransactionBody, ConsensusSubmitMessageTransactionBody.Builder>body(
@@ -153,7 +153,7 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
         return b -> b.setConsensusSubmitMessage(opBody);
     }
 
-    private TopicID resolveTopicId(final DynamicTest spec) {
+    private TopicID resolveTopicId(final HapiSpec spec) {
         if (topicFn.isPresent()) {
             final TopicID topicID = topicFn.get().apply(spec);
             topic = Optional.of(HapiPropertySource.asTopicString(topicID));
@@ -176,12 +176,12 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final DynamicTest spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
         return spec.clients().getConsSvcStub(targetNodeFor(spec), useTls)::submitMessage;
     }
 
     @Override
-    protected long feeFor(final DynamicTest spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         return spec.fees().forActivityBasedOp(ConsensusSubmitMessage, this::usageEstimate, txn, numPayerKeys);
     }
 

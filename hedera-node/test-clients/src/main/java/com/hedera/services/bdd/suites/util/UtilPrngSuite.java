@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestSuite
 public class UtilPrngSuite extends HapiSuite {
@@ -52,7 +53,7 @@ public class UtilPrngSuite extends HapiSuite {
         return allOf(positiveTests());
     }
 
-    private List<HapiSpec> positiveTests() {
+    private List<DynamicTest> positiveTests() {
         return List.of(happyPathWorksForRangeAndBitString(), failsInPreCheckForNegativeRange(), usdFeeAsExpected());
     }
 

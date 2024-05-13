@@ -48,6 +48,7 @@ import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class SimpleXfersAvoidingHotspot extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SimpleXfersAvoidingHotspot.class);
@@ -64,9 +65,7 @@ public class SimpleXfersAvoidingHotspot extends HapiSuite {
 
     @Override
     public List<DynamicTest> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            runSimpleXfers(),
-        });
+        return List.of(runSimpleXfers());
     }
 
     final DynamicTest runSimpleXfers() {

@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class AutoRenewEntitiesForReconnect extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AutoRenewEntitiesForReconnect.class);
@@ -104,7 +105,7 @@ public class AutoRenewEntitiesForReconnect extends HapiSuite {
      *
      * @return a {@link HapiSpec} to do some crypto transfer transactions before reconnect
      */
-    public static HapiSpec runTransfersBeforeReconnect() {
+    static DynamicTest runTransfersBeforeReconnect() {
         return defaultHapiSpec("runTransfersBeforeReconnect")
                 .given()
                 .when()

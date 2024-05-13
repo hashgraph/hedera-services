@@ -162,7 +162,7 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
     }
 
     private void calculateAllowances(
-            final DynamicTest spec,
+            final HapiSpec spec,
             final List<CryptoAllowance> callowances,
             final List<TokenAllowance> tallowances,
             final List<NftAllowance> nftallowances) {

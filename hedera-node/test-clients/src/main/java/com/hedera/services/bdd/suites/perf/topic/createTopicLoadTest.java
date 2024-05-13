@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class createTopicLoadTest extends LoadTest {
 
@@ -54,7 +55,7 @@ public class createTopicLoadTest extends LoadTest {
         return List.of(runCreateTopics());
     }
 
-    private static HapiSpec runCreateTopics() {
+    final DynamicTest runCreateTopics() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         final AtomicInteger submittedSoFar = new AtomicInteger(0);
         KeyShape submitKeyShape = threshOf(2, SIMPLE, SIMPLE, listOf(2));

@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class SimpleFreezeOnly extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SimpleFreezeOnly.class);
@@ -45,7 +46,7 @@ public class SimpleFreezeOnly extends HapiSuite {
         return allOf(positiveTests());
     }
 
-    private List<HapiSpec> positiveTests() {
+    private List<DynamicTest> positiveTests() {
         return Arrays.asList(simpleFreezeWithTimestamp());
     }
 

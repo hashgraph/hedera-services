@@ -43,6 +43,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class AutoRemovalCasesSuite extends HapiSuite {
 
@@ -55,12 +56,11 @@ public class AutoRemovalCasesSuite extends HapiSuite {
     @Override
     @SuppressWarnings("java:S3878")
     public List<DynamicTest> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
+        return List.of(
             ignoresExpiredDeletedContracts(),
             displacesTokenUnitsAsExpected(),
             immediatelyRemovesDeletedAccountOnExpiry(),
-            autoRemovalCasesSuiteCleanup(),
-        });
+            autoRemovalCasesSuiteCleanup());
     }
 
     final DynamicTest ignoresExpiredDeletedContracts() {

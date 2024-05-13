@@ -36,6 +36,7 @@ import java.util.Random;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
     private static final Logger log = LogManager.getLogger(CryptoTransferLoadTestWithStakedAccounts.class);
@@ -58,7 +59,7 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
         return List.of(runCryptoTransfers());
     }
 
-    protected HapiSpec runCryptoTransfers() {
+    final DynamicTest runCryptoTransfers() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
         Supplier<HapiSpecOperation[]> transferBurst = () -> {

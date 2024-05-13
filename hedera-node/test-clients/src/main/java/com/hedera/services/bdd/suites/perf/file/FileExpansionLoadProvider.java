@@ -54,6 +54,7 @@ import java.util.function.Function;
 import java.util.function.LongFunction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * Load provider that continually appends 5kb chunks to a random choice of one of a set of target

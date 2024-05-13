@@ -69,7 +69,7 @@ public class UpgradeHelperSuite extends HapiSuite {
     }
 
     final DynamicTest doStagingAction() {
-        final DynamicTestOperation op;
+        final HapiSpecOperation op;
 
         if (startTime == null) {
             op = UtilVerbs.prepareUpgrade()

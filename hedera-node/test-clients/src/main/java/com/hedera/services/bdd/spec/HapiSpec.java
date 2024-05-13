@@ -269,7 +269,7 @@ public class HapiSpec implements Runnable, Executable {
         return targetNetworkType;
     }
 
-    final HapiSpec setTargetNetworkType(TargetNetworkType targetNetworkType) {
+    public HapiSpec setTargetNetworkType(TargetNetworkType targetNetworkType) {
         this.targetNetworkType = targetNetworkType;
         return this;
     }

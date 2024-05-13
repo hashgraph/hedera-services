@@ -48,6 +48,7 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class TokenRelStatusChanges extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenRelStatusChanges.class);
@@ -62,9 +63,8 @@ public class TokenRelStatusChanges extends HapiSuite {
 
     @Override
     public List<DynamicTest> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            runTokenRelStatusChanges(),
-        });
+        return List.of(
+            runTokenRelStatusChanges());
     }
 
     final DynamicTest runTokenRelStatusChanges() {

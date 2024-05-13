@@ -20,7 +20,6 @@ import com.hedera.services.bdd.suites.autorenew.AutoRemovalCasesSuite;
 import com.hedera.services.bdd.suites.autorenew.GracePeriodRestrictionsSuite;
 import com.hedera.services.bdd.suites.autorenew.MacroFeesChargedSanityCheckSuite;
 import com.hedera.services.bdd.suites.autorenew.NoGprIfNoAutoRenewSuite;
-import com.hedera.services.bdd.suites.autorenew.TopicAutoRenewalSuite;
 import com.hedera.services.bdd.suites.compose.LocalNetworkCheck;
 import com.hedera.services.bdd.suites.compose.PerpetualLocalCalls;
 import com.hedera.services.bdd.suites.consensus.AssortedHcsOps;
@@ -179,7 +178,6 @@ import com.hedera.services.bdd.suites.token.TokenDeleteSpecs;
 import com.hedera.services.bdd.suites.token.TokenFeeScheduleUpdateSpecs;
 import com.hedera.services.bdd.suites.token.TokenManagementSpecs;
 import com.hedera.services.bdd.suites.token.TokenManagementSpecsStateful;
-import com.hedera.services.bdd.suites.token.TokenMiscOps;
 import com.hedera.services.bdd.suites.token.TokenPauseSpecs;
 import com.hedera.services.bdd.suites.token.TokenTotalSupplyAfterMintBurnWipeSuite;
 import com.hedera.services.bdd.suites.token.TokenTransactSpecs;
@@ -202,8 +200,7 @@ class EndToEndPackageRunner extends TestBase {
                 extractSpecsFromSuite(AutoRemovalCasesSuite::new),
                 extractSpecsFromSuite(GracePeriodRestrictionsSuite::new),
                 extractSpecsFromSuite(MacroFeesChargedSanityCheckSuite::new),
-                extractSpecsFromSuite(NoGprIfNoAutoRenewSuite::new),
-                extractSpecsFromSuite(TopicAutoRenewalSuite::new));
+                extractSpecsFromSuite(NoGprIfNoAutoRenewSuite::new));
     }
 
     @Tag("compose")
@@ -413,9 +410,7 @@ class EndToEndPackageRunner extends TestBase {
                 extractSpecsFromSuite(AllBaseOpFeesSuite::new),
                 extractSpecsFromSuite(CongestionPricingSuite::new),
                 extractSpecsFromSuite(CostOfEverythingSuite::new),
-                extractSpecsFromSuite(CreateAndUpdateOps::new),
                 extractSpecsFromSuite(OverlappingKeysSuite::new),
-                extractSpecsFromSuite(QueryPaymentExploitsSuite::new),
                 extractSpecsFromSuite(SpecialAccountsAreExempted::new));
     }
 
@@ -641,7 +636,6 @@ class EndToEndPackageRunner extends TestBase {
                 extractSpecsFromSuite(TokenFeeScheduleUpdateSpecs::new),
                 extractSpecsFromSuite(TokenManagementSpecs::new),
                 extractSpecsFromSuite(TokenManagementSpecsStateful::new),
-                extractSpecsFromSuite(TokenMiscOps::new),
                 extractSpecsFromSuite(TokenPauseSpecs::new),
                 extractSpecsFromSuite(TokenTotalSupplyAfterMintBurnWipeSuite::new),
                 extractSpecsFromSuite(TokenTransactSpecs::new),

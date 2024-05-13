@@ -55,6 +55,7 @@ import java.util.function.Supplier;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class SubmitMessageLoadTest extends LoadTest {
 
@@ -113,7 +114,7 @@ public class SubmitMessageLoadTest extends LoadTest {
         return List.of(runSubmitMessages());
     }
 
-    private static HapiSpec runSubmitMessages() {
+    final DynamicTest runSubmitMessages() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         final AtomicInteger submittedSoFar = new AtomicInteger(0);
         Supplier<HapiSpecOperation[]> submitBurst =
@@ -137,13 +138,6 @@ public class SubmitMessageLoadTest extends LoadTest {
                                 : sleepFor(100),
                         logIt(ignore -> settings.toString()))
                 .when(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(Map.of(
-                                        "hapi.throttling.buckets.fastOpBucket.capacity",
-                                        "4000",
-                                        "hapi.throttling.ops.consensusSubmitMessage.capacityRequired",
-                                        "1.0")),
                         cryptoCreate(SENDER)
                                 .balance(ignore -> settings.getInitialBalance())
                                 .withRecharging()

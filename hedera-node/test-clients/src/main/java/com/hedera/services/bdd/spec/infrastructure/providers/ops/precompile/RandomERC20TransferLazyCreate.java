@@ -40,7 +40,7 @@ import java.math.BigInteger;
 import java.util.Optional;
 
 public class RandomERC20TransferLazyCreate implements OpProvider {
-    private final DynamicTestRegistry registry;
+    private final HapiSpecRegistry registry;
     private static final long GAS_TO_OFFER = 5_000_000L;
     private static final String TRANSFER = "transfer";
     private static final String TRANSFER_TXN = "transferTxn";

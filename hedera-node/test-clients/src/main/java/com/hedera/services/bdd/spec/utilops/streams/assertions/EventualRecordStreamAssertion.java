@@ -28,6 +28,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.function.Function;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * A {@link com.hedera.services.bdd.spec.utilops.UtilOp} that registers itself with {@link
@@ -73,7 +74,7 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
         return new EventualRecordStreamAssertion(assertionFactory, true);
     }
 
-    public static String recordStreamLocFor(@NonNull final DynamicTest spec) {
+    public static String recordStreamLocFor(@NonNull final HapiSpec spec) {
         Objects.requireNonNull(spec);
         return switch (spec.targetNetworkType()) {
             case HAPI_TEST_NETWORK -> HAPI_TEST_STREAMS_LOC_TEST_NETWORK;
@@ -83,7 +84,7 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
     }
 
     @Override
-    protected boolean submitOp(final DynamicTest spec) throws Throwable {
+    protected boolean submitOp(final HapiSpec spec) throws Throwable {
         final var locToUse = recordStreamLocFor(spec);
         final var validatingListener = RECORD_STREAM_ACCESS.getValidatingListener(locToUse);
         assertion = Objects.requireNonNull(assertionFactory.apply(spec));

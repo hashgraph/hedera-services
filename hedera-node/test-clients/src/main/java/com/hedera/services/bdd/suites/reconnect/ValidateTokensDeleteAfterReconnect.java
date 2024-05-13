@@ -39,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * A reconnect test in which a few tokens are created while the node 0.0.8 is disconnected from the
@@ -48,7 +49,6 @@ import org.apache.logging.log4j.Logger;
 public class ValidateTokensDeleteAfterReconnect extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ValidateTokensDeleteAfterReconnect.class);
     public static final String reconnectingNode = "0.0.8";
-    public static final String nonReconnectingNode = "0.0.3";
     private static final long TOKEN_INITIAL_SUPPLY = 500;
 
     public static void main(String... args) {
@@ -56,7 +56,7 @@ public class ValidateTokensDeleteAfterReconnect extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<DynamicTest> getSpecsInSuite() {
         return List.of(runTransfersBeforeReconnect(), validateTokensAfterReconnect());
     }
 

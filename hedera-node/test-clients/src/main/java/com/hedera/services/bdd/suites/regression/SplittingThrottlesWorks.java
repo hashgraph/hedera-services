@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class SplittingThrottlesWorks extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SplittingThrottlesWorks.class);
@@ -59,9 +60,7 @@ public class SplittingThrottlesWorks extends HapiSuite {
 
     @Override
     public List<DynamicTest> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            setNewLimits(), tryCreations(),
-        });
+        return List.of(setNewLimits(), tryCreations());
     }
 
     final DynamicTest setNewLimits() {

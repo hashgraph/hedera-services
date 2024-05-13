@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class CreateTopicPerfSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CreateTopicPerfSuite.class);
@@ -45,7 +46,7 @@ public class CreateTopicPerfSuite extends HapiSuite {
 
     @Override
     public List<DynamicTest> getSpecsInSuite() {
-        return Arrays.asList(createTopicPerf());
+        return List.of(createTopicPerf());
     }
 
     @Override

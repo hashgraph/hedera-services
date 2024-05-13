@@ -36,6 +36,7 @@ import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 // Run this suite first in CI, since it assumes there are no NFTs in state
 @HapiTestSuite(order = Integer.MIN_VALUE)

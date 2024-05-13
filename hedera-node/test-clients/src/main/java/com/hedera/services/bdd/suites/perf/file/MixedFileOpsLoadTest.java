@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 /** Run mixed operations including FileCreate, FileAppend, FileUpdate */
 public class MixedFileOpsLoadTest extends LoadTest {
@@ -55,7 +56,7 @@ public class MixedFileOpsLoadTest extends LoadTest {
     }
 
     @HapiTest
-    protected HapiSpec runMixedFileOps() {
+    final DynamicTest runMixedFileOps() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         final AtomicInteger submittedSoFar = new AtomicInteger(0);
         String initialContent = "The initial contents!";

@@ -48,6 +48,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class UpdateAllProtectedFilesDuringReconnect extends HapiSuite {
 

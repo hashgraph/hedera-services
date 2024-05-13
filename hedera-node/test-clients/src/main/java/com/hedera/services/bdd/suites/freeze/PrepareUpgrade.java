@@ -28,6 +28,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public final class PrepareUpgrade extends HapiSuite {
     private static final Logger log = LogManager.getLogger(PrepareUpgrade.class);
@@ -43,7 +44,7 @@ public final class PrepareUpgrade extends HapiSuite {
 
     @Override
     public List<DynamicTest> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {prepareUpgrade()});
+        return List.of(prepareUpgrade());
     }
 
     final DynamicTest prepareUpgrade() {

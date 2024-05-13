@@ -73,6 +73,7 @@ import java.util.stream.IntStream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class MixedOpsLoadTest extends LoadTest {
     private static final Logger log = LogManager.getLogger(MixedOpsLoadTest.class);
@@ -99,7 +100,7 @@ public class MixedOpsLoadTest extends LoadTest {
         return List.of(runMixedOps());
     }
 
-    protected HapiSpec runMixedOps() {
+    final DynamicTest runMixedOps() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine
         Random r = new Random(511523L);
@@ -189,19 +190,6 @@ public class MixedOpsLoadTest extends LoadTest {
                                 .hasRetryPrecheckFrom(permissiblePrechecks)
                                 .key(GENESIS))
                 .when(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(Map.of(
-                                        "hapi.throttling.buckets.fastOpBucket.capacity",
-                                        "1300000.0",
-                                        "hapi.throttling.ops.consensusUpdateTopic.capacityRequired",
-                                        "1.0",
-                                        "hapi.throttling.ops.consensusGetTopicInfo.capacityRequired",
-                                        "1.0",
-                                        "hapi.throttling.ops.consensusSubmitMessage.capacityRequired",
-                                        "1.0",
-                                        "tokens.maxPerAccount",
-                                        "10000000")),
                         cryptoCreate(sender)
                                 .balance(initialBalance.getAsLong())
                                 .withRecharging()

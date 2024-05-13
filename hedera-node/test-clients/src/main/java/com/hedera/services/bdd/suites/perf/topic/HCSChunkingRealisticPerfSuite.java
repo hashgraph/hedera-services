@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class HCSChunkingRealisticPerfSuite extends LoadTest {
 
@@ -61,7 +62,7 @@ public class HCSChunkingRealisticPerfSuite extends LoadTest {
         return List.of(fragmentLongMessageIntoChunks());
     }
 
-    private static HapiSpec fragmentLongMessageIntoChunks() {
+    final DynamicTest fragmentLongMessageIntoChunks() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
         Supplier<HapiSpecOperation[]> submitBurst =

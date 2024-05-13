@@ -425,7 +425,7 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
     }
 
     private static ServicesConfigurationList downloadConfigFile(
-            @NonNull final DynamicTest spec, @NonNull final String file, @NonNull final Optional<String> payer) {
+            @NonNull final HapiSpec spec, @NonNull final String file, @NonNull final Optional<String> payer) {
         int getsRemaining = 10;
         var gotFileContents = false;
         HapiGetFileContents subOp = null;

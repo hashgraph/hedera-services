@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class TokenPuvSuite extends HapiSuite {
 
@@ -59,9 +60,7 @@ public class TokenPuvSuite extends HapiSuite {
 
     @Override
     public List<DynamicTest> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            cleanupIfNecessary(), initialAssociation(), initialFunding(),
-        });
+        return List.of(cleanupIfNecessary(), initialAssociation(), initialFunding());
     }
 
     final DynamicTest initialFunding() {

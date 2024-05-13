@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class LocalNetworkCheck extends HapiSuite {
 
@@ -42,10 +43,8 @@ public class LocalNetworkCheck extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            balancesChangeOnTransfer(),
-        });
+    public List<DynamicTest> getSpecsInSuite() {
+        return List.of(balancesChangeOnTransfer());
     }
 
     final DynamicTest balancesChangeOnTransfer() {

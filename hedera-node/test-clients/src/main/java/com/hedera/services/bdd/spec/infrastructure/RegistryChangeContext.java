@@ -21,7 +21,7 @@ import java.util.Optional;
 
 public class RegistryChangeContext<T> {
     private final T value;
-    private final DynamicTestRegistry registry;
+    private final HapiSpecRegistry registry;
     private final Optional<HapiSpecOperation> cause;
 
     public RegistryChangeContext(T value, HapiSpecRegistry registry, Optional<HapiSpecOperation> cause) {

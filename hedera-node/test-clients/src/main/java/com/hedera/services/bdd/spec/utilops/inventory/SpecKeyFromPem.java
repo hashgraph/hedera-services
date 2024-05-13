@@ -97,7 +97,7 @@ public class SpecKeyFromPem extends UtilOp {
     }
 
     static void incorporatePem(
-            final DynamicTest spec,
+            final HapiSpec spec,
             final SigControl control,
             final String pemLoc,
             final String passphrase,
