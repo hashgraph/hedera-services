@@ -60,7 +60,8 @@ public class DigestProvider extends CachingOperationProvider<Message, Void, byte
      * @throws NoSuchAlgorithmException
      * 		if an implementation of the required algorithm cannot be located or loaded
      */
-    protected @NonNull byte[] compute(@NonNull final byte[] msg, @NonNull final DigestType algorithmType) throws NoSuchAlgorithmException {
+    protected @NonNull byte[] compute(@NonNull final byte[] msg, @NonNull final DigestType algorithmType)
+            throws NoSuchAlgorithmException {
         if (msg == null) {
             throw new IllegalArgumentException("msg");
         }
@@ -84,7 +85,8 @@ public class DigestProvider extends CachingOperationProvider<Message, Void, byte
      * @throws NoSuchAlgorithmException
      * 		if an implementation of the required algorithm cannot be located or loaded
      */
-    private @NonNull byte[] compute(@NonNull final byte[] msg, final int offset, final int length, @NonNull final DigestType algorithmType)
+    private @NonNull byte[] compute(
+            @NonNull final byte[] msg, final int offset, final int length, @NonNull final DigestType algorithmType)
             throws NoSuchAlgorithmException {
         final MessageDigest algorithm = loadAlgorithm(algorithmType);
         return compute(algorithm, msg, offset, length);
@@ -94,7 +96,8 @@ public class DigestProvider extends CachingOperationProvider<Message, Void, byte
      * {@inheritDoc}
      */
     @Override
-    protected @NonNull MessageDigest handleAlgorithmRequired(@NonNull final DigestType algorithmType) throws NoSuchAlgorithmException {
+    protected @NonNull MessageDigest handleAlgorithmRequired(@NonNull final DigestType algorithmType)
+            throws NoSuchAlgorithmException {
         return MessageDigest.getInstance(algorithmType.algorithmName());
     }
 
@@ -124,7 +127,8 @@ public class DigestProvider extends CachingOperationProvider<Message, Void, byte
      * 		the total number of bytes to read
      * @return the message digest as an array of the raw bytes
      */
-    private @NonNull byte[] compute(@NonNull final MessageDigest algorithm, @NonNull final byte[] msg, final int offset, final int length) {
+    private @NonNull byte[] compute(
+            @NonNull final MessageDigest algorithm, @NonNull final byte[] msg, final int offset, final int length) {
         algorithm.reset();
         algorithm.update(msg, offset, length);
 

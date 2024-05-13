@@ -351,7 +351,9 @@ public class CryptoEngine implements Cryptography {
      * @return the cryptographic hash for the given message contents
      */
     private @NonNull byte[] digestSyncInternal(
-            @NonNull final byte[] message, @NonNull final DigestType digestType, @NonNull final DigestProvider provider) {
+            @NonNull final byte[] message,
+            @NonNull final DigestType digestType,
+            @NonNull final DigestProvider provider) {
         try {
             return provider.compute(message, digestType);
         } catch (final NoSuchAlgorithmException ex) {
