@@ -21,19 +21,23 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.SystemDeleteTransactionBody;
 import com.hedera.hapi.node.state.file.File;
@@ -46,6 +50,8 @@ import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -63,6 +69,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -117,6 +124,41 @@ class FileSystemDeleteTest extends FileTestBase {
         lenient().when(handleContext.configuration()).thenReturn(testConfig);
         when(mockStoreFactory.getStore(ReadableFileStore.class)).thenReturn(mockStore);
         when(mockStoreFactory.getStore(ReadableAccountStore.class)).thenReturn(accountStore);
+    }
+
+    @Test
+    @DisplayName("pureChecks throws exception when file id is null")
+    public void testPureChecksThrowsExceptionWhenFileIdIsNull() {
+        SystemDeleteTransactionBody transactionBody = mock(SystemDeleteTransactionBody.class);
+        TransactionBody transaction = mock(TransactionBody.class);
+        given(handleContext.body()).willReturn(transaction);
+        given(transaction.systemDeleteOrThrow()).willReturn(transactionBody);
+        given(transactionBody.fileID()).willReturn(null);
+
+        assertThrows(PreCheckException.class, () -> subject.pureChecks(handleContext.body()));
+    }
+
+    @Test
+    @DisplayName("pureChecks does not throw exception when file id is not null")
+    public void testPureChecksDoesNotThrowExceptionWhenFileIdIsNotNull() {
+        given(handleContext.body()).willReturn(newFileDeleteTxn());
+
+        assertDoesNotThrow(() -> subject.pureChecks(handleContext.body()));
+    }
+
+    @Test
+    @DisplayName("calculateFees method invocations")
+    public void testCalculateFeesInvocations() {
+        FeeContext feeContext = mock(FeeContext.class);
+        FeeCalculator feeCalculator = mock(FeeCalculator.class);
+        when(feeContext.feeCalculator(SubType.DEFAULT)).thenReturn(feeCalculator);
+
+        subject.calculateFees(feeContext);
+
+        InOrder inOrder = inOrder(feeContext, feeCalculator);
+        inOrder.verify(feeContext).body();
+        inOrder.verify(feeContext).feeCalculator(SubType.DEFAULT);
+        inOrder.verify(feeCalculator).legacyCalculate(any());
     }
 
     @Test
