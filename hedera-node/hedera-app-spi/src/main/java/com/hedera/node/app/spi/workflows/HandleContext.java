@@ -270,7 +270,7 @@ public interface HandleContext {
     /**
      * Checks whether the payer of the current transaction refers to a superuser.
      *
-     * @return {@code true} if the payer is a superuser, otherwise {@code false
+     * @return {@code true} if the payer is a superuser, otherwise {@code false}
      */
     boolean isSuperUser();
 

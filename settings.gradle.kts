@@ -38,9 +38,9 @@ include(":app-service-contract", "hedera-node/hedera-smart-contract-service")
 
 include(":app-service-contract-impl", "hedera-node/hedera-smart-contract-service-impl")
 
-include(":app-service-evm", "hedera-node/hedera-evm")
+include(":hedera-evm", "hedera-node/hedera-evm")
 
-include(":app-service-evm-impl", "hedera-node/hedera-evm-impl")
+include(":hedera-evm-impl", "hedera-node/hedera-evm-impl")
 
 include(":app-service-file", "hedera-node/hedera-file-service")
 

@@ -15,8 +15,8 @@ module com.hedera.node.app.service.token.impl {
     requires transitive dagger;
     requires transitive javax.inject;
     requires com.hedera.node.app.hapi.utils;
-    requires com.hedera.node.app.service.evm;
     requires com.google.common;
+    requires com.hedera.evm;
     requires com.swirlds.base;
     requires com.swirlds.common;
     requires org.apache.commons.lang3;

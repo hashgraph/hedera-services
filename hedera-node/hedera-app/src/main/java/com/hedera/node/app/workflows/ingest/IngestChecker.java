@@ -196,7 +196,7 @@ public final class IngestChecker {
                     requireNonNull(txBody.ethereumTransactionOrThrow().ethereumData())
                             .toByteArray());
             validateTruePreCheck(nonNull(ethTxData), INVALID_ETHEREUM_TRANSACTION);
-            validateTruePreCheck(requireNonNull(ethTxData.gasLimit()) >= INTRINSIC_GAS_LOWER_BOUND, INSUFFICIENT_GAS);
+            validateTruePreCheck(ethTxData.gasLimit() >= INTRINSIC_GAS_LOWER_BOUND, INSUFFICIENT_GAS);
             // Do not allow sending HBars to Burn Address
             if (ethTxData.value().compareTo(BigInteger.ZERO) > 0) {
                 validateFalsePreCheck(Arrays.equals(ethTxData.to(), new byte[20]), INVALID_SOLIDITY_ADDRESS);
