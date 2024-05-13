@@ -50,9 +50,7 @@ public class SysFileDownloadSuite extends HapiSuite {
 
     @Override
     public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            downloadSysFiles(),
-        });
+        return List.of( downloadSysFiles());
     }
 
     final Stream<DynamicTest> downloadSysFiles() {

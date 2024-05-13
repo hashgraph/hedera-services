@@ -48,9 +48,7 @@ public class SchedulesValidationSuite extends HapiSuite {
 
     @Override
     public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            validateScheduling(),
-        });
+        return List.of(validateScheduling());
     }
 
     final Stream<DynamicTest> validateScheduling() {

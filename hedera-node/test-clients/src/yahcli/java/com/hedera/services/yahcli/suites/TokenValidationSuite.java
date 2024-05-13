@@ -46,9 +46,8 @@ public class TokenValidationSuite extends HapiSuite {
 
     @Override
     public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            validateTokens(),
-        });
+        return List.of(
+            validateTokens());
     }
 
     final Stream<DynamicTest> validateTokens() {
