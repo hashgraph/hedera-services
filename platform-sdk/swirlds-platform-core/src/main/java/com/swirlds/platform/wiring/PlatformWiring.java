@@ -34,6 +34,7 @@ import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.model.WiringModelBuilder;
+import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.transformers.WireTransformer;
@@ -199,18 +200,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .withDefaultPool(defaultPool)
                 .build();
 
-        // This counter spans both the event hasher and the post hash collector. This is a workaround for the current
-        // inability of concurrent schedulers to handle backpressure from an immediately subsequent scheduler.
-        // This counter is the on-ramp for the event hasher, and the off-ramp for the post hash collector.
-        final ObjectCounter hashingObjectCounter = new BackpressureObjectCounter(
-                "hashingObjectCounter",
-                platformContext
-                        .getConfiguration()
-                        .getConfigData(PlatformSchedulersConfig.class)
-                        .eventHasherUnhandledCapacity(),
-                Duration.ofNanos(100));
-
-        final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model, hashingObjectCounter);
+        final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model);
 
         final AncientMode ancientMode = platformContext
                 .getConfiguration()
@@ -228,9 +218,20 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             birthRoundMigrationShimWiring = null;
         }
 
-        eventHasherWiring = new ComponentWiring<>(model, EventHasher.class, schedulers.eventHasherScheduler());
+        // Provides back pressure across both the event hasher and the post hash collector
+        final ObjectCounter hashingObjectCounter = new BackpressureObjectCounter(
+                "hashingObjectCounter",
+                platformContext
+                        .getConfiguration()
+                        .getConfigData(PlatformSchedulersConfig.class)
+                        .eventHasherUnhandledCapacity(),
+                Duration.ofNanos(100));
+
+        eventHasherWiring =
+                new ComponentWiring<>(model, EventHasher.class, buildEventHasherScheduler(hashingObjectCounter));
         postHashCollectorWiring =
-                new PassThroughWiring<>(model, "GossipEvent", schedulers.postHashCollectorScheduler());
+                new PassThroughWiring<>(model, "GossipEvent", buildPostHashCollectorScheduler(hashingObjectCounter));
+
         internalEventValidatorWiring =
                 new ComponentWiring<>(model, InternalEventValidator.class, config.internalEventValidator());
         eventDeduplicatorWiring = new ComponentWiring<>(model, EventDeduplicator.class, config.eventDeduplicator());
@@ -349,6 +350,44 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 signedStateHasherWiring);
 
         wire();
+    }
+
+    /**
+     * Build the event hasher scheduler. Normally we don't build schedulers in this class, but a special exception is
+     * made here because for back pressure reasons. Will be removed from this class when we implement a platform health
+     * monitor.
+     *
+     * @param hashingObjectCounter the object counter to use for back pressure
+     * @return the event hasher scheduler
+     */
+    @NonNull
+    private TaskScheduler<GossipEvent> buildEventHasherScheduler(@NonNull final ObjectCounter hashingObjectCounter) {
+        return model.schedulerBuilder("EventHasher")
+                .configure(config.eventHasher())
+                .withOnRamp(hashingObjectCounter)
+                .withExternalBackPressure(true)
+                .withHyperlink(platformCoreHyperlink(EventHasher.class))
+                .build()
+                .cast();
+    }
+
+    /**
+     * Build the post hash collector scheduler. Normally we don't build schedulers in this class, but a special
+     * exception is made here because for back pressure reasons. Will be removed from this class when we implement a
+     * platform health monitor.
+     *
+     * @param hashingObjectCounter the object counter to use for back pressure
+     * @return the post hash collector scheduler
+     */
+    @NonNull
+    private TaskScheduler<GossipEvent> buildPostHashCollectorScheduler(
+            @NonNull final ObjectCounter hashingObjectCounter) {
+        return model.schedulerBuilder("PostHashCollector")
+                .configure(config.postHashCollector())
+                .withOffRamp(hashingObjectCounter)
+                .withExternalBackPressure(true)
+                .build()
+                .cast();
     }
 
     /**

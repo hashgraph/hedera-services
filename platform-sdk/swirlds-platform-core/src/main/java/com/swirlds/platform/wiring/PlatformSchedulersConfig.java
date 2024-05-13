@@ -25,54 +25,56 @@ import java.time.Duration;
 /**
  * Contains configuration values for the platform schedulers.
  *
- * @param defaultPoolMultiplier                    used when calculating the size of the default platform fork join
- *                                                 pool. Maximum parallelism in this pool is calculated as max(1,
- *                                                 (defaultPoolMultipler * [number of processors] +
- *                                                 defaultPoolConstant)).
- * @param defaultPoolConstant                      used when calculating the size of the default platform fork join
- *                                                 pool. Maximum parallelism in this pool is calculated as max(1,
- *                                                 (defaultPoolMultipler * [number of processors] +
- *                                                 defaultPoolConstant)). It is legal for this constant to be a negative
- *                                                 number.
- * @param eventHasherUnhandledCapacity             number of unhandled tasks allowed in the event hasher scheduler
- * @param internalEventValidator                   configuration for the internal event validator scheduler
- * @param eventDeduplicator                        configuration for the event deduplicator scheduler
- * @param eventSignatureValidator                  configuration for the event signature validator scheduler
- * @param orphanBuffer                             configuration for the orphan buffer scheduler
- * @param consensusEngine                          configuration for the consensus engine scheduler
- * @param eventCreationManager                     configuration for the event creation manager scheduler
- * @param selfEventSigner                          configuration for the self event signer scheduler
- * @param signedStateFileManagerSchedulerType      the signed state file manager scheduler type
- * @param signedStateFileManagerUnhandledCapacity  number of unhandled tasks allowed in the signed state file manager
- *                                                 scheduler
- * @param stateSignerSchedulerType                 the state signer scheduler type
- * @param stateSignerUnhandledCapacity             number of unhandled tasks allowed in the state signer scheduler,
- *                                                 default is -1 (unlimited)
- * @param pcesWriter                               configuration for the preconsensus event writer scheduler
- * @param pcesSequencer                            configuration for the preconsensus event sequencer scheduler
- * @param applicationTransactionPrehandler         configuration for the application transaction prehandler scheduler
- * @param stateSignatureCollector                  configuration for the state signature collector scheduler
- * @param consensusRoundHandlerSchedulerType       the consensus round handler scheduler type
- * @param consensusRoundHandlerUnhandledCapacity   number of unhandled tasks allowed for the consensus round handler
- * @param runningEventHasher                       configuration for the running event hasher scheduler
- * @param issDetector                              configuration for the ISS detector scheduler
- * @param hashLoggerSchedulerType                  the hash logger scheduler type
- * @param hashLoggerUnhandledTaskCapacity          number of unhandled tasks allowed in the hash logger task scheduler
- * @param completeStateNotifierUnhandledCapacity   number of unhandled tasks allowed for the state completion notifier
- * @param stateHasherSchedulerType                 the state hasher scheduler type
- * @param stateHasherUnhandledCapacity             number of unhandled tasks allowed for the state hasher
- * @param stateGarbageCollector                    configuration for the state garbage collector scheduler
- * @param stateGarbageCollectorHeartbeatPeriod     the frequency that heartbeats should be sent to the state garbage
- *                                                 collector
- * @param platformPublisher                        configuration for the platform publisher scheduler
- * @param consensusEventStream                     configuration for the consensus event stream scheduler
- * @param roundDurabilityBuffer                    configuration for the round durability buffer scheduler
- * @param statusStateMachine                       configuration for the status state machine scheduler
- * @param platformStatusNexus                      configuration for the status nexus scheduler
- * @param signedStateSentinel                      configuration for the signed state sentinel scheduler
- * @param signedStateSentinelHeartbeatPeriod       the frequency that heartbeats should be sent to the signed state
- *                                                 sentinel
- * @param gossip                                   configuration for the gossip scheduler
+ * @param defaultPoolMultiplier                   used when calculating the size of the default platform fork join pool.
+ *                                                Maximum parallelism in this pool is calculated as max(1,
+ *                                                (defaultPoolMultipler * [number of processors] +
+ *                                                defaultPoolConstant)).
+ * @param defaultPoolConstant                     used when calculating the size of the default platform fork join pool.
+ *                                                Maximum parallelism in this pool is calculated as max(1,
+ *                                                (defaultPoolMultipler * [number of processors] +
+ *                                                defaultPoolConstant)). It is legal for this constant to be a negative
+ *                                                number.
+ * @param eventHasherUnhandledCapacity            number of unhandled tasks allowed in the event hasher scheduler
+ * @param internalEventValidator                  configuration for the internal event validator scheduler
+ * @param eventDeduplicator                       configuration for the event deduplicator scheduler
+ * @param eventSignatureValidator                 configuration for the event signature validator scheduler
+ * @param orphanBuffer                            configuration for the orphan buffer scheduler
+ * @param consensusEngine                         configuration for the consensus engine scheduler
+ * @param eventCreationManager                    configuration for the event creation manager scheduler
+ * @param selfEventSigner                         configuration for the self event signer scheduler
+ * @param signedStateFileManagerSchedulerType     the signed state file manager scheduler type
+ * @param signedStateFileManagerUnhandledCapacity number of unhandled tasks allowed in the signed state file manager
+ *                                                scheduler
+ * @param stateSignerSchedulerType                the state signer scheduler type
+ * @param stateSignerUnhandledCapacity            number of unhandled tasks allowed in the state signer scheduler,
+ *                                                default is -1 (unlimited)
+ * @param pcesWriter                              configuration for the preconsensus event writer scheduler
+ * @param pcesSequencer                           configuration for the preconsensus event sequencer scheduler
+ * @param applicationTransactionPrehandler        configuration for the application transaction prehandler scheduler
+ * @param stateSignatureCollector                 configuration for the state signature collector scheduler
+ * @param consensusRoundHandlerSchedulerType      the consensus round handler scheduler type
+ * @param consensusRoundHandlerUnhandledCapacity  number of unhandled tasks allowed for the consensus round handler
+ * @param runningEventHasher                      configuration for the running event hasher scheduler
+ * @param issDetector                             configuration for the ISS detector scheduler
+ * @param hashLoggerSchedulerType                 the hash logger scheduler type
+ * @param hashLoggerUnhandledTaskCapacity         number of unhandled tasks allowed in the hash logger task scheduler
+ * @param completeStateNotifierUnhandledCapacity  number of unhandled tasks allowed for the state completion notifier
+ * @param stateHasherSchedulerType                the state hasher scheduler type
+ * @param stateHasherUnhandledCapacity            number of unhandled tasks allowed for the state hasher
+ * @param stateGarbageCollector                   configuration for the state garbage collector scheduler
+ * @param stateGarbageCollectorHeartbeatPeriod    the frequency that heartbeats should be sent to the state garbage
+ *                                                collector
+ * @param platformPublisher                       configuration for the platform publisher scheduler
+ * @param consensusEventStream                    configuration for the consensus event stream scheduler
+ * @param roundDurabilityBuffer                   configuration for the round durability buffer scheduler
+ * @param statusStateMachine                      configuration for the status state machine scheduler
+ * @param platformStatusNexus                     configuration for the status nexus scheduler
+ * @param signedStateSentinel                     configuration for the signed state sentinel scheduler
+ * @param signedStateSentinelHeartbeatPeriod      the frequency that heartbeats should be sent to the signed state
+ *                                                sentinel
+ * @param gossip                                  configuration for the gossip scheduler
+ * @param eventHasher                             configuration for the event hasher scheduler
+ * @param postHashCollector                       configuration for the post hash collector scheduler
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -131,4 +133,8 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration statusStateMachine,
         @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration platformStatusNexus,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
-                TaskSchedulerConfiguration gossip) {}
+                TaskSchedulerConfiguration gossip,
+        @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(0) UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration eventHasher,
+        @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(0) UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration postHashCollector) {}
