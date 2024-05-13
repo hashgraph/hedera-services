@@ -35,3 +35,5 @@ tasks.register("qualityGate") {
     dependsOn(tasks.spotlessApply)
     dependsOn(tasks.assemble)
 }
+
+tasks.register("releaseMavenCentral")

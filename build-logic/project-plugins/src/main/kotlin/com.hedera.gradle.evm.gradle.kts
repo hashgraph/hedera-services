@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,8 @@
  */
 
 plugins {
-    id("com.hedera.gradle.services")
-    id("com.hedera.gradle.services-publish")
+    id("java-library")
+    id("com.hedera.hashgraph.java")
 }
 
-description = "Hedera Services API Fees"
-
-mainModuleInfo { annotationProcessor("dagger.compiler") }
-
-testModuleInfo {
-    requires("org.junit.jupiter.api")
-    requires("org.mockito")
-    requires("org.mockito.junit.jupiter")
-}
+group = "com.hedera.evm"
