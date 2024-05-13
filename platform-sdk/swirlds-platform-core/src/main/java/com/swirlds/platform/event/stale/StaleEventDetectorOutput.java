@@ -14,25 +14,18 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.signing;
-
-import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import edu.umd.cs.findbugs.annotations.NonNull;
+package com.swirlds.platform.event.stale;
 
 /**
- * Signs self events.
+ * Describes the different types of output that the stale event detector produces.
  */
-public interface SelfEventSigner {
-
+public enum StaleEventDetectorOutput {
     /**
-     * Signs an event and then returns it.
-     *
-     * @param event the event to sign
-     * @return the signed event
+     * A self event that was just created. Type is {@link com.swirlds.platform.event.GossipEvent}.
      */
-    @InputWireLabel("self events")
-    @NonNull
-    GossipEvent signEvent(@NonNull BaseEventHashedData event);
+    SELF_EVENT,
+    /**
+     * A self event that has gone stale. Type is {@link com.swirlds.platform.event.GossipEvent}.
+     */
+    STALE_SELF_EVENT
 }
