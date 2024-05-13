@@ -280,7 +280,12 @@ public class Evm46ValidationSuite extends HapiSuite {
                 .given(
                         cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                        contractCreate(INTERNAL_CALLER_CONTRACT)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion()
+                                .balance(ONE_HBAR),
                         contractDelete(INTERNAL_CALLER_CONTRACT))
                 .when(withOpContext((spec, op) -> allRunFor(
                         spec,
@@ -626,8 +631,14 @@ public class Evm46ValidationSuite extends HapiSuite {
         return defaultHapiSpec("internalCallToExistingMirrorAddressResultsInSuccessfulCall")
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT, INTERNAL_CALLEE_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
-                        contractCreate(INTERNAL_CALLEE_CONTRACT).exposingNumTo(calleeNum::set))
+                        contractCreate(INTERNAL_CALLER_CONTRACT)
+                                .balance(ONE_HBAR)
+                                // Adding refusingEthConversion() due to fee differences and not supported address type
+                                .refusingEthConversion(),
+                        contractCreate(INTERNAL_CALLEE_CONTRACT)
+                                .exposingNumTo(calleeNum::set)
+                                // Adding refusingEthConversion() due to fee differences and not supported address type
+                                .refusingEthConversion())
                 .when(withOpContext((spec, ignored) -> allRunFor(
                         spec,
                         contractCall(INTERNAL_CALLER_CONTRACT, CALL_EXTERNAL_FUNCTION, mirrorAddrWith(calleeNum.get()))
@@ -1015,8 +1026,18 @@ public class Evm46ValidationSuite extends HapiSuite {
         return defaultHapiSpec("internalCallToDeletedContractReturnsSuccessfulNoop")
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT, INTERNAL_CALLEE_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
-                        contractCreate(INTERNAL_CALLEE_CONTRACT).exposingNumTo(calleeNum::set),
+                        contractCreate(INTERNAL_CALLER_CONTRACT)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion()
+                                .balance(ONE_HBAR),
+                        contractCreate(INTERNAL_CALLEE_CONTRACT)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion()
+                                .exposingNumTo(calleeNum::set),
                         contractDelete(INTERNAL_CALLEE_CONTRACT))
                 .when(withOpContext((spec, ignored) -> allRunFor(
                         spec,
