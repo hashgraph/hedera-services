@@ -26,15 +26,6 @@ import java.security.PublicKey;
 @FunctionalInterface
 public interface SignatureVerifier {
     /**
-     * Same as {@link #verifySignature(Bytes, Bytes, PublicKey)} but with byte arrays
-     * @deprecated use {@link #verifySignature(Bytes, Bytes, PublicKey)} instead
-     */
-    @Deprecated
-    default boolean verifySignature(@NonNull final byte[] data, @NonNull final byte[] signature, @NonNull final PublicKey publicKey){
-        return verifySignature(Bytes.wrap(data), Bytes.wrap(signature), publicKey);
-    }
-
-    /**
      * check whether the given signature is valid
      *
      * @param data

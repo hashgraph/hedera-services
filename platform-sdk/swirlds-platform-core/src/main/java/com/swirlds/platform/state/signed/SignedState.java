@@ -24,6 +24,7 @@ import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAc
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RELEASE;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RESERVE;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
@@ -590,7 +591,7 @@ public class SignedState implements SignedStateInfo {
         }
 
         return signatureVerifier.verifySignature(
-                state.getHash().getValue(), signature.getSignatureBytes(), address.getSigPublicKey());
+                state.getHash().getBytes(), Bytes.wrap(signature.getSignatureBytes()), address.getSigPublicKey());
     }
 
     /**
