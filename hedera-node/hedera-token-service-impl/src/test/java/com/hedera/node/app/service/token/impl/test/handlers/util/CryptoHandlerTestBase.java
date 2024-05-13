@@ -19,6 +19,8 @@ package com.hedera.node.app.service.token.impl.test.handlers.util;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ACCOUNTS;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ALIASES;
 import static com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils.UNSET_STAKED_ID;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
@@ -38,7 +40,6 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -60,10 +61,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 // FUTURE : Remove this and use CryptoTokenHandlerTestBase instead for all classes extending this class
 
+/**
+ * Base class for testing Crypto handlers implementations.
+ */
 @ExtendWith(MockitoExtension.class)
 public class CryptoHandlerTestBase {
-    public static final String ACCOUNTS = "ACCOUNTS";
-    protected static final String ALIASES = "ALIASES";
     protected final Key key = A_COMPLEX_KEY;
     protected final Key otherKey = C_COMPLEX_KEY;
     protected final AccountID id = AccountID.newBuilder().accountNum(3).build();
@@ -135,11 +137,11 @@ public class CryptoHandlerTestBase {
     protected WritableStates writableStates;
 
     @Mock
-    protected CryptoSignatureWaiversImpl waivers;
-
-    @Mock
     private StoreMetricsService storeMetricsService;
 
+    /**
+     * Set up the test environment.
+     */
     @BeforeEach
     public void setUp() {
         account = givenValidAccount(accountNum);

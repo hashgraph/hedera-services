@@ -32,16 +32,34 @@ import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
+/**
+ * Validator for token update transactions.
+ */
 public class TokenUpdateValidator {
     private final TokenAttributesValidator validator;
 
+    /**
+     * Create a new {@link TokenUpdateValidator} instance.
+     * @param validator The {@link TokenAttributesValidator} to use.
+     */
     @Inject
     public TokenUpdateValidator(@NonNull final TokenAttributesValidator validator) {
         this.validator = validator;
     }
 
+    /**
+     * Validate the semantics of a token update transaction.
+     * @param token The token to update.
+     * @param resolvedExpiryMeta The resolved expiry metadata.
+     */
     public record ValidationResult(@NonNull Token token, @NonNull ExpiryMeta resolvedExpiryMeta) {}
 
+    /**
+     * Validate the semantics of a token update transaction.
+     * @param context The context to use.
+     * @param op The token update transaction body.
+     * @return The result of the validation.
+     */
     @NonNull
     public ValidationResult validateSemantics(
             @NonNull final HandleContext context, @NonNull final TokenUpdateTransactionBody op) {

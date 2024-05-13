@@ -45,6 +45,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenUnpauseHandler implements TransactionHandler {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenUnpauseHandler() {
         // Exists for injection

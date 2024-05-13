@@ -459,7 +459,9 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverID::set),
                         uploadInitCode(outerContract, NESTED_CONTRACT),
-                        contractCreate(NESTED_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(NESTED_CONTRACT).refusingEthConversion(),
                         tokenAssociate(NESTED_CONTRACT, VANILLA_TOKEN),
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                         tokenAssociate(RECEIVER, VANILLA_TOKEN),
@@ -468,7 +470,12 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCreate(
-                                outerContract, asHeadlongAddress(getNestedContractAddress(NESTED_CONTRACT, spec))),
+                                        outerContract,
+                                        asHeadlongAddress(getNestedContractAddress(NESTED_CONTRACT, spec)))
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         tokenAssociate(outerContract, VANILLA_TOKEN),
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
                         cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
@@ -594,7 +601,9 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverID::set),
                         uploadInitCode(outerContract, NESTED_CONTRACT),
-                        contractCreate(NESTED_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(NESTED_CONTRACT).refusingEthConversion(),
                         tokenAssociate(NESTED_CONTRACT, VANILLA_TOKEN),
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                         tokenAssociate(RECEIVER, VANILLA_TOKEN),
@@ -603,7 +612,12 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCreate(
-                                outerContract, asHeadlongAddress(getNestedContractAddress(NESTED_CONTRACT, spec))),
+                                        outerContract,
+                                        asHeadlongAddress(getNestedContractAddress(NESTED_CONTRACT, spec)))
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         tokenAssociate(outerContract, VANILLA_TOKEN),
                         newKeyNamed(DELEGATE_KEY)
                                 .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
@@ -883,7 +897,12 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, NFT),
                         mintToken(NFT, List.of(metadata("firstMemo"), metadata("secondMemo"))),
                         uploadInitCode(ORDINARY_CALLS_CONTRACT),
-                        contractCreate(ORDINARY_CALLS_CONTRACT).via(CREATION_TX))
+                        contractCreate(ORDINARY_CALLS_CONTRACT)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion()
+                                .via(CREATION_TX))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         newKeyNamed(CONTRACT_KEY)
@@ -945,7 +964,9 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, NFT),
                         mintToken(NFT, List.of(metadata("firstMemo"), metadata("secondMemo"))),
                         uploadInitCode(ORDINARY_CALLS_CONTRACT),
-                        contractCreate(ORDINARY_CALLS_CONTRACT))
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(ORDINARY_CALLS_CONTRACT).refusingEthConversion())
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         newKeyNamed(DELEGATE_KEY)

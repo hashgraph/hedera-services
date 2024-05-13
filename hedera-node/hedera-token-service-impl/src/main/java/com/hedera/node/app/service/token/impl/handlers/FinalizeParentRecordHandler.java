@@ -68,6 +68,10 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
 
     private final StakingRewardsHandler stakingRewardsHandler;
 
+    /**
+     * Constructs a {@link FinalizeParentRecordHandler} instance.
+     * @param stakingRewardsHandler the {@link StakingRewardsHandler} instance
+     */
     @Inject
     public FinalizeParentRecordHandler(@NonNull final StakingRewardsHandler stakingRewardsHandler) {
         this.stakingRewardsHandler = stakingRewardsHandler;

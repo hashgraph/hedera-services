@@ -1,3 +1,6 @@
+/**
+ * Provides the classes necessary to manage Hedera Token Service.
+ */
 module com.hedera.node.app.service.token {
     exports com.hedera.node.app.service.token;
     exports com.hedera.node.app.service.token.api to
@@ -18,7 +21,7 @@ module com.hedera.node.app.service.token {
     requires transitive com.swirlds.config.api;
     requires transitive org.apache.logging.log4j;
     requires com.hedera.node.app.hapi.utils;
-    requires com.hedera.node.app.service.evm;
     requires com.github.spotbugs.annotations;
+    requires com.hedera.evm;
     requires com.swirlds.common;
 }

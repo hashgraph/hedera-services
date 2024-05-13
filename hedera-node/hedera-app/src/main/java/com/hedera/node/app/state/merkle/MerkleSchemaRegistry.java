@@ -73,7 +73,7 @@ import org.apache.logging.log4j.Logger;
  * then registers each and every {@link Schema} that it has. Each {@link Schema} is associated with
  * a {@link SemanticVersion}.
  *
- * <p>The Hedera application then calls {@link #migrate(MerkleHederaState, SemanticVersion, SemanticVersion, Configuration, NetworkInfo, WritableEntityIdStore)} on each {@link MerkleSchemaRegistry} instance, supplying it the
+ * <p>The Hedera application then calls {@link #migrate(MerkleHederaState, SemanticVersion, SemanticVersion, Configuration, NetworkInfo, Metrics, WritableEntityIdStore)}  on each {@link MerkleSchemaRegistry} instance, supplying it the
  * application version number and the newly created (or deserialized) but not yet hashed copy of the {@link
  * MerkleHederaState}. The registry determines which {@link Schema}s to apply, possibly taking multiple migration steps,
  * to transition the merkle tree from its current version to the final version.
