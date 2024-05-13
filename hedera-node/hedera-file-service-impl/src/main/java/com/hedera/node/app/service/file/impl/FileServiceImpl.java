@@ -22,6 +22,7 @@ import com.hedera.node.app.service.file.impl.schemas.InitialModFileGenesisSchema
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
+import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.config.ConfigProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
