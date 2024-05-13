@@ -155,13 +155,6 @@ public class GossipEvent implements SelfSerializable {
     /**
      * @return the signature for the event
      */
-    public byte[] getSignatureOld() {
-        return null;
-    }
-
-    /**
-     * @return the signature for the event
-     */
     public Bytes getSignature() {
         return signature;
     }
