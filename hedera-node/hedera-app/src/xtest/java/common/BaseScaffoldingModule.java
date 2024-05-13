@@ -265,6 +265,7 @@ public interface BaseScaffoldingModule {
     }
 
     @Provides
+    @Singleton
     static Function<TransactionBody, HandleContext> provideHandleContextCreator(
             @NonNull final Metrics metrics,
             @NonNull final NetworkInfo networkInfo,
