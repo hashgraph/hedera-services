@@ -18,6 +18,7 @@ package com.swirlds.common.crypto.engine;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Message;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -44,7 +45,7 @@ public class DigestProvider extends CachingOperationProvider<Message, Void, byte
      * @throws NoSuchAlgorithmException
      * 		if an implementation of the required algorithm cannot be located or loaded
      */
-    protected byte[] compute(final byte[] msg) throws NoSuchAlgorithmException {
+    protected @NonNull byte[] compute(@NonNull final byte[] msg) throws NoSuchAlgorithmException {
         return compute(msg, DigestType.SHA_384);
     }
 
@@ -59,7 +60,7 @@ public class DigestProvider extends CachingOperationProvider<Message, Void, byte
      * @throws NoSuchAlgorithmException
      * 		if an implementation of the required algorithm cannot be located or loaded
      */
-    protected byte[] compute(final byte[] msg, final DigestType algorithmType) throws NoSuchAlgorithmException {
+    protected @NonNull byte[] compute(@NonNull final byte[] msg, @NonNull final DigestType algorithmType) throws NoSuchAlgorithmException {
         if (msg == null) {
             throw new IllegalArgumentException("msg");
         }
@@ -83,7 +84,7 @@ public class DigestProvider extends CachingOperationProvider<Message, Void, byte
      * @throws NoSuchAlgorithmException
      * 		if an implementation of the required algorithm cannot be located or loaded
      */
-    private byte[] compute(final byte[] msg, final int offset, final int length, final DigestType algorithmType)
+    private @NonNull byte[] compute(@NonNull final byte[] msg, final int offset, final int length, @NonNull final DigestType algorithmType)
             throws NoSuchAlgorithmException {
         final MessageDigest algorithm = loadAlgorithm(algorithmType);
         return compute(algorithm, msg, offset, length);
@@ -93,7 +94,7 @@ public class DigestProvider extends CachingOperationProvider<Message, Void, byte
      * {@inheritDoc}
      */
     @Override
-    protected MessageDigest handleAlgorithmRequired(final DigestType algorithmType) throws NoSuchAlgorithmException {
+    protected @NonNull MessageDigest handleAlgorithmRequired(@NonNull final DigestType algorithmType) throws NoSuchAlgorithmException {
         return MessageDigest.getInstance(algorithmType.algorithmName());
     }
 
@@ -101,11 +102,11 @@ public class DigestProvider extends CachingOperationProvider<Message, Void, byte
      * {@inheritDoc}
      */
     @Override
-    protected byte[] handleItem(
-            final MessageDigest algorithm,
-            final DigestType algorithmType,
-            final Message item,
-            final Void optionalData) {
+    protected @NonNull byte[] handleItem(
+            @NonNull final MessageDigest algorithm,
+            @NonNull final DigestType algorithmType,
+            @NonNull final Message item,
+            @NonNull final Void optionalData) {
         return compute(algorithm, item.getPayloadDirect(), item.getOffset(), item.getLength());
     }
 
@@ -123,7 +124,7 @@ public class DigestProvider extends CachingOperationProvider<Message, Void, byte
      * 		the total number of bytes to read
      * @return the message digest as an array of the raw bytes
      */
-    private byte[] compute(final MessageDigest algorithm, final byte[] msg, final int offset, final int length) {
+    private @NonNull byte[] compute(@NonNull final MessageDigest algorithm, @NonNull final byte[] msg, final int offset, final int length) {
         algorithm.reset();
         algorithm.update(msg, offset, length);
 

@@ -350,8 +350,8 @@ public class CryptoEngine implements Cryptography {
      * @param provider   the underlying provider to be used
      * @return the cryptographic hash for the given message contents
      */
-    private byte[] digestSyncInternal(
-            final byte[] message, final DigestType digestType, final DigestProvider provider) {
+    private @NonNull byte[] digestSyncInternal(
+            @NonNull final byte[] message, @NonNull final DigestType digestType, @NonNull final DigestProvider provider) {
         try {
             return provider.compute(message, digestType);
         } catch (final NoSuchAlgorithmException ex) {

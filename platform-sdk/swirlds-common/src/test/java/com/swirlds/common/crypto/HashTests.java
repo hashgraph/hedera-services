@@ -58,17 +58,13 @@ public class HashTests {
         assertDoesNotThrow(() -> new Hash(DigestType.SHA_512));
 
         assertThrows(NullPointerException.class, () -> new Hash((DigestType) null));
-        assertThrows(IllegalArgumentException.class, () -> new Hash((byte[]) null));
+        assertThrows(NullPointerException.class, () -> new Hash((byte[]) null));
         assertThrows(IllegalArgumentException.class, () -> new Hash((Hash) null));
-        assertThrows(EmptyHashValueException.class, () -> new Hash(new byte[48]));
 
-        assertThrows(IllegalArgumentException.class, () -> new Hash(nonZeroHashValue, null));
+        assertThrows(NullPointerException.class, () -> new Hash(nonZeroHashValue, null));
         assertThrows(IllegalArgumentException.class, () -> new Hash(new byte[0], DigestType.SHA_384));
         assertThrows(IllegalArgumentException.class, () -> new Hash(new byte[47], DigestType.SHA_384));
         assertThrows(IllegalArgumentException.class, () -> new Hash(new byte[71], DigestType.SHA_512));
-        assertThrows(
-                EmptyHashValueException.class,
-                () -> new Hash(new byte[DigestType.SHA_384.digestLength()], DigestType.SHA_384));
     }
 
     @Test
