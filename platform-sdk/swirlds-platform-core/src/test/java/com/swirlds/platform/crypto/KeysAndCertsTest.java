@@ -34,7 +34,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class KeysAndCertsTest {
-    private static final byte[] DATA_ARRAY ={1, 2, 3};
+    private static final byte[] DATA_ARRAY = {1, 2, 3};
     private static final Bytes DATA_BYTES = Bytes.wrap(DATA_ARRAY);
     private static final PublicKey WRONG_KEY =
             PreGeneratedPublicKeys.getPublicKey(KeyType.RSA, 0).getPublicKey();

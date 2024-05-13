@@ -82,7 +82,7 @@ public class Signature implements SelfSerializable {
     /**
      * @return the bytes of this signature in an immutable instance
      */
-    public Bytes getBytes(){
+    public Bytes getBytes() {
         return Bytes.wrap(signatureBytes);
     }
 
