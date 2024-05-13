@@ -2248,6 +2248,7 @@ public class CryptoTransferSuite extends HapiSuite {
                 .given(
                         cryptoCreate(senderAccount).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(transferContract),
+
                         contractCreate(transferContract).balance(ONE_HBAR))
                 //                        tokenCreate(HBAR_TOKEN_SENTINEL)
                 //                                .treasury(senderAccount)
