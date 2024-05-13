@@ -251,7 +251,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    public void testCalculateFees() {
+    public void testCalculateFeesHappyPath() {
         TransactionInfo txnInfo = mock(TransactionInfo.class);
         FeeManager feeManager = mock(FeeManager.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
@@ -260,7 +260,6 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         TokenFeeScheduleUpdateTransactionBody tokenFeeScheduleUpdateTransactionBody =
                 mock(TokenFeeScheduleUpdateTransactionBody.class);
         TransactionID transactionID = mock(TransactionID.class);
-        Fees fees = mock(Fees.class);
 
         List<CustomFee> customFees = new ArrayList<>();
         customFees.add(withFixedFee(hbarFixedFee));
