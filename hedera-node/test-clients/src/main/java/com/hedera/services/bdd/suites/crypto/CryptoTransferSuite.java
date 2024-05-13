@@ -2248,7 +2248,6 @@ public class CryptoTransferSuite extends HapiSuite {
                 .given(
                         cryptoCreate(senderAccount).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(transferContract),
-
                         contractCreate(transferContract).balance(ONE_HBAR))
                 //                        tokenCreate(HBAR_TOKEN_SENTINEL)
                 //                                .treasury(senderAccount)
@@ -2346,9 +2345,6 @@ public class CryptoTransferSuite extends HapiSuite {
                 .then(cryptoTransfer(moving(1L, "ft").between(PARTY, COUNTERPARTY))
                         .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
     }
-
-
-    
 
     @Override
     protected Logger getResultsLogger() {
