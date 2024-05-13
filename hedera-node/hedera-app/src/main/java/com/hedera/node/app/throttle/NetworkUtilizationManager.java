@@ -45,7 +45,6 @@ public interface NetworkUtilizationManager {
     /**
      * Updates the throttle usage and congestion pricing for cases where the transaction is not valid, but we want to track the fee payments related to it.
      *
-     * @param payer - the payer of the transaction.
      * @param consensusNow - the consensus time of the transaction.
      * @param state - the state of the node.
      */
