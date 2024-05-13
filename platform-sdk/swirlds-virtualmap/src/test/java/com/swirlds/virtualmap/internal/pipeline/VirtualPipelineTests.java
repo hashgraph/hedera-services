@@ -31,9 +31,9 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
@@ -236,11 +236,11 @@ class VirtualPipelineTests {
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         final MetricKeyRegistry registry = new MetricKeyRegistry();
-        return new DefaultMetrics(
+        return new DefaultPlatformMetrics(
                 null,
                 registry,
                 mock(ScheduledExecutorService.class),
-                new DefaultMetricsFactory(metricsConfig),
+                new PlatformMetricsFactoryImpl(metricsConfig),
                 metricsConfig);
     }
 

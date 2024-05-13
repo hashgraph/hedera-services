@@ -27,13 +27,13 @@ import java.util.Objects;
 public record Snapshot(Metric metric, List<SnapshotEntry> entries) {
 
     /**
-     * Create a {@code Snapshot} of a {@link DefaultMetric}
+     * Create a {@code Snapshot} of a {@link AbstractMetric}
      *
      * @param metric The source metric
      * @return the {@code Snapshot}
      * @throws NullPointerException in case {@code metric} parameter is {@code null}
      */
-    public static Snapshot of(final DefaultMetric metric) {
+    public static Snapshot of(final AbstractMetric metric) {
         Objects.requireNonNull(metric, "metric must not be null");
         return new Snapshot(metric, metric.takeSnapshot());
     }

@@ -23,9 +23,9 @@ import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.StatEntry;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.metrics.api.MetricConfig;
+import com.swirlds.metrics.impl.Snapshot.SnapshotEntry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -36,7 +36,7 @@ import java.util.function.Supplier;
  * Platform-implementation of {@link StatEntry}
  */
 @SuppressWarnings("removal")
-public class DefaultStatEntry extends DefaultMetric implements StatEntry {
+public class DefaultStatEntry extends AbstractPlatformMetric implements StatEntry {
 
     private final @NonNull DataType dataType;
     /**

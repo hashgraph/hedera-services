@@ -16,7 +16,6 @@
 
 package com.swirlds.metrics.impl;
 
-import com.swirlds.common.metrics.PlatformMetricsFactory;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.DoubleAccumulator;
 import com.swirlds.metrics.api.DoubleGauge;
@@ -24,12 +23,8 @@ import com.swirlds.metrics.api.IntegerAccumulator;
 import com.swirlds.metrics.api.IntegerGauge;
 import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.metrics.api.LongGauge;
-import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.MetricsFactory;
 
-/**
- * An implementation of {@link PlatformMetricsFactory} that creates platform-internal {@link Metric}-instances
- */
 public class DefaultMetricsFactory implements MetricsFactory {
 
     /**

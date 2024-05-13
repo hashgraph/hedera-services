@@ -44,7 +44,7 @@ import java.util.stream.Stream;
 /**
  * Default implementation of the {@link Metrics} interface.
  */
-public class DefaultMetrics implements PlatformMetrics {
+public class DefaultPlatformMetrics implements PlatformMetrics {
 
     /**
      * Threshold for the number of similar {@link Exception} that are thrown by regular metrics-tasks
@@ -92,7 +92,7 @@ public class DefaultMetrics implements PlatformMetrics {
      *                                <li>{@code metricsConfig}</li>
      *                              </ul>
      */
-    public DefaultMetrics(
+    public DefaultPlatformMetrics(
             final @Nullable NodeId selfId,
             final @NonNull MetricKeyRegistry metricKeyRegistry,
             final @NonNull ScheduledExecutorService executor,

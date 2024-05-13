@@ -30,7 +30,7 @@ import java.util.function.IntSupplier;
 /**
  * Platform-implementation of {@link IntegerAccumulator}
  */
-public class DefaultIntegerAccumulator extends DefaultMetric implements IntegerAccumulator {
+public class DefaultIntegerAccumulator extends AbstractMetric implements IntegerAccumulator {
 
     private final AtomicInteger container;
     private final IntBinaryOperator accumulator;

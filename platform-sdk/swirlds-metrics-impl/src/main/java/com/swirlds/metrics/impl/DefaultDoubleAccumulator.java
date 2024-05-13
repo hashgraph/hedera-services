@@ -29,7 +29,7 @@ import java.util.function.DoubleSupplier;
 /**
  * Platform-implementation of {@link DoubleAccumulator}
  */
-public class DefaultDoubleAccumulator extends DefaultMetric implements DoubleAccumulator {
+public class DefaultDoubleAccumulator extends AbstractMetric implements DoubleAccumulator {
 
     private final @NonNull AtomicDouble container;
     private final @NonNull DoubleBinaryOperator accumulator;

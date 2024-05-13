@@ -38,10 +38,10 @@ import java.util.Objects;
 /**
  * An implementation of {@link PlatformMetricsFactory} that creates platform-internal {@link Metric}-instances
  */
-public class DefaultMetricsFactory implements PlatformMetricsFactory {
+public class PlatformMetricsFactoryImpl implements PlatformMetricsFactory {
     private final MetricsConfig metricsConfig;
 
-    public DefaultMetricsFactory(@NonNull final MetricsConfig metricsConfig) {
+    public PlatformMetricsFactoryImpl(@NonNull final MetricsConfig metricsConfig) {
         this.metricsConfig = Objects.requireNonNull(metricsConfig, "metricsConfig is null");
     }
 
@@ -50,7 +50,7 @@ public class DefaultMetricsFactory implements PlatformMetricsFactory {
      */
     @Override
     public Counter createCounter(final Counter.Config config) {
-        return new DefaultCounter(config);
+        return new PlatformCounter(config);
     }
 
     /**
@@ -58,7 +58,7 @@ public class DefaultMetricsFactory implements PlatformMetricsFactory {
      */
     @Override
     public DoubleAccumulator createDoubleAccumulator(final DoubleAccumulator.Config config) {
-        return new DefaultDoubleAccumulator(config);
+        return new PlatformDoubleAccumulator(config);
     }
 
     /**
@@ -66,7 +66,7 @@ public class DefaultMetricsFactory implements PlatformMetricsFactory {
      */
     @Override
     public DoubleGauge createDoubleGauge(final DoubleGauge.Config config) {
-        return new DefaultDoubleGauge(config);
+        return new PlatformDoubleGauge(config);
     }
 
     @Override
@@ -87,7 +87,7 @@ public class DefaultMetricsFactory implements PlatformMetricsFactory {
      */
     @Override
     public IntegerAccumulator createIntegerAccumulator(final IntegerAccumulator.Config config) {
-        return new DefaultIntegerAccumulator(config);
+        return new PlatformIntegerAccumulator(config);
     }
 
     /**
@@ -95,7 +95,7 @@ public class DefaultMetricsFactory implements PlatformMetricsFactory {
      */
     @Override
     public IntegerGauge createIntegerGauge(final IntegerGauge.Config config) {
-        return new DefaultIntegerGauge(config);
+        return new PlatformIntegerGauge(config);
     }
 
     /**
@@ -111,7 +111,7 @@ public class DefaultMetricsFactory implements PlatformMetricsFactory {
      */
     @Override
     public LongAccumulator createLongAccumulator(final LongAccumulator.Config config) {
-        return new DefaultLongAccumulator(config);
+        return new PlatformLongAccumulator(config);
     }
 
     /**
@@ -119,7 +119,7 @@ public class DefaultMetricsFactory implements PlatformMetricsFactory {
      */
     @Override
     public LongGauge createLongGauge(final LongGauge.Config config) {
-        return new DefaultLongGauge(config);
+        return new PlatformLongGauge(config);
     }
 
     /**

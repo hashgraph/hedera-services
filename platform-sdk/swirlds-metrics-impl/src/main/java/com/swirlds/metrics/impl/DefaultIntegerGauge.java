@@ -19,7 +19,6 @@ package com.swirlds.metrics.impl;
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.metrics.api.IntegerGauge;
 import com.swirlds.metrics.impl.Snapshot.SnapshotEntry;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Platform-implementation of {@link IntegerGauge}
  */
-public class DefaultIntegerGauge extends DefaultMetric implements IntegerGauge {
+public class DefaultIntegerGauge extends AbstractMetric implements IntegerGauge {
 
     private final AtomicInteger value;
 

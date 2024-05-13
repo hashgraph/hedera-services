@@ -16,9 +16,9 @@
 
 package com.swirlds.common.metrics.platform;
 
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.metrics.api.MetricConfig;
+import com.swirlds.metrics.impl.Snapshot.SnapshotEntry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
@@ -26,7 +26,7 @@ import java.util.Objects;
 /**
  * Represents a metric computed over a distribution function
  */
-public abstract class AbstractDistributionMetric extends DefaultMetric {
+public abstract class AbstractDistributionMetric extends AbstractPlatformMetric {
 
     /**
      * Half-life of the metric

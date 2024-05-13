@@ -19,6 +19,7 @@ package com.swirlds.common.metrics.platform;
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.common.metrics.DurationGauge;
+import com.swirlds.metrics.impl.Snapshot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -28,7 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Platform-implementation of {@link DurationGauge}
  */
-public class DefaultDurationGauge extends DefaultMetric implements DurationGauge {
+public class DefaultDurationGauge extends AbstractPlatformMetric implements DurationGauge {
     private final AtomicLong nanos;
     private final ChronoUnit unit;
 

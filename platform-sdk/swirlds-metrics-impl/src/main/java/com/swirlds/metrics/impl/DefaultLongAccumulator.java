@@ -19,7 +19,6 @@ package com.swirlds.metrics.impl;
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.metrics.impl.Snapshot.SnapshotEntry;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -31,7 +30,7 @@ import java.util.function.LongSupplier;
 /**
  * Platform-implementation of {@link LongAccumulator}
  */
-public class DefaultLongAccumulator extends DefaultMetric implements LongAccumulator {
+public class DefaultLongAccumulator extends AbstractMetric implements LongAccumulator {
 
     private final AtomicLong container;
     private final LongBinaryOperator accumulator;

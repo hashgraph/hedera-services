@@ -27,7 +27,7 @@ import java.util.List;
 /**
  * Platform-implementation of {@link DoubleGauge}
  */
-public class DefaultDoubleGauge extends DefaultMetric implements DoubleGauge {
+public class DefaultDoubleGauge extends AbstractMetric implements DoubleGauge {
 
     private final AtomicDouble value;
 

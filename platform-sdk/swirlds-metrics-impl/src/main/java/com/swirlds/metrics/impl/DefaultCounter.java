@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.LongAdder;
 /**
  * Platform-implementation of {@link Counter}
  */
-public class DefaultCounter extends DefaultMetric implements Counter {
+public class DefaultCounter extends AbstractMetric implements Counter {
 
     private static final String INCREASE_ONLY_ERROR_MESSAGE = "The value of a a Counter can only be increased";
 

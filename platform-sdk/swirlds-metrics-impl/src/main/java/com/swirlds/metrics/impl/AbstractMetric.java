@@ -14,23 +14,20 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics.platform;
+package com.swirlds.metrics.impl;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.metrics.PlatformMetric;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.MetricConfig;
+import com.swirlds.metrics.impl.Snapshot.SnapshotEntry;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
 
 /**
  * Basic implementation of all platform-implementations of {@link Metric}
  */
-public abstract class DefaultMetric implements Metric, PlatformMetric {
+public abstract class AbstractMetric implements Metric {
 
     private final String category;
     private final String name;
@@ -38,7 +35,7 @@ public abstract class DefaultMetric implements Metric, PlatformMetric {
     private final String unit;
     private final String format;
 
-    DefaultMetric(MetricConfig<?, ?> config) {
+    protected AbstractMetric(MetricConfig<?, ?> config) {
         Objects.requireNonNull(config, "config must not be null");
         this.category = config.getCategory();
         this.name = config.getName();
@@ -90,9 +87,9 @@ public abstract class DefaultMetric implements Metric, PlatformMetric {
     }
 
     /**
-     * Take entries of the current values and return them. If the functionality of this {@code PlatformMetric}
-     * requires it to be reset in regular intervals, it is done automatically after the snapshot was generated.
-     * The list of {@code ValueTypes} will always be in the same order.
+     * Take entries of the current values and return them. If the functionality of this {@code PlatformMetric} requires
+     * it to be reset in regular intervals, it is done automatically after the snapshot was generated. The list of
+     * {@code ValueTypes} will always be in the same order.
      *
      * @return the list of {@code ValueTypes} with their current values
      */
@@ -109,16 +106,6 @@ public abstract class DefaultMetric implements Metric, PlatformMetric {
     /**
      * {@inheritDoc}
      */
-    @Nullable
-    @SuppressWarnings("removal")
-    @Override
-    public StatsBuffered getStatsBuffered() {
-        return null;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean equals(final Object other) {
         if (this == other) {
@@ -127,7 +114,7 @@ public abstract class DefaultMetric implements Metric, PlatformMetric {
         if (other == null || getClass() != other.getClass()) {
             return false;
         }
-        final DefaultMetric metric = (DefaultMetric) other;
+        final AbstractMetric metric = (AbstractMetric) other;
         return category.equals(metric.category) && name.equals(metric.name);
     }
 

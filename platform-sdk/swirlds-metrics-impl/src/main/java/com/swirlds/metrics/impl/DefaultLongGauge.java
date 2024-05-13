@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Platform-implementation of {@link LongGauge}
  */
-public class DefaultLongGauge extends DefaultMetric implements LongGauge {
+public class DefaultLongGauge extends AbstractMetric implements LongGauge {
 
     private final AtomicLong value;
 

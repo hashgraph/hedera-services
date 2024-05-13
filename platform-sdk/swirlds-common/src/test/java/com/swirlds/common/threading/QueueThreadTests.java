@@ -42,9 +42,9 @@ import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.PlatformMetricsFactory;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultIntegerAccumulator;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.threading.framework.QueueThread;
@@ -117,8 +117,8 @@ class QueueThreadTests {
         executor = Executors.newSingleThreadScheduledExecutor();
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        final PlatformMetricsFactory factory = new DefaultMetricsFactory(metricsConfig);
-        metrics = new DefaultMetrics(null, registry, executor, factory, metricsConfig);
+        final PlatformMetricsFactory factory = new PlatformMetricsFactoryImpl(metricsConfig);
+        metrics = new DefaultPlatformMetrics(null, registry, executor, factory, metricsConfig);
     }
 
     @AfterEach

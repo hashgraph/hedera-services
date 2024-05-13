@@ -62,19 +62,19 @@ class SnapshotServiceTest {
     private DefaultMetric globalMetric;
 
     @Mock
-    private DefaultMetrics globalMetrics;
+    private DefaultPlatformMetrics globalMetrics;
 
     @Mock(strictness = LENIENT)
     private DefaultMetric platform1Metric;
 
     @Mock(strictness = LENIENT)
-    private DefaultMetrics platform1Metrics;
+    private DefaultPlatformMetrics platform1Metrics;
 
     @Mock(strictness = LENIENT)
     private DefaultMetric platform2Metric;
 
     @Mock(strictness = LENIENT)
-    private DefaultMetrics platform2Metrics;
+    private DefaultPlatformMetrics platform2Metrics;
 
     @Mock
     private Consumer<SnapshotEvent> subscriber;
