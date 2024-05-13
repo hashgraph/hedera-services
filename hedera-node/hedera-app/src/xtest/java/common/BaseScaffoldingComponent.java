@@ -28,6 +28,7 @@ import com.hedera.node.app.state.WorkingStateAccessor;
 import com.swirlds.config.api.Configuration;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 /**
  * The common provision methods needed for practically any kind of x-test, no matter the target service.
@@ -46,4 +47,6 @@ public interface BaseScaffoldingComponent {
     FeeManager feeManager();
 
     ExchangeRateManager exchangeRateManager();
+
+    GasCalculator gasCalculator();
 }

@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.node.state.common.EntityIDPair;
@@ -62,6 +63,7 @@ import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -104,6 +106,7 @@ public abstract class AbstractXTest {
         AccountID.newBuilder().accountNum(343434L).build(),
         AccountID.newBuilder().accountNum(373737L).build(),
     };
+    protected long ethNonce = 0;
     private int numNamedAccounts = 0;
     protected final Map<String, AccountID> namedAccountIds = new HashMap<>();
 
@@ -161,6 +164,9 @@ public abstract class AbstractXTest {
             @NonNull final TransactionBody txn,
             @NonNull final ResponseCodeEnum expectedStatus) {
         final var context = component().txnContextFactory().apply(txn);
+        // add transaction to the record builder, to be able to build it later
+        context.recordBuilder(SingleTransactionRecordBuilderImpl.class)
+                .transaction(Transaction.newBuilder().body(txn).build());
         var impliedStatus = OK;
         try {
             handler.handle(context);
@@ -171,6 +177,21 @@ public abstract class AbstractXTest {
         }
         assertEquals(expectedStatus, impliedStatus);
         return (SingleTransactionRecordBuilderImpl) context.recordBuilder(SingleTransactionRecordBuilder.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected SingleTransactionRecord handleAndCommitEthereumTransaction(
+            @NonNull final TransactionHandler handler,
+            @NonNull final TransactionBody txn,
+            @NonNull final ResponseCodeEnum expectedStatus) {
+        var record =
+                handleAndCommitSingleTransaction(handler, txn, expectedStatus).build();
+
+        var receipt = record.transactionRecord().receipt();
+        if (receipt != null && receipt.status().equals(OK)) {
+            ethNonce++;
+        }
+        return record;
     }
 
     protected void addNamedAccount(@NonNull final String name, @NonNull final Map<AccountID, Account> accounts) {

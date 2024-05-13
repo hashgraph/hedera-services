@@ -46,6 +46,7 @@ import com.hedera.node.app.records.impl.producers.BlockRecordWriterFactory;
 import com.hedera.node.app.records.impl.producers.StreamFileProducerSingleThreaded;
 import com.hedera.node.app.records.impl.producers.formats.BlockRecordWriterFactoryImpl;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
+import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.file.FileSignatureWaivers;
 import com.hedera.node.app.service.file.impl.handlers.FileSignatureWaiversImpl;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
@@ -121,6 +122,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.inject.Singleton;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -139,6 +141,11 @@ import org.jetbrains.annotations.NotNull;
  */
 @Module
 public interface BaseScaffoldingModule {
+
+    @Binds
+    @Singleton
+    GasCalculator bindGasCalculator(@NonNull final CustomGasCalculator gasCalculator);
+
     @Provides
     @Singleton
     static HederaState provideState() {
@@ -259,7 +266,6 @@ public interface BaseScaffoldingModule {
     }
 
     @Provides
-    @Singleton
     static Function<TransactionBody, HandleContext> provideHandleContextCreator(
             @NonNull final Metrics metrics,
             @NonNull final NetworkInfo networkInfo,
