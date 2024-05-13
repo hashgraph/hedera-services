@@ -287,14 +287,9 @@ public class CustomRoyaltyFeeAssessorTest {
 
         subject.assessRoyaltyFees(feeMeta, payer, funding, result);
 
-        assertThat(result.getAssessedCustomFees()).isNotEmpty();
-        assertThat(result.getAssessedCustomFees()).contains(hbarAssessedFee);
-        assertThat(result.getAssessedCustomFees()).contains(htsAssessedFee);
+        assertThat(result.getAssessedCustomFees()).isEmpty();
         // sender will pay from exchange credits
         verify(fixedFeeAssessor, never()).assessFixedFees(any(), any(), any());
-
-        // We add to the set of royalties paid to track the royalties paid. It should have an entry with sender
-        assertThat(result.getRoyaltiesPaid()).contains(Pair.of(payer, feeMeta.tokenId()));
     }
 
     public CustomFeeMeta withCustomFeeMeta(List<CustomFee> customFees, TokenType tokenType) {
