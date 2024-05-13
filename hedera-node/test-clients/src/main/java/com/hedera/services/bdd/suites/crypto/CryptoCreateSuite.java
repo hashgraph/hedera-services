@@ -37,8 +37,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
@@ -59,6 +61,8 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.RealmID;
+import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.List;
@@ -121,6 +125,15 @@ public class CryptoCreateSuite extends HapiSuite {
                 createAnAccountWithEDKeyAliasDifferentThanAdminKeyShouldFail(),
                 cannotCreateAnAccountWithLongZeroKeyButCanUseEvmAddress(),
                 successfullyRecreateAccountWithSameAliasAfterDeletion());
+    }
+
+    @HapiTest
+    public HapiSpec idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given()
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> cryptoCreate("account")
+                        .stakedAccountId("0.0.3")));
     }
 
     @HapiTest
@@ -294,6 +307,8 @@ public class CryptoCreateSuite extends HapiSuite {
     final HapiSpec createAnAccountEmptyKeyList() {
         KeyShape shape = listOf(0);
         long initialBalance = 10_000L;
+        ShardID shardID = ShardID.newBuilder().build();
+        RealmID realmID = RealmID.newBuilder().build();
 
         return defaultHapiSpec("createAnAccountEmptyKeyList")
                 .given()
@@ -302,6 +317,8 @@ public class CryptoCreateSuite extends HapiSuite {
                         cryptoCreate(NO_KEYS)
                                 .keyShape(shape)
                                 .balance(initialBalance)
+                                .shardId(shardID)
+                                .realmId(realmID)
                                 .logged()
                                 .hasPrecheck(KEY_REQUIRED)
                         // In modular code this error is thrown in handle, but it is fixed using dynamic property

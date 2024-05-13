@@ -19,7 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapp
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fromHeadlongAddress;
 
 import com.esaulpaugh.headlong.abi.Function;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
@@ -30,7 +30,7 @@ import javax.inject.Singleton;
  * Translates {@code isApprovedForAll} calls to the HTS system contract.
  */
 @Singleton
-public class IsApprovedForAllTranslator extends AbstractHtsCallTranslator {
+public class IsApprovedForAllTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     public static final Function CLASSIC_IS_APPROVED_FOR_ALL =
             new Function("isApprovedForAll(address,address,address)", "(int64,bool)");
     public static final Function ERC_IS_APPROVED_FOR_ALL = new Function("isApprovedForAll(address,address)", "(bool)");

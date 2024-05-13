@@ -38,10 +38,18 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Adjusts the hbar balances and token allowances for the accounts involved in the transfer.
+ */
 public class AdjustHbarChangesStep extends BaseTokenHandler implements TransferStep {
     final CryptoTransferTransactionBody op;
     private final AccountID topLevelPayer;
 
+    /**
+     * Constructs the step with the operation and the top level payer account.
+     * @param op - the operation
+     * @param topLevelPayer - the top level payer account
+     */
     public AdjustHbarChangesStep(
             @NonNull final CryptoTransferTransactionBody op, @NonNull final AccountID topLevelPayer) {
         requireNonNull(op);
@@ -157,6 +165,12 @@ public class AdjustHbarChangesStep extends BaseTokenHandler implements TransferS
         }
     }
 
+    /**
+     * Checks if the effective payment was made by the payer already by checking the assessed custom fees.
+     * @param payer - the payer accountId
+     * @param assessedCustomFees - the assessed custom fees
+     * @return true if the effective payment was made, false otherwise
+     */
     private boolean effectivePaymentWasMade(
             @NonNull final AccountID payer, @NonNull final List<AssessedCustomFee> assessedCustomFees) {
         for (final var fee : assessedCustomFees) {

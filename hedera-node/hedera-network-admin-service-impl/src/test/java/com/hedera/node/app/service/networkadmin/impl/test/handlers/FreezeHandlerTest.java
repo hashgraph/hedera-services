@@ -145,8 +145,7 @@ class FreezeHandlerTest {
                             .freezeType(freezeType)
                             .build())
                     .build();
-            given(preHandleContext.body()).willReturn(txn);
-            assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), INVALID_FREEZE_TRANSACTION_BODY);
+            assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_FREEZE_TRANSACTION_BODY);
         }
     }
 
@@ -166,8 +165,7 @@ class FreezeHandlerTest {
                             .freezeType(freezeType)
                             .startTime(Timestamp.newBuilder().seconds(1000).build()))
                     .build();
-            given(preHandleContext.body()).willReturn(txn);
-            assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), FREEZE_START_TIME_MUST_BE_FUTURE);
+            assertThrowsPreCheck(() -> subject.pureChecks(txn), FREEZE_START_TIME_MUST_BE_FUTURE);
         }
     }
 
@@ -255,8 +253,7 @@ class FreezeHandlerTest {
                             .updateFile(FileID.newBuilder().fileNum(150L))
                             .build())
                     .build();
-            given(preHandleContext.body()).willReturn(txn);
-            assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
+            assertThrowsPreCheck(() -> subject.pureChecks(txn), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
         }
     }
 
@@ -458,8 +455,7 @@ class FreezeHandlerTest {
                 .freeze(FreezeTransactionBody.newBuilder().build())
                 // do not set freeze start time
                 .build();
-        given(preHandleContext.body()).willReturn(txn);
-        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), INVALID_FREEZE_TRANSACTION_BODY);
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test

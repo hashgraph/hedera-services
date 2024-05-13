@@ -22,6 +22,7 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
 import static com.swirlds.common.test.fixtures.io.SerializationUtils.serializeDeserialize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -55,12 +56,15 @@ class TransactionSerializationTest {
         }
         final Bytes signature = randomSignatureBytes(random);
         final Bytes stateHash = randomHashBytes(random);
-        final Bytes epochHash = random.nextBoolean() ? randomHashBytes(random) : Bytes.EMPTY;
         final StateSignatureTransaction systemTransactionSignature =
-                new StateSignatureTransaction(random.nextLong(), signature, stateHash, epochHash);
+                new StateSignatureTransaction(StateSignaturePayload.newBuilder()
+                        .round(random.nextLong())
+                        .signature(signature)
+                        .hash(stateHash)
+                        .build());
         final StateSignatureTransaction deserialized = serializeDeserialize(systemTransactionSignature);
 
-        assertEquals(systemTransactionSignature.signature(), deserialized.signature());
+        assertEquals(systemTransactionSignature.getPayload(), deserialized.getPayload());
         assertEquals(systemTransactionSignature.isSystem(), deserialized.isSystem());
         assertEquals(systemTransactionSignature.getVersion(), deserialized.getVersion());
         assertEquals(systemTransactionSignature.getClassId(), deserialized.getClassId());

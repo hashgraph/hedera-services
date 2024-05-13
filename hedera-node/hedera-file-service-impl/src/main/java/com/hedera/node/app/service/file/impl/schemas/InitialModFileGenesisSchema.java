@@ -102,7 +102,12 @@ public class InitialModFileGenesisSchema extends Schema {
     private Map<com.hederahashgraph.api.proto.java.FileID, byte[]> fileContents;
     private Map<com.hederahashgraph.api.proto.java.FileID, HFileMeta> fileAttrs;
 
-    /** Create a new instance */
+    /**
+     * Constructs a new {@link InitialModFileGenesisSchema} instance with the given {@link SemanticVersion} and {@link ConfigProvider}.
+     *
+     * @param version the version of the schema
+     * @param configProvider the configuration provider
+     */
     public InitialModFileGenesisSchema(
             @NonNull final SemanticVersion version, @NonNull final ConfigProvider configProvider) {
         super(version);
@@ -579,6 +584,12 @@ public class InitialModFileGenesisSchema extends Schema {
                         .build());
     }
 
+    /**
+     * Load the throttle definitions from the bootstrap configuration.
+     *
+     * @param bootstrapConfig the bootstrap configuration
+     * @return the throttle definitions proto as a byte array
+     */
     public static byte[] loadBootstrapThrottleDefinitions(@NonNull BootstrapConfig bootstrapConfig) {
         // Get the path to the throttles permissions file
         final var throttleDefinitionsResource = bootstrapConfig.throttleDefsJsonResource();

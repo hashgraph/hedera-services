@@ -16,9 +16,10 @@
 
 package com.hedera.services.bdd.spec.utilops;
 
-import static com.hedera.services.bdd.spec.utilops.UtilStateChange.initializeEthereumAccountForSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.createEthereumAccountForSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.isEthereumAccountCreatedForSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.convertHapiCallsToEthereumCalls;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -33,7 +34,7 @@ public class CustomSpecAssert extends UtilOp {
     public static void allRunFor(final HapiSpec spec, final List<HapiSpecOperation> ops) {
         if (spec.isUsingEthCalls()) {
             if (!isEthereumAccountCreatedForSpec(spec)) {
-                initializeEthereumAccountForSpec(spec);
+                ops.addAll(createEthereumAccountForSpec(spec));
             }
             executeEthereumOps(spec, ops);
         } else {
@@ -48,7 +49,12 @@ public class CustomSpecAssert extends UtilOp {
     }
 
     private static void executeEthereumOps(final HapiSpec spec, final List<HapiSpecOperation> ops) {
-        final var convertedOps = convertHapiCallsToEthereumCalls(ops);
+        final var convertedOps = convertHapiCallsToEthereumCalls(
+                ops,
+                SECP_256K1_SOURCE_KEY,
+                spec.registry().getKey(SECP_256K1_SOURCE_KEY),
+                spec.setup().defaultCreateGas(),
+                spec);
         for (final var op : convertedOps) {
             handleExec(spec, op);
         }

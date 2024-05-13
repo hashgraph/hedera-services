@@ -23,12 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
+import com.swirlds.platform.test.fixtures.event.TransactionUtils;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;

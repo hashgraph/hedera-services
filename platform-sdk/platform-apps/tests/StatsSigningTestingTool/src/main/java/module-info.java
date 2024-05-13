@@ -1,4 +1,5 @@
 module com.swirlds.demo.stats.signing {
+    requires com.hedera.pbj.runtime;
     requires com.swirlds.base;
     requires com.swirlds.common;
     requires com.swirlds.logging;

@@ -16,9 +16,9 @@
 
 plugins {
     id("com.hedera.hashgraph.hapi")
-    id("com.hedera.hashgraph.evm-maven-publish")
-    @Suppress("DSL_SCOPE_VIOLATION") alias(libs.plugins.pbj)
+    id("com.hedera.gradle.services-publish")
     id("com.hedera.hashgraph.java-test-fixtures")
+    alias(libs.plugins.pbj)
 }
 
 description = "Hedera API"
@@ -35,10 +35,12 @@ sourceSets {
         pbj {
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("services") })
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("streams") })
+            srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("platform") })
         }
         proto {
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("services") })
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("streams") })
+            srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("platform") })
         }
     }
 }
