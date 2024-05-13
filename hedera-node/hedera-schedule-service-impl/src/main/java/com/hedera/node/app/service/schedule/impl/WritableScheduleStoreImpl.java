@@ -152,6 +152,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
                 schedule.originalCreateTransaction(),
                 schedule.signatories());
     }
+
     /**
      * {@inheritDoc}
      */

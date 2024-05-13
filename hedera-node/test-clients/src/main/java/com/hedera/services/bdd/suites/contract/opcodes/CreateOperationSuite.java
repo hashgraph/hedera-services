@@ -130,7 +130,9 @@ public class CreateOperationSuite extends HapiSuite {
         return defaultHapiSpec("InheritanceOfNestedCreatedContracts", FULLY_NONDETERMINISTIC)
                 .given(
                         uploadInitCode(contract),
-                        contractCreate(contract).logged().via("createRecord"),
+                        // refuse eth conversion because ethereum transaction is missing admin key and memo is same as
+                        // parent
+                        contractCreate(contract).logged().via("createRecord").refusingEthConversion(),
                         getContractInfo(contract).logged().saveToRegistry(PARENT_INFO))
                 .when(contractCall(contract, "callCreate").gas(780_000).via(CALL_RECORD_TRANSACTION_NAME))
                 .then(
@@ -286,7 +288,11 @@ public class CreateOperationSuite extends HapiSuite {
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         HIGHLY_NON_DETERMINISTIC_FEES,
                         ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE)
-                .given(uploadInitCode(contract), contractCreate(contract).via("AbandoningParentTxn"))
+                // refuse eth conversion because ethereum transaction is missing admin key (the new contract has own key
+                // - isSelfAdmin(parent))
+                .given(
+                        uploadInitCode(contract),
+                        contractCreate(contract).via("AbandoningParentTxn").refusingEthConversion())
                 .when()
                 .then(
                         getContractInfo(contract)

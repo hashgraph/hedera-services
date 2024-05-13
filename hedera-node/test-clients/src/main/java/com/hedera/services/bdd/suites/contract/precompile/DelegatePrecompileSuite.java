@@ -128,7 +128,9 @@ public class DelegatePrecompileSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverID::set),
                         uploadInitCode(OUTER_CONTRACT, NESTED_CONTRACT),
-                        contractCreate(NESTED_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(NESTED_CONTRACT).refusingEthConversion(),
                         tokenAssociate(NESTED_CONTRACT, VANILLA_TOKEN),
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                         tokenAssociate(RECEIVER, VANILLA_TOKEN),
@@ -137,7 +139,12 @@ public class DelegatePrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCreate(
-                                OUTER_CONTRACT, asHeadlongAddress(getNestedContractAddress(NESTED_CONTRACT, spec))),
+                                        OUTER_CONTRACT,
+                                        asHeadlongAddress(getNestedContractAddress(NESTED_CONTRACT, spec)))
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         tokenAssociate(OUTER_CONTRACT, VANILLA_TOKEN),
                         newKeyNamed(SIMPLE_AND_DELEGATE_KEY_NAME)
                                 .shape(SIMPLE_AND_DELEGATE_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
