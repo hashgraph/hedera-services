@@ -46,7 +46,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -72,8 +71,7 @@ public class ValidateCongestionPricingAfterReconnect extends HapiSuite {
 
     @Override
     public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-            runTransfersBeforeReconnect(), validateCongestionPricing());
+        return List.of(runTransfersBeforeReconnect(), validateCongestionPricing());
     }
 
     final Stream<DynamicTest> validateCongestionPricing() {

@@ -47,7 +47,6 @@ import java.util.Map;
 import java.util.SplittableRandom;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
-
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -75,7 +74,7 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
         return allOf(positiveTests(), negativeTests());
     }
 
-    private List<Stream<DynamicTest>>positiveTests() {
+    private List<Stream<DynamicTest>> positiveTests() {
         return List.of(
                 account2CanUpdateApplicationProperties(),
                 account50CanUpdateApplicationProperties(),
@@ -95,7 +94,7 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
                 account57CanUpdateExchangeRates());
     }
 
-    private List<Stream<DynamicTest>>negativeTests() {
+    private List<Stream<DynamicTest>> negativeTests() {
         return Arrays.asList(
                 unauthorizedAccountCannotUpdateApplicationProperties(),
                 unauthorizedAccountCannotUpdateApiPermissions(),
@@ -210,7 +209,8 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
     }
 
     @BddMethodIsNotATest
-    final Stream<DynamicTest> unauthorizedAccountCannotUpdateSpecialFile(final String specialFile, final String newContents) {
+    final Stream<DynamicTest> unauthorizedAccountCannotUpdateSpecialFile(
+            final String specialFile, final String newContents) {
         return defaultHapiSpec("UnauthorizedAccountCannotUpdate" + specialFile)
                 .given(cryptoCreate("unauthorizedAccount"))
                 .when()

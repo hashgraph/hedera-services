@@ -35,7 +35,6 @@ import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -52,9 +51,9 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
     @Override
     public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
-            transactionsWithOnlySigMap(),
-            transactionsWithSignedTxnBytesAndSigMap(),
-            transactionsWithSignedTxnBytesAndBodyBytes());
+                transactionsWithOnlySigMap(),
+                transactionsWithSignedTxnBytesAndSigMap(),
+                transactionsWithSignedTxnBytesAndBodyBytes());
     }
 
     @Override

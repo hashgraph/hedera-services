@@ -63,7 +63,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -92,10 +91,9 @@ public class TokenUnhappyAccountsSuite extends HapiSuite {
     @Override
     public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
-            uniqueTokenOperationsFailForExpiredAccount(),
-            uniqueTokenOperationsFailForAutoRemovedAccount(),
-            dissociationFromExpiredTokensAsExpected()
-       );
+                uniqueTokenOperationsFailForExpiredAccount(),
+                uniqueTokenOperationsFailForAutoRemovedAccount(),
+                dissociationFromExpiredTokensAsExpected());
     }
 
     final Stream<DynamicTest> uniqueTokenOperationsFailForAutoRemovedAccount() {

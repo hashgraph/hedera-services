@@ -66,7 +66,6 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -114,12 +113,12 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<Stream<DynamicTest>>negativeSpecs() {
+    List<Stream<DynamicTest>> negativeSpecs() {
         return List.of(
                 v2Security006TokenAssociateNegativeTests(), V2Security041TokenAssociateFromStaticcallAndCallcode());
     }
 
-    List<Stream<DynamicTest>>positiveSpecs() {
+    List<Stream<DynamicTest>> positiveSpecs() {
         return List.of(
                 v2Security031AssociateSingleTokenWithDelegateContractKey(),
                 v2Security010NestedAssociateNftAndNonFungibleTokens(),

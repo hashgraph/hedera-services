@@ -28,6 +28,7 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,8 +41,6 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
@@ -77,7 +76,10 @@ public abstract class HapiSuite {
     public abstract List<Stream<DynamicTest>> getSpecsInSuite();
 
     private List<HapiSpec> getHapiSpecsInSuite() {
-        return getSpecsInSuite().stream().flatMap(Function.identity()).map(HapiSuite::specFrom).toList();
+        return getSpecsInSuite().stream()
+                .flatMap(Function.identity())
+                .map(HapiSuite::specFrom)
+                .toList();
     }
 
     public List<HapiSpec> getSpecsInSuiteWithOverrides() {

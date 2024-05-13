@@ -25,7 +25,6 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.validation.YamlHelper;
 import java.io.File;
 import java.io.IOException;

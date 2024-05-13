@@ -279,7 +279,7 @@ public class EthereumSuite extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot(aliasBalanceSnapshot, -FIVE_HBARS)));
     }
 
-    List<Stream<DynamicTest>>feePaymentMatrix() {
+    List<Stream<DynamicTest>> feePaymentMatrix() {
         final long gasPrice = 71;
         final long chargedGasLimit = GAS_LIMIT * 4 / 5;
 

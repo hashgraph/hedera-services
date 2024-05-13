@@ -39,7 +39,6 @@ import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -62,13 +61,13 @@ public class TxnReceiptRegression extends HapiSuite {
     @Override
     public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
-            returnsInvalidForUnspecifiedTxnId(),
-            returnsNotSupportedForMissingOp(),
-            receiptAvailableWithinCacheTtl(),
-            receiptUnavailableAfterCacheTtl(),
-            receiptUnavailableIfRejectedInPrecheck(),
-            receiptNotFoundOnUnknownTransactionID(),
-            receiptUnknownBeforeConsensus());
+                returnsInvalidForUnspecifiedTxnId(),
+                returnsNotSupportedForMissingOp(),
+                receiptAvailableWithinCacheTtl(),
+                receiptUnavailableAfterCacheTtl(),
+                receiptUnavailableIfRejectedInPrecheck(),
+                receiptNotFoundOnUnknownTransactionID(),
+                receiptUnknownBeforeConsensus());
     }
 
     @HapiTest

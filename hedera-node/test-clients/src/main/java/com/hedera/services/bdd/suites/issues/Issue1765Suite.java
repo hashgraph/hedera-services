@@ -37,7 +37,6 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -57,8 +56,7 @@ public class Issue1765Suite extends HapiSuite {
 
     @Override
     public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                get950Balance());
+        return List.of(get950Balance());
     }
 
     @HapiTest

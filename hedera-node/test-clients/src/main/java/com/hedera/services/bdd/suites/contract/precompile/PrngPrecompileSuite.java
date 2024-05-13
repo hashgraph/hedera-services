@@ -47,7 +47,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -88,7 +87,7 @@ public class PrngPrecompileSuite extends HapiSuite {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<Stream<DynamicTest>>negativeSpecs() {
+    List<Stream<DynamicTest>> negativeSpecs() {
         return List.of(
                 functionCallWithLessThanFourBytesFailsGracefully(),
                 nonSupportedAbiCallGracefullyFails(),
@@ -96,7 +95,7 @@ public class PrngPrecompileSuite extends HapiSuite {
                 emptyInputCallFails());
     }
 
-    List<Stream<DynamicTest>>positiveSpecs() {
+    List<Stream<DynamicTest>> positiveSpecs() {
         return List.of(prngPrecompileHappyPathWorks(), multipleCallsHaveIndependentResults());
     }
 

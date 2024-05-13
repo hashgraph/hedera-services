@@ -34,7 +34,6 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -54,7 +53,7 @@ public class UtilPrngSuite extends HapiSuite {
         return allOf(positiveTests());
     }
 
-    private List<Stream<DynamicTest>>positiveTests() {
+    private List<Stream<DynamicTest>> positiveTests() {
         return List.of(happyPathWorksForRangeAndBitString(), failsInPreCheckForNegativeRange(), usdFeeAsExpected());
     }
 

@@ -60,7 +60,6 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -110,7 +109,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<Stream<DynamicTest>>positiveSpecs() {
+    List<Stream<DynamicTest>> positiveSpecs() {
         return List.of(
                 fungibleTokenCreateHappyPath(),
                 nonFungibleTokenCreateHappyPath(),
@@ -121,7 +120,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
                 createTokenWithDefaultExpiryAndEmptyKeys());
     }
 
-    List<Stream<DynamicTest>>negativeSpecs() {
+    List<Stream<DynamicTest>> negativeSpecs() {
         // TODO: Where are the security model v1 _negative_ tests?
         return List.of();
     }

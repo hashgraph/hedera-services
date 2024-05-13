@@ -55,7 +55,6 @@ import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -109,13 +108,13 @@ public class CreatePrecompileSuite extends HapiSuite {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<Stream<DynamicTest>>positiveSpecs() {
+    List<Stream<DynamicTest>> positiveSpecs() {
         return List.of(
                 // TODO: where are the security model V2 _positive_ tests?
                 );
     }
 
-    List<Stream<DynamicTest>>negativeSpecs() {
+    List<Stream<DynamicTest>> negativeSpecs() {
         return List.of(
                 tokenCreateWithEmptyKeysReverts(),
                 tokenCreateWithKeyWithMultipleKeyValuesReverts(),

@@ -44,7 +44,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.LongUnaryOperator;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;

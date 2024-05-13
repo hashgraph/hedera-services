@@ -70,7 +70,6 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -116,7 +115,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<Stream<DynamicTest>>negativeSpecs() {
+    List<Stream<DynamicTest>> negativeSpecs() {
         return List.of(
                 functionCallWithLessThanFourBytesFailsWithinSingleContractCall(),
                 nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls(),
@@ -128,7 +127,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
                 associateTokenNegativeScenarios());
     }
 
-    List<Stream<DynamicTest>>positiveSpecs() {
+    List<Stream<DynamicTest>> positiveSpecs() {
         return List.of(associateWithMissingEvmAddressHasSaneTxnAndRecord());
     }
 

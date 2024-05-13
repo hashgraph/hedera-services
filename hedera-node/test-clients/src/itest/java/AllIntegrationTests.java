@@ -17,8 +17,6 @@
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Stream;
-
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
@@ -74,7 +72,7 @@ class AllIntegrationTests extends DockerIntegrationTestBase {
     @Tag("integration")
     @Order(3)
     @TestFactory
-    List<DynamicTest>logValidation() {
+    List<DynamicTest> logValidation() {
         return List.of(
                 hgcaaLogValidation("build/network/itest/output/node_0/hgcaa.log"),
                 queriesLogValidation("build/network/itest/output/node_0/queries.log"));
@@ -83,7 +81,7 @@ class AllIntegrationTests extends DockerIntegrationTestBase {
     @Tag("integration")
     @Order(4)
     @TestFactory
-    List<DynamicTest>recordStreamValidation() {
+    List<DynamicTest> recordStreamValidation() {
         // Need to enable the disabled record validators after fixing the CI issues
         return List.of(
                 /*

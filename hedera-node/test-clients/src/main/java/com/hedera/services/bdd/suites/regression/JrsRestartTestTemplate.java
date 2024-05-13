@@ -51,7 +51,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -96,8 +95,7 @@ public class JrsRestartTestTemplate extends HapiSuite {
 
     @Override
     public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-            enableHSS(), jrsRestartTemplate());
+        return List.of(enableHSS(), jrsRestartTemplate());
     }
 
     final Stream<DynamicTest> enableHSS() {

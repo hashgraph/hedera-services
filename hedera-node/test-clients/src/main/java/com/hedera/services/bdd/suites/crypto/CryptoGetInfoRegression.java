@@ -52,7 +52,6 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -75,13 +74,13 @@ public class CryptoGetInfoRegression extends HapiSuite {
     @Override
     public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
-            failsForDeletedAccount(),
-            failsForMissingAccount(),
-            failsForMissingPayment(),
-            failsForMalformedPayment(),
-            failsForUnfundablePayment(),
-            succeedsNormally(),
-            fetchesOnlyALimitedTokenAssociations());
+                failsForDeletedAccount(),
+                failsForMissingAccount(),
+                failsForMissingPayment(),
+                failsForMalformedPayment(),
+                failsForUnfundablePayment(),
+                succeedsNormally(),
+                fetchesOnlyALimitedTokenAssociations());
     }
 
     /** For Demo purpose : The limit on each account info and account balance queries is set to 5 */

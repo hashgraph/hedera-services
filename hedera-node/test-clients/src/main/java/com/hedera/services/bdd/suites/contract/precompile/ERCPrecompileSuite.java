@@ -97,7 +97,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -180,7 +179,7 @@ public class ERCPrecompileSuite extends HapiSuite {
         return allOf(erc20(), erc721());
     }
 
-    List<Stream<DynamicTest>>erc20() {
+    List<Stream<DynamicTest>> erc20() {
         return List.of(
                 getErc20TokenName(),
                 getErc20TokenSymbol(),
@@ -202,7 +201,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                 transferErc20TokenFromContractWithNoApproval());
     }
 
-    List<Stream<DynamicTest>>erc721() {
+    List<Stream<DynamicTest>> erc721() {
         return List.of(
                 getErc721TokenName(),
                 getErc721Symbol(),

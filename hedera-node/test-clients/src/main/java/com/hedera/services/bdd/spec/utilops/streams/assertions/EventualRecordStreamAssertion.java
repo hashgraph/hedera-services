@@ -28,7 +28,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.function.Function;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.DynamicTest;
 
 /**
  * A {@link com.hedera.services.bdd.spec.utilops.UtilOp} that registers itself with {@link

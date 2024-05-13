@@ -34,7 +34,6 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -52,11 +51,11 @@ public class ExchangeRateControlSuite extends HapiSuite {
         return allOf(positiveTests(), negativeTests());
     }
 
-    private List<Stream<DynamicTest>>positiveTests() {
+    private List<Stream<DynamicTest>> positiveTests() {
         return Arrays.asList(midnightRateChangesWhenAcct50UpdatesFile112(), acct57CanMakeSmallChanges());
     }
 
-    private List<Stream<DynamicTest>>negativeTests() {
+    private List<Stream<DynamicTest>> negativeTests() {
         return Arrays.asList(anonCantUpdateRates(), acct57CantMakeLargeChanges());
     }
 

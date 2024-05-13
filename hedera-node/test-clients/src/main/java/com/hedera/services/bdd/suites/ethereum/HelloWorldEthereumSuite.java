@@ -92,7 +92,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -124,7 +123,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
         return true;
     }
 
-    List<Stream<DynamicTest>>ethereumCalls() {
+    List<Stream<DynamicTest>> ethereumCalls() {
         return List.of(
                 depositSuccess(),
                 badRelayClient(),
@@ -137,7 +136,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 canCreateTokenWithCryptoAdminKeyOnlyIfHasTopLevelSig());
     }
 
-    List<Stream<DynamicTest>>ethereumCreates() {
+    List<Stream<DynamicTest>> ethereumCreates() {
         return List.of(
                 smallContractCreate(),
                 contractCreateWithConstructorArgs(),

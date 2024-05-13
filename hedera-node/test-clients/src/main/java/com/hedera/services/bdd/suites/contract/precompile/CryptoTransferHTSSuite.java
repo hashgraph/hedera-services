@@ -99,7 +99,6 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -1281,7 +1280,8 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens() {
+    final Stream<DynamicTest>
+            nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return defaultHapiSpec(

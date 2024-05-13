@@ -52,7 +52,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -78,8 +77,7 @@ public class OnePendingSigScheduledXfersLoad extends HapiSuite {
 
     @Override
     public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-            runOnePendingSigXfers());
+        return List.of(runOnePendingSigXfers());
     }
 
     final Stream<DynamicTest> runOnePendingSigXfers() {

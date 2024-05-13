@@ -50,7 +50,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -97,14 +96,14 @@ public class UpgradeSuite extends HapiSuite {
     @Override
     public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
-            precheckRejectsUnknownFreezeType(),
-            freezeOnlyPrecheckRejectsInvalid(),
-            freezeUpgradeValidationRejectsInvalid(),
-            prepareUpgradeValidationRejectsInvalid(),
-            telemetryUpgradeValidationRejectsInvalid(),
-            canFreezeUpgradeWithPreparedUpgrade(),
-            canTelemetryUpgradeWithValid(),
-            freezeAbortIsIdempotent());
+                precheckRejectsUnknownFreezeType(),
+                freezeOnlyPrecheckRejectsInvalid(),
+                freezeUpgradeValidationRejectsInvalid(),
+                prepareUpgradeValidationRejectsInvalid(),
+                telemetryUpgradeValidationRejectsInvalid(),
+                canFreezeUpgradeWithPreparedUpgrade(),
+                canTelemetryUpgradeWithValid(),
+                freezeAbortIsIdempotent());
     }
 
     final Stream<DynamicTest> precheckRejectsUnknownFreezeType() {

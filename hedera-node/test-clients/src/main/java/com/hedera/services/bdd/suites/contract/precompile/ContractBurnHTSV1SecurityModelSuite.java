@@ -71,7 +71,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -109,11 +108,11 @@ public class ContractBurnHTSV1SecurityModelSuite extends HapiSuite {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<Stream<DynamicTest>>negativeSpecs() {
+    List<Stream<DynamicTest>> negativeSpecs() {
         return List.of(hscsPreC020RollbackBurnThatFailsAfterAPrecompileTransfer());
     }
 
-    List<Stream<DynamicTest>>positiveSpecs() {
+    List<Stream<DynamicTest>> positiveSpecs() {
         return List.of(
                 hscsPrec004TokenBurnOfFungibleTokenUnits(),
                 hscsPrec005TokenBurnOfNft(),

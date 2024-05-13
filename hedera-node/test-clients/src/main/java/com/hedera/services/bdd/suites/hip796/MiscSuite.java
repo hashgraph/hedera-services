@@ -60,7 +60,6 @@ import com.hedera.services.bdd.suites.hip796.operations.DesiredAccountTokenRelat
 import com.hedera.services.bdd.suites.hip796.operations.TokenFeature;
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;

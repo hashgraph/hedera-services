@@ -30,7 +30,6 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.DynamicTest;
 
 public class ParallelSpecOps extends UtilOp {
     private static final Logger log = LogManager.getLogger(HapiSpecOperation.class);

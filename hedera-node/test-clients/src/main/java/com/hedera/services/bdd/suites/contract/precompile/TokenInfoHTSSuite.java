@@ -88,7 +88,6 @@ import java.util.List;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -153,7 +152,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<Stream<DynamicTest>>negativeSpecs() {
+    List<Stream<DynamicTest>> negativeSpecs() {
         return List.of(
                 getInfoOnDeletedFungibleTokenWorks(),
                 getInfoOnInvalidFungibleTokenFails(),
@@ -164,7 +163,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                 getTokenCustomFeesNegativeCases());
     }
 
-    List<Stream<DynamicTest>>positiveSpecs() {
+    List<Stream<DynamicTest>> positiveSpecs() {
         return List.of(
                 happyPathGetTokenInfo(),
                 happyPathGetFungibleTokenInfo(),

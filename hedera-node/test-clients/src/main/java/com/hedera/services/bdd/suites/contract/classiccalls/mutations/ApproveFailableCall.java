@@ -26,7 +26,6 @@ import static com.hedera.services.bdd.suites.contract.classiccalls.ClassicInvent
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.contract.classiccalls.AbstractFailableNonStaticCall;
 import com.hedera.services.bdd.suites.contract.classiccalls.ClassicFailureMode;
 import edu.umd.cs.findbugs.annotations.NonNull;

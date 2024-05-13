@@ -38,7 +38,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -76,7 +75,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
         return allOf(positiveTests(), negativeTests());
     }
 
-    private List<Stream<DynamicTest>>positiveTests() {
+    private List<Stream<DynamicTest>> positiveTests() {
         return List.of(
                 transferWithFractionalCustomFee(),
                 transferWithFractionalCustomFeeAndHollowAccountCollector(),
@@ -101,15 +100,15 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
                 transferMultipleTimesWithFractionalFeeTakenFromReceiver());
     }
 
-    private List<Stream<DynamicTest>>negativeTests() {
+    private List<Stream<DynamicTest>> negativeTests() {
         return List.of(
-            transferWithFractionalCustomFeeNegativeMoreThanTen(),
-            transferWithFractionalCustomFeeZeroDenominator(),
-            transferWithFractionalCustomFeeNegativeNotEnoughAllowance(),
-            transferWithFractionalCustomFeeGreaterThanAmountNegative(),
-            transferWithFractionalCustomFeeNotEnoughBalance(),
-            transferWithFractionalCustomFeeMultipleRecipientsHasNotEnoughBalance(),
-            transferWithFractionalCustomFeeMultipleRecipientsNotEnoughBalance());
+                transferWithFractionalCustomFeeNegativeMoreThanTen(),
+                transferWithFractionalCustomFeeZeroDenominator(),
+                transferWithFractionalCustomFeeNegativeNotEnoughAllowance(),
+                transferWithFractionalCustomFeeGreaterThanAmountNegative(),
+                transferWithFractionalCustomFeeNotEnoughBalance(),
+                transferWithFractionalCustomFeeMultipleRecipientsHasNotEnoughBalance(),
+                transferWithFractionalCustomFeeMultipleRecipientsNotEnoughBalance());
     }
 
     @HapiTest

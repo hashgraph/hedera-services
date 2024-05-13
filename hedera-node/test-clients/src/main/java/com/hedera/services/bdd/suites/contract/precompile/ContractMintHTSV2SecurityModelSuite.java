@@ -63,7 +63,6 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -139,7 +138,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<Stream<DynamicTest>>negativeSpecs() {
+    List<Stream<DynamicTest>> negativeSpecs() {
         return List.of(
                 V2Security002FungibleTokenMintInTreasuryNegative(),
                 V2Security003NonFungibleTokenMintInTreasuryNegative(),
@@ -148,7 +147,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                 V2Security040TokenWithDelegateContractKeyCanNotMintFromCallcode());
     }
 
-    List<Stream<DynamicTest>>positiveSpecs() {
+    List<Stream<DynamicTest>> positiveSpecs() {
         return List.of(
                 V2Security002FungibleTokenMintInTreasuryPositive(),
                 V2Security003NonFungibleTokenMintInTreasuryPositive());

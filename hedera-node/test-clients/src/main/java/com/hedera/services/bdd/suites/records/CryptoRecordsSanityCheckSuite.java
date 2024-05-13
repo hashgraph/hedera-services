@@ -46,7 +46,6 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -66,13 +65,13 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
     @Override
     public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
-            cryptoCreateRecordSanityChecks(),
-            cryptoDeleteRecordSanityChecks(),
-            cryptoTransferRecordSanityChecks(),
-            cryptoUpdateRecordSanityChecks(),
-            insufficientAccountBalanceRecordSanityChecks(),
-            invalidPayerSigCryptoTransferRecordSanityChecks(),
-            ownershipChangeShowsInRecord());
+                cryptoCreateRecordSanityChecks(),
+                cryptoDeleteRecordSanityChecks(),
+                cryptoTransferRecordSanityChecks(),
+                cryptoUpdateRecordSanityChecks(),
+                insufficientAccountBalanceRecordSanityChecks(),
+                invalidPayerSigCryptoTransferRecordSanityChecks(),
+                ownershipChangeShowsInRecord());
     }
 
     @HapiTest

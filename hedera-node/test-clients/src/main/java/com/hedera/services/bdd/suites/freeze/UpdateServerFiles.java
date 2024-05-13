@@ -33,7 +33,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -72,7 +71,7 @@ public class UpdateServerFiles extends HapiSuite {
         return allOf(postiveTests());
     }
 
-    private List<Stream<DynamicTest>>postiveTests() {
+    private List<Stream<DynamicTest>> postiveTests() {
         return Arrays.asList(uploadGivenDirectory());
     }
 

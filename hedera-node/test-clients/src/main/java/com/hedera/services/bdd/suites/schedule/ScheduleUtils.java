@@ -33,8 +33,6 @@ import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import org.junit.jupiter.api.DynamicTest;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -48,6 +46,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 
 public final class ScheduleUtils {
     static final String ACCOUNT = "civilian";
@@ -321,26 +320,21 @@ public final class ScheduleUtils {
         list.addAll(getSpecs.get());
         list.add(enableLongTermScheduledTransactions());
         var withEnabled = getSpecs.get();
-        list.add(
-                withEnabled
-                        .stream()
-                        .flatMap(Function.identity())
-                        .peek(s -> ((HapiSpec) s.getExecutable()).appendToName("WithLongTermEnabled")));
+        list.add(withEnabled.stream().flatMap(Function.identity()).peek(s -> ((HapiSpec) s.getExecutable())
+                .appendToName("WithLongTermEnabled")));
         list.add(setLongTermScheduledTransactionsToDefault());
         return list;
     }
 
-    static List<Stream<DynamicTest>> withAndWithoutLongTermEnabled(Function<Boolean, List<Stream<DynamicTest>>> getSpecs) {
-        List<Stream<DynamicTest>>list = new ArrayList<>();
+    static List<Stream<DynamicTest>> withAndWithoutLongTermEnabled(
+            Function<Boolean, List<Stream<DynamicTest>>> getSpecs) {
+        List<Stream<DynamicTest>> list = new ArrayList<>();
         list.add(disableLongTermScheduledTransactions());
         list.addAll(getSpecs.apply(false));
         list.add(enableLongTermScheduledTransactions());
         var withEnabled = getSpecs.apply(true);
-        list.add(
-                withEnabled
-                        .stream()
-                        .flatMap(Function.identity())
-                        .peek(s -> ((HapiSpec) s.getExecutable()).appendToName("WithLongTermEnabled")));
+        list.add(withEnabled.stream().flatMap(Function.identity()).peek(s -> ((HapiSpec) s.getExecutable())
+                .appendToName("WithLongTermEnabled")));
         list.add(setLongTermScheduledTransactionsToDefault());
         return list;
     }

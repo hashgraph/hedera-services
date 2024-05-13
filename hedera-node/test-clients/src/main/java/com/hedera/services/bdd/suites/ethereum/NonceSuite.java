@@ -74,7 +74,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -336,7 +335,8 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> nonceNotUpdatedWhenOfferedGasPriceIsLessThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailed() {
+    final Stream<DynamicTest>
+            nonceNotUpdatedWhenOfferedGasPriceIsLessThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailed() {
         return defaultHapiSpec(
                         "nonceNotUpdatedWhenOfferedGasPriceIsLessThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailed",
                         NONDETERMINISTIC_TRANSACTION_FEES)
@@ -802,7 +802,8 @@ public class NonceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> nonceNotUpdatedWhenUserOfferedGasPriceAndAllowanceAreZeroHandlerCheckFailedEthContractCreate() {
+    final Stream<DynamicTest>
+            nonceNotUpdatedWhenUserOfferedGasPriceAndAllowanceAreZeroHandlerCheckFailedEthContractCreate() {
         return defaultHapiSpec(
                         "nonceNotUpdatedWhenUserOfferedGasPriceAndAllowanceAreZeroHandlerCheckFailedEthContractCreate",
                         NONDETERMINISTIC_TRANSACTION_FEES)

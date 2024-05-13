@@ -61,7 +61,6 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -116,7 +115,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
         return allOf(negativeCases());
     }
 
-    List<Stream<DynamicTest>>negativeCases() {
+    List<Stream<DynamicTest>> negativeCases() {
         return List.of(
                 updateTokenWithInvalidKeyValues(),
                 updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey(),

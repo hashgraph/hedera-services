@@ -93,7 +93,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -168,7 +167,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
         return allOf(hscsKey1(), hscsKey2(), hscsKey3(), hscsKey4(), hscsKey5(), hscsKey6());
     }
 
-    List<Stream<DynamicTest>>hscsKey1() {
+    List<Stream<DynamicTest>> hscsKey1() {
         return List.of(
                 callForMintWithContractKey(),
                 callForTransferWithContractKey(),
@@ -179,7 +178,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 delegateCallForDissociatePrecompileSignedWithContractKeyFails());
     }
 
-    List<Stream<DynamicTest>>hscsKey2() {
+    List<Stream<DynamicTest>> hscsKey2() {
         return List.of(
                 staticCallForTransferWithContractKey(),
                 staticCallForBurnWithContractKey(),
@@ -189,7 +188,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 staticCallForDissociatePrecompileFails());
     }
 
-    List<Stream<DynamicTest>>hscsKey3() {
+    List<Stream<DynamicTest>> hscsKey3() {
         return List.of(
                 callForMintWithDelegateContractKey(),
                 callForTransferWithDelegateContractKey(),
@@ -200,7 +199,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 delegateCallForDissociatePrecompileSignedWithDelegateContractKeyWorks());
     }
 
-    List<Stream<DynamicTest>>hscsKey4() {
+    List<Stream<DynamicTest>> hscsKey4() {
         return List.of(
                 associatePrecompileWithDelegateContractKeyForFungibleVanilla(),
                 associatePrecompileWithDelegateContractKeyForFungibleFrozen(),
@@ -216,7 +215,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 dissociatePrecompileWithDelegateContractKeyForNonFungibleWithKYC());
     }
 
-    List<Stream<DynamicTest>>hscsKey5() {
+    List<Stream<DynamicTest>> hscsKey5() {
         return List.of(
                 staticCallForTransferWithDelegateContractKey(),
                 staticCallForBurnWithDelegateContractKey(),
@@ -224,7 +223,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 staticCallForAssociatePrecompileFails());
     }
 
-    List<Stream<DynamicTest>>hscsKey6() {
+    List<Stream<DynamicTest>> hscsKey6() {
         return List.of(burnWithKeyAsPartOf1OfXThreshold());
     }
 

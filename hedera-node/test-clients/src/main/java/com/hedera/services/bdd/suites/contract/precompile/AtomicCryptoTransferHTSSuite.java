@@ -93,7 +93,6 @@ import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -138,20 +137,20 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     @Override
     public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
-            cryptoTransferForHbarOnly(),
-            cryptoTransferForFungibleTokenOnly(),
-            cryptoTransferForFungibleTokenWithFees(),
-            cryptoTransferForNFTWithFees(),
-            cryptoTransferForNonFungibleTokenOnly(),
-            cryptoTransferHBarFungibleNft(),
-            cryptoTransferSpecialAccounts(),
-            blockCryptoTransferForPermittedDelegates(),
-            cryptoTransferAllowanceToContractHbar(),
-            cryptoTransferAllowanceToContractFT(),
-            cryptoTransferAllowanceToContractNFT(),
-            cryptoTransferAllowanceToContractFromContract(),
-            receiverSigRequiredButNotProvided(),
-            cryptoTransferSpecialAccounts());
+                cryptoTransferForHbarOnly(),
+                cryptoTransferForFungibleTokenOnly(),
+                cryptoTransferForFungibleTokenWithFees(),
+                cryptoTransferForNFTWithFees(),
+                cryptoTransferForNonFungibleTokenOnly(),
+                cryptoTransferHBarFungibleNft(),
+                cryptoTransferSpecialAccounts(),
+                blockCryptoTransferForPermittedDelegates(),
+                cryptoTransferAllowanceToContractHbar(),
+                cryptoTransferAllowanceToContractFT(),
+                cryptoTransferAllowanceToContractNFT(),
+                cryptoTransferAllowanceToContractFromContract(),
+                receiverSigRequiredButNotProvided(),
+                cryptoTransferSpecialAccounts());
     }
 
     @HapiTest

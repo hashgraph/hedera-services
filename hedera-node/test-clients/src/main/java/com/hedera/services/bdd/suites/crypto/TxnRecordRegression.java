@@ -33,7 +33,6 @@ import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -61,11 +60,11 @@ public class TxnRecordRegression extends HapiSuite {
     @Override
     public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
-            returnsInvalidForUnspecifiedTxnId(),
-            recordNotFoundIfNotInPayerState(),
-            recordUnavailableIfRejectedInPrecheck(),
-            recordUnavailableBeforeConsensus(),
-            recordsStillQueryableWithDeletedPayerId());
+                returnsInvalidForUnspecifiedTxnId(),
+                recordNotFoundIfNotInPayerState(),
+                recordUnavailableIfRejectedInPrecheck(),
+                recordUnavailableBeforeConsensus(),
+                recordsStillQueryableWithDeletedPayerId());
     }
 
     // FUTURE: revisit this test, which isn't passing in modular or mono code (even with a 3 second TTL)

@@ -1001,19 +1001,16 @@ public class HapiSpec implements Runnable, Executable {
 
     public static Def.Setup hapiSpec(
             String name, List<String> propertiesToPreserve, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
-        return setup -> given -> when ->
-                then -> Stream.of(DynamicTest.dynamicTest(name,
-                        new HapiSpec(name, false, setup, given, when, then, propertiesToPreserve, snapshotMatchModes)));
+        return setup -> given -> when -> then -> Stream.of(DynamicTest.dynamicTest(
+                name, new HapiSpec(name, false, setup, given, when, then, propertiesToPreserve, snapshotMatchModes)));
     }
 
     public static Def.Setup onlyHapiSpec(
             final String name,
             final List<String> propertiesToPreserve,
             @NonNull final SnapshotMatchMode... snapshotMatchModes) {
-        return setup -> given -> when ->
-                then -> Stream.of(DynamicTest.dynamicTest(
-                        name,
-                        new HapiSpec(name, true, setup, given, when, then, propertiesToPreserve, snapshotMatchModes)));
+        return setup -> given -> when -> then -> Stream.of(DynamicTest.dynamicTest(
+                name, new HapiSpec(name, true, setup, given, when, then, propertiesToPreserve, snapshotMatchModes)));
     }
 
     public HapiSpec(

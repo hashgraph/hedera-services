@@ -65,13 +65,13 @@ public class AccountAutoRenewalSuite extends HapiSuite {
     @SuppressWarnings("java:S3878")
     public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
-            accountAutoRemoval(),
-            accountAutoRenewal(),
-            maxNumberOfEntitiesToRenewOrDeleteWorks(),
-            numberOfEntitiesToScanWorks(),
-            autoDeleteAfterGracePeriod(),
-            accountAutoRenewalSuiteCleanup(),
-            freezeAtTheEnd());
+                accountAutoRemoval(),
+                accountAutoRenewal(),
+                maxNumberOfEntitiesToRenewOrDeleteWorks(),
+                numberOfEntitiesToScanWorks(),
+                autoDeleteAfterGracePeriod(),
+                accountAutoRenewalSuiteCleanup(),
+                freezeAtTheEnd());
     }
 
     final Stream<DynamicTest> accountAutoRemoval() {

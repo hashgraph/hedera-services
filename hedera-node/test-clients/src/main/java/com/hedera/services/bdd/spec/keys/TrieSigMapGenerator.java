@@ -37,7 +37,6 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.DynamicTest;
 
 public class TrieSigMapGenerator implements SigMapGenerator {
     private static final Logger log = LogManager.getLogger(TrieSigMapGenerator.class);
