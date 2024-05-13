@@ -51,6 +51,10 @@ import com.swirlds.platform.event.runninghash.DefaultRunningEventHasher;
 import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.DefaultSelfEventSigner;
 import com.swirlds.platform.event.signing.SelfEventSigner;
+import com.swirlds.platform.event.stale.DefaultStaleEventDetector;
+import com.swirlds.platform.event.stale.DefaultTransactionResubmitter;
+import com.swirlds.platform.event.stale.StaleEventDetector;
+import com.swirlds.platform.event.stale.TransactionResubmitter;
 import com.swirlds.platform.event.stream.ConsensusEventStream;
 import com.swirlds.platform.event.stream.DefaultConsensusEventStream;
 import com.swirlds.platform.event.validation.DefaultEventSignatureValidator;
@@ -61,6 +65,8 @@ import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.pool.DefaultTransactionPool;
+import com.swirlds.platform.pool.TransactionPool;
 import com.swirlds.platform.state.iss.DefaultIssDetector;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssScratchpad;
@@ -121,6 +127,9 @@ public class PlatformComponentBuilder {
     private PcesWriter pcesWriter;
     private IssDetector issDetector;
     private Gossip gossip;
+    private StaleEventDetector staleEventDetector;
+    private TransactionResubmitter transactionResubmitter;
+    private TransactionPool transactionPool;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -480,11 +489,11 @@ public class PlatformComponentBuilder {
                     blocks.initialAddressBook(),
                     blocks.selfId(),
                     blocks.appVersion(),
-                    blocks.transactionPool());
+                    blocks.transactionPoolNexus());
 
             eventCreationManager = new DefaultEventCreationManager(
                     blocks.platformContext(),
-                    blocks.transactionPool(),
+                    blocks.transactionPoolNexus(),
                     blocks.intakeQueueSizeSupplierSupplier().get(),
                     eventCreator);
         }
@@ -845,6 +854,102 @@ public class PlatformComponentBuilder {
                     roundToIgnore);
         }
         return issDetector;
+    }
+
+    /**
+     * Provide a stale event detector in place of the platform's default stale event detector.
+     *
+     * @param staleEventDetector the stale event detector to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withStaleEventDetector(@NonNull final StaleEventDetector staleEventDetector) {
+        throwIfAlreadyUsed();
+        if (this.staleEventDetector != null) {
+            throw new IllegalStateException("Stale event detector has already been set");
+        }
+        this.staleEventDetector = Objects.requireNonNull(staleEventDetector);
+        return this;
+    }
+
+    /**
+     * Build the stale event detector if it has not yet been built. If one has been provided via
+     * {@link #withStaleEventDetector(StaleEventDetector)}, that detector will be used. If this method is called more
+     * than once, only the first call will build the stale event detector. Otherwise, the default detector will be
+     * created and returned.
+     *
+     * @return the stale event detector
+     */
+    @NonNull
+    public StaleEventDetector buildStaleEventDetector() {
+        if (staleEventDetector == null) {
+            staleEventDetector = new DefaultStaleEventDetector(blocks.platformContext(), blocks.selfId());
+        }
+        return staleEventDetector;
+    }
+
+    /**
+     * Provide a transaction resubmitter in place of the platform's default transaction resubmitter.
+     *
+     * @param transactionResubmitter the transaction resubmitter to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withTransactionResubmitter(
+            @NonNull final TransactionResubmitter transactionResubmitter) {
+        throwIfAlreadyUsed();
+        if (this.transactionResubmitter != null) {
+            throw new IllegalStateException("Transaction resubmitter has already been set");
+        }
+        this.transactionResubmitter = Objects.requireNonNull(transactionResubmitter);
+        return this;
+    }
+
+    /**
+     * Build the transaction resubmitter if it has not yet been built. If one has been provided via
+     * {@link #withTransactionResubmitter(TransactionResubmitter)}, that resubmitter will be used. If this method is
+     * called more than once, only the first call will build the transaction resubmitter. Otherwise, the default
+     * resubmitter will be created and returned.
+     *
+     * @return the transaction resubmitter
+     */
+    @NonNull
+    public TransactionResubmitter buildTransactionResubmitter() {
+        if (transactionResubmitter == null) {
+            transactionResubmitter = new DefaultTransactionResubmitter();
+        }
+        return transactionResubmitter;
+    }
+
+    /**
+     * Provide a transaction pool in place of the platform's default transaction pool.
+     *
+     * @param transactionPool the transaction pool to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withTransactionPool(@NonNull final TransactionPool transactionPool) {
+        throwIfAlreadyUsed();
+        if (this.transactionPool != null) {
+            throw new IllegalStateException("Transaction pool has already been set");
+        }
+        this.transactionPool = Objects.requireNonNull(transactionPool);
+        return this;
+    }
+
+    /**
+     * Build the transaction pool if it has not yet been built. If one has been provided via
+     * {@link #withTransactionPool(TransactionPool)}, that pool will be used. If this method is called more than once,
+     * only the first call will build the transaction pool. Otherwise, the default pool will be created and returned.
+     *
+     * @return the transaction pool
+     */
+    @NonNull
+    public TransactionPool buildTransactionPool() {
+        if (transactionPool == null) {
+            transactionPool = new DefaultTransactionPool(blocks.transactionPoolNexus());
+        }
+        return transactionPool;
     }
 
     /**

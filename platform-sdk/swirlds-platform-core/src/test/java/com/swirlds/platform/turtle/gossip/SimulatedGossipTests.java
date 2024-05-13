@@ -151,8 +151,7 @@ class SimulatedGossipTests {
             final GossipEvent event = eventsToGossip.get(eventIndex);
 
             for (final NodeId nodeId : addressBook.getNodeIdSet()) {
-                if (event.getHashedData().getCreatorId().equals(nodeId)
-                        || randotron.randomBooleanWithProbability(0.1)) {
+                if (event.getHashedData().getCreatorId().equals(nodeId) || randotron.nextBoolean(0.1)) {
                     eventSubmitters.get(nodeId).accept(event);
 
                     // When a node sends out an event, add it to the list of events that node knows about.
@@ -160,7 +159,7 @@ class SimulatedGossipTests {
                 }
             }
 
-            if (randotron.randomBooleanWithProbability(0.1)) {
+            if (randotron.nextBoolean(0.1)) {
                 time.tick(averageDelay.dividedBy(10));
                 network.tick(time.now());
             }
