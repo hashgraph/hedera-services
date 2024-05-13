@@ -37,13 +37,15 @@ import java.util.Arrays;
 import java.util.List;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class EthTxDataTest {
 
     static final String SIGNATURE_ADDRESS = "a94f5374fce5edbc8e2a8697c15331677e6ebf0b";
     static final String SIGNATURE_PUBKEY = "033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d";
     static final String RAW_TX_TYPE_0 =
-            "f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792";
+            "f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18100827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792";
     static final String RAW_TX_TYPE_0_TRIMMED_LAST_BYTES =
             "f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290000";
     // {
@@ -79,8 +81,8 @@ class EthTxDataTest {
     static final String EIP155_DEMO =
             "f86c098504a817c800825208943535353535353535353535353535353535353535880de0b6b3a76400008025a028ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276a067cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83";
     // v = 37
-    static final String EIP155_UNPROTECTED =
-            "f8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222";
+    static final String EIP155_NO_CHAIN_ID =
+            "f8a58085174876e800830186a08000b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222";
     // v = 27
 
     private static final long TINYBAR_GAS_PRICE = 100L;
@@ -157,7 +159,7 @@ class EthTxDataTest {
         assertEquals(
                 "0c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792", Hex.toHexString(frontierTx.s()));
         assertEquals(
-                "9ffbd69c44cf643ed8d1e756b505e545e3b5dd3a6b5ef9da1d8eca6679706594",
+                "30dfc91e5df4eee9640b82fa6451fc6496c9eb439d055c6809795bd4b5fcadac",
                 Hex.toHexString(frontierTx.getEthereumHash()));
 
         final var frontierSigs = EthTxSigs.extractSignatures(frontierTx);
@@ -267,8 +269,10 @@ class EthTxDataTest {
     }
 
     @Test
+    // EIP-155 adds chainId in order to prevent replay attacks. This test checks if the encoding works without the
+    // chainId
     void roundTrip155UnprotectedTx() {
-        final var expected = Hex.decode(EIP155_UNPROTECTED);
+        final var expected = Hex.decode(EIP155_NO_CHAIN_ID);
         final var tx155 = EthTxData.populateEthTxData(expected);
 
         assertNotNull(tx155);
@@ -581,5 +585,51 @@ class EthTxDataTest {
                                 .multiply(BigInteger.valueOf(DETERMINISTIC_DEPLOYER_GAS_PRICE_MULTIPLIER))
                                 .multiply(WEIBARS_TO_TINYBARS))
                 == 0);
+    }
+
+    @ParameterizedTest
+    @EnumSource(EthTransactionType.class)
+    void negativeValueWithDifferentTypes(EthTransactionType type) {
+        final var negativeValue = BigInteger.valueOf(-1000);
+
+        final var oneByte = new byte[] {1};
+        final EthTxData ethTxData = new EthTxData(
+                oneByte,
+                type,
+                oneByte,
+                1,
+                oneByte,
+                oneByte,
+                oneByte,
+                1,
+                oneByte,
+                negativeValue,
+                oneByte,
+                null,
+                1,
+                oneByte,
+                oneByte,
+                oneByte);
+        final var encoded = ethTxData.encodeTx();
+
+        final var populateEthTxData = EthTxData.populateEthTxData(encoded);
+
+        assertEquals(negativeValue, populateEthTxData.value());
+    }
+
+    @ParameterizedTest
+    @EnumSource(EthTransactionType.class)
+    void bigPositiveValueWithDifferentTypes(EthTransactionType type) {
+        final var bigValue = BigInteger.valueOf(Long.MAX_VALUE);
+
+        final var oneByte = new byte[] {1};
+        final EthTxData ethTxData = new EthTxData(
+                oneByte, type, oneByte, 1, oneByte, oneByte, oneByte, 1, oneByte, bigValue, oneByte, null, 1, oneByte,
+                oneByte, oneByte);
+        final var encoded = ethTxData.encodeTx();
+
+        final var populateEthTxData = EthTxData.populateEthTxData(encoded);
+
+        assertEquals(bigValue, populateEthTxData.value());
     }
 }
