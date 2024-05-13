@@ -116,6 +116,16 @@ public class CustomFixedFeeAssessorTest {
         assertThat(result.getAssessedCustomFees()).isEmpty();
     }
 
+    @Test
+    void ignoresIfPayerExempt() {
+        result = new AssessmentResult(List.of(nftTransferList), List.of());
+        final var hbarFee = withFixedFee(htsFixedFee, payer);
+        final var feeMeta = withCustomFeeMeta(List.of(hbarFee), TokenType.FUNGIBLE_COMMON);
+
+        subject.assessFixedFee(feeMeta, payer, hbarFee, result);
+        assertThat(result.getAssessedCustomFees()).isEmpty();
+    }
+
     private CustomFeeMeta withCustomFeeMeta(List<CustomFee> customFees, TokenType tokenType) {
         return new CustomFeeMeta(firstFungibleTokenId, minter, customFees, tokenType);
     }
