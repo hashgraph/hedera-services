@@ -41,11 +41,12 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -63,7 +64,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
             cryptoCreateRecordSanityChecks(),
             cryptoDeleteRecordSanityChecks(),
@@ -75,7 +76,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest ownershipChangeShowsInRecord() {
+    final Stream<DynamicTest> ownershipChangeShowsInRecord() {
         final var firstOwner = "A";
         final var secondOwner = "B";
         final var uniqueToken = "DoubleVision";
@@ -108,7 +109,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cryptoCreateRecordSanityChecks() {
+    final Stream<DynamicTest> cryptoCreateRecordSanityChecks() {
         return defaultHapiSpec("CryptoCreateRecordSanityChecks")
                 .given(takeBalanceSnapshots(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER))
                 .when(cryptoCreate("test").via("txn"))
@@ -119,7 +120,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cryptoDeleteRecordSanityChecks() {
+    final Stream<DynamicTest> cryptoDeleteRecordSanityChecks() {
         return defaultHapiSpec("CryptoDeleteRecordSanityChecks")
                 .given(flattened(
                         cryptoCreate("test"),
@@ -134,7 +135,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cryptoTransferRecordSanityChecks() {
+    final Stream<DynamicTest> cryptoTransferRecordSanityChecks() {
         return defaultHapiSpec("CryptoTransferRecordSanityChecks")
                 .given(flattened(
                         cryptoCreate("a").balance(100_000L),
@@ -147,7 +148,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cryptoUpdateRecordSanityChecks() {
+    final Stream<DynamicTest> cryptoUpdateRecordSanityChecks() {
         return defaultHapiSpec("CryptoUpdateRecordSanityChecks")
                 .given(flattened(
                         cryptoCreate("test"),
@@ -161,7 +162,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest insufficientAccountBalanceRecordSanityChecks() {
+    final Stream<DynamicTest> insufficientAccountBalanceRecordSanityChecks() {
         final long BALANCE = 500_000_000L;
         return defaultHapiSpec("InsufficientAccountBalanceRecordSanityChecks")
                 .given(flattened(
@@ -185,7 +186,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest invalidPayerSigCryptoTransferRecordSanityChecks() {
+    final Stream<DynamicTest> invalidPayerSigCryptoTransferRecordSanityChecks() {
         final long BALANCE = 10_000_000L;
 
         return defaultHapiSpec("InvalidPayerSigCryptoTransferSanityChecks")

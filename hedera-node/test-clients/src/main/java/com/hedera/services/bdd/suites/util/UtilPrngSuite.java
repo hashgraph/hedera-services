@@ -30,10 +30,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -49,16 +50,16 @@ public class UtilPrngSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(positiveTests());
     }
 
-    private List<DynamicTest> positiveTests() {
+    private List<Stream<DynamicTest>>positiveTests() {
         return List.of(happyPathWorksForRangeAndBitString(), failsInPreCheckForNegativeRange(), usdFeeAsExpected());
     }
 
     @HapiTest
-    final DynamicTest usdFeeAsExpected() {
+    final Stream<DynamicTest> usdFeeAsExpected() {
         double baseFee = 0.001;
         double plusRangeFee = 0.0010010316;
 
@@ -86,7 +87,7 @@ public class UtilPrngSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest failsInPreCheckForNegativeRange() {
+    final Stream<DynamicTest> failsInPreCheckForNegativeRange() {
         return defaultHapiSpec("failsInPreCheckForNegativeRange")
                 .given(
                         overridingAllOf(Map.of(PRNG_IS_ENABLED, "true")),
@@ -102,7 +103,7 @@ public class UtilPrngSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest idVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given()
                 .when()
@@ -110,7 +111,7 @@ public class UtilPrngSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest happyPathWorksForRangeAndBitString() {
+    final Stream<DynamicTest> happyPathWorksForRangeAndBitString() {
         final var rangeTxn = "prngWithRange";
         final var rangeTxn1 = "prngWithRange1";
         final var prngWithoutRange = "prngWithoutRange";

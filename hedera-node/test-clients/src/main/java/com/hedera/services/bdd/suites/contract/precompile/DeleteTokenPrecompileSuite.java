@@ -55,13 +55,14 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -93,12 +94,12 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(deleteFungibleToken(), deleteNftToken());
     }
 
     @HapiTest
-    final DynamicTest deleteFungibleToken() {
+    final Stream<DynamicTest> deleteFungibleToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final var tokenAlreadyDeletedTxn = "tokenAlreadyDeletedTxn";
@@ -158,7 +159,7 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest deleteNftToken() {
+    final Stream<DynamicTest> deleteNftToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final var notAnAdminTxn = "notAnAdminTxn";

@@ -55,7 +55,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -90,7 +89,7 @@ public class LeakyEthereumTestsSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return Stream.of(legacyUnprotectedEtxBeforeEIP155(), legacyEtxAfterEIP155(), callHtsSystemContractTest())
                 .toList();
     }
@@ -101,7 +100,7 @@ public class LeakyEthereumTestsSuite extends HapiSuite {
     // and so `v` is calculated -> v = {0,1} + 27
     // source: https://eips.ethereum.org/EIPS/eip-155
     @HapiTest
-    final DynamicTest legacyUnprotectedEtxBeforeEIP155() {
+    final Stream<DynamicTest> legacyUnprotectedEtxBeforeEIP155() {
         final String DEPOSIT = "deposit";
         final long depositAmount = 20_000L;
         final Integer chainId = 0;
@@ -149,7 +148,7 @@ public class LeakyEthereumTestsSuite extends HapiSuite {
     // and so `v` is calculated -> v = {0,1} + CHAIN_ID * 2 + 35
     // source: https://eips.ethereum.org/EIPS/eip-155
     @HapiTest
-    final DynamicTest legacyEtxAfterEIP155() {
+    final Stream<DynamicTest> legacyEtxAfterEIP155() {
         final String DEPOSIT = "deposit";
         final long depositAmount = 20_000L;
         final Integer chainId = 1;
@@ -190,7 +189,7 @@ public class LeakyEthereumTestsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest callHtsSystemContractTest() {
+    final Stream<DynamicTest> callHtsSystemContractTest() {
         final var callHtsSystemContractTxn = "callHtsSystemContractTxn";
         final var function = getABIFor(FUNCTION, "transferToken", "IHederaTokenService");
         final var HTS_SYSTEM_CONTRACT = "hts";

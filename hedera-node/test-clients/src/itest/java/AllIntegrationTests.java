@@ -64,7 +64,7 @@ class AllIntegrationTests extends DockerIntegrationTestBase {
     @Tag("integration")
     @Order(2)
     @TestFactory
-    List<DynamicTest> concurrentSpecs() {
+    List<Stream<DynamicTest>>concurrentSpecs() {
         return List.of(
                 concurrentSpecsFrom(ConcurrentSuites.all()), concurrentEthSpecsFrom(ConcurrentSuites.ethereumSuites()));
     }
@@ -72,7 +72,7 @@ class AllIntegrationTests extends DockerIntegrationTestBase {
     @Tag("integration")
     @Order(3)
     @TestFactory
-    List<DynamicTest> logValidation() {
+    List<Stream<DynamicTest>>logValidation() {
         return List.of(
                 hgcaaLogValidation("build/network/itest/output/node_0/hgcaa.log"),
                 queriesLogValidation("build/network/itest/output/node_0/queries.log"));
@@ -81,7 +81,7 @@ class AllIntegrationTests extends DockerIntegrationTestBase {
     @Tag("integration")
     @Order(4)
     @TestFactory
-    List<DynamicTest> recordStreamValidation() {
+    List<Stream<DynamicTest>>recordStreamValidation() {
         // Need to enable the disabled record validators after fixing the CI issues
         return List.of(
                 /*

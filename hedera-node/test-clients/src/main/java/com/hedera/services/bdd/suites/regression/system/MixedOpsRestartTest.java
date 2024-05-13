@@ -47,7 +47,6 @@ import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -56,6 +55,8 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -83,12 +84,12 @@ public class MixedOpsRestartTest extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(restartMixedOps());
     }
 
     @HapiTest
-    final DynamicTest restartMixedOps() {
+    final Stream<DynamicTest> restartMixedOps() {
         AtomicInteger tokenId = new AtomicInteger(0);
         AtomicInteger scheduleId = new AtomicInteger(0);
         AtomicInteger contractId = new AtomicInteger(0);

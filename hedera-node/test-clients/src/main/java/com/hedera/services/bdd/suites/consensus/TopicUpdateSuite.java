@@ -41,7 +41,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicUpdate;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -52,6 +51,8 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -73,7 +74,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 pureCheckFails(),
                 validateMultipleFields(),
@@ -97,7 +98,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest pureCheckFails() {
+    final Stream<DynamicTest> pureCheckFails() {
         return defaultHapiSpec("testTopic")
                 .given()
                 .when()
@@ -105,7 +106,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateToMissingTopicFails() {
+    final Stream<DynamicTest> updateToMissingTopicFails() {
         return defaultHapiSpec("updateToMissingTopicFails")
                 .given()
                 .when()
@@ -113,7 +114,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest idVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         final var autoRenewAccount = "autoRenewAccount";
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(cryptoCreate(autoRenewAccount), cryptoCreate("replacementAccount"), newKeyNamed("adminKey"))
@@ -123,7 +124,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest validateMultipleFields() {
+    final Stream<DynamicTest> validateMultipleFields() {
         byte[] longBytes = new byte[1000];
         Arrays.fill(longBytes, (byte) 33);
         String longMemo = new String(longBytes, StandardCharsets.UTF_8);
@@ -145,7 +146,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest topicUpdateSigReqsEnforcedAtConsensus() {
+    final Stream<DynamicTest> topicUpdateSigReqsEnforcedAtConsensus() {
         long PAYER_BALANCE = 199_999_999_999L;
         Function<String[], HapiTopicUpdate> updateTopicSignedBy = (signers) -> updateTopic("testTopic")
                 .payingWith("payer")
@@ -184,7 +185,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateSubmitKeyToDiffKey() {
+    final Stream<DynamicTest> updateSubmitKeyToDiffKey() {
         return defaultHapiSpec("updateSubmitKeyToDiffKey")
                 .given(
                         newKeyNamed("adminKey"),
@@ -198,7 +199,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest canRemoveSubmitKeyDuringUpdate() {
+    final Stream<DynamicTest> canRemoveSubmitKeyDuringUpdate() {
         return defaultHapiSpec("updateSubmitKeyToDiffKey")
                 .given(
                         newKeyNamed("adminKey"),
@@ -213,7 +214,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateAdminKeyToDiffKey() {
+    final Stream<DynamicTest> updateAdminKeyToDiffKey() {
         return defaultHapiSpec("updateAdminKeyToDiffKey")
                 .given(
                         newKeyNamed("adminKey"),
@@ -224,7 +225,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateAdminKeyToEmpty() {
+    final Stream<DynamicTest> updateAdminKeyToEmpty() {
         return defaultHapiSpec("updateAdminKeyToEmpty")
                 .given(newKeyNamed("adminKey"), createTopic("testTopic").adminKeyName("adminKey"))
                 /* if adminKey is empty list should clear adminKey */
@@ -233,7 +234,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateMultipleFields() {
+    final Stream<DynamicTest> updateMultipleFields() {
         long expirationTimestamp = Instant.now().getEpochSecond() + 10000000; // more than default.autorenew
         // .secs=7000000
         return defaultHapiSpec("updateMultipleFields")
@@ -267,7 +268,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest expirationTimestampIsValidated() {
+    final Stream<DynamicTest> expirationTimestampIsValidated() {
         long now = Instant.now().getEpochSecond();
         return defaultHapiSpec("expirationTimestampIsValidated")
                 .given(createTopic("testTopic").autoRenewPeriod(validAutoRenewPeriod))
@@ -283,7 +284,7 @@ public class TopicUpdateSuite extends HapiSuite {
 
     /* If admin key is not set, only expiration timestamp updates are allowed */
     @HapiTest
-    final DynamicTest updateExpiryOnTopicWithNoAdminKey() {
+    final Stream<DynamicTest> updateExpiryOnTopicWithNoAdminKey() {
         long overlyDistantNewExpiry = Instant.now().getEpochSecond() + defaultMaxLifetime + 12_345L;
         long reasonableNewExpiry = Instant.now().getEpochSecond() + defaultMaxLifetime - 12_345L;
         return defaultHapiSpec("updateExpiryOnTopicWithNoAdminKey")
@@ -295,7 +296,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest clearingAdminKeyWhenAutoRenewAccountPresent() {
+    final Stream<DynamicTest> clearingAdminKeyWhenAutoRenewAccountPresent() {
         return defaultHapiSpec("clearingAdminKeyWhenAutoRenewAccountPresent")
                 .given(
                         newKeyNamed("adminKey"),
@@ -308,7 +309,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateSubmitKeyOnTopicWithNoAdminKeyFails() {
+    final Stream<DynamicTest> updateSubmitKeyOnTopicWithNoAdminKeyFails() {
         return defaultHapiSpec("updateSubmitKeyOnTopicWithNoAdminKeyFails")
                 .given(newKeyNamed("submitKey"), createTopic("testTopic"))
                 .when(updateTopic("testTopic").submitKey("submitKey").hasKnownStatus(UNAUTHORIZED))
@@ -316,7 +317,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest feeAsExpected() {
+    final Stream<DynamicTest> feeAsExpected() {
         return defaultHapiSpec("feeAsExpected")
                 .given(
                         cryptoCreate("autoRenewAccount"),

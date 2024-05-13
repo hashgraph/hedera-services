@@ -36,6 +36,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -48,14 +50,14 @@ public class AutoRenewEntitiesForReconnect extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 runTransfersBeforeReconnect(),
                 autoRenewAccountGetsDeletedOnReconnectingNodeAsWell(),
                 accountAutoRenewalSuiteCleanup());
     }
 
-    final DynamicTest autoRenewAccountGetsDeletedOnReconnectingNodeAsWell() {
+    final Stream<DynamicTest> autoRenewAccountGetsDeletedOnReconnectingNodeAsWell() {
         String autoDeleteAccount = "autoDeleteAccount";
         int autoRenewSecs = 1;
         return defaultHapiSpec("AutoRenewAccountGetsDeletedOnReconnectingNodeAsWell")
@@ -87,7 +89,7 @@ public class AutoRenewEntitiesForReconnect extends HapiSuite {
                         .hasAnswerOnlyPrecheckFrom(INVALID_ACCOUNT_ID));
     }
 
-    final DynamicTest accountAutoRenewalSuiteCleanup() {
+    final Stream<DynamicTest> accountAutoRenewalSuiteCleanup() {
         return defaultHapiSpec("accountAutoRenewalSuiteCleanup")
                 .given()
                 .when()
@@ -105,7 +107,7 @@ public class AutoRenewEntitiesForReconnect extends HapiSuite {
      *
      * @return a {@link HapiSpec} to do some crypto transfer transactions before reconnect
      */
-    static DynamicTest runTransfersBeforeReconnect() {
+    static Stream<DynamicTest> runTransfersBeforeReconnect() {
         return defaultHapiSpec("runTransfersBeforeReconnect")
                 .given()
                 .when()

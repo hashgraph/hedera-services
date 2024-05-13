@@ -42,6 +42,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -59,11 +61,11 @@ public class TokenPuvSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(cleanupIfNecessary(), initialAssociation(), initialFunding());
     }
 
-    final DynamicTest initialFunding() {
+    final Stream<DynamicTest> initialFunding() {
         return HapiSpec.customHapiSpec("InitialFunding")
                 .withProperties(targetInfo.toCustomProperties(miscConfig))
                 .given(
@@ -93,7 +95,7 @@ public class TokenPuvSuite extends HapiSuite {
                                         .balance(Amounts.BESTOWED_CAT_TOKENS)));
     }
 
-    final DynamicTest initialAssociation() {
+    final Stream<DynamicTest> initialAssociation() {
         return HapiSpec.customHapiSpec("InitialAssociation")
                 .withProperties(targetInfo.toCustomProperties(miscConfig))
                 .given(
@@ -111,7 +113,7 @@ public class TokenPuvSuite extends HapiSuite {
                                         .kyc(TokenKycStatus.KycNotApplicable)));
     }
 
-    final DynamicTest cleanupIfNecessary() {
+    final Stream<DynamicTest> cleanupIfNecessary() {
         return HapiSpec.customHapiSpec("CleanupIfNecessary")
                 .withProperties(targetInfo.toCustomProperties(miscConfig))
                 .given()

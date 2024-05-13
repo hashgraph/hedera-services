@@ -40,13 +40,14 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -62,12 +63,12 @@ public class RandomOps extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(freezeDemo(), retryLimitDemo(), getAccountDetailsDemo());
     }
 
     @HapiTest
-    final DynamicTest getAccountDetailsDemo() {
+    final Stream<DynamicTest> getAccountDetailsDemo() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -140,7 +141,7 @@ public class RandomOps extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest retryLimitDemo() {
+    final Stream<DynamicTest> retryLimitDemo() {
         return defaultHapiSpec("RetryLimitDemo")
                 .given()
                 .when()
@@ -153,7 +154,7 @@ public class RandomOps extends HapiSuite {
     }
 
     @BddMethodIsNotATest
-    final DynamicTest freezeDemo() {
+    final Stream<DynamicTest> freezeDemo() {
         return customHapiSpec("FreezeDemo")
                 .withProperties(Map.of("nodes", "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"))
                 .given()

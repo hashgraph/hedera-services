@@ -24,9 +24,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -40,7 +41,7 @@ public class Issue1742Suite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(cryptoTransferListShowsOnlyFeesAfterIAB());
     }
 
@@ -50,7 +51,7 @@ public class Issue1742Suite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cryptoTransferListShowsOnlyFeesAfterIAB() {
+    final Stream<DynamicTest> cryptoTransferListShowsOnlyFeesAfterIAB() {
         final long PAYER_BALANCE = 1_000_000L;
 
         return defaultHapiSpec("CryptoTransferListShowsOnlyFeesAfterIAB")

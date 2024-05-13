@@ -72,7 +72,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -83,6 +82,8 @@ import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -113,11 +114,11 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(positiveTests(), negativeTests());
     }
 
-    private List<DynamicTest> positiveTests() {
+    private List<Stream<DynamicTest>> positiveTests() {
         return List.of(
                 symbolChanges(),
                 standardImmutabilitySemanticsHold(),
@@ -140,7 +141,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                 canUpdateExpiryOnlyOpWithoutAdminKey());
     }
 
-    private List<DynamicTest> negativeTests() {
+    private List<Stream<DynamicTest>> negativeTests() {
         return List.of(
                 updateTokenTreasuryRequiresZeroTokenBalance(),
                 validatesAlreadyDeletedToken(),
@@ -159,7 +160,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest canUpdateExpiryOnlyOpWithoutAdminKey() {
+    final Stream<DynamicTest> canUpdateExpiryOnlyOpWithoutAdminKey() {
         final var smallBuffer = 12_345L;
         final var okExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() - smallBuffer;
         String originalMemo = "First things first";
@@ -198,7 +199,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest validatesNewExpiry() {
+    final Stream<DynamicTest> validatesNewExpiry() {
         final var smallBuffer = 12_345L;
         final var okExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() - smallBuffer;
         final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
@@ -211,7 +212,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest validatesAlreadyDeletedToken() {
+    final Stream<DynamicTest> validatesAlreadyDeletedToken() {
         return defaultHapiSpec("ValidatesAlreadyDeletedToken")
                 .given(
                         newKeyNamed("adminKey"),
@@ -223,7 +224,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest tokensCanBeMadeImmutableWithEmptyKeyList() {
+    final Stream<DynamicTest> tokensCanBeMadeImmutableWithEmptyKeyList() {
         final var mutableForNow = "mutableForNow";
         return defaultHapiSpec("TokensCanBeMadeImmutableWithEmptyKeyList")
                 .given(
@@ -245,7 +246,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest standardImmutabilitySemanticsHold() {
+    final Stream<DynamicTest> standardImmutabilitySemanticsHold() {
         long then = Instant.now().getEpochSecond() + 1_234_567L;
         final var immutable = "immutable";
         return defaultHapiSpec("StandardImmutabilitySemanticsHold")
@@ -258,7 +259,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest validatesMissingRef() {
+    final Stream<DynamicTest> validatesMissingRef() {
         return defaultHapiSpec("ValidatesMissingRef")
                 .given(cryptoCreate(PAYER))
                 .when()
@@ -276,7 +277,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest validatesMissingAdminKey() {
+    final Stream<DynamicTest> validatesMissingAdminKey() {
         return defaultHapiSpec("ValidatesMissingAdminKey")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -291,7 +292,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest keysChange() {
+    final Stream<DynamicTest> keysChange() {
         return defaultHapiSpec("KeysChange")
                 .given(
                         newKeyNamed("adminKey"),
@@ -338,7 +339,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest newTreasuryAutoAssociationWorks() {
+    final Stream<DynamicTest> newTreasuryAutoAssociationWorks() {
         return defaultHapiSpec("NewTreasuryAutoAssociationWorks")
                 .given(
                         newKeyNamed("adminKey"),
@@ -362,7 +363,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest newTreasuryMustSign() {
+    final Stream<DynamicTest> newTreasuryMustSign() {
         return defaultHapiSpec("NewTreasuryMustSign")
                 .given(
                         newKeyNamed("adminKey"),
@@ -381,7 +382,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest treasuryEvolves() {
+    final Stream<DynamicTest> treasuryEvolves() {
         return defaultHapiSpec("TreasuryEvolves")
                 .given(
                         newKeyNamed("adminKey"),
@@ -410,7 +411,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest validAutoRenewWorks() {
+    final Stream<DynamicTest> validAutoRenewWorks() {
         final var firstPeriod = THREE_MONTHS_IN_SECONDS;
         final var secondPeriod = THREE_MONTHS_IN_SECONDS + 1234;
         return defaultHapiSpec("validAutoRenewWorks")
@@ -436,7 +437,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest symbolChanges() {
+    final Stream<DynamicTest> symbolChanges() {
         var hopefullyUnique = "ORIGINAL" + TxnUtils.randomUppercase(5);
 
         return defaultHapiSpec("SymbolChanges")
@@ -451,7 +452,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest changeAutoRenewAccount() {
+    final Stream<DynamicTest> changeAutoRenewAccount() {
         var account = "autoRenewAccount";
 
         return defaultHapiSpec("AutoRenewAccountChange")
@@ -469,7 +470,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest nameChanges() {
+    final Stream<DynamicTest> nameChanges() {
         var hopefullyUnique = "ORIGINAL" + TxnUtils.randomUppercase(5);
 
         return defaultHapiSpec("NameChanges")
@@ -481,7 +482,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest tooLongNameCheckHolds() {
+    final Stream<DynamicTest> tooLongNameCheckHolds() {
         var tooLongName = "ORIGINAL" + TxnUtils.randomUppercase(MAX_NAME_LENGTH + 1);
 
         return defaultHapiSpec("TooLongNameCheckHolds")
@@ -494,7 +495,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest tooLongSymbolCheckHolds() {
+    final Stream<DynamicTest> tooLongSymbolCheckHolds() {
         var tooLongSymbol = TxnUtils.randomUppercase(MAX_SYMBOL_LENGTH + 1);
 
         return defaultHapiSpec("TooLongSymbolCheckHolds")
@@ -507,7 +508,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest deletedAutoRenewAccountCheckHolds() {
+    final Stream<DynamicTest> deletedAutoRenewAccountCheckHolds() {
         return defaultHapiSpec("DeletedAutoRenewAccountCheckHolds")
                 .given(
                         newKeyNamed("adminKey"),
@@ -523,7 +524,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest renewalPeriodCheckHolds() {
+    final Stream<DynamicTest> renewalPeriodCheckHolds() {
         return defaultHapiSpec("RenewalPeriodCheckHolds")
                 .given(
                         newKeyNamed("adminKey"),
@@ -557,7 +558,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest invalidTreasuryCheckHolds() {
+    final Stream<DynamicTest> invalidTreasuryCheckHolds() {
         return defaultHapiSpec("InvalidTreasuryCheckHolds")
                 .given(
                         newKeyNamed("adminKey"),
@@ -573,7 +574,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateHappyPath() {
+    final Stream<DynamicTest> updateHappyPath() {
         String originalMemo = "First things first";
         String updatedMemo = "Nothing left to do";
         String saltedName = salted("primary");
@@ -660,7 +661,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateTokenTreasuryRequiresZeroTokenBalance() {
+    final Stream<DynamicTest> updateTokenTreasuryRequiresZeroTokenBalance() {
         return defaultHapiSpec("updateTokenTreasuryRequiresZeroTokenBalance")
                 .given(
                         cryptoCreate("oldTreasury"),
@@ -686,7 +687,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest tokenUpdateCanClearMemo() {
+    final Stream<DynamicTest> tokenUpdateCanClearMemo() {
         final var token = "token";
         final var multiKey = "multiKey";
         final var memoToBeErased = "memoToBeErased";
@@ -700,7 +701,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateNftTreasuryHappyPath() {
+    final Stream<DynamicTest> updateNftTreasuryHappyPath() {
         return defaultHapiSpec("UpdateNftTreasuryHappyPath")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
@@ -736,7 +737,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest safeToUpdateCustomFeesWithNewFallbackWhileTransferring() {
+    final Stream<DynamicTest> safeToUpdateCustomFeesWithNewFallbackWhileTransferring() {
         final var uniqueTokenFeeKey = "uniqueTokenFeeKey";
         final var hbarCollector = "hbarFee";
         final var beneficiary = "luckyOne";
@@ -782,7 +783,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest customFeesOnlyUpdatableWithKey() {
+    final Stream<DynamicTest> customFeesOnlyUpdatableWithKey() {
         final var origHbarFee = 1_234L;
         final var newHbarFee = 4_321L;
 
@@ -838,7 +839,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest tokenUpdateTokenHasNoFreezeKey() {
+    final Stream<DynamicTest> tokenUpdateTokenHasNoFreezeKey() {
         final var tokenName = "token";
         final var HBAR_COLLECTOR = "hbarFee";
 
@@ -871,7 +872,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest tokenUpdateTokenHasNoSupplyKey() {
+    final Stream<DynamicTest> tokenUpdateTokenHasNoSupplyKey() {
         final var tokenName = "token";
         final var HBAR_COLLECTOR = "hbarFee";
 
@@ -904,7 +905,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest tokenUpdateTokenHasNoKycKey() {
+    final Stream<DynamicTest> tokenUpdateTokenHasNoKycKey() {
         final var tokenName = "token";
         final var HBAR_COLLECTOR = "hbarFee";
 
@@ -937,7 +938,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest tokenUpdateTokenHasNoWipeKey() {
+    final Stream<DynamicTest> tokenUpdateTokenHasNoWipeKey() {
         final var tokenName = "token";
         final var HBAR_COLLECTOR = "hbarFee";
 
@@ -970,7 +971,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest tokenUpdateTokenHasNoPauseKey() {
+    final Stream<DynamicTest> tokenUpdateTokenHasNoPauseKey() {
         final var tokenName = "token";
         final var HBAR_COLLECTOR = "hbarFee";
 
@@ -1003,7 +1004,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest tokenUpdateTokenHasNoMetadataKey() {
+    final Stream<DynamicTest> tokenUpdateTokenHasNoMetadataKey() {
         final var tokenName = "token";
         final var HBAR_COLLECTOR = "hbarFee";
 
@@ -1036,7 +1037,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateUniqueTreasuryWithNfts() {
+    final Stream<DynamicTest> updateUniqueTreasuryWithNfts() {
         final var specialKey = "special";
 
         return defaultHapiSpec("UpdateUniqueTreasuryWithNfts")

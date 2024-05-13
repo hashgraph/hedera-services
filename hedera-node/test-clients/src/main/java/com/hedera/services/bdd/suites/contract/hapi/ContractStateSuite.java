@@ -28,7 +28,6 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
@@ -56,12 +55,12 @@ public class ContractStateSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(stateChangesSpec());
     }
 
     @HapiTest
-    final DynamicTest stateChangesSpec() {
+    final Stream<DynamicTest> stateChangesSpec() {
         final var iterations = 2;
         final var integralTypes = Map.ofEntries(
                 Map.entry("Uint8", 0x01),

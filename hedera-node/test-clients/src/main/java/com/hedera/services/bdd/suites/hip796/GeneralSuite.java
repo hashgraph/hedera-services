@@ -33,9 +33,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -45,7 +46,7 @@ public class GeneralSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(GeneralSuite.class);
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(canCreateFungibleTokenWithLockingAndPartitioning(), canCreateNFTWithLockingAndPartitioning());
     }
 
@@ -57,7 +58,7 @@ public class GeneralSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest canCreateFungibleTokenWithLockingAndPartitioning() {
+    final Stream<DynamicTest> canCreateFungibleTokenWithLockingAndPartitioning() {
         return defaultHapiSpec("CanCreateFungibleTokenWithLockingAndPartitioning")
                 .given(fungibleTokenWithFeatures(PARTITIONING, LOCKING)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION)
@@ -84,7 +85,7 @@ public class GeneralSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest canCreateNFTWithLockingAndPartitioning() {
+    final Stream<DynamicTest> canCreateNFTWithLockingAndPartitioning() {
         return defaultHapiSpec("CanCreateNFTWithLockingAndPartitioning")
                 .given(nonFungibleTokenWithFeatures(PARTITIONING, LOCKING)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION)

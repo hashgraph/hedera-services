@@ -26,12 +26,13 @@ import static com.hedera.services.bdd.suites.contract.Utils.asInstant;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.validators.ContractExistenceValidator;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -45,11 +46,11 @@ public class NewContractRecordExists extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(newContractIsReflectedInRecordStream());
     }
 
-    final DynamicTest newContractIsReflectedInRecordStream() {
+    final Stream<DynamicTest> newContractIsReflectedInRecordStream() {
         final var creation = "creation";
         final AtomicReference<Instant> consensusTime = new AtomicReference<>();
         return defaultHapiSpec(EMPTY_CONTRACT)

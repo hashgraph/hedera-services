@@ -38,9 +38,10 @@ import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.LOCK
 import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.PARTITIONING;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -53,7 +54,7 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenKeysDefinitionSuite.class);
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 manageLockKeyCapabilities(),
                 managePartitionKeyCapabilities(),
@@ -69,7 +70,7 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest manageLockKeyCapabilities() {
+    final Stream<DynamicTest> manageLockKeyCapabilities() {
         return defaultHapiSpec("ManageLockKeyCapabilities")
                 .given(fungibleTokenWithFeatures(ADMIN_CONTROL, LOCKING), newKeyNamed("newLockKey"))
                 .when(
@@ -91,7 +92,7 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest managePartitionKeyCapabilities() {
+    final Stream<DynamicTest> managePartitionKeyCapabilities() {
         return defaultHapiSpec("ManagePartitionKeyCapabilities")
                 .given(fungibleTokenWithFeatures(ADMIN_CONTROL, PARTITIONING), newKeyNamed("newPartitionKey"))
                 .when(
@@ -113,7 +114,7 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest managePartitionMoveKeyCapabilities() {
+    final Stream<DynamicTest> managePartitionMoveKeyCapabilities() {
         return defaultHapiSpec("ManagePartitionMoveKeyCapabilities")
                 .given(
                         fungibleTokenWithFeatures(ADMIN_CONTROL, INTER_PARTITION_MANAGEMENT),
@@ -137,7 +138,7 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest manageKeysViaSmartContract() {
+    final Stream<DynamicTest> manageKeysViaSmartContract() {
         return defaultHapiSpec("ManageKeysViaSmartContract")
                 .given(
                         fungibleTokenWithFeatures(ADMIN_CONTROL, LOCKING, PARTITIONING, INTER_PARTITION_MANAGEMENT)

@@ -57,11 +57,12 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -106,11 +107,11 @@ public class ContractHTSSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<DynamicTest> negativeSpecs() {
+    List<Stream<DynamicTest>>negativeSpecs() {
         return List.of(
                 nonZeroTransfersFail(),
                 shouldFailWhenTransferringTokensWithInvalidParametersAndConditions(),
@@ -119,12 +120,12 @@ public class ContractHTSSuite extends HapiSuite {
                 shouldFailOnInvalidTokenTransferParametersAndConditions());
     }
 
-    List<DynamicTest> positiveSpecs() {
+    List<Stream<DynamicTest>>positiveSpecs() {
         return List.of();
     }
 
     @HapiTest
-    final DynamicTest nonZeroTransfersFail() {
+    final Stream<DynamicTest> nonZeroTransfersFail() {
         final var theSecondReceiver = "somebody2";
         return defaultHapiSpec(
                         "NonZeroTransfersFail",
@@ -187,7 +188,7 @@ public class ContractHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest shouldFailWhenTransferringTokensWithInvalidParametersAndConditions() {
+    final Stream<DynamicTest> shouldFailWhenTransferringTokensWithInvalidParametersAndConditions() {
         final var TXN_WITH_EMPTY_AMOUNTS_ARRAY = "TXN_WITH_EMPTY_AMOUNTS_ARRAY";
         final var TXN_WITH_EMPTY_ACCOUNTS_ARRAY = "TXN_WITH_EMPTY_ACCOUNTS_ARRAY";
         final var TXN_WITH_NOT_LENGTH_MATCHING_ACCOUNTS_AND_AMOUNTS =
@@ -323,7 +324,7 @@ public class ContractHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest shouldFailOnInvalidTokenTransferParametersAndConditions() {
+    final Stream<DynamicTest> shouldFailOnInvalidTokenTransferParametersAndConditions() {
         final var TXN_WITH_INVALID_TOKEN_ADDRESS = "TXN_WITH_INVALID_TOKEN_ADDRESS";
         final var TXN_WITH_INVALID_RECEIVER_ADDRESS = "TXN_WITH_INVALID_RECEIVER_ADDRESS";
         final var TXN_WITH_INVALID_SENDER_ADDRESS = "TXN_WITH_INVALID_SENDER_ADDRESS";
@@ -441,7 +442,7 @@ public class ContractHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest shouldFailWhenTransferringMultipleNFTsWithInvalidParametersAndConditions() {
+    final Stream<DynamicTest> shouldFailWhenTransferringMultipleNFTsWithInvalidParametersAndConditions() {
         final var TXN_WITH_INVALID_TOKEN_ADDRESS = "TXN_WITH_INVALID_TOKEN_ADDRESS";
         final var TXN_WITH_EMPTY_SENDER_ARRAY = "TXN_WITH_EMPTY_SENDER_ARRAY";
         final var TXN_WITH_EMPTY_RECEIVER_ARRAY = "TXN_WITH_EMPTY_RECEIVER_ARRAY";
@@ -599,7 +600,7 @@ public class ContractHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest shouldFailOnInvalidNFTTransferParametersAndConditions() {
+    final Stream<DynamicTest> shouldFailOnInvalidNFTTransferParametersAndConditions() {
         final var TXN_WITH_INVALID_TOKEN_ADDRESS = "TXN_WITH_INVALID_TOKEN_ADDRESS";
         final var TXN_WITH_INVALID_RECEIVER_ADDRESS = "TXN_WITH_INVALID_RECEIVER_ADDRESS";
         final var TXN_WITH_INVALID_SENDER_ADDRESS = "TXN_WITH_INVALID_SENDER_ADDRESS";

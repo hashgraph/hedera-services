@@ -50,10 +50,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOU
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -78,7 +79,7 @@ public class CryptoDeleteSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 fundsTransferOnDelete(),
                 cannotDeleteAccountsWithNonzeroTokenBalances(),
@@ -90,7 +91,7 @@ public class CryptoDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest accountIdVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> accountIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("accountIdVariantsTreatedAsExpected")
                 .given(cryptoCreate(TRANSFER_ACCOUNT), cryptoCreate(ACCOUNT_TO_BE_DELETED))
                 .when()
@@ -101,7 +102,7 @@ public class CryptoDeleteSuite extends HapiSuite {
     @HapiTest
     // In this transactionFee is not set in mono-service record, because it fails in node due diligence.
     // But it feels right to set it. So setting this HIGHLY_NONDETERMINISTIC_TRANSACTION_FEES
-    final DynamicTest deletedAccountCannotBePayer() {
+    final Stream<DynamicTest> deletedAccountCannotBePayer() {
         // Account Names
         String SUBMITTING_NODE_ACCOUNT = "0.0.3";
         String BENEFICIARY_ACCOUNT = "beneficiaryAccountForDeletedAccount";
@@ -132,7 +133,7 @@ public class CryptoDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest canQueryForRecordsWithDeletedPayers() {
+    final Stream<DynamicTest> canQueryForRecordsWithDeletedPayers() {
         final var stillQueryableTxn = "stillQueryableTxn";
         return defaultHapiSpec("CanQueryForRecordsWithDeletedPayers")
                 .given(cryptoCreate(ACCOUNT_TO_BE_DELETED))
@@ -145,7 +146,7 @@ public class CryptoDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest fundsTransferOnDelete() {
+    final Stream<DynamicTest> fundsTransferOnDelete() {
         long B = HapiSpecSetup.getDefaultInstance().defaultBalance();
 
         return defaultHapiSpec("FundsTransferOnDelete")
@@ -164,7 +165,7 @@ public class CryptoDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cannotDeleteAccountsWithNonzeroTokenBalances() {
+    final Stream<DynamicTest> cannotDeleteAccountsWithNonzeroTokenBalances() {
         return defaultHapiSpec("CannotDeleteAccountsWithNonzeroTokenBalances")
                 .given(
                         newKeyNamed("admin"),
@@ -202,7 +203,7 @@ public class CryptoDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cannotDeleteAlreadyDeletedAccount() {
+    final Stream<DynamicTest> cannotDeleteAlreadyDeletedAccount() {
         return defaultHapiSpec("CannotDeleteAlreadyDeletedAccount", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate(ACCOUNT_TO_BE_DELETED), cryptoCreate(TRANSFER_ACCOUNT))
                 .when(cryptoDelete(ACCOUNT_TO_BE_DELETED)
@@ -214,7 +215,7 @@ public class CryptoDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest mustSpecifyTargetId() {
+    final Stream<DynamicTest> mustSpecifyTargetId() {
         return defaultHapiSpec("mustSpecifyTargetId")
                 .given()
                 .when()
@@ -225,7 +226,7 @@ public class CryptoDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cannotDeleteAccountWithSameBeneficiary() {
+    final Stream<DynamicTest> cannotDeleteAccountWithSameBeneficiary() {
         return defaultHapiSpec("CannotDeleteAccountWithSameBeneficiary")
                 .given(cryptoCreate(ACCOUNT_TO_BE_DELETED))
                 .when()
@@ -235,7 +236,7 @@ public class CryptoDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cannotDeleteTreasuryAccount() {
+    final Stream<DynamicTest> cannotDeleteTreasuryAccount() {
         return defaultHapiSpec("CannotDeleteTreasuryAccount", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate(TREASURY), cryptoCreate(TRANSFER_ACCOUNT))
                 .when(tokenCreate("toBeTransferred")

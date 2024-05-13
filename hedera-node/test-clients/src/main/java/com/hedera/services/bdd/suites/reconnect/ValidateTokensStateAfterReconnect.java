@@ -39,7 +39,6 @@ import static com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForRecon
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Duration;
@@ -47,6 +46,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -67,11 +68,11 @@ public class ValidateTokensStateAfterReconnect extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(runTransfersBeforeReconnect(), validateTokensAfterReconnect());
     }
 
-    final DynamicTest validateTokensAfterReconnect() {
+    final Stream<DynamicTest> validateTokensAfterReconnect() {
         String tokenToBeQueried = "token-1";
         String anotherToken = "token-2";
         String anotherAccount = "account";

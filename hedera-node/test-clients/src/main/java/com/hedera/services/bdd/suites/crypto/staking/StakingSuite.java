@@ -61,10 +61,11 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -108,7 +109,7 @@ public class StakingSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 setUp(),
                 losingEvenAZeroBalanceStakerTriggersStakeeRewardSituation(),
@@ -125,7 +126,7 @@ public class StakingSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest setUp() {
+    final Stream<DynamicTest> setUp() {
         return defaultHapiSpec("setUp")
                 .given(
                         overriding(STAKING_START_THRESHOLD, "" + 10 * ONE_HBAR),
@@ -143,7 +144,7 @@ public class StakingSuite extends HapiSuite {
      */
     @HapiTest
     @Order(12)
-    final DynamicTest zeroStakeAccountsHaveMetadataResetOnFirstDayTheyReceiveFunds() {
+    final Stream<DynamicTest> zeroStakeAccountsHaveMetadataResetOnFirstDayTheyReceiveFunds() {
         final var zeroStakeAccount = "zeroStakeAccount";
         final var numZeroStakeAccounts = 10;
         final var stakePeriodMins = 1L;
@@ -193,7 +194,7 @@ public class StakingSuite extends HapiSuite {
      */
     @HapiTest
     @Order(11)
-    final DynamicTest stakeIsManagedCorrectlyInTxnsAroundPeriodBoundaries() {
+    final Stream<DynamicTest> stakeIsManagedCorrectlyInTxnsAroundPeriodBoundaries() {
         final var alice = "alice";
         final var baldwin = "baldwin";
         final var stakePeriodMins = 1L;
@@ -273,7 +274,7 @@ public class StakingSuite extends HapiSuite {
      */
     @HapiTest
     @Order(10)
-    final DynamicTest autoRenewalsCanTriggerStakingRewards() {
+    final Stream<DynamicTest> autoRenewalsCanTriggerStakingRewards() {
         final var initBalance = ONE_HBAR * 1000;
         final var minimalLifetime = 3;
         final var creation = "creation";
@@ -306,7 +307,7 @@ public class StakingSuite extends HapiSuite {
 
     @HapiTest
     @Order(8)
-    final DynamicTest canBeRewardedWithoutMinStakeIfSoConfigured() {
+    final Stream<DynamicTest> canBeRewardedWithoutMinStakeIfSoConfigured() {
         final var patientlyWaiting = "patientlyWaiting";
 
         return defaultHapiSpec("CanBeRewardedWithoutMinStakeIfSoConfigured")
@@ -335,7 +336,7 @@ public class StakingSuite extends HapiSuite {
     // HERE
     @HapiTest
     @Order(5)
-    final DynamicTest secondOrderRewardSituationsWork() {
+    final Stream<DynamicTest> secondOrderRewardSituationsWork() {
         final long totalStakeStartCase1 = 3 * ONE_HUNDRED_HBARS;
         final long rewardSumHistoryCase1 = SOME_REWARD_RATE / (totalStakeStartCase1 / TINY_PARTS_PER_WHOLE) / 100;
         final long alicePendingRewardsCase1 = rewardSumHistoryCase1 * (2 * ONE_HUNDRED_HBARS / TINY_PARTS_PER_WHOLE);
@@ -402,7 +403,7 @@ public class StakingSuite extends HapiSuite {
 
     @HapiTest
     @Order(13)
-    final DynamicTest pendingRewardsPaidBeforeStakedToMeUpdates() {
+    final Stream<DynamicTest> pendingRewardsPaidBeforeStakedToMeUpdates() {
         return defaultHapiSpec("PendingRewardsPaidBeforeStakedToMeUpdates")
                 .given(
                         overriding(STAKING_START_THRESHOLD, "" + 10 * ONE_HBAR),
@@ -460,7 +461,7 @@ public class StakingSuite extends HapiSuite {
 
     @HapiTest
     @Order(3)
-    final DynamicTest evenOneTinybarChangeInIndirectStakingAccountTriggersStakeeRewardSituation() {
+    final Stream<DynamicTest> evenOneTinybarChangeInIndirectStakingAccountTriggersStakeeRewardSituation() {
         return defaultHapiSpec("EvenOneTinybarChangeInIndirectStakingAccountTriggersStakeeRewardSituation")
                 .given()
                 .when(
@@ -480,7 +481,7 @@ public class StakingSuite extends HapiSuite {
 
     @HapiTest
     @Order(9)
-    final DynamicTest zeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP() {
+    final Stream<DynamicTest> zeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP() {
         return defaultHapiSpec("ZeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP")
                 .given(
                         cryptoCreate("helpfulStaker").stakedNodeId(0).balance(ONE_MILLION_HBARS),
@@ -499,7 +500,7 @@ public class StakingSuite extends HapiSuite {
 
     @HapiTest
     @Order(2)
-    final DynamicTest losingEvenAZeroBalanceStakerTriggersStakeeRewardSituation() {
+    final Stream<DynamicTest> losingEvenAZeroBalanceStakerTriggersStakeeRewardSituation() {
         return defaultHapiSpec("LosingEvenAZeroBalanceStakerTriggersStakeeRewardSituation")
                 .given()
                 .when(
@@ -520,7 +521,7 @@ public class StakingSuite extends HapiSuite {
 
     @HapiTest
     @Order(4)
-    final DynamicTest stakingMetadataUpdateIsRewardOpportunity() {
+    final Stream<DynamicTest> stakingMetadataUpdateIsRewardOpportunity() {
         return defaultHapiSpec("stakingMetadataUpdateIsRewardOpportunity")
                 .given()
                 .when(
@@ -584,7 +585,7 @@ public class StakingSuite extends HapiSuite {
 
     @HapiTest
     @Order(6)
-    final DynamicTest endOfStakingPeriodRecTest() {
+    final Stream<DynamicTest> endOfStakingPeriodRecTest() {
         return defaultHapiSpec("EndOfStakingPeriodRecTest")
                 .given(
                         cryptoCreate("a1").balance(ONE_MILLION_HBARS).stakedNodeId(0),
@@ -623,7 +624,7 @@ public class StakingSuite extends HapiSuite {
 
     @HapiTest
     @Order(7)
-    final DynamicTest rewardsOfDeletedAreRedirectedToBeneficiary() {
+    final Stream<DynamicTest> rewardsOfDeletedAreRedirectedToBeneficiary() {
         final var bob = "bob";
         final var deletion = "deletion";
         return defaultHapiSpec("RewardsOfDeletedAreRedirectedToBeneficiary")

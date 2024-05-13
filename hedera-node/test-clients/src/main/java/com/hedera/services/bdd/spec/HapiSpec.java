@@ -315,8 +315,9 @@ public class HapiSpec implements Runnable, Executable {
         return name;
     }
 
-    public void appendToName(String postfix) {
+    public HapiSpec appendToName(String postfix) {
         this.name = this.name + postfix;
+        return this;
     }
 
     public String getSuitePrefix() {
@@ -1001,8 +1002,8 @@ public class HapiSpec implements Runnable, Executable {
     public static Def.Setup hapiSpec(
             String name, List<String> propertiesToPreserve, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
         return setup -> given -> when ->
-                then -> DynamicTest.dynamicTest(name,
-                        new HapiSpec(name, false, setup, given, when, then, propertiesToPreserve, snapshotMatchModes));
+                then -> Stream.of(DynamicTest.dynamicTest(name,
+                        new HapiSpec(name, false, setup, given, when, then, propertiesToPreserve, snapshotMatchModes)));
     }
 
     public static Def.Setup onlyHapiSpec(
@@ -1010,9 +1011,9 @@ public class HapiSpec implements Runnable, Executable {
             final List<String> propertiesToPreserve,
             @NonNull final SnapshotMatchMode... snapshotMatchModes) {
         return setup -> given -> when ->
-                then -> DynamicTest.dynamicTest(
+                then -> Stream.of(DynamicTest.dynamicTest(
                         name,
-                        new HapiSpec(name, true, setup, given, when, then, propertiesToPreserve, snapshotMatchModes));
+                        new HapiSpec(name, true, setup, given, when, then, propertiesToPreserve, snapshotMatchModes)));
     }
 
     public HapiSpec(
@@ -1076,7 +1077,7 @@ public class HapiSpec implements Runnable, Executable {
 
         @FunctionalInterface
         interface Then {
-            DynamicTest then(HapiSpecOperation... ops);
+            Stream<DynamicTest> then(HapiSpecOperation... ops);
         }
     }
 

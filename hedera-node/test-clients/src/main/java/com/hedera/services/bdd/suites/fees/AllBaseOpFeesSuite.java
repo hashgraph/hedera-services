@@ -36,11 +36,12 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -79,7 +80,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(List.of(
                 baseNftFreezeUnfreezeChargedAsExpected(),
                 baseCommonFreezeUnfreezeChargedAsExpected(),
@@ -91,7 +92,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest baseNftMintOperationIsChargedExpectedFee() {
+    final Stream<DynamicTest> baseNftMintOperationIsChargedExpectedFee() {
         final var standard100ByteMetadata = ByteString.copyFromUtf8(
                 "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
 
@@ -114,7 +115,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest NftMintsScaleLinearlyBasedOnNumberOfSerialNumbers() {
+    final Stream<DynamicTest> NftMintsScaleLinearlyBasedOnNumberOfSerialNumbers() {
         final var expectedFee = 10 * EXPECTED_NFT_MINT_PRICE_USD;
         final var standard100ByteMetadata = ByteString.copyFromUtf8(
                 "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
@@ -150,7 +151,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest NftMintsScaleLinearlyBasedOnNumberOfSignatures() {
+    final Stream<DynamicTest> NftMintsScaleLinearlyBasedOnNumberOfSignatures() {
         final var numOfSigs = 10;
         final var extraSigPrice = 0.0006016996;
         final var expectedFee = EXPECTED_NFT_MINT_PRICE_USD + ((numOfSigs - 1) * extraSigPrice);
@@ -176,7 +177,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest baseNftWipeOperationIsChargedExpectedFee() {
+    final Stream<DynamicTest> baseNftWipeOperationIsChargedExpectedFee() {
         return defaultHapiSpec("BaseUniqueWipeOperationIsChargedExpectedFee")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -202,7 +203,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest baseNftBurnOperationIsChargedExpectedFee() {
+    final Stream<DynamicTest> baseNftBurnOperationIsChargedExpectedFee() {
         return defaultHapiSpec("BaseUniqueBurnOperationIsChargedExpectedFee")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -223,7 +224,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest baseNftFreezeUnfreezeChargedAsExpected() {
+    final Stream<DynamicTest> baseNftFreezeUnfreezeChargedAsExpected() {
         return defaultHapiSpec("baseNftFreezeUnfreezeChargedAsExpected")
                 .given(
                         newKeyNamed(TREASURE_KEY),
@@ -261,7 +262,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest baseCommonFreezeUnfreezeChargedAsExpected() {
+    final Stream<DynamicTest> baseCommonFreezeUnfreezeChargedAsExpected() {
         return defaultHapiSpec("baseCommonFreezeUnfreezeChargedAsExpected")
                 .given(
                         newKeyNamed(TREASURE_KEY),

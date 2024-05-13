@@ -48,6 +48,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -67,12 +69,12 @@ public class ContractQueriesStressTests extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
             contractCallLocalStress(), getContractRecordsStress(), getContractBytecodeStress(), getContractInfoStress());
     }
 
-    final DynamicTest getContractInfoStress() {
+    final Stream<DynamicTest> getContractInfoStress() {
         return defaultHapiSpec("GetContractInfoStress")
                 .given()
                 .when()
@@ -83,7 +85,7 @@ public class ContractQueriesStressTests extends HapiSuite {
                                 .maxOpsPerSec(maxOpsPerSec::get));
     }
 
-    final DynamicTest getContractBytecodeStress() {
+    final Stream<DynamicTest> getContractBytecodeStress() {
         return defaultHapiSpec("GetAccountRecordsStress")
                 .given()
                 .when()
@@ -94,7 +96,7 @@ public class ContractQueriesStressTests extends HapiSuite {
                                 .maxOpsPerSec(maxOpsPerSec::get));
     }
 
-    final DynamicTest contractCallLocalStress() {
+    final Stream<DynamicTest> contractCallLocalStress() {
         return defaultHapiSpec("ContractCallLocalStress")
                 .given()
                 .when()
@@ -105,7 +107,7 @@ public class ContractQueriesStressTests extends HapiSuite {
                                 .maxOpsPerSec(maxOpsPerSec::get));
     }
 
-    final DynamicTest getContractRecordsStress() {
+    final Stream<DynamicTest> getContractRecordsStress() {
         return defaultHapiSpec("GetContractRecordsStress")
                 .given()
                 .when()

@@ -54,7 +54,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -64,6 +63,8 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -92,7 +93,7 @@ public class ContractCallV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 contractTransferToSigReqAccountWithKeySucceeds(),
                 canMintAndTransferInSameContractOperation(),
@@ -100,7 +101,7 @@ public class ContractCallV1SecurityModelSuite extends HapiSuite {
                 lpFarmSimulation());
     }
 
-    final DynamicTest workingHoursDemo() {
+    final Stream<DynamicTest> workingHoursDemo() {
         final var gasToOffer = 4_000_000;
         final var contract = "WorkingHours";
         final var ticketToken = "ticketToken";
@@ -185,7 +186,7 @@ public class ContractCallV1SecurityModelSuite extends HapiSuite {
                         getTxnRecord(ticketWorking).andAllChildRecords().logged());
     }
 
-    final DynamicTest canMintAndTransferInSameContractOperation() {
+    final Stream<DynamicTest> canMintAndTransferInSameContractOperation() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final var nfToken = "nfToken";
@@ -252,7 +253,7 @@ public class ContractCallV1SecurityModelSuite extends HapiSuite {
                                 .alsoSigningWithFullPrefix(multiKey, aCivilian)));
     }
 
-    final DynamicTest contractTransferToSigReqAccountWithKeySucceeds() {
+    final Stream<DynamicTest> contractTransferToSigReqAccountWithKeySucceeds() {
         return propertyPreservingHapiSpec("ContractTransferToSigReqAccountWithKeySucceeds")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
@@ -302,7 +303,7 @@ public class ContractCallV1SecurityModelSuite extends HapiSuite {
                 }));
     }
 
-    final DynamicTest lpFarmSimulation() {
+    final Stream<DynamicTest> lpFarmSimulation() {
         final var adminKey = "adminKey";
         final var gasToOffer = 4_000_000;
         final var farmInitcodeLoc = "src/main/resource/contract/bytecodes/farmInitcode.bin";

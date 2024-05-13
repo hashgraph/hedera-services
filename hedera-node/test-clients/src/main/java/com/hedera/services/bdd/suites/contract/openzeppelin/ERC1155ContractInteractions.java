@@ -36,13 +36,14 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -62,7 +63,7 @@ public class ERC1155ContractInteractions extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(erc1155());
     }
 
@@ -72,7 +73,7 @@ public class ERC1155ContractInteractions extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest erc1155() {
+    final Stream<DynamicTest> erc1155() {
         // Adding NONDETERMINISTIC_CONTRACT_CALL_RESULTS because one of the
         // contractCallResult->logInfo->topics is always different(both in mono and mod)
         return defaultHapiSpec("erc1155", NONDETERMINISTIC_FUNCTION_PARAMETERS, NONDETERMINISTIC_CONTRACT_CALL_RESULTS)

@@ -27,7 +27,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
@@ -35,6 +34,8 @@ import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -51,12 +52,12 @@ public class MixedFileOpsLoadTest extends LoadTest {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(runMixedFileOps());
     }
 
     @HapiTest
-    final DynamicTest runMixedFileOps() {
+    final Stream<DynamicTest> runMixedFileOps() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         final AtomicInteger submittedSoFar = new AtomicInteger(0);
         String initialContent = "The initial contents!";

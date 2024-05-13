@@ -49,13 +49,14 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -93,20 +94,20 @@ public class GrantRevokeKycSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<DynamicTest> negativeSpecs() {
+    List<Stream<DynamicTest>>negativeSpecs() {
         return List.of(grantRevokeKycFail());
     }
 
-    List<DynamicTest> positiveSpecs() {
+    List<Stream<DynamicTest>>positiveSpecs() {
         return List.of(grantRevokeKycSpecWithAliasLocalCall());
     }
 
     @HapiTest
-    final DynamicTest grantRevokeKycFail() {
+    final Stream<DynamicTest> grantRevokeKycFail() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<AccountID> secondAccountID = new AtomicReference<>();
@@ -283,7 +284,7 @@ public class GrantRevokeKycSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest grantRevokeKycSpecWithAliasLocalCall() {
+    final Stream<DynamicTest> grantRevokeKycSpecWithAliasLocalCall() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<String> autoCreatedAccountId = new AtomicReference<>();
         final String accountAlias = "accountAlias";

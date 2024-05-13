@@ -98,7 +98,6 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.StateChange;
 import com.hedera.services.bdd.spec.assertions.StorageChange;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
@@ -119,6 +118,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -165,7 +166,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 suiteSetup(),
                 traceabilityE2EScenario1(),
@@ -199,7 +200,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(1)
-    final DynamicTest suiteSetup() {
+    final Stream<DynamicTest> suiteSetup() {
         return defaultHapiSpec("suiteSetup")
                 .given()
                 .when()
@@ -212,7 +213,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(2)
-    final DynamicTest traceabilityE2EScenario1() {
+    final Stream<DynamicTest> traceabilityE2EScenario1() {
         return defaultHapiSpec(
                         "traceabilityE2EScenario1",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -586,7 +587,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(3)
-    final DynamicTest traceabilityE2EScenario2() {
+    final Stream<DynamicTest> traceabilityE2EScenario2() {
         return defaultHapiSpec(
                         "traceabilityE2EScenario2",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -994,7 +995,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(4)
-    final DynamicTest traceabilityE2EScenario3() {
+    final Stream<DynamicTest> traceabilityE2EScenario3() {
         return defaultHapiSpec(
                         "traceabilityE2EScenario3", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
@@ -1404,7 +1405,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(5)
-    final DynamicTest traceabilityE2EScenario4() {
+    final Stream<DynamicTest> traceabilityE2EScenario4() {
         return defaultHapiSpec(
                         "traceabilityE2EScenario4", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
@@ -1697,7 +1698,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(6)
-    final DynamicTest traceabilityE2EScenario5() {
+    final Stream<DynamicTest> traceabilityE2EScenario5() {
         return defaultHapiSpec("traceabilityE2EScenario5", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         uploadInitCode(TRACEABILITY),
@@ -2003,7 +2004,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(7)
-    final DynamicTest traceabilityE2EScenario6() {
+    final Stream<DynamicTest> traceabilityE2EScenario6() {
         return defaultHapiSpec(
                         "traceabilityE2EScenario6",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -2342,7 +2343,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(8)
-    final DynamicTest traceabilityE2EScenario7() {
+    final Stream<DynamicTest> traceabilityE2EScenario7() {
         return defaultHapiSpec("traceabilityE2EScenario7", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         uploadInitCode(TRACEABILITY_CALLCODE),
@@ -2733,7 +2734,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(9)
-    final DynamicTest traceabilityE2EScenario8() {
+    final Stream<DynamicTest> traceabilityE2EScenario8() {
         return defaultHapiSpec("traceabilityE2EScenario8", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         uploadInitCode(TRACEABILITY_CALLCODE),
@@ -3085,7 +3086,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(10)
-    final DynamicTest traceabilityE2EScenario9() {
+    final Stream<DynamicTest> traceabilityE2EScenario9() {
         return defaultHapiSpec(
                         "traceabilityE2EScenario9", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
@@ -3393,7 +3394,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(11)
-    final DynamicTest traceabilityE2EScenario10() {
+    final Stream<DynamicTest> traceabilityE2EScenario10() {
         return defaultHapiSpec("traceabilityE2EScenario10", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         uploadInitCode(TRACEABILITY),
@@ -3736,7 +3737,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(12)
-    final DynamicTest traceabilityE2EScenario11() {
+    final Stream<DynamicTest> traceabilityE2EScenario11() {
         return defaultHapiSpec("traceabilityE2EScenario11", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         uploadInitCode(TRACEABILITY),
@@ -4014,7 +4015,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(13)
-    final DynamicTest traceabilityE2EScenario12() {
+    final Stream<DynamicTest> traceabilityE2EScenario12() {
         final var contract = "CreateTrivial";
         final var scenario12 = "traceabilityE2EScenario12";
         return defaultHapiSpec(scenario12)
@@ -4047,7 +4048,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(14)
-    final DynamicTest traceabilityE2EScenario13() {
+    final Stream<DynamicTest> traceabilityE2EScenario13() {
         final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
         return defaultHapiSpec("traceabilityE2EScenario13", NONDETERMINISTIC_ETHEREUM_DATA, NONDETERMINISTIC_NONCE)
                 .given(
@@ -4091,7 +4092,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(15)
-    final DynamicTest traceabilityE2EScenario14() {
+    final Stream<DynamicTest> traceabilityE2EScenario14() {
         return defaultHapiSpec(
                         "traceabilityE2EScenario14", NONDETERMINISTIC_ETHEREUM_DATA, NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
@@ -4136,7 +4137,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(16)
-    final DynamicTest traceabilityE2EScenario15() {
+    final Stream<DynamicTest> traceabilityE2EScenario15() {
         final String GET_BYTECODE = "getBytecode";
         final String DEPLOY = "deploy";
         final var CREATE_2_TXN = "Create2Txn";
@@ -4283,7 +4284,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(17)
-    final DynamicTest traceabilityE2EScenario16() {
+    final Stream<DynamicTest> traceabilityE2EScenario16() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final String PRECOMPILE_CALLER = "PrecompileCaller";
         final String txn = "payTxn";
@@ -4396,7 +4397,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(18)
-    final DynamicTest traceabilityE2EScenario17() {
+    final Stream<DynamicTest> traceabilityE2EScenario17() {
         return defaultHapiSpec("traceabilityE2EScenario17")
                 .given(
                         uploadInitCode(REVERTING_CONTRACT),
@@ -4455,7 +4456,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(19)
-    final DynamicTest traceabilityE2EScenario18() {
+    final Stream<DynamicTest> traceabilityE2EScenario18() {
         return defaultHapiSpec("traceabilityE2EScenario18")
                 .given(uploadInitCode(REVERTING_CONTRACT))
                 .when(contractCreate(REVERTING_CONTRACT, BigInteger.valueOf(4))
@@ -4480,7 +4481,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(20)
-    final DynamicTest traceabilityE2EScenario19() {
+    final Stream<DynamicTest> traceabilityE2EScenario19() {
         final var RECEIVER = "RECEIVER";
         final var hbarsToSend = 1;
         final var transferTxn = "payTxn";
@@ -4525,7 +4526,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(21)
-    final DynamicTest traceabilityE2EScenario20() {
+    final Stream<DynamicTest> traceabilityE2EScenario20() {
         return defaultHapiSpec("traceabilityE2EScenario20", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(REVERTING_CONTRACT))
                 .when(contractCreate(REVERTING_CONTRACT, BigInteger.valueOf(6))
@@ -4551,7 +4552,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(22)
-    final DynamicTest traceabilityE2EScenario21() {
+    final Stream<DynamicTest> traceabilityE2EScenario21() {
         return defaultHapiSpec("traceabilityE2EScenario21")
                 .given(
                         uploadInitCode(REVERTING_CONTRACT),
@@ -4626,7 +4627,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(23)
-    final DynamicTest vanillaBytecodeSidecar() {
+    final Stream<DynamicTest> vanillaBytecodeSidecar() {
         final var EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
         final var vanillaBytecodeSidecar = "vanillaBytecodeSidecar";
         final var firstTxn = "firstTxn";
@@ -4661,7 +4662,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(24)
-    final DynamicTest vanillaBytecodeSidecar2() {
+    final Stream<DynamicTest> vanillaBytecodeSidecar2() {
         final var contract = "CreateTrivial";
         final String trivialCreate = "vanillaBytecodeSidecar2";
         final var firstTxn = "firstTxn";
@@ -4693,7 +4694,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(25)
-    final DynamicTest actionsShowPropagatedRevert() {
+    final Stream<DynamicTest> actionsShowPropagatedRevert() {
         final var APPROVE_BY_DELEGATE = "ApproveByDelegateCall";
         final var badApproval = "BadApproval";
         final var somebody = "somebody";
@@ -4876,7 +4877,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(26)
-    final DynamicTest ethereumLazyCreateExportsExpectedSidecars() {
+    final Stream<DynamicTest> ethereumLazyCreateExportsExpectedSidecars() {
         final var RECIPIENT_KEY = "lazyAccountRecipient";
         final var RECIPIENT_KEY2 = "lazyAccountRecipient2";
         final var lazyCreateTxn = "lazyCreateTxn";
@@ -4973,7 +4974,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     @SuppressWarnings("java:S5960")
     @HapiTest
     @Order(27)
-    final DynamicTest hollowAccountCreate2MergeExportsExpectedSidecars() {
+    final Stream<DynamicTest> hollowAccountCreate2MergeExportsExpectedSidecars() {
         final var tcValue = 1_234L;
         final var create2Factory = "Create2Factory";
         final var creation = "creation";
@@ -5147,7 +5148,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     @HapiTest
     @Order(Integer.MAX_VALUE)
-    public final DynamicTest assertSidecars() {
+    public final Stream<DynamicTest> assertSidecars() {
         return defaultHapiSpec("assertSidecars")
                 .given()
                 .when(tearDownSidecarWatcher())

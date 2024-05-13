@@ -45,13 +45,14 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -87,12 +88,12 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(isFrozenHappyPathWithAliasLocalCall(), noTokenIdReverts());
     }
 
     @HapiTest
-    final DynamicTest noTokenIdReverts() {
+    final Stream<DynamicTest> noTokenIdReverts() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         return defaultHapiSpec("noTokenIdReverts", NONDETERMINISTIC_FUNCTION_PARAMETERS)
@@ -143,7 +144,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest isFrozenHappyPathWithAliasLocalCall() {
+    final Stream<DynamicTest> isFrozenHappyPathWithAliasLocalCall() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<String> autoCreatedAccountId = new AtomicReference<>();
         final String accountAlias = "accountAlias";

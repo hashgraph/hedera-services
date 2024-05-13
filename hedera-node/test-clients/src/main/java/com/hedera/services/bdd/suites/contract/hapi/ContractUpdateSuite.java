@@ -57,7 +57,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -65,6 +64,8 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -95,7 +96,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 updateWithBothMemoSettersWorks(),
                 updatingExpiryWorks(),
@@ -114,7 +115,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest idVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(
                         newKeyNamed("adminKey"),
@@ -129,7 +130,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateStakingFieldsWorks() {
+    final Stream<DynamicTest> updateStakingFieldsWorks() {
         return defaultHapiSpec("updateStakingFieldsWorks", FULLY_NONDETERMINISTIC)
                 .given(
                         uploadInitCode(CONTRACT),
@@ -178,7 +179,7 @@ public class ContractUpdateSuite extends HapiSuite {
 
     // https://github.com/hashgraph/hedera-services/issues/2877
     @HapiTest
-    final DynamicTest eip1014AddressAlwaysHasPriority() {
+    final Stream<DynamicTest> eip1014AddressAlwaysHasPriority() {
         final var contract = "VariousCreate2Calls";
         final var creationTxn = "creationTxn";
         final var callTxn = "callTxn";
@@ -239,7 +240,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateWithBothMemoSettersWorks() {
+    final Stream<DynamicTest> updateWithBothMemoSettersWorks() {
         final var firstMemo = "First";
         final var secondMemo = "Second";
         final var thirdMemo = "Third";
@@ -259,7 +260,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updatingExpiryWorks() {
+    final Stream<DynamicTest> updatingExpiryWorks() {
         final var newExpiry = Instant.now().getEpochSecond() + 5 * ONE_MONTH;
         return defaultHapiSpec("UpdatingExpiryWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
@@ -268,7 +269,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest rejectsExpiryTooFarInTheFuture() {
+    final Stream<DynamicTest> rejectsExpiryTooFarInTheFuture() {
         final var smallBuffer = 12_345L;
         final var excessiveExpiry = DEFAULT_MAX_LIFETIME + Instant.now().getEpochSecond() + smallBuffer;
 
@@ -279,7 +280,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateAutoRenewWorks() {
+    final Stream<DynamicTest> updateAutoRenewWorks() {
         return defaultHapiSpec("UpdateAutoRenewWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
@@ -290,7 +291,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateAutoRenewAccountWorks() {
+    final Stream<DynamicTest> updateAutoRenewAccountWorks() {
         final var autoRenewAccount = "autoRenewAccount";
         final var newAutoRenewAccount = "newAutoRenewAccount";
         return defaultHapiSpec("UpdateAutoRenewAccountWorks", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -317,7 +318,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateAdminKeyWorks() {
+    final Stream<DynamicTest> updateAdminKeyWorks() {
         return defaultHapiSpec("UpdateAdminKeyWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
@@ -333,7 +334,7 @@ public class ContractUpdateSuite extends HapiSuite {
 
     // https://github.com/hashgraph/hedera-services/issues/3037
     @HapiTest
-    final DynamicTest immutableContractKeyFormIsStandard() {
+    final Stream<DynamicTest> immutableContractKeyFormIsStandard() {
         return defaultHapiSpec("ImmutableContractKeyFormIsStandard", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).immutable())
                 .when()
@@ -341,7 +342,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest canMakeContractImmutableWithEmptyKeyList() {
+    final Stream<DynamicTest> canMakeContractImmutableWithEmptyKeyList() {
         return defaultHapiSpec("CanMakeContractImmutableWithEmptyKeyList", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
@@ -355,7 +356,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest givenAdminKeyMustBeValid() {
+    final Stream<DynamicTest> givenAdminKeyMustBeValid() {
         final var contract = "BalanceLookup";
         return defaultHapiSpec("GivenAdminKeyMustBeValid", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(contract), contractCreate(contract))
@@ -367,7 +368,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest fridayThe13thSpec() {
+    final Stream<DynamicTest> fridayThe13thSpec() {
         final var contract = "SimpleStorage";
         final var suffix = "Clone";
         final var newExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 2;
@@ -460,7 +461,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateDoesNotChangeBytecode() {
+    final Stream<DynamicTest> updateDoesNotChangeBytecode() {
         // HSCS-DCPR-001
         final var simpleStorageContract = "SimpleStorage";
         final var emptyConstructorContract = "EmptyConstructor";
@@ -478,7 +479,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cannotUpdateMaxAutomaticAssociations() {
+    final Stream<DynamicTest> cannotUpdateMaxAutomaticAssociations() {
         return defaultHapiSpec("cannotUpdateMaxAutomaticAssociations")
                 .given(
                         newKeyNamed(ADMIN_KEY),

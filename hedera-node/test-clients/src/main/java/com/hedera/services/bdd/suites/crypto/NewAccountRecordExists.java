@@ -29,12 +29,13 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustInclude;
 import static com.hedera.services.bdd.suites.contract.Utils.asInstant;
 
 import com.hedera.services.bdd.junit.validators.AccountExistenceValidator;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -48,11 +49,11 @@ public class NewAccountRecordExists extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(newAccountIsReflectedInRecordStream(), newAccountIsReflectedInRecordStreamV2());
     }
 
-    final DynamicTest newAccountIsReflectedInRecordStream() {
+    final Stream<DynamicTest> newAccountIsReflectedInRecordStream() {
         final var balance = 1_234_567L;
         final var novelKey = "novelKey";
         final var memo = "It was the best of times";
@@ -75,7 +76,7 @@ public class NewAccountRecordExists extends HapiSuite {
                         new AccountExistenceValidator(account, consensusTime.get()), Duration.ofMillis(2_100))));
     }
 
-    final DynamicTest newAccountIsReflectedInRecordStreamV2() {
+    final Stream<DynamicTest> newAccountIsReflectedInRecordStreamV2() {
         final var balance = 1_234_567L;
         final var memo = "It was the best of times";
         final var account = "novel";

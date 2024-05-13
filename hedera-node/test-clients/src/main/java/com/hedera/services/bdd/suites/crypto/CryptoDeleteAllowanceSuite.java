@@ -57,12 +57,13 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -78,7 +79,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
             happyPathWorks(),
             approvedForAllNotAffectedOnDelete(),
@@ -97,7 +98,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest idVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(
                         newKeyNamed("supplyKey"),
@@ -135,7 +136,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest canDeleteAllowanceForDeletedSpender() {
+    final Stream<DynamicTest> canDeleteAllowanceForDeletedSpender() {
         final String owner = "owner";
         final String spender = "spender";
         final String nft = "nft";
@@ -192,7 +193,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest duplicateEntriesDoesntThrow() {
+    final Stream<DynamicTest> duplicateEntriesDoesntThrow() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -269,7 +270,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest invalidOwnerFails() {
+    final Stream<DynamicTest> invalidOwnerFails() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -325,7 +326,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest feesAsExpected() {
+    final Stream<DynamicTest> feesAsExpected() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -413,7 +414,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest succeedsWhenTokenPausedFrozenKycRevoked() {
+    final Stream<DynamicTest> succeedsWhenTokenPausedFrozenKycRevoked() {
         final String owner = "owner";
         final String spender = "spender";
         final String spender1 = "spender1";
@@ -510,7 +511,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest exceedsTransactionLimit() {
+    final Stream<DynamicTest> exceedsTransactionLimit() {
         final String owner = "owner";
         final String spender = "spender";
         final String spender1 = "spender1";
@@ -585,7 +586,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest validatesSerialNums() {
+    final Stream<DynamicTest> validatesSerialNums() {
         final String owner = "owner";
         final String spender = "spender";
         final String nft = "nft";
@@ -641,7 +642,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest invalidTokenTypeFailsInDeleteAllowance() {
+    final Stream<DynamicTest> invalidTokenTypeFailsInDeleteAllowance() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -670,7 +671,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest emptyAllowancesDeleteRejected() {
+    final Stream<DynamicTest> emptyAllowancesDeleteRejected() {
         final String owner = "owner";
         return defaultHapiSpec("emptyAllowancesDeleteRejected")
                 .given(cryptoCreate(owner).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10))
@@ -679,7 +680,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest tokenNotAssociatedToAccountFailsOnDeleteAllowance() {
+    final Stream<DynamicTest> tokenNotAssociatedToAccountFailsOnDeleteAllowance() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -727,7 +728,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest canDeleteMultipleOwners() {
+    final Stream<DynamicTest> canDeleteMultipleOwners() {
         final String owner1 = "owner1";
         final String owner2 = "owner2";
         final String spender = "spender";
@@ -819,7 +820,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest noOwnerDefaultsToPayerInDeleteAllowance() {
+    final Stream<DynamicTest> noOwnerDefaultsToPayerInDeleteAllowance() {
         final String payer = "payer";
         final String spender = "spender";
         final String spender1 = "spender1";
@@ -882,7 +883,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest approvedForAllNotAffectedOnDelete() {
+    final Stream<DynamicTest> approvedForAllNotAffectedOnDelete() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -957,7 +958,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest happyPathWorks() {
+    final Stream<DynamicTest> happyPathWorks() {
         final String owner = "owner";
         final String spender = "spender";
         final String spender1 = "spender1";

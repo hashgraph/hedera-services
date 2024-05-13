@@ -22,9 +22,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -42,11 +43,11 @@ public class CryptoAllowancePerfSuite extends LoadTest {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(runCryptoCreatesAndTokenCreates(), runCryptoAllowances());
     }
 
-    final DynamicTest runCryptoCreatesAndTokenCreates() {
+    final Stream<DynamicTest> runCryptoCreatesAndTokenCreates() {
         final int NUM_CREATES = 5000;
         return defaultHapiSpec("runCryptoCreatesAndTokenCreates")
                 .given()
@@ -97,7 +98,7 @@ public class CryptoAllowancePerfSuite extends LoadTest {
                                         .deferStatusResolution())));
     }
 
-    final DynamicTest runCryptoAllowances() {
+    final Stream<DynamicTest> runCryptoAllowances() {
         final int NUM_ALLOWANCES = 5000;
         return defaultHapiSpec("runCryptoAllowances")
                 .given()

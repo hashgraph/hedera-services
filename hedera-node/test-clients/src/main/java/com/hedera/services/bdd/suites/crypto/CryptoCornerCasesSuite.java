@@ -29,7 +29,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -38,6 +37,8 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,7 +56,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 invalidNodeAccount(),
                 invalidTransactionBody(),
@@ -72,7 +73,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest invalidTransactionBody() {
+    final Stream<DynamicTest> invalidTransactionBody() {
         return defaultHapiSpec("InvalidTransactionBody")
                 .given()
                 .when()
@@ -94,7 +95,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest invalidNodeAccount() {
+    final Stream<DynamicTest> invalidNodeAccount() {
         return defaultHapiSpec("InvalidNodeAccount")
                 .given()
                 .when()
@@ -109,7 +110,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest invalidTransactionDuration() {
+    final Stream<DynamicTest> invalidTransactionDuration() {
         return defaultHapiSpec("InvalidTransactionDuration")
                 .given()
                 .when()
@@ -125,7 +126,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest invalidTransactionMemoTooLong() {
+    final Stream<DynamicTest> invalidTransactionMemoTooLong() {
         return defaultHapiSpec("InvalidTransactionMemoTooLong")
                 .given()
                 .when()
@@ -145,7 +146,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest invalidTransactionPayerAccountNotFound() {
+    final Stream<DynamicTest> invalidTransactionPayerAccountNotFound() {
         return defaultHapiSpec("InvalidTransactionDuration")
                 .given()
                 .when()
@@ -161,7 +162,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest invalidTransactionStartTime() {
+    final Stream<DynamicTest> invalidTransactionStartTime() {
         return defaultHapiSpec("InvalidTransactionStartTime")
                 .given()
                 .when()

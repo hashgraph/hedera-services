@@ -29,11 +29,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -47,15 +48,15 @@ public class ExchangeRateControlSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(positiveTests(), negativeTests());
     }
 
-    private List<DynamicTest> positiveTests() {
+    private List<Stream<DynamicTest>>positiveTests() {
         return Arrays.asList(midnightRateChangesWhenAcct50UpdatesFile112(), acct57CanMakeSmallChanges());
     }
 
-    private List<DynamicTest> negativeTests() {
+    private List<Stream<DynamicTest>>negativeTests() {
         return Arrays.asList(anonCantUpdateRates(), acct57CantMakeLargeChanges());
     }
 
@@ -65,7 +66,7 @@ public class ExchangeRateControlSuite extends HapiSuite {
             .contents(spec -> spec.ratesProvider().rateSetWith(1, 12).toByteString());
 
     @HapiTest
-    final DynamicTest acct57CanMakeSmallChanges() {
+    final Stream<DynamicTest> acct57CanMakeSmallChanges() {
         return defaultHapiSpec("Acct57CanMakeSmallChanges")
                 .given(
                         resetRatesOp,
@@ -86,7 +87,7 @@ public class ExchangeRateControlSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest midnightRateChangesWhenAcct50UpdatesFile112() {
+    final Stream<DynamicTest> midnightRateChangesWhenAcct50UpdatesFile112() {
         return defaultHapiSpec("MidnightRateChangesWhenAcct50UpdatesFile112")
                 .given(
                         resetRatesOp,
@@ -140,7 +141,7 @@ public class ExchangeRateControlSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest anonCantUpdateRates() {
+    final Stream<DynamicTest> anonCantUpdateRates() {
         return defaultHapiSpec("AnonCantUpdateRates")
                 .given(resetRatesOp, cryptoCreate("randomAccount"))
                 .when()
@@ -151,7 +152,7 @@ public class ExchangeRateControlSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest acct57CantMakeLargeChanges() {
+    final Stream<DynamicTest> acct57CantMakeLargeChanges() {
         return defaultHapiSpec("Acct57CantMakeLargeChanges")
                 .given(
                         resetRatesOp,

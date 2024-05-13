@@ -22,10 +22,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -39,12 +40,12 @@ public class DeleteFailuresSpec extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(handleRejectsMissingFile(), handleRejectsDeletedFile());
     }
 
     @HapiTest
-    final DynamicTest handleRejectsMissingFile() {
+    final Stream<DynamicTest> handleRejectsMissingFile() {
         return defaultHapiSpec("handleRejectsMissingFile")
                 .given()
                 .when()
@@ -52,7 +53,7 @@ public class DeleteFailuresSpec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest handleRejectsDeletedFile() {
+    final Stream<DynamicTest> handleRejectsDeletedFile() {
         return defaultHapiSpec("handleRejectsDeletedFile")
                 .given(fileCreate("tbd"))
                 .when(fileDelete("tbd"))

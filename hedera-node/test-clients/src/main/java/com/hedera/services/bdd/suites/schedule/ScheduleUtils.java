@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 public final class ScheduleUtils {
     static final String ACCOUNT = "civilian";
@@ -287,7 +288,7 @@ public final class ScheduleUtils {
         return overriding(SCHEDULING_WHITELIST, fullWhitelist);
     }
 
-    static DynamicTest enableLongTermScheduledTransactions() {
+    static Stream<DynamicTest> enableLongTermScheduledTransactions() {
         return defaultHapiSpec("EnableLongTermScheduledTransactions")
                 .given()
                 .when()
@@ -296,7 +297,7 @@ public final class ScheduleUtils {
                         .overridingProps(Map.of(SCHEDULING_LONG_TERM_ENABLED, "true")));
     }
 
-    static DynamicTest disableLongTermScheduledTransactions() {
+    static Stream<DynamicTest> disableLongTermScheduledTransactions() {
         return defaultHapiSpec("DisableLongTermScheduledTransactions")
                 .given()
                 .when()
@@ -305,7 +306,7 @@ public final class ScheduleUtils {
                         .overridingProps(Map.of(SCHEDULING_LONG_TERM_ENABLED, FALSE)));
     }
 
-    static DynamicTest setLongTermScheduledTransactionsToDefault() {
+    static Stream<DynamicTest> setLongTermScheduledTransactionsToDefault() {
         return defaultHapiSpec("SetLongTermScheduledTransactionsToDefault")
                 .given()
                 .when()
@@ -314,26 +315,32 @@ public final class ScheduleUtils {
                         .overridingProps(Map.of(SCHEDULING_LONG_TERM_ENABLED, DEFAULT_LONG_TERM_ENABLED)));
     }
 
-    static List<DynamicTest> withAndWithoutLongTermEnabled(Supplier<List<DynamicTest>> getSpecs) {
-        List<DynamicTest> list = new ArrayList<>();
+    static List<Stream<DynamicTest>> withAndWithoutLongTermEnabled(Supplier<List<Stream<DynamicTest>>> getSpecs) {
+        List<Stream<DynamicTest>> list = new ArrayList<>();
         list.add(disableLongTermScheduledTransactions());
         list.addAll(getSpecs.get());
         list.add(enableLongTermScheduledTransactions());
         var withEnabled = getSpecs.get();
-        withEnabled.forEach(s -> ((HapiSpec) s.getExecutable()).appendToName("WithLongTermEnabled"));
-        list.addAll(withEnabled);
+        list.add(
+                withEnabled
+                        .stream()
+                        .flatMap(Function.identity())
+                        .peek(s -> ((HapiSpec) s.getExecutable()).appendToName("WithLongTermEnabled")));
         list.add(setLongTermScheduledTransactionsToDefault());
         return list;
     }
 
-    static List<DynamicTest> withAndWithoutLongTermEnabled(Function<Boolean, List<DynamicTest>> getSpecs) {
-        List<DynamicTest> list = new ArrayList<>();
+    static List<Stream<DynamicTest>> withAndWithoutLongTermEnabled(Function<Boolean, List<Stream<DynamicTest>>> getSpecs) {
+        List<Stream<DynamicTest>>list = new ArrayList<>();
         list.add(disableLongTermScheduledTransactions());
         list.addAll(getSpecs.apply(false));
         list.add(enableLongTermScheduledTransactions());
         var withEnabled = getSpecs.apply(true);
-        withEnabled.forEach(s -> ((HapiSpec) s.getExecutable()).appendToName("WithLongTermEnabled"));
-        list.addAll(withEnabled);
+        list.add(
+                withEnabled
+                        .stream()
+                        .flatMap(Function.identity())
+                        .peek(s -> ((HapiSpec) s.getExecutable()).appendToName("WithLongTermEnabled")));
         list.add(setLongTermScheduledTransactionsToDefault());
         return list;
     }

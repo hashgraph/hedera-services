@@ -19,9 +19,10 @@ package com.hedera.services.bdd.suites.reconnect;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -34,11 +35,11 @@ public class CheckUnavailableNode extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(checkUnavailableNode());
     }
 
-    final DynamicTest checkUnavailableNode() {
+    final Stream<DynamicTest> checkUnavailableNode() {
         return defaultHapiSpec("CheckUnavailableNode")
                 .given()
                 .when()

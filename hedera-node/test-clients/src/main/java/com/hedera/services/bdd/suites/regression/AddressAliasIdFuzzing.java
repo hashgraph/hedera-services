@@ -29,13 +29,14 @@ import static java.util.stream.Collectors.joining;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -61,12 +62,12 @@ public class AddressAliasIdFuzzing extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(addressAliasIdFuzzing(), transferToKeyFuzzing());
     }
 
     @HapiTest
-    final DynamicTest addressAliasIdFuzzing() {
+    final Stream<DynamicTest> addressAliasIdFuzzing() {
         final Map<String, String> existingProps = new LinkedHashMap<>();
         return propertyPreservingHapiSpec("AddressAliasIdFuzzing")
                 .preserving(
@@ -87,7 +88,7 @@ public class AddressAliasIdFuzzing extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferToKeyFuzzing() {
+    final Stream<DynamicTest> transferToKeyFuzzing() {
         return defaultHapiSpec("TransferToKeyFuzzing")
                 .given(cryptoCreate(UNIQUE_PAYER_ACCOUNT)
                         .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)

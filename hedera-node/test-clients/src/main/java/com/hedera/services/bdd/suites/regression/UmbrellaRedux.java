@@ -41,6 +41,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -65,12 +67,12 @@ public class UmbrellaRedux extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(umbrellaRedux());
     }
 
     @HapiTest
-    final DynamicTest umbrellaRedux() {
+    final Stream<DynamicTest> umbrellaRedux() {
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         return defaultHapiSpec("UmbrellaRedux")
                 .given(

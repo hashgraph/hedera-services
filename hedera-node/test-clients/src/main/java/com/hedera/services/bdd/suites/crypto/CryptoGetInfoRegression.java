@@ -45,13 +45,14 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -72,7 +73,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
             failsForDeletedAccount(),
             failsForMissingAccount(),
@@ -85,7 +86,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
 
     /** For Demo purpose : The limit on each account info and account balance queries is set to 5 */
     @HapiTest
-    final DynamicTest fetchesOnlyALimitedTokenAssociations() {
+    final Stream<DynamicTest> fetchesOnlyALimitedTokenAssociations() {
         final int infoLimit = 3;
         final var account = "test";
         final var aKey = "tokenKey";
@@ -197,7 +198,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest succeedsNormally() {
+    final Stream<DynamicTest> succeedsNormally() {
         long balance = 1_234_567L;
         KeyShape misc = listOf(SIMPLE, listOf(2));
 
@@ -238,7 +239,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest failsForMissingAccount() {
+    final Stream<DynamicTest> failsForMissingAccount() {
         return defaultHapiSpec("FailsForMissingAccount")
                 .given()
                 .when()
@@ -246,7 +247,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest failsForMalformedPayment() {
+    final Stream<DynamicTest> failsForMalformedPayment() {
         return defaultHapiSpec("FailsForMalformedPayment")
                 .given(newKeyNamed("wrong").shape(SIMPLE))
                 .when()
@@ -254,7 +255,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest failsForUnfundablePayment() {
+    final Stream<DynamicTest> failsForUnfundablePayment() {
         long everything = 1_234L;
         return defaultHapiSpec("FailsForUnfundablePayment")
                 .given(cryptoCreate("brokePayer").balance(everything))
@@ -266,7 +267,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest failsForInsufficientPayment() {
+    final Stream<DynamicTest> failsForInsufficientPayment() {
         return defaultHapiSpec("FailsForInsufficientPayment")
                 .given(cryptoCreate(CIVILIAN_PAYER))
                 .when()
@@ -277,7 +278,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
     }
 
     @HapiTest // this test needs to be updated for both mono and module code.
-    final DynamicTest failsForMissingPayment() {
+    final Stream<DynamicTest> failsForMissingPayment() {
         return defaultHapiSpec("FailsForMissingPayment")
                 .given()
                 .when()
@@ -287,7 +288,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest failsForDeletedAccount() {
+    final Stream<DynamicTest> failsForDeletedAccount() {
         return defaultHapiSpec("FailsForDeletedAccount")
                 .given(cryptoCreate("toBeDeleted"))
                 .when(cryptoDelete("toBeDeleted").transfer(GENESIS))

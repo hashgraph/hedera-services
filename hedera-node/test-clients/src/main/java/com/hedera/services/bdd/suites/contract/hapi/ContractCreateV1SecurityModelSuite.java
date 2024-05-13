@@ -29,11 +29,12 @@ import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModel
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -50,7 +51,7 @@ public class ContractCreateV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix());
     }
 
@@ -59,7 +60,7 @@ public class ContractCreateV1SecurityModelSuite extends HapiSuite {
         return false;
     }
 
-    final DynamicTest receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix() {
+    final Stream<DynamicTest> receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix() {
         final var sendInternalAndDelegateContract = "SendInternalAndDelegate";
         final var justSendContract = "JustSend";
         final var beneficiary = "civilian";

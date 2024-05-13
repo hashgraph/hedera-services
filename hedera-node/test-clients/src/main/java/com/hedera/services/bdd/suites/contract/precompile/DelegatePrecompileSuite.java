@@ -55,7 +55,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -65,6 +64,8 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -101,12 +102,12 @@ public class DelegatePrecompileSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(delegateCallForTransfer(), delegateCallForBurn(), delegateCallForMint());
     }
 
     @HapiTest
-    final DynamicTest delegateCallForTransfer() {
+    final Stream<DynamicTest> delegateCallForTransfer() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> receiverID = new AtomicReference<>();
@@ -167,7 +168,7 @@ public class DelegatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest delegateCallForBurn() {
+    final Stream<DynamicTest> delegateCallForBurn() {
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
         return defaultHapiSpec(
@@ -220,7 +221,7 @@ public class DelegatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest delegateCallForMint() {
+    final Stream<DynamicTest> delegateCallForMint() {
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
         return defaultHapiSpec(

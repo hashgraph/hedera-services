@@ -36,12 +36,13 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -63,14 +64,14 @@ public class TokenManagementSpecsStateful extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
             /* Stateful specs from TokenManagementSpecs */
             freezeMgmtFailureCasesWork());
     }
 
     @HapiTest
-    final DynamicTest freezeMgmtFailureCasesWork() {
+    final Stream<DynamicTest> freezeMgmtFailureCasesWork() {
         var unfreezableToken = "without";
         var freezableToken = "withPlusDefaultTrue";
 
@@ -110,7 +111,7 @@ public class TokenManagementSpecsStateful extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest nftMintingCapIsEnforced() {
+    final Stream<DynamicTest> nftMintingCapIsEnforced() {
         return defaultHapiSpec("NftMintingCapIsEnforced")
                 .given(
                         newKeyNamed("supplyKey"),

@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
@@ -37,6 +36,8 @@ import com.hedera.services.bdd.suites.perf.PerfUtilOps;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -50,12 +51,12 @@ public class MixedOpsTransactionsSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(createStateWithMixedOps());
     }
 
     // Used to generate state with mixed operations
-    final DynamicTest createStateWithMixedOps() {
+    final Stream<DynamicTest> createStateWithMixedOps() {
         long ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
         int numScheduledTxns = 10;
         return HapiSpec.defaultHapiSpec("createStateWithMixedOps")

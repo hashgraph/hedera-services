@@ -58,7 +58,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -68,6 +67,8 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -101,7 +102,7 @@ public class Evm38ValidationSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 invalidContractCall(),
                 cannotSendValueToTokenAccount(),
@@ -120,7 +121,7 @@ public class Evm38ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest invalidContractCall() {
+    final Stream<DynamicTest> invalidContractCall() {
         final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
 
         return propertyPreservingHapiSpec("InvalidContract")
@@ -139,7 +140,7 @@ public class Evm38ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cannotSendValueToTokenAccount() {
+    final Stream<DynamicTest> cannotSendValueToTokenAccount() {
         final var multiKey = "multiKey";
         final var nonFungibleToken = "NFT";
         final var contract = "ManyChildren";
@@ -183,7 +184,7 @@ public class Evm38ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest verifiesExistenceOfAccountsAndContracts() {
+    final Stream<DynamicTest> verifiesExistenceOfAccountsAndContracts() {
         final var contract = "BalanceChecker";
         final var BALANCE = 10L;
         final var ACCOUNT = "test";
@@ -240,7 +241,7 @@ public class Evm38ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest verifiesExistenceForCallCodeOperation() {
+    final Stream<DynamicTest> verifiesExistenceForCallCodeOperation() {
         final var contract = "CallOperationsChecker";
         final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
         return propertyPreservingHapiSpec("verifiesExistenceForCallCodeOperation")
@@ -267,7 +268,7 @@ public class Evm38ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest verifiesExistenceForCallOperation() {
+    final Stream<DynamicTest> verifiesExistenceForCallOperation() {
         final var contract = "CallOperationsChecker";
         final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
         final var ACCOUNT = "account";
@@ -299,7 +300,7 @@ public class Evm38ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest verifiesExistenceForCallOperationInternal() {
+    final Stream<DynamicTest> verifiesExistenceForCallOperationInternal() {
         final var contract = "CallingContract";
         final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
         return propertyPreservingHapiSpec("verifiesExistenceForCallOperationInternal")
@@ -322,7 +323,7 @@ public class Evm38ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest verifiesExistenceForDelegateCallOperation() {
+    final Stream<DynamicTest> verifiesExistenceForDelegateCallOperation() {
         final var contract = "CallOperationsChecker";
         final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
         return propertyPreservingHapiSpec("verifiesExistenceForDelegateCallOperation")
@@ -350,7 +351,7 @@ public class Evm38ValidationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    final DynamicTest verifiesExistenceForExtCodeOperation() {
+    final Stream<DynamicTest> verifiesExistenceForExtCodeOperation() {
         final var contract = "ExtCodeOperationsChecker";
         final var invalidAddress = "0x0000000000000000000000000000000000123456";
         final var emptyBytecode = ByteString.EMPTY;
@@ -415,7 +416,7 @@ public class Evm38ValidationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    final DynamicTest verifiesExistenceForExtCodeSize() {
+    final Stream<DynamicTest> verifiesExistenceForExtCodeSize() {
         final var contract = "ExtCodeOperationsChecker";
         final var invalidAddress = "0x0000000000000000000000000000000000123456";
         final var sizeOf = "sizeOf";
@@ -479,7 +480,7 @@ public class Evm38ValidationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    final DynamicTest verifiesExistenceForExtCodeHash() {
+    final Stream<DynamicTest> verifiesExistenceForExtCodeHash() {
         final var contract = "ExtCodeOperationsChecker";
         final var invalidAddress = "0x0000000000000000000000000000000000123456";
         final var expectedAccountHash =
@@ -542,7 +543,7 @@ public class Evm38ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest verifiesExistenceForStaticCall() {
+    final Stream<DynamicTest> verifiesExistenceForStaticCall() {
         final var contract = "CallOperationsChecker";
         final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
 
@@ -574,7 +575,7 @@ public class Evm38ValidationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5669")
     @HapiTest
-    final DynamicTest canInternallyCallAliasedAddressesOnlyViaCreate2Address() {
+    final Stream<DynamicTest> canInternallyCallAliasedAddressesOnlyViaCreate2Address() {
         final var contract = "AddressValueRet";
         final var aliasCall = "aliasCall";
         final var mirrorCall = "mirrorCall";
@@ -635,7 +636,7 @@ public class Evm38ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest callingDestructedContractReturnsStatusDeleted() {
+    final Stream<DynamicTest> callingDestructedContractReturnsStatusDeleted() {
         final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
         return propertyPreservingHapiSpec("callingDestructedContractReturnsStatusDeleted")
                 .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY, EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS)
@@ -660,7 +661,7 @@ public class Evm38ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest factoryAndSelfDestructInConstructorContract() {
+    final Stream<DynamicTest> factoryAndSelfDestructInConstructorContract() {
         final var contract = "FactorySelfDestructConstructor";
 
         final var sender = "sender";

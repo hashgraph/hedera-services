@@ -82,7 +82,6 @@ import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
@@ -96,6 +95,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -160,7 +161,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 erc20TransferLazyCreate(),
                 erc20TransferFromLazyCreate(),
@@ -172,7 +173,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest resourceLimitExceededRevertsAllRecords() {
+    final Stream<DynamicTest> resourceLimitExceededRevertsAllRecords() {
         final var n = 4; // preceding child record limit is 3
         final var nft = "nft";
         final var nftKey = NFT_KEY;
@@ -243,7 +244,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest autoCreationFailsWithMirrorAddress() {
+    final Stream<DynamicTest> autoCreationFailsWithMirrorAddress() {
         final var nft = "nft";
         final var nftKey = "nftKeyHere";
         final var creationAttempt = CREATION_ATTEMPT;
@@ -286,7 +287,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest erc20TransferLazyCreate() {
+    final Stream<DynamicTest> erc20TransferLazyCreate() {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
         return defaultHapiSpec(
@@ -369,7 +370,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
 
     // Expected INSUFFICIENT_GAS but was REVERTED_SUCCESS
     @HapiTest
-    final DynamicTest erc20TransferFromLazyCreate() {
+    final Stream<DynamicTest> erc20TransferFromLazyCreate() {
         return defaultHapiSpec(
                         "erc20TransferFromLazyCreate",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -484,7 +485,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest erc721TransferFromLazyCreate() {
+    final Stream<DynamicTest> erc721TransferFromLazyCreate() {
         return defaultHapiSpec(
                         "erc721TransferFromLazyCreate",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -579,7 +580,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest htsTransferFromFungibleTokenLazyCreate() {
+    final Stream<DynamicTest> htsTransferFromFungibleTokenLazyCreate() {
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";
         return defaultHapiSpec(
@@ -657,7 +658,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest htsTransferFromForNFTLazyCreate() {
+    final Stream<DynamicTest> htsTransferFromForNFTLazyCreate() {
         return defaultHapiSpec(
                         "htsTransferFromForNFTLazyCreate",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -726,7 +727,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest revertedAutoCreationRollsBackEvenIfTopLevelSucceeds() {
+    final Stream<DynamicTest> revertedAutoCreationRollsBackEvenIfTopLevelSucceeds() {
         return defaultHapiSpec(
                         "revertedAutoCreationRollsBackEvenIfTopLevelSucceeds",
                         NONDETERMINISTIC_TRANSACTION_FEES,

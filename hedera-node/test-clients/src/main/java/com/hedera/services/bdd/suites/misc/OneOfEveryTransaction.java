@@ -44,12 +44,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -62,11 +63,11 @@ public class OneOfEveryTransaction extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(doThings());
     }
 
-    final DynamicTest doThings() {
+    final Stream<DynamicTest> doThings() {
         /* Crypto signing */
         var complex = KeyShape.threshOf(1, KeyShape.listOf(3), KeyShape.threshOf(1, 3));
         /* File signing */

@@ -42,7 +42,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -51,6 +50,8 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -84,19 +85,19 @@ public class GrantRevokeKycV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<DynamicTest> negativeSpecs() {
+    List<Stream<DynamicTest>>negativeSpecs() {
         return List.of();
     }
 
-    List<DynamicTest> positiveSpecs() {
+    List<Stream<DynamicTest>>positiveSpecs() {
         return List.of(grantRevokeKycSpec());
     }
 
-    final DynamicTest grantRevokeKycSpec() {
+    final Stream<DynamicTest> grantRevokeKycSpec() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<AccountID> secondAccountID = new AtomicReference<>();

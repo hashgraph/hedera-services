@@ -54,6 +54,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -77,7 +79,7 @@ public class TokenTransferBasicLoadTest extends LoadTest {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(runTokenTransferBasicLoadTest());
     }
 
@@ -190,7 +192,7 @@ public class TokenTransferBasicLoadTest extends LoadTest {
         };
     }
 
-    final DynamicTest runTokenTransferBasicLoadTest() {
+    final Stream<DynamicTest> runTokenTransferBasicLoadTest() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         Supplier<HapiSpecOperation[]> tokenTransferBurst =
                 () -> new HapiSpecOperation[] {opSupplier(settings).get()};

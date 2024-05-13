@@ -28,7 +28,6 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -36,6 +35,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -53,7 +54,7 @@ public class RecordsSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(bigCall(), txRecordsContainValidTransfers());
     }
 
@@ -63,7 +64,7 @@ public class RecordsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest bigCall() {
+    final Stream<DynamicTest> bigCall() {
         final var contract = "BigBig";
         final var txName = "BigCall";
         final long byteArraySize = (long) (87.5 * 1_024);
@@ -81,7 +82,7 @@ public class RecordsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest txRecordsContainValidTransfers() {
+    final Stream<DynamicTest> txRecordsContainValidTransfers() {
         final var contract = "ParentChildTransfer";
 
         return defaultHapiSpec("TXRecordsContainValidTransfers", NONDETERMINISTIC_TRANSACTION_FEES)

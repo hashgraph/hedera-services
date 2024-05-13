@@ -62,9 +62,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -77,7 +78,7 @@ public class PartitionsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(PartitionsSuite.class);
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 createNewPartitionDefinitions(),
                 updatePartitionDefinitionsMemo(),
@@ -107,7 +108,7 @@ public class PartitionsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest createNewPartitionDefinitions() {
+    final Stream<DynamicTest> createNewPartitionDefinitions() {
         return defaultHapiSpec("CreateNewPartitionDefinitions")
                 .given(fungibleTokenWithFeatures(PARTITIONING))
                 .when()
@@ -124,7 +125,7 @@ public class PartitionsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest updatePartitionDefinitionsMemo() {
+    final Stream<DynamicTest> updatePartitionDefinitionsMemo() {
         return defaultHapiSpec("UpdatePartitionDefinitionsMemo")
                 .given(fungibleTokenWithFeatures(PARTITIONING, ADMIN_CONTROL)
                         .withPartition(RED_PARTITION, p -> p.memo("TBD")))
@@ -141,7 +142,7 @@ public class PartitionsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest deletePartitionDefinitions() {
+    final Stream<DynamicTest> deletePartitionDefinitions() {
         return defaultHapiSpec("DeletePartitionDefinitions")
                 .given(fungibleTokenWithFeatures(PARTITIONING, ADMIN_CONTROL).withPartition(RED_PARTITION))
                 .when(
@@ -158,7 +159,7 @@ public class PartitionsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest transferBetweenPartitions() {
+    final Stream<DynamicTest> transferBetweenPartitions() {
         return defaultHapiSpec("TransferBetweenPartitions")
                 .given(fungibleTokenWithFeatures(PARTITIONING, INTER_PARTITION_MANAGEMENT)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION)
@@ -181,7 +182,7 @@ public class PartitionsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest transferNFTsWithinPartitions() {
+    final Stream<DynamicTest> transferNFTsWithinPartitions() {
         return defaultHapiSpec("TransferNFTsWithinPartitions")
                 .given(nonFungibleTokenWithFeatures(PARTITIONING, INTER_PARTITION_MANAGEMENT)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION)
@@ -210,7 +211,7 @@ public class PartitionsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest pauseTokenTransfersIncludingPartitions() {
+    final Stream<DynamicTest> pauseTokenTransfersIncludingPartitions() {
         return defaultHapiSpec("PauseTokenTransfersIncludingPartitions")
                 .given(nonFungibleTokenWithFeatures(PARTITIONING, PAUSING)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION)
@@ -240,7 +241,7 @@ public class PartitionsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest freezeTokenTransfersForAccountIncludingPartitions() {
+    final Stream<DynamicTest> freezeTokenTransfersForAccountIncludingPartitions() {
         return defaultHapiSpec("FreezeTokenTransfersForAccountIncludingPartitions")
                 .given(nonFungibleTokenWithFeatures(PARTITIONING, FREEZING)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION)
@@ -269,7 +270,7 @@ public class PartitionsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest requireKycForTokenTransfersIncludingPartitions() {
+    final Stream<DynamicTest> requireKycForTokenTransfersIncludingPartitions() {
         return defaultHapiSpec("RequireKycForTokenTransfersIncludingPartitions")
                 .given(nonFungibleTokenWithFeatures(PARTITIONING, KYC_MANAGEMENT)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION)
@@ -298,7 +299,7 @@ public class PartitionsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest pauseTransfersForSpecificPartition() {
+    final Stream<DynamicTest> pauseTransfersForSpecificPartition() {
         return defaultHapiSpec("PauseTransfersForSpecificPartition")
                 .given(nonFungibleTokenWithFeatures(PARTITIONING, PAUSING)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION)
@@ -329,7 +330,7 @@ public class PartitionsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest freezeTransfersForSpecificPartitionOnAccount() {
+    final Stream<DynamicTest> freezeTransfersForSpecificPartitionOnAccount() {
         return defaultHapiSpec("FreezeTransfersForSpecificPartitionOnAccount")
                 .given(nonFungibleTokenWithFeatures(PARTITIONING, FREEZING)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION)
@@ -360,7 +361,7 @@ public class PartitionsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest requireKycForPartitionTransfers() {
+    final Stream<DynamicTest> requireKycForPartitionTransfers() {
         return defaultHapiSpec("RequireKycForPartitionTransfers")
                 .given(
                         cryptoCreate(ALICE),
@@ -385,7 +386,7 @@ public class PartitionsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest createFixedSupplyTokenWithPartitionKey() {
+    final Stream<DynamicTest> createFixedSupplyTokenWithPartitionKey() {
         return defaultHapiSpec("CreateFixedSupplyTokenWithPartitionKey")
                 .given(
                         // Without a supply key, this will be a fixed supply token
@@ -417,7 +418,7 @@ public class PartitionsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest notHonorDeletionOfTokenWithExistingPartitions() {
+    final Stream<DynamicTest> notHonorDeletionOfTokenWithExistingPartitions() {
         return defaultHapiSpec("NotHonorDeletionOfTokenWithExistingPartitions")
                 .given(fungibleTokenWithFeatures(PARTITIONING)
                         .initialSupply(6L)
@@ -445,7 +446,7 @@ public class PartitionsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest mintToSpecificPartitionOfTreasury() {
+    final Stream<DynamicTest> mintToSpecificPartitionOfTreasury() {
         return defaultHapiSpec("MintToSpecificPartitionOfTreasury")
                 .given(fungibleTokenWithFeatures(PARTITIONING, SUPPLY_MANAGEMENT)
                         .initialSupply(99L)
@@ -468,7 +469,7 @@ public class PartitionsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest burnFromSpecificPartitionOfTreasury() {
+    final Stream<DynamicTest> burnFromSpecificPartitionOfTreasury() {
         return defaultHapiSpec("BurnFromSpecificPartitionOfTreasury")
                 .given(fungibleTokenWithFeatures(PARTITIONING, SUPPLY_MANAGEMENT)
                         .initialSupply(99L)
@@ -491,7 +492,7 @@ public class PartitionsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest wipeFromSpecificPartitionInUserAccount() {
+    final Stream<DynamicTest> wipeFromSpecificPartitionInUserAccount() {
         return defaultHapiSpec("WipeFromSpecificPartitionInUserAccount")
                 .given(nonFungibleTokenWithFeatures(PARTITIONING, WIPING)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION)
@@ -513,7 +514,7 @@ public class PartitionsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest smartContractAdministersPartitions() {
+    final Stream<DynamicTest> smartContractAdministersPartitions() {
         return defaultHapiSpec("SmartContractAdministersPartitions")
                 .given(fungibleTokenWithFeatures(PARTITIONING, ADMIN_CONTROL).managedByContract())
                 .when(
@@ -558,7 +559,7 @@ public class PartitionsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest freezeOrPauseAtTokenLevelOverridesPartition() {
+    final Stream<DynamicTest> freezeOrPauseAtTokenLevelOverridesPartition() {
         return defaultHapiSpec("FreezeOrPauseAtTokenLevelOverridesPartition")
                 .given(nonFungibleTokenWithFeatures(PARTITIONING, PAUSING, FREEZING)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION)

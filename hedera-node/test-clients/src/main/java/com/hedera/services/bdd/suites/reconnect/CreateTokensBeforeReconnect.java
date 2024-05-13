@@ -28,13 +28,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -53,7 +54,7 @@ public class CreateTokensBeforeReconnect extends HapiSuite {
     private static final AtomicInteger tokenNumber = new AtomicInteger(0);
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(runCreateTopics());
     }
 
@@ -70,7 +71,7 @@ public class CreateTokensBeforeReconnect extends HapiSuite {
                 .deferStatusResolution();
     }
 
-    final DynamicTest runCreateTopics() {
+    final Stream<DynamicTest> runCreateTopics() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings(
                 TOKEN_CREATION_RECONNECT_TPS,
                 DEFAULT_MINS_FOR_RECONNECT_TESTS,

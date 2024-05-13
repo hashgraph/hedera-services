@@ -26,10 +26,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.finishThroughputObs
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.startThroughputObs;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -43,7 +44,7 @@ public class CryptoTransferPerfSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return Arrays.asList(cryptoTransferPerf());
     }
 
@@ -52,7 +53,7 @@ public class CryptoTransferPerfSuite extends HapiSuite {
         return false;
     }
 
-    final DynamicTest cryptoTransferPerf() {
+    final Stream<DynamicTest> cryptoTransferPerf() {
         final int NUM_ACCOUNTS = 10;
         final int NUM_TRANSFERS = 10_000;
         final long INIT_BALANCE = 100_000_000_000L;

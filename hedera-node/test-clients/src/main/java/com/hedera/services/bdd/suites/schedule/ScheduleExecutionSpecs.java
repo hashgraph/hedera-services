@@ -157,7 +157,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
@@ -175,6 +174,8 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -210,7 +211,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return withAndWithoutLongTermEnabled(isLongTermEnabled -> List.of(
                 suiteSetup(),
                 // Note: Order matters here, e2e tests may fail if reordered.
@@ -269,14 +270,14 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(1)
-    final DynamicTest suiteSetup() {
+    final Stream<DynamicTest> suiteSetup() {
         // Managing whitelist for these is error-prone, so just whitelist everything by default.
         return defaultHapiSpec("suiteSetup").given().when().then(addAllToWhitelist());
     }
 
     @HapiTest
     @Order(18)
-    final DynamicTest scheduledBurnFailsWithInvalidTxBody() {
+    final Stream<DynamicTest> scheduledBurnFailsWithInvalidTxBody() {
         return defaultHapiSpec("ScheduledBurnFailsWithInvalidTxBody")
                 .given(
                         overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
@@ -305,7 +306,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(23)
-    final DynamicTest scheduledMintFailsWithInvalidTxBody() {
+    final Stream<DynamicTest> scheduledMintFailsWithInvalidTxBody() {
         return defaultHapiSpec("ScheduledMintFailsWithInvalidTxBody")
                 .given(
                         overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
@@ -340,7 +341,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(24)
-    final DynamicTest scheduledMintWithInvalidTokenThrowsUnresolvableSigners() {
+    final Stream<DynamicTest> scheduledMintWithInvalidTokenThrowsUnresolvableSigners() {
         return defaultHapiSpec("ScheduledMintWithInvalidTokenThrowsUnresolvableSigners")
                 .given(overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM), cryptoCreate(SCHEDULE_PAYER))
                 .when(scheduleCreate(
@@ -354,7 +355,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(35)
-    final DynamicTest scheduledUniqueBurnFailsWithInvalidBatchSize() {
+    final Stream<DynamicTest> scheduledUniqueBurnFailsWithInvalidBatchSize() {
         return defaultHapiSpec("ScheduledUniqueBurnFailsWithInvalidBatchSize")
                 .given(
                         overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
@@ -388,7 +389,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(34)
-    final DynamicTest scheduledUniqueBurnExecutesProperly() {
+    final Stream<DynamicTest> scheduledUniqueBurnExecutesProperly() {
         return defaultHapiSpec("ScheduledUniqueBurnExecutesProperly")
                 .given(
                         overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
@@ -465,7 +466,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(39)
-    final DynamicTest scheduledUniqueMintFailsWithInvalidMetadata() {
+    final Stream<DynamicTest> scheduledUniqueMintFailsWithInvalidMetadata() {
         return defaultHapiSpec("ScheduledUniqueMintFailsWithInvalidMetadata")
                 .given(
                         overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
@@ -494,7 +495,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(36)
-    final DynamicTest scheduledUniqueBurnFailsWithInvalidNftId() {
+    final Stream<DynamicTest> scheduledUniqueBurnFailsWithInvalidNftId() {
         return defaultHapiSpec("ScheduledUniqueBurnFailsWithInvalidNftId")
                 .given(
                         overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
@@ -519,7 +520,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(20)
-    final DynamicTest scheduledBurnForUniqueSucceedsWithExistingAmount() {
+    final Stream<DynamicTest> scheduledBurnForUniqueSucceedsWithExistingAmount() {
         return defaultHapiSpec("scheduledBurnForUniqueSucceedsWithExistingAmount")
                 .given(
                         overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
@@ -546,7 +547,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(19)
-    final DynamicTest scheduledBurnForUniqueFailsWithInvalidAmount() {
+    final Stream<DynamicTest> scheduledBurnForUniqueFailsWithInvalidAmount() {
         return defaultHapiSpec("ScheduledBurnForUniqueFailsWithInvalidAmount")
                 .given(
                         overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
@@ -587,7 +588,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(38)
-    final DynamicTest scheduledUniqueMintFailsWithInvalidBatchSize() {
+    final Stream<DynamicTest> scheduledUniqueMintFailsWithInvalidBatchSize() {
         return defaultHapiSpec("ScheduledUniqueMintFailsWithInvalidBatchSize")
                 .given(
                         overriding(TOKENS_NFTS_MAX_BATCH_SIZE_MINT, "5"),
@@ -626,7 +627,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(22)
-    final DynamicTest scheduledMintFailsWithInvalidAmount() {
+    final Stream<DynamicTest> scheduledMintFailsWithInvalidAmount() {
         final var zeroAmountTxn = "zeroAmountTxn";
         return defaultHapiSpec("ScheduledMintFailsWithInvalidAmount")
                 .given(
@@ -660,7 +661,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(37)
-    final DynamicTest scheduledUniqueMintExecutesProperly() {
+    final Stream<DynamicTest> scheduledUniqueMintExecutesProperly() {
         return defaultHapiSpec("ScheduledUniqueMintExecutesProperly")
                 .given(
                         overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
@@ -740,7 +741,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(21)
-    final DynamicTest scheduledMintExecutesProperly() {
+    final Stream<DynamicTest> scheduledMintExecutesProperly() {
         return defaultHapiSpec("ScheduledMintExecutesProperly")
                 .given(
                         overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
@@ -813,7 +814,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(17)
-    final DynamicTest scheduledBurnExecutesProperly() {
+    final Stream<DynamicTest> scheduledBurnExecutesProperly() {
         return defaultHapiSpec("ScheduledBurnExecutesProperly")
                 .given(
                         overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
@@ -887,7 +888,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(40)
-    final DynamicTest scheduledXferFailingWithDeletedAccountPaysServiceFeeButNoImpact() {
+    final Stream<DynamicTest> scheduledXferFailingWithDeletedAccountPaysServiceFeeButNoImpact() {
         final String xToken = "XXX";
         final String validSchedule = "withLiveAccount";
         final String invalidSchedule = "withDeletedAccount";
@@ -939,7 +940,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(41)
-    final DynamicTest scheduledXferFailingWithDeletedTokenPaysServiceFeeButNoImpact() {
+    final Stream<DynamicTest> scheduledXferFailingWithDeletedTokenPaysServiceFeeButNoImpact() {
         String xToken = "XXX";
         String validSchedule = "withLiveToken";
         String invalidSchedule = "withDeletedToken";
@@ -994,7 +995,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(43)
-    final DynamicTest scheduledXferFailingWithFrozenAccountTransferPaysServiceFeeButNoImpact() {
+    final Stream<DynamicTest> scheduledXferFailingWithFrozenAccountTransferPaysServiceFeeButNoImpact() {
         String xToken = "XXX";
         String validSchedule = "withUnfrozenAccount";
         String invalidSchedule = "withFrozenAccount";
@@ -1051,7 +1052,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(44)
-    final DynamicTest scheduledXferFailingWithNonKycedAccountTransferPaysServiceFeeButNoImpact() {
+    final Stream<DynamicTest> scheduledXferFailingWithNonKycedAccountTransferPaysServiceFeeButNoImpact() {
         String xToken = "XXX";
         String validSchedule = "withKycedToken";
         String invalidSchedule = "withNonKycedToken";
@@ -1107,7 +1108,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(47)
-    final DynamicTest scheduledXferFailingWithUnassociatedAccountTransferPaysServiceFeeButNoImpact() {
+    final Stream<DynamicTest> scheduledXferFailingWithUnassociatedAccountTransferPaysServiceFeeButNoImpact() {
         String xToken = "XXX";
         String validSchedule = "withAssociatedToken";
         String invalidSchedule = "withUnassociatedToken";
@@ -1158,7 +1159,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(45)
-    final DynamicTest scheduledXferFailingWithNonNetZeroTokenTransferPaysServiceFeeButNoImpact() {
+    final Stream<DynamicTest> scheduledXferFailingWithNonNetZeroTokenTransferPaysServiceFeeButNoImpact() {
         String xToken = "XXX";
         String validSchedule = "withZeroNetTokenChange";
         String invalidSchedule = "withNonZeroNetTokenChange";
@@ -1216,7 +1217,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(46)
-    final DynamicTest scheduledXferFailingWithRepeatedTokenIdPaysServiceFeeButNoImpact() {
+    final Stream<DynamicTest> scheduledXferFailingWithRepeatedTokenIdPaysServiceFeeButNoImpact() {
         String xToken = "XXX";
         String yToken = "YYY";
         String validSchedule = "withNoRepeats";
@@ -1283,7 +1284,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(42)
-    final DynamicTest scheduledXferFailingWithEmptyTokenTransferAccountAmountsPaysServiceFeeButNoImpact() {
+    final Stream<DynamicTest> scheduledXferFailingWithEmptyTokenTransferAccountAmountsPaysServiceFeeButNoImpact() {
         String xToken = "XXX";
         String yToken = "YYY";
         String validSchedule = "withNonEmptyTransfers";
@@ -1353,7 +1354,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(29)
-    final DynamicTest scheduledSubmitFailedWithMsgSizeTooLargeStillPaysServiceFeeButHasNoImpact() {
+    final Stream<DynamicTest> scheduledSubmitFailedWithMsgSizeTooLargeStillPaysServiceFeeButHasNoImpact() {
         String immutableTopic = "XXX";
         String validSchedule = "withValidSize";
         String invalidSchedule = "withInvalidSize";
@@ -1396,7 +1397,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(28)
-    final DynamicTest scheduledSubmitFailedWithInvalidChunkTxnIdStillPaysServiceFeeButHasNoImpact() {
+    final Stream<DynamicTest> scheduledSubmitFailedWithInvalidChunkTxnIdStillPaysServiceFeeButHasNoImpact() {
         String immutableTopic = "XXX";
         String validSchedule = "withValidChunkTxnId";
         String invalidSchedule = "withInvalidChunkTxnId";
@@ -1450,7 +1451,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(27)
-    final DynamicTest scheduledSubmitFailedWithInvalidChunkNumberStillPaysServiceFeeButHasNoImpact() {
+    final Stream<DynamicTest> scheduledSubmitFailedWithInvalidChunkNumberStillPaysServiceFeeButHasNoImpact() {
         String immutableTopic = "XXX";
         String validSchedule = "withValidChunkNumber";
         String invalidSchedule = "withInvalidChunkNumber";
@@ -1499,7 +1500,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(30)
-    final DynamicTest scheduledSubmitThatWouldFailWithInvalidTopicIdCannotBeScheduled() {
+    final Stream<DynamicTest> scheduledSubmitThatWouldFailWithInvalidTopicIdCannotBeScheduled() {
         String civilianPayer = PAYER;
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
@@ -1538,7 +1539,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(31)
-    final DynamicTest scheduledSubmitThatWouldFailWithTopicDeletedCannotBeSigned() {
+    final Stream<DynamicTest> scheduledSubmitThatWouldFailWithTopicDeletedCannotBeSigned() {
         String adminKey = ADMIN;
         String mutableTopic = "XXX";
         String postDeleteSchedule = "deferredTooLongSubmitMsg";
@@ -1565,7 +1566,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(2)
-    final DynamicTest executionTriggersOnceTopicHasSatisfiedSubmitKey() {
+    final Stream<DynamicTest> executionTriggersOnceTopicHasSatisfiedSubmitKey() {
         String adminKey = ADMIN;
         String submitKey = "submit";
         String mutableTopic = "XXX";
@@ -1604,7 +1605,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(3)
-    final DynamicTest executionTriggersWithWeirdlyRepeatedKey() {
+    final Stream<DynamicTest> executionTriggersWithWeirdlyRepeatedKey() {
         String schedule = "dupKeyXfer";
 
         return defaultHapiSpec("ExecutionTriggersWithWeirdlyRepeatedKey")
@@ -1639,7 +1640,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(14)
-    final DynamicTest executionWithDefaultPayerWorks() {
+    final Stream<DynamicTest> executionWithDefaultPayerWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithDefaultPayerWorks")
                 .given(
@@ -1698,7 +1699,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(13)
-    final DynamicTest executionWithDefaultPayerButNoFundsFails() {
+    final Stream<DynamicTest> executionWithDefaultPayerButNoFundsFails() {
         long balance = 10_000_000L;
         long noBalance = 0L;
         long transferAmount = 1L;
@@ -1737,7 +1738,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(11)
-    final DynamicTest executionWithCustomPayerWorksWithLastSigBeingCustomPayer() {
+    final Stream<DynamicTest> executionWithCustomPayerWorksWithLastSigBeingCustomPayer() {
         long noBalance = 0L;
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerWorksWithLastSigBeingCustomPayer")
@@ -1776,7 +1777,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(8)
-    final DynamicTest executionWithCustomPayerButNoFundsFails() {
+    final Stream<DynamicTest> executionWithCustomPayerButNoFundsFails() {
         long balance = 0L;
         long noBalance = 0L;
         long transferAmount = 1;
@@ -1810,7 +1811,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(12)
-    final DynamicTest executionWithDefaultPayerButAccountDeletedFails() {
+    final Stream<DynamicTest> executionWithDefaultPayerButAccountDeletedFails() {
         long balance = 10_000_000L;
         long noBalance = 0L;
         long transferAmount = 1L;
@@ -1838,7 +1839,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @Order(7)
     @HapiTest
-    final DynamicTest executionWithCustomPayerButAccountDeletedFails() {
+    final Stream<DynamicTest> executionWithCustomPayerButAccountDeletedFails() {
         long balance = 10_000_000L;
         long noBalance = 0L;
         long transferAmount = 1;
@@ -1879,7 +1880,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(4)
-    final DynamicTest executionWithCryptoInsufficientAccountBalanceFails() {
+    final Stream<DynamicTest> executionWithCryptoInsufficientAccountBalanceFails() {
         long noBalance = 0L;
         long senderBalance = 100L;
         long transferAmount = 101L;
@@ -1914,7 +1915,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(5)
-    final DynamicTest executionWithCryptoSenderDeletedFails() {
+    final Stream<DynamicTest> executionWithCryptoSenderDeletedFails() {
         long noBalance = 0L;
         long senderBalance = 100L;
         long transferAmount = 101L;
@@ -1951,7 +1952,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(16)
-    final DynamicTest executionWithTokenInsufficientAccountBalanceFails() {
+    final Stream<DynamicTest> executionWithTokenInsufficientAccountBalanceFails() {
         String xToken = "XXX";
         String invalidSchedule = "withInsufficientTokenTransfer";
         String schedulePayer = PAYER;
@@ -1986,7 +1987,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(15)
-    final DynamicTest executionWithInvalidAccountAmountsFails() {
+    final Stream<DynamicTest> executionWithInvalidAccountAmountsFails() {
         long transferAmount = 100;
         long senderBalance = 1000L;
         long payingAccountBalance = 1_000_000L;
@@ -2031,7 +2032,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(10)
-    final DynamicTest executionWithCustomPayerWorks() {
+    final Stream<DynamicTest> executionWithCustomPayerWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerWorks")
                 .given(
@@ -2098,7 +2099,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(6)
-    final DynamicTest executionWithCustomPayerAndAdminKeyWorks() {
+    final Stream<DynamicTest> executionWithCustomPayerAndAdminKeyWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerAndAdminKeyWorks")
                 .given(
@@ -2167,7 +2168,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(9)
-    final DynamicTest executionWithCustomPayerWhoSignsAtCreationAsPayerWorks() {
+    final Stream<DynamicTest> executionWithCustomPayerWhoSignsAtCreationAsPayerWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerWhoSignsAtCreationAsPayerWorks")
                 .given(
@@ -2235,7 +2236,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     // Currently this cannot be run as HapiTest because it stops the captive nodes.
     @BddMethodIsNotATest
-    final DynamicTest scheduledFreezeWorksAsExpected() {
+    final Stream<DynamicTest> scheduledFreezeWorksAsExpected() {
         final byte[] poeticUpgradeHash = getPoeticUpgradeHash();
 
         return defaultHapiSpec("ScheduledFreezeWorksAsExpected")
@@ -2278,7 +2279,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     // Currently this cannot be run as HapiTest because it stops the captive nodes.
     @BddMethodIsNotATest
-    final DynamicTest scheduledFreezeWithUnauthorizedPayerFails(boolean isLongTermEnabled) {
+    final Stream<DynamicTest> scheduledFreezeWithUnauthorizedPayerFails(boolean isLongTermEnabled) {
         final byte[] poeticUpgradeHash = getPoeticUpgradeHash();
 
         if (isLongTermEnabled) {
@@ -2350,7 +2351,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(26)
-    final DynamicTest scheduledPermissionedFileUpdateWorksAsExpected() {
+    final Stream<DynamicTest> scheduledPermissionedFileUpdateWorksAsExpected() {
         return defaultHapiSpec("ScheduledPermissionedFileUpdateWorksAsExpected")
                 .given(
                         overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
@@ -2383,7 +2384,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(25)
-    final DynamicTest scheduledPermissionedFileUpdateUnauthorizedPayerFails() {
+    final Stream<DynamicTest> scheduledPermissionedFileUpdateUnauthorizedPayerFails() {
 
         return defaultHapiSpec("ScheduledPermissionedFileUpdateUnauthorizedPayerFails")
                 .given(
@@ -2418,7 +2419,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(33)
-    final DynamicTest scheduledSystemDeleteWorksAsExpected() {
+    final Stream<DynamicTest> scheduledSystemDeleteWorksAsExpected() {
 
         return defaultHapiSpec("ScheduledSystemDeleteWorksAsExpected")
                 .given(
@@ -2452,7 +2453,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(32)
-    final DynamicTest hapiTestScheduledSystemDeleteUnauthorizedPayerFails() {
+    final Stream<DynamicTest> hapiTestScheduledSystemDeleteUnauthorizedPayerFails() {
         return defaultHapiSpec("ScheduledSystemDeleteUnauthorizedPayerFails")
                 .given(
                         overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
@@ -2486,7 +2487,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @BddMethodIsNotATest
-    final DynamicTest scheduledSystemDeleteUnauthorizedPayerFails(boolean isLongTermEnabled) {
+    final Stream<DynamicTest> scheduledSystemDeleteUnauthorizedPayerFails(boolean isLongTermEnabled) {
         if (isLongTermEnabled) {
 
             return defaultHapiSpec("ScheduledSystemDeleteUnauthorizedPayerFails")
@@ -2542,7 +2543,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     // @todo('FUTURE') Work out why we get `PLATFORM_TRANSACTION_NOT_CREATED` instead of `OK`
     //      for UncheckedSubmit...  This appears to come from `blockingOrder` call in `when` clause
-    final DynamicTest congestionPricingAffectsImmediateScheduleExecution() {
+    final Stream<DynamicTest> congestionPricingAffectsImmediateScheduleExecution() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-congestion.json");
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         var contract = "Multipurpose";
@@ -2646,7 +2647,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @HapiTest
     @Order(48)
-    final DynamicTest suiteCleanup() {
+    final Stream<DynamicTest> suiteCleanup() {
         return defaultHapiSpec("suiteCleanup")
                 .given()
                 .when()

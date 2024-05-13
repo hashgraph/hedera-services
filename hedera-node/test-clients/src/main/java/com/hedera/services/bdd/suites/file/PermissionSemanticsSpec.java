@@ -39,7 +39,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -47,6 +46,8 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -69,7 +70,7 @@ public class PermissionSemanticsSpec extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 allowsDeleteWithOneTopLevelSig(),
                 supportsImmutableFiles(),
@@ -77,7 +78,7 @@ public class PermissionSemanticsSpec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest addressBookAdminExemptFromFeesGivenAuthorizedOps() {
+    final Stream<DynamicTest> addressBookAdminExemptFromFeesGivenAuthorizedOps() {
         long amount = 100 * 100_000_000L;
         AtomicReference<byte[]> origContents = new AtomicReference<>();
         return defaultHapiSpec("AddressBookAdminExemptFromFeesGivenAuthorizedOps")
@@ -101,7 +102,7 @@ public class PermissionSemanticsSpec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest supportsImmutableFiles() {
+    final Stream<DynamicTest> supportsImmutableFiles() {
         long extensionSecs = 666L;
         AtomicLong approxExpiry = new AtomicLong();
 
@@ -143,7 +144,7 @@ public class PermissionSemanticsSpec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest allowsDeleteWithOneTopLevelSig() {
+    final Stream<DynamicTest> allowsDeleteWithOneTopLevelSig() {
         KeyShape wacl = KeyShape.listOf(KeyShape.SIMPLE, KeyShape.listOf(2));
 
         var deleteSig = wacl.signedWith(sigs(ON, sigs(OFF, OFF)));

@@ -19,16 +19,12 @@ package com.hedera.services.bdd.suites.fees;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.TAKE;
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
-import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -39,15 +35,12 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
-import static java.util.stream.Collectors.toList;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.TransferList;
+
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
@@ -69,12 +62,12 @@ public class CostOfEverythingSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(miscContractCreatesAndCalls());
     }
 
     @HapiTest
-    final DynamicTest miscContractCreatesAndCalls() {
+    final Stream<DynamicTest> miscContractCreatesAndCalls() {
         // Note that contracts are prohibited to sending value to system
         // accounts below 0.0.750
         Object[] donationArgs = new Object[] {800L, "Hey, Ma!"};
@@ -112,7 +105,7 @@ public class CostOfEverythingSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cryptoCreateSimpleKey() {
+    final Stream<DynamicTest> cryptoCreateSimpleKey() {
         KeyShape shape = SIMPLE;
 
         return customHapiSpec("SuccessfulCryptoCreate")

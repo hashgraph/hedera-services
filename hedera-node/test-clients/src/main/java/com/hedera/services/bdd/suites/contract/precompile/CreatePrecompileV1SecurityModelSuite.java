@@ -47,7 +47,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TRE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
@@ -60,6 +59,8 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -105,11 +106,11 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
 
     // TODO: Fix contract name in TokenCreateContract.sol
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<DynamicTest> positiveSpecs() {
+    List<Stream<DynamicTest>>positiveSpecs() {
         return List.of(
                 fungibleTokenCreateHappyPath(),
                 nonFungibleTokenCreateHappyPath(),
@@ -120,13 +121,13 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
                 createTokenWithDefaultExpiryAndEmptyKeys());
     }
 
-    List<DynamicTest> negativeSpecs() {
+    List<Stream<DynamicTest>>negativeSpecs() {
         // TODO: Where are the security model v1 _negative_ tests?
         return List.of();
     }
 
     // TEST-001
-    final DynamicTest fungibleTokenCreateHappyPath() {
+    final Stream<DynamicTest> fungibleTokenCreateHappyPath() {
         final var tokenCreateContractAsKeyDelegate = "tokenCreateContractAsKeyDelegate";
         final var createTokenNum = new AtomicLong();
         return propertyPreservingHapiSpec("fungibleTokenCreateHappyPath")
@@ -233,7 +234,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
 
     // TEST-002
 
-    final DynamicTest inheritsSenderAutoRenewAccountIfAnyForNftCreate() {
+    final Stream<DynamicTest> inheritsSenderAutoRenewAccountIfAnyForNftCreate() {
         final var createdNftTokenNum = new AtomicLong();
         return propertyPreservingHapiSpec("inheritsSenderAutoRenewAccountIfAnyForNftCreate")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -299,7 +300,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
                 }));
     }
 
-    final DynamicTest inheritsSenderAutoRenewAccountForTokenCreate() {
+    final Stream<DynamicTest> inheritsSenderAutoRenewAccountForTokenCreate() {
         final var createTokenNum = new AtomicLong();
         return propertyPreservingHapiSpec("inheritsSenderAutoRenewAccountForTokenCreate")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -369,7 +370,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     // TEST-003 & TEST-019
-    final DynamicTest nonFungibleTokenCreateHappyPath() {
+    final Stream<DynamicTest> nonFungibleTokenCreateHappyPath() {
         final var createdTokenNum = new AtomicLong();
         return propertyPreservingHapiSpec("nonFungibleTokenCreateHappyPath")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -461,7 +462,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     // TEST-005
-    final DynamicTest fungibleTokenCreateThenQueryAndTransfer() {
+    final Stream<DynamicTest> fungibleTokenCreateThenQueryAndTransfer() {
         final var createdTokenNum = new AtomicLong();
         return propertyPreservingHapiSpec("fungibleTokenCreateThenQueryAndTransfer")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -543,7 +544,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     // TEST-006
-    final DynamicTest nonFungibleTokenCreateThenQuery() {
+    final Stream<DynamicTest> nonFungibleTokenCreateThenQuery() {
         final var createdTokenNum = new AtomicLong();
         return propertyPreservingHapiSpec("nonFungibleTokenCreateThenQuery")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -610,7 +611,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
                                 .logged()));
     }
 
-    final DynamicTest createTokenWithDefaultExpiryAndEmptyKeys() {
+    final Stream<DynamicTest> createTokenWithDefaultExpiryAndEmptyKeys() {
         final var tokenCreateContractAsKeyDelegate = "createTokenWithDefaultExpiryAndEmptyKeys";
         final var createTokenNum = new AtomicLong();
         return propertyPreservingHapiSpec("createTokenWithDefaultExpiryAndEmptyKeys")

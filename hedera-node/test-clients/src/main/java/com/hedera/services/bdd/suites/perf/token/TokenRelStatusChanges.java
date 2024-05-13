@@ -46,6 +46,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -62,12 +64,12 @@ public class TokenRelStatusChanges extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
             runTokenRelStatusChanges());
     }
 
-    final DynamicTest runTokenRelStatusChanges() {
+    final Stream<DynamicTest> runTokenRelStatusChanges() {
         return HapiSpec.defaultHapiSpec("RunTokenRelStatusChanges")
                 .given(stdMgmtOf(duration, unit, maxOpsPerSec))
                 .when()

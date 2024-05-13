@@ -39,7 +39,6 @@ import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -53,6 +52,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -68,7 +69,7 @@ public class Issue305Spec extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         final var repeatedSpecs = new ArrayList<>(IntStream.range(0, 5)
                 .mapToObj(ignore -> createDeleteInSameRoundWorks())
                 .toList());
@@ -77,7 +78,7 @@ public class Issue305Spec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest createDeleteInSameRoundWorks() {
+    final Stream<DynamicTest> createDeleteInSameRoundWorks() {
         AtomicReference<String> nextFileId = new AtomicReference<>();
         return defaultHapiSpec("CreateDeleteInSameRoundWorks")
                 .given(
@@ -100,7 +101,7 @@ public class Issue305Spec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest congestionMultipliersRefreshOnPropertyUpdate() {
+    final Stream<DynamicTest> congestionMultipliersRefreshOnPropertyUpdate() {
         final var civilian = "civilian";
         final var preCongestionTxn = "preCongestionTxn";
         final var multipurposeContract = "Multipurpose";

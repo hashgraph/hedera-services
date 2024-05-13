@@ -23,10 +23,11 @@ import static com.hedera.services.bdd.suites.token.hip540.Hip540TestScenarios.AL
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -42,12 +43,12 @@ public class Hip540Suite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(allScenariosAsExpected());
     }
 
     @HapiTest
-    public final DynamicTest allScenariosAsExpected() {
+    public final Stream<DynamicTest> allScenariosAsExpected() {
         return defaultHapiSpec("allScenariosAsExpected")
                 .given()
                 .when()

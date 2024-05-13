@@ -38,12 +38,13 @@ import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompil
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -63,7 +64,7 @@ public class ContractGetInfoSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(getInfoWorks(), invalidContractFromCostAnswer(), invalidContractFromAnswerOnly());
     }
 
@@ -73,7 +74,7 @@ public class ContractGetInfoSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest idVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         final var contract = "Multipurpose";
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(
@@ -84,7 +85,7 @@ public class ContractGetInfoSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest getInfoWorks() {
+    final Stream<DynamicTest> getInfoWorks() {
         final var contract = "Multipurpose";
         final var MEMO = "This is a test.";
         final var canonicalUsdPrice = 0.0001;
@@ -118,7 +119,7 @@ public class ContractGetInfoSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest invalidContractFromCostAnswer() {
+    final Stream<DynamicTest> invalidContractFromCostAnswer() {
         return defaultHapiSpec("InvalidContractFromCostAnswer")
                 .given()
                 .when()
@@ -127,7 +128,7 @@ public class ContractGetInfoSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest invalidContractFromAnswerOnly() {
+    final Stream<DynamicTest> invalidContractFromAnswerOnly() {
         return defaultHapiSpec("InvalidContractFromAnswerOnly")
                 .given()
                 .when()

@@ -30,11 +30,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.THROTTLE_GROUP
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -56,7 +57,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
             throttleDefsRejectUnauthorizedPayers(),
             throttleUpdateRejectsMultiGroupAssignment(),
@@ -66,7 +67,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateWithMissingTokenMintFails() {
+    final Stream<DynamicTest> updateWithMissingTokenMintFails() {
         var missingMintThrottles = protoDefsFromResource("testSystemFiles/throttles-sans-mint.json");
 
         return defaultHapiSpec("updateWithMissingTokenMintFails")
@@ -80,7 +81,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
 
     @HapiTest
     @Order(100) // this needs to be executed after all other tests
-    final DynamicTest ensureDefaultsRestored() {
+    final Stream<DynamicTest> ensureDefaultsRestored() {
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
 
         return defaultHapiSpec("EnsureDefaultsRestored")
@@ -97,7 +98,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest throttleUpdateWithZeroGroupOpsPerSecFails() {
+    final Stream<DynamicTest> throttleUpdateWithZeroGroupOpsPerSecFails() {
         var zeroOpsPerSecThrottles = protoDefsFromResource("testSystemFiles/zero-ops-group.json");
 
         return defaultHapiSpec("ThrottleUpdateWithZeroGroupOpsPerSecFails")
@@ -110,7 +111,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest throttleUpdateRejectsMultiGroupAssignment() {
+    final Stream<DynamicTest> throttleUpdateRejectsMultiGroupAssignment() {
         var multiGroupThrottles = protoDefsFromResource("testSystemFiles/duplicated-operation.json");
 
         return defaultHapiSpec("ThrottleUpdateRejectsMultiGroupAssignment")
@@ -123,7 +124,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest throttleDefsRejectUnauthorizedPayers() {
+    final Stream<DynamicTest> throttleDefsRejectUnauthorizedPayers() {
         return defaultHapiSpec("ThrottleDefsRejectUnauthorizedPayers")
                 .given(
                         cryptoCreate("civilian"),

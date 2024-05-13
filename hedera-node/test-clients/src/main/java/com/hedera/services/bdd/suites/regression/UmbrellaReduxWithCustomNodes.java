@@ -39,6 +39,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -86,11 +88,11 @@ public class UmbrellaReduxWithCustomNodes extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(runUmbrellaReduxWithCustomNodes(), messageSubmissionSimple());
     }
 
-    final DynamicTest messageSubmissionSimple() {
+    final Stream<DynamicTest> messageSubmissionSimple() {
         return HapiSpec.customHapiSpec(MESSAGE_SUBMISSION_SIMPLE)
                 .withProperties(Map.of(
                         "default.topic.runningHash.version", topic_running_hash_version,
@@ -111,7 +113,7 @@ public class UmbrellaReduxWithCustomNodes extends HapiSuite {
                                         .checkTopicRunningHashVersion(topic_running_hash_version)));
     }
 
-    final DynamicTest runUmbrellaReduxWithCustomNodes() {
+    final Stream<DynamicTest> runUmbrellaReduxWithCustomNodes() {
         return HapiSpec.customHapiSpec("RunUmbrellaReduxWithCustomNodes")
                 .withProperties(Map.of(
                         "status.wait.timeout.ms",

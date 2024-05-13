@@ -52,6 +52,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.LongFunction;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -92,12 +94,12 @@ public class FileExpansionLoadProvider extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(runFileExpansions());
     }
 
     @HapiTest
-    final DynamicTest runFileExpansions() {
+    final Stream<DynamicTest> runFileExpansions() {
         return HapiSpec.defaultHapiSpec("RunFileExpansions")
                 .given(
                         overriding(MAX_FILE_SIZE_KB_PROP, OVERRIDE_MAX_FILE_SIZE_KB),

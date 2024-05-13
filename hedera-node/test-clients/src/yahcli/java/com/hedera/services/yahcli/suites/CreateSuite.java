@@ -33,8 +33,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class CreateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CreateSuite.class);
@@ -68,11 +71,11 @@ public class CreateSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(doCreate());
     }
 
-    final DynamicTest doCreate() {
+    final Stream<DynamicTest> doCreate() {
         if (!novelTarget.endsWith(NOVELTY + ".pem")) {
             throw new IllegalArgumentException("Only accepts tentative new key material named 'novel.pem'");
         }

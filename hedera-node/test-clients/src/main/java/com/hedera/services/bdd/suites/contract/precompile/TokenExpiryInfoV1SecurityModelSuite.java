@@ -48,7 +48,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
@@ -59,6 +58,8 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -94,13 +95,13 @@ public class TokenExpiryInfoV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(updateExpiryInfoForToken(), updateExpiryInfoForTokenAndReadLatestInfo());
     }
 
     @SuppressWarnings({"java:S5960", "java:S1192"
     }) // using `assertThat` in production code - except this isn't production code
-    final DynamicTest updateExpiryInfoForToken() {
+    final Stream<DynamicTest> updateExpiryInfoForToken() {
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> updatedAutoRenewAccountID = new AtomicReference<>();
@@ -252,7 +253,7 @@ public class TokenExpiryInfoV1SecurityModelSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S1192") // "use already defined const instead of copying its value here" - not this time
-    final DynamicTest updateExpiryInfoForTokenAndReadLatestInfo() {
+    final Stream<DynamicTest> updateExpiryInfoForTokenAndReadLatestInfo() {
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> updatedAutoRenewAccountID = new AtomicReference<>();

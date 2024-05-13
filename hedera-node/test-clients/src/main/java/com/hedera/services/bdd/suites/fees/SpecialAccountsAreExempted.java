@@ -30,12 +30,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.annotations.LeakyFeeSchedule;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -54,13 +55,13 @@ public class SpecialAccountsAreExempted extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(feeScheduleControlAccountIsntCharged());
     }
 
     @LeakyFeeSchedule
     @HapiTest
-    final DynamicTest feeScheduleControlAccountIsntCharged() {
+    final Stream<DynamicTest> feeScheduleControlAccountIsntCharged() {
         ResponseCodeEnum[] acceptable = {SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED};
 
         return defaultHapiSpec("FeeScheduleControlAccountIsntCharged")

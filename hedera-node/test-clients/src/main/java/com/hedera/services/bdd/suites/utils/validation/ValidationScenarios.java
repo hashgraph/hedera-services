@@ -169,6 +169,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
@@ -259,9 +260,9 @@ public class ValidationScenarios extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         var specs = Stream.of(
-                        Optional.of(recordPayerBalance(startingBalance::set)),
+                        ofNullable(recordPayerBalance(startingBalance::set)),
                         ofNullable(skipScenarioPayer() ? null : ensureScenarioPayer()),
                         ofNullable(params.getScenarios().contains(CRYPTO) ? cryptoScenario() : null),
                         ofNullable(params.getScenarios().contains(VERSIONS) ? versionsScenario() : null),
@@ -278,10 +279,11 @@ public class ValidationScenarios extends HapiSuite {
                         ofNullable(params.getScenarios().contains(FEE_SNAPSHOTS) ? updatePaymentCsv() : null),
                         ofNullable(params.getScenarios().isEmpty() ? null : recordPayerBalance(endingBalance::set)))
                 .flatMap(Optional::stream)
-                .collect(toList());
+                .toList();
         System.out.println(specs.stream()
+                .flatMap(Function.identity())
                 .map(test -> ((HapiSpec) test.getExecutable()).getName())
-                .collect(toList()));
+                .toList());
         return specs;
     }
 
@@ -291,7 +293,7 @@ public class ValidationScenarios extends HapiSuite {
         return needScenarioPayer.stream().noneMatch(params.getScenarios()::contains);
     }
 
-    private static DynamicTest ensureBytecode() {
+    private static Stream<DynamicTest> ensureBytecode() {
         ensureScenarios();
         if (scenarios.getFeeSnapshots() == null) {
             scenarios.setFeeSnapshots(new FeeSnapshotsScenario());
@@ -329,7 +331,7 @@ public class ValidationScenarios extends HapiSuite {
         }
     }
 
-    private static DynamicTest feeSnapshots() {
+    private static Stream<DynamicTest> feeSnapshots() {
         ensureScenarios();
         if (scenarios.getFeeSnapshots() == null) {
             scenarios.setFeeSnapshots(new FeeSnapshotsScenario());
@@ -531,7 +533,7 @@ public class ValidationScenarios extends HapiSuite {
         }
     }
 
-    private static DynamicTest updatePaymentCsv() {
+    private static Stream<DynamicTest> updatePaymentCsv() {
         ensureScenarios();
         if (scenarios.getFeeSnapshots() == null) {
             scenarios.setFeeSnapshots(new FeeSnapshotsScenario());
@@ -628,7 +630,7 @@ public class ValidationScenarios extends HapiSuite {
         }
     }
 
-    private static DynamicTest doJustTransfers() {
+    private static Stream<DynamicTest> doJustTransfers() {
         try {
             int numNodes = targetNetwork().getNodes().size();
             return customHapiSpec("DoJustTransfers")
@@ -666,7 +668,7 @@ public class ValidationScenarios extends HapiSuite {
         }
     }
 
-    private static DynamicTest sysFilesUp() {
+    private static Stream<DynamicTest> sysFilesUp() {
         ensureScenarios();
         if (scenarios.getSysFilesUp() == null) {
             scenarios.setSysFilesUp(new SysFilesUpScenario());
@@ -722,7 +724,7 @@ public class ValidationScenarios extends HapiSuite {
                 "%s_ACCOUNT%d_PASSPHRASE", params.getTargetNetwork().toUpperCase(), accountNum);
     }
 
-    private static DynamicTest sysFilesDown() {
+    private static Stream<DynamicTest> sysFilesDown() {
         ensureScenarios();
         if (scenarios.getSysFilesDown() == null) {
             scenarios.setSysFilesDown(new SysFilesDownScenario());
@@ -817,7 +819,7 @@ public class ValidationScenarios extends HapiSuite {
         }
     }
 
-    private static DynamicTest getSystemKeys() {
+    private static Stream<DynamicTest> getSystemKeys() {
         final long[] accounts = {2, 50, 55, 56, 57, 58};
         final long[] files = {101, 102, 111, 112, 121, 122};
         try {
@@ -855,7 +857,7 @@ public class ValidationScenarios extends HapiSuite {
         }
     }
 
-    private static DynamicTest recordPayerBalance(LongConsumer learner) {
+    private static Stream<DynamicTest> recordPayerBalance(LongConsumer learner) {
         try {
             return customHapiSpec("RecordPayerBalance")
                     .withProperties(Map.of(
@@ -888,7 +890,7 @@ public class ValidationScenarios extends HapiSuite {
         }
     }
 
-    private static DynamicTest ensureScenarioPayer() {
+    private static Stream<DynamicTest> ensureScenarioPayer() {
         try {
             ensureScenarios();
             long minStartingBalance = targetNetwork().getEnsureScenarioPayerHbars() * TINYBARS_PER_HBAR;
@@ -921,7 +923,7 @@ public class ValidationScenarios extends HapiSuite {
         }
     }
 
-    private static DynamicTest versionsScenario() {
+    private static Stream<DynamicTest> versionsScenario() {
         try {
             ensureScenarios();
             if (scenarios.getVersions() == null) {
@@ -955,7 +957,7 @@ public class ValidationScenarios extends HapiSuite {
         }
     }
 
-    private static DynamicTest cryptoScenario() {
+    private static Stream<DynamicTest> cryptoScenario() {
         try {
             ensureScenarios();
             if (scenarios.getCrypto() == null) {
@@ -1104,7 +1106,7 @@ public class ValidationScenarios extends HapiSuite {
         });
     }
 
-    private static DynamicTest fileScenario() {
+    private static Stream<DynamicTest> fileScenario() {
         try {
             ensureScenarios();
             if (scenarios.getFile() == null) {
@@ -1259,7 +1261,7 @@ public class ValidationScenarios extends HapiSuite {
         });
     }
 
-    private static DynamicTest contractScenario() {
+    private static Stream<DynamicTest> contractScenario() {
         try {
             ensureScenarios();
             if (scenarios.getContract() == null) {
@@ -1464,7 +1466,7 @@ public class ValidationScenarios extends HapiSuite {
                 .orElse(-1L);
     }
 
-    private static DynamicTest consensusScenario() {
+    private static Stream<DynamicTest> consensusScenario() {
         try {
             ensureScenarios();
             if (scenarios.getConsensus() == null) {
@@ -1517,7 +1519,7 @@ public class ValidationScenarios extends HapiSuite {
         }
     }
 
-    private static DynamicTest stakingScenario() {
+    private static Stream<DynamicTest> stakingScenario() {
         try {
             ensureScenarios();
             if (scenarios.getStaking() == null) {

@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -73,10 +74,10 @@ public abstract class HapiSuite {
 
     protected abstract Logger getResultsLogger();
 
-    public abstract List<DynamicTest> getSpecsInSuite();
+    public abstract List<Stream<DynamicTest>> getSpecsInSuite();
 
     private List<HapiSpec> getHapiSpecsInSuite() {
-        return getSpecsInSuite().stream().map(HapiSuite::specFrom).toList();
+        return getSpecsInSuite().stream().flatMap(Function.identity()).map(HapiSuite::specFrom).toList();
     }
 
     public List<HapiSpec> getSpecsInSuiteWithOverrides() {
@@ -310,7 +311,7 @@ public abstract class HapiSuite {
     }
 
     @SafeVarargs
-    protected final List<DynamicTest> allOf(final List<DynamicTest>... specLists) {
+    protected final List<Stream<DynamicTest>> allOf(final List<Stream<DynamicTest>>... specLists) {
         return Arrays.stream(specLists).flatMap(List::stream).toList();
     }
 

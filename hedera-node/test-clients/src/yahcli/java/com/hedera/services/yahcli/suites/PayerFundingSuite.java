@@ -26,8 +26,11 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.yahcli.commands.validation.ValidationCommand;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class PayerFundingSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(PayerFundingSuite.class);
@@ -41,13 +44,11 @@ public class PayerFundingSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            fundPayer(),
-        });
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
+        return List.of(fundPayer());
     }
 
-    final DynamicTest fundPayer() {
+    final Stream<DynamicTest> fundPayer() {
         return HapiSpec.customHapiSpec("FundPayer")
                 .withProperties(specConfig)
                 .given(UtilVerbs.withOpContext((spec, opLog) -> {

@@ -42,9 +42,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -63,7 +64,7 @@ public class DuplicateManagementTest extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 usesUnclassifiableIfNoClassifiableAvailable(),
                 hasExpectedDuplicates(),
@@ -72,7 +73,7 @@ public class DuplicateManagementTest extends HapiSuite {
 
     @HapiTest
     @SuppressWarnings("java:S5960")
-    final DynamicTest hasExpectedDuplicates() {
+    final Stream<DynamicTest> hasExpectedDuplicates() {
         return defaultHapiSpec("HasExpectedDuplicates")
                 .given(
                         cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
@@ -132,7 +133,7 @@ public class DuplicateManagementTest extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest usesUnclassifiableIfNoClassifiableAvailable() {
+    final Stream<DynamicTest> usesUnclassifiableIfNoClassifiableAvailable() {
         return defaultHapiSpec("UsesUnclassifiableIfNoClassifiableAvailable")
                 .given(
                         newKeyNamed("wrongKey"),
@@ -155,7 +156,7 @@ public class DuplicateManagementTest extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest classifiableTakesPriorityOverUnclassifiable() {
+    final Stream<DynamicTest> classifiableTakesPriorityOverUnclassifiable() {
         return defaultHapiSpec("ClassifiableTakesPriorityOverUnclassifiable")
                 .given(
                         cryptoCreate(CIVILIAN).balance(100 * 100_000_000L),

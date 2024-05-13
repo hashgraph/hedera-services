@@ -31,11 +31,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -57,7 +58,7 @@ public class ERC721ContractInteractions extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(callsERC721ContractInteractions());
     }
 
@@ -67,7 +68,7 @@ public class ERC721ContractInteractions extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest callsERC721ContractInteractions() {
+    final Stream<DynamicTest> callsERC721ContractInteractions() {
         final var CONTRACT = "GameItem";
         final var nftId = BigInteger.ONE;
         final var CREATE_TX = "create";

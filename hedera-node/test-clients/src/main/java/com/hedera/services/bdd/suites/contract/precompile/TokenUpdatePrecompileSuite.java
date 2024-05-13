@@ -53,7 +53,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -61,6 +60,8 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -111,11 +112,11 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(negativeCases());
     }
 
-    List<DynamicTest> negativeCases() {
+    List<Stream<DynamicTest>>negativeCases() {
         return List.of(
                 updateTokenWithInvalidKeyValues(),
                 updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey(),
@@ -123,7 +124,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateTokenWithInvalidKeyValues() {
+    final Stream<DynamicTest> updateTokenWithInvalidKeyValues() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("updateTokenWithInvalidKeyValues")
                 .given(
@@ -172,7 +173,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey() {
+    final Stream<DynamicTest> updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey() {
         final AtomicReference<TokenID> nftToken = new AtomicReference<>();
         return defaultHapiSpec("updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey")
                 .given(
@@ -253,7 +254,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest getTokenKeyForNonFungibleNegative() {
+    final Stream<DynamicTest> getTokenKeyForNonFungibleNegative() {
         final AtomicReference<TokenID> nftToken = new AtomicReference<>();
         return defaultHapiSpec("getTokenKeyForNonFungibleNegative")
                 .given(

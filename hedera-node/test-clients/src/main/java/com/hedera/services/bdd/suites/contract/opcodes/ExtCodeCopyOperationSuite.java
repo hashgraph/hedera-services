@@ -39,10 +39,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -60,7 +61,7 @@ public class ExtCodeCopyOperationSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(verifiesExistence(), testExtCodeCopyWithSystemAccounts());
     }
 
@@ -71,7 +72,7 @@ public class ExtCodeCopyOperationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    final DynamicTest verifiesExistence() {
+    final Stream<DynamicTest> verifiesExistence() {
         final var contract = "ExtCodeOperationsChecker";
         final var invalidAddress = "0x0000000000000000000000000000000000123456";
         final var emptyBytecode = ByteString.EMPTY;
@@ -129,7 +130,7 @@ public class ExtCodeCopyOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest testExtCodeCopyWithSystemAccounts() {
+    final Stream<DynamicTest> testExtCodeCopyWithSystemAccounts() {
         final var contract = "ExtCodeOperationsChecker";
         final var emptyBytecode = ByteString.EMPTY;
         final var codeCopyOf = "codeCopyOf";

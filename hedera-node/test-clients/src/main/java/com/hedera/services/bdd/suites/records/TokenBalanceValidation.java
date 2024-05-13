@@ -31,7 +31,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.bdd.junit.utils.AccountClassifier;
 import com.hedera.services.bdd.junit.validators.AccountNumTokenNum;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -39,6 +38,8 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -117,7 +118,7 @@ public class TokenBalanceValidation extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(validateTokenBalances());
     }
 
@@ -165,7 +166,7 @@ public class TokenBalanceValidation extends HapiSuite {
      * Create HAPI queries to check whether token balances match what's given in <code>expectedTokenBalances</code>
      * @return HAPI queries to execute
      */
-    final DynamicTest validateTokenBalances() {
+    final Stream<DynamicTest> validateTokenBalances() {
         return defaultHapiSpec("ValidateTokenBalances")
                 .given(getHapiSpecsForTransferTxs()) // set up transfers if needed
                 .when()

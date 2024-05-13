@@ -22,10 +22,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.suites.reconnect.AutoAccountCreationsBeforeReconnect.TOTAL_ACCOUNTS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -39,7 +40,7 @@ public class AutoAccountCreationValidationsAfterReconnect extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(getAccountInfoOfAutomaticallyCreatedAccounts());
     }
 
@@ -49,7 +50,7 @@ public class AutoAccountCreationValidationsAfterReconnect extends HapiSuite {
     /* These validations are assuming the state is from a 6N-1C test in which a client generates 10 autoAccounts in the
      * beginning of the test */
     @HapiTest
-    final DynamicTest getAccountInfoOfAutomaticallyCreatedAccounts() {
+    final Stream<DynamicTest> getAccountInfoOfAutomaticallyCreatedAccounts() {
         return defaultHapiSpec("GetAccountInfoOfAutomaticallyCreatedAccounts")
                 .given()
                 .when()

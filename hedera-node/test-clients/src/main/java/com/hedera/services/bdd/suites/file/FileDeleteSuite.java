@@ -33,11 +33,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -51,12 +52,12 @@ public class FileDeleteSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(getDeletedFileInfo(), canDeleteWithAnyOneOfTopLevelKeyList());
     }
 
     @HapiTest
-    final DynamicTest idVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(fileCreate("file").contents("ABC"))
                 .when()
@@ -64,7 +65,7 @@ public class FileDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest canDeleteWithAnyOneOfTopLevelKeyList() {
+    final Stream<DynamicTest> canDeleteWithAnyOneOfTopLevelKeyList() {
         KeyShape shape = listOf(SIMPLE, threshOf(1, 2), listOf(2));
         SigControl deleteSigs = shape.signedWith(sigs(ON, sigs(OFF, OFF), sigs(ON, OFF)));
 
@@ -75,7 +76,7 @@ public class FileDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest getDeletedFileInfo() {
+    final Stream<DynamicTest> getDeletedFileInfo() {
         return defaultHapiSpec("getDeletedFileInfo")
                 .given(fileCreate("deletedFile").logged())
                 .when(fileDelete("deletedFile").logged())

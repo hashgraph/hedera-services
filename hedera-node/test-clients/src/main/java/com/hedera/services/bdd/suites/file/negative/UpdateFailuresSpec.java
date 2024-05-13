@@ -32,7 +32,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -41,6 +40,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -63,7 +64,7 @@ public class UpdateFailuresSpec extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 precheckAllowsMissing(),
                 precheckAllowsDeleted(),
@@ -75,7 +76,7 @@ public class UpdateFailuresSpec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest confusedUpdateCantExtendExpiry() {
+    final Stream<DynamicTest> confusedUpdateCantExtendExpiry() {
         // this test verify that the exchange rate file parsed correctly on update, it doesn't check expiry
         var initialExpiry = new AtomicLong();
         var extension = 1_000L;
@@ -95,7 +96,7 @@ public class UpdateFailuresSpec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest precheckRejectsUnauthorized() {
+    final Stream<DynamicTest> precheckRejectsUnauthorized() {
         // this test is to verify that the system files cannot be updated without privileged account
         return defaultHapiSpec("precheckRejectsUnauthorized")
                 .given(cryptoCreate(CIVILIAN))
@@ -110,7 +111,7 @@ public class UpdateFailuresSpec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest precheckAllowsMissing() {
+    final Stream<DynamicTest> precheckAllowsMissing() {
         return defaultHapiSpec("PrecheckAllowsMissing")
                 .given()
                 .when()
@@ -123,7 +124,7 @@ public class UpdateFailuresSpec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest precheckAllowsDeleted() {
+    final Stream<DynamicTest> precheckAllowsDeleted() {
         return defaultHapiSpec("PrecheckAllowsDeleted")
                 .given(fileCreate("tbd"))
                 .when(fileDelete("tbd"))
@@ -131,7 +132,7 @@ public class UpdateFailuresSpec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest precheckRejectsPrematureExpiry() {
+    final Stream<DynamicTest> precheckRejectsPrematureExpiry() {
         long now = Instant.now().getEpochSecond();
         return defaultHapiSpec("PrecheckRejectsPrematureExpiry")
                 .given(fileCreate("file"))
@@ -143,7 +144,7 @@ public class UpdateFailuresSpec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest precheckAllowsBadEncoding() {
+    final Stream<DynamicTest> precheckAllowsBadEncoding() {
         return defaultHapiSpec("PrecheckAllowsBadEncoding")
                 .given(fileCreate("file"))
                 .when()
@@ -157,7 +158,7 @@ public class UpdateFailuresSpec extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    final DynamicTest handleIgnoresEarlierExpiry() {
+    final Stream<DynamicTest> handleIgnoresEarlierExpiry() {
         var initialExpiry = new AtomicLong();
 
         return defaultHapiSpec("HandleIgnoresEarlierExpiry")

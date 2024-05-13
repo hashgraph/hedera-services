@@ -27,11 +27,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -44,7 +45,7 @@ public class ContractCallPerfSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(contractCallPerf());
     }
 
@@ -53,7 +54,7 @@ public class ContractCallPerfSuite extends HapiSuite {
         return false;
     }
 
-    final DynamicTest contractCallPerf() {
+    final Stream<DynamicTest> contractCallPerf() {
         final int NUM_CALLS = 1_000;
         final long ENDING_BALANCE = NUM_CALLS * (NUM_CALLS + 1) / 2;
         final String DEPOSIT_MEMO = "So we out-danced thought, body perfection brought...";

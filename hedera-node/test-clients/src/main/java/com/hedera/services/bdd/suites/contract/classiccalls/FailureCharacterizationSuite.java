@@ -107,6 +107,8 @@ import com.hederahashgraph.api.proto.java.ThresholdKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -119,7 +121,7 @@ public class FailureCharacterizationSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(characterizeClassicFailureModes(
                 List.of(
                         new IsKycFailableCall(),
@@ -179,7 +181,7 @@ public class FailureCharacterizationSuite extends HapiSuite {
 
     // assertions in production code, repeated string literals
     @SuppressWarnings({"java:S5960", "java:S1192"})
-    final DynamicTest characterizeClassicFailureModes(
+    final Stream<DynamicTest> characterizeClassicFailureModes(
             @NonNull final List<FailableClassicCall> calls, @NonNull final CharacterizationMode characterizationMode) {
         if (characterizationMode == CharacterizationMode.RECORD_SNAPSHOT) {
             CALL_RESULTS_SNAPSHOT.begin();

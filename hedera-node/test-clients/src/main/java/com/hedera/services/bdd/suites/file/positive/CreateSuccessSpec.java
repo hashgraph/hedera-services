@@ -28,13 +28,14 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -48,12 +49,12 @@ public class CreateSuccessSpec extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(targetsAppear());
     }
 
     @HapiTest
-    final DynamicTest targetsAppear() {
+    final Stream<DynamicTest> targetsAppear() {
         var lifetime = 100_000L;
         var requestedExpiry = Instant.now().getEpochSecond() + lifetime;
         var contents = "SOMETHING".getBytes();

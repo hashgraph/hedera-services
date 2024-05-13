@@ -41,6 +41,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -59,11 +61,11 @@ public class SplittingThrottlesWorks extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(setNewLimits(), tryCreations());
     }
 
-    final DynamicTest setNewLimits() {
+    final Stream<DynamicTest> setNewLimits() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/split-throttles.json");
 
         return defaultHapiSpec("SetNewLimits")
@@ -74,7 +76,7 @@ public class SplittingThrottlesWorks extends HapiSuite {
                         .contents(artificialLimits.toByteArray()));
     }
 
-    final DynamicTest tryCreations() {
+    final Stream<DynamicTest> tryCreations() {
         return defaultHapiSpec("TryCreations")
                 .given()
                 .when(runWithProvider(cryptoCreateOps())

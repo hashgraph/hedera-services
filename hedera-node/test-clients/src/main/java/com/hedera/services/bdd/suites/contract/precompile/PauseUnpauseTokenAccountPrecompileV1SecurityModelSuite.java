@@ -50,11 +50,12 @@ import static com.hederahashgraph.api.proto.java.TokenPauseStatus.Unpaused;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -98,7 +99,7 @@ public class PauseUnpauseTokenAccountPrecompileV1SecurityModelSuite extends Hapi
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 pauseFungibleTokenHappyPath(),
                 unpauseFungibleTokenHappyPath(),
@@ -106,7 +107,7 @@ public class PauseUnpauseTokenAccountPrecompileV1SecurityModelSuite extends Hapi
                 unpauseNonFungibleTokenHappyPath());
     }
 
-    final DynamicTest pauseFungibleTokenHappyPath() {
+    final Stream<DynamicTest> pauseFungibleTokenHappyPath() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return propertyPreservingHapiSpec("PauseFungibleTokenHappyPath")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -179,7 +180,7 @@ public class PauseUnpauseTokenAccountPrecompileV1SecurityModelSuite extends Hapi
                                                         htsPrecompileResult().withStatus(TOKEN_WAS_DELETED)))));
     }
 
-    final DynamicTest unpauseFungibleTokenHappyPath() {
+    final Stream<DynamicTest> unpauseFungibleTokenHappyPath() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return propertyPreservingHapiSpec("UnpauseFungibleTokenHappyPath")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -232,7 +233,7 @@ public class PauseUnpauseTokenAccountPrecompileV1SecurityModelSuite extends Hapi
                         getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Unpaused));
     }
 
-    final DynamicTest pauseNonFungibleTokenHappyPath() {
+    final Stream<DynamicTest> pauseNonFungibleTokenHappyPath() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return propertyPreservingHapiSpec("PauseNonFungibleTokenHappyPath")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -307,7 +308,7 @@ public class PauseUnpauseTokenAccountPrecompileV1SecurityModelSuite extends Hapi
                                                         htsPrecompileResult().withStatus(TOKEN_WAS_DELETED)))));
     }
 
-    final DynamicTest unpauseNonFungibleTokenHappyPath() {
+    final Stream<DynamicTest> unpauseNonFungibleTokenHappyPath() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return propertyPreservingHapiSpec("UnpauseNonFungibleTokenHappyPath")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)

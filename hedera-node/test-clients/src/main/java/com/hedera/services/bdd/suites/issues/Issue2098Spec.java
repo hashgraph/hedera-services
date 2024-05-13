@@ -29,10 +29,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -49,7 +50,7 @@ public class Issue2098Spec extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
             queryApiPermissionsChangeImmediately(),
             txnApiPermissionsChangeImmediately(),
@@ -58,7 +59,7 @@ public class Issue2098Spec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest txnApiPermissionsChangeImmediately() {
+    final Stream<DynamicTest> txnApiPermissionsChangeImmediately() {
         return defaultHapiSpec("TxnApiPermissionsChangeImmediately")
                 .given(cryptoCreate(CIVILIAN))
                 .when(fileUpdate(API_PERMISSIONS)
@@ -76,7 +77,7 @@ public class Issue2098Spec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest queryApiPermissionsChangeImmediately() {
+    final Stream<DynamicTest> queryApiPermissionsChangeImmediately() {
         return defaultHapiSpec("QueryApiPermissionsChangeImmediately")
                 .given(cryptoCreate(CIVILIAN), createTopic("misc"))
                 .when(fileUpdate(API_PERMISSIONS)
@@ -91,7 +92,7 @@ public class Issue2098Spec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest adminsCanQueryNoMatterPermissions() {
+    final Stream<DynamicTest> adminsCanQueryNoMatterPermissions() {
         return defaultHapiSpec("AdminsCanQueryNoMatterPermissions")
                 .given(cryptoCreate(CIVILIAN), createTopic("misc"))
                 .when(fileUpdate(API_PERMISSIONS)
@@ -106,7 +107,7 @@ public class Issue2098Spec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest adminsCanTransactNoMatterPermissions() {
+    final Stream<DynamicTest> adminsCanTransactNoMatterPermissions() {
         return defaultHapiSpec("AdminsCanTransactNoMatterPermissions")
                 .given(cryptoCreate(CIVILIAN))
                 .when(fileUpdate(API_PERMISSIONS)

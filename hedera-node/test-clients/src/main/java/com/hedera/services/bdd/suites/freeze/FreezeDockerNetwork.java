@@ -19,10 +19,11 @@ package com.hedera.services.bdd.suites.freeze;
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -35,11 +36,11 @@ public class FreezeDockerNetwork extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(justFreeze());
     }
 
-    final DynamicTest justFreeze() {
+    final Stream<DynamicTest> justFreeze() {
         return customHapiSpec("JustFreeze")
                 .withProperties(Map.of("nodes", "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"))
                 .given()

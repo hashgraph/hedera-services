@@ -66,7 +66,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -78,6 +77,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -116,7 +117,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 hapiNftGetApproved(),
                 hapiNftIsApprovedForAll(),
@@ -132,7 +133,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest nftAutoCreationIncludeAllowanceCheck() {
+    final Stream<DynamicTest> nftAutoCreationIncludeAllowanceCheck() {
         final var ownerAccount = "owningAlias";
         final var receivingAlias = "receivingAlias";
         return defaultHapiSpec("NftAutoCreationIncludeAllowanceCheck", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -186,7 +187,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest htsTokenApproveToInnerContract() {
+    final Stream<DynamicTest> htsTokenApproveToInnerContract() {
         final var approveTxn = "NestedChildren";
         final var nestedContract = DIRECT_ERC_CALLEE;
         final var theSpender = SPENDER;
@@ -259,7 +260,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest idVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(
                         newKeyNamed("supplyKey"),
@@ -297,7 +298,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest htsTokenAllowance() {
+    final Stream<DynamicTest> htsTokenAllowance() {
         final var theSpender = SPENDER;
         final var allowanceTxn = ALLOWANCE_TX;
 
@@ -380,7 +381,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest htsTokenApprove() {
+    final Stream<DynamicTest> htsTokenApprove() {
         final var approveTxn = "approveTxn";
         final var theSpender = SPENDER;
 
@@ -447,7 +448,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest hapiNftIsApprovedForAll() {
+    final Stream<DynamicTest> hapiNftIsApprovedForAll() {
         final var notApprovedTxn = "notApprovedTxn";
         final var approvedForAllTxn = "approvedForAllTxn";
         final var notAnAddress = new byte[20];
@@ -565,7 +566,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest hapiNftGetApproved() {
+    final Stream<DynamicTest> hapiNftGetApproved() {
         final var theSpender = SPENDER;
         final var theSpender2 = "spender2";
         final var allowanceTxn = ALLOWANCE_TX;
@@ -654,7 +655,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest hapiNftSetApprovalForAll() {
+    final Stream<DynamicTest> hapiNftSetApprovalForAll() {
         final var theSpender = SPENDER;
         final var theSpender2 = "spender2";
         final var allowanceTxn = ALLOWANCE_TX;
@@ -727,27 +728,27 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest testIndirectApprovalWithDelegatePrecompileCallee() {
+    final Stream<DynamicTest> testIndirectApprovalWithDelegatePrecompileCallee() {
         return testIndirectApprovalWith("DelegatePrecompileCallee", DELEGATE_PRECOMPILE_CALLEE, false);
     }
 
     @HapiTest
-    final DynamicTest testIndirectApprovalWithDirectPrecompileCallee() {
+    final Stream<DynamicTest> testIndirectApprovalWithDirectPrecompileCallee() {
         return testIndirectApprovalWith("DirectPrecompileCallee", DIRECT_PRECOMPILE_CALLEE, true);
     }
 
     @HapiTest
-    final DynamicTest testIndirectApprovalWithDelegateErc20Callee() {
+    final Stream<DynamicTest> testIndirectApprovalWithDelegateErc20Callee() {
         return testIndirectApprovalWith("DelegateErc20Callee", DELEGATE_ERC_CALLEE, false);
     }
 
     @HapiTest
-    final DynamicTest testIndirectApprovalWithDirectErc20Callee() {
+    final Stream<DynamicTest> testIndirectApprovalWithDirectErc20Callee() {
         return testIndirectApprovalWith("DirectErc20Callee", DIRECT_ERC_CALLEE, true);
     }
 
     @BddMethodIsNotATest
-    final DynamicTest testIndirectApprovalWith(
+    final Stream<DynamicTest> testIndirectApprovalWith(
             @NonNull final String testName, @NonNull final String callee, final boolean expectGrantedApproval) {
 
         final AtomicReference<TokenID> tokenID = new AtomicReference<>();

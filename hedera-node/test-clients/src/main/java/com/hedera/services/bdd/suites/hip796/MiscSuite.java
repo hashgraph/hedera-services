@@ -55,11 +55,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_N
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.hip796.operations.DesiredAccountTokenRelation;
 import com.hedera.services.bdd.suites.hip796.operations.TokenFeature;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -75,7 +76,7 @@ public class MiscSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MiscSuite.class);
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 tokenOpsUnchangedWithPartitionDefinitions(),
                 rentNotYetChargedForPartitionAndDefinitions(),
@@ -95,7 +96,7 @@ public class MiscSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest tokenOpsUnchangedWithPartitionDefinitions() {
+    final Stream<DynamicTest> tokenOpsUnchangedWithPartitionDefinitions() {
         return defaultHapiSpec("TokenOpsUnchangedWithPartitionDefinitions")
                 .given(
                         // Create a partitioned token with all features
@@ -143,7 +144,7 @@ public class MiscSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest rentNotYetChargedForPartitionAndDefinitions() {
+    final Stream<DynamicTest> rentNotYetChargedForPartitionAndDefinitions() {
         return propertyPreservingHapiSpec("RentNotYetChargedForPartitionAndDefinitions")
                 .preserving("ledger.autoRenewPeriod.minDuration")
                 .given(
@@ -184,7 +185,7 @@ public class MiscSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest approvalAllowanceSpecificPartition() {
+    final Stream<DynamicTest> approvalAllowanceSpecificPartition() {
         return defaultHapiSpec("ApprovalAllowanceSpecificPartition")
                 .given(
                         fungibleTokenWithFeatures(PARTITIONING)
@@ -244,7 +245,7 @@ public class MiscSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest accountExpiryAndReclamationIsNotEnabled() {
+    final Stream<DynamicTest> accountExpiryAndReclamationIsNotEnabled() {
         return propertyPreservingHapiSpec("AccountExpiryAndReclamationIsNotEnabled")
                 .preserving("ledger.autoRenewPeriod.minDuration")
                 .given(
@@ -281,7 +282,7 @@ public class MiscSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest accountDeletionWithTokenHoldings() {
+    final Stream<DynamicTest> accountDeletionWithTokenHoldings() {
         return defaultHapiSpec("AccountDeletionWithTokenHoldings")
                 .given(fungibleTokenWithFeatures(PARTITIONING, WIPING)
                         .withPartitions(RED_PARTITION)
@@ -306,7 +307,7 @@ public class MiscSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    final DynamicTest customFeesAtTokenDefinitionLevel() {
+    final Stream<DynamicTest> customFeesAtTokenDefinitionLevel() {
         return defaultHapiSpec("CustomFeesAtTokenDefinitionLevel")
                 .given(fungibleTokenWithFeatures(PARTITIONING, CUSTOM_FEE_SCHEDULE_MANAGEMENT)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION)

@@ -137,6 +137,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -223,7 +225,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 consTimeManagementWorksWithRevertedInternalCreations(),
                 payableSuccess(),
@@ -272,7 +274,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest canHandleInvalidContractCallTransactions() {
+    final Stream<DynamicTest> canHandleInvalidContractCallTransactions() {
         return defaultHapiSpec("canHandleInvalidContractCallTransactions")
                 .given()
                 .when()
@@ -280,7 +282,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest repeatedCreate2FailsWithInterpretableActionSidecars() {
+    final Stream<DynamicTest> repeatedCreate2FailsWithInterpretableActionSidecars() {
         final var contract = "Create2PrecompileUser";
         final var salt = unhex(SALT);
         final var firstCreation = "firstCreation";
@@ -305,7 +307,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest insufficientGasToPrecompileFailsWithInterpretableActionSidecars() {
+    final Stream<DynamicTest> insufficientGasToPrecompileFailsWithInterpretableActionSidecars() {
         final var contract = "LowLevelCall";
         // A real-world payload for a call to the altbn128 pairing precompile, for
         // completeness; c.f. https://hashscan.io/testnet/transaction/1711397022.025030483
@@ -345,7 +347,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest hollowCreationFailsCleanly() {
+    final Stream<DynamicTest> hollowCreationFailsCleanly() {
         final var contract = "HollowAccountCreator";
         return defaultHapiSpec("HollowCreationFailsCleanly", FULLY_NONDETERMINISTIC)
                 .given(
@@ -361,7 +363,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest lowLevelEcrecCallBehavior() {
+    final Stream<DynamicTest> lowLevelEcrecCallBehavior() {
         final var TEST_CONTRACT = "TestContract";
         final var somebody = "somebody";
         final var account = "0.0.1";
@@ -397,7 +399,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest callsToSystemEntityNumsAreTreatedAsPrecompileCalls() {
+    final Stream<DynamicTest> callsToSystemEntityNumsAreTreatedAsPrecompileCalls() {
         final var TEST_CONTRACT = "TestContract";
         final var ZERO_ADDRESS = 0L;
         final var zeroAddressTxn = "zeroAddressTxn";
@@ -611,7 +613,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest depositMoreThanBalanceFailsGracefully() {
+    final Stream<DynamicTest> depositMoreThanBalanceFailsGracefully() {
         return defaultHapiSpec("depositMoreThanBalanceFailsGracefully", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
@@ -625,7 +627,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest nestedContractCannotOverSendValue() {
+    final Stream<DynamicTest> nestedContractCannotOverSendValue() {
         return defaultHapiSpec(
                         "NestedContractCannotOverSendValue",
                         NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
@@ -674,7 +676,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest whitelistingAliasedContract() {
+    final Stream<DynamicTest> whitelistingAliasedContract() {
         final var creationTxn = "creationTxn";
         final var mirrorWhitelistCheckTxn = "mirrorWhitelistCheckTxn";
         final var evmWhitelistCheckTxn = "evmWhitelistCheckTxn";
@@ -731,7 +733,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cannotUseMirrorAddressOfAliasedContractInPrecompileMethod() {
+    final Stream<DynamicTest> cannotUseMirrorAddressOfAliasedContractInPrecompileMethod() {
         final var creationTxn = "creationTxn";
         final var ASSOCIATOR = "Associator";
 
@@ -790,7 +792,7 @@ public class ContractCallSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5669")
     @HapiTest
-    final DynamicTest bitcarbonTestStillPasses() {
+    final Stream<DynamicTest> bitcarbonTestStillPasses() {
         final var addressBook = "AddressBook";
         final var jurisdictions = "Jurisdictions";
         final var minters = "Minters";
@@ -873,7 +875,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest exchangeRatePrecompileWorks() {
+    final Stream<DynamicTest> exchangeRatePrecompileWorks() {
         final var valueToTinycentCall = "recoverUsd";
         final var rateAware = "ExchangeRatePrecompile";
         // Must send $6.66 USD to access the gated method
@@ -927,7 +929,7 @@ public class ContractCallSuite extends HapiSuite {
      */
     @SuppressWarnings("java:S5960")
     @HapiTest
-    final DynamicTest erc721TokenUriAndHtsNftInfoTreatNonUtf8BytesDifferently() {
+    final Stream<DynamicTest> erc721TokenUriAndHtsNftInfoTreatNonUtf8BytesDifferently() {
         final var contractAlternatives = "ErcAndHtsAlternatives";
         final AtomicReference<Address> nftAddr = new AtomicReference<>();
         final var viaErc721TokenURI = "erc721TokenURI";
@@ -991,7 +993,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest imapUserExercise() {
+    final Stream<DynamicTest> imapUserExercise() {
         final var contract = "User";
         final var insert1To4 = "insert1To10";
         final var insert2To8 = "insert2To8";
@@ -1018,7 +1020,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest specialQueriesXTest() {
+    final Stream<DynamicTest> specialQueriesXTest() {
         final var secret = BigInteger.valueOf(123456789L);
         final var tinybars = BigInteger.valueOf(666_666_666L);
         final var erc20Symbol = "SYM20";
@@ -1186,7 +1188,7 @@ public class ContractCallSuite extends HapiSuite {
     // since we should modify the expected balances and change the test itself in order to pass with
     // Eth Calls
     @HapiTest
-    final DynamicTest ocToken() {
+    final Stream<DynamicTest> ocToken() {
         final var contract = "OcToken";
 
         return defaultHapiSpec(
@@ -1413,7 +1415,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest smartContractInlineAssemblyCheck() {
+    final Stream<DynamicTest> smartContractInlineAssemblyCheck() {
         final var inlineTestContract = "InlineTest";
 
         return defaultHapiSpec("smartContractInlineAssemblyCheck", HIGHLY_NON_DETERMINISTIC_FEES)
@@ -1484,7 +1486,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest multipleSelfDestructsAreSafe() {
+    final Stream<DynamicTest> multipleSelfDestructsAreSafe() {
         final var contract = "Fuse";
         return defaultHapiSpec("MultipleSelfDestructsAreSafe", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(contract), contractCreate(contract).gas(600_000))
@@ -1493,7 +1495,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest depositSuccess() {
+    final Stream<DynamicTest> depositSuccess() {
         return defaultHapiSpec("DepositSuccess", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
@@ -1507,7 +1509,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest multipleDepositSuccess() {
+    final Stream<DynamicTest> multipleDepositSuccess() {
         return defaultHapiSpec("MultipleDepositSuccess", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
@@ -1528,7 +1530,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest depositDeleteSuccess() {
+    final Stream<DynamicTest> depositDeleteSuccess() {
         final var initBalance = 7890L;
         return defaultHapiSpec("DepositDeleteSuccess", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
@@ -1544,7 +1546,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest associationAcknowledgedInApprovePrecompile() {
+    final Stream<DynamicTest> associationAcknowledgedInApprovePrecompile() {
         final var token = "TOKEN";
         final var spender = "SPENDER";
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
@@ -1565,7 +1567,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest payableSuccess() {
+    final Stream<DynamicTest> payableSuccess() {
         return defaultHapiSpec("PayableSuccess", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
@@ -1580,7 +1582,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest idVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(uploadInitCode(PAY_RECEIVABLE_CONTRACT), contractCreate(PAY_RECEIVABLE_CONTRACT))
                 .when()
@@ -1588,7 +1590,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest callFailsWhenAmountIsNegativeButStillChargedFee() {
+    final Stream<DynamicTest> callFailsWhenAmountIsNegativeButStillChargedFee() {
         final var payer = "payer";
         return defaultHapiSpec("callFailsWhenAmountIsNegativeButStillChargedFee")
                 .given(
@@ -1618,7 +1620,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest insufficientGas() {
+    final Stream<DynamicTest> insufficientGas() {
         return defaultHapiSpec("InsufficientGas", NONDETERMINISTIC_CONTRACT_CALL_RESULTS, HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         uploadInitCode(SIMPLE_STORAGE_CONTRACT),
@@ -1632,7 +1634,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest insufficientFee() {
+    final Stream<DynamicTest> insufficientFee() {
         final var contract = CREATE_TRIVIAL;
 
         // FUTURE: Once we add the check again that compares the estimated gas with the maximum transaction fee,
@@ -1647,7 +1649,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest nonPayable() {
+    final Stream<DynamicTest> nonPayable() {
         final var contract = CREATE_TRIVIAL;
 
         return defaultHapiSpec("NonPayable", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -1664,7 +1666,7 @@ public class ContractCallSuite extends HapiSuite {
     // This test disabled for modularization service
     // Adding refusingEthConversion() due to fee differences
     @HapiTest
-    final DynamicTest smartContractFailFirst() {
+    final Stream<DynamicTest> smartContractFailFirst() {
         final var civilian = "civilian";
         return defaultHapiSpec("smartContractFailFirst", FULLY_NONDETERMINISTIC)
                 .given(
@@ -1776,7 +1778,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest payTestSelfDestructCall() {
+    final Stream<DynamicTest> payTestSelfDestructCall() {
         final var contract = "PayTestSelfDestruct";
 
         return defaultHapiSpec(
@@ -1833,7 +1835,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest contractTransferToSigReqAccountWithoutKeyFails() {
+    final Stream<DynamicTest> contractTransferToSigReqAccountWithoutKeyFails() {
         return defaultHapiSpec(
                         "ContractTransferToSigReqAccountWithoutKeyFails",
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
@@ -1861,7 +1863,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest minChargeIsTXGasUsedByContractCall() {
+    final Stream<DynamicTest> minChargeIsTXGasUsedByContractCall() {
         return defaultHapiSpec("MinChargeIsTXGasUsedByContractCall", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(SIMPLE_UPDATE_CONTRACT))
                 .when(
@@ -1882,7 +1884,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest hscsEvm006ContractHBarTransferToAccount() {
+    final Stream<DynamicTest> hscsEvm006ContractHBarTransferToAccount() {
         return defaultHapiSpec(
                         "hscsEvm006ContractHBarTransferToAccount",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -1912,7 +1914,7 @@ public class ContractCallSuite extends HapiSuite {
 
     // Adding refusingEthConversion() due to fee differences
     @HapiTest
-    final DynamicTest hscsEvm005TransfersWithSubLevelCallsBetweenContracts() {
+    final Stream<DynamicTest> hscsEvm005TransfersWithSubLevelCallsBetweenContracts() {
         final var topLevelContract = "TopLevelTransferring";
         final var subLevelContract = "SubLevelTransferring";
         final var INITIAL_CONTRACT_BALANCE = 100;
@@ -1980,7 +1982,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest hscsEvm005TransferOfHBarsWorksBetweenContracts() {
+    final Stream<DynamicTest> hscsEvm005TransferOfHBarsWorksBetweenContracts() {
         final var to = "To";
 
         return defaultHapiSpec(
@@ -2016,7 +2018,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest hscsEvm010ReceiverMustSignContractTx() {
+    final Stream<DynamicTest> hscsEvm010ReceiverMustSignContractTx() {
         final var ACC = "acc";
         final var RECEIVER_KEY = "receiverKey";
         return defaultHapiSpec(
@@ -2057,7 +2059,7 @@ public class ContractCallSuite extends HapiSuite {
 
     // Adding refusingEthConversion() due to fee differences
     @HapiTest
-    final DynamicTest hscsEvm010MultiSignatureAccounts() {
+    final Stream<DynamicTest> hscsEvm010MultiSignatureAccounts() {
         final var ACC = "acc";
         final var PAYER_KEY = "pkey";
         final var OTHER_KEY = "okey";
@@ -2116,7 +2118,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest sendHbarsToAddressesMultipleTimes() {
+    final Stream<DynamicTest> sendHbarsToAddressesMultipleTimes() {
         return defaultHapiSpec(
                         "sendHbarsToAddressesMultipleTimes",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -2147,7 +2149,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest sendHbarsToDifferentAddresses() {
+    final Stream<DynamicTest> sendHbarsToDifferentAddresses() {
         return defaultHapiSpec(
                         "sendHbarsToDifferentAddresses",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -2190,7 +2192,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest sendHbarsFromDifferentAddressessToAddress() {
+    final Stream<DynamicTest> sendHbarsFromDifferentAddressessToAddress() {
         return defaultHapiSpec(
                         "sendHbarsFromDifferentAddressessToAddress",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -2238,7 +2240,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest sendHbarsToOuterContractFromDifferentAddresses() {
+    final Stream<DynamicTest> sendHbarsToOuterContractFromDifferentAddresses() {
         return defaultHapiSpec(
                         "sendHbarsToOuterContractFromDifferentAddresses",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -2279,7 +2281,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest sendHbarsToCallerFromDifferentAddresses() {
+    final Stream<DynamicTest> sendHbarsToCallerFromDifferentAddresses() {
         return defaultHapiSpec(
                         "sendHbarsToCallerFromDifferentAddresses",
                         NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
@@ -2369,7 +2371,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest sendHbarsFromAndToDifferentAddressess() {
+    final Stream<DynamicTest> sendHbarsFromAndToDifferentAddressess() {
         return defaultHapiSpec(
                         "sendHbarsFromAndToDifferentAddressess",
                         NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
@@ -2431,7 +2433,7 @@ public class ContractCallSuite extends HapiSuite {
 
     // Adding refusingEthConversion() due to fee differences
     @HapiTest
-    final DynamicTest transferNegativeAmountOfHbarsFails() {
+    final Stream<DynamicTest> transferNegativeAmountOfHbarsFails() {
         return defaultHapiSpec(
                         "transferNegativeAmountOfHbarsFails",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -2472,7 +2474,7 @@ public class ContractCallSuite extends HapiSuite {
 
     // Adding refusingEthConversion() due to fee differences
     @HapiTest
-    final DynamicTest transferZeroHbars() {
+    final Stream<DynamicTest> transferZeroHbars() {
         return defaultHapiSpec(
                         "transferZeroHbars", NONDETERMINISTIC_FUNCTION_PARAMETERS, NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
@@ -2511,7 +2513,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest consTimeManagementWorksWithRevertedInternalCreations() {
+    final Stream<DynamicTest> consTimeManagementWorksWithRevertedInternalCreations() {
         final var contract = "ConsTimeRepro";
         final var failingCall = "FailingCall";
         final AtomicReference<Timestamp> parentConsTime = new AtomicReference<>();
@@ -2539,7 +2541,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest callStaticCallToLargeAddress() {
+    final Stream<DynamicTest> callStaticCallToLargeAddress() {
         final var txn = "txn";
         final var contract = "CallInConstructor";
         return defaultHapiSpec("callStaticAddress")
@@ -2560,7 +2562,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest htsCallWithInsufficientGasHasNoStateChanges() {
+    final Stream<DynamicTest> htsCallWithInsufficientGasHasNoStateChanges() {
         final var contract = "LowLevelCall";
         final var htsSystemContractAddress = asHeadlongAddress("0x0167");
         final var transferToken = new Function("transferToken(address,address,address,int64)", "(int64)");
@@ -2607,7 +2609,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest callToNonExtantLongZeroAddressUsesTargetedAddress() {
+    final Stream<DynamicTest> callToNonExtantLongZeroAddressUsesTargetedAddress() {
         final var contract = "LowLevelCall";
         final var nonExtantMirrorAddress = asHeadlongAddress("0xE8D4A50FFF");
         return defaultHapiSpec("callToNonExtantLongZeroAddressUsesTargetedAddress")
@@ -2621,7 +2623,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest callToNonExtantEvmAddressUsesTargetedAddress() {
+    final Stream<DynamicTest> callToNonExtantEvmAddressUsesTargetedAddress() {
         final var contract = "LowLevelCall";
         final var nonExtantEvmAddress = asHeadlongAddress(TxnUtils.randomUtf8Bytes(20));
         return defaultHapiSpec("callToNonExtantEvmAddressUsesTargetedAddress")

@@ -31,7 +31,6 @@ import static com.swirlds.common.utility.CommonUtils.hex;
 
 import com.google.common.io.Files;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -45,6 +44,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -88,7 +89,7 @@ public class ContractPerformanceSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         List<String> perfTests;
         try {
             perfTests =
@@ -99,7 +100,7 @@ public class ContractPerformanceSuite extends HapiSuite {
         } catch (IOException e) {
             return List.of();
         }
-        List<DynamicTest> hapiSpecs = new ArrayList<>();
+        List<Stream<DynamicTest>>hapiSpecs = new ArrayList<>();
         for (String line : perfTests) {
             String[] values = line.split(",", 2);
             String test = values[0];

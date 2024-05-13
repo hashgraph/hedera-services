@@ -40,11 +40,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -64,7 +65,7 @@ public class ExtCodeHashOperationSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(verifiesExistence(), testExtCodeHashWithSystemAccounts());
     }
 
@@ -75,7 +76,7 @@ public class ExtCodeHashOperationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    final DynamicTest verifiesExistence() {
+    final Stream<DynamicTest> verifiesExistence() {
         final var contract = "ExtCodeOperationsChecker";
         final var invalidAddress = "0x0000000000000000000000000000000000123456";
         final var expectedAccountHash =
@@ -132,7 +133,7 @@ public class ExtCodeHashOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest testExtCodeHashWithSystemAccounts() {
+    final Stream<DynamicTest> testExtCodeHashWithSystemAccounts() {
         final var contract = "ExtCodeOperationsChecker";
         final var hashOf = "hashOf";
         final String account = "account";

@@ -43,12 +43,13 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -77,7 +78,7 @@ public class DefaultTokenStatusSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(getTokenDefaultFreezeStatus(), getTokenDefaultKycStatus());
     }
 
@@ -87,7 +88,7 @@ public class DefaultTokenStatusSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest getTokenDefaultFreezeStatus() {
+    final Stream<DynamicTest> getTokenDefaultFreezeStatus() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var notAnAddress = new byte[20];
 
@@ -155,7 +156,7 @@ public class DefaultTokenStatusSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest getTokenDefaultKycStatus() {
+    final Stream<DynamicTest> getTokenDefaultKycStatus() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var notAnAddress = new byte[20];
 

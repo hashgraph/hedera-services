@@ -37,7 +37,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -46,6 +45,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -64,11 +65,11 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiSuite {
     private static final String FEES_FILE_REGISTRY = "FeeSchedulesInRegistry";
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(runTransfersBeforeReconnect(), updateAllProtectedFilesDuringReconnect());
     }
 
-    final DynamicTest updateAllProtectedFilesDuringReconnect() {
+    final Stream<DynamicTest> updateAllProtectedFilesDuringReconnect() {
         final String fileInfoRegistry = "apiPermissionsReconnect";
         final String nonUpdatableFile = "nonUpdatableFile";
 

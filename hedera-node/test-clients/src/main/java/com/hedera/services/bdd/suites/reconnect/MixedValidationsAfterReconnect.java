@@ -23,10 +23,11 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -51,11 +52,11 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(getAccountBalanceFromAllNodes(), validateTopicInfo(), validateFileInfo());
     }
 
-    final DynamicTest getAccountBalanceFromAllNodes() {
+    final Stream<DynamicTest> getAccountBalanceFromAllNodes() {
         // Since https://github.com/hashgraph/hedera-services/pull/5799, the nodes will create
         // 299 "blocklist" accounts with EVM addresses commonly used in HardHat test environments,
         // to protect developers from accidentally sending hbar to those addresses
@@ -97,7 +98,7 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot("lastlyCreatedAccountBalance", 0)));
     }
 
-    final DynamicTest validateTopicInfo() {
+    final Stream<DynamicTest> validateTopicInfo() {
         final byte[] emptyRunningHash = new byte[48];
         return defaultHapiSpec("ValidateTopicInfo")
                 .given(getTopicInfo(TOPIC_ID_WITH_MESSAGE_SUBMITTED_TO).logged().saveRunningHash())
@@ -118,7 +119,7 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
                                 .hasRunningHash(TOPIC_ID_WITH_MESSAGE_SUBMITTED_TO));
     }
 
-    final DynamicTest validateFileInfo() {
+    final Stream<DynamicTest> validateFileInfo() {
         return defaultHapiSpec("ValidateFileInfo")
                 .given()
                 .when()

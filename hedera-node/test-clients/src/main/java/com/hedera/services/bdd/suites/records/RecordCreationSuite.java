@@ -45,7 +45,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -53,6 +52,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -81,7 +82,7 @@ public class RecordCreationSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 payerRecordCreationSanityChecks(),
                 accountsGetPayerRecordsIfSoConfigured(),
@@ -91,7 +92,7 @@ public class RecordCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest submittingNodeStillPaidIfServiceFeesOmitted() {
+    final Stream<DynamicTest> submittingNodeStillPaidIfServiceFeesOmitted() {
         final String comfortingMemo = THIS_IS_OK_IT_S_FINE_IT_S_WHATEVER;
         final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
 
@@ -149,7 +150,7 @@ public class RecordCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest submittingNodeChargedNetworkFeeForLackOfDueDiligence() {
+    final Stream<DynamicTest> submittingNodeChargedNetworkFeeForLackOfDueDiligence() {
         final String comfortingMemo = THIS_IS_OK_IT_S_FINE_IT_S_WHATEVER;
         final String disquietingMemo = "\u0000his is ok, it's fine, it's whatever.";
         final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
@@ -205,7 +206,7 @@ public class RecordCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness() {
+    final Stream<DynamicTest> submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness() {
         final String comfortingMemo = THIS_IS_OK_IT_S_FINE_IT_S_WHATEVER;
         final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
 
@@ -261,7 +262,7 @@ public class RecordCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest payerRecordCreationSanityChecks() {
+    final Stream<DynamicTest> payerRecordCreationSanityChecks() {
         return defaultHapiSpec("PayerRecordCreationSanityChecks")
                 .given(cryptoCreate(PAYER))
                 .when(
@@ -290,7 +291,7 @@ public class RecordCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest accountsGetPayerRecordsIfSoConfigured() {
+    final Stream<DynamicTest> accountsGetPayerRecordsIfSoConfigured() {
         final var txn = "ofRecord";
 
         return defaultHapiSpec("AccountsGetPayerRecordsIfSoConfigured")

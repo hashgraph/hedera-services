@@ -56,7 +56,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -65,6 +64,8 @@ import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -102,14 +103,14 @@ public class FreezeUnfreezeTokenPrecompileV1SecurityModelSuite extends HapiSuite
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 freezeUnfreezeFungibleWithNegativeCases(),
                 freezeUnfreezeNftsWithNegativeCases(),
                 isFrozenHappyPathWithLocalCall());
     }
 
-    final DynamicTest freezeUnfreezeFungibleWithNegativeCases() {
+    final Stream<DynamicTest> freezeUnfreezeFungibleWithNegativeCases() {
         final AtomicReference<TokenID> withoutKeyID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -223,7 +224,7 @@ public class FreezeUnfreezeTokenPrecompileV1SecurityModelSuite extends HapiSuite
                                                         htsPrecompileResult().withStatus(TOKEN_HAS_NO_FREEZE_KEY)))));
     }
 
-    final DynamicTest freezeUnfreezeNftsWithNegativeCases() {
+    final Stream<DynamicTest> freezeUnfreezeNftsWithNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         return propertyPreservingHapiSpec("freezeUnfreezeNftsWithNegativeCases")
@@ -313,7 +314,7 @@ public class FreezeUnfreezeTokenPrecompileV1SecurityModelSuite extends HapiSuite
                                                         .withIsFrozen(false)))));
     }
 
-    final DynamicTest isFrozenHappyPathWithLocalCall() {
+    final Stream<DynamicTest> isFrozenHappyPathWithLocalCall() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return propertyPreservingHapiSpec("isFrozenHappyPathWithLocalCall")

@@ -34,11 +34,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -57,12 +58,12 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(checkTokenTotalSupplyAfterMintAndBurn(), totalSupplyAfterWipe());
     }
 
     @HapiTest
-    final DynamicTest checkTokenTotalSupplyAfterMintAndBurn() {
+    final Stream<DynamicTest> checkTokenTotalSupplyAfterMintAndBurn() {
         String tokenName = "tokenToTest";
         return defaultHapiSpec(
                         "checkTokenTotalSupplyAfterMintAndBurn", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
@@ -92,7 +93,7 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest totalSupplyAfterWipe() {
+    final Stream<DynamicTest> totalSupplyAfterWipe() {
         var tokenToWipe = "tokenToWipe";
 
         return defaultHapiSpec("totalSupplyAfterWipe")

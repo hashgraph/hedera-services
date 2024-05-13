@@ -68,6 +68,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.stream.Stream;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -110,11 +112,11 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(runAccountBalancesClientSaveLoadTest());
     }
 
-    final DynamicTest runAccountBalancesClientSaveLoadTest() {
+    final Stream<DynamicTest> runAccountBalancesClientSaveLoadTest() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         var throttlesForJRS = protoDefsFromResource("testSystemFiles/throttles-for-acct-balances-tests.json");
         return defaultHapiSpec("AccountBalancesClientSaveLoadTest")

@@ -44,13 +44,14 @@ import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablem
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -94,12 +95,12 @@ public class JrsRestartTestTemplate extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
             enableHSS(), jrsRestartTemplate());
     }
 
-    final DynamicTest enableHSS() {
+    final Stream<DynamicTest> enableHSS() {
         return defaultHapiSpec("enableHSS")
                 .given(
                         // Directly puting this request in the customHapiSpec before
@@ -109,7 +110,7 @@ public class JrsRestartTestTemplate extends HapiSuite {
                 .then();
     }
 
-    final DynamicTest jrsRestartTemplate() {
+    final Stream<DynamicTest> jrsRestartTemplate() {
         return customHapiSpec("JrsRestartTemplate")
                 .withProperties(Map.of("persistentEntities.dir.path", ENTITIES_DIR))
                 .given(expectedEntitiesExist())

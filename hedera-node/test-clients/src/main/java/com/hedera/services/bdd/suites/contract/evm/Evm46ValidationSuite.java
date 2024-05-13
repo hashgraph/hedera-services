@@ -68,7 +68,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -78,6 +77,8 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -141,7 +142,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 // Top-level calls:
                 // EOA -calls-> NonExistingMirror, expect noop success
@@ -265,7 +266,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest directCallToDeletedContractResultsInSuccessfulNoop() {
+    final Stream<DynamicTest> directCallToDeletedContractResultsInSuccessfulNoop() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
 
         return defaultHapiSpec("directCallToDeletedContractResultsInSuccessfulNoop")
@@ -289,7 +290,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest selfdestructToExistingMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> selfdestructToExistingMirrorAddressResultsInSuccess() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
         return defaultHapiSpec("selfdestructToExistingMirrorAddressResultsInSuccess")
                 .given(
@@ -312,7 +313,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest selfdestructToExistingNonMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> selfdestructToExistingNonMirrorAddressResultsInSuccess() {
         return defaultHapiSpec("selfdestructToExistingNonMirrorAddressResultsInSuccess")
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
@@ -337,7 +338,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest selfdestructToNonExistingNonMirrorAddressResultsInInvalidSolidityAddress() {
+    final Stream<DynamicTest> selfdestructToNonExistingNonMirrorAddressResultsInInvalidSolidityAddress() {
         AtomicReference<Bytes> nonExistingNonMirrorAddress = new AtomicReference<>();
 
         return defaultHapiSpec("selfdestructToNonExistingNonMirrorAddressResultsInInvalidSolidityAddress")
@@ -369,7 +370,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest selfdestructToNonExistingMirrorAddressResultsInInvalidSolidityAddress() {
+    final Stream<DynamicTest> selfdestructToNonExistingMirrorAddressResultsInInvalidSolidityAddress() {
         return defaultHapiSpec("selfdestructToNonExistingMirrorAddressResultsInInvalidSolidityAddress")
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
@@ -390,7 +391,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp() {
+    final Stream<DynamicTest> directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp() {
 
         return defaultHapiSpec("directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp")
                 .given(withOpContext((spec, ctxLog) -> spec.registry()
@@ -421,7 +422,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest directCallToNonExistingNonMirrorAddressResultsInSuccessfulNoOp() {
+    final Stream<DynamicTest> directCallToNonExistingNonMirrorAddressResultsInSuccessfulNoOp() {
 
         return defaultHapiSpec("directCallToNonExistingNonMirrorAddressResultsInSuccessfulNoOp")
                 .given(withOpContext((spec, ctxLog) -> spec.registry()
@@ -455,7 +456,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest directCallToRevertingContractRevertsWithCorrectRevertReason() {
+    final Stream<DynamicTest> directCallToRevertingContractRevertsWithCorrectRevertReason() {
 
         return defaultHapiSpec("directCallToRevertingContractRevertsWithCorrectRevertReason")
                 .given(uploadInitCode(INTERNAL_CALLEE_CONTRACT), contractCreate(INTERNAL_CALLEE_CONTRACT))
@@ -476,7 +477,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest directCallToExistingCryptoAccountResultsInSuccess() {
+    final Stream<DynamicTest> directCallToExistingCryptoAccountResultsInSuccess() {
 
         AtomicReference<AccountID> mirrorAccountID = new AtomicReference<>();
 
@@ -524,7 +525,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest directCallWithValueToExistingCryptoAccountResultsInSuccess() {
+    final Stream<DynamicTest> directCallWithValueToExistingCryptoAccountResultsInSuccess() {
 
         AtomicReference<AccountID> mirrorAccountID = new AtomicReference<>();
 
@@ -591,7 +592,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalCallToNonExistingMirrorAddressResultsInNoopSuccess() {
+    final Stream<DynamicTest> internalCallToNonExistingMirrorAddressResultsInNoopSuccess() {
 
         return defaultHapiSpec("internalCallToNonExistingMirrorAddressResultsInNoopSuccess")
                 .given(
@@ -611,7 +612,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalCallToExistingMirrorAddressResultsInSuccessfulCall() {
+    final Stream<DynamicTest> internalCallToExistingMirrorAddressResultsInSuccessfulCall() {
 
         final AtomicLong calleeNum = new AtomicLong();
 
@@ -635,7 +636,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalCallToNonExistingNonMirrorAddressResultsInNoopSuccess() {
+    final Stream<DynamicTest> internalCallToNonExistingNonMirrorAddressResultsInNoopSuccess() {
 
         return defaultHapiSpec("internalCallToNonExistingNonMirrorAddressResultsInNoopSuccess")
                 .given(
@@ -655,7 +656,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalCallToExistingRevertingResultsInSuccessfulTopLevelTxn() {
+    final Stream<DynamicTest> internalCallToExistingRevertingResultsInSuccessfulTopLevelTxn() {
 
         final AtomicLong calleeNum = new AtomicLong();
 
@@ -677,7 +678,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalTransferToNonExistingMirrorAddressResultsInInvalidAliasKey() {
+    final Stream<DynamicTest> internalTransferToNonExistingMirrorAddressResultsInInvalidAliasKey() {
         return defaultHapiSpec("internalTransferToNonExistingMirrorAddressResultsInInvalidAliasKey")
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
@@ -694,7 +695,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalTransferToExistingMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalTransferToExistingMirrorAddressResultsInSuccess() {
 
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
 
@@ -720,7 +721,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalTransferToNonExistingNonMirrorAddressResultsInRevert() {
+    final Stream<DynamicTest> internalTransferToNonExistingNonMirrorAddressResultsInRevert() {
         return defaultHapiSpec("internalTransferToNonExistingNonMirrorAddressResultsInRevert")
                 .given(
                         cryptoCreate(CUSTOM_PAYER).balance(ONE_HUNDRED_HBARS),
@@ -738,7 +739,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalTransferToExistingNonMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalTransferToExistingNonMirrorAddressResultsInSuccess() {
 
         return defaultHapiSpec("internalTransferToExistingNonMirrorAddressResultsInSuccess")
                 .given(
@@ -770,7 +771,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalSendToNonExistingMirrorAddressDoesNotLazyCreateIt() {
+    final Stream<DynamicTest> internalSendToNonExistingMirrorAddressDoesNotLazyCreateIt() {
         return defaultHapiSpec("internalSendToNonExistingMirrorAddressDoesNotLazyCreateIt")
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
@@ -787,7 +788,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalSendToExistingMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalSendToExistingMirrorAddressResultsInSuccess() {
 
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
 
@@ -813,7 +814,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalSendToNonExistingNonMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalSendToNonExistingNonMirrorAddressResultsInSuccess() {
 
         AtomicReference<Bytes> nonExistingNonMirrorAddress = new AtomicReference<>();
 
@@ -849,7 +850,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalSendToExistingNonMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalSendToExistingNonMirrorAddressResultsInSuccess() {
 
         return defaultHapiSpec("internalSendToExistingNonMirrorAddressResultsInSuccess")
                 .given(
@@ -878,7 +879,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalCallWithValueToNonExistingMirrorAddressResultsInInvalidAliasKey() {
+    final Stream<DynamicTest> internalCallWithValueToNonExistingMirrorAddressResultsInInvalidAliasKey() {
         return defaultHapiSpec("internalCallWithValueToNonExistingMirrorAddressResultsInInvalidAliasKey")
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
@@ -894,7 +895,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalCallWithValueToExistingMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalCallWithValueToExistingMirrorAddressResultsInSuccess() {
 
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
 
@@ -920,7 +921,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest
+    final Stream<DynamicTest>
             internalCallWithValueToNonExistingNonMirrorAddressWithoutEnoughGasForLazyCreationResultsInSuccessNoAccountCreated() {
         return defaultHapiSpec(
                         "internalCallWithValueToNonExistingNonMirrorAddressWithoutEnoughGasForLazyCreationResultsInSuccessNoAccountCreated")
@@ -945,7 +946,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest
+    final Stream<DynamicTest>
             internalCallWithValueToNonExistingNonMirrorAddressWithEnoughGasForLazyCreationResultsInSuccessAccountCreated() {
         return defaultHapiSpec(
                         "internalCallWithValueToNonExistingNonMirrorAddressWithEnoughGasForLazyCreationResultsInSuccessAccountCreated")
@@ -970,7 +971,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalCallWithValueToExistingNonMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalCallWithValueToExistingNonMirrorAddressResultsInSuccess() {
 
         return defaultHapiSpec("internalCallWithValueToExistingNonMirrorAddressResultsInSuccess")
                 .given(
@@ -1002,7 +1003,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalCallToDeletedContractReturnsSuccessfulNoop() {
+    final Stream<DynamicTest> internalCallToDeletedContractReturnsSuccessfulNoop() {
         final AtomicLong calleeNum = new AtomicLong();
         return defaultHapiSpec("internalCallToDeletedContractReturnsSuccessfulNoop")
                 .given(
@@ -1025,7 +1026,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest callingDestructedContractReturnsStatusSuccess() {
+    final Stream<DynamicTest> callingDestructedContractReturnsStatusSuccess() {
         final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
         return defaultHapiSpec("callingDestructedContractReturnsStatusSuccess")
                 .given(
@@ -1046,7 +1047,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalStaticCallNonExistingMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalStaticCallNonExistingMirrorAddressResultsInSuccess() {
         return defaultHapiSpec("internalStaticCallNonExistingMirrorAddressResultsInSuccess")
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
@@ -1065,7 +1066,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalStaticCallExistingMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalStaticCallExistingMirrorAddressResultsInSuccess() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
         return defaultHapiSpec("internalStaticCallExistingMirrorAddressResultsInSuccess")
                 .given(
@@ -1089,7 +1090,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalStaticCallNonExistingNonMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalStaticCallNonExistingNonMirrorAddressResultsInSuccess() {
         AtomicReference<Bytes> nonExistingNonMirrorAddress = new AtomicReference<>();
         return defaultHapiSpec("internalStaticCallNonExistingNonMirrorAddressResultsInSuccess")
                 .given(
@@ -1124,7 +1125,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalStaticCallExistingNonMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalStaticCallExistingNonMirrorAddressResultsInSuccess() {
         return defaultHapiSpec("internalStaticCallExistingNonMirrorAddressResultsInSuccess")
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
@@ -1154,7 +1155,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalDelegateCallNonExistingMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalDelegateCallNonExistingMirrorAddressResultsInSuccess() {
         return defaultHapiSpec("internalDelegateCallNonExistingMirrorAddressResultsInSuccess")
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
@@ -1173,7 +1174,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalDelegateCallExistingMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalDelegateCallExistingMirrorAddressResultsInSuccess() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
         return defaultHapiSpec("internalDelegateCallExistingMirrorAddressResultsInSuccess")
                 .given(
@@ -1197,7 +1198,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalDelegateCallNonExistingNonMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalDelegateCallNonExistingNonMirrorAddressResultsInSuccess() {
         AtomicReference<Bytes> nonExistingNonMirrorAddress = new AtomicReference<>();
         return defaultHapiSpec("internalDelegateCallNonExistingNonMirrorAddressResultsInSuccess")
                 .given(
@@ -1232,7 +1233,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalDelegateCallExistingNonMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalDelegateCallExistingNonMirrorAddressResultsInSuccess() {
         return defaultHapiSpec("internalDelegateCallExistingNonMirrorAddressResultsInSuccess")
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
@@ -1262,7 +1263,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalCallWithValueToAccountWithReceiverSigRequiredTrue() {
+    final Stream<DynamicTest> internalCallWithValueToAccountWithReceiverSigRequiredTrue() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
 
         return defaultHapiSpec("internalCallWithValueToAccountWithReceiverSigRequiredTrue")
@@ -1287,7 +1288,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalCallToSystemAccount564ResultsInSuccessNoop() {
+    final Stream<DynamicTest> internalCallToSystemAccount564ResultsInSuccessNoop() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(564L).build());
 
@@ -1312,7 +1313,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalCallToEthereumPrecompile0x2ResultsInSuccess() {
+    final Stream<DynamicTest> internalCallToEthereumPrecompile0x2ResultsInSuccess() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(2L).build());
 
@@ -1344,7 +1345,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalCallWithValueToEthereumPrecompile0x2ResultsInRevert() {
+    final Stream<DynamicTest> internalCallWithValueToEthereumPrecompile0x2ResultsInRevert() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(2L).build());
 
@@ -1376,7 +1377,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalCallToNonExistingSystemAccount852ResultsInSuccessNoop() {
+    final Stream<DynamicTest> internalCallToNonExistingSystemAccount852ResultsInSuccessNoop() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(852L).build());
 
@@ -1401,7 +1402,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalCallWithValueToNonExistingSystemAccount852ResultsInInvalidAliasKey() {
+    final Stream<DynamicTest> internalCallWithValueToNonExistingSystemAccount852ResultsInInvalidAliasKey() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         final var systemAccountNum = 852L;
         targetId.set(AccountID.newBuilder().setAccountNum(systemAccountNum).build());
@@ -1426,7 +1427,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalCallWithValueToSystemAccount564ResultsInSuccessNoopNoTransfer() {
+    final Stream<DynamicTest> internalCallWithValueToSystemAccount564ResultsInSuccessNoopNoTransfer() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(564L).build());
 
@@ -1451,7 +1452,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalCallWithValueToExistingSystemAccount800ResultsInSuccessfulTransfer() {
+    final Stream<DynamicTest> internalCallWithValueToExistingSystemAccount800ResultsInSuccessfulTransfer() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(800L).build());
 
@@ -1476,7 +1477,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest internalCallToExistingSystemAccount800ResultsInSuccessNoop() {
+    final Stream<DynamicTest> internalCallToExistingSystemAccount800ResultsInSuccessNoop() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(800L).build());
 
@@ -1501,7 +1502,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest testBalanceOfForSystemAccounts() {
+    final Stream<DynamicTest> testBalanceOfForSystemAccounts() {
         final var contract = "BalanceChecker46Version";
         final var balance = 10L;
         final var systemAccountBalance = 0;

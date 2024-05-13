@@ -40,10 +40,11 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -56,7 +57,7 @@ public class ZeroStakeNodeTest extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(zeroStakeBehavesAsExpectedJRS());
     }
 
@@ -65,7 +66,7 @@ public class ZeroStakeNodeTest extends HapiSuite {
      * node ids of the network with zero stake nodes. Assumes that node 0.0.7 and node 0.0.8 are
      * started with zero stake in a 6 node network.
      */
-    final DynamicTest zeroStakeBehavesAsExpectedJRS() {
+    final Stream<DynamicTest> zeroStakeBehavesAsExpectedJRS() {
         return defaultHapiSpec("zeroStakeBehavesAsExpectedJRS")
                 .given(
                         cryptoCreate("sponsor"),

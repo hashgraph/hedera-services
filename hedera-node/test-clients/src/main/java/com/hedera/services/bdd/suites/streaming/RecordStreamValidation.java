@@ -21,10 +21,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.verifyRecordStreams
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -39,11 +40,11 @@ public class RecordStreamValidation extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(recordStreamSanityChecks());
     }
 
-    final DynamicTest recordStreamSanityChecks() {
+    final Stream<DynamicTest> recordStreamSanityChecks() {
         AtomicReference<String> pathToStreams = new AtomicReference<>(PATH_TO_LOCAL_STREAMS);
 
         return defaultHapiSpec("RecordStreamSanityChecks")

@@ -62,6 +62,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -88,7 +90,7 @@ public class TokenUnhappyAccountsSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
             uniqueTokenOperationsFailForExpiredAccount(),
             uniqueTokenOperationsFailForAutoRemovedAccount(),
@@ -96,7 +98,7 @@ public class TokenUnhappyAccountsSuite extends HapiSuite {
        );
     }
 
-    final DynamicTest uniqueTokenOperationsFailForAutoRemovedAccount() {
+    final Stream<DynamicTest> uniqueTokenOperationsFailForAutoRemovedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForAutoRemovedAccount")
                 .given(
                         fileUpdate(APP_PROPERTIES)
@@ -136,7 +138,7 @@ public class TokenUnhappyAccountsSuite extends HapiSuite {
                         wipeTokenAccount(UNIQUE_TOKEN_A, CLIENT_1, List.of(1L)).hasKnownStatus(INVALID_ACCOUNT_ID));
     }
 
-    final DynamicTest uniqueTokenOperationsFailForExpiredAccount() {
+    final Stream<DynamicTest> uniqueTokenOperationsFailForExpiredAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForExpiredAccount")
                 .given(
                         fileUpdate(APP_PROPERTIES)
@@ -184,7 +186,7 @@ public class TokenUnhappyAccountsSuite extends HapiSuite {
 
     // Enable when token expiration is implemented
     // @HapiTest
-    final DynamicTest dissociationFromExpiredTokensAsExpected() {
+    final Stream<DynamicTest> dissociationFromExpiredTokensAsExpected() {
         final String treasury = "accountA";
         final String frozenAccount = "frozen";
         final String unfrozenAccount = "unfrozen";

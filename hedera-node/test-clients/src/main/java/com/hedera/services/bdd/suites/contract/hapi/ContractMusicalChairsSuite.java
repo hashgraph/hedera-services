@@ -34,7 +34,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
@@ -43,6 +42,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -62,12 +63,12 @@ public class ContractMusicalChairsSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(playGame());
     }
 
     @HapiTest
-    final DynamicTest playGame() {
+    final Stream<DynamicTest> playGame() {
         final var dj = "dj";
         final var players = IntStream.range(1, 30).mapToObj(i -> "Player" + i).toList();
         final var contract = "MusicalChairs";

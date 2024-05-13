@@ -28,9 +28,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -51,12 +52,12 @@ public class ChunkingSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(chunkNumberIsValidated(), chunkTransactionIDIsValidated(), longMessageIsFragmentedIntoChunks());
     }
 
     @HapiTest
-    final DynamicTest chunkNumberIsValidated() {
+    final Stream<DynamicTest> chunkNumberIsValidated() {
         return defaultHapiSpec("chunkNumberIsValidated")
                 .given(createTopic("testTopic"))
                 .when()
@@ -79,7 +80,7 @@ public class ChunkingSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest chunkTransactionIDIsValidated() {
+    final Stream<DynamicTest> chunkTransactionIDIsValidated() {
         return defaultHapiSpec("chunkTransactionIDIsValidated")
                 .given(cryptoCreate("initialTransactionPayer"), createTopic("testTopic"))
                 .when()
@@ -120,7 +121,7 @@ public class ChunkingSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest longMessageIsFragmentedIntoChunks() {
+    final Stream<DynamicTest> longMessageIsFragmentedIntoChunks() {
         String fileForLongMessage = "src/main/resource/RandomLargeBinary.bin";
         return defaultHapiSpec("longMessageIsFragmentedIntoChunks")
                 .given(cryptoCreate("payer"), createTopic("testTopic"))

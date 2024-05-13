@@ -46,6 +46,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -66,11 +68,11 @@ public class ReadyToRunScheduledXfersLoad extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(runReadyToRunXfers());
     }
 
-    final DynamicTest runReadyToRunXfers() {
+    final Stream<DynamicTest> runReadyToRunXfers() {
         return defaultHapiSpec("RunReadyToRunXfers")
                 .given(stdMgmtOf(duration, unit, maxOpsPerSec))
                 .when(runWithProvider(readyToRunXfersFactory())

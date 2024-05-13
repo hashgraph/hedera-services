@@ -32,9 +32,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOU
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -49,7 +50,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
             transactionsWithOnlySigMap(),
             transactionsWithSignedTxnBytesAndSigMap(),
@@ -62,7 +63,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transactionsWithOnlySigMap() {
+    final Stream<DynamicTest> transactionsWithOnlySigMap() {
         final var contract = "BalanceLookup";
         return defaultHapiSpec("TransactionsWithOnlySigMap")
                 .given(
@@ -87,7 +88,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transactionsWithSignedTxnBytesAndSigMap() {
+    final Stream<DynamicTest> transactionsWithSignedTxnBytesAndSigMap() {
         return defaultHapiSpec("TransactionsWithSignedTxnBytesAndSigMap")
                 .given()
                 .when(createTopic("testTopic")
@@ -98,7 +99,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transactionsWithSignedTxnBytesAndBodyBytes() {
+    final Stream<DynamicTest> transactionsWithSignedTxnBytesAndBodyBytes() {
         return defaultHapiSpec("TransactionsWithSignedTxnBytesAndBodyBytes")
                 .given()
                 .when(cryptoCreate("testAccount")

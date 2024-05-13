@@ -26,12 +26,13 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -44,11 +45,11 @@ public class ValidateFeeScheduleStateAfterReconnect extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(validateFeeScheduleStateAfterReconnect());
     }
 
-    final DynamicTest validateFeeScheduleStateAfterReconnect() {
+    final Stream<DynamicTest> validateFeeScheduleStateAfterReconnect() {
         return customHapiSpec("validateFeeScheduleStateAfterReconnect")
                 .withProperties(Map.of("txn.start.offset.secs", "-5"))
                 .given(

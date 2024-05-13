@@ -26,11 +26,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRAN
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -44,7 +45,7 @@ public class Issue310Suite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 duplicatedTxnsSameTypeDetected(),
                 duplicatedTxnsDifferentTypesDetected(),
@@ -53,7 +54,7 @@ public class Issue310Suite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest duplicatedTxnsSameTypeDetected() {
+    final Stream<DynamicTest> duplicatedTxnsSameTypeDetected() {
         long initialBalance = 10_000L;
 
         return defaultHapiSpec("duplicatedTxnsSameTypeDetected")
@@ -70,7 +71,7 @@ public class Issue310Suite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest duplicatedTxnsDifferentTypesDetected() {
+    final Stream<DynamicTest> duplicatedTxnsDifferentTypesDetected() {
         return defaultHapiSpec("duplicatedTxnsDifferentTypesDetected")
                 .given(
                         cryptoCreate("acct2").via("txnId2"),
@@ -86,7 +87,7 @@ public class Issue310Suite extends HapiSuite {
 
     // This test requires multiple nodes
     @HapiTest
-    final DynamicTest duplicatedTxnsSameTypeDifferentNodesDetected() {
+    final Stream<DynamicTest> duplicatedTxnsSameTypeDifferentNodesDetected() {
 
         return defaultHapiSpec("duplicatedTxnsSameTypeDifferentNodesDetected")
                 .given(
@@ -102,7 +103,7 @@ public class Issue310Suite extends HapiSuite {
 
     // This test requires multiple nodes
     @HapiTest
-    final DynamicTest duplicatedTxnsDifferentTypesDifferentNodesDetected() {
+    final Stream<DynamicTest> duplicatedTxnsDifferentTypesDifferentNodesDetected() {
         return defaultHapiSpec("duplicatedTxnsDifferentTypesDifferentNodesDetected")
                 .given(
                         cryptoCreate("acct4").via("txnId4").setNode("0.0.3"),

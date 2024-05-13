@@ -23,10 +23,11 @@ import static com.hedera.services.bdd.suites.regression.factories.AccountComplet
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -45,12 +46,12 @@ public class HollowAccountCompletionFuzzing extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(hollowAccountCompletionFuzzing());
     }
 
     @HapiTest
-    final DynamicTest hollowAccountCompletionFuzzing() {
+    final Stream<DynamicTest> hollowAccountCompletionFuzzing() {
         return defaultHapiSpec("HollowAccountCompletionFuzzing")
                 .given(initOperations())
                 .when()

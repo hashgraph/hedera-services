@@ -48,12 +48,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OV
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -73,7 +74,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 pureCheckFails(),
                 topicIdIsValidated(),
@@ -88,7 +89,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest pureCheckFails() {
+    final Stream<DynamicTest> pureCheckFails() {
         return defaultHapiSpec("testTopic")
                 .given(cryptoCreate("nonTopicId"))
                 .when()
@@ -99,7 +100,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest idVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(createTopic("testTopic"))
                 .when()
@@ -108,7 +109,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest topicIdIsValidated() {
+    final Stream<DynamicTest> topicIdIsValidated() {
         return defaultHapiSpec("topicIdIsValidated")
                 .given(cryptoCreate("nonTopicId"))
                 .when()
@@ -123,7 +124,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest messageIsValidated() {
+    final Stream<DynamicTest> messageIsValidated() {
         return defaultHapiSpec("messageIsValidated")
                 .given(createTopic("testTopic"))
                 .when()
@@ -139,7 +140,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest messageSubmissionSimple() {
+    final Stream<DynamicTest> messageSubmissionSimple() {
         return defaultHapiSpec("messageSubmissionSimple")
                 .given(
                         newKeyNamed("submitKey"),
@@ -153,7 +154,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest messageSubmissionIncreasesSeqNo() {
+    final Stream<DynamicTest> messageSubmissionIncreasesSeqNo() {
         KeyShape submitKeyShape = threshOf(2, SIMPLE, SIMPLE, listOf(2));
 
         return defaultHapiSpec("messageSubmissionIncreasesSeqNo")
@@ -165,7 +166,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest messageSubmissionWithSubmitKey() {
+    final Stream<DynamicTest> messageSubmissionWithSubmitKey() {
         KeyShape submitKeyShape = threshOf(2, SIMPLE, SIMPLE, listOf(2));
 
         SigControl validSig = submitKeyShape.signedWith(sigs(ON, OFF, sigs(ON, ON)));
@@ -188,7 +189,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest messageSubmissionMultiple() {
+    final Stream<DynamicTest> messageSubmissionMultiple() {
         final int numMessages = 10;
 
         return defaultHapiSpec("messageSubmissionMultiple")
@@ -200,7 +201,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest messageSubmissionOverSize() {
+    final Stream<DynamicTest> messageSubmissionOverSize() {
         final byte[] messageBytes = new byte[4096]; // 4k
         Arrays.fill(messageBytes, (byte) 0b1);
 
@@ -217,7 +218,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest feeAsExpected() {
+    final Stream<DynamicTest> feeAsExpected() {
         final byte[] messageBytes = new byte[100]; // 4k
         Arrays.fill(messageBytes, (byte) 0b1);
         return defaultHapiSpec("feeAsExpected")
@@ -234,7 +235,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest messageSubmissionCorrectlyUpdatesRunningHash() {
+    final Stream<DynamicTest> messageSubmissionCorrectlyUpdatesRunningHash() {
         String topic = "testTopic";
         String message1 = "Hello world!";
         String message2 = "Hello world again!";

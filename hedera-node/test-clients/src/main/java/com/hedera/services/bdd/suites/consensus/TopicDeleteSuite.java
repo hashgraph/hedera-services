@@ -32,10 +32,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -55,7 +56,7 @@ public class TopicDeleteSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 pureCheckFails(),
                 cannotDeleteAccountAsTopic(),
@@ -67,7 +68,7 @@ public class TopicDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest idVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(newKeyNamed("adminKey"))
                 .when(createTopic("topic").adminKeyName("adminKey"))
@@ -75,7 +76,7 @@ public class TopicDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest pureCheckFails() {
+    final Stream<DynamicTest> pureCheckFails() {
         return defaultHapiSpec("CannotDeleteAccountAsTopic")
                 .given(cryptoCreate("nonTopicId"))
                 .when()
@@ -86,7 +87,7 @@ public class TopicDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cannotDeleteAccountAsTopic() {
+    final Stream<DynamicTest> cannotDeleteAccountAsTopic() {
         return defaultHapiSpec("CannotDeleteAccountAsTopic")
                 .given(cryptoCreate("nonTopicId"))
                 .when()
@@ -95,7 +96,7 @@ public class TopicDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest topicIdIsValidated() {
+    final Stream<DynamicTest> topicIdIsValidated() {
         // Fully non-deterministic for fuzzy matching because the test uses an absolute entity number (i.e.
         // 100.232.4534)
         // but fuzzy matching compares relative entity numbers
@@ -109,7 +110,7 @@ public class TopicDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest noAdminKeyCannotDelete() {
+    final Stream<DynamicTest> noAdminKeyCannotDelete() {
         return defaultHapiSpec("noAdminKeyCannotDelete")
                 .given(createTopic("testTopic"))
                 .when(deleteTopic("testTopic").hasKnownStatus(UNAUTHORIZED))
@@ -117,7 +118,7 @@ public class TopicDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest deleteWithAdminKey() {
+    final Stream<DynamicTest> deleteWithAdminKey() {
         return defaultHapiSpec("deleteWithAdminKey")
                 .given(newKeyNamed("adminKey"), createTopic("testTopic").adminKeyName("adminKey"))
                 .when(deleteTopic("testTopic").hasPrecheck(ResponseCodeEnum.OK))
@@ -125,7 +126,7 @@ public class TopicDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest deleteFailedWithWrongKey() {
+    final Stream<DynamicTest> deleteFailedWithWrongKey() {
         long PAYER_BALANCE = 1_999_999_999L;
         return defaultHapiSpec("deleteFailedWithWrongKey")
                 .given(
@@ -141,7 +142,7 @@ public class TopicDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest feeAsExpected() {
+    final Stream<DynamicTest> feeAsExpected() {
         return defaultHapiSpec("feeAsExpected")
                 .given(cryptoCreate("payer"), createTopic("testTopic").adminKeyName("payer"))
                 .when(deleteTopic("testTopic").blankMemo().payingWith("payer").via("topicDelete"))

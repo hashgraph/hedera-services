@@ -25,12 +25,13 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -44,12 +45,12 @@ public class Issue1758Suite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(allowsCryptoCreatePayerToHaveLessThanTwiceFee());
     }
 
     @HapiTest
-    final DynamicTest allowsCryptoCreatePayerToHaveLessThanTwiceFee() {
+    final Stream<DynamicTest> allowsCryptoCreatePayerToHaveLessThanTwiceFee() {
         return defaultFailingHapiSpec("AllowsCryptoCreatePayerToHaveLessThanTwiceFee")
                 .given(
                         cryptoCreate("payer").via("referenceTxn").balance(0L),

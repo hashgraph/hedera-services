@@ -59,7 +59,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
@@ -75,6 +74,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -125,7 +126,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 updateWithUniqueSigs(),
                 updateWithOverlappingSigs(),
@@ -144,7 +145,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest idVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(cryptoCreate("user").stakedAccountId("0.0.20").declinedReward(true))
                 .when()
@@ -153,7 +154,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateStakingFieldsWorks() {
+    final Stream<DynamicTest> updateStakingFieldsWorks() {
         return defaultHapiSpec("updateStakingFieldsWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
@@ -203,7 +204,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest usdFeeAsExpectedCryptoUpdate() {
+    final Stream<DynamicTest> usdFeeAsExpectedCryptoUpdate() {
         double autoAssocSlotPrice = 0.0018;
         double baseFee = 0.00022;
         double plusOneSlotFee = baseFee + autoAssocSlotPrice;
@@ -258,7 +259,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateFailsWithOverlyLongLifetime() {
+    final Stream<DynamicTest> updateFailsWithOverlyLongLifetime() {
         final var smallBuffer = 12_345L;
         final var excessiveExpiry = DEFAULT_MAX_LIFETIME + Instant.now().getEpochSecond() + smallBuffer;
         return defaultHapiSpec("UpdateFailsWithOverlyLongLifetime")
@@ -268,7 +269,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
+    final Stream<DynamicTest> sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
         String sysAccount = "0.0.99";
         String randomAccount = "randomAccount";
         String firstKey = "firstKey";
@@ -294,7 +295,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest canUpdateMemo() {
+    final Stream<DynamicTest> canUpdateMemo() {
         String firstMemo = "First";
         String secondMemo = "Second";
         return defaultHapiSpec("CanUpdateMemo")
@@ -310,7 +311,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateWithUniqueSigs() {
+    final Stream<DynamicTest> updateWithUniqueSigs() {
         return defaultHapiSpec("UpdateWithUniqueSigs", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(TARGET_KEY).shape(twoLevelThresh).labels(overlappingKeys),
@@ -322,7 +323,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateWithOneEffectiveSig() {
+    final Stream<DynamicTest> updateWithOneEffectiveSig() {
         KeyLabel oneUniqueKey =
                 complex(complex("X", "X", "X", "X", "X", "X", "X"), complex("X", "X", "X", "X", "X", "X", "X"));
         SigControl singleSig = SigControl.threshSigs(
@@ -342,7 +343,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateWithOverlappingSigs() {
+    final Stream<DynamicTest> updateWithOverlappingSigs() {
         return defaultHapiSpec("UpdateWithOverlappingSigs", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(TARGET_KEY).shape(twoLevelThresh).labels(overlappingKeys),
@@ -355,7 +356,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateFailsWithContractKey() {
+    final Stream<DynamicTest> updateFailsWithContractKey() {
         AtomicLong id = new AtomicLong();
         final var CONTRACT = "Multipurpose";
         return defaultHapiSpec(
@@ -377,7 +378,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateFailsWithInsufficientSigs() {
+    final Stream<DynamicTest> updateFailsWithInsufficientSigs() {
         return defaultHapiSpec("UpdateFailsWithInsufficientSigs", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(TARGET_KEY).shape(twoLevelThresh).labels(overlappingKeys),
@@ -390,7 +391,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cannotSetThresholdNegative() {
+    final Stream<DynamicTest> cannotSetThresholdNegative() {
         return defaultHapiSpec("CannotSetThresholdNegative", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate(TEST_ACCOUNT))
                 .when()
@@ -398,7 +399,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateFailsIfMissingSigs() {
+    final Stream<DynamicTest> updateFailsIfMissingSigs() {
         SigControl origKeySigs = SigControl.threshSigs(3, ON, ON, SigControl.threshSigs(1, OFF, ON));
         SigControl updKeySigs = SigControl.listSigs(ON, OFF, SigControl.threshSigs(1, ON, OFF, OFF, OFF));
 
@@ -417,7 +418,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateWithEmptyKeyFails() {
+    final Stream<DynamicTest> updateWithEmptyKeyFails() {
         SigControl updKeySigs = threshOf(0, 0);
 
         return defaultHapiSpec("updateWithEmptyKeyFails", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -429,7 +430,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateMaxAutoAssociationsWorks() {
+    final Stream<DynamicTest> updateMaxAutoAssociationsWorks() {
         final int maxAllowedAssociations = 5000;
         final int originalMax = 2;
         final int newBadMax = originalMax - 1;

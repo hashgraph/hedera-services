@@ -25,6 +25,8 @@ import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -38,12 +40,12 @@ public class Issue1741Suite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(queryPaymentTxnMustHavePayerBalanceForBothTransferFeeAndNodePayment());
     }
 
     @HapiTest
-    final DynamicTest queryPaymentTxnMustHavePayerBalanceForBothTransferFeeAndNodePayment() {
+    final Stream<DynamicTest> queryPaymentTxnMustHavePayerBalanceForBothTransferFeeAndNodePayment() {
         final long BALANCE = 1_000_000L;
 
         return HapiSpec.defaultHapiSpec("QueryPaymentTxnMustHavePayerBalanceForBothTransferFeeAndNodePayment")

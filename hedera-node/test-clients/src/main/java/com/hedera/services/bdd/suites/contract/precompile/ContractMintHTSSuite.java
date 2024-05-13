@@ -71,7 +71,6 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
@@ -81,6 +80,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -124,23 +125,23 @@ public class ContractMintHTSSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<DynamicTest> negativeSpecs() {
+    List<Stream<DynamicTest>>negativeSpecs() {
         return List.of(
                 rollbackOnFailedMintAfterFungibleTransfer(),
                 mintTokensWithExtremeValues(),
                 mintTokensWithInvalidValues());
     }
 
-    List<DynamicTest> positiveSpecs() {
+    List<Stream<DynamicTest>>positiveSpecs() {
         return List.of(transferNftAfterNestedMint());
     }
 
     @HapiTest
-    final DynamicTest mintTokensWithExtremeValues() {
+    final Stream<DynamicTest> mintTokensWithExtremeValues() {
         var mintExtremeValue = "mintExtremeValue";
         var mintInvalidAddressType = "mintInvalidAddressType";
 
@@ -250,7 +251,7 @@ public class ContractMintHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest mintTokensWithInvalidValues() {
+    final Stream<DynamicTest> mintTokensWithInvalidValues() {
         var mintToken = "mintToken";
 
         var fungibleMintWithMetadataTest = "fungibleMintWithMetadataTest";
@@ -360,7 +361,7 @@ public class ContractMintHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNftAfterNestedMint() {
+    final Stream<DynamicTest> transferNftAfterNestedMint() {
         final var nestedTransferTxn = "nestedTransferTxn";
         final var v2SecuritySendNftAfterNestedMint = "v2SecuritySendNftAfterNestedMint";
 
@@ -490,7 +491,7 @@ public class ContractMintHTSSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5669")
     @HapiTest
-    final DynamicTest rollbackOnFailedMintAfterFungibleTransfer() {
+    final Stream<DynamicTest> rollbackOnFailedMintAfterFungibleTransfer() {
         final var failedMintTxn = "failedMintTxn";
 
         return defaultHapiSpec(

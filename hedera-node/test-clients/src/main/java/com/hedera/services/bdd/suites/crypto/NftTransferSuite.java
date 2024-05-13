@@ -33,7 +33,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -41,6 +40,8 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -74,7 +75,7 @@ public class NftTransferSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(transferNfts());
     }
 
@@ -197,7 +198,7 @@ public class NftTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNfts() {
+    final Stream<DynamicTest> transferNfts() {
         return defaultHapiSpec("TransferNfts")
                 .given(setupNftTest(), transferInitial())
                 .when(seqFor(0, NUM_ROUNDS, NftTransferSuite::transferRound))

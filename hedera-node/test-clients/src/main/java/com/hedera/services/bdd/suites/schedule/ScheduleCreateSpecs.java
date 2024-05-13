@@ -91,7 +91,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_R
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
@@ -100,6 +99,8 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -113,7 +114,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return withAndWithoutLongTermEnabled(() -> List.of(
                 notIdenticalScheduleIfScheduledTxnChanges(),
                 notIdenticalScheduleIfAdminKeyChanges(),
@@ -146,7 +147,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest aliasNotAllowedAsPayer() {
+    final Stream<DynamicTest> aliasNotAllowedAsPayer() {
         return defaultHapiSpec("BodyAndPayerCreation")
                 .given(
                         newKeyNamed(ALIAS),
@@ -182,7 +183,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest suiteCleanup() {
+    final Stream<DynamicTest> suiteCleanup() {
         return defaultHapiSpec("suiteCleanup")
                 .given()
                 .when()
@@ -190,7 +191,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest worksAsExpectedWithDefaultScheduleId() {
+    final Stream<DynamicTest> worksAsExpectedWithDefaultScheduleId() {
         return defaultHapiSpec("WorksAsExpectedWithDefaultScheduleId")
                 .given()
                 .when()
@@ -198,7 +199,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest bodyOnlyCreation() {
+    final Stream<DynamicTest> bodyOnlyCreation() {
         return customHapiSpec("bodyOnlyCreation")
                 .withProperties(Map.of("default.keyAlgorithm", "SECP256K1"))
                 .given(overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"), cryptoCreate(SENDER))
@@ -213,7 +214,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest validateSignersInInfo() {
+    final Stream<DynamicTest> validateSignersInInfo() {
         return customHapiSpec(VALID_SCHEDULE)
                 .withProperties(Map.of("default.keyAlgorithm", "SECP256K1"))
                 .given(cryptoCreate(SENDER))
@@ -228,7 +229,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest onlyBodyAndAdminCreation() {
+    final Stream<DynamicTest> onlyBodyAndAdminCreation() {
         return defaultHapiSpec("OnlyBodyAndAdminCreation")
                 .given(newKeyNamed(ADMIN), cryptoCreate(SENDER))
                 .when(scheduleCreate(ONLY_BODY_AND_ADMIN_KEY, cryptoTransfer(tinyBarsFromTo(SENDER, GENESIS, 1)))
@@ -241,7 +242,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest onlyBodyAndMemoCreation() {
+    final Stream<DynamicTest> onlyBodyAndMemoCreation() {
         return defaultHapiSpec("OnlyBodyAndMemoCreation")
                 .given(overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"), cryptoCreate(SENDER))
                 .when(scheduleCreate(ONLY_BODY_AND_MEMO, cryptoTransfer(tinyBarsFromTo(SENDER, GENESIS, 1)))
@@ -254,7 +255,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest idVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(cryptoCreate(PAYER))
                 .when()
@@ -265,7 +266,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest bodyAndPayerCreation() {
+    final Stream<DynamicTest> bodyAndPayerCreation() {
         return defaultHapiSpec("BodyAndPayerCreation")
                 .given(cryptoCreate(PAYER))
                 .when(scheduleCreate(
@@ -283,7 +284,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest bodyAndSignatoriesCreation() {
+    final Stream<DynamicTest> bodyAndSignatoriesCreation() {
         var scheduleName = "onlyBodyAndSignatories";
         var scheduledTxn = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
@@ -306,7 +307,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest failsWithNonExistingPayerAccountId() {
+    final Stream<DynamicTest> failsWithNonExistingPayerAccountId() {
         return defaultHapiSpec("FailsWithNonExistingPayerAccountId")
                 .given(overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"))
                 .when(scheduleCreate("invalidPayer", cryptoCreate("secondary"))
@@ -316,7 +317,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest failsWithTooLongMemo() {
+    final Stream<DynamicTest> failsWithTooLongMemo() {
         return defaultHapiSpec("FailsWithTooLongMemo")
                 .given()
                 .when(scheduleCreate("invalidMemo", cryptoCreate("secondary"))
@@ -326,7 +327,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest notIdenticalScheduleIfScheduledTxnChanges() {
+    final Stream<DynamicTest> notIdenticalScheduleIfScheduledTxnChanges() {
         return defaultHapiSpec("NotIdenticalScheduleIfScheduledTxnChanges")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
@@ -348,7 +349,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest notIdenticalScheduleIfMemoChanges() {
+    final Stream<DynamicTest> notIdenticalScheduleIfMemoChanges() {
         return defaultHapiSpec("NotIdenticalScheduleIfMemoChanges")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
@@ -367,7 +368,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest notIdenticalScheduleIfAdminKeyChanges() {
+    final Stream<DynamicTest> notIdenticalScheduleIfAdminKeyChanges() {
         return defaultHapiSpec("notIdenticalScheduleIfAdminKeyChanges")
                 .given(
                         newKeyNamed("adminA"),
@@ -394,7 +395,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer() {
+    final Stream<DynamicTest> recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer() {
         return defaultHapiSpec("recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
@@ -422,7 +423,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest rejectsSentinelKeyListAsAdminKey() {
+    final Stream<DynamicTest> rejectsSentinelKeyListAsAdminKey() {
         return defaultHapiSpec("RejectsSentinelKeyListAsAdminKey")
                 .given()
                 .when()
@@ -432,7 +433,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest rejectsMalformedScheduledTxnMemo() {
+    final Stream<DynamicTest> rejectsMalformedScheduledTxnMemo() {
         return defaultHapiSpec("RejectsMalformedScheduledTxnMemo")
                 .given(
                         cryptoCreate("ntb").memo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
@@ -452,7 +453,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest infoIncludesTxnIdFromCreationReceipt() {
+    final Stream<DynamicTest> infoIncludesTxnIdFromCreationReceipt() {
         return defaultHapiSpec("InfoIncludesTxnIdFromCreationReceipt")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
@@ -467,7 +468,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest preservesRevocationServiceSemanticsForFileDelete() {
+    final Stream<DynamicTest> preservesRevocationServiceSemanticsForFileDelete() {
         KeyShape waclShape = listOf(SIMPLE, threshOf(2, 3));
         SigControl adequateSigs = waclShape.signedWith(sigs(OFF, sigs(ON, ON, OFF)));
         SigControl inadequateSigs = waclShape.signedWith(sigs(OFF, sigs(ON, OFF, OFF)));
@@ -501,7 +502,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest detectsKeysChangedBetweenExpandSigsAndHandleTxn() {
+    final Stream<DynamicTest> detectsKeysChangedBetweenExpandSigsAndHandleTxn() {
         var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
         String aKey = "a", bKey = "b";
 
@@ -527,7 +528,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest onlySchedulesWithMissingReqSimpleSigs() {
+    final Stream<DynamicTest> onlySchedulesWithMissingReqSimpleSigs() {
         return defaultHapiSpec("OnlySchedulesWithMissingReqSimpleSigs")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
@@ -539,7 +540,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest requiresExtantPayer() {
+    final Stream<DynamicTest> requiresExtantPayer() {
         return defaultHapiSpec("RequiresExtantPayer")
                 .given()
                 .when()
@@ -550,7 +551,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest doesntTriggerUntilPayerSigns() {
+    final Stream<DynamicTest> doesntTriggerUntilPayerSigns() {
         return defaultHapiSpec("DoesntTriggerUntilPayerSigns")
                 .given(
                         cryptoCreate(PAYER).balance(ONE_HBAR * 5),
@@ -578,7 +579,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest triggersImmediatelyWithBothReqSimpleSigs() {
+    final Stream<DynamicTest> triggersImmediatelyWithBothReqSimpleSigs() {
         long initialBalance = HapiSpecSetup.getDefaultInstance().defaultBalance();
         long transferAmount = 1;
 
@@ -599,7 +600,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest rejectsUnresolvableReqSigners() {
+    final Stream<DynamicTest> rejectsUnresolvableReqSigners() {
         return defaultHapiSpec("RejectsUnresolvableReqSigners")
                 .given()
                 .when()
@@ -612,7 +613,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest rejectsFunctionlessTxn() {
+    final Stream<DynamicTest> rejectsFunctionlessTxn() {
         return defaultHapiSpec("RejectsFunctionlessTxn")
                 .given()
                 .when()
@@ -622,7 +623,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest functionlessTxnBusyWithNonExemptPayer() {
+    final Stream<DynamicTest> functionlessTxnBusyWithNonExemptPayer() {
         return defaultHapiSpec("FunctionlessTxnBusyWithNonExemptPayer")
                 .given()
                 .when()
@@ -632,7 +633,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest whitelistWorks() {
+    final Stream<DynamicTest> whitelistWorks() {
         return defaultHapiSpec("whitelistWorks")
                 .given(scheduleCreate("nope", createTopic(NEVER_TO_BE))
                         .hasKnownStatus(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST))

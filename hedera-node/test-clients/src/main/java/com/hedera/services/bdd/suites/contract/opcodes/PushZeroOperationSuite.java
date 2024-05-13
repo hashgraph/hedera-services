@@ -33,11 +33,12 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -65,20 +66,20 @@ public class PushZeroOperationSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<DynamicTest> negativeSpecs() {
+    List<Stream<DynamicTest>>negativeSpecs() {
         return List.of();
     }
 
-    List<DynamicTest> positiveSpecs() {
+    List<Stream<DynamicTest>>positiveSpecs() {
         return List.of(pushZeroHappyPathWorks(), pushZeroDisabledInV034());
     }
 
     @HapiTest
-    final DynamicTest pushZeroHappyPathWorks() {
+    final Stream<DynamicTest> pushZeroHappyPathWorks() {
         final var pushZeroContract = CONTRACT;
         final var pushResult = "pushResult";
         return defaultHapiSpec("pushZeroHappyPathWorks", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -104,7 +105,7 @@ public class PushZeroOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest pushZeroDisabledInV034() {
+    final Stream<DynamicTest> pushZeroDisabledInV034() {
         final var pushZeroContract = CONTRACT;
         final var pushResult = "pushResult";
         return propertyPreservingHapiSpec("pushZeroDisabledInV034", NONDETERMINISTIC_TRANSACTION_FEES)

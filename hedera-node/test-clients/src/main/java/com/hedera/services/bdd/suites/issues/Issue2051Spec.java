@@ -32,9 +32,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_DOES_
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -52,7 +53,7 @@ public class Issue2051Spec extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
             transferAccountCannotBeDeletedForContractTarget(),
             transferAccountCannotBeDeleted(),
@@ -60,7 +61,7 @@ public class Issue2051Spec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest tbdCanPayForItsOwnDeletion() {
+    final Stream<DynamicTest> tbdCanPayForItsOwnDeletion() {
         return defaultHapiSpec("TbdCanPayForItsOwnDeletion")
                 .given(cryptoCreate("tbd"), cryptoCreate(TRANSFER))
                 .when()
@@ -73,7 +74,7 @@ public class Issue2051Spec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferAccountCannotBeDeleted() {
+    final Stream<DynamicTest> transferAccountCannotBeDeleted() {
         return defaultHapiSpec("TransferAccountCannotBeDeleted")
                 .given(cryptoCreate(PAYER), cryptoCreate(TRANSFER), cryptoCreate("tbd"))
                 .when(cryptoDelete(TRANSFER))
@@ -89,7 +90,7 @@ public class Issue2051Spec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferAccountCannotBeDeletedForContractTarget() {
+    final Stream<DynamicTest> transferAccountCannotBeDeletedForContractTarget() {
         return defaultHapiSpec("TransferAccountCannotBeDeletedForContractTarget")
                 .given(
                         uploadInitCode("CreateTrivial"),

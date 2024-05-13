@@ -45,6 +45,8 @@ import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -58,11 +60,11 @@ public class CryptoTransferPerfSuiteWOpProvider extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(runMixedTransferAndSubmits());
     }
 
-    final DynamicTest runMixedTransferAndSubmits() {
+    final Stream<DynamicTest> runMixedTransferAndSubmits() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         return defaultHapiSpec("CryptoTransferPerfSuiteWOpProvider")
                 .given(

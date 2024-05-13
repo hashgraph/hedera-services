@@ -70,6 +70,8 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -103,22 +105,22 @@ public class ContractBurnHTSV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<DynamicTest> negativeSpecs() {
+    List<Stream<DynamicTest>>negativeSpecs() {
         return List.of(hscsPreC020RollbackBurnThatFailsAfterAPrecompileTransfer());
     }
 
-    List<DynamicTest> positiveSpecs() {
+    List<Stream<DynamicTest>>positiveSpecs() {
         return List.of(
                 hscsPrec004TokenBurnOfFungibleTokenUnits(),
                 hscsPrec005TokenBurnOfNft(),
                 hscsPrec011BurnAfterNestedMint());
     }
 
-    final DynamicTest hscsPreC020RollbackBurnThatFailsAfterAPrecompileTransfer() {
+    final Stream<DynamicTest> hscsPreC020RollbackBurnThatFailsAfterAPrecompileTransfer() {
         final var bob = "bob";
         final var feeCollector = "feeCollector";
         final var tokenWithHbarFee = "tokenWithHbarFee";
@@ -203,7 +205,7 @@ public class ContractBurnHTSV1SecurityModelSuite extends HapiSuite {
                         getAccountBalance(ALICE).hasTokenBalance(tokenWithHbarFee, 1));
     }
 
-    final DynamicTest hscsPrec004TokenBurnOfFungibleTokenUnits() {
+    final Stream<DynamicTest> hscsPrec004TokenBurnOfFungibleTokenUnits() {
         final var gasUsed = 14085L;
         return propertyPreservingHapiSpec("hscsPrec004TokenBurnOfFungibleTokenUnits")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -288,7 +290,7 @@ public class ContractBurnHTSV1SecurityModelSuite extends HapiSuite {
                 .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 48));
     }
 
-    final DynamicTest hscsPrec005TokenBurnOfNft() {
+    final Stream<DynamicTest> hscsPrec005TokenBurnOfNft() {
         final var gasUsed = 14085;
         return propertyPreservingHapiSpec("hscsPrec005TokenBurnOfNft")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -345,7 +347,7 @@ public class ContractBurnHTSV1SecurityModelSuite extends HapiSuite {
                 .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 1));
     }
 
-    final DynamicTest hscsPrec011BurnAfterNestedMint() {
+    final Stream<DynamicTest> hscsPrec011BurnAfterNestedMint() {
         final var innerContract = "MintToken";
         final var outerContract = "NestedBurn";
         final var revisedKey = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT, DELEGATE_CONTRACT);

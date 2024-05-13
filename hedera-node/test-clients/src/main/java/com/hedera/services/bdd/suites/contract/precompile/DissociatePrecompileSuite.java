@@ -46,12 +46,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -80,16 +81,16 @@ public class DissociatePrecompileSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(negativeSpecs());
     }
 
-    List<DynamicTest> negativeSpecs() {
+    List<Stream<DynamicTest>>negativeSpecs() {
         return List.of(dissociateTokensNegativeScenarios(), dissociateTokenNegativeScenarios());
     }
 
     @HapiTest
-    final DynamicTest dissociateTokensNegativeScenarios() {
+    final Stream<DynamicTest> dissociateTokensNegativeScenarios() {
         final AtomicReference<Address> tokenAddress1 = new AtomicReference<>();
         final AtomicReference<Address> tokenAddress2 = new AtomicReference<>();
         final AtomicReference<Address> accountAddress = new AtomicReference<>();
@@ -208,7 +209,7 @@ public class DissociatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest dissociateTokenNegativeScenarios() {
+    final Stream<DynamicTest> dissociateTokenNegativeScenarios() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         final AtomicReference<Address> accountAddress = new AtomicReference<>();
         final var nonExistingAccount = "nonExistingAccount";

@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -31,6 +30,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -46,13 +47,13 @@ public class FetchSystemFiles extends HapiSuite {
     private static final String TARGET_DIR = "./remote-system-files";
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(fetchFiles());
     }
 
     /** Fetches the system files from a running network and saves them to the local file system. */
     @HapiTest
-    final DynamicTest fetchFiles() {
+    final Stream<DynamicTest> fetchFiles() {
         return customHapiSpec("FetchFiles")
                 .withProperties(Map.of(
                         "fees.useFixedOffer", "true",

@@ -69,6 +69,8 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -108,7 +110,7 @@ public class TokenPauseSpecs extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 cannotPauseWithInvalidPauseKey(),
                 cannotChangePauseStatusIfMissingPauseKey(),
@@ -126,7 +128,7 @@ public class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cannotAddPauseKeyViaTokenUpdate() {
+    final Stream<DynamicTest> cannotAddPauseKeyViaTokenUpdate() {
         return defaultHapiSpec("CannotAddPauseKeyViaTokenUpdate")
                 .given(newKeyNamed(PAUSE_KEY), newKeyNamed(ADMIN_KEY))
                 .when(tokenCreate(PRIMARY), tokenCreate(SECONDARY).adminKey(ADMIN_KEY))
@@ -139,7 +141,7 @@ public class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cannotPauseWithInvalidPauseKey() {
+    final Stream<DynamicTest> cannotPauseWithInvalidPauseKey() {
         return defaultHapiSpec("cannotPauseWithInvalidPauseKey")
                 .given(newKeyNamed(PAUSE_KEY), newKeyNamed(OTHER_KEY))
                 .when(tokenCreate(PRIMARY).pauseKey(PAUSE_KEY))
@@ -147,7 +149,7 @@ public class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest pausedTokenInCustomFeeCaseStudy() {
+    final Stream<DynamicTest> pausedTokenInCustomFeeCaseStudy() {
         return defaultHapiSpec("PausedTokenInCustomFeeCaseStudy", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
@@ -192,7 +194,7 @@ public class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest unpauseWorks() {
+    final Stream<DynamicTest> unpauseWorks() {
         final String firstUser = FIRST_USER;
         final String token = PRIMARY;
 
@@ -227,7 +229,7 @@ public class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest pausedNonFungibleUniqueCannotBeUsed() {
+    final Stream<DynamicTest> pausedNonFungibleUniqueCannotBeUsed() {
         final String uniqueToken = "nonFungibleUnique";
         final String firstUser = FIRST_USER;
         final String secondUser = SECOND_USER;
@@ -312,7 +314,7 @@ public class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest pausedFungibleTokenCannotBeUsed() {
+    final Stream<DynamicTest> pausedFungibleTokenCannotBeUsed() {
         final String token = PRIMARY;
         final String otherToken = SECONDARY;
         final String firstUser = FIRST_USER;
@@ -395,7 +397,7 @@ public class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cannotChangePauseStatusIfMissingPauseKey() {
+    final Stream<DynamicTest> cannotChangePauseStatusIfMissingPauseKey() {
         return defaultHapiSpec("CannotChangePauseStatusIfMissingPauseKey")
                 .given(cryptoCreate(TOKEN_TREASURY))
                 .when(
@@ -425,7 +427,7 @@ public class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest basePauseAndUnpauseHaveExpectedPrices() {
+    final Stream<DynamicTest> basePauseAndUnpauseHaveExpectedPrices() {
         final var expectedBaseFee = 0.001;
         final var token = "token";
         final var tokenPauseTransaction = "tokenPauseTxn";

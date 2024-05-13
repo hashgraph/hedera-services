@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.leaky;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCallV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCreateV1SecurityModelSuite;
@@ -45,6 +44,8 @@ import com.hedera.services.bdd.suites.ethereum.EthereumV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationV1SecurityModelSpecs;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -90,7 +91,7 @@ public class LeakySecurityModelV1Suite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return suites.stream()
                 .map(HapiSuite::getSpecsInSuite)
                 .flatMap(List::stream)

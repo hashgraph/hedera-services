@@ -32,10 +32,11 @@ import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -65,12 +66,12 @@ public class LogsSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(log0Works(), log1Works(), log2Works(), log3Works(), log4Works());
     }
 
     @HapiTest
-    final DynamicTest log0Works() {
+    final Stream<DynamicTest> log0Works() {
         return defaultHapiSpec("log0Works", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log0", BigInteger.valueOf(15))
@@ -84,7 +85,7 @@ public class LogsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest log1Works() {
+    final Stream<DynamicTest> log1Works() {
         return defaultHapiSpec("log1Works", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log1", BigInteger.valueOf(15))
@@ -101,7 +102,7 @@ public class LogsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest log2Works() {
+    final Stream<DynamicTest> log2Works() {
         return defaultHapiSpec("log2Works", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log2", BigInteger.ONE, BigInteger.TWO)
@@ -120,7 +121,7 @@ public class LogsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest log3Works() {
+    final Stream<DynamicTest> log3Works() {
         return defaultHapiSpec("log3Works", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log3", BigInteger.ONE, BigInteger.TWO, BigInteger.valueOf(3))
@@ -140,7 +141,7 @@ public class LogsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest log4Works() {
+    final Stream<DynamicTest> log4Works() {
         return defaultHapiSpec("log4Works", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(

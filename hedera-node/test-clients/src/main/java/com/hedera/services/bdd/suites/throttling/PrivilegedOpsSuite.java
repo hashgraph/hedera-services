@@ -37,12 +37,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MI
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -66,7 +67,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 superusersAreNeverThrottledOnTransfers(),
                 superusersAreNeverThrottledOnMiscTxns(),
@@ -101,7 +102,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
             .toArray(HapiSpecOperation[]::new);
 
     @HapiTest
-    final DynamicTest freezeAdminPrivilegesAsExpected() {
+    final Stream<DynamicTest> freezeAdminPrivilegesAsExpected() {
         return defaultHapiSpec("freezeAdminPrivilegesAsExpected")
                 .given(
                         cryptoCreate(CIVILIAN),
@@ -148,7 +149,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest systemAccountUpdatePrivilegesAsExpected() {
+    final Stream<DynamicTest> systemAccountUpdatePrivilegesAsExpected() {
         final var tmpTreasury = "tmpTreasury";
         return defaultHapiSpec("systemAccountUpdatePrivilegesAsExpected")
                 .given(newKeyNamed(tmpTreasury), newKeyNamed(NEW_88), cryptoCreate(CIVILIAN))
@@ -202,7 +203,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest superusersAreNeverThrottledOnTransfers() {
+    final Stream<DynamicTest> superusersAreNeverThrottledOnTransfers() {
         return defaultHapiSpec("superusersAreNeverThrottledOnTransfers")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L))
@@ -223,7 +224,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest superusersAreNeverThrottledOnMiscTxns() {
+    final Stream<DynamicTest> superusersAreNeverThrottledOnMiscTxns() {
         return defaultHapiSpec("superusersAreNeverThrottledOnMiscTxns")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L))
@@ -244,7 +245,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest superusersAreNeverThrottledOnHcsTxns() {
+    final Stream<DynamicTest> superusersAreNeverThrottledOnHcsTxns() {
         return defaultHapiSpec("superusersAreNeverThrottledOnHcsTxns")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
@@ -262,7 +263,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest superusersAreNeverThrottledOnMiscQueries() {
+    final Stream<DynamicTest> superusersAreNeverThrottledOnMiscQueries() {
         return defaultHapiSpec("superusersAreNeverThrottledOnMiscQueries")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
@@ -280,7 +281,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest superusersAreNeverThrottledOnHcsQueries() {
+    final Stream<DynamicTest> superusersAreNeverThrottledOnHcsQueries() {
         return defaultHapiSpec("superusersAreNeverThrottledOnHcsQueries")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),

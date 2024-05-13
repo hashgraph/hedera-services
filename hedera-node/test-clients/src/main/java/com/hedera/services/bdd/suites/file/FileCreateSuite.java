@@ -43,7 +43,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_B
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -53,6 +52,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -74,7 +75,7 @@ public class FileCreateSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 createWithMemoWorks(),
                 createFailsWithMissingSigs(),
@@ -84,7 +85,7 @@ public class FileCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest exchangeRateControlAccountIsntCharged() {
+    final Stream<DynamicTest> exchangeRateControlAccountIsntCharged() {
         return defaultHapiSpec("ExchangeRateControlAccountIsntCharged")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, 1_000_000_000_000L)),
@@ -97,7 +98,7 @@ public class FileCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest createFailsWithExcessiveLifetime() {
+    final Stream<DynamicTest> createFailsWithExcessiveLifetime() {
         return defaultHapiSpec("CreateFailsWithExcessiveLifetime")
                 .given()
                 .when()
@@ -107,7 +108,7 @@ public class FileCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest idVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given()
                 .when()
@@ -116,7 +117,7 @@ public class FileCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest createWithMemoWorks() {
+    final Stream<DynamicTest> createWithMemoWorks() {
         String memo = "Really quite something!";
 
         return defaultHapiSpec("createWithMemoWorks")
@@ -129,7 +130,7 @@ public class FileCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest createFailsWithMissingSigs() {
+    final Stream<DynamicTest> createFailsWithMissingSigs() {
         KeyShape shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
         SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
         SigControl invalidSig = shape.signedWith(sigs(OFF, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
@@ -155,7 +156,7 @@ public class FileCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest createFailsWithPayerAccountNotFound() {
+    final Stream<DynamicTest> createFailsWithPayerAccountNotFound() {
         KeyShape shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
         SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
 

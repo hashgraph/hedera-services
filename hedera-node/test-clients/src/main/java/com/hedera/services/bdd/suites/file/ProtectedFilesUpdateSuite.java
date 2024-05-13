@@ -31,7 +31,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
@@ -47,6 +46,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.SplittableRandom;
 import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -70,11 +71,11 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(positiveTests(), negativeTests());
     }
 
-    private List<DynamicTest> positiveTests() {
+    private List<Stream<DynamicTest>>positiveTests() {
         return List.of(
                 account2CanUpdateApplicationProperties(),
                 account50CanUpdateApplicationProperties(),
@@ -94,7 +95,7 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
                 account57CanUpdateExchangeRates());
     }
 
-    private List<DynamicTest> negativeTests() {
+    private List<Stream<DynamicTest>>negativeTests() {
         return Arrays.asList(
                 unauthorizedAccountCannotUpdateApplicationProperties(),
                 unauthorizedAccountCannotUpdateApiPermissions(),
@@ -105,13 +106,13 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
     }
 
     @BddMethodIsNotATest
-    final DynamicTest specialAccountCanUpdateSpecialPropertyFile(
+    final Stream<DynamicTest> specialAccountCanUpdateSpecialPropertyFile(
             final String specialAccount, final String specialFile, final String property, final String expected) {
         return specialAccountCanUpdateSpecialPropertyFile(specialAccount, specialFile, property, expected, true);
     }
 
     @BddMethodIsNotATest
-    final DynamicTest specialAccountCanUpdateSpecialPropertyFile(
+    final Stream<DynamicTest> specialAccountCanUpdateSpecialPropertyFile(
             final String specialAccount,
             final String specialFile,
             final String property,
@@ -145,13 +146,13 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
     }
 
     @BddMethodIsNotATest
-    final DynamicTest specialAccountCanUpdateSpecialFile(
+    final Stream<DynamicTest> specialAccountCanUpdateSpecialFile(
             final String specialAccount, final String specialFile, final String target, final String replacement) {
         return specialAccountCanUpdateSpecialFile(specialAccount, specialFile, target, replacement, true);
     }
 
     @BddMethodIsNotATest
-    final DynamicTest specialAccountCanUpdateSpecialFile(
+    final Stream<DynamicTest> specialAccountCanUpdateSpecialFile(
             final String specialAccount,
             final String specialFile,
             final String target,
@@ -167,7 +168,7 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
     }
 
     @BddMethodIsNotATest
-    final DynamicTest specialAccountCanUpdateSpecialFile(
+    final Stream<DynamicTest> specialAccountCanUpdateSpecialFile(
             final String specialAccount,
             final String specialFile,
             final boolean isFree,
@@ -209,7 +210,7 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
     }
 
     @BddMethodIsNotATest
-    final DynamicTest unauthorizedAccountCannotUpdateSpecialFile(final String specialFile, final String newContents) {
+    final Stream<DynamicTest> unauthorizedAccountCannotUpdateSpecialFile(final String specialFile, final String newContents) {
         return defaultHapiSpec("UnauthorizedAccountCannotUpdate" + specialFile)
                 .given(cryptoCreate("unauthorizedAccount"))
                 .when()
@@ -220,114 +221,114 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest account2CanUpdateApplicationProperties() {
+    final Stream<DynamicTest> account2CanUpdateApplicationProperties() {
         return specialAccountCanUpdateSpecialPropertyFile(GENESIS, APP_PROPERTIES, "throttlingTps", "10");
     }
 
     @HapiTest
-    final DynamicTest account50CanUpdateApplicationProperties() {
+    final Stream<DynamicTest> account50CanUpdateApplicationProperties() {
         return specialAccountCanUpdateSpecialPropertyFile(SYSTEM_ADMIN, APP_PROPERTIES, "getReceiptTps", "100");
     }
 
     @HapiTest
-    final DynamicTest unauthorizedAccountCannotUpdateApplicationProperties() {
+    final Stream<DynamicTest> unauthorizedAccountCannotUpdateApplicationProperties() {
         return unauthorizedAccountCannotUpdateSpecialFile(APP_PROPERTIES, NEW_CONTENTS);
     }
 
     @HapiTest
-    final DynamicTest account2CanUpdateApiPermissions() {
+    final Stream<DynamicTest> account2CanUpdateApiPermissions() {
         return specialAccountCanUpdateSpecialPropertyFile(GENESIS, API_PERMISSIONS, "createTopic", "1-*");
     }
 
     @HapiTest
-    final DynamicTest account50CanUpdateApiPermissions() {
+    final Stream<DynamicTest> account50CanUpdateApiPermissions() {
         return specialAccountCanUpdateSpecialPropertyFile(SYSTEM_ADMIN, API_PERMISSIONS, "updateFile", "1-*");
     }
 
     @HapiTest
-    final DynamicTest unauthorizedAccountCannotUpdateApiPermissions() {
+    final Stream<DynamicTest> unauthorizedAccountCannotUpdateApiPermissions() {
         return unauthorizedAccountCannotUpdateSpecialFile(API_PERMISSIONS, NEW_CONTENTS);
     }
 
     @HapiTest
-    final DynamicTest account2CanUpdateAddressBook() {
+    final Stream<DynamicTest> account2CanUpdateAddressBook() {
         return specialAccountCanUpdateSpecialFile(
                 GENESIS, ADDRESS_BOOK, true, contents -> extendedBioAddressBook(contents, TARGET_MEMO, REPLACE_MEMO));
     }
 
     @HapiTest
-    final DynamicTest account50CanUpdateAddressBook() {
+    final Stream<DynamicTest> account50CanUpdateAddressBook() {
         return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, ADDRESS_BOOK, TARGET_MEMO, REPLACE_MEMO);
     }
 
     @HapiTest
-    final DynamicTest account55CanUpdateAddressBook() {
+    final Stream<DynamicTest> account55CanUpdateAddressBook() {
         return specialAccountCanUpdateSpecialFile(ADDRESS_BOOK_CONTROL, ADDRESS_BOOK, TARGET_MEMO, REPLACE_MEMO, false);
     }
 
     @HapiTest
-    final DynamicTest unauthorizedAccountCannotUpdateAddressBook() {
+    final Stream<DynamicTest> unauthorizedAccountCannotUpdateAddressBook() {
         return unauthorizedAccountCannotUpdateSpecialFile(ADDRESS_BOOK, NEW_CONTENTS);
     }
 
     @HapiTest
-    final DynamicTest account2CanUpdateNodeDetails() {
+    final Stream<DynamicTest> account2CanUpdateNodeDetails() {
         return specialAccountCanUpdateSpecialFile(
                 GENESIS, NODE_DETAILS, true, contents -> extendedBioNodeDetails(contents, TARGET_MEMO, REPLACE_MEMO));
     }
 
     @HapiTest
-    final DynamicTest account50CanUpdateNodeDetails() {
+    final Stream<DynamicTest> account50CanUpdateNodeDetails() {
         return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, NODE_DETAILS, TARGET_MEMO, REPLACE_MEMO);
     }
 
     @HapiTest
-    final DynamicTest account55CanUpdateNodeDetails() {
+    final Stream<DynamicTest> account55CanUpdateNodeDetails() {
         return specialAccountCanUpdateSpecialFile(ADDRESS_BOOK_CONTROL, NODE_DETAILS, TARGET_MEMO, REPLACE_MEMO, false);
     }
 
     @HapiTest
-    final DynamicTest unauthorizedAccountCannotUpdateNodeDetails() {
+    final Stream<DynamicTest> unauthorizedAccountCannotUpdateNodeDetails() {
         return unauthorizedAccountCannotUpdateSpecialFile(NODE_DETAILS, NEW_CONTENTS);
     }
 
     @HapiTest
-    final DynamicTest account2CanUpdateFeeSchedule() {
+    final Stream<DynamicTest> account2CanUpdateFeeSchedule() {
         return specialAccountCanUpdateSpecialFile(GENESIS, FEE_SCHEDULE, IGNORE, IGNORE);
     }
 
     @HapiTest
-    final DynamicTest account50CanUpdateFeeSchedule() {
+    final Stream<DynamicTest> account50CanUpdateFeeSchedule() {
         return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, FEE_SCHEDULE, IGNORE, IGNORE);
     }
 
     @HapiTest
-    final DynamicTest account56CanUpdateFeeSchedule() {
+    final Stream<DynamicTest> account56CanUpdateFeeSchedule() {
         return specialAccountCanUpdateSpecialFile(FEE_SCHEDULE_CONTROL, FEE_SCHEDULE, IGNORE, IGNORE);
     }
 
     @HapiTest
-    final DynamicTest unauthorizedAccountCannotUpdateFeeSchedule() {
+    final Stream<DynamicTest> unauthorizedAccountCannotUpdateFeeSchedule() {
         return unauthorizedAccountCannotUpdateSpecialFile(FEE_SCHEDULE, NEW_CONTENTS);
     }
 
     @HapiTest
-    final DynamicTest account2CanUpdateExchangeRates() {
+    final Stream<DynamicTest> account2CanUpdateExchangeRates() {
         return specialAccountCanUpdateSpecialFile(GENESIS, EXCHANGE_RATES, IGNORE, IGNORE);
     }
 
     @HapiTest
-    final DynamicTest account50CanUpdateExchangeRates() {
+    final Stream<DynamicTest> account50CanUpdateExchangeRates() {
         return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, EXCHANGE_RATES, IGNORE, IGNORE);
     }
 
     @HapiTest
-    final DynamicTest account57CanUpdateExchangeRates() {
+    final Stream<DynamicTest> account57CanUpdateExchangeRates() {
         return specialAccountCanUpdateSpecialFile(EXCHANGE_RATE_CONTROL, EXCHANGE_RATES, IGNORE, IGNORE);
     }
 
     @HapiTest
-    final DynamicTest unauthorizedAccountCannotUpdateExchangeRates() {
+    final Stream<DynamicTest> unauthorizedAccountCannotUpdateExchangeRates() {
         return unauthorizedAccountCannotUpdateSpecialFile(EXCHANGE_RATES, NEW_CONTENTS);
     }
 

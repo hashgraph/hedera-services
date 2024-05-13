@@ -30,6 +30,8 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -47,16 +49,16 @@ public class CrytoCreateSuiteWithUTF8 extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(positiveTests());
     }
 
-    private List<DynamicTest> positiveTests() {
+    private List<Stream<DynamicTest>>positiveTests() {
         return Arrays.asList(createCryptoTxvWithUTF8Memo(), cryptoCreateTxnCustomSpec());
     }
 
     @HapiTest
-    final DynamicTest createCryptoTxvWithUTF8Memo() {
+    final Stream<DynamicTest> createCryptoTxvWithUTF8Memo() {
         return defaultHapiSpec("CreateCryptoTxvWithUTF8Memo")
                 .given(cryptoCreate("UTF8MemoTestAccount").via("utf8MemoTxn"))
                 .when()
@@ -64,7 +66,7 @@ public class CrytoCreateSuiteWithUTF8 extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cryptoCreateTxnCustomSpec() {
+    final Stream<DynamicTest> cryptoCreateTxnCustomSpec() {
         return customHapiSpec("UTF8CustomSpecMemoTxn")
                 .withProperties(Map.of("default.useMemoUTF8", utf8Mode.toString()))
                 .given(cryptoCreate("UTF8CustomSpecTestAccount").via("utf8CustomSpecMemoTxn"))

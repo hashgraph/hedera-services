@@ -31,12 +31,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -53,7 +54,7 @@ public class Issue2319Spec extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
             sysFileImmutabilityWaivedForMasterAndTreasury(),
             propsPermissionsSigReqsWaivedForAddressBookAdmin(),
@@ -62,7 +63,7 @@ public class Issue2319Spec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest propsPermissionsSigReqsWaivedForAddressBookAdmin() {
+    final Stream<DynamicTest> propsPermissionsSigReqsWaivedForAddressBookAdmin() {
         return defaultHapiSpec("PropsPermissionsSigReqsWaivedForAddressBookAdmin")
                 .given(
                         newKeyNamed(NON_TREASURY_KEY),
@@ -89,7 +90,7 @@ public class Issue2319Spec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest sysFileImmutabilityWaivedForMasterAndTreasury() {
+    final Stream<DynamicTest> sysFileImmutabilityWaivedForMasterAndTreasury() {
         return defaultHapiSpec("sysFileImmutabilityWaivedForMasterAndTreasury")
                 .given(
                         cryptoCreate("civilian"),
@@ -113,7 +114,7 @@ public class Issue2319Spec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest sysAccountSigReqsWaivedForMasterAndTreasury() {
+    final Stream<DynamicTest> sysAccountSigReqsWaivedForMasterAndTreasury() {
         return defaultHapiSpec("SysAccountSigReqsWaivedForMasterAndTreasury")
                 .given(
                         newKeyNamed(NON_TREASURY_KEY),
@@ -147,7 +148,7 @@ public class Issue2319Spec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest sysFileSigReqsWaivedForMasterAndTreasury() {
+    final Stream<DynamicTest> sysFileSigReqsWaivedForMasterAndTreasury() {
         var validRates = new AtomicReference<ByteString>();
 
         return defaultHapiSpec("SysFileSigReqsWaivedForMasterAndTreasury")

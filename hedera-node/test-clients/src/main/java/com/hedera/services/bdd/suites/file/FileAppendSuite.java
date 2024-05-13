@@ -32,10 +32,11 @@ import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuc
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -49,7 +50,7 @@ public class FileAppendSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(vanillaAppendSucceeds(), baseOpsHaveExpectedPrices());
     }
 
@@ -59,7 +60,7 @@ public class FileAppendSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest appendIdVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> appendIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(fileCreate("file").contents("ABC"))
                 .when()
@@ -68,7 +69,7 @@ public class FileAppendSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest getContentsIdVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> getContentsIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("getContentsIdVariantsTreatedAsExpected")
                 .given(fileCreate("file").contents("ABC"))
                 .when()
@@ -76,7 +77,7 @@ public class FileAppendSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest getInfoIdVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> getInfoIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("getInfoIdVariantsTreatedAsExpected")
                 .given(fileCreate("file").contents("ABC"))
                 .when()
@@ -84,7 +85,7 @@ public class FileAppendSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest baseOpsHaveExpectedPrices() {
+    final Stream<DynamicTest> baseOpsHaveExpectedPrices() {
         final var civilian = "NonExemptPayer";
 
         final var expectedAppendFeesPriceUsd = 0.05;
@@ -117,7 +118,7 @@ public class FileAppendSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest vanillaAppendSucceeds() {
+    final Stream<DynamicTest> vanillaAppendSucceeds() {
         final byte[] first4K = randomUtf8Bytes(BYTES_4K);
         final byte[] next4k = randomUtf8Bytes(BYTES_4K);
         final byte[] all8k = new byte[2 * BYTES_4K];

@@ -23,12 +23,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.text.ParseException;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -48,11 +49,11 @@ public class MidnightUpdateRateSuite extends HapiSuite {
             .contents(spec -> spec.ratesProvider().rateSetWith(1, 12).toByteString());
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of();
     }
 
-    final DynamicTest acct57UpdatesMidnightRateAtMidNight() throws ParseException {
+    final Stream<DynamicTest> acct57UpdatesMidnightRateAtMidNight() throws ParseException {
         return defaultHapiSpec("Acct57UpdatesMidnightRateAtMidNight")
                 .given(resetRatesOp, cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, ADEQUATE_FUNDS)))
                 .when(

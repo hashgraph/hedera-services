@@ -28,9 +28,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferLis
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -44,7 +45,7 @@ public class FileRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
             fileCreateRecordSanityChecks(),
             fileDeleteRecordSanityChecks(),
@@ -53,7 +54,7 @@ public class FileRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest fileAppendRecordSanityChecks() {
+    final Stream<DynamicTest> fileAppendRecordSanityChecks() {
         return defaultHapiSpec("FileAppendRecordSanityChecks")
                 .given(flattened(
                         fileCreate("test"),
@@ -66,7 +67,7 @@ public class FileRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest fileCreateRecordSanityChecks() {
+    final Stream<DynamicTest> fileCreateRecordSanityChecks() {
         return defaultHapiSpec("FileCreateRecordSanityChecks")
                 .given(takeBalanceSnapshots(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER))
                 .when(fileCreate("test").via("txn"))
@@ -77,7 +78,7 @@ public class FileRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest fileDeleteRecordSanityChecks() {
+    final Stream<DynamicTest> fileDeleteRecordSanityChecks() {
         return defaultHapiSpec("FileDeleteRecordSanityChecks")
                 .given(flattened(
                         fileCreate("test"),
@@ -90,7 +91,7 @@ public class FileRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest fileUpdateRecordSanityChecks() {
+    final Stream<DynamicTest> fileUpdateRecordSanityChecks() {
         return defaultHapiSpec("FileUpdateRecordSanityChecks")
                 .given(flattened(
                         fileCreate("test"),

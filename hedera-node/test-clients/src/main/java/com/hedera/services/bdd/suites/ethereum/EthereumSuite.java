@@ -156,7 +156,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return Stream.concat(
                         feePaymentMatrix().stream(),
                         Stream.of(
@@ -181,7 +181,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest sendingLargerBalanceThanAvailableFailsGracefully() {
+    final Stream<DynamicTest> sendingLargerBalanceThanAvailableFailsGracefully() {
         final AtomicReference<Address> tokenCreateContractAddress = new AtomicReference<>();
 
         return defaultHapiSpec("sendingLargerBalanceThanAvailableFailsGracefully", NONDETERMINISTIC_ETHEREUM_DATA)
@@ -230,7 +230,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest etx010TransferToCryptoAccountSucceeds() {
+    final Stream<DynamicTest> etx010TransferToCryptoAccountSucceeds() {
         String RECEIVER = "RECEIVER";
         final String aliasBalanceSnapshot = "aliasBalance";
         return defaultHapiSpec(
@@ -279,7 +279,7 @@ public class EthereumSuite extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot(aliasBalanceSnapshot, -FIVE_HBARS)));
     }
 
-    List<DynamicTest> feePaymentMatrix() {
+    List<Stream<DynamicTest>>feePaymentMatrix() {
         final long gasPrice = 71;
         final long chargedGasLimit = GAS_LIMIT * 4 / 5;
 
@@ -317,67 +317,67 @@ public class EthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest matrixedPayerRelayerTest1() {
+    final Stream<DynamicTest> matrixedPayerRelayerTest1() {
         return feePaymentMatrix().get(0);
     }
 
     @HapiTest
-    final DynamicTest matrixedPayerRelayerTest2() {
+    final Stream<DynamicTest> matrixedPayerRelayerTest2() {
         return feePaymentMatrix().get(1);
     }
 
     @HapiTest
-    final DynamicTest matrixedPayerRelayerTest3() {
+    final Stream<DynamicTest> matrixedPayerRelayerTest3() {
         return feePaymentMatrix().get(2);
     }
 
     @HapiTest
-    final DynamicTest matrixedPayerRelayerTest4() {
+    final Stream<DynamicTest> matrixedPayerRelayerTest4() {
         return feePaymentMatrix().get(3);
     }
 
     @HapiTest
-    final DynamicTest matrixedPayerRelayerTest5() {
+    final Stream<DynamicTest> matrixedPayerRelayerTest5() {
         return feePaymentMatrix().get(4);
     }
 
     @HapiTest
-    final DynamicTest matrixedPayerRelayerTest6() {
+    final Stream<DynamicTest> matrixedPayerRelayerTest6() {
         return feePaymentMatrix().get(5);
     }
 
     @HapiTest
-    final DynamicTest matrixedPayerRelayerTest7() {
+    final Stream<DynamicTest> matrixedPayerRelayerTest7() {
         return feePaymentMatrix().get(6);
     }
 
     @HapiTest
-    final DynamicTest matrixedPayerRelayerTest8() {
+    final Stream<DynamicTest> matrixedPayerRelayerTest8() {
         return feePaymentMatrix().get(7);
     }
 
     @HapiTest
-    final DynamicTest matrixedPayerRelayerTest9() {
+    final Stream<DynamicTest> matrixedPayerRelayerTest9() {
         return feePaymentMatrix().get(8);
     }
 
     @HapiTest
-    final DynamicTest matrixedPayerRelayerTest10() {
+    final Stream<DynamicTest> matrixedPayerRelayerTest10() {
         return feePaymentMatrix().get(9);
     }
 
     @HapiTest
-    final DynamicTest matrixedPayerRelayerTest11() {
+    final Stream<DynamicTest> matrixedPayerRelayerTest11() {
         return feePaymentMatrix().get(10);
     }
 
     @HapiTest
-    final DynamicTest matrixedPayerRelayerTest12() {
+    final Stream<DynamicTest> matrixedPayerRelayerTest12() {
         return feePaymentMatrix().get(11);
     }
 
     @BddMethodIsNotATest
-    final DynamicTest matrixedPayerRelayerTest(
+    final Stream<DynamicTest> matrixedPayerRelayerTest(
             final boolean success, final long senderGasPrice, final long relayerOffered, final long senderCharged) {
         return defaultHapiSpec(
                         "feePaymentMatrix "
@@ -435,7 +435,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest invalidTxData() {
+    final Stream<DynamicTest> invalidTxData() {
         return defaultHapiSpec("InvalidTxData")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -460,7 +460,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest etx014ContractCreateInheritsSignerProperties() {
+    final Stream<DynamicTest> etx014ContractCreateInheritsSignerProperties() {
         final AtomicReference<String> contractID = new AtomicReference<>();
         final String MEMO = "memo";
         final String PROXY = "proxy";
@@ -511,7 +511,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest etx031InvalidNonceEthereumTxFailsAndChargesRelayer() {
+    final Stream<DynamicTest> etx031InvalidNonceEthereumTxFailsAndChargesRelayer() {
         final var relayerSnapshot = "relayer";
         final var senderSnapshot = "sender";
         return defaultHapiSpec(
@@ -556,7 +556,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest etx013PrecompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn() {
+    final Stream<DynamicTest> etx013PrecompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = TOKEN;
         final String mintTxn = MINT_TXN;
@@ -612,7 +612,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest etx009CallsToTokenAddresses() {
+    final Stream<DynamicTest> etx009CallsToTokenAddresses() {
         final AtomicReference<String> tokenNum = new AtomicReference<>();
         final var totalSupply = 50;
 
@@ -664,7 +664,7 @@ public class EthereumSuite extends HapiSuite {
 
     // ETX-011 and ETX-030
     @HapiTest
-    final DynamicTest originAndSenderAreEthereumSigner() {
+    final Stream<DynamicTest> originAndSenderAreEthereumSigner() {
         return defaultHapiSpec(
                         "originAndSenderAreEthereumSigner",
                         NONDETERMINISTIC_ETHEREUM_DATA,
@@ -711,7 +711,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest etx008ContractCreateExecutesWithExpectedRecord() {
+    final Stream<DynamicTest> etx008ContractCreateExecutesWithExpectedRecord() {
         final var txn = "creation";
         final var contract = "Fuse";
 
@@ -793,7 +793,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest etxSvc003ContractGetBytecodeQueryReturnsDeployedCode() {
+    final Stream<DynamicTest> etxSvc003ContractGetBytecodeQueryReturnsDeployedCode() {
         final var txn = "creation";
         final var contract = "EmptyConstructor";
         return HapiSpec.defaultHapiSpec(
@@ -823,7 +823,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest directTransferWorksForERC20() {
+    final Stream<DynamicTest> directTransferWorksForERC20() {
         final var tokenSymbol = "FDFGF";
         final var tokenTotalSupply = 5;
         final var tokenTransferAmount = 3;
@@ -880,7 +880,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferHbarsViaEip2930TxSuccessfully() {
+    final Stream<DynamicTest> transferHbarsViaEip2930TxSuccessfully() {
         final String RECEIVER = "RECEIVER";
         final String aliasBalanceSnapshot = "aliasBalance";
         return defaultHapiSpec("transferHbarsViaEip2930TxSuccessfully", NONDETERMINISTIC_ETHEREUM_DATA)
@@ -928,7 +928,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest callToTokenAddressViaEip2930TxSuccessfully() {
+    final Stream<DynamicTest> callToTokenAddressViaEip2930TxSuccessfully() {
         final AtomicReference<String> tokenNum = new AtomicReference<>();
         final var totalSupply = 50;
 
@@ -978,7 +978,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferTokensViaEip2930TxSuccessfully() {
+    final Stream<DynamicTest> transferTokensViaEip2930TxSuccessfully() {
         final var tokenSymbol = "FDFGF";
         final var tokenTotalSupply = 5;
         final var tokenTransferAmount = 3;
@@ -1037,7 +1037,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest accountDeletionResetsTheAliasNonce() {
+    final Stream<DynamicTest> accountDeletionResetsTheAliasNonce() {
 
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
@@ -1139,7 +1139,7 @@ public class EthereumSuite extends HapiSuite {
     // is calculated -> v = {0,1} + 27
     // source: https://eips.ethereum.org/EIPS/eip-155
     @HapiTest
-    final DynamicTest legacyUnprotectedEtxBeforeEIP155WithDefaultChainId() {
+    final Stream<DynamicTest> legacyUnprotectedEtxBeforeEIP155WithDefaultChainId() {
         final String DEPOSIT = "deposit";
         final long depositAmount = 20_000L;
         final Integer chainId = 0;

@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
@@ -56,7 +55,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOPIC_EXPIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
@@ -65,11 +63,12 @@ import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -96,11 +95,11 @@ public class MixedOpsLoadTest extends LoadTest {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(runMixedOps());
     }
 
-    final DynamicTest runMixedOps() {
+    final Stream<DynamicTest> runMixedOps() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine
         Random r = new Random(511523L);

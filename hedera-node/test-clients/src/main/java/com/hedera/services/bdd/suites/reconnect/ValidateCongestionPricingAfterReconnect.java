@@ -35,7 +35,6 @@ import static com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForRecon
 import static com.hedera.services.bdd.suites.reconnect.ValidateTokensStateAfterReconnect.reconnectingNode;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
@@ -46,6 +45,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -70,12 +71,12 @@ public class ValidateCongestionPricingAfterReconnect extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
             runTransfersBeforeReconnect(), validateCongestionPricing());
     }
 
-    final DynamicTest validateCongestionPricing() {
+    final Stream<DynamicTest> validateCongestionPricing() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-6N.json");
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         String tmpMinCongestionPeriodInSecs = "5";

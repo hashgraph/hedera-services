@@ -46,7 +46,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -54,6 +53,8 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalLong;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -98,11 +99,11 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(positiveTests(), negativeTests());
     }
 
-    private List<DynamicTest> positiveTests() {
+    private List<Stream<DynamicTest>>positiveTests() {
         return List.of(
                 transferFungibleWithFixedHbarCustomFee(),
                 transferFungibleWithFixedHtsCustomFee(),
@@ -130,7 +131,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                 transferMultipleTimesWithFixedFeeInCustomFungibleTokenShouldVerifyEachTransferIsPaid());
     }
 
-    private List<DynamicTest> negativeTests() {
+    private List<Stream<DynamicTest>>negativeTests() {
         return List.of(
                 transferFungibleWithFixedHtsCustomFeeNotEnoughBalanceFeeToken(),
                 transferFungibleWithFixedHtsCustomFeeNotEnoughBalanceTransferToken(),
@@ -153,7 +154,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferFungibleWithFixedHbarCustomFee() {
+    final Stream<DynamicTest> transferFungibleWithFixedHbarCustomFee() {
         return defaultHapiSpec("transferFungibleWithFixedHbarCustomFee")
                 .given(
                         cryptoCreate(hbarCollector).balance(0L),
@@ -189,7 +190,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferFungibleWithFixedHbarCustomFeeNotEnoughBalance() {
+    final Stream<DynamicTest> transferFungibleWithFixedHbarCustomFeeNotEnoughBalance() {
         return defaultHapiSpec("transferFungibleWithFixedHbarCustomFeeNotEnoughBalance")
                 .given(
                         cryptoCreate(hbarCollector).balance(0L),
@@ -215,7 +216,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferFungibleWithFixedHtsCustomFee() {
+    final Stream<DynamicTest> transferFungibleWithFixedHtsCustomFee() {
         return defaultHapiSpec("transferFungibleWithFixedHtsCustomFee")
                 .given(
                         cryptoCreate(htsCollector),
@@ -244,7 +245,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferFungibleWithFixedHtsCustomFeeNotEnoughBalanceFeeToken() {
+    final Stream<DynamicTest> transferFungibleWithFixedHtsCustomFeeNotEnoughBalanceFeeToken() {
         return defaultHapiSpec("transferFungibleWithFixedHtsCustomFeeNotEnoughBalanceFeeToken()")
                 .given(
                         cryptoCreate(htsCollector),
@@ -274,7 +275,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferFungibleWithFixedHtsCustomFeeNotEnoughBalanceTransferToken() {
+    final Stream<DynamicTest> transferFungibleWithFixedHtsCustomFeeNotEnoughBalanceTransferToken() {
         return defaultHapiSpec("transferFungibleWithFixedHtsCustomFeeNotEnoughBalanceTransferToken()")
                 .given(
                         cryptoCreate(htsCollector),
@@ -304,7 +305,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithFixedHbarCustomFee() {
+    final Stream<DynamicTest> transferNonFungibleWithFixedHbarCustomFee() {
         return defaultHapiSpec("transferNonFungibleWithFixedHbarCustomFee")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -344,7 +345,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithFixedHbarCustomFeeNotEnoughBalance() {
+    final Stream<DynamicTest> transferNonFungibleWithFixedHbarCustomFeeNotEnoughBalance() {
         return defaultHapiSpec("transferNonFungibleWithFixedHbarCustomFeeNotEnoughBalance")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -375,7 +376,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithFixedHtsCustomFee() {
+    final Stream<DynamicTest> transferNonFungibleWithFixedHtsCustomFee() {
         return defaultHapiSpec("transferNonFungibleWithFixedHtsCustomFee")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -406,7 +407,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithFixedHtsCustomFeeNotEnoughBalanceFeeToken() {
+    final Stream<DynamicTest> transferNonFungibleWithFixedHtsCustomFeeNotEnoughBalanceFeeToken() {
         return defaultHapiSpec("transferNonFungibleWithFixedHtsCustomFeeNotEnoughBalanceFeeToken")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -441,7 +442,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferApprovedFungibleWithFixedHbarCustomFee() {
+    final Stream<DynamicTest> transferApprovedFungibleWithFixedHbarCustomFee() {
         return defaultHapiSpec("transferApprovedFungibleWithFixedHbarCustomFee")
                 .given(
                         cryptoCreate(hbarCollector).balance(0L),
@@ -490,7 +491,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferApprovedFungibleWithFixedHbarCustomFeeNoAllowance() {
+    final Stream<DynamicTest> transferApprovedFungibleWithFixedHbarCustomFeeNoAllowance() {
         return defaultHapiSpec("transferApprovedFungibleWithFixedHbarCustomFeeNoAllowance")
                 .given(
                         cryptoCreate(hbarCollector).balance(0L),
@@ -520,7 +521,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferApprovedFungibleWithFixedHtsCustomFeeAsOwner() {
+    final Stream<DynamicTest> transferApprovedFungibleWithFixedHtsCustomFeeAsOwner() {
         return defaultHapiSpec("transferApprovedFungibleWithFixedHtsCustomFeeAsOwner")
                 .given(
                         cryptoCreate(htsCollector),
@@ -566,7 +567,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferApprovedFungibleWithFixedHtsCustomFeeAsSpender() {
+    final Stream<DynamicTest> transferApprovedFungibleWithFixedHtsCustomFeeAsSpender() {
         return defaultHapiSpec("transferApprovedFungibleWithFixedHtsCustomFeeAsSpender")
                 .given(
                         cryptoCreate(htsCollector),
@@ -612,7 +613,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferApprovedFungibleWithFixedHtsCustomFeeNoAllowance() {
+    final Stream<DynamicTest> transferApprovedFungibleWithFixedHtsCustomFeeNoAllowance() {
         return defaultHapiSpec("transferApprovedFungibleWithFixedHtsCustomFeeNoAllowance")
                 .given(
                         cryptoCreate(htsCollector),
@@ -649,7 +650,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferApprovedNonFungibleWithFixedHbarCustomFee() {
+    final Stream<DynamicTest> transferApprovedNonFungibleWithFixedHbarCustomFee() {
         return defaultHapiSpec("transferApprovedNonFungibleWithFixedHbarCustomFee")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -699,7 +700,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferApprovedNonFungibleWithFixedHbarCustomFeeNoAllowance() {
+    final Stream<DynamicTest> transferApprovedNonFungibleWithFixedHbarCustomFeeNoAllowance() {
         return defaultHapiSpec("transferApprovedNonFungibleWithFixedHbarCustomFeeNoAllowance")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -734,7 +735,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferApprovedNonFungibleWithFixedHtsCustomFeeAsOwner() {
+    final Stream<DynamicTest> transferApprovedNonFungibleWithFixedHtsCustomFeeAsOwner() {
         return defaultHapiSpec("transferApprovedNonFungibleWithFixedHtsCustomFeeAsOwner")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -781,7 +782,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferApprovedNonFungibleWithFixedHtsCustomFeeAsSpender() {
+    final Stream<DynamicTest> transferApprovedNonFungibleWithFixedHtsCustomFeeAsSpender() {
         return defaultHapiSpec("transferApprovedNonFungibleWithFixedHtsCustomFeeAsSpender")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -827,7 +828,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferApprovedNonFungibleWithFixedHtsCustomFeeNoAllowance() {
+    final Stream<DynamicTest> transferApprovedNonFungibleWithFixedHtsCustomFeeNoAllowance() {
         return defaultHapiSpec("transferApprovedNonFungibleWithFixedHtsCustomFeeNoAllowance")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -869,7 +870,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferFungibleWithThreeFixedHtsCustomFeesWithoutAllCollectorsExempt() {
+    final Stream<DynamicTest> transferFungibleWithThreeFixedHtsCustomFeesWithoutAllCollectorsExempt() {
         final long amountToSend = 400L;
         return defaultHapiSpec("transferFungibleWithThreeFixedHtsCustomFeesWithoutAllCollectorsExempt")
                 .given(
@@ -915,7 +916,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferFungibleWithThreeFixedHtsCustomFeesWithAllCollectorsExempt() {
+    final Stream<DynamicTest> transferFungibleWithThreeFixedHtsCustomFeesWithAllCollectorsExempt() {
         final long amountToSend = 400L;
         return defaultHapiSpec("transferFungibleWithThreeFixedHtsCustomFeesWithAllCollectorsExempt")
                 .given(
@@ -961,7 +962,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferFungibleWithFixedHtsCustomFees2Layers() {
+    final Stream<DynamicTest> transferFungibleWithFixedHtsCustomFees2Layers() {
         return defaultHapiSpec("transferFungibleWithFixedHtsCustomFees2Layers")
                 .given(
                         cryptoCreate(htsCollector),
@@ -1003,7 +1004,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithFixedHtsCustomFees2Layers() {
+    final Stream<DynamicTest> transferNonFungibleWithFixedHtsCustomFees2Layers() {
         return defaultHapiSpec("transferNonFungibleWithFixedHtsCustomFees2Layers")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -1049,7 +1050,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferFungibleWithFixedHtsCustomFees3LayersShouldFail() {
+    final Stream<DynamicTest> transferFungibleWithFixedHtsCustomFees3LayersShouldFail() {
         return defaultHapiSpec("transferFungibleWithFixedHtsCustomFees3LayersShouldFail")
                 .given(
                         cryptoCreate(htsCollector),
@@ -1092,7 +1093,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithFixedHtsCustomFees3LayersShouldFail() {
+    final Stream<DynamicTest> transferNonFungibleWithFixedHtsCustomFees3LayersShouldFail() {
         return defaultHapiSpec("transferNonFungibleWithFixedHtsCustomFees3LayersShouldFail")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -1139,7 +1140,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferMaxFungibleWith10FixedHtsCustomFees2Layers() {
+    final Stream<DynamicTest> transferMaxFungibleWith10FixedHtsCustomFees2Layers() {
         final String fungibleToken3 = "fungibleWithCustomFees3";
         final String fungibleToken4 = "fungibleWithCustomFees4";
         final String fungibleToken5 = "fungibleWithCustomFees5";
@@ -1274,7 +1275,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest multipleTransfersWithMultipleCustomFees() {
+    final Stream<DynamicTest> multipleTransfersWithMultipleCustomFees() {
         return defaultHapiSpec("multipleTransfersWithMultipleCustomFees")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -1379,7 +1380,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferFungibleWithFixedHbarCustomFeeAmount0() {
+    final Stream<DynamicTest> transferFungibleWithFixedHbarCustomFeeAmount0() {
         return defaultHapiSpec("transferFungibleWithFixedHbarCustomFeeAmount0")
                 .given(
                         cryptoCreate(hbarCollector).balance(0L),
@@ -1397,7 +1398,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferFungibleWithFixedHtsCustomFeeAmount0() {
+    final Stream<DynamicTest> transferFungibleWithFixedHtsCustomFeeAmount0() {
         return defaultHapiSpec("transferFungibleWithFixedHtsCustomFeeAmount0")
                 .given(
                         cryptoCreate(htsCollector),
@@ -1417,7 +1418,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithFixedHbarCustomFeeAmount0() {
+    final Stream<DynamicTest> transferNonFungibleWithFixedHbarCustomFeeAmount0() {
         return defaultHapiSpec("transferNonFungibleWithFixedHbarCustomFeeAmount0")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -1438,7 +1439,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithFixedHtsCustomFeeAmount0() {
+    final Stream<DynamicTest> transferNonFungibleWithFixedHtsCustomFeeAmount0() {
         return defaultHapiSpec("transferNonFungibleWithFixedHtsCustomFeeAmount0")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -1461,7 +1462,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferFungibleWithFixedHbarCustomFeeSenderHasOnlyGasAmount() {
+    final Stream<DynamicTest> transferFungibleWithFixedHbarCustomFeeSenderHasOnlyGasAmount() {
         final var gasAmount = 1669096L;
         return defaultHapiSpec("transferFungibleWithFixedHbarCustomFeeSenderHasOnlyGasAmount")
                 .given(
@@ -1485,7 +1486,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferFungibleWithFixedHtsCustomFeeTotalSupply0() {
+    final Stream<DynamicTest> transferFungibleWithFixedHtsCustomFeeTotalSupply0() {
         return defaultHapiSpec("transferFungibleWithFixedHtsCustomFeeTotalSupply0")
                 .given(
                         cryptoCreate(htsCollector),
@@ -1520,7 +1521,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferFungibleWithFixedHtsCustomFeeNotEnoughForGasAndFee() {
+    final Stream<DynamicTest> transferFungibleWithFixedHtsCustomFeeNotEnoughForGasAndFee() {
         final var gasAmount = 1669096L;
         return defaultHapiSpec("transferFungibleWithFixedHtsCustomFeeNotEnoughForGasAndFee")
                 .given(
@@ -1544,7 +1545,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferWithFractionalCustomFee() {
+    final Stream<DynamicTest> transferWithFractionalCustomFee() {
         return defaultHapiSpec("transferWithFractionalCustomFee")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -1575,7 +1576,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferWithInsufficientCustomFee() {
+    final Stream<DynamicTest> transferWithInsufficientCustomFee() {
         return defaultHapiSpec("transferWithInsufficientCustomFee")
                 .given(
                         cryptoCreate(htsCollector),
@@ -1600,7 +1601,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferMultipleTimesWithFixedFeeInHBarShouldVerifyEachTransferIsPaid() {
+    final Stream<DynamicTest> transferMultipleTimesWithFixedFeeInHBarShouldVerifyEachTransferIsPaid() {
         return defaultHapiSpec("transferMultipleTimesWithFixedFeeShouldVerifyEachTransferIsPaid")
                 .given(
                         cryptoCreate(hbarCollector).balance(ONE_HUNDRED_HBARS),
@@ -1644,7 +1645,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferMultipleTimesWithFixedFeeInCustomFungibleTokenShouldVerifyEachTransferIsPaid() {
+    final Stream<DynamicTest> transferMultipleTimesWithFixedFeeInCustomFungibleTokenShouldVerifyEachTransferIsPaid() {
         return defaultHapiSpec("transferMultipleTimesWithFixedFeeInCustomFungibleTokenShouldVerifyEachTransferIsPaid")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -1698,7 +1699,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferFungibleToHollowAccountWithFixedHBarFee() {
+    final Stream<DynamicTest> transferFungibleToHollowAccountWithFixedHBarFee() {
         return defaultHapiSpec("transferFungibleToHollowAccountWithFixedHBarFee")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -1729,7 +1730,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferFungibleToHollowAccountWithFixedHtsFee() {
+    final Stream<DynamicTest> transferFungibleToHollowAccountWithFixedHtsFee() {
         return defaultHapiSpec("transferFungibleToHollowAccountWithFixedHtsFee")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -1767,7 +1768,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleToHollowAccountWithFixedHBarFee() {
+    final Stream<DynamicTest> transferNonFungibleToHollowAccountWithFixedHBarFee() {
         return defaultHapiSpec("transferNonFungibleToHollowAccountWithFixedHBarFee")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -1802,7 +1803,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleToHollowAccountWithFixedHtsFee() {
+    final Stream<DynamicTest> transferNonFungibleToHollowAccountWithFixedHtsFee() {
         return defaultHapiSpec("transferNonFungibleToHollowAccountWithFixedHtsFee")
                 .given(
                         newKeyNamed(NFT_KEY),

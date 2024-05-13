@@ -35,7 +35,6 @@ import static java.util.function.Function.identity;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -62,7 +61,7 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 contractCallWithSendRecordSanityChecks(),
                 circularTransfersRecordSanityChecks(),
@@ -72,7 +71,7 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest contractDeleteRecordSanityChecks() {
+    final Stream<DynamicTest> contractDeleteRecordSanityChecks() {
         return defaultHapiSpec("ContractDeleteRecordSanityChecks")
                 .given(flattened(
                         uploadInitCode(BALANCE_LOOKUP),
@@ -89,7 +88,7 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest contractCreateRecordSanityChecks() {
+    final Stream<DynamicTest> contractCreateRecordSanityChecks() {
         return defaultHapiSpec("ContractCreateRecordSanityChecks")
                 .given(flattened(
                         uploadInitCode(BALANCE_LOOKUP),
@@ -103,7 +102,7 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest contractCallWithSendRecordSanityChecks() {
+    final Stream<DynamicTest> contractCallWithSendRecordSanityChecks() {
         return defaultHapiSpec("ContractCallWithSendRecordSanityChecks")
                 .given(flattened(
                         uploadInitCode(PAYABLE_CONTRACT),
@@ -121,7 +120,7 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest circularTransfersRecordSanityChecks() {
+    final Stream<DynamicTest> circularTransfersRecordSanityChecks() {
         final var contractName = "CircularTransfers";
         int numAltruists = 3;
         ToLongFunction<String> initBalanceFn = ignore -> 1_000_000L;
@@ -196,7 +195,7 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest contractUpdateRecordSanityChecks() {
+    final Stream<DynamicTest> contractUpdateRecordSanityChecks() {
         return defaultHapiSpec("ContractUpdateRecordSanityChecks")
                 .given(flattened(
                         newKeyNamed("newKey").type(KeyFactory.KeyType.SIMPLE),

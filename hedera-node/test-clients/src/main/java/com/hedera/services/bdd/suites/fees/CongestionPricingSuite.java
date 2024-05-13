@@ -30,7 +30,6 @@ import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsL
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
@@ -40,6 +39,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -65,12 +66,12 @@ public class CongestionPricingSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(canUpdateMultipliersDynamically(), canUpdateMultipliersDynamically2());
     }
 
     @HapiTest
-    final DynamicTest canUpdateMultipliersDynamically() {
+    final Stream<DynamicTest> canUpdateMultipliersDynamically() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-congestion.json");
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         var contract = "Multipurpose";
@@ -158,7 +159,7 @@ public class CongestionPricingSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest canUpdateMultipliersDynamically2() {
+    final Stream<DynamicTest> canUpdateMultipliersDynamically2() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-congestion.json");
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         String tmpMinCongestionPeriod = "1";

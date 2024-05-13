@@ -26,9 +26,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -47,12 +48,12 @@ public class QueryFailuresSpec extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(getsExpectedRejections());
     }
 
     @HapiTest
-    final DynamicTest getsExpectedRejections() {
+    final Stream<DynamicTest> getsExpectedRejections() {
         return defaultHapiSpec("getsExpectedRejections")
                 .given(fileCreate("tbd"), fileDelete("tbd"))
                 .when()

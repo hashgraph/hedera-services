@@ -31,12 +31,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -52,7 +53,7 @@ public class GasLimitThrottlingSuite extends HapiSuite {
     public static final String PAYER_ACCOUNT = "payerAccount";
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(txsUnderGasLimitAllowed(), txOverGasLimitThrottled());
     }
 
@@ -61,7 +62,7 @@ public class GasLimitThrottlingSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest txsUnderGasLimitAllowed() {
+    final Stream<DynamicTest> txsUnderGasLimitAllowed() {
         final var NUM_CALLS = 10;
         final Map<String, String> startingProps = new HashMap<>();
         return defaultHapiSpec("TXsUnderGasLimitAllowed")
@@ -99,7 +100,7 @@ public class GasLimitThrottlingSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest txOverGasLimitThrottled() {
+    final Stream<DynamicTest> txOverGasLimitThrottled() {
         final Map<String, String> startingProps = new HashMap<>();
         final var MAX_GAS_PER_SECOND = 1_000_001L;
         return defaultHapiSpec("TXOverGasLimitThrottled")

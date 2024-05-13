@@ -70,13 +70,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -91,7 +92,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 enableLongTermScheduledTransactions(),
                 suiteSetup(),
@@ -115,7 +116,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                 setLongTermScheduledTransactionsToDefault());
     }
 
-    final DynamicTest suiteCleanup() {
+    final Stream<DynamicTest> suiteCleanup() {
         return defaultHapiSpec("suiteCleanup")
                 .given()
                 .when()
@@ -124,7 +125,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         .overridingProps(Map.of(SCHEDULING_WHITELIST, WHITELIST_DEFAULT)));
     }
 
-    final DynamicTest suiteSetup() {
+    final Stream<DynamicTest> suiteSetup() {
         return defaultHapiSpec("suiteSetup")
                 .given()
                 .when()
@@ -133,7 +134,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         .overridingProps(Map.of(SCHEDULING_WHITELIST, suiteWhitelist)));
     }
 
-    final DynamicTest changeInNestedSigningReqsRespected() {
+    final Stream<DynamicTest> changeInNestedSigningReqsRespected() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
         var firstSigThree = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF), sigs(ON, OFF, OFF)));
@@ -192,7 +193,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
         return mutation;
     }
 
-    final DynamicTest reductionInSigningReqsAllowsTxnToGoThrough() {
+    final Stream<DynamicTest> reductionInSigningReqsAllowsTxnToGoThrough() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
         var sigTwo = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(ON, ON, ON), sigs(OFF, OFF, OFF)));
@@ -242,7 +243,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    final DynamicTest reductionInSigningReqsAllowsTxnToGoThroughAtExpiryWithNoWaitForExpiry() {
+    final Stream<DynamicTest> reductionInSigningReqsAllowsTxnToGoThroughAtExpiryWithNoWaitForExpiry() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
         var sigTwo = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(ON, ON, ON), sigs(OFF, OFF, OFF)));
@@ -300,7 +301,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
         return mutation;
     }
 
-    final DynamicTest nestedSigningReqsWorkAsExpected() {
+    final Stream<DynamicTest> nestedSigningReqsWorkAsExpected() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
         var sigTwo = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, ON, OFF), sigs(OFF, OFF, OFF)));
@@ -339,7 +340,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    final DynamicTest receiverSigRequiredNotConfusedByOrder() {
+    final Stream<DynamicTest> receiverSigRequiredNotConfusedByOrder() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         String sender = "X";
@@ -376,7 +377,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    final DynamicTest extraSigsDontMatterAtExpiry() {
+    final Stream<DynamicTest> extraSigsDontMatterAtExpiry() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -469,7 +470,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    final DynamicTest receiverSigRequiredNotConfusedByMultiSigSender() {
+    final Stream<DynamicTest> receiverSigRequiredNotConfusedByMultiSigSender() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -510,7 +511,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    final DynamicTest receiverSigRequiredUpdateIsRecognized() {
+    final Stream<DynamicTest> receiverSigRequiredUpdateIsRecognized() {
         var senderShape = threshOf(2, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -556,7 +557,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         getAccountBalance(receiver).hasTinyBars(1));
     }
 
-    final DynamicTest basicSignatureCollectionWorks() {
+    final Stream<DynamicTest> basicSignatureCollectionWorks() {
         var txnBody = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
         return defaultHapiSpec("BasicSignatureCollectionWorksWithExpiryAndWait")
@@ -568,7 +569,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                 .then(getScheduleInfo(BASIC_XFER).hasSignatories(RECEIVER));
     }
 
-    final DynamicTest signalsIrrelevantSig() {
+    final Stream<DynamicTest> signalsIrrelevantSig() {
         var txnBody = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
         return defaultHapiSpec("SignalsIrrelevantSigWithExpiryAndWait")
@@ -583,7 +584,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         .hasKnownStatusFrom(NO_NEW_VALID_SIGNATURES, SOME_SIGNATURES_WERE_INVALID));
     }
 
-    final DynamicTest signalsIrrelevantSigEvenAfterLinkedEntityUpdate() {
+    final Stream<DynamicTest> signalsIrrelevantSigEvenAfterLinkedEntityUpdate() {
         var txnBody = mintToken(TOKEN_A, 50000000L);
 
         return defaultHapiSpec("SignalsIrrelevantSigEvenAfterLinkedEntityUpdateWithExpiryAndWait")
@@ -611,7 +612,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         overriding(SCHEDULING_WHITELIST, suiteWhitelist));
     }
 
-    final DynamicTest triggersUponFinishingPayerSig() {
+    final Stream<DynamicTest> triggersUponFinishingPayerSig() {
         return defaultHapiSpec("TriggersUponFinishingPayerSigAtExpiry")
                 .given(
                         cryptoCreate(PAYER).balance(ONE_HBAR),
@@ -644,7 +645,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         getAccountBalance(RECEIVER).hasTinyBars(1L));
     }
 
-    final DynamicTest triggersUponAdditionalNeededSig() {
+    final Stream<DynamicTest> triggersUponAdditionalNeededSig() {
         return defaultHapiSpec("TriggersUponAdditionalNeededSigAtExpiry")
                 .given(
                         cryptoCreate(SENDER).balance(1L).via(SENDER_TXN),
@@ -675,7 +676,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         getAccountBalance(RECEIVER).hasTinyBars(1L));
     }
 
-    final DynamicTest sharedKeyWorksAsExpected() {
+    final Stream<DynamicTest> sharedKeyWorksAsExpected() {
         return defaultHapiSpec("RequiresSharedKeyToSignBothSchedulingAndScheduledTxnsAtExpiry")
                 .given(
                         newKeyNamed(SHARED_KEY),
@@ -708,7 +709,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         getTxnRecord(CREATION).scheduled());
     }
 
-    final DynamicTest overlappingKeysTreatedAsExpected() {
+    final Stream<DynamicTest> overlappingKeysTreatedAsExpected() {
         var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
 
         return defaultHapiSpec("OverlappingKeysTreatedAsExpectedAtExpiry")
@@ -759,7 +760,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         getAccountBalance(ADDRESS_BOOK_CONTROL).hasTinyBars(changeFromSnapshot(BEFORE, +2)));
     }
 
-    final DynamicTest retestsActivationOnSignWithEmptySigMap() {
+    final Stream<DynamicTest> retestsActivationOnSignWithEmptySigMap() {
         return defaultHapiSpec("RetestsActivationOnCreateWithEmptySigMapAtExpiry")
                 .given(newKeyNamed("a"), newKeyNamed("b"), newKeyListNamed("ab", List.of("a", "b")), newKeyNamed(ADMIN))
                 .when(

@@ -32,12 +32,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -58,7 +59,7 @@ public class SysDelSysUndelSpec extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 systemDeleteThenUndeleteRestoresContentsAndExpiry(),
                 systemDeleteWithPastExpiryDestroysFile(),
@@ -66,7 +67,7 @@ public class SysDelSysUndelSpec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest sysDelIdVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> sysDelIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("sysDelIdVariantsTreatedAsExpected")
                 .given(fileCreate("misc").contents(ORIG_FILE))
                 .when()
@@ -75,7 +76,7 @@ public class SysDelSysUndelSpec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest sysUndelIdVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> sysUndelIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("sysUndelIdVariantsTreatedAsExpected")
                 .given(fileCreate("misc").contents(ORIG_FILE))
                 .when(systemFileDelete("misc").payingWith(SYSTEM_DELETE_ADMIN))
@@ -84,7 +85,7 @@ public class SysDelSysUndelSpec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest distinguishesAdminPrivileges() {
+    final Stream<DynamicTest> distinguishesAdminPrivileges() {
         final var lifetime = THREE_MONTHS_IN_SECONDS;
 
         return defaultHapiSpec("DistinguishesAdminPrivileges")
@@ -101,7 +102,7 @@ public class SysDelSysUndelSpec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest systemDeleteWithPastExpiryDestroysFile() {
+    final Stream<DynamicTest> systemDeleteWithPastExpiryDestroysFile() {
         final var lifetime = THREE_MONTHS_IN_SECONDS;
 
         return defaultHapiSpec("systemDeleteWithPastExpiryDestroysFile")
@@ -115,7 +116,7 @@ public class SysDelSysUndelSpec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest systemDeleteThenUndeleteRestoresContentsAndExpiry() {
+    final Stream<DynamicTest> systemDeleteThenUndeleteRestoresContentsAndExpiry() {
         var now = Instant.now().getEpochSecond();
         var lifetime = THREE_MONTHS_IN_SECONDS;
         AtomicLong initExpiry = new AtomicLong();

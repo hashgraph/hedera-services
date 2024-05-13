@@ -43,13 +43,14 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -81,12 +82,12 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(checkTokenAndTypeStandardCases(), checkTokenAndTypeNegativeCases());
     }
 
     @HapiTest
-    final DynamicTest checkTokenAndTypeStandardCases() {
+    final Stream<DynamicTest> checkTokenAndTypeStandardCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
         return defaultHapiSpec("checkTokenAndTypeStandardCases")
@@ -128,7 +129,7 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
 
     // Should just return false on isToken() check for missing token type
     @HapiTest
-    final DynamicTest checkTokenAndTypeNegativeCases() {
+    final Stream<DynamicTest> checkTokenAndTypeNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var notAnAddress = new byte[20];
 

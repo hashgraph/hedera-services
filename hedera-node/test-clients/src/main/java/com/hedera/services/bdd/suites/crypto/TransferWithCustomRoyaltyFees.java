@@ -52,11 +52,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -89,7 +90,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 transferNonFungibleWithRoyaltyHbarFee(),
                 transferNonFungibleWithRoyaltyFungibleFee(),
@@ -129,7 +130,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithRoyaltyHbarFee() {
+    final Stream<DynamicTest> transferNonFungibleWithRoyaltyHbarFee() {
         final var fourHundredHbars = 4 * ONE_HUNDRED_HBARS;
         final var twoHundredHbars = 2 * ONE_HUNDRED_HBARS;
         return defaultHapiSpec("transferNonFungibleWithRoyaltyHbarFee")
@@ -162,7 +163,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithRoyaltyFungibleFee() {
+    final Stream<DynamicTest> transferNonFungibleWithRoyaltyFungibleFee() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltyFungibleFee")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -198,7 +199,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithMultipleRoyaltyFungibleFee() {
+    final Stream<DynamicTest> transferNonFungibleWithMultipleRoyaltyFungibleFee() {
         return defaultHapiSpec("transferNonFungibleWithMultipleRoyaltyFungibleFee")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -238,7 +239,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithMultipleRoyaltyFungibleFeeToFeeCollector() {
+    final Stream<DynamicTest> transferNonFungibleWithMultipleRoyaltyFungibleFeeToFeeCollector() {
         return defaultHapiSpec("transferNonFungibleWithMultipleRoyaltyFungibleFeeToFeeCollector")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -277,7 +278,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithMultipleRoyaltyFungibleFeeNegative() {
+    final Stream<DynamicTest> transferNonFungibleWithMultipleRoyaltyFungibleFeeNegative() {
         return defaultHapiSpec("transferNonFungibleWithMultipleRoyaltyFungibleFeeNegative")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -318,7 +319,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithRoyaltyFallbackHbarFee() {
+    final Stream<DynamicTest> transferNonFungibleWithRoyaltyFallbackHbarFee() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltyFallbackHbarFee")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -349,7 +350,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithRoyaltyFallbackFungibleFee() {
+    final Stream<DynamicTest> transferNonFungibleWithRoyaltyFallbackFungibleFee() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltyFallbackFungibleFee")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -383,7 +384,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithRoyaltyHbarFeeInsufficientBalance() {
+    final Stream<DynamicTest> transferNonFungibleWithRoyaltyHbarFeeInsufficientBalance() {
         final var fourHundredHbars = 4 * ONE_HUNDRED_HBARS;
         return defaultHapiSpec("transferNonFungibleWithRoyaltyHbarFeeInsufficientBalance")
                 .given(
@@ -413,7 +414,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithRoyaltyFungibleFeeInsufficientBalance() {
+    final Stream<DynamicTest> transferNonFungibleWithRoyaltyFungibleFeeInsufficientBalance() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltyFungibleFeeInsufficientBalance")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -445,7 +446,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithRoyaltyFallbackHbarFeeInsufficientBalance() {
+    final Stream<DynamicTest> transferNonFungibleWithRoyaltyFallbackHbarFeeInsufficientBalance() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltyFallbackHbarFeeInsufficientBalance")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -474,7 +475,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithRoyaltyFallbackFungibleFeeInsufficientBalance() {
+    final Stream<DynamicTest> transferNonFungibleWithRoyaltyFallbackFungibleFeeInsufficientBalance() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltyFallbackFungibleFeeInsufficientBalance")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -506,7 +507,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithRoyaltyFallbackFungibleFeeNoAssociation() {
+    final Stream<DynamicTest> transferNonFungibleWithRoyaltyFallbackFungibleFeeNoAssociation() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltyFallbackFungibleFeeNoAssociation")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -537,7 +538,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithRoyaltyFungibleFeeNoAssociation() {
+    final Stream<DynamicTest> transferNonFungibleWithRoyaltyFungibleFeeNoAssociation() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltyFungibleFeeNoAssociation")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -568,7 +569,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithRoyaltyZeroTransaction() {
+    final Stream<DynamicTest> transferNonFungibleWithRoyaltyZeroTransaction() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltyZeroTransaction")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -605,7 +606,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithRoyaltyHtsFee2Transactions() {
+    final Stream<DynamicTest> transferNonFungibleWithRoyaltyHtsFee2Transactions() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltyHtsFee2Transactions")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -638,7 +639,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithRoyaltyHtsFee2TokenFees() {
+    final Stream<DynamicTest> transferNonFungibleWithRoyaltyHtsFee2TokenFees() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltyHtsFee2TokenFees")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -675,7 +676,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithRoyaltyHtsFeeMinFee() {
+    final Stream<DynamicTest> transferNonFungibleWithRoyaltyHtsFeeMinFee() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltyHtsFeeMinFee")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -717,7 +718,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithRoyaltyFallbackAllowanceNegative() {
+    final Stream<DynamicTest> transferNonFungibleWithRoyaltyFallbackAllowanceNegative() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltyFallbackAllowanceNegative")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -761,7 +762,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithRoyaltyAllowancePassFromSpenderToOwner() {
+    final Stream<DynamicTest> transferNonFungibleWithRoyaltyAllowancePassFromSpenderToOwner() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltyAllowancePassFromSpenderToOwner")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -807,7 +808,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithRoyaltyRandomFeeSameCollectorAccount() {
+    final Stream<DynamicTest> transferNonFungibleWithRoyaltyRandomFeeSameCollectorAccount() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltyRandomFeeSameCollectorAccount")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -847,7 +848,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithRoyaltyRandomFeeDifCollectorAccount() {
+    final Stream<DynamicTest> transferNonFungibleWithRoyaltyRandomFeeDifCollectorAccount() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltyRandomFeeDifCollectorAccount")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -892,7 +893,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithRoyaltySameHTSTreasuryТоRandom() {
+    final Stream<DynamicTest> transferNonFungibleWithRoyaltySameHTSTreasuryТоRandom() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltySameHTSTreasuryТоRandom")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -936,7 +937,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithRoyaltyAnotherHTSTreasuryТоRandom() {
+    final Stream<DynamicTest> transferNonFungibleWithRoyaltyAnotherHTSTreasuryТоRandom() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltyAnotherHTSTreasuryТоRandom")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -978,7 +979,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithRoyaltyAllowanceOfTheNFTGiven() {
+    final Stream<DynamicTest> transferNonFungibleWithRoyaltyAllowanceOfTheNFTGiven() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltyAllowancePassFromSpenderToOwner")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -1029,7 +1030,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithRoyaltyAllCollectorsExempt() {
+    final Stream<DynamicTest> transferNonFungibleWithRoyaltyAllCollectorsExempt() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltyAllCollectorsExempt")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -1069,7 +1070,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWith2LayersRoyaltyFungibleFee() {
+    final Stream<DynamicTest> transferNonFungibleWith2LayersRoyaltyFungibleFee() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltyFungibleFeeNoAssociation")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -1109,7 +1110,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWith2LayersRoyaltyHbarFee() {
+    final Stream<DynamicTest> transferNonFungibleWith2LayersRoyaltyHbarFee() {
         return defaultHapiSpec("transferNonFungibleWith2LayersRoyaltyHbarFee")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -1145,7 +1146,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithRoyaltyFromFeeCollector() {
+    final Stream<DynamicTest> transferNonFungibleWithRoyaltyFromFeeCollector() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltyFungibleFee")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -1180,7 +1181,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferMultipleTimesWithRoyaltyWithFallbackFeeShouldVerifyEachTransferIsPaid() {
+    final Stream<DynamicTest> transferMultipleTimesWithRoyaltyWithFallbackFeeShouldVerifyEachTransferIsPaid() {
         return defaultHapiSpec("transferMultipleTimesWithRoyaltyWithFallbackFeeShouldVerifyEachTransferIsPaid")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -1228,7 +1229,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferMultipleNonFungibleWithRoyaltyFungibleFee() {
+    final Stream<DynamicTest> transferMultipleNonFungibleWithRoyaltyFungibleFee() {
         return defaultHapiSpec("transferMultipleNonFungibleWithRoyaltyFungibleFee")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -1267,7 +1268,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferMultipleNonFungibleWithRoyaltyHbarFee() {
+    final Stream<DynamicTest> transferMultipleNonFungibleWithRoyaltyHbarFee() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltyHbarFee")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -1299,7 +1300,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferMultipleNonFungibleWithRoyaltyHbarAndFungibleFee() {
+    final Stream<DynamicTest> transferMultipleNonFungibleWithRoyaltyHbarAndFungibleFee() {
         return defaultHapiSpec("transferNonFungibleWithRoyaltyHbarFee")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -1341,7 +1342,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithHollowAccountAndRoyaltyHbarFee() {
+    final Stream<DynamicTest> transferNonFungibleWithHollowAccountAndRoyaltyHbarFee() {
         final var fourHundredHbars = 4 * ONE_HUNDRED_HBARS;
         final var twoHundredHbars = 2 * ONE_HUNDRED_HBARS;
         return defaultHapiSpec("transferNonFungibleWithHollowAccountAndRoyaltyHbarFee")
@@ -1381,7 +1382,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithHollowAccountAndRoyaltyFungibleFee() {
+    final Stream<DynamicTest> transferNonFungibleWithHollowAccountAndRoyaltyFungibleFee() {
         return defaultHapiSpec("transferNonFungibleWithHollowAccountAndRoyaltyFungibleFee")
                 .given(
                         newKeyNamed(NFT_KEY),
@@ -1430,7 +1431,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest transferNonFungibleWithHollowAccountAndRoyaltyFallbackHbarFee() {
+    final Stream<DynamicTest> transferNonFungibleWithHollowAccountAndRoyaltyFallbackHbarFee() {
         return defaultHapiSpec("transferNonFungibleWithHollowAccountAndRoyaltyFallbackHbarFee")
                 .given(
                         newKeyNamed(NFT_KEY),

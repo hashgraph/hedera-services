@@ -31,7 +31,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -40,6 +39,8 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -101,15 +102,15 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
         return true;
     }
 
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<DynamicTest> positiveSpecs() {
+    List<Stream<DynamicTest>>positiveSpecs() {
         return List.of(V2Security004FungibleTokenBurnPositive(), V2Security005NonFungibleTokenBurnPositive());
     }
 
-    List<DynamicTest> negativeSpecs() {
+    List<Stream<DynamicTest>>negativeSpecs() {
         return List.of(
                 V2Security004FungibleTokenBurnNegative(),
                 V2Security004NonFungibleTokenBurnNegative(),
@@ -118,7 +119,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest V2Security004FungibleTokenBurnPositive() {
+    final Stream<DynamicTest> V2Security004FungibleTokenBurnPositive() {
         final var initialAmount = 20L;
         final var amountToBurn = 5L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
@@ -218,7 +219,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest V2Security005NonFungibleTokenBurnPositive() {
+    final Stream<DynamicTest> V2Security005NonFungibleTokenBurnPositive() {
         final var amountToBurn = 1L;
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
         final var serialNumber1 = new long[] {1L};
@@ -297,7 +298,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest V2Security004FungibleTokenBurnNegative() {
+    final Stream<DynamicTest> V2Security004FungibleTokenBurnNegative() {
         final var initialAmount = 20L;
         final var amountToBurn = 5L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
@@ -398,7 +399,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest V2Security004NonFungibleTokenBurnNegative() {
+    final Stream<DynamicTest> V2Security004NonFungibleTokenBurnNegative() {
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
         final var serialNumber1 = new long[] {1L};
 
@@ -504,7 +505,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest V2Security039NonFungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall() {
+    final Stream<DynamicTest> V2Security039NonFungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall() {
         final var serialNumber1 = new long[] {1L};
         return defaultHapiSpec("V2Security035NonFungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall")
                 .given(
@@ -593,7 +594,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest V2Security039FungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall() {
+    final Stream<DynamicTest> V2Security039FungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall() {
         final var initialAmount = 20L;
         return defaultHapiSpec("V2Security035FungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall")
                 .given(

@@ -34,12 +34,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -68,12 +69,12 @@ public class RedirectPrecompileSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(balanceOf(), redirectToInvalidToken(), redirectToNullSelector());
     }
 
     @HapiTest
-    final DynamicTest balanceOf() {
+    final Stream<DynamicTest> balanceOf() {
         final var totalSupply = 50;
         return defaultHapiSpec(
                         "balanceOf", NONDETERMINISTIC_CONTRACT_CALL_RESULTS, NONDETERMINISTIC_FUNCTION_PARAMETERS)
@@ -115,7 +116,7 @@ public class RedirectPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest redirectToInvalidToken() {
+    final Stream<DynamicTest> redirectToInvalidToken() {
         return defaultHapiSpec(
                         "redirectToInvalidToken",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -153,7 +154,7 @@ public class RedirectPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest redirectToNullSelector() {
+    final Stream<DynamicTest> redirectToNullSelector() {
         return defaultHapiSpec(
                         "redirectToNullSelector",
                         NONDETERMINISTIC_TRANSACTION_FEES,

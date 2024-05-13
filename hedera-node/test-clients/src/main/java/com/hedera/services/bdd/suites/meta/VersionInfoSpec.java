@@ -24,12 +24,13 @@ import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuc
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.suites.BddTestNameDoesNotMatchMethodName;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -57,13 +58,13 @@ public class VersionInfoSpec extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(discoversExpectedVersions());
     }
 
     @BddTestNameDoesNotMatchMethodName
     @HapiTest
-    final DynamicTest discoversExpectedVersions() {
+    final Stream<DynamicTest> discoversExpectedVersions() {
         if (specConfig != null) {
             return customHapiSpec("getVersionInfo")
                     .withProperties(specConfig)
@@ -79,7 +80,7 @@ public class VersionInfoSpec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest idVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given()
                 .when()

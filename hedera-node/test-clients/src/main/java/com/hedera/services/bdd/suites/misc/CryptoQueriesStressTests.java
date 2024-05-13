@@ -44,6 +44,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -61,13 +63,13 @@ public class CryptoQueriesStressTests extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
             getAccountInfoStress(), getAccountBalanceStress());
     }
 
     @HapiTest
-    final DynamicTest getAccountBalanceStress() {
+    final Stream<DynamicTest> getAccountBalanceStress() {
         return defaultHapiSpec("getAccountBalanceStress")
                 .given()
                 .when()
@@ -79,7 +81,7 @@ public class CryptoQueriesStressTests extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest getAccountInfoStress() {
+    final Stream<DynamicTest> getAccountInfoStress() {
         return defaultHapiSpec("getAccountInfoStress")
                 .given()
                 .when()
@@ -91,7 +93,7 @@ public class CryptoQueriesStressTests extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest getAccountRecordsStress() {
+    final Stream<DynamicTest> getAccountRecordsStress() {
         return defaultHapiSpec("getAccountRecordsStress")
                 .given()
                 .when()

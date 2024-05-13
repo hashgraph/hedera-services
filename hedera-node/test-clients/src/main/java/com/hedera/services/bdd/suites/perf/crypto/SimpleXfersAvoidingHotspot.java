@@ -46,6 +46,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -64,11 +66,11 @@ public class SimpleXfersAvoidingHotspot extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(runSimpleXfers());
     }
 
-    final DynamicTest runSimpleXfers() {
+    final Stream<DynamicTest> runSimpleXfers() {
         return HapiSpec.customHapiSpec("RunTokenTransfers")
                 .withProperties(Map.of(
                         //				"default.keyAlgorithm", "SECP256K1"

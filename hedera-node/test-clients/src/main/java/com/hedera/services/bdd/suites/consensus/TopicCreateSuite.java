@@ -39,9 +39,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -55,7 +56,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 signingRequirementsEnforced(),
                 autoRenewPeriodIsValidated(),
@@ -74,7 +75,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest adminKeyIsValidated() {
+    final Stream<DynamicTest> adminKeyIsValidated() {
         return defaultHapiSpec("AdminKeyIsValidated")
                 .given()
                 .when()
@@ -86,7 +87,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest submitKeyIsValidated() {
+    final Stream<DynamicTest> submitKeyIsValidated() {
         return defaultHapiSpec("SubmitKeyIsValidated")
                 .given()
                 .when()
@@ -97,7 +98,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest autoRenewAccountIsValidated() {
+    final Stream<DynamicTest> autoRenewAccountIsValidated() {
         return defaultHapiSpec("AutoRenewAccountIsValidated")
                 .given()
                 .when()
@@ -108,7 +109,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest autoRenewAccountIdNeedsAdminKeyToo() {
+    final Stream<DynamicTest> autoRenewAccountIdNeedsAdminKeyToo() {
         return defaultHapiSpec("autoRenewAccountIdNeedsAdminKeyToo")
                 .given(cryptoCreate("payer"), cryptoCreate("autoRenewAccount"))
                 .when()
@@ -121,7 +122,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest idVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         final var autoRenewAccount = "autoRenewAccount";
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(cryptoCreate(autoRenewAccount), newKeyNamed("adminKey"))
@@ -132,7 +133,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest autoRenewPeriodIsValidated() {
+    final Stream<DynamicTest> autoRenewPeriodIsValidated() {
         final var tooShortAutoRenewPeriod = "tooShortAutoRenewPeriod";
         final var tooLongAutoRenewPeriod = "tooLongAutoRenewPeriod";
         return defaultHapiSpec("autoRenewPeriodIsValidated")
@@ -148,7 +149,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest noAutoRenewPeriod() {
+    final Stream<DynamicTest> noAutoRenewPeriod() {
         return defaultHapiSpec("noAutoRenewPeriod")
                 .given()
                 .when()
@@ -159,7 +160,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest signingRequirementsEnforced() {
+    final Stream<DynamicTest> signingRequirementsEnforced() {
         long PAYER_BALANCE = 1_999_999_999L;
         final var contractWithAdminKey = "nonCryptoAccount";
 
@@ -238,7 +239,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest allFieldsSetHappyCase() {
+    final Stream<DynamicTest> allFieldsSetHappyCase() {
         return defaultHapiSpec("AllFieldsSetHappyCase", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(newKeyNamed("adminKey"), newKeyNamed("submitKey"), cryptoCreate("autoRenewAccount"))
                 .when()
@@ -250,7 +251,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest feeAsExpected() {
+    final Stream<DynamicTest> feeAsExpected() {
         return defaultHapiSpec("feeAsExpected")
                 .given(
                         newKeyNamed("adminKey"),

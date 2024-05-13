@@ -39,12 +39,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -77,21 +78,21 @@ public class PrngSeedOperationSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<DynamicTest> negativeSpecs() {
+    List<Stream<DynamicTest>>negativeSpecs() {
         return List.of();
     }
 
-    List<DynamicTest> positiveSpecs() {
+    List<Stream<DynamicTest>>positiveSpecs() {
         return List.of(
                 prngPrecompileHappyPathWorks(), multipleCallsHaveIndependentResults(), prngPrecompileDisabledInV030());
     }
 
     @HapiTest
-    final DynamicTest multipleCallsHaveIndependentResults() {
+    final Stream<DynamicTest> multipleCallsHaveIndependentResults() {
         final var prng = THE_PRNG_CONTRACT;
         final var gasToOffer = 400_000;
         final var numCalls = 5;
@@ -144,7 +145,7 @@ public class PrngSeedOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest prngPrecompileHappyPathWorks() {
+    final Stream<DynamicTest> prngPrecompileHappyPathWorks() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
         return propertyPreservingHapiSpec(
@@ -172,7 +173,7 @@ public class PrngSeedOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest prngPrecompileDisabledInV030() {
+    final Stream<DynamicTest> prngPrecompileDisabledInV030() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
         return propertyPreservingHapiSpec("prngPrecompileDisabledInV_0_30")

@@ -30,9 +30,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -46,12 +47,12 @@ public class InvalidgRPCValuesTest extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(invalidIdCheck());
     }
 
     @HapiTest
-    final DynamicTest invalidIdCheck() {
+    final Stream<DynamicTest> invalidIdCheck() {
         final long MAX_NUM_ALLOWED = 0xFFFFFFFFL;
         final String invalidMaxId = MAX_NUM_ALLOWED + 1 + ".2.3";
         return defaultHapiSpec("TransferWithInvalidAccount")

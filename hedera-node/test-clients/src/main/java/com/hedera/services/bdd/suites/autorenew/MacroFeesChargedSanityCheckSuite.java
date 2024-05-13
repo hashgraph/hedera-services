@@ -57,6 +57,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -71,7 +73,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 feesChargedMatchNumberOfRenewals(),
                 renewalCappedByAffordablePeriod(),
@@ -79,7 +81,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S125")
-    final DynamicTest renewalCappedByAffordablePeriod() {
+    final Stream<DynamicTest> renewalCappedByAffordablePeriod() {
         final long briefAutoRenew = 10L;
         final long normalAutoRenew = THREE_MONTHS_IN_SECONDS;
         final long threeHoursInSeconds = 3 * 3600L;
@@ -131,7 +133,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    final DynamicTest feesChargedMatchNumberOfRenewals() {
+    final Stream<DynamicTest> feesChargedMatchNumberOfRenewals() {
         final long reqAutoRenew = 2L;
         final long startBalance = ONE_HUNDRED_HBARS;
         final var target = "czar";
@@ -230,7 +232,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiSuite {
         return new RenewalFeeComponents(inTinybars(constantPrice, rates), inTinybars(variablePrice, rates));
     }
 
-    final DynamicTest macroFeesChargedSanityCheckSuiteCleanup() {
+    final Stream<DynamicTest> macroFeesChargedSanityCheckSuiteCleanup() {
         return defaultHapiSpec("MacroFeesChargedSanityCheckSuiteCleanup")
                 .given()
                 .when()

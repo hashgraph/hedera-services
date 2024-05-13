@@ -25,7 +25,6 @@ import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgra
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -33,6 +32,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -50,12 +51,12 @@ public final class UpdateFileForUpgrade extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(updateFileForUpgrade());
     }
 
     @HapiTest
-    final DynamicTest updateFileForUpgrade() {
+    final Stream<DynamicTest> updateFileForUpgrade() {
         return defaultHapiSpec("UpdateFileForUpgrade")
                 .given(initializeSettings())
                 .when(sourcing(() -> {

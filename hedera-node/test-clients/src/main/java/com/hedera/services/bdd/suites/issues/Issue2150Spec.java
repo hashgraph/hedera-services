@@ -28,11 +28,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -48,12 +49,12 @@ public class Issue2150Spec extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(multiKeyNonPayerEntityVerifiedAsync());
     }
 
     @HapiTest
-    final DynamicTest multiKeyNonPayerEntityVerifiedAsync() {
+    final Stream<DynamicTest> multiKeyNonPayerEntityVerifiedAsync() {
         KeyShape LARGE_THRESH_SHAPE = KeyShape.threshOf(1, 10);
         SigControl firstOnly = LARGE_THRESH_SHAPE.signedWith(sigs(ON, OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF));
 

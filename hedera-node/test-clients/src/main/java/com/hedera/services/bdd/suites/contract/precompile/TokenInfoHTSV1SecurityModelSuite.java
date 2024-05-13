@@ -80,6 +80,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -143,15 +145,15 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<DynamicTest> negativeSpecs() {
+    List<Stream<DynamicTest>>negativeSpecs() {
         return List.of();
     }
 
-    List<DynamicTest> positiveSpecs() {
+    List<Stream<DynamicTest>>positiveSpecs() {
         return List.of(
                 happyPathUpdateTokenInfoAndGetLatestInfo(),
                 happyPathUpdateFungibleTokenInfoAndGetLatestInfo(),
@@ -159,7 +161,7 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
                 happyPathUpdateTokenKeysAndReadLatestInformation());
     }
 
-    final DynamicTest happyPathUpdateTokenInfoAndGetLatestInfo() {
+    final Stream<DynamicTest> happyPathUpdateTokenInfoAndGetLatestInfo() {
         final int decimals = 1;
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
         return propertyPreservingHapiSpec("happyPathUpdateTokenInfoAndGetLatestInfo")
@@ -270,7 +272,7 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
                 }));
     }
 
-    final DynamicTest happyPathUpdateFungibleTokenInfoAndGetLatestInfo() {
+    final Stream<DynamicTest> happyPathUpdateFungibleTokenInfoAndGetLatestInfo() {
         final int decimals = 1;
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
         return propertyPreservingHapiSpec("happyPathUpdateFungibleTokenInfoAndGetLatestInfo")
@@ -378,7 +380,7 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
                 }));
     }
 
-    final DynamicTest happyPathUpdateNonFungibleTokenInfoAndGetLatestInfo() {
+    final Stream<DynamicTest> happyPathUpdateNonFungibleTokenInfoAndGetLatestInfo() {
         final int maxSupply = 10;
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
@@ -499,7 +501,7 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
                 }));
     }
 
-    final DynamicTest happyPathUpdateTokenKeysAndReadLatestInformation() {
+    final Stream<DynamicTest> happyPathUpdateTokenKeysAndReadLatestInformation() {
         final String TOKEN_INFO_AS_KEY = "TOKEN_INFO_CONTRACT_KEY";
         return propertyPreservingHapiSpec("happyPathUpdateTokenKeysAndReadLatestInformation")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)

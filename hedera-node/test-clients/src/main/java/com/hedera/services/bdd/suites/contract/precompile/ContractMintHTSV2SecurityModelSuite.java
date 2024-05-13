@@ -54,7 +54,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintTranslator;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -63,6 +62,8 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -134,11 +135,11 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
         return true;
     }
 
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<DynamicTest> negativeSpecs() {
+    List<Stream<DynamicTest>>negativeSpecs() {
         return List.of(
                 V2Security002FungibleTokenMintInTreasuryNegative(),
                 V2Security003NonFungibleTokenMintInTreasuryNegative(),
@@ -147,14 +148,14 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                 V2Security040TokenWithDelegateContractKeyCanNotMintFromCallcode());
     }
 
-    List<DynamicTest> positiveSpecs() {
+    List<Stream<DynamicTest>>positiveSpecs() {
         return List.of(
                 V2Security002FungibleTokenMintInTreasuryPositive(),
                 V2Security003NonFungibleTokenMintInTreasuryPositive());
     }
 
     @HapiTest
-    final DynamicTest V2Security002FungibleTokenMintInTreasuryPositive() {
+    final Stream<DynamicTest> V2Security002FungibleTokenMintInTreasuryPositive() {
         final var amount = 10L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
 
@@ -286,7 +287,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest V2Security003NonFungibleTokenMintInTreasuryPositive() {
+    final Stream<DynamicTest> V2Security003NonFungibleTokenMintInTreasuryPositive() {
         final var amount = 1;
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
 
@@ -423,7 +424,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest V2Security002FungibleTokenMintInTreasuryNegative() {
+    final Stream<DynamicTest> V2Security002FungibleTokenMintInTreasuryNegative() {
         final var amount = 10L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
 
@@ -539,7 +540,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest V2Security003NonFungibleTokenMintInTreasuryNegative() {
+    final Stream<DynamicTest> V2Security003NonFungibleTokenMintInTreasuryNegative() {
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
 
         return defaultHapiSpec("V2Security003NonFungibleTokenMintNegative")
@@ -654,7 +655,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest V2Security035TokenWithDelegateContractKeyCanNotMintFromDelegatecall() {
+    final Stream<DynamicTest> V2Security035TokenWithDelegateContractKeyCanNotMintFromDelegatecall() {
         return defaultHapiSpec("V2Security035TokenWithDelegateContractKeyCanNotMintFromDelegatecal")
                 .given(
                         overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
@@ -803,7 +804,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest V2Security040TokenWithDelegateContractKeyCanNotMintFromStaticcall() {
+    final Stream<DynamicTest> V2Security040TokenWithDelegateContractKeyCanNotMintFromStaticcall() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
 
@@ -887,7 +888,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest V2Security040TokenWithDelegateContractKeyCanNotMintFromCallcode() {
+    final Stream<DynamicTest> V2Security040TokenWithDelegateContractKeyCanNotMintFromCallcode() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
         final String precompileAddress = "0000000000000000000000000000000000000167";

@@ -45,6 +45,8 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
@@ -70,7 +72,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(getByteCodeWorks(), invalidContractFromCostAnswer(), invalidContractFromAnswerOnly());
     }
 
@@ -80,7 +82,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest idVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         final var contract = "Multipurpose";
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(
@@ -91,7 +93,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest getByteCodeWorks() {
+    final Stream<DynamicTest> getByteCodeWorks() {
         final var contract = "EmptyConstructor";
         final var canonicalUsdFee = 0.05;
         final var canonicalQueryFeeAtActiveRate = new AtomicLong();
@@ -137,7 +139,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest invalidContractFromCostAnswer() {
+    final Stream<DynamicTest> invalidContractFromCostAnswer() {
         return defaultHapiSpec("InvalidContractFromCostAnswer")
                 .given()
                 .when()
@@ -146,7 +148,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest invalidContractFromAnswerOnly() {
+    final Stream<DynamicTest> invalidContractFromAnswerOnly() {
         return defaultHapiSpec("InvalidContractFromAnswerOnly")
                 .given()
                 .when()

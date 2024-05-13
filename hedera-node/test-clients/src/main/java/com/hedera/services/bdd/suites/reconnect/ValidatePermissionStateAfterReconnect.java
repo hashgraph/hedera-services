@@ -24,12 +24,13 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -43,11 +44,11 @@ public class ValidatePermissionStateAfterReconnect extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(validateApiPermissionStateAfterReconnect());
     }
 
-    final DynamicTest validateApiPermissionStateAfterReconnect() {
+    final Stream<DynamicTest> validateApiPermissionStateAfterReconnect() {
         return customHapiSpec("validateApiPermissionStateAfterReconnect")
                 .withProperties(Map.of("txn.start.offset.secs", "-5"))
                 .given(

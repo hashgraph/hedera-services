@@ -60,13 +60,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_RED
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -80,7 +81,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 gracePeriodRestrictionsSuiteSetup(),
                 contractCallRestrictionsEnforced(),
@@ -95,7 +96,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                 gracePeriodRestrictionsSuiteCleanup());
     }
 
-    final DynamicTest contractCallRestrictionsEnforced() {
+    final Stream<DynamicTest> contractCallRestrictionsEnforced() {
         final var civilian = "misc";
         final var detachedAccount = "gone";
         final var contract = "DoubleSend";
@@ -135,7 +136,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                         getAccountBalance(detachedAccount).hasTinyBars(1L));
     }
 
-    final DynamicTest cryptoUpdateRestrictionsEnforced() {
+    final Stream<DynamicTest> cryptoUpdateRestrictionsEnforced() {
         final var detachedAccount = "gone";
         final long certainlyPast = Instant.now().getEpochSecond() - THREE_MONTHS_IN_SECONDS;
         final long certainlyDistant = Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -178,7 +179,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                                 .hasKnownStatus(EXPIRATION_REDUCTION_NOT_ALLOWED));
     }
 
-    final DynamicTest payerRestrictionsEnforced() {
+    final Stream<DynamicTest> payerRestrictionsEnforced() {
         final var detachedAccount = "gone";
 
         return defaultHapiSpec("PayerRestrictionsEnforced")
@@ -200,7 +201,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                                 .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
 
-    final DynamicTest topicAutoRenewOpsEnforced() {
+    final Stream<DynamicTest> topicAutoRenewOpsEnforced() {
         final var topicWithDetachedAsAutoRenew = "c";
         final var topicSansDetachedAsAutoRenew = "d";
         final var detachedAccount = "gone";
@@ -237,7 +238,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                         getTopicInfo(topicWithDetachedAsAutoRenew).hasAutoRenewAccount(detachedAccount));
     }
 
-    final DynamicTest tokenAutoRenewOpsEnforced() {
+    final Stream<DynamicTest> tokenAutoRenewOpsEnforced() {
         final var tokenWithDetachedAsAutoRenew = "c";
         final var tokenSansDetachedAsAutoRenew = "d";
         final var detachedAccount = "gone";
@@ -275,7 +276,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                         getTokenInfo(tokenWithDetachedAsAutoRenew).hasAutoRenewAccount(detachedAccount));
     }
 
-    final DynamicTest treasuryOpsRestrictionEnforced() {
+    final Stream<DynamicTest> treasuryOpsRestrictionEnforced() {
         final var aToken = "c";
         final var detachedAccount = "gone";
         final var tokenMultiKey = "tak";
@@ -307,7 +308,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                         getAccountBalance(detachedAccount).hasTokenBalance(aToken, expectedSupply));
     }
 
-    final DynamicTest tokenMgmtRestrictionsEnforced() {
+    final Stream<DynamicTest> tokenMgmtRestrictionsEnforced() {
         final var notToBe = "a";
         final var tokenNotYetAssociated = "b";
         final var tokenAlreadyAssociated = "c";
@@ -352,7 +353,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                                 .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
 
-    final DynamicTest cryptoAndContractDeleteRestrictionsEnforced() {
+    final Stream<DynamicTest> cryptoAndContractDeleteRestrictionsEnforced() {
         final var detachedAccount = "gone";
         final var civilian = "misc";
         final var tbd = "contract";
@@ -379,7 +380,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                                 .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
 
-    final DynamicTest cryptoTransferRestrictionsEnforced() {
+    final Stream<DynamicTest> cryptoTransferRestrictionsEnforced() {
         final var aToken = "c";
         final var detachedAccount = "gone";
         final var civilian = "misc";
@@ -402,7 +403,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                                 .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
 
-    final DynamicTest gracePeriodRestrictionsSuiteSetup() {
+    final Stream<DynamicTest> gracePeriodRestrictionsSuiteSetup() {
         return defaultHapiSpec("GracePeriodRestrictionsSuiteSetup")
                 .given()
                 .when()
@@ -411,7 +412,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                         .overridingProps(propsForAccountAutoRenewOnWith(1, 3600)));
     }
 
-    final DynamicTest gracePeriodRestrictionsSuiteCleanup() {
+    final Stream<DynamicTest> gracePeriodRestrictionsSuiteCleanup() {
         return defaultHapiSpec("GracePeriodRestrictionsSuiteCleanup")
                 .given()
                 .when()

@@ -50,13 +50,11 @@ import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.VAL
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_TXN;
-import static com.hedera.services.bdd.suites.util.UtilPrngSuite.BOB;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.utilops.FeatureFlags;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -64,6 +62,8 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -77,14 +77,14 @@ public class FeatureFlagSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 disableAllFeatureFlagsAndConfirmNotSupported(),
                 enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting());
     }
 
     @HapiTest
-    final DynamicTest disableAllFeatureFlagsAndConfirmNotSupported() {
+    final Stream<DynamicTest> disableAllFeatureFlagsAndConfirmNotSupported() {
         return defaultHapiSpec("disableAllFeatureFlagsAndConfirmNotSupported")
                 .given(overridingAllOf(FeatureFlags.FEATURE_FLAGS.allDisabled()))
                 .when()
@@ -96,7 +96,7 @@ public class FeatureFlagSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting() {
+    final Stream<DynamicTest> enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting() {
         return defaultHapiSpec("enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting")
                 .given()
                 .when()

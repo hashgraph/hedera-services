@@ -32,11 +32,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -55,13 +56,13 @@ public class Issue1765Suite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 get950Balance());
     }
 
     @HapiTest
-    final DynamicTest get950Balance() {
+    final Stream<DynamicTest> get950Balance() {
         return defaultHapiSpec("Get950Balance")
                 .given()
                 .when()
@@ -69,7 +70,7 @@ public class Issue1765Suite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest recordOfInvalidContractUpdateSanityChecks() {
+    final Stream<DynamicTest> recordOfInvalidContractUpdateSanityChecks() {
         final long ADEQUATE_FEE = 100_000_000L;
         final String INVALID_CONTRACT = IMAGINARY;
         final String THE_MEMO_IS = MEMO_IS;
@@ -92,7 +93,7 @@ public class Issue1765Suite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest recordOfInvalidFileUpdateSanityChecks() {
+    final Stream<DynamicTest> recordOfInvalidFileUpdateSanityChecks() {
         final long ADEQUATE_FEE = 100_000_000L;
         final String INVALID_FILE = IMAGINARY;
         final String THE_MEMO_IS = MEMO_IS;
@@ -115,7 +116,7 @@ public class Issue1765Suite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest recordOfInvalidFileAppendSanityChecks() {
+    final Stream<DynamicTest> recordOfInvalidFileAppendSanityChecks() {
         final long ADEQUATE_FEE = 100_000_000L;
         final String INVALID_FILE = IMAGINARY;
         final String THE_MEMO_IS = MEMO_IS;

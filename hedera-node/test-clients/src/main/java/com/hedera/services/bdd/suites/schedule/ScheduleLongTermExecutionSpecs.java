@@ -102,7 +102,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTURE_THROTTLE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
@@ -112,6 +111,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -126,7 +127,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 enableLongTermScheduledTransactions(),
                 executionWithDefaultPayerWorks(),
@@ -160,7 +161,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    final DynamicTest executionWithCustomPayerWorks() {
+    final Stream<DynamicTest> executionWithCustomPayerWorks() {
         return defaultHapiSpec("ExecutionAtExpiryWithCustomPayerWorks")
                 .given(
                         cryptoCreate(PAYING_ACCOUNT),
@@ -265,7 +266,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    final DynamicTest executionWithCustomPayerAndAdminKeyWorks() {
+    final Stream<DynamicTest> executionWithCustomPayerAndAdminKeyWorks() {
         return defaultHapiSpec("ExecutionAtExpiryWithCustomPayerAndAdminKeyWorks")
                 .given(
                         newKeyNamed("adminKey"),
@@ -372,7 +373,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    final DynamicTest executionWithCustomPayerWhoSignsAtCreationAsPayerWorks() {
+    final Stream<DynamicTest> executionWithCustomPayerWhoSignsAtCreationAsPayerWorks() {
         return defaultHapiSpec("ExecutionAtExpiryWithCustomPayerWhoSignsAtCreationAsPayerWorks")
                 .given(
                         cryptoCreate(PAYING_ACCOUNT),
@@ -478,7 +479,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    final DynamicTest executionWithDefaultPayerWorks() {
+    final Stream<DynamicTest> executionWithDefaultPayerWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionAtExpiryWithDefaultPayerWorks")
                 .given(
@@ -580,7 +581,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    final DynamicTest executionWithContractCallWorksAtExpiry() {
+    final Stream<DynamicTest> executionWithContractCallWorksAtExpiry() {
         return defaultHapiSpec("ExecutionWithContractCallWorksAtExpiry")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "ContractCall"),
@@ -631,7 +632,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    final DynamicTest executionWithContractCreateWorksAtExpiry() {
+    final Stream<DynamicTest> executionWithContractCreateWorksAtExpiry() {
         return defaultHapiSpec("ExecutionWithContractCreateWorksAtExpiry")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "ContractCreate"),
@@ -684,7 +685,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    final DynamicTest executionWithDefaultPayerButNoFundsFails() {
+    final Stream<DynamicTest> executionWithDefaultPayerButNoFundsFails() {
         long balance = 10_000_000L;
         long noBalance = 0L;
         long transferAmount = 1L;
@@ -733,7 +734,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    final DynamicTest executionWithCustomPayerThatNeverSignsFails() {
+    final Stream<DynamicTest> executionWithCustomPayerThatNeverSignsFails() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerThatNeverSignsFails")
                 .given(
@@ -764,7 +765,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         getTxnRecord(CREATE_TX).scheduled().hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
     }
 
-    final DynamicTest executionWithCustomPayerButNoFundsFails() {
+    final Stream<DynamicTest> executionWithCustomPayerButNoFundsFails() {
         long balance = 0L;
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionAtExpiryWithCustomPayerButNoFundsFails")
@@ -805,7 +806,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    final DynamicTest executionWithDefaultPayerButAccountDeletedFails() {
+    final Stream<DynamicTest> executionWithDefaultPayerButAccountDeletedFails() {
         long balance = 10_000_000L;
         long noBalance = 0L;
         long transferAmount = 1L;
@@ -843,7 +844,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         getTxnRecord(CREATE_TX).scheduled().hasCostAnswerPrecheck(ACCOUNT_DELETED));
     }
 
-    final DynamicTest executionWithCustomPayerButAccountDeletedFails() {
+    final Stream<DynamicTest> executionWithCustomPayerButAccountDeletedFails() {
         long balance = 10_000_000L;
         long noBalance = 0L;
         long transferAmount = 1;
@@ -892,7 +893,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    final DynamicTest executionWithInvalidAccountAmountsFails() {
+    final Stream<DynamicTest> executionWithInvalidAccountAmountsFails() {
         long transferAmount = 100;
         long senderBalance = 1000L;
         long payingAccountBalance = 1_000_000L;
@@ -940,7 +941,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    final DynamicTest executionWithCryptoInsufficientAccountBalanceFails() {
+    final Stream<DynamicTest> executionWithCryptoInsufficientAccountBalanceFails() {
         long noBalance = 0L;
         long senderBalance = 100L;
         long transferAmount = 101L;
@@ -985,7 +986,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    final DynamicTest executionWithCryptoSenderDeletedFails() {
+    final Stream<DynamicTest> executionWithCryptoSenderDeletedFails() {
         long noBalance = 0L;
         long senderBalance = 100L;
         long transferAmount = 101L;
@@ -1032,7 +1033,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    final DynamicTest executionTriggersWithWeirdlyRepeatedKey() {
+    final Stream<DynamicTest> executionTriggersWithWeirdlyRepeatedKey() {
         String schedule = "dupKeyXfer";
 
         return defaultHapiSpec("ExecutionAtExpiryTriggersWithWeirdlyRepeatedKey")
@@ -1074,7 +1075,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                                 .hasPrecheck(INVALID_SCHEDULE_ID));
     }
 
-    final DynamicTest scheduledFreezeWorksAsExpected() {
+    final Stream<DynamicTest> scheduledFreezeWorksAsExpected() {
 
         final byte[] poeticUpgradeHash = getPoeticUpgradeHash();
 
@@ -1128,7 +1129,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    final DynamicTest scheduledFreezeWithUnauthorizedPayerFails() {
+    final Stream<DynamicTest> scheduledFreezeWithUnauthorizedPayerFails() {
 
         final byte[] poeticUpgradeHash = getPoeticUpgradeHash();
 
@@ -1163,7 +1164,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                                 HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST)));
     }
 
-    final DynamicTest scheduledPermissionedFileUpdateWorksAsExpected() {
+    final Stream<DynamicTest> scheduledPermissionedFileUpdateWorksAsExpected() {
 
         return defaultHapiSpec("ScheduledPermissionedFileUpdateWorksAsExpectedAtExpiry")
                 .given(
@@ -1208,7 +1209,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    final DynamicTest scheduledPermissionedFileUpdateUnauthorizedPayerFails() {
+    final Stream<DynamicTest> scheduledPermissionedFileUpdateUnauthorizedPayerFails() {
 
         return defaultHapiSpec("ScheduledPermissionedFileUpdateUnauthorizedPayerFailsAtExpiry")
                 .given(
@@ -1254,7 +1255,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    final DynamicTest scheduledSystemDeleteWorksAsExpected() {
+    final Stream<DynamicTest> scheduledSystemDeleteWorksAsExpected() {
 
         return defaultHapiSpec("ScheduledSystemDeleteWorksAsExpectedAtExpiry")
                 .given(
@@ -1299,7 +1300,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    final DynamicTest scheduledSystemDeleteUnauthorizedPayerFails() {
+    final Stream<DynamicTest> scheduledSystemDeleteUnauthorizedPayerFails() {
 
         return defaultHapiSpec("ScheduledSystemDeleteUnauthorizedPayerFailsAtExpiry")
                 .given(
@@ -1325,7 +1326,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                                 HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST)));
     }
 
-    final DynamicTest waitForExpiryIgnoredWhenLongTermDisabled() {
+    final Stream<DynamicTest> waitForExpiryIgnoredWhenLongTermDisabled() {
 
         return defaultHapiSpec("WaitForExpiryIgnoredWhenLongTermDisabled")
                 .given(
@@ -1350,7 +1351,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                                 .isExecuted());
     }
 
-    final DynamicTest expiryIgnoredWhenLongTermDisabled() {
+    final Stream<DynamicTest> expiryIgnoredWhenLongTermDisabled() {
 
         return defaultHapiSpec("ExpiryIgnoredWhenLongTermDisabled")
                 .given(
@@ -1378,7 +1379,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         getAccountBalance(RECEIVER).hasTinyBars(0L));
     }
 
-    final DynamicTest waitForExpiryIgnoredWhenLongTermDisabledThenEnabled() {
+    final Stream<DynamicTest> waitForExpiryIgnoredWhenLongTermDisabledThenEnabled() {
 
         return defaultHapiSpec("WaitForExpiryIgnoredWhenLongTermDisabledThenEnabled")
                 .given(
@@ -1405,7 +1406,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         overriding(SCHEDULING_LONG_TERM_ENABLED, FALSE));
     }
 
-    final DynamicTest expiryIgnoredWhenLongTermDisabledThenEnabled() {
+    final Stream<DynamicTest> expiryIgnoredWhenLongTermDisabledThenEnabled() {
 
         return defaultHapiSpec("ExpiryIgnoredWhenLongTermDisabledThenEnabled")
                 .given(
@@ -1435,7 +1436,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         getAccountBalance(RECEIVER).hasTinyBars(0L));
     }
 
-    final DynamicTest futureThrottlesAreRespected() {
+    final Stream<DynamicTest> futureThrottlesAreRespected() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-schedule.json");
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
 

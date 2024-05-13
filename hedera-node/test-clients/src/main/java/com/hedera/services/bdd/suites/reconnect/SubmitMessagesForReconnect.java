@@ -25,12 +25,13 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -43,7 +44,7 @@ public class SubmitMessagesForReconnect extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(runSubmitMessages());
     }
 
@@ -57,7 +58,7 @@ public class SubmitMessagesForReconnect extends HapiSuite {
                 .deferStatusResolution();
     }
 
-    final DynamicTest runSubmitMessages() {
+    final Stream<DynamicTest> runSubmitMessages() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
         Supplier<HapiSpecOperation[]> submitBurst = () -> new HapiSpecOperation[] {submitToTestTopic(settings)};

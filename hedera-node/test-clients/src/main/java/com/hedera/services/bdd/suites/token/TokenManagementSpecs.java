@@ -98,13 +98,14 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -130,7 +131,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 freezeMgmtSuccessCasesWork(),
                 kycMgmtFailureCasesWork(),
@@ -153,7 +154,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest aliasFormFailsForAllTokenOps() {
+    final Stream<DynamicTest> aliasFormFailsForAllTokenOps() {
         final var CIVILIAN = "civilian";
         final var PAUSE_KEY = "pauseKey";
         final var KYC_KEY = "kycKey";
@@ -225,7 +226,7 @@ public class TokenManagementSpecs extends HapiSuite {
 
     //    @HapiTest
     // This test should be enabled when aliases are supported in all transaction bodies
-    final DynamicTest aliasFormWorksForAllTokenOps() {
+    final Stream<DynamicTest> aliasFormWorksForAllTokenOps() {
         final var CIVILIAN = "civilian";
         final var PAUSE_KEY = "pauseKey";
         final var KYC_KEY = "kycKey";
@@ -319,7 +320,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest getNftInfoIdVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> getNftInfoIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("getNftInfoIdVariantsTreatedAsExpected")
                 .given(newKeyNamed("supplyKey"), cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(
@@ -335,7 +336,7 @@ public class TokenManagementSpecs extends HapiSuite {
     // FULLY_NONDETERMINISTIC because in mono-service zero amount token transfers will create a tokenTransferLists
     // with a just tokenNum, in mono-service the tokenTransferLists will be empty
     @HapiTest
-    final DynamicTest zeroUnitTokenOperationsWorkAsExpected() {
+    final Stream<DynamicTest> zeroUnitTokenOperationsWorkAsExpected() {
         final var civilian = "civilian";
         final var adminKey = "adminKey";
         final var fungible = "fungible";
@@ -393,7 +394,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest frozenTreasuryCannotBeMintedOrBurned() {
+    final Stream<DynamicTest> frozenTreasuryCannotBeMintedOrBurned() {
         return defaultHapiSpec("FrozenTreasuryCannotBeMintedOrBurned", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -414,7 +415,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest revokedKYCTreasuryCannotBeMintedOrBurned() {
+    final Stream<DynamicTest> revokedKYCTreasuryCannotBeMintedOrBurned() {
         return defaultHapiSpec(
                         "RevokedKYCTreasuryCannotBeMintedOrBurned", SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
@@ -436,7 +437,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest burnTokenFailsDueToInsufficientTreasuryBalance() {
+    final Stream<DynamicTest> burnTokenFailsDueToInsufficientTreasuryBalance() {
         final String BURN_TOKEN = "burn";
         final int TOTAL_SUPPLY = 100;
         final int TRANSFER_AMOUNT = 50;
@@ -469,7 +470,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest wipeAccountSuccessCasesWork() {
+    final Stream<DynamicTest> wipeAccountSuccessCasesWork() {
         var wipeableToken = "with";
 
         return defaultHapiSpec("WipeAccountSuccessCasesWork")
@@ -500,7 +501,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest wipeAccountWithAliasesWork() {
+    final Stream<DynamicTest> wipeAccountWithAliasesWork() {
         final var initialTokenSupply = 1000;
         return defaultHapiSpec("wipeAccountWithAliasesWork")
                 .given(
@@ -546,7 +547,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest wipeAccountFailureCasesWork() {
+    final Stream<DynamicTest> wipeAccountFailureCasesWork() {
         var unwipeableToken = "without";
         var wipeableToken = "with";
         var wipeableUniqueToken = "uniqueWith";
@@ -602,7 +603,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest kycMgmtFailureCasesWork() {
+    final Stream<DynamicTest> kycMgmtFailureCasesWork() {
         var withoutKycKey = "withoutKycKey";
         var withKycKey = "withKycKey";
 
@@ -631,7 +632,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest updateIdVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> updateIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("updateIdVariantsTreatedAsExpected")
                 .given(
                         newKeyNamed("adminKey"),
@@ -645,7 +646,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest wipeIdVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> wipeIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("wipeIdVariantsTreatedAsExpected")
                 .given(
                         newKeyNamed("wipeKey"),
@@ -656,7 +657,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest grantRevokeIdVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> grantRevokeIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("grantRevokeIdVariantsTreatedAsExpected")
                 .given(
                         newKeyNamed("kycKey"),
@@ -671,7 +672,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest pauseUnpauseIdVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> pauseUnpauseIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("pauseUnpauseIdVariantsTreatedAsExpected")
                 .given(newKeyNamed("pauseKey"), tokenCreate("t").pauseKey("pauseKey"))
                 .when()
@@ -681,7 +682,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest freezeUnfreezeIdVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> freezeUnfreezeIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("freezeUnfreezeIdVariantsTreatedAsExpected")
                 .given(
                         newKeyNamed("freezeKey"),
@@ -695,7 +696,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest mintBurnIdVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> mintBurnIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("mintBurnIdVariantsTreatedAsExpected")
                 .given(newKeyNamed("supplyKey"), tokenCreate("t").supplyKey("supplyKey"))
                 .when()
@@ -705,7 +706,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest freezeMgmtSuccessCasesWork() {
+    final Stream<DynamicTest> freezeMgmtSuccessCasesWork() {
         var withPlusDefaultFalse = "withPlusDefaultFalse";
 
         return defaultHapiSpec("FreezeMgmtSuccessCasesWork")
@@ -731,7 +732,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest kycMgmtSuccessCasesWork() {
+    final Stream<DynamicTest> kycMgmtSuccessCasesWork() {
         var withKycKey = "withKycKey";
         var withoutKycKey = "withoutKycKey";
 
@@ -758,7 +759,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest supplyMgmtSuccessCasesWork() {
+    final Stream<DynamicTest> supplyMgmtSuccessCasesWork() {
         return defaultHapiSpec("SupplyMgmtSuccessCasesWork")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -781,7 +782,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest fungibleCommonMaxSupplyReachWork() {
+    final Stream<DynamicTest> fungibleCommonMaxSupplyReachWork() {
         return defaultHapiSpec("FungibleCommonMaxSupplyReachWork")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -808,7 +809,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest mintingMaxLongValueWorks() {
+    final Stream<DynamicTest> mintingMaxLongValueWorks() {
         return defaultHapiSpec("MintingMaxLongValueWorks")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -824,7 +825,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest nftMintProvidesMintedNftsAndNewTotalSupply() {
+    final Stream<DynamicTest> nftMintProvidesMintedNftsAndNewTotalSupply() {
         final var multiKey = "multi";
         final var token = "non-fungible";
         final var txn = "mint";
@@ -851,7 +852,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest supplyMgmtFailureCasesWork() {
+    final Stream<DynamicTest> supplyMgmtFailureCasesWork() {
         return defaultHapiSpec("SupplyMgmtFailureCasesWork")
                 .given(newKeyNamed(SUPPLY_KEY))
                 .when(

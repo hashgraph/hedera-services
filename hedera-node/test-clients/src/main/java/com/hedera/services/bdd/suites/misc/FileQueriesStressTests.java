@@ -39,6 +39,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -56,13 +58,13 @@ public class FileQueriesStressTests extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
             getFileInfoStress(), getFileContentsStress());
     }
 
     @HapiTest
-    final DynamicTest getFileContentsStress() {
+    final Stream<DynamicTest> getFileContentsStress() {
         return defaultHapiSpec("getFileContentsStress")
                 .given()
                 .when()
@@ -74,7 +76,7 @@ public class FileQueriesStressTests extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest getFileInfoStress() {
+    final Stream<DynamicTest> getFileInfoStress() {
         return defaultHapiSpec("getFileInfoStress")
                 .given()
                 .when()

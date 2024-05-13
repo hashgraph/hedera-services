@@ -25,10 +25,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_FILE_SIZE_
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -42,12 +43,12 @@ public class AppendFailuresSpec extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(handleRejectsOversized());
     }
 
     @HapiTest
-    final DynamicTest handleRejectsOversized() {
+    final Stream<DynamicTest> handleRejectsOversized() {
         byte[] BYTES_3K_MINUS1 = new byte[3 * 1024 - 1];
         Arrays.fill(BYTES_3K_MINUS1, (byte) 0xAB);
         byte[] BYTES_1 = new byte[] {(byte) 0xAB};

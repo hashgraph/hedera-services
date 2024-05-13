@@ -40,7 +40,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_HA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_ID_DOES_NOT_MATCH_PREPARED;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
@@ -50,6 +49,8 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -94,7 +95,7 @@ public class UpgradeSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
             precheckRejectsUnknownFreezeType(),
             freezeOnlyPrecheckRejectsInvalid(),
@@ -106,14 +107,14 @@ public class UpgradeSuite extends HapiSuite {
             freezeAbortIsIdempotent());
     }
 
-    final DynamicTest precheckRejectsUnknownFreezeType() {
+    final Stream<DynamicTest> precheckRejectsUnknownFreezeType() {
         return defaultHapiSpec("PrejeckRejectsUnknownFreezeType")
                 .given()
                 .when()
                 .then(freeze().hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY));
     }
 
-    final DynamicTest freezeOnlyPrecheckRejectsInvalid() {
+    final Stream<DynamicTest> freezeOnlyPrecheckRejectsInvalid() {
         return defaultHapiSpec("freezeOnlyPrecheckRejectsInvalid")
                 .given()
                 .when()
@@ -125,7 +126,7 @@ public class UpgradeSuite extends HapiSuite {
                         freezeOnly().startingIn(-60).minutes().hasPrecheck(FREEZE_START_TIME_MUST_BE_FUTURE));
     }
 
-    final DynamicTest freezeUpgradeValidationRejectsInvalid() {
+    final Stream<DynamicTest> freezeUpgradeValidationRejectsInvalid() {
         return defaultHapiSpec("freezeUpgradeValidationRejectsInvalid")
                 .given()
                 .when()
@@ -153,14 +154,14 @@ public class UpgradeSuite extends HapiSuite {
                                 .hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY));
     }
 
-    final DynamicTest freezeAbortIsIdempotent() {
+    final Stream<DynamicTest> freezeAbortIsIdempotent() {
         return defaultHapiSpec("FreezeAbortIsIdempotent")
                 .given()
                 .when()
                 .then(freezeAbort().hasKnownStatus(SUCCESS), freezeAbort().hasKnownStatus(SUCCESS));
     }
 
-    final DynamicTest prepareUpgradeValidationRejectsInvalid() {
+    final Stream<DynamicTest> prepareUpgradeValidationRejectsInvalid() {
         return defaultHapiSpec("PrepareUpgradeValidationRejectsInvalid")
                 .given(
                         fileUpdate(standardUpdateFile)
@@ -220,7 +221,7 @@ public class UpgradeSuite extends HapiSuite {
                         freezeAbort());
     }
 
-    final DynamicTest telemetryUpgradeValidationRejectsInvalid() {
+    final Stream<DynamicTest> telemetryUpgradeValidationRejectsInvalid() {
         return defaultHapiSpec("TelemetryUpgradeValidationRejectsInvalid")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FREEZE_ADMIN, ONE_HUNDRED_HBARS)),
@@ -254,7 +255,7 @@ public class UpgradeSuite extends HapiSuite {
                         .hasKnownStatus(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH));
     }
 
-    final DynamicTest canFreezeUpgradeWithPreparedUpgrade() {
+    final Stream<DynamicTest> canFreezeUpgradeWithPreparedUpgrade() {
         return defaultHapiSpec("CanFreezeUpgradeWithPreparedUpgrade")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FREEZE_ADMIN, ONE_HUNDRED_HBARS)),
@@ -284,7 +285,7 @@ public class UpgradeSuite extends HapiSuite {
                         freezeAbort());
     }
 
-    final DynamicTest canTelemetryUpgradeWithValid() {
+    final Stream<DynamicTest> canTelemetryUpgradeWithValid() {
         return defaultHapiSpec("CanTelemetryUpgradeWithValid")
                 .given(cryptoTransfer(tinyBarsFromTo(GENESIS, FREEZE_ADMIN, ONE_HUNDRED_HBARS)))
                 .when(

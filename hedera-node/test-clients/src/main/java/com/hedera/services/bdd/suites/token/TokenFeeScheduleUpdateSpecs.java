@@ -46,13 +46,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -69,13 +70,13 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
             onlyValidCustomFeeScheduleCanBeUpdated(), baseOperationIsChargedExpectedFee());
     }
 
     @HapiTest
-    final DynamicTest baseOperationIsChargedExpectedFee() {
+    final Stream<DynamicTest> baseOperationIsChargedExpectedFee() {
         final var htsAmount = 2_345L;
         final var targetToken = "immutableToken";
         final var feeDenom = "denom";
@@ -102,7 +103,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest idVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(
                         newKeyNamed("feeScheduleKey"),
@@ -116,7 +117,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest onlyValidCustomFeeScheduleCanBeUpdated() {
+    final Stream<DynamicTest> onlyValidCustomFeeScheduleCanBeUpdated() {
         final var hbarAmount = 1_234L;
         final var htsAmount = 2_345L;
         final var numerator = 1;

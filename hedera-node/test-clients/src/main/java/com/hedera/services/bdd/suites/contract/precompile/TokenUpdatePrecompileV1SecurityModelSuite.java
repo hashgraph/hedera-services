@@ -65,7 +65,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
@@ -78,6 +77,8 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -137,11 +138,11 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(positiveCases(), negativeCases());
     }
 
-    List<DynamicTest> positiveCases() {
+    List<Stream<DynamicTest>>positiveCases() {
         return List.of(
                 updateTokenWithKeysHappyPath(),
                 updateNftTreasuryWithAndWithoutAdminKey(),
@@ -150,11 +151,11 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
                 updateTokenWithoutNameSymbolMemo());
     }
 
-    List<DynamicTest> negativeCases() {
+    List<Stream<DynamicTest>>negativeCases() {
         return List.of(updateWithTooLongNameAndSymbol(), updateTokenWithKeysNegative());
     }
 
-    final DynamicTest updateTokenWithKeysHappyPath() {
+    final Stream<DynamicTest> updateTokenWithKeysHappyPath() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return propertyPreservingHapiSpec("updateTokenWithKeysHappyPath")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -268,7 +269,7 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
                                 .hasPauseKey(TOKEN_UPDATE_AS_KEY)));
     }
 
-    final DynamicTest updateNftTreasuryWithAndWithoutAdminKey() {
+    final Stream<DynamicTest> updateNftTreasuryWithAndWithoutAdminKey() {
         final var newTokenTreasury = "newTokenTreasury";
         final var NO_ADMIN_TOKEN = "noAdminKeyToken";
         final AtomicReference<TokenID> noAdminKeyToken = new AtomicReference<>();
@@ -344,7 +345,7 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
                                 .logged());
     }
 
-    final DynamicTest updateWithTooLongNameAndSymbol() {
+    final Stream<DynamicTest> updateWithTooLongNameAndSymbol() {
         final var tooLongString = "ORIGINAL" + TxnUtils.randomUppercase(101);
         final var tooLongSymbolTxn = "tooLongSymbolTxn";
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
@@ -408,7 +409,7 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
                                 TransactionRecordAsserts.recordWith().status(TOKEN_SYMBOL_TOO_LONG)))));
     }
 
-    final DynamicTest updateTokenWithKeysNegative() {
+    final Stream<DynamicTest> updateTokenWithKeysNegative() {
         final var updateTokenWithKeysFunc = "updateTokenWithKeys";
         final var NO_FEE_SCHEDULE_KEY_TXN = "NO_FEE_SCHEDULE_KEY_TXN";
         final var NO_PAUSE_KEY_TXN = "NO_PAUSE_KEY_TXN";
@@ -646,7 +647,7 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
                                 TransactionRecordAsserts.recordWith().status(TOKEN_HAS_NO_KYC_KEY)))));
     }
 
-    final DynamicTest updateOnlyTokenKeysAndGetTheUpdatedValues() {
+    final Stream<DynamicTest> updateOnlyTokenKeysAndGetTheUpdatedValues() {
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return propertyPreservingHapiSpec("updateOnlyTokenKeysAndGetTheUpdatedValues")
@@ -840,7 +841,7 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
                                                                 spec.registry().getKey(TOKEN_UPDATE_AS_KEY))))))));
     }
 
-    final DynamicTest updateOnlyKeysForNonFungibleToken() {
+    final Stream<DynamicTest> updateOnlyKeysForNonFungibleToken() {
         final AtomicReference<TokenID> nftToken = new AtomicReference<>();
         return propertyPreservingHapiSpec("updateOnlyKeysForNonFungibleToken")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -909,7 +910,7 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
                                 .hasPauseKey(TOKEN_UPDATE_AS_KEY))));
     }
 
-    final DynamicTest updateTokenWithoutNameSymbolMemo() {
+    final Stream<DynamicTest> updateTokenWithoutNameSymbolMemo() {
         final var updateTokenWithoutNameSymbolMemoFunc = "updateTokenWithoutNameSymbolMemo";
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return propertyPreservingHapiSpec("updateTokenWithoutNameSymbolMemo")

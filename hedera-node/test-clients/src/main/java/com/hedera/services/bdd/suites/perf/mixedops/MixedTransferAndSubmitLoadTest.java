@@ -32,7 +32,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
@@ -40,6 +39,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -53,11 +54,11 @@ public class MixedTransferAndSubmitLoadTest extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(runMixedTransferAndSubmits());
     }
 
-    final DynamicTest runMixedTransferAndSubmits() {
+    final Stream<DynamicTest> runMixedTransferAndSubmits() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         final AtomicInteger submittedSoFar = new AtomicInteger(0);
 

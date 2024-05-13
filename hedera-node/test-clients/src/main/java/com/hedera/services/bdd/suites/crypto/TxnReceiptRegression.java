@@ -34,11 +34,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetReceipt;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -59,7 +60,7 @@ public class TxnReceiptRegression extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
             returnsInvalidForUnspecifiedTxnId(),
             returnsNotSupportedForMissingOp(),
@@ -71,7 +72,7 @@ public class TxnReceiptRegression extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest returnsInvalidForUnspecifiedTxnId() {
+    final Stream<DynamicTest> returnsInvalidForUnspecifiedTxnId() {
         return defaultHapiSpec("ReturnsInvalidForUnspecifiedTxnId")
                 .given()
                 .when()
@@ -79,7 +80,7 @@ public class TxnReceiptRegression extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest returnsNotSupportedForMissingOp() {
+    final Stream<DynamicTest> returnsNotSupportedForMissingOp() {
         return defaultHapiSpec("ReturnsNotSupportedForMissingOp")
                 .given(cryptoCreate("misc").via("success").balance(1_000L))
                 .when()
@@ -87,7 +88,7 @@ public class TxnReceiptRegression extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest receiptUnavailableAfterCacheTtl() {
+    final Stream<DynamicTest> receiptUnavailableAfterCacheTtl() {
         return defaultHapiSpec("ReceiptUnavailableAfterCacheTtl")
                 .given()
                 .when()
@@ -103,7 +104,7 @@ public class TxnReceiptRegression extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest receiptUnknownBeforeConsensus() {
+    final Stream<DynamicTest> receiptUnknownBeforeConsensus() {
         return defaultHapiSpec("ReceiptUnknownBeforeConsensus")
                 .given()
                 .when()
@@ -113,7 +114,7 @@ public class TxnReceiptRegression extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest receiptAvailableWithinCacheTtl() {
+    final Stream<DynamicTest> receiptAvailableWithinCacheTtl() {
         return defaultHapiSpec("ReceiptAvailableWithinCacheTtl")
                 .given(cryptoCreate("misc").via("success").balance(1_000L))
                 .when()
@@ -121,7 +122,7 @@ public class TxnReceiptRegression extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest receiptUnavailableIfRejectedInPrecheck() {
+    final Stream<DynamicTest> receiptUnavailableIfRejectedInPrecheck() {
         return defaultHapiSpec("ReceiptUnavailableIfRejectedInPrecheck")
                 .given(cryptoCreate("misc").balance(1_000L))
                 .when(cryptoCreate("nope")
@@ -132,7 +133,7 @@ public class TxnReceiptRegression extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest receiptNotFoundOnUnknownTransactionID() {
+    final Stream<DynamicTest> receiptNotFoundOnUnknownTransactionID() {
         return defaultHapiSpec("receiptNotFoundOnUnknownTransactionID")
                 .given()
                 .when()

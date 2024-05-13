@@ -70,7 +70,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -80,6 +79,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -93,7 +94,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return withAndWithoutLongTermEnabled(() -> List.of(
                 allRecordsAreQueryable(),
                 canonicalScheduleOpsHaveExpectedUsdFees(),
@@ -106,7 +107,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest canonicalScheduleOpsHaveExpectedUsdFees() {
+    final Stream<DynamicTest> canonicalScheduleOpsHaveExpectedUsdFees() {
         return defaultHapiSpec("CanonicalScheduleOpsHaveExpectedUsdFees")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,ContractCall"),
@@ -162,7 +163,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest noFeesChargedIfTriggeredPayerIsUnwilling() {
+    final Stream<DynamicTest> noFeesChargedIfTriggeredPayerIsUnwilling() {
         return defaultHapiSpec("NoFeesChargedIfTriggeredPayerIsUnwilling")
                 .given(cryptoCreate(UNWILLING_PAYER))
                 .when(scheduleCreate(
@@ -183,7 +184,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest noFeesChargedIfTriggeredPayerIsInsolvent() {
+    final Stream<DynamicTest> noFeesChargedIfTriggeredPayerIsInsolvent() {
         return defaultHapiSpec("NoFeesChargedIfTriggeredPayerIsInsolvent")
                 .given(cryptoCreate(INSOLVENT_PAYER).balance(0L))
                 .when(scheduleCreate(SCHEDULE, cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1)))
@@ -201,7 +202,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest canScheduleChunkedMessages() {
+    final Stream<DynamicTest> canScheduleChunkedMessages() {
         String ofGeneralInterest = "Scotch";
         AtomicReference<TransactionID> initialTxnId = new AtomicReference<>();
 
@@ -274,7 +275,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest schedulingTxnIdFieldsNotAllowed() {
+    final Stream<DynamicTest> schedulingTxnIdFieldsNotAllowed() {
         return defaultHapiSpec("SchedulingTxnIdFieldsNotAllowed")
                 .given(usableTxnIdNamed("withScheduled").settingScheduledInappropriately())
                 .when()
@@ -282,7 +283,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest executionTimeIsAvailable() {
+    final Stream<DynamicTest> executionTimeIsAvailable() {
         return defaultHapiSpec("ExecutionTimeIsAvailable")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,ContractCall"),
@@ -301,7 +302,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest deletionTimeIsAvailable() {
+    final Stream<DynamicTest> deletionTimeIsAvailable() {
         return defaultHapiSpec("DeletionTimeIsAvailable")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,ContractCall"),
@@ -321,7 +322,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest allRecordsAreQueryable() {
+    final Stream<DynamicTest> allRecordsAreQueryable() {
         return defaultHapiSpec("AllRecordsAreQueryable")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,ContractCall"),

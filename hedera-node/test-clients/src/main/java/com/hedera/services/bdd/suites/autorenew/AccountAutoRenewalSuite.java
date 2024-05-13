@@ -63,7 +63,7 @@ public class AccountAutoRenewalSuite extends HapiSuite {
 
     @Override
     @SuppressWarnings("java:S3878")
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
             accountAutoRemoval(),
             accountAutoRenewal(),
@@ -74,7 +74,7 @@ public class AccountAutoRenewalSuite extends HapiSuite {
             freezeAtTheEnd());
     }
 
-    final DynamicTest accountAutoRemoval() {
+    final Stream<DynamicTest> accountAutoRemoval() {
         String autoRemovedAccount = "autoRemovedAccount";
         return defaultHapiSpec("AccountAutoRemoval")
                 .given(
@@ -92,7 +92,7 @@ public class AccountAutoRenewalSuite extends HapiSuite {
                 .then(getAccountBalance(autoRemovedAccount).hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID));
     }
 
-    final DynamicTest accountAutoRenewal() {
+    final Stream<DynamicTest> accountAutoRenewal() {
         final var briefAutoRenew = 3L;
         final var autoRenewedAccount = "autoRenewedAccount";
 
@@ -129,7 +129,7 @@ public class AccountAutoRenewalSuite extends HapiSuite {
      * periods, this test is just a minimal sanity check.
      */
     @SuppressWarnings("java:S5960")
-    final DynamicTest maxNumberOfEntitiesToRenewOrDeleteWorks() {
+    final Stream<DynamicTest> maxNumberOfEntitiesToRenewOrDeleteWorks() {
         final var briefAutoRenew = 3L;
         final var firstTouchable = "a";
         final var secondTouchable = "b";
@@ -184,7 +184,7 @@ public class AccountAutoRenewalSuite extends HapiSuite {
      * <p>If run against a network that has existing funded accounts with very low auto-renew
      * periods, this test is just a minimal sanity check.
      */
-    final DynamicTest numberOfEntitiesToScanWorks() {
+    final Stream<DynamicTest> numberOfEntitiesToScanWorks() {
         final var briefAutoRenew = 3L;
         final int abbrevMaxToScan = 10;
         final IntFunction<String> accountName = i -> "fastExpiring" + i;
@@ -223,7 +223,7 @@ public class AccountAutoRenewalSuite extends HapiSuite {
                 }));
     }
 
-    final DynamicTest autoDeleteAfterGracePeriod() {
+    final Stream<DynamicTest> autoDeleteAfterGracePeriod() {
         final var briefAutoRenew = 3L;
         String autoDeleteAccount = "autoDeleteAccount";
         return defaultHapiSpec("AutoDeleteAfterGracePeriod")
@@ -244,14 +244,14 @@ public class AccountAutoRenewalSuite extends HapiSuite {
                 .then(getAccountBalance(autoDeleteAccount).hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID));
     }
 
-    final DynamicTest accountAutoRenewalSuiteCleanup() {
+    final Stream<DynamicTest> accountAutoRenewalSuiteCleanup() {
         return defaultHapiSpec("accountAutoRenewalSuiteCleanup")
                 .given()
                 .when()
                 .then(fileUpdate(APP_PROPERTIES).payingWith(GENESIS).overridingProps(disablingAutoRenewWithDefaults()));
     }
 
-    final DynamicTest freezeAtTheEnd() {
+    final Stream<DynamicTest> freezeAtTheEnd() {
         return defaultHapiSpec("freezeAtTheEnd")
                 .given()
                 .when(freezeOnly().startingIn(30).seconds().payingWith(GENESIS))

@@ -36,7 +36,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRAN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static org.apache.commons.lang3.SystemUtils.getHostName;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
@@ -44,6 +43,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -64,7 +65,7 @@ public class CreateSchedulesBeforeReconnect extends HapiSuite {
     private static final AtomicInteger scheduleNumber = new AtomicInteger(0);
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(runCreateSchedules());
     }
 
@@ -87,7 +88,7 @@ public class CreateSchedulesBeforeReconnect extends HapiSuite {
                 .advertisingCreation();
     }
 
-    final DynamicTest runCreateSchedules() {
+    final Stream<DynamicTest> runCreateSchedules() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings(
                 SCHEDULE_CREATION_RECONNECT_TPS, DEFAULT_MINS_FOR_RECONNECT_TESTS, DEFAULT_THREADS_FOR_RECONNECT_TESTS);
 

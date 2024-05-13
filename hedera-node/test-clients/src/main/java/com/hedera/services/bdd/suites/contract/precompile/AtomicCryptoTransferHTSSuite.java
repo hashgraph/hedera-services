@@ -80,7 +80,6 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers;
@@ -93,6 +92,8 @@ import java.util.List;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -135,7 +136,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
             cryptoTransferForHbarOnly(),
             cryptoTransferForFungibleTokenOnly(),
@@ -154,7 +155,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cryptoTransferForHbarOnly() {
+    final Stream<DynamicTest> cryptoTransferForHbarOnly() {
         final var cryptoTransferTxn = "cryptoTransferTxn";
         final var cryptoTransferMultiTxn = "cryptoTransferMultiTxn";
         final var cryptoTransferRevertTxn = "cryptoTransferRevertTxn";
@@ -344,7 +345,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cryptoTransferForFungibleTokenOnly() {
+    final Stream<DynamicTest> cryptoTransferForFungibleTokenOnly() {
         final var cryptoTransferTxnForFungible = "cryptoTransferTxnForFungible";
         final var cryptoTransferRevertNoKeyTxn = "cryptoTransferRevertNoKeyTxn";
 
@@ -452,7 +453,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cryptoTransferForFungibleTokenWithFees() {
+    final Stream<DynamicTest> cryptoTransferForFungibleTokenWithFees() {
         final var cryptoTransferTxnForFungible = "cryptoTransferTxnForFungible";
         final var FEE_TOKEN = "FeeToken";
 
@@ -544,7 +545,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cryptoTransferForNFTWithFees() {
+    final Stream<DynamicTest> cryptoTransferForNFTWithFees() {
         final var cryptoTransferTxnForNonFungible = "cryptoTransferTxnForNonFungible";
         final var FEE_TOKEN = "FeeToken";
 
@@ -640,7 +641,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cryptoTransferForNonFungibleTokenOnly() {
+    final Stream<DynamicTest> cryptoTransferForNonFungibleTokenOnly() {
         final var cryptoTransferTxnForNft = "cryptoTransferTxnForNft";
         final var cryptoTransferRevertNoKeyTxn = "cryptoTransferRevertNoKeyTxn";
 
@@ -745,7 +746,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cryptoTransferHBarFungibleNft() {
+    final Stream<DynamicTest> cryptoTransferHBarFungibleNft() {
         final var cryptoTransferTxnForAll = "cryptoTransferTxnForAll";
 
         return propertyPreservingHapiSpec(
@@ -877,7 +878,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cryptoTransferAllowanceToContractHbar() {
+    final Stream<DynamicTest> cryptoTransferAllowanceToContractHbar() {
         final var allowance = 11L;
         final var successfulTransferFromTxn = "txn";
         final var successfulTransferFromTxn2 = "txn2";
@@ -1041,7 +1042,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cryptoTransferAllowanceToContractFT() {
+    final Stream<DynamicTest> cryptoTransferAllowanceToContractFT() {
         final var allowance = 11L;
         final var successfulTransferFromTxn = "txn";
         final var successfulTransferFromTxn2 = "txn2";
@@ -1232,7 +1233,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cryptoTransferAllowanceToContractNFT() {
+    final Stream<DynamicTest> cryptoTransferAllowanceToContractNFT() {
         final var successfulTransferFromTxn = "txn";
         final var revertingTransferFromTxnNft = "revertWhenMoreThanAllowanceNft";
         return propertyPreservingHapiSpec(
@@ -1320,7 +1321,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cryptoTransferAllowanceToContractFromContract() {
+    final Stream<DynamicTest> cryptoTransferAllowanceToContractFromContract() {
         final var successfulTransferFromTxn = "txn";
         final var revertingTransferFromTxnNft = "revertWhenMoreThanAllowanceNft";
         final var simpleStorageContract = "SimpleStorage";
@@ -1383,7 +1384,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest receiverSigRequiredButNotProvided() {
+    final Stream<DynamicTest> receiverSigRequiredButNotProvided() {
         final var failedTransferFromTxn = "failed_txn";
         final long allowance = 20L;
 
@@ -1438,7 +1439,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest cryptoTransferSpecialAccounts() {
+    final Stream<DynamicTest> cryptoTransferSpecialAccounts() {
         final var cryptoTransferTxn = "cryptoTransferTxn";
 
         return propertyPreservingHapiSpec(
@@ -1514,7 +1515,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest blockCryptoTransferForPermittedDelegates() {
+    final Stream<DynamicTest> blockCryptoTransferForPermittedDelegates() {
         final var blockCryptoTransferForPermittedDelegates = "blockCryptoTransferForPermittedDelegates";
         final AtomicLong whitelistedCalleeMirrorNum = new AtomicLong();
         final AtomicReference<String> whitelistedCalleeMirrorAddr = new AtomicReference<>();

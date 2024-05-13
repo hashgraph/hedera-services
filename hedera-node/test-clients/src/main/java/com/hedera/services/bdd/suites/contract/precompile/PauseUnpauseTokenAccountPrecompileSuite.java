@@ -59,13 +59,14 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -113,7 +114,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 noTokenIdReverts(),
                 noAccountKeyReverts(),
@@ -124,7 +125,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest pauseFungibleToken() {
+    final Stream<DynamicTest> pauseFungibleToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("PauseFungibleToken")
                 .given(
@@ -195,7 +196,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest unpauseFungibleToken() {
+    final Stream<DynamicTest> unpauseFungibleToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("unpauseFungibleToken")
                 .given(
@@ -247,7 +248,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest pauseNonFungibleToken() {
+    final Stream<DynamicTest> pauseNonFungibleToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("pauseNonFungibleToken")
                 .given(
@@ -320,7 +321,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest unpauseNonFungibleToken() {
+    final Stream<DynamicTest> unpauseNonFungibleToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("unpauseNonFungibleToken")
                 .given(
@@ -374,7 +375,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest noTokenIdReverts() {
+    final Stream<DynamicTest> noTokenIdReverts() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("noTokenIdReverts")
                 .given(
@@ -418,7 +419,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest noAccountKeyReverts() {
+    final Stream<DynamicTest> noAccountKeyReverts() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec(

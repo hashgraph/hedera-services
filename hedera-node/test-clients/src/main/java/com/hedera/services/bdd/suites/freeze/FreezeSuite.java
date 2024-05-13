@@ -22,12 +22,13 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.suites.utils.ZipUtil.createZip;
 
 import com.hedera.node.app.hapi.utils.CommonUtils;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -53,11 +54,11 @@ public class FreezeSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(uploadNewFile());
     }
 
-    final DynamicTest uploadNewFile() {
+    final Stream<DynamicTest> uploadNewFile() {
         String uploadFile = UPDATE_NEW_FILE;
         if (uploadPath != null) {
             log.info("Creating zip file from {}", uploadPath);

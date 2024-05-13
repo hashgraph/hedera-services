@@ -61,7 +61,6 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -70,6 +69,8 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -111,11 +112,11 @@ public class AssociatePrecompileSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<DynamicTest> negativeSpecs() {
+    List<Stream<DynamicTest>>negativeSpecs() {
         return List.of(
                 functionCallWithLessThanFourBytesFailsWithinSingleContractCall(),
                 nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls(),
@@ -127,13 +128,13 @@ public class AssociatePrecompileSuite extends HapiSuite {
                 associateTokenNegativeScenarios());
     }
 
-    List<DynamicTest> positiveSpecs() {
+    List<Stream<DynamicTest>>positiveSpecs() {
         return List.of(associateWithMissingEvmAddressHasSaneTxnAndRecord());
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     @HapiTest
-    final DynamicTest functionCallWithLessThanFourBytesFailsWithinSingleContractCall() {
+    final Stream<DynamicTest> functionCallWithLessThanFourBytesFailsWithinSingleContractCall() {
         return defaultHapiSpec("functionCallWithLessThanFourBytesFailsWithinSingleContractCall")
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
                 .when(contractCall(
@@ -149,7 +150,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     @HapiTest
-    final DynamicTest invalidAbiCallGracefullyFailsWithinSingleContractCall() {
+    final Stream<DynamicTest> invalidAbiCallGracefullyFailsWithinSingleContractCall() {
         return defaultHapiSpec("invalidAbiCallGracefullyFailsWithinSingleContractCall")
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
                 .when(contractCall(
@@ -167,7 +168,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-26 from HTS Precompile Test Plan -- */
     @HapiTest
-    final DynamicTest nonSupportedAbiCallGracefullyFailsWithinSingleContractCall() {
+    final Stream<DynamicTest> nonSupportedAbiCallGracefullyFailsWithinSingleContractCall() {
         return defaultHapiSpec(
                         "nonSupportedAbiCallGracefullyFailsWithinSingleContractCall", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
@@ -183,7 +184,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-26 from HTS Precompile Test Plan -- */
     @HapiTest
-    final DynamicTest nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls() {
+    final Stream<DynamicTest> nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
@@ -236,7 +237,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     @HapiTest
-    final DynamicTest invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls() {
+    final Stream<DynamicTest> invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var invalidAbiArgument = new byte[20];
@@ -298,7 +299,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest associateWithMissingEvmAddressHasSaneTxnAndRecord() {
+    final Stream<DynamicTest> associateWithMissingEvmAddressHasSaneTxnAndRecord() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         final var missingAddress =
                 Address.wrap(Address.toChecksumAddress("0xabababababababababababababababababababab"));
@@ -328,7 +329,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     @HapiTest
-    final DynamicTest invalidSingleAbiCallConsumesAllProvidedGas() {
+    final Stream<DynamicTest> invalidSingleAbiCallConsumesAllProvidedGas() {
         return defaultHapiSpec("invalidSingleAbiCallConsumesAllProvidedGas", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
                 .when(
@@ -350,7 +351,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest associateTokensNegativeScenarios() {
+    final Stream<DynamicTest> associateTokensNegativeScenarios() {
         final AtomicReference<Address> tokenAddress1 = new AtomicReference<>();
         final AtomicReference<Address> tokenAddress2 = new AtomicReference<>();
         final AtomicReference<Address> accountAddress = new AtomicReference<>();
@@ -467,7 +468,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest associateTokenNegativeScenarios() {
+    final Stream<DynamicTest> associateTokenNegativeScenarios() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         final AtomicReference<Address> accountAddress = new AtomicReference<>();
         final var nonExistingAccount = "nonExistingAccount";

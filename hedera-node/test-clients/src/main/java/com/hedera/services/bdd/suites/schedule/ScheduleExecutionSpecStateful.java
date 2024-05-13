@@ -66,11 +66,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_R
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -92,7 +93,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return withAndWithoutLongTermEnabled(() -> List.of(
                 /* Stateful specs from ScheduleExecutionSpecs */
                 suiteSetup(),
@@ -106,14 +107,14 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
 
     @HapiTest
     @Order(1)
-    final DynamicTest suiteSetup() {
+    final Stream<DynamicTest> suiteSetup() {
         // Managing whitelist for these is error-prone, so just whitelist everything by default.
         return defaultHapiSpec("suiteSetup").given().when().then(addAllToWhitelist());
     }
 
     @HapiTest
     @Order(4)
-    final DynamicTest scheduledBurnWithInvalidTokenThrowsUnresolvableSigners() {
+    final Stream<DynamicTest> scheduledBurnWithInvalidTokenThrowsUnresolvableSigners() {
         return defaultHapiSpec("ScheduledBurnWithInvalidTokenThrowsUnresolvableSigners")
                 .given(cryptoCreate(SCHEDULE_PAYER))
                 .when(scheduleCreate(VALID_SCHEDULE, burnToken("0.0.123231", List.of(1L, 2L)))
@@ -124,7 +125,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
 
     @HapiTest
     @Order(2)
-    final DynamicTest scheduledUniqueMintFailsWithNftsDisabled() {
+    final Stream<DynamicTest> scheduledUniqueMintFailsWithNftsDisabled() {
         return defaultHapiSpec("ScheduledUniqueMintFailsWithNftsDisabled")
                 .given(
                         cryptoCreate(TREASURY),
@@ -156,7 +157,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
 
     @HapiTest
     @Order(3)
-    final DynamicTest scheduledUniqueBurnFailsWithNftsDisabled() {
+    final Stream<DynamicTest> scheduledUniqueBurnFailsWithNftsDisabled() {
         return defaultHapiSpec("ScheduledUniqueBurnFailsWithNftsDisabled")
                 .given(
                         cryptoCreate(TREASURY),
@@ -188,7 +189,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
 
     @HapiTest
     @Order(5)
-    final DynamicTest executionWithTransferListWrongSizedFails() {
+    final Stream<DynamicTest> executionWithTransferListWrongSizedFails() {
         long transferAmount = 1L;
         long senderBalance = 1000L;
         long payingAccountBalance = 1_000_000L;
@@ -236,7 +237,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
 
     @HapiTest
     @Order(6)
-    final DynamicTest executionWithTokenTransferListSizeExceedFails() {
+    final Stream<DynamicTest> executionWithTokenTransferListSizeExceedFails() {
         String xToken = "XXX";
         String invalidSchedule = "withMaxTokenTransfer";
         String schedulePayer = "somebody", xTreasury = "xt", civilianA = "xa", civilianB = "xb";
@@ -273,7 +274,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
 
     @HapiTest
     @Order(7)
-    final DynamicTest suiteCleanup() {
+    final Stream<DynamicTest> suiteCleanup() {
         return defaultHapiSpec("suiteCleanup")
                 .given()
                 .when()

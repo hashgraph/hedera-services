@@ -46,7 +46,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -56,6 +55,8 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -79,7 +80,7 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 simpleFactoryWorks(),
                 stackedFactoryWorks(),
@@ -98,7 +99,7 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest factoryQuickSelfDestructContract() {
+    final Stream<DynamicTest> factoryQuickSelfDestructContract() {
         final var contract = "FactoryQuickSelfDestruct";
         final var sender = "sender";
         return defaultHapiSpec(
@@ -126,7 +127,7 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest inheritanceOfNestedCreatedContracts() {
+    final Stream<DynamicTest> inheritanceOfNestedCreatedContracts() {
         final var contract = "NestedChildren";
         return defaultHapiSpec("InheritanceOfNestedCreatedContracts", FULLY_NONDETERMINISTIC)
                 .given(
@@ -142,7 +143,7 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest simpleFactoryWorks() {
+    final Stream<DynamicTest> simpleFactoryWorks() {
         return defaultHapiSpec("simpleFactoryWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION)
@@ -163,7 +164,7 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest stackedFactoryWorks() {
+    final Stream<DynamicTest> stackedFactoryWorks() {
         return defaultHapiSpec("StackedFactoryWorks", FULLY_NONDETERMINISTIC)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "stackedDeploymentSuccess")
@@ -184,7 +185,7 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest resetOnFactoryFailureWorks() {
+    final Stream<DynamicTest> resetOnFactoryFailureWorks() {
         return defaultHapiSpec("ResetOnFactoryFailureWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(
@@ -216,7 +217,7 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest resetOnFactoryFailureAfterDeploymentWorks() {
+    final Stream<DynamicTest> resetOnFactoryFailureAfterDeploymentWorks() {
         return defaultHapiSpec("ResetOnFactoryFailureAfterDeploymentWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(
@@ -248,7 +249,7 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest resetOnStackedFactoryFailureWorks() {
+    final Stream<DynamicTest> resetOnStackedFactoryFailureWorks() {
         return defaultHapiSpec("ResetOnStackedFactoryFailureWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(
@@ -280,7 +281,7 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest contractCreateWithNewOpInConstructorAbandoningParent() {
+    final Stream<DynamicTest> contractCreateWithNewOpInConstructorAbandoningParent() {
         final var contract = "AbandoningParent";
         return defaultHapiSpec(
                         "contractCreateWithNewOpInConstructorAbandoningParent",
@@ -301,7 +302,7 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest childContractStorageWorks() {
+    final Stream<DynamicTest> childContractStorageWorks() {
         final var contract = "CreateTrivial";
         final var CREATED_TRIVIAL_CONTRACT_RETURNS = 7;
 

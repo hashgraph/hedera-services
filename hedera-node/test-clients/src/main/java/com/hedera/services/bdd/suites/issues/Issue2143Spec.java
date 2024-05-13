@@ -23,10 +23,11 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -40,12 +41,12 @@ public class Issue2143Spec extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of( account55ControlCanUpdatePropertiesAndPermissions(), account57ControlCanUpdatePropertiesAndPermissions());
     }
 
     @HapiTest
-    final DynamicTest account55ControlCanUpdatePropertiesAndPermissions() {
+    final Stream<DynamicTest> account55ControlCanUpdatePropertiesAndPermissions() {
         return defaultHapiSpec("Account55ControlCanUpdatePropertiesAndPermissions")
                 .given(cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000L)))
                 .when(
@@ -65,7 +66,7 @@ public class Issue2143Spec extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest account57ControlCanUpdatePropertiesAndPermissions() {
+    final Stream<DynamicTest> account57ControlCanUpdatePropertiesAndPermissions() {
         return defaultHapiSpec("Account57ControlCanUpdatePropertiesAndPermissions")
                 .given(cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, 1_000_000_000L)))
                 .when(

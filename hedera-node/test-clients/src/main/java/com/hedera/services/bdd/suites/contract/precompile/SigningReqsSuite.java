@@ -34,7 +34,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_P
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.*;
 import com.hedera.services.bdd.spec.assertions.*;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
@@ -42,6 +41,8 @@ import com.hedera.services.bdd.suites.*;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.*;
 import java.util.concurrent.atomic.*;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.*;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
@@ -74,12 +75,12 @@ public class SigningReqsSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(autoRenewAccountCanUseLegacySigActivationIfConfigured());
     }
 
     @HapiTest
-    final DynamicTest autoRenewAccountCanUseLegacySigActivationIfConfigured() {
+    final Stream<DynamicTest> autoRenewAccountCanUseLegacySigActivationIfConfigured() {
         final var autoRenew = AUTO_RENEW;
         final AtomicReference<Address> autoRenewMirrorAddr = new AtomicReference<>();
         final AtomicLong contractId = new AtomicLong();

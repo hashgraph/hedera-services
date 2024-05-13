@@ -37,12 +37,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -62,11 +63,11 @@ public class SchedulesExpiryDuringReconnect extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(runTransfersBeforeReconnect(), suiteSetup(), expireSchedulesDuringReconnect());
     }
 
-    final DynamicTest expireSchedulesDuringReconnect() {
+    final Stream<DynamicTest> expireSchedulesDuringReconnect() {
         String soonToBeExpiredSchedule = "schedule-1";
         String longLastingSchedule = "schedule-2";
         String oneOtherSchedule = "schedule-3";
@@ -170,7 +171,7 @@ public class SchedulesExpiryDuringReconnect extends HapiSuite {
                                 .hasCostAnswerPrecheck(INVALID_SCHEDULE_ID));
     }
 
-    final DynamicTest suiteSetup() {
+    final Stream<DynamicTest> suiteSetup() {
         return defaultHapiSpec("suiteSetup")
                 .given()
                 .when()

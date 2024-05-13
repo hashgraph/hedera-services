@@ -34,7 +34,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
@@ -44,6 +43,8 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -70,13 +71,13 @@ public class SStoreSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(multipleSStoreOpsSucceed(), benchmarkSingleSetter(), childStorage());
     }
 
     // This test is failing with CONSENSUS_GAS_EXHAUSTED prior the refactor.
     @HapiTest
-    final DynamicTest multipleSStoreOpsSucceed() {
+    final Stream<DynamicTest> multipleSStoreOpsSucceed() {
         final var contract = "GrowArray";
         final var GAS_TO_OFFER = 6_000_000L;
         return defaultHapiSpec(
@@ -112,7 +113,7 @@ public class SStoreSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest childStorage() {
+    final Stream<DynamicTest> childStorage() {
         // Successfully exceeds deprecated max contract storage of 1 KB
         final var contract = "ChildStorage";
         return defaultHapiSpec("ChildStorage", HIGHLY_NON_DETERMINISTIC_FEES)
@@ -176,7 +177,7 @@ public class SStoreSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5669")
     @HapiTest
-    final DynamicTest benchmarkSingleSetter() {
+    final Stream<DynamicTest> benchmarkSingleSetter() {
         final var contract = "Benchmark";
         final var GAS_LIMIT = 1_000_000;
         var value = Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000005")

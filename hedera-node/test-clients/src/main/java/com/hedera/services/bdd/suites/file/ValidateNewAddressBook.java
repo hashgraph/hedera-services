@@ -21,11 +21,12 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.suites.file.FetchSystemFiles.unchecked;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -40,11 +41,11 @@ public class ValidateNewAddressBook extends HapiSuite {
     final String TARGET_DIR = "./remote-system-files";
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(fetchFiles());
     }
 
-    final DynamicTest fetchFiles() {
+    final Stream<DynamicTest> fetchFiles() {
         return defaultHapiSpec("ValidateNewAddressBook")
                 .given()
                 .when()

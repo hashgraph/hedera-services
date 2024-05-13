@@ -60,12 +60,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_RED
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -79,7 +80,7 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
             noGracePeriodRestrictionsIfNoAutoRenewSuiteSetup(),
             payerRestrictionsNotEnforced(),
@@ -94,7 +95,7 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
             noGracePeriodRestrictionsIfNoAutoRenewSuiteCleanup());
     }
 
-    final DynamicTest contractCallRestrictionsNotEnforced() {
+    final Stream<DynamicTest> contractCallRestrictionsNotEnforced() {
         final var civilian = "misc";
         final var notDetachedAccount = "gone";
         final var contract = "DoubleSend";
@@ -125,7 +126,7 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                         getAccountBalance(notDetachedAccount).hasTinyBars(1L));
     }
 
-    final DynamicTest cryptoUpdateRestrictionsNotEnforced() {
+    final Stream<DynamicTest> cryptoUpdateRestrictionsNotEnforced() {
         final var notDetachedAccount = "gone";
         final long certainlyPast = Instant.now().getEpochSecond() - THREE_MONTHS_IN_SECONDS;
         final long certainlyDistant = Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -158,7 +159,7 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                                 .hasKnownStatus(EXPIRATION_REDUCTION_NOT_ALLOWED));
     }
 
-    final DynamicTest payerRestrictionsNotEnforced() {
+    final Stream<DynamicTest> payerRestrictionsNotEnforced() {
         final var notDetachedAccount = "gone";
 
         return defaultHapiSpec("PayerRestrictionsEnforced")
@@ -187,7 +188,7 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                                 .hasPriority(recordWith().status(INSUFFICIENT_PAYER_BALANCE)));
     }
 
-    final DynamicTest topicAutoRenewOpsNotEnforced() {
+    final Stream<DynamicTest> topicAutoRenewOpsNotEnforced() {
         final var topicWithDetachedAsAutoRenew = "c";
         final var topicSansDetachedAsAutoRenew = "d";
         final var notDetachedAccount = "gone";
@@ -214,7 +215,7 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                         getTopicInfo(topicWithDetachedAsAutoRenew).hasAutoRenewAccount(civilian));
     }
 
-    final DynamicTest tokenAutoRenewOpsNotEnforced() {
+    final Stream<DynamicTest> tokenAutoRenewOpsNotEnforced() {
         final var tokenWithDetachedAsAutoRenew = "c";
         final var tokenSansDetachedAsAutoRenew = "d";
         final var notDetachedAccount = "gone";
@@ -245,7 +246,7 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                         getTokenInfo(tokenWithDetachedAsAutoRenew).hasAutoRenewAccount(civilian));
     }
 
-    final DynamicTest treasuryOpsRestrictionNotEnforced() {
+    final Stream<DynamicTest> treasuryOpsRestrictionNotEnforced() {
         final var aToken = "c";
         final var notDetachedAccount = "gone";
         final var tokenMultiKey = "tak";
@@ -271,7 +272,7 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                         getAccountBalance(notDetachedAccount).hasTokenBalance(aToken, 0L));
     }
 
-    final DynamicTest tokenMgmtRestrictionsNotEnforced() {
+    final Stream<DynamicTest> tokenMgmtRestrictionsNotEnforced() {
         final var onTheFly = "a";
         final var tokenNotYetAssociated = "b";
         final var tokenAlreadyAssociated = "c";
@@ -305,7 +306,7 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                                 .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
     }
 
-    final DynamicTest cryptoDeleteRestrictionsNotEnforced() {
+    final Stream<DynamicTest> cryptoDeleteRestrictionsNotEnforced() {
         final var notDetachedAccount = "gone";
         final var civilian = "misc";
 
@@ -319,7 +320,7 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                         cryptoDelete(civilian).transfer(notDetachedAccount).hasKnownStatus(ACCOUNT_DELETED));
     }
 
-    final DynamicTest cryptoTransferRestrictionsNotEnforced() {
+    final Stream<DynamicTest> cryptoTransferRestrictionsNotEnforced() {
         final var aToken = "c";
         final var notDetachedAccount = "gone";
         final var civilian = "misc";
@@ -336,14 +337,14 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                         cryptoTransfer(moving(1, aToken).between(notDetachedAccount, civilian)));
     }
 
-    final DynamicTest noGracePeriodRestrictionsIfNoAutoRenewSuiteSetup() {
+    final Stream<DynamicTest> noGracePeriodRestrictionsIfNoAutoRenewSuiteSetup() {
         return defaultHapiSpec("NoGracePeriodRestrictionsIfNoAutoRenewSuiteSetup")
                 .given()
                 .when()
                 .then(fileUpdate(APP_PROPERTIES).payingWith(GENESIS).overridingProps(leavingAutoRenewDisabledWith(1)));
     }
 
-    final DynamicTest noGracePeriodRestrictionsIfNoAutoRenewSuiteCleanup() {
+    final Stream<DynamicTest> noGracePeriodRestrictionsIfNoAutoRenewSuiteCleanup() {
         return defaultHapiSpec("NoGracePeriodRestrictionsIfNoAutoRenewSuiteCleanup")
                 .given()
                 .when()

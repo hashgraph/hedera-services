@@ -35,6 +35,8 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -56,11 +58,11 @@ public class QueryPaymentSuite extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(queryPaymentTests());
     }
 
-    private List<DynamicTest> queryPaymentTests() {
+    private List<Stream<DynamicTest>>queryPaymentTests() {
         return List.of(
             queryPaymentsFailsWithInsufficientFunds(),
             queryPaymentsSingleBeneficiaryChecked(),
@@ -74,7 +76,7 @@ public class QueryPaymentSuite extends HapiSuite {
      * 3. Transaction payer is not involved in transfers for query payment to node and one or more have less balance
      */
     @HapiTest
-    final DynamicTest queryPaymentsFailsWithInsufficientFunds() {
+    final Stream<DynamicTest> queryPaymentsFailsWithInsufficientFunds() {
         return defaultHapiSpec("queryPaymentsFailsWithInsufficientFunds")
                 .given(
                         cryptoCreate("a").balance(500_000_000L),
@@ -110,7 +112,7 @@ public class QueryPaymentSuite extends HapiSuite {
      * 3. Transaction payer is not involved in transfers for query payment to node and all payers have enough balance
      */
     @HapiTest
-    final DynamicTest queryPaymentsMultiBeneficiarySucceeds() {
+    final Stream<DynamicTest> queryPaymentsMultiBeneficiarySucceeds() {
         return defaultHapiSpec("queryPaymentsMultiBeneficiarySucceeds")
                 .given(
                         cryptoCreate("a").balance(1_234L),
@@ -140,7 +142,7 @@ public class QueryPaymentSuite extends HapiSuite {
 
     // Check if multiple payers or single payer pay amount to node
     @HapiTest
-    final DynamicTest queryPaymentsSingleBeneficiaryChecked() {
+    final Stream<DynamicTest> queryPaymentsSingleBeneficiaryChecked() {
         return defaultHapiSpec("queryPaymentsSingleBeneficiaryChecked")
                 .given(
                         cryptoCreate("a").balance(500_000_000L),
@@ -162,7 +164,7 @@ public class QueryPaymentSuite extends HapiSuite {
 
     // Check if payment is not done to node
     @HapiTest
-    final DynamicTest queryPaymentsNotToNodeFails() {
+    final Stream<DynamicTest> queryPaymentsNotToNodeFails() {
         return defaultHapiSpec("queryPaymentsNotToNodeFails")
                 .given(
                         cryptoCreate("a").balance(500_000_000L),

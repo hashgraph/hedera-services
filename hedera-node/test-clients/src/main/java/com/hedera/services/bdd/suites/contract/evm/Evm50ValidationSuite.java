@@ -30,9 +30,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -60,7 +61,7 @@ public class Evm50ValidationSuite extends HapiSuite {
         return false;
     }
 
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 verifiesNonExistenceForTransientStorageOpcodesV46(),
                 verifiesNonExistenceForMCOPYOpcodeV46(),
@@ -72,7 +73,7 @@ public class Evm50ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest verifiesNonExistenceForTransientStorageOpcodesV46() {
+    final Stream<DynamicTest> verifiesNonExistenceForTransientStorageOpcodesV46() {
         final var contract = Module05OpcodesExist_CONTRACT;
 
         return propertyPreservingHapiSpec(
@@ -94,7 +95,7 @@ public class Evm50ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest verifiesNonExistenceForMCOPYOpcodeV46() {
+    final Stream<DynamicTest> verifiesNonExistenceForMCOPYOpcodeV46() {
         final var contract = Module05OpcodesExist_CONTRACT;
 
         return propertyPreservingHapiSpec("verifiesNonExistenceForMCOPYOpcodeV46", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -115,7 +116,7 @@ public class Evm50ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest verifiesNonExistenceForKZGPrecompileV46() {
+    final Stream<DynamicTest> verifiesNonExistenceForKZGPrecompileV46() {
         final var contract = Module05OpcodesExist_CONTRACT;
 
         return propertyPreservingHapiSpec("verifiesNonExistenceForKZGPrecompileV46")
@@ -136,7 +137,7 @@ public class Evm50ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest verifiesExistenceForTransientStorageOpcodesV050() {
+    final Stream<DynamicTest> verifiesExistenceForTransientStorageOpcodesV050() {
         final var contract = Module05OpcodesExist_CONTRACT;
 
         return propertyPreservingHapiSpec("verifiesExistenceForTransientStorageOpcodesV050")
@@ -157,7 +158,7 @@ public class Evm50ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest verifiesExistenceForMCOPYOpcodeV050() {
+    final Stream<DynamicTest> verifiesExistenceForMCOPYOpcodeV050() {
         final var contract = Module05OpcodesExist_CONTRACT;
 
         return propertyPreservingHapiSpec("verifiesExistenceForMCOPYOpcodeV050")
@@ -178,7 +179,7 @@ public class Evm50ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest verifiesExistenceForKZGPrecompileV050() {
+    final Stream<DynamicTest> verifiesExistenceForKZGPrecompileV050() {
         final var contract = Module05OpcodesExist_CONTRACT;
 
         return propertyPreservingHapiSpec("verifiesExistenceForKZGPrecompileV050")
@@ -199,7 +200,7 @@ public class Evm50ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final DynamicTest successTestForKZGPrecompileV050() {
+    final Stream<DynamicTest> successTestForKZGPrecompileV050() {
         final var contract = Module05OpcodesExist_CONTRACT;
 
         return propertyPreservingHapiSpec("successTestForKZGPrecompileV050")

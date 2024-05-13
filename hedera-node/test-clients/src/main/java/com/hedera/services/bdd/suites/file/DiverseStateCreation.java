@@ -34,7 +34,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.swirlds.common.utility.CommonUtils;
@@ -46,6 +45,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -99,7 +100,7 @@ public final class DiverseStateCreation extends HapiSuite {
     }
 
     @Override
-    public List<DynamicTest> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         try {
             SMALL_CONTENTS = Files.newInputStream(Paths.get(SMALL_CONTENTS_LOC)).readAllBytes();
             MEDIUM_CONTENTS =
@@ -112,7 +113,7 @@ public final class DiverseStateCreation extends HapiSuite {
         return List.of(createDiverseState());
     }
 
-    final DynamicTest createDiverseState() {
+    final Stream<DynamicTest> createDiverseState() {
         final KeyShape SMALL_SHAPE = listOf(threshOf(1, 3));
         final KeyShape MEDIUM_SHAPE = listOf(SIMPLE, threshOf(2, 3));
         final KeyShape LARGE_SHAPE = listOf(
