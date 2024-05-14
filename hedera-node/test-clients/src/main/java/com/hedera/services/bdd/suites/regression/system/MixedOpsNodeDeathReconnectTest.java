@@ -22,8 +22,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutDownNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
@@ -32,7 +31,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToBeBehi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToBecomeActive;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToFinishReconnect;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToShutDown;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablement;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.ADMIN_KEY;
@@ -123,11 +121,11 @@ public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
                         sleepFor(180_000L).logged())
                 .when(
                         // Submit operations when node 2 is down
-                        withOpContext((spec, log) -> allRunFor(spec, mixedOpsBurst.get())),
+                        blockingOrder(mixedOpsBurst.get()),
                         sleepFor(10000),
-                        inParallel(IntStream.range(0, NUM_SUBMISSIONS)
-                                .mapToObj(ignore -> mintToken(
-                                                NFT + nftId.getAndDecrement(),
+                        blockingOrder(IntStream.range(0, NUM_SUBMISSIONS)
+                                .mapToObj(i -> mintToken(
+                                                NFT + i,
                                                 List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b")))
                                         .logging())
                                 .toArray(HapiSpecOperation[]::new)),
@@ -148,6 +146,6 @@ public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
                         createTopic(TOPIC).submitKeyName(SUBMIT_KEY).payingWith(PAYER),
                         fileCreate(SOME_BYTE_CODE)
                                 .path(HapiSpecSetup.getDefaultInstance().defaultContractPath()),
-                        withOpContext((spec, log) -> allRunFor(spec, mixedOpsBurst.get())));
+                        blockingOrder(mixedOpsBurst.get()));
     }
 }
