@@ -67,6 +67,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
     private Optional<String> contractInfoPath = Optional.empty();
     private Optional<String> validateDirPath = Optional.empty();
     private Optional<String> registryEntry = Optional.empty();
+    private Optional<String> saveEVMAddressToRegistry = Optional.empty();
     private List<String> absentRelationships = new ArrayList<>();
     private List<ExpectedTokenRel> relationships = new ArrayList<>();
     private Optional<ContractInfoAsserts> expectations = Optional.empty();
@@ -101,6 +102,11 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
 
     public HapiGetContractInfo saveToRegistry(String registryEntry) {
         this.registryEntry = Optional.of(registryEntry);
+        return this;
+    }
+
+    public HapiGetContractInfo saveEVMAddressToRegistry(String registryEntry) {
+        this.saveEVMAddressToRegistry = Optional.of(registryEntry);
         return this;
     }
 
@@ -173,6 +179,18 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
         }
         if (registryEntry.isPresent()) {
             spec.registry().saveContractInfo(registryEntry.get(), actualInfo);
+        }
+    }
+
+    @Override
+    protected void updateStateOf(HapiSpec spec) throws Throwable {
+        ContractInfo actualInfo = response.getContractGetInfo().getContractInfo();
+
+        if (saveEVMAddressToRegistry.isPresent()) {
+            spec.registry()
+                    .saveEVMAddress(
+                            String.valueOf(actualInfo.getContractID().getContractNum()),
+                            actualInfo.getContractAccountID());
         }
     }
 

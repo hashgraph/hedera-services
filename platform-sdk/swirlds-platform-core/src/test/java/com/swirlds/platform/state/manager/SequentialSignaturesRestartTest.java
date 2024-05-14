@@ -34,7 +34,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
@@ -50,9 +50,9 @@ public class SequentialSignaturesRestartTest extends AbstractStateSignatureColle
 
     private final int roundAgeToSign = 3;
 
-    private final AddressBook addressBook = new RandomAddressBookGenerator(random)
-            .setSize(4)
-            .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
+    private final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+            .withSize(4)
+            .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
             .build();
 
     private final long firstRound = 50;

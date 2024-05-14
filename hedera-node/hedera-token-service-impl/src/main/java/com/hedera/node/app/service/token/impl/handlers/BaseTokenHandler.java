@@ -429,6 +429,11 @@ public class BaseTokenHandler {
         return !op.symbol().isEmpty() || !op.name().isEmpty() || op.hasAutoRenewPeriod() || op.hasMemo();
     }
 
+    /**
+     * Returns a new {@link TokenID} with the given number.
+     * @param num the token number
+     * @return the new token ID
+     */
     @NonNull
     public static TokenID asToken(final long num) {
         return TokenID.newBuilder().tokenNum(num).build();

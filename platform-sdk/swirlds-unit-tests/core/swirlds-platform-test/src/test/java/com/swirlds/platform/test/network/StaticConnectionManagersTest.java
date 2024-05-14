@@ -30,7 +30,7 @@ import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.topology.StaticConnectionManagers;
 import com.swirlds.platform.network.topology.StaticTopology;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,7 +55,7 @@ class StaticConnectionManagersTest {
     void testShouldConnectToMe(final int numNodes, final int numNeighbors) throws Exception {
         final Random r = RandomUtils.getRandomPrintSeed();
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(r).setSize(numNodes).build();
+                RandomAddressBookBuilder.create(r).withSize(numNodes).build();
         final NodeId selfId = addressBook.getNodeId(r.nextInt(numNodes));
         final StaticTopology topology = new StaticTopology(r, addressBook, selfId, numNeighbors);
         final StaticConnectionManagers managers = new StaticConnectionManagers(topology, connectionCreator);
@@ -88,7 +88,7 @@ class StaticConnectionManagersTest {
     void testShouldConnectTo(final int numNodes, final int numNeighbors) throws Exception {
         final Random r = RandomUtils.getRandomPrintSeed();
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(r).setSize(numNodes).build();
+                RandomAddressBookBuilder.create(r).withSize(numNodes).build();
         final NodeId selfId = addressBook.getNodeId(r.nextInt(numNodes));
         final StaticTopology topology = new StaticTopology(r, addressBook, selfId, numNeighbors);
         final StaticConnectionManagers managers = new StaticConnectionManagers(topology, connectionCreator);

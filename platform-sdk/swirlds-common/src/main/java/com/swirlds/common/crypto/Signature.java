@@ -86,6 +86,14 @@ public class Signature implements SelfSerializable {
     public @NonNull Bytes getBytes() {
         return Bytes.wrap(signatureBytes);
     }
+    
+    /**
+     * Get the type of this signature.
+     */
+    @NonNull
+    public SignatureType getType() {
+        return signatureType;
+    }
 
     /**
      * {@inheritDoc}

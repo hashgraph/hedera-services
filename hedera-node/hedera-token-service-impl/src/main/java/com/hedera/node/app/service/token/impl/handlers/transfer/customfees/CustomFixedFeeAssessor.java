@@ -35,6 +35,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CustomFixedFeeAssessor {
+    /**
+     * Constructs a {@link CustomFixedFeeAssessor} instance.
+     */
     @Inject
     public CustomFixedFeeAssessor() {
         // For Dagger injection

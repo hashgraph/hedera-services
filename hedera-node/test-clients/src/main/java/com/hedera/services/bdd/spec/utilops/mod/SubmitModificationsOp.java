@@ -54,7 +54,14 @@ public class SubmitModificationsOp extends UtilOp {
     public SubmitModificationsOp(
             @NonNull final Supplier<HapiTxnOp<?>> txnOpSupplier,
             @NonNull final Function<Transaction, List<TxnModification>> modificationsFn) {
-        this.useCivilianPayer = true;
+        this(true, txnOpSupplier, modificationsFn);
+    }
+
+    public SubmitModificationsOp(
+            final boolean useCivilianPayer,
+            @NonNull final Supplier<HapiTxnOp<?>> txnOpSupplier,
+            @NonNull final Function<Transaction, List<TxnModification>> modificationsFn) {
+        this.useCivilianPayer = useCivilianPayer;
         this.txnOpSupplier = txnOpSupplier;
         this.modificationsFn = modificationsFn;
     }

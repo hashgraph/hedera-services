@@ -50,6 +50,10 @@ import javax.inject.Singleton;
 public class CustomFractionalFeeAssessor {
     private final CustomFixedFeeAssessor fixedFeeAssessor;
 
+    /**
+     * Constructs a {@link CustomFractionalFeeAssessor} instance.
+     * @param fixedFeeAssessor the fixed fee assessor
+     */
     @Inject
     public CustomFractionalFeeAssessor(CustomFixedFeeAssessor fixedFeeAssessor) {
         this.fixedFeeAssessor = fixedFeeAssessor;

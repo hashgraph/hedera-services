@@ -22,8 +22,6 @@ import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
-import com.swirlds.platform.listeners.StateLoadedFromDiskCompleteListener;
-import com.swirlds.platform.listeners.StateLoadedFromDiskNotification;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
 import com.swirlds.platform.system.state.notifications.IssListener;
@@ -42,14 +40,6 @@ public record DefaultAppNotifier(@NonNull NotificationEngine notificationEngine)
     @Override
     public void sendStateWrittenToDiskNotification(@NonNull final StateWriteToDiskCompleteNotification notification) {
         notificationEngine.dispatch(StateWriteToDiskCompleteListener.class, notification);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void sendStateLoadedFromDiskNotification(@NonNull final StateLoadedFromDiskNotification notification) {
-        notificationEngine.dispatch(StateLoadedFromDiskCompleteListener.class, notification);
     }
 
     /**
