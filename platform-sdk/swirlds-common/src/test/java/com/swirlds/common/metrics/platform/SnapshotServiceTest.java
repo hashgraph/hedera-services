@@ -37,6 +37,8 @@ import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.metrics.impl.AbstractMetric;
+import com.swirlds.metrics.impl.Snapshot;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -59,19 +61,19 @@ class SnapshotServiceTest {
     private static final NodeId NODE_ID_2 = new NodeId(2L);
 
     @Mock
-    private DefaultMetric globalMetric;
+    private AbstractMetric globalMetric;
 
     @Mock
     private DefaultPlatformMetrics globalMetrics;
 
     @Mock(strictness = LENIENT)
-    private DefaultMetric platform1Metric;
+    private AbstractMetric platform1Metric;
 
     @Mock(strictness = LENIENT)
     private DefaultPlatformMetrics platform1Metrics;
 
     @Mock(strictness = LENIENT)
-    private DefaultMetric platform2Metric;
+    private AbstractMetric platform2Metric;
 
     @Mock(strictness = LENIENT)
     private DefaultPlatformMetrics platform2Metrics;

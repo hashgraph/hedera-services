@@ -33,11 +33,12 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.metrics.StatEntry;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.IntegerGauge;
 import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.impl.DefaultIntegerGauge;
+import com.swirlds.metrics.impl.Snapshot.SnapshotEntry;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
