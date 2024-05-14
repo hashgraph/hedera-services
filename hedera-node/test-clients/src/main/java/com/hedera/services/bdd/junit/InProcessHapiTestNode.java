@@ -21,7 +21,6 @@ import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTIN
 import static com.swirlds.platform.system.status.PlatformStatus.BEHIND;
 import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
 import static com.swirlds.platform.system.status.PlatformStatus.RECONNECT_COMPLETE;
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -45,7 +44,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
@@ -177,86 +175,6 @@ public class InProcessHapiTestNode implements HapiTestNode {
         // We timed out.
         throw new TimeoutException(
                 "node " + nodeId + ": Waited " + seconds + " seconds, but node did not become active!");
-    }
-
-    public void blockNetworkPort() {
-        if (th != null && th.hedera.isActive()) {
-            final String[] cmd = new String[] {
-                "sudo",
-                "-n",
-                "iptables",
-                "-A",
-                "INPUT",
-                "-p",
-                "tcp",
-                "--dport",
-                format("%d:%d", START_PORT, STOP_PORT),
-                "-j",
-                "DROP;",
-                "sudo",
-                "-n",
-                "iptables",
-                "-A",
-                "OUTPUT",
-                "-p",
-                "tcp",
-                "--sport",
-                format("%d:%d", START_PORT, STOP_PORT),
-                "-j",
-                "DROP;"
-            };
-            try {
-                final Process process = Runtime.getRuntime().exec(cmd);
-                logger.info("Blocking Network port {} for node {}", grpcPort, nodeId);
-                process.waitFor(75, TimeUnit.SECONDS);
-            } catch (IOException | InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-
-            try {
-                MILLISECONDS.sleep(10);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException(
-                        "node " + nodeId + ": Interrupted while sleeping in waitForActive busy loop", e);
-            }
-        }
-    }
-
-    public void unblockNetworkPort() {
-        if (th != null && th.hedera.isActive()) {
-            final String[] cmd = new String[] {
-                "sudo",
-                "-n",
-                "iptables",
-                "-D",
-                "INPUT",
-                "-p",
-                "tcp",
-                "--dport",
-                format("%d:%d", START_PORT, STOP_PORT),
-                "-j",
-                "DROP;",
-                "sudo",
-                "-n",
-                "iptables",
-                "-D",
-                "OUTPUT",
-                "-p",
-                "tcp",
-                "--sport",
-                format("%d:%d", START_PORT, STOP_PORT),
-                "-j",
-                "DROP;"
-            };
-            try {
-                final Process process = Runtime.getRuntime().exec(cmd);
-                logger.info("Unblocking Network port {} for node {}", grpcPort, nodeId);
-                process.waitFor(75, TimeUnit.SECONDS);
-            } catch (IOException | InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
     }
 
     @Override
