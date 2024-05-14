@@ -53,7 +53,6 @@ module com.hedera.node.test.clients {
     requires transitive org.yaml.snakeyaml;
     requires transitive tuweni.bytes;
     requires com.hedera.node.app.service.contract.impl;
-    requires com.hedera.node.app.service.evm;
     requires com.hedera.node.app.service.mono;
     requires com.hedera.node.app.service.token.impl;
     requires com.hedera.node.app.service.token;
@@ -62,6 +61,7 @@ module com.hedera.node.test.clients {
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
     requires com.github.docker.java.api;
+    requires com.hedera.evm;
     requires com.hedera.pbj.runtime;
     requires com.swirlds.base;
     requires com.swirlds.config.api;
@@ -79,7 +79,6 @@ module com.hedera.node.test.clients {
     requires org.bouncycastle.provider;
     requires org.connid.framework;
     requires org.hyperledger.besu.datatypes;
-    requires org.hyperledger.besu.evm;
     requires org.hyperledger.besu.internal.crypto;
     requires org.json;
     requires org.opentest4j;

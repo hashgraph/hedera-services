@@ -19,7 +19,7 @@ package com.swirlds.platform.event.creation.rules;
 import static com.swirlds.platform.event.creation.EventCreationStatus.PLATFORM_STATUS;
 
 import com.swirlds.platform.event.creation.EventCreationStatus;
-import com.swirlds.platform.eventhandling.TransactionPool;
+import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -31,20 +31,20 @@ import java.util.function.Supplier;
 public class PlatformStatusRule implements EventCreationRule {
 
     private final Supplier<PlatformStatus> platformStatusSupplier;
-    private final TransactionPool transactionPool;
+    private final TransactionPoolNexus transactionPoolNexus;
 
     /**
      * Constructor.
      *
-     * @param platformStatusSupplier    provides the current platform status
-     * @param transactionPool           provides transactions to be added to new events
+     * @param platformStatusSupplier provides the current platform status
+     * @param transactionPoolNexus   provides transactions to be added to new events
      */
     public PlatformStatusRule(
             @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
-            @NonNull final TransactionPool transactionPool) {
+            @NonNull final TransactionPoolNexus transactionPoolNexus) {
 
         this.platformStatusSupplier = Objects.requireNonNull(platformStatusSupplier);
-        this.transactionPool = Objects.requireNonNull(transactionPool);
+        this.transactionPoolNexus = Objects.requireNonNull(transactionPoolNexus);
     }
 
     /**
@@ -55,7 +55,7 @@ public class PlatformStatusRule implements EventCreationRule {
         final PlatformStatus currentStatus = platformStatusSupplier.get();
 
         if (currentStatus == PlatformStatus.FREEZING) {
-            return transactionPool.hasBufferedSignatureTransactions();
+            return transactionPoolNexus.hasBufferedSignatureTransactions();
         }
 
         if (currentStatus != PlatformStatus.ACTIVE && currentStatus != PlatformStatus.CHECKING) {

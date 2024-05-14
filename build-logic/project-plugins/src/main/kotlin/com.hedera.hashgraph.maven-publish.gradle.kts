@@ -27,6 +27,11 @@ java {
 
 tasks.withType<Jar>().configureEach { setGroup(null) }
 
+tasks.named("releaseMavenCentral") {
+    group = "release"
+    dependsOn(tasks.named("publishToSonatype"))
+}
+
 val maven =
     publishing.publications.create<MavenPublication>("maven") {
         from(components["java"])

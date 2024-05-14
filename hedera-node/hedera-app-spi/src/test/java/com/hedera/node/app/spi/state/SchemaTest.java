@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
+import com.swirlds.platform.test.fixtures.state.StateTestBase;
 import java.util.ArrayList;
 import java.util.Collections;
 import org.junit.jupiter.api.Disabled;
