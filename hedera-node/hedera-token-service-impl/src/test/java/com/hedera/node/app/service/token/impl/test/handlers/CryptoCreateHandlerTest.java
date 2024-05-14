@@ -31,10 +31,14 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
+import static com.hedera.hapi.node.base.SubType.DEFAULT;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ACCOUNTS;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ALIASES;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -63,6 +67,7 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -73,7 +78,9 @@ import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.fixtures.fees.FakeFeeCalculator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
@@ -94,7 +101,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
@@ -105,11 +111,14 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @Mock(strictness = LENIENT)
     private HandleContext handleContext;
 
-    @Mock(strictness = Strictness.LENIENT)
+    @Mock(strictness = LENIENT)
     private LongSupplier consensusSecondNow;
 
     @Mock(strictness = LENIENT)
     private GlobalDynamicProperties dynamicProperties;
+
+    @Mock(strictness = LENIENT)
+    private FeeContext feeContext;
 
     @Mock
     private PropertySource compositeProps;
@@ -128,6 +137,9 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     @Mock
     private FeeCalculator feeCalculator;
+
+    @Mock
+    private FeeManager feeManager;
 
     @Mock
     private FeeAccumulator feeAccumulator;
@@ -174,6 +186,21 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         stakingValidator = new StakingValidator();
         given(handleContext.networkInfo()).willReturn(networkInfo);
         subject = new CryptoCreateHandler(cryptoCreateValidator, stakingValidator);
+    }
+
+    @Test
+    @DisplayName("test CalculateFees When Free")
+    void testCalculateFeesWhenFree() {
+        var transactionBody = new CryptoCreateBuilder()
+                .withStakedAccountId(3)
+                .withMemo("blank")
+                .withKey(A_COMPLEX_KEY)
+                .build();
+        feeCalculator = new FakeFeeCalculator();
+        given(feeContext.body()).willReturn(transactionBody);
+        given(feeContext.feeCalculator(DEFAULT)).willReturn(feeCalculator);
+        final var result = subject.calculateFees(feeContext);
+        assertThat(result).isEqualTo(Fees.FREE);
     }
 
     @Test
@@ -254,6 +281,39 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(txn, context.body());
         basicMetaAssertions(context, 1);
         assertEquals(key, context.payerKey());
+    }
+
+    @Test
+    @DisplayName("preHandle succeeds when has non zero evm alias")
+    void preHandleWorksWhenHasEvmAlias() throws PreCheckException {
+        final byte[] evmAddress = CommonUtils.unhex("6aeb3773ea468a814d954e6dec795bfee7d76e26");
+        txn = new CryptoCreateBuilder()
+                .withAlias(Bytes.wrap(evmAddress))
+                .withStakedAccountId(3)
+                .build();
+        final var context = new FakePreHandleContext(readableStore, txn);
+        subject.pureChecks(txn);
+        subject.preHandle(context);
+
+        assertEquals(txn, context.body());
+        basicMetaAssertions(context, 1);
+        assertEquals(key, context.payerKey());
+    }
+
+    @Test
+    @DisplayName("preHandle fails when invalid alias key")
+    void preHandleWorksWhenHasAlias() throws PreCheckException {
+        final Bytes SENDER_ALIAS =
+                Bytes.fromHex("3a21030edcc130e13fb5102e7c883535af8c2b0a5a617231f77fd127ce5f3b9a620591");
+        txn = new CryptoCreateBuilder()
+                .withAlias(SENDER_ALIAS)
+                .withStakedAccountId(3)
+                .build();
+        final var context = new FakePreHandleContext(readableStore, txn);
+        subject.pureChecks(txn);
+        assertThatThrownBy(() -> subject.preHandle(context))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_ALIAS_KEY));
     }
 
     @Test
