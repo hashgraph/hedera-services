@@ -30,7 +30,7 @@ import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
@@ -125,7 +125,7 @@ class SyncFilteringTest {
         final Random random = getRandomPrintSeed();
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(32).build();
+                RandomAddressBookBuilder.create(random).withSize(32).build();
         final NodeId selfId = addressBook.getNodeId(0);
 
         final Instant startingTime = Instant.ofEpochMilli(random.nextInt());

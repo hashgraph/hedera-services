@@ -19,12 +19,13 @@ package com.hedera.node.app.service.networkadmin.impl;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.networkadmin.NetworkService;
 import com.hedera.node.app.service.networkadmin.impl.schemas.InitialModServiceNetworkSchema;
+import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Standard implementation of the {@link NetworkService} {@link com.hedera.node.app.spi.Service}.
+ * Standard implementation of the {@link NetworkService} {@link Service}.
  */
 public final class NetworkServiceImpl implements NetworkService {
 
