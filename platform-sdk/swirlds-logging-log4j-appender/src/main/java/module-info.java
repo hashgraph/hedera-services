@@ -13,7 +13,6 @@ module com.swirlds.logging.log4j.appender {
 
     provides Provider with
             BaseLoggingProvider;
-
     provides LogProviderFactory with
             Log4JProviderFactory;
 

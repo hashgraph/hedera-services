@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.logging.log4j.factory;
 
 import com.swirlds.logging.api.extensions.event.LogEvent;
@@ -47,7 +63,10 @@ public class BaseLogger extends AbstractLogger {
      * @param logEventConsumer the log event consumer
      * @param logEventFactory the log event factory
      */
-    public BaseLogger(@Nullable final String name, @NonNull final LogEventConsumer logEventConsumer, @NonNull final LogEventFactory logEventFactory) {
+    public BaseLogger(
+            @Nullable final String name,
+            @NonNull final LogEventConsumer logEventConsumer,
+            @NonNull final LogEventFactory logEventFactory) {
         super(name);
         this.logEventConsumer = Objects.requireNonNull(logEventConsumer, "logEventConsumer is required");
         this.logEventFactory = Objects.requireNonNull(logEventFactory, "logEventFactory is required");
@@ -130,8 +149,8 @@ public class BaseLogger extends AbstractLogger {
      * {@inheritDoc}
      */
     @Override
-    public boolean isEnabled(final Level level, final Marker marker, final String message, final Object p0,
-            final Object p1) {
+    public boolean isEnabled(
+            final Level level, final Marker marker, final String message, final Object p0, final Object p1) {
         return isEnabledFor(level, marker);
     }
 
@@ -139,8 +158,13 @@ public class BaseLogger extends AbstractLogger {
      * {@inheritDoc}
      */
     @Override
-    public boolean isEnabled(final Level level, final Marker marker, final String message, final Object p0,
-            final Object p1, final Object p2) {
+    public boolean isEnabled(
+            final Level level,
+            final Marker marker,
+            final String message,
+            final Object p0,
+            final Object p1,
+            final Object p2) {
         return isEnabledFor(level, marker);
     }
 
@@ -148,8 +172,14 @@ public class BaseLogger extends AbstractLogger {
      * {@inheritDoc}
      */
     @Override
-    public boolean isEnabled(final Level level, final Marker marker, final String message, final Object p0,
-            final Object p1, final Object p2, final Object p3) {
+    public boolean isEnabled(
+            final Level level,
+            final Marker marker,
+            final String message,
+            final Object p0,
+            final Object p1,
+            final Object p2,
+            final Object p3) {
         return isEnabledFor(level, marker);
     }
 
@@ -157,8 +187,14 @@ public class BaseLogger extends AbstractLogger {
      * {@inheritDoc}
      */
     @Override
-    public boolean isEnabled(final Level level, final Marker marker, final String message, final Object p0,
-            final Object p1, final Object p2, final Object p3,
+    public boolean isEnabled(
+            final Level level,
+            final Marker marker,
+            final String message,
+            final Object p0,
+            final Object p1,
+            final Object p2,
+            final Object p3,
             final Object p4) {
         return isEnabledFor(level, marker);
     }
@@ -167,9 +203,16 @@ public class BaseLogger extends AbstractLogger {
      * {@inheritDoc}
      */
     @Override
-    public boolean isEnabled(final Level level, final Marker marker, final String message, final Object p0,
-            final Object p1, final Object p2, final Object p3,
-            final Object p4, final Object p5) {
+    public boolean isEnabled(
+            final Level level,
+            final Marker marker,
+            final String message,
+            final Object p0,
+            final Object p1,
+            final Object p2,
+            final Object p3,
+            final Object p4,
+            final Object p5) {
         return isEnabledFor(level, marker);
     }
 
@@ -177,9 +220,17 @@ public class BaseLogger extends AbstractLogger {
      * {@inheritDoc}
      */
     @Override
-    public boolean isEnabled(final Level level, final Marker marker, final String message, final Object p0,
-            final Object p1, final Object p2, final Object p3,
-            final Object p4, final Object p5, final Object p6) {
+    public boolean isEnabled(
+            final Level level,
+            final Marker marker,
+            final String message,
+            final Object p0,
+            final Object p1,
+            final Object p2,
+            final Object p3,
+            final Object p4,
+            final Object p5,
+            final Object p6) {
         return isEnabledFor(level, marker);
     }
 
@@ -187,9 +238,17 @@ public class BaseLogger extends AbstractLogger {
      * {@inheritDoc}
      */
     @Override
-    public boolean isEnabled(final Level level, final Marker marker, final String message, final Object p0,
-            final Object p1, final Object p2, final Object p3,
-            final Object p4, final Object p5, final Object p6,
+    public boolean isEnabled(
+            final Level level,
+            final Marker marker,
+            final String message,
+            final Object p0,
+            final Object p1,
+            final Object p2,
+            final Object p3,
+            final Object p4,
+            final Object p5,
+            final Object p6,
             final Object p7) {
         return isEnabledFor(level, marker);
     }
@@ -198,10 +257,19 @@ public class BaseLogger extends AbstractLogger {
      * {@inheritDoc}
      */
     @Override
-    public boolean isEnabled(final Level level, final Marker marker, final String message, final Object p0,
-            final Object p1, final Object p2, final Object p3,
-            final Object p4, final Object p5, final Object p6,
-            final Object p7, final Object p8) {
+    public boolean isEnabled(
+            final Level level,
+            final Marker marker,
+            final String message,
+            final Object p0,
+            final Object p1,
+            final Object p2,
+            final Object p3,
+            final Object p4,
+            final Object p5,
+            final Object p6,
+            final Object p7,
+            final Object p8) {
         return isEnabledFor(level, marker);
     }
 
@@ -209,10 +277,20 @@ public class BaseLogger extends AbstractLogger {
      * {@inheritDoc}
      */
     @Override
-    public boolean isEnabled(final Level level, final Marker marker, final String message, final Object p0,
-            final Object p1, final Object p2, final Object p3,
-            final Object p4, final Object p5, final Object p6,
-            final Object p7, final Object p8, final Object p9) {
+    public boolean isEnabled(
+            final Level level,
+            final Marker marker,
+            final String message,
+            final Object p0,
+            final Object p1,
+            final Object p2,
+            final Object p3,
+            final Object p4,
+            final Object p5,
+            final Object p6,
+            final Object p7,
+            final Object p8,
+            final Object p9) {
         return isEnabledFor(level, marker);
     }
 
@@ -228,12 +306,13 @@ public class BaseLogger extends AbstractLogger {
      * {@inheritDoc}
      */
     @Override
-    public void logMessage(final String fqcn, final Level level, final Marker marker, final Message message, final Throwable t) {
+    public void logMessage(
+            final String fqcn, final Level level, final Marker marker, final Message message, final Throwable t) {
         final com.swirlds.logging.api.Marker baseMarker = getMarker(marker);
         final Log4JMessage log4JMessage = new Log4JMessage(message);
 
-        final LogEvent event = logEventFactory.createLogEvent(convertLevel(level), getName(), log4JMessage, t, baseMarker,
-                ThreadContext.getImmutableContext());
+        final LogEvent event = logEventFactory.createLogEvent(
+                convertLevel(level), getName(), log4JMessage, t, baseMarker, ThreadContext.getImmutableContext());
         logEventConsumer.accept(event);
     }
 
