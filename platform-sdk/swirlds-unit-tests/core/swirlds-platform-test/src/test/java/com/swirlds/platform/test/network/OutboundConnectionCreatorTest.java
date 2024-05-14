@@ -39,8 +39,8 @@ import com.swirlds.platform.network.connection.NotConnectedConnection;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.connectivity.SocketFactory;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator.WeightDistributionStrategy;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder.WeightDistributionStrategy;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -61,10 +61,9 @@ class OutboundConnectionCreatorTest {
 
         final int numNodes = 10;
         final Random r = new Random();
-        final AddressBook addressBook = new RandomAddressBookGenerator(r)
-                .setSize(numNodes)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
+        final AddressBook addressBook = RandomAddressBookBuilder.create(r)
+                .withSize(numNodes)
+                .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
         final int thisNodeIndex = r.nextInt(numNodes);
         final int otherNodeIndex = r.nextInt(numNodes);
@@ -141,10 +140,9 @@ class OutboundConnectionCreatorTest {
 
         final int numNodes = 10;
         final Random r = new Random();
-        final AddressBook addressBook = new RandomAddressBookGenerator(r)
-                .setSize(numNodes)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
+        final AddressBook addressBook = RandomAddressBookBuilder.create(r)
+                .withSize(numNodes)
+                .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
         final int thisNodeIndex = r.nextInt(numNodes);
         final int otherNodeIndex = r.nextInt(numNodes);
