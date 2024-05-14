@@ -41,7 +41,7 @@ import com.swirlds.common.metrics.platform.DefaultRunningAverageMetric;
 import com.swirlds.common.metrics.platform.DefaultSpeedometerMetric;
 import com.swirlds.common.metrics.platform.DefaultStatEntry;
 import com.swirlds.common.metrics.platform.MetricsEvent;
-import com.swirlds.common.metrics.platform.SnapshotEvent;
+import com.swirlds.common.metrics.platform.PlatformSnapshotEvent;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Counter;
@@ -59,7 +59,7 @@ import com.swirlds.metrics.impl.DefaultIntegerAccumulator;
 import com.swirlds.metrics.impl.DefaultIntegerGauge;
 import com.swirlds.metrics.impl.DefaultLongAccumulator;
 import com.swirlds.metrics.impl.DefaultLongGauge;
-import com.swirlds.metrics.impl.Snapshot;
+import com.swirlds.metrics.impl.snapshot.Snapshot;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Gauge;
@@ -183,7 +183,8 @@ class PrometheusEndpointTest {
         try (final PrometheusEndpoint endpoint = new PrometheusEndpoint(httpServer, registry)) {
 
             // then
-            final SnapshotEvent snapshotEvent = new SnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric)));
+            final PlatformSnapshotEvent snapshotEvent =
+                    new PlatformSnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric)));
             assertThatCode(() -> endpoint.handleSnapshots(snapshotEvent)).doesNotThrowAnyException();
         }
     }
@@ -207,7 +208,7 @@ class PrometheusEndpointTest {
 
             // when
             metric.add(42L);
-            final SnapshotEvent snapshotEvent = new SnapshotEvent(null, List.of(Snapshot.of(metric)));
+            final PlatformSnapshotEvent snapshotEvent = new PlatformSnapshotEvent(null, List.of(Snapshot.of(metric)));
             endpoint.handleSnapshots(snapshotEvent);
 
             // then
@@ -240,9 +241,11 @@ class PrometheusEndpointTest {
             // when
             metric1.add(3L);
             metric2.add(5L);
-            final SnapshotEvent snapshotEvent1 = new SnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
+            final PlatformSnapshotEvent snapshotEvent1 =
+                    new PlatformSnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
             endpoint.handleSnapshots(snapshotEvent1);
-            final SnapshotEvent snapshotEvent2 = new SnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
+            final PlatformSnapshotEvent snapshotEvent2 =
+                    new PlatformSnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
             endpoint.handleSnapshots(snapshotEvent2);
 
             // then
@@ -271,7 +274,7 @@ class PrometheusEndpointTest {
 
             // when
             metric.update(Math.PI);
-            final SnapshotEvent snapshotEvent = new SnapshotEvent(null, List.of(Snapshot.of(metric)));
+            final PlatformSnapshotEvent snapshotEvent = new PlatformSnapshotEvent(null, List.of(Snapshot.of(metric)));
             endpoint.handleSnapshots(snapshotEvent);
 
             // then
@@ -304,9 +307,11 @@ class PrometheusEndpointTest {
             // when
             metric1.update(Math.PI);
             metric2.update(Math.E);
-            final SnapshotEvent snapshotEvent1 = new SnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
+            final PlatformSnapshotEvent snapshotEvent1 =
+                    new PlatformSnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
             endpoint.handleSnapshots(snapshotEvent1);
-            final SnapshotEvent snapshotEvent2 = new SnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
+            final PlatformSnapshotEvent snapshotEvent2 =
+                    new PlatformSnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
             endpoint.handleSnapshots(snapshotEvent2);
 
             // then
@@ -335,7 +340,7 @@ class PrometheusEndpointTest {
 
             // when
             metric.set(Math.E);
-            final SnapshotEvent snapshotEvent = new SnapshotEvent(null, List.of(Snapshot.of(metric)));
+            final PlatformSnapshotEvent snapshotEvent = new PlatformSnapshotEvent(null, List.of(Snapshot.of(metric)));
             endpoint.handleSnapshots(snapshotEvent);
 
             // then
@@ -368,9 +373,11 @@ class PrometheusEndpointTest {
             // when
             metric1.set(Math.PI);
             metric2.set(Math.E);
-            final SnapshotEvent snapshotEvent1 = new SnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
+            final PlatformSnapshotEvent snapshotEvent1 =
+                    new PlatformSnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
             endpoint.handleSnapshots(snapshotEvent1);
-            final SnapshotEvent snapshotEvent2 = new SnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
+            final PlatformSnapshotEvent snapshotEvent2 =
+                    new PlatformSnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
             endpoint.handleSnapshots(snapshotEvent2);
 
             // then
@@ -399,7 +406,7 @@ class PrometheusEndpointTest {
 
             // when
             metric.set(Duration.ofSeconds(1L));
-            final SnapshotEvent snapshotEvent = new SnapshotEvent(null, List.of(Snapshot.of(metric)));
+            final PlatformSnapshotEvent snapshotEvent = new PlatformSnapshotEvent(null, List.of(Snapshot.of(metric)));
             endpoint.handleSnapshots(snapshotEvent);
 
             // then
@@ -432,9 +439,11 @@ class PrometheusEndpointTest {
             // when
             metric1.set(Duration.ofNanos(1000L));
             metric2.set(Duration.ofNanos(1L));
-            final SnapshotEvent snapshotEvent1 = new SnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
+            final PlatformSnapshotEvent snapshotEvent1 =
+                    new PlatformSnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
             endpoint.handleSnapshots(snapshotEvent1);
-            final SnapshotEvent snapshotEvent2 = new SnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
+            final PlatformSnapshotEvent snapshotEvent2 =
+                    new PlatformSnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
             endpoint.handleSnapshots(snapshotEvent2);
 
             // then
@@ -465,7 +474,7 @@ class PrometheusEndpointTest {
             assertThat(collector.get()).isEqualTo(0.0, within(EPSILON));
 
             // when
-            final SnapshotEvent snapshotEvent = new SnapshotEvent(null, List.of(Snapshot.of(metric)));
+            final PlatformSnapshotEvent snapshotEvent = new PlatformSnapshotEvent(null, List.of(Snapshot.of(metric)));
             endpoint.handleSnapshots(snapshotEvent);
 
             // then
@@ -499,9 +508,11 @@ class PrometheusEndpointTest {
             assertThat(collector.labels(LABEL_2).get()).isEqualTo(0.0, within(EPSILON));
 
             // when
-            final SnapshotEvent snapshotEvent1 = new SnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
+            final PlatformSnapshotEvent snapshotEvent1 =
+                    new PlatformSnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
             endpoint.handleSnapshots(snapshotEvent1);
-            final SnapshotEvent snapshotEvent2 = new SnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
+            final PlatformSnapshotEvent snapshotEvent2 =
+                    new PlatformSnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
             endpoint.handleSnapshots(snapshotEvent2);
 
             // then
@@ -530,7 +541,7 @@ class PrometheusEndpointTest {
             assertThat(collector.get()).isEqualTo(0.0, within(EPSILON));
 
             // when
-            final SnapshotEvent snapshotEvent = new SnapshotEvent(null, List.of(Snapshot.of(metric)));
+            final PlatformSnapshotEvent snapshotEvent = new PlatformSnapshotEvent(null, List.of(Snapshot.of(metric)));
             endpoint.handleSnapshots(snapshotEvent);
 
             // then
@@ -564,9 +575,11 @@ class PrometheusEndpointTest {
             assertThat(collector.labels(LABEL_2).get()).isEqualTo(0.0, within(EPSILON));
 
             // when
-            final SnapshotEvent snapshotEvent1 = new SnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
+            final PlatformSnapshotEvent snapshotEvent1 =
+                    new PlatformSnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
             endpoint.handleSnapshots(snapshotEvent1);
-            final SnapshotEvent snapshotEvent2 = new SnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
+            final PlatformSnapshotEvent snapshotEvent2 =
+                    new PlatformSnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
             endpoint.handleSnapshots(snapshotEvent2);
 
             // then
@@ -595,7 +608,7 @@ class PrometheusEndpointTest {
             assertThat(collector.get()).isEmpty();
 
             // when
-            final SnapshotEvent snapshotEvent = new SnapshotEvent(null, List.of(Snapshot.of(metric)));
+            final PlatformSnapshotEvent snapshotEvent = new PlatformSnapshotEvent(null, List.of(Snapshot.of(metric)));
             endpoint.handleSnapshots(snapshotEvent);
 
             // then
@@ -629,9 +642,11 @@ class PrometheusEndpointTest {
             assertThat(collector.labels(LABEL_2).get()).isEmpty();
 
             // when
-            final SnapshotEvent snapshotEvent1 = new SnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
+            final PlatformSnapshotEvent snapshotEvent1 =
+                    new PlatformSnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
             endpoint.handleSnapshots(snapshotEvent1);
-            final SnapshotEvent snapshotEvent2 = new SnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
+            final PlatformSnapshotEvent snapshotEvent2 =
+                    new PlatformSnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
             endpoint.handleSnapshots(snapshotEvent2);
 
             // then
@@ -660,7 +675,7 @@ class PrometheusEndpointTest {
 
             // when
             metric.update(42);
-            final SnapshotEvent snapshotEvent = new SnapshotEvent(null, List.of(Snapshot.of(metric)));
+            final PlatformSnapshotEvent snapshotEvent = new PlatformSnapshotEvent(null, List.of(Snapshot.of(metric)));
             endpoint.handleSnapshots(snapshotEvent);
 
             // then
@@ -693,9 +708,11 @@ class PrometheusEndpointTest {
             // when
             metric1.update(3);
             metric2.update(5);
-            final SnapshotEvent snapshotEvent1 = new SnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
+            final PlatformSnapshotEvent snapshotEvent1 =
+                    new PlatformSnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
             endpoint.handleSnapshots(snapshotEvent1);
-            final SnapshotEvent snapshotEvent2 = new SnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
+            final PlatformSnapshotEvent snapshotEvent2 =
+                    new PlatformSnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
             endpoint.handleSnapshots(snapshotEvent2);
 
             // then
@@ -724,7 +741,7 @@ class PrometheusEndpointTest {
 
             // when
             metric.set(42);
-            final SnapshotEvent snapshotEvent = new SnapshotEvent(null, List.of(Snapshot.of(metric)));
+            final PlatformSnapshotEvent snapshotEvent = new PlatformSnapshotEvent(null, List.of(Snapshot.of(metric)));
             endpoint.handleSnapshots(snapshotEvent);
 
             // then
@@ -757,9 +774,11 @@ class PrometheusEndpointTest {
             // when
             metric1.set(3);
             metric2.set(5);
-            final SnapshotEvent snapshotEvent1 = new SnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
+            final PlatformSnapshotEvent snapshotEvent1 =
+                    new PlatformSnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
             endpoint.handleSnapshots(snapshotEvent1);
-            final SnapshotEvent snapshotEvent2 = new SnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
+            final PlatformSnapshotEvent snapshotEvent2 =
+                    new PlatformSnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
             endpoint.handleSnapshots(snapshotEvent2);
 
             // then
@@ -789,7 +808,7 @@ class PrometheusEndpointTest {
 
             // when
             metric.update(3, 5);
-            final SnapshotEvent snapshotEvent = new SnapshotEvent(null, List.of(Snapshot.of(metric)));
+            final PlatformSnapshotEvent snapshotEvent = new PlatformSnapshotEvent(null, List.of(Snapshot.of(metric)));
             endpoint.handleSnapshots(snapshotEvent);
 
             // then
@@ -825,9 +844,11 @@ class PrometheusEndpointTest {
             // when
             metric1.update(3, 5);
             metric2.update(7, 13);
-            final SnapshotEvent snapshotEvent1 = new SnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
+            final PlatformSnapshotEvent snapshotEvent1 =
+                    new PlatformSnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
             endpoint.handleSnapshots(snapshotEvent1);
-            final SnapshotEvent snapshotEvent2 = new SnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
+            final PlatformSnapshotEvent snapshotEvent2 =
+                    new PlatformSnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
             endpoint.handleSnapshots(snapshotEvent2);
 
             // then
@@ -857,7 +878,7 @@ class PrometheusEndpointTest {
 
             // when
             metric.update(3, 5);
-            final SnapshotEvent snapshotEvent = new SnapshotEvent(null, List.of(Snapshot.of(metric)));
+            final PlatformSnapshotEvent snapshotEvent = new PlatformSnapshotEvent(null, List.of(Snapshot.of(metric)));
             endpoint.handleSnapshots(snapshotEvent);
 
             // then
@@ -893,9 +914,11 @@ class PrometheusEndpointTest {
             // when
             metric1.update(3, 5);
             metric2.update(7, 13);
-            final SnapshotEvent snapshotEvent1 = new SnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
+            final PlatformSnapshotEvent snapshotEvent1 =
+                    new PlatformSnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
             endpoint.handleSnapshots(snapshotEvent1);
-            final SnapshotEvent snapshotEvent2 = new SnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
+            final PlatformSnapshotEvent snapshotEvent2 =
+                    new PlatformSnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
             endpoint.handleSnapshots(snapshotEvent2);
 
             // then
@@ -925,7 +948,7 @@ class PrometheusEndpointTest {
 
             // when
             metric.update(3, 5);
-            final SnapshotEvent snapshotEvent = new SnapshotEvent(null, List.of(Snapshot.of(metric)));
+            final PlatformSnapshotEvent snapshotEvent = new PlatformSnapshotEvent(null, List.of(Snapshot.of(metric)));
             endpoint.handleSnapshots(snapshotEvent);
 
             // then
@@ -961,9 +984,11 @@ class PrometheusEndpointTest {
             // when
             metric1.update(3, 5);
             metric2.update(7, 13);
-            final SnapshotEvent snapshotEvent1 = new SnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
+            final PlatformSnapshotEvent snapshotEvent1 =
+                    new PlatformSnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
             endpoint.handleSnapshots(snapshotEvent1);
-            final SnapshotEvent snapshotEvent2 = new SnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
+            final PlatformSnapshotEvent snapshotEvent2 =
+                    new PlatformSnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
             endpoint.handleSnapshots(snapshotEvent2);
 
             // then
@@ -992,7 +1017,7 @@ class PrometheusEndpointTest {
 
             // when
             metric.update(42L);
-            final SnapshotEvent snapshotEvent = new SnapshotEvent(null, List.of(Snapshot.of(metric)));
+            final PlatformSnapshotEvent snapshotEvent = new PlatformSnapshotEvent(null, List.of(Snapshot.of(metric)));
             endpoint.handleSnapshots(snapshotEvent);
 
             // then
@@ -1025,9 +1050,11 @@ class PrometheusEndpointTest {
             // when
             metric1.update(3L);
             metric2.update(5L);
-            final SnapshotEvent snapshotEvent1 = new SnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
+            final PlatformSnapshotEvent snapshotEvent1 =
+                    new PlatformSnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
             endpoint.handleSnapshots(snapshotEvent1);
-            final SnapshotEvent snapshotEvent2 = new SnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
+            final PlatformSnapshotEvent snapshotEvent2 =
+                    new PlatformSnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
             endpoint.handleSnapshots(snapshotEvent2);
 
             // then
@@ -1056,7 +1083,7 @@ class PrometheusEndpointTest {
 
             // when
             metric.set(42L);
-            final SnapshotEvent snapshotEvent = new SnapshotEvent(null, List.of(Snapshot.of(metric)));
+            final PlatformSnapshotEvent snapshotEvent = new PlatformSnapshotEvent(null, List.of(Snapshot.of(metric)));
             endpoint.handleSnapshots(snapshotEvent);
 
             // then
@@ -1089,9 +1116,11 @@ class PrometheusEndpointTest {
             // when
             metric1.set(3L);
             metric2.set(5L);
-            final SnapshotEvent snapshotEvent1 = new SnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
+            final PlatformSnapshotEvent snapshotEvent1 =
+                    new PlatformSnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
             endpoint.handleSnapshots(snapshotEvent1);
-            final SnapshotEvent snapshotEvent2 = new SnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
+            final PlatformSnapshotEvent snapshotEvent2 =
+                    new PlatformSnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
             endpoint.handleSnapshots(snapshotEvent2);
 
             // then
@@ -1123,7 +1152,7 @@ class PrometheusEndpointTest {
 
             // when
             metric.update(1000.0);
-            final SnapshotEvent snapshotEvent = new SnapshotEvent(null, List.of(Snapshot.of(metric)));
+            final PlatformSnapshotEvent snapshotEvent = new PlatformSnapshotEvent(null, List.of(Snapshot.of(metric)));
             endpoint.handleSnapshots(snapshotEvent);
 
             // then
@@ -1165,9 +1194,11 @@ class PrometheusEndpointTest {
             // when
             metric1.update(3000.0);
             metric2.update(5000.0);
-            final SnapshotEvent snapshotEvent1 = new SnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
+            final PlatformSnapshotEvent snapshotEvent1 =
+                    new PlatformSnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
             endpoint.handleSnapshots(snapshotEvent1);
-            final SnapshotEvent snapshotEvent2 = new SnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
+            final PlatformSnapshotEvent snapshotEvent2 =
+                    new PlatformSnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
             endpoint.handleSnapshots(snapshotEvent2);
 
             // then
@@ -1211,7 +1242,7 @@ class PrometheusEndpointTest {
             time.set(Duration.ofMillis(500));
             metric.cycle();
             time.set(Duration.ofMillis(1000));
-            final SnapshotEvent snapshotEvent = new SnapshotEvent(null, List.of(Snapshot.of(metric)));
+            final PlatformSnapshotEvent snapshotEvent = new PlatformSnapshotEvent(null, List.of(Snapshot.of(metric)));
             endpoint.handleSnapshots(snapshotEvent);
 
             // then
@@ -1260,9 +1291,11 @@ class PrometheusEndpointTest {
             metric1.cycle();
             metric2.update(100.0);
             time.set(Duration.ofMillis(1000));
-            final SnapshotEvent snapshotEvent1 = new SnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
+            final PlatformSnapshotEvent snapshotEvent1 =
+                    new PlatformSnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
             endpoint.handleSnapshots(snapshotEvent1);
-            final SnapshotEvent snapshotEvent2 = new SnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
+            final PlatformSnapshotEvent snapshotEvent2 =
+                    new PlatformSnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
             endpoint.handleSnapshots(snapshotEvent2);
 
             // then
@@ -1296,7 +1329,7 @@ class PrometheusEndpointTest {
             assertThat(collector.get()).isEqualTo(0.0, within(EPSILON));
 
             // when
-            final SnapshotEvent snapshotEvent = new SnapshotEvent(null, List.of(Snapshot.of(metric)));
+            final PlatformSnapshotEvent snapshotEvent = new PlatformSnapshotEvent(null, List.of(Snapshot.of(metric)));
             endpoint.handleSnapshots(snapshotEvent);
 
             // then
@@ -1328,9 +1361,11 @@ class PrometheusEndpointTest {
             assertThat(collector.labels(LABEL_2).get()).isEqualTo(0.0, within(EPSILON));
 
             // when
-            final SnapshotEvent snapshotEvent1 = new SnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
+            final PlatformSnapshotEvent snapshotEvent1 =
+                    new PlatformSnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
             endpoint.handleSnapshots(snapshotEvent1);
-            final SnapshotEvent snapshotEvent2 = new SnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
+            final PlatformSnapshotEvent snapshotEvent2 =
+                    new PlatformSnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
             endpoint.handleSnapshots(snapshotEvent2);
 
             // then
@@ -1358,7 +1393,7 @@ class PrometheusEndpointTest {
             assertThat(collector.get()).isEqualTo(0.0, within(EPSILON));
 
             // when
-            final SnapshotEvent snapshotEvent = new SnapshotEvent(null, List.of(Snapshot.of(metric)));
+            final PlatformSnapshotEvent snapshotEvent = new PlatformSnapshotEvent(null, List.of(Snapshot.of(metric)));
             endpoint.handleSnapshots(snapshotEvent);
 
             // then
@@ -1390,9 +1425,11 @@ class PrometheusEndpointTest {
             assertThat(collector.labels(LABEL_2).get()).isEqualTo(0.0, within(EPSILON));
 
             // when
-            final SnapshotEvent snapshotEvent1 = new SnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
+            final PlatformSnapshotEvent snapshotEvent1 =
+                    new PlatformSnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
             endpoint.handleSnapshots(snapshotEvent1);
-            final SnapshotEvent snapshotEvent2 = new SnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
+            final PlatformSnapshotEvent snapshotEvent2 =
+                    new PlatformSnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
             endpoint.handleSnapshots(snapshotEvent2);
 
             // then
@@ -1420,7 +1457,7 @@ class PrometheusEndpointTest {
             assertThat(collector.get()).isEmpty();
 
             // when
-            final SnapshotEvent snapshotEvent = new SnapshotEvent(null, List.of(Snapshot.of(metric)));
+            final PlatformSnapshotEvent snapshotEvent = new PlatformSnapshotEvent(null, List.of(Snapshot.of(metric)));
             endpoint.handleSnapshots(snapshotEvent);
 
             // then
@@ -1452,9 +1489,11 @@ class PrometheusEndpointTest {
             assertThat(collector.labels(LABEL_2).get()).isEmpty();
 
             // when
-            final SnapshotEvent snapshotEvent1 = new SnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
+            final PlatformSnapshotEvent snapshotEvent1 =
+                    new PlatformSnapshotEvent(NODE_ID_1, List.of(Snapshot.of(metric1)));
             endpoint.handleSnapshots(snapshotEvent1);
-            final SnapshotEvent snapshotEvent2 = new SnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
+            final PlatformSnapshotEvent snapshotEvent2 =
+                    new PlatformSnapshotEvent(NODE_ID_2, List.of(Snapshot.of(metric2)));
             endpoint.handleSnapshots(snapshotEvent2);
 
             // then

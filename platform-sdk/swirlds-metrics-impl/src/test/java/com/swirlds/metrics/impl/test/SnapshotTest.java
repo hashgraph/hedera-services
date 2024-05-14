@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.impl.AbstractMetric;
-import com.swirlds.metrics.impl.Snapshot;
+import com.swirlds.metrics.impl.snapshot.Snapshot;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

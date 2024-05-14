@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics.platform;
+package com.swirlds.metrics.impl.snapshot;
 
-import com.swirlds.common.platform.NodeId;
-import com.swirlds.metrics.impl.Snapshot;
-import java.util.Collection;
-import java.util.Objects;
-
-public record SnapshotEvent(NodeId nodeId, Collection<Snapshot> snapshots) {
-
-    /**
-     * @throws NullPointerException in case {@code snapshots} parameter is {@code null}
-     */
-    public SnapshotEvent {
-        Objects.requireNonNull(snapshots, "snapshots must not be null");
-    }
-}
+/**
+ * A label is a key-value pair that can be attached to a {@link Snapshot}.
+ */
+public record Label(String name, String value) {}

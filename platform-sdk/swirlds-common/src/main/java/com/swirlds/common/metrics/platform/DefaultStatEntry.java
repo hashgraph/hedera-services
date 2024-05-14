@@ -25,7 +25,7 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.StatEntry;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.metrics.api.MetricConfig;
-import com.swirlds.metrics.impl.Snapshot.SnapshotEntry;
+import com.swirlds.metrics.impl.snapshot.Snapshot.SnapshotEntry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;

@@ -34,7 +34,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metric.ValueType;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.metrics.impl.Snapshot;
+import com.swirlds.metrics.impl.snapshot.Snapshot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -233,9 +233,9 @@ public class LegacyCsvWriter {
     /**
      * Handle notification with new snapshots
      *
-     * @param snapshotEvent the {@link SnapshotEvent}
+     * @param snapshotEvent the {@link PlatformSnapshotEvent}
      */
-    public void handleSnapshots(final SnapshotEvent snapshotEvent) {
+    public void handleSnapshots(final PlatformSnapshotEvent snapshotEvent) {
         if (snapshotEvent.nodeId() != selfId) {
             return;
         }

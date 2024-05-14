@@ -27,7 +27,7 @@ import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.impl.DefaultIntegerGauge;
 import com.swirlds.metrics.impl.DefaultLongAccumulator;
-import com.swirlds.metrics.impl.Snapshot.SnapshotEntry;
+import com.swirlds.metrics.impl.snapshot.Snapshot.SnapshotEntry;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

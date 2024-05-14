@@ -20,7 +20,7 @@ import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.metrics.api.DoubleGauge;
-import com.swirlds.metrics.impl.Snapshot.SnapshotEntry;
+import com.swirlds.metrics.impl.snapshot.Snapshot.SnapshotEntry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 

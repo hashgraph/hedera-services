@@ -19,7 +19,7 @@ package com.swirlds.common.metrics.platform;
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.common.metrics.DurationGauge;
-import com.swirlds.metrics.impl.Snapshot;
+import com.swirlds.metrics.impl.snapshot.Snapshot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;

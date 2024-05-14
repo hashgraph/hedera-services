@@ -34,7 +34,7 @@ import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.IntegerGauge;
 import com.swirlds.metrics.impl.DefaultIntegerGauge;
-import com.swirlds.metrics.impl.Snapshot.SnapshotEntry;
+import com.swirlds.metrics.impl.snapshot.Snapshot.SnapshotEntry;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Disabled;

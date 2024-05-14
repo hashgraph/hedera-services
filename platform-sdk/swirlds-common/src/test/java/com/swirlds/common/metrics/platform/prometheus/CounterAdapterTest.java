@@ -26,7 +26,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.impl.DefaultCounter;
-import com.swirlds.metrics.impl.Snapshot;
+import com.swirlds.metrics.impl.snapshot.Snapshot;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import org.junit.jupiter.api.Test;

@@ -43,7 +43,7 @@ import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.metrics.impl.AbstractMetric;
-import com.swirlds.metrics.impl.Snapshot;
+import com.swirlds.metrics.impl.snapshot.Snapshot;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -108,7 +108,7 @@ class LegacyCsvWriterTest {
                 .map(AbstractMetric.class::cast)
                 .map(Snapshot::of)
                 .toList();
-        final SnapshotEvent notification = new SnapshotEvent(NODE_ID, snapshots);
+        final PlatformSnapshotEvent notification = new PlatformSnapshotEvent(NODE_ID, snapshots);
 
         // when
         writer.handleSnapshots(notification);
@@ -129,7 +129,7 @@ class LegacyCsvWriterTest {
                 .map(AbstractMetric.class::cast)
                 .map(Snapshot::of)
                 .toList();
-        final SnapshotEvent notification1 = new SnapshotEvent(NODE_ID, snapshots1);
+        final PlatformSnapshotEvent notification1 = new PlatformSnapshotEvent(NODE_ID, snapshots1);
 
         // when
         writer.handleSnapshots(notification1);
@@ -148,7 +148,7 @@ class LegacyCsvWriterTest {
                 .map(AbstractMetric.class::cast)
                 .map(Snapshot::of)
                 .toList();
-        final SnapshotEvent notification2 = new SnapshotEvent(NODE_ID, snapshots2);
+        final PlatformSnapshotEvent notification2 = new PlatformSnapshotEvent(NODE_ID, snapshots2);
 
         // when
         writer.handleSnapshots(notification2);
@@ -192,21 +192,21 @@ class LegacyCsvWriterTest {
                 .map(AbstractMetric.class::cast)
                 .map(Snapshot::of)
                 .toList();
-        final SnapshotEvent notification1 = new SnapshotEvent(NODE_ID, snapshots1);
+        final PlatformSnapshotEvent notification1 = new PlatformSnapshotEvent(NODE_ID, snapshots1);
         writer.handleSnapshots(notification1);
         gauge.set(Double.POSITIVE_INFINITY);
         final List<Snapshot> snapshots2 = metrics.stream()
                 .map(AbstractMetric.class::cast)
                 .map(Snapshot::of)
                 .toList();
-        final SnapshotEvent notification2 = new SnapshotEvent(NODE_ID, snapshots2);
+        final PlatformSnapshotEvent notification2 = new PlatformSnapshotEvent(NODE_ID, snapshots2);
         writer.handleSnapshots(notification2);
         gauge.set(Double.NEGATIVE_INFINITY);
         final List<Snapshot> snapshots3 = metrics.stream()
                 .map(AbstractMetric.class::cast)
                 .map(Snapshot::of)
                 .toList();
-        final SnapshotEvent notification3 = new SnapshotEvent(NODE_ID, snapshots3);
+        final PlatformSnapshotEvent notification3 = new PlatformSnapshotEvent(NODE_ID, snapshots3);
         writer.handleSnapshots(notification3);
 
         // then
@@ -232,7 +232,7 @@ class LegacyCsvWriterTest {
                 .map(AbstractMetric.class::cast)
                 .map(Snapshot::of)
                 .toList();
-        final SnapshotEvent notification = new SnapshotEvent(NODE_ID, snapshots);
+        final PlatformSnapshotEvent notification = new PlatformSnapshotEvent(NODE_ID, snapshots);
 
         // when
         writer.handleSnapshots(notification);
@@ -278,7 +278,7 @@ class LegacyCsvWriterTest {
                 .map(AbstractMetric.class::cast)
                 .map(Snapshot::of)
                 .toList();
-        final SnapshotEvent notification = new SnapshotEvent(NODE_ID, snapshots);
+        final PlatformSnapshotEvent notification = new PlatformSnapshotEvent(NODE_ID, snapshots);
 
         // when
         writer.handleSnapshots(notification);
@@ -317,7 +317,7 @@ class LegacyCsvWriterTest {
                 .map(AbstractMetric.class::cast)
                 .map(Snapshot::of)
                 .toList();
-        final SnapshotEvent notification = new SnapshotEvent(NODE_ID, snapshots);
+        final PlatformSnapshotEvent notification = new PlatformSnapshotEvent(NODE_ID, snapshots);
 
         // when
         writer.handleSnapshots(notification);
@@ -347,7 +347,7 @@ class LegacyCsvWriterTest {
                 .map(AbstractMetric.class::cast)
                 .map(Snapshot::of)
                 .toList();
-        final SnapshotEvent notification1 = new SnapshotEvent(NODE_ID, snapshots1);
+        final PlatformSnapshotEvent notification1 = new PlatformSnapshotEvent(NODE_ID, snapshots1);
 
         // when
         writer.handleSnapshots(notification1);
@@ -361,7 +361,7 @@ class LegacyCsvWriterTest {
                 .map(AbstractMetric.class::cast)
                 .map(Snapshot::of)
                 .toList();
-        final SnapshotEvent notification2 = new SnapshotEvent(NODE_ID, snapshots2);
+        final PlatformSnapshotEvent notification2 = new PlatformSnapshotEvent(NODE_ID, snapshots2);
 
         // when
         writer.handleSnapshots(notification2);
@@ -395,7 +395,7 @@ class LegacyCsvWriterTest {
                 .map(AbstractMetric.class::cast)
                 .map(Snapshot::of)
                 .toList();
-        final SnapshotEvent notification1 = new SnapshotEvent(NODE_ID, snapshots1);
+        final PlatformSnapshotEvent notification1 = new PlatformSnapshotEvent(NODE_ID, snapshots1);
 
         // when
         writer.handleSnapshots(notification1);
@@ -409,7 +409,7 @@ class LegacyCsvWriterTest {
                 .map(AbstractMetric.class::cast)
                 .map(Snapshot::of)
                 .toList();
-        final SnapshotEvent notification2 = new SnapshotEvent(NODE_ID, snapshots2);
+        final PlatformSnapshotEvent notification2 = new PlatformSnapshotEvent(NODE_ID, snapshots2);
 
         // when
         writer.handleSnapshots(notification2);
@@ -442,7 +442,7 @@ class LegacyCsvWriterTest {
                 .map(AbstractMetric.class::cast)
                 .map(Snapshot::of)
                 .toList();
-        final SnapshotEvent notification1 = new SnapshotEvent(NODE_ID, snapshots1);
+        final PlatformSnapshotEvent notification1 = new PlatformSnapshotEvent(NODE_ID, snapshots1);
 
         // when
         writer.handleSnapshots(notification1);
@@ -456,7 +456,7 @@ class LegacyCsvWriterTest {
                 .map(AbstractMetric.class::cast)
                 .map(Snapshot::of)
                 .toList();
-        final SnapshotEvent notification2 = new SnapshotEvent(NODE_ID, snapshots2);
+        final PlatformSnapshotEvent notification2 = new PlatformSnapshotEvent(NODE_ID, snapshots2);
 
         // when
         writer.handleSnapshots(notification2);
@@ -492,7 +492,7 @@ class LegacyCsvWriterTest {
                 .map(AbstractMetric.class::cast)
                 .map(Snapshot::of)
                 .toList();
-        final SnapshotEvent notification1 = new SnapshotEvent(NODE_ID, snapshots1);
+        final PlatformSnapshotEvent notification1 = new PlatformSnapshotEvent(NODE_ID, snapshots1);
 
         // when
         writer.handleSnapshots(notification1);
@@ -506,7 +506,7 @@ class LegacyCsvWriterTest {
                 .map(AbstractMetric.class::cast)
                 .map(Snapshot::of)
                 .toList();
-        final SnapshotEvent notification2 = new SnapshotEvent(NODE_ID, snapshots2);
+        final PlatformSnapshotEvent notification2 = new PlatformSnapshotEvent(NODE_ID, snapshots2);
 
         // when
         writer.handleSnapshots(notification2);
@@ -538,7 +538,7 @@ class LegacyCsvWriterTest {
                 .withFormat("%d")
                 .withInitialValue(Math.PI));
         final Snapshot snapshot = Snapshot.of((AbstractMetric) gauge);
-        final SnapshotEvent notification = new SnapshotEvent(NODE_ID, List.of(snapshot));
+        final PlatformSnapshotEvent notification = new PlatformSnapshotEvent(NODE_ID, List.of(snapshot));
 
         // when
         writer.handleSnapshots(notification);
@@ -569,7 +569,7 @@ class LegacyCsvWriterTest {
                 .map(AbstractMetric.class::cast)
                 .map(Snapshot::of)
                 .toList();
-        final SnapshotEvent notification1 = new SnapshotEvent(NODE_ID, snapshots1);
+        final PlatformSnapshotEvent notification1 = new PlatformSnapshotEvent(NODE_ID, snapshots1);
         writer.handleSnapshots(notification1);
 
         // second row
@@ -577,7 +577,7 @@ class LegacyCsvWriterTest {
         ((Counter) metrics.get(3)).add(30L);
         final List<Snapshot> snapshots2 =
                 List.of(Snapshot.of((AbstractMetric) metrics.get(3)), Snapshot.of((AbstractMetric) metrics.get(1)));
-        final SnapshotEvent notification2 = new SnapshotEvent(NODE_ID, snapshots2);
+        final PlatformSnapshotEvent notification2 = new PlatformSnapshotEvent(NODE_ID, snapshots2);
         writer.handleSnapshots(notification2);
 
         // then
@@ -617,7 +617,7 @@ class LegacyCsvWriterTest {
                 .map(AbstractMetric.class::cast)
                 .map(Snapshot::of)
                 .toList();
-        final SnapshotEvent notification1 = new SnapshotEvent(NODE_ID, snapshots1);
+        final PlatformSnapshotEvent notification1 = new PlatformSnapshotEvent(NODE_ID, snapshots1);
         writer.handleSnapshots(notification1);
 
         // second row
@@ -625,7 +625,7 @@ class LegacyCsvWriterTest {
         ((RunningAverageMetric) metrics.get(3)).update(30000.0);
         final List<Snapshot> snapshots2 =
                 List.of(Snapshot.of((AbstractMetric) metrics.get(3)), Snapshot.of((AbstractMetric) metrics.get(1)));
-        final SnapshotEvent notification2 = new SnapshotEvent(NODE_ID, snapshots2);
+        final PlatformSnapshotEvent notification2 = new PlatformSnapshotEvent(NODE_ID, snapshots2);
         writer.handleSnapshots(notification2);
 
         // then
@@ -668,7 +668,7 @@ class LegacyCsvWriterTest {
                 .map(AbstractMetric.class::cast)
                 .map(Snapshot::of)
                 .toList();
-        final SnapshotEvent notification1 = new SnapshotEvent(NODE_ID, snapshots1);
+        final PlatformSnapshotEvent notification1 = new PlatformSnapshotEvent(NODE_ID, snapshots1);
         writer.handleSnapshots(notification1);
 
         // second row
@@ -676,7 +676,7 @@ class LegacyCsvWriterTest {
         ((RunningAverageMetric) metrics.get(3)).update(30000.0);
         final List<Snapshot> snapshots2 =
                 List.of(Snapshot.of((AbstractMetric) metrics.get(3)), Snapshot.of((AbstractMetric) metrics.get(1)));
-        final SnapshotEvent notification2 = new SnapshotEvent(NODE_ID, snapshots2);
+        final PlatformSnapshotEvent notification2 = new PlatformSnapshotEvent(NODE_ID, snapshots2);
         writer.handleSnapshots(notification2);
 
         // then
@@ -710,11 +710,11 @@ class LegacyCsvWriterTest {
                 .map(AbstractMetric.class::cast)
                 .map(Snapshot::of)
                 .toList();
-        writer.handleSnapshots(new SnapshotEvent(NODE_ID, snapshots1));
+        writer.handleSnapshots(new PlatformSnapshotEvent(NODE_ID, snapshots1));
 
         final List<Snapshot> snapshots = List.of(
                 Snapshot.of((AbstractMetric) this.metrics.getOrCreate(new Config("NewCategory", "NewCounter"))));
-        writer.handleSnapshots(new SnapshotEvent(NODE_ID, snapshots));
+        writer.handleSnapshots(new PlatformSnapshotEvent(NODE_ID, snapshots));
 
         // then
         final String content = Files.readString(csvFilePath);

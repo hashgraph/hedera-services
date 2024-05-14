@@ -37,7 +37,7 @@ import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.metrics.impl.Snapshot;
+import com.swirlds.metrics.impl.snapshot.Snapshot;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -78,9 +78,9 @@ class SnapshotServiceTest {
     private DefaultPlatformMetrics platform2Metrics;
 
     @Mock
-    private Consumer<SnapshotEvent> subscriber;
+    private Consumer<PlatformSnapshotEvent> subscriber;
 
-    private SnapshotService service;
+    private PlatformSnapshotService service;
 
     private MetricsConfig metricsConfig;
 
@@ -111,7 +111,7 @@ class SnapshotServiceTest {
                 })
                 .thenAnswer(invocation -> mock(ScheduledFuture.class));
 
-        service = new SnapshotService(globalMetrics, executorService, Duration.ZERO);
+        service = new PlatformSnapshotService(globalMetrics, executorService, Duration.ZERO);
         service.subscribe(subscriber);
     }
 
@@ -144,7 +144,7 @@ class SnapshotServiceTest {
         service.start();
 
         // then
-        final ArgumentCaptor<SnapshotEvent> notification = ArgumentCaptor.forClass(SnapshotEvent.class);
+        final ArgumentCaptor<PlatformSnapshotEvent> notification = ArgumentCaptor.forClass(PlatformSnapshotEvent.class);
         verify(subscriber).accept(notification.capture());
         assertThat(notification.getValue().nodeId()).isNull();
         assertThat(notification.getValue().snapshots()).containsExactly(Snapshot.of(globalMetric));
@@ -157,7 +157,7 @@ class SnapshotServiceTest {
         service.start();
 
         // then
-        final ArgumentCaptor<SnapshotEvent> notification = ArgumentCaptor.forClass(SnapshotEvent.class);
+        final ArgumentCaptor<PlatformSnapshotEvent> notification = ArgumentCaptor.forClass(PlatformSnapshotEvent.class);
         verify(subscriber, times(2)).accept(notification.capture());
         assertThat(notification.getValue().nodeId()).isEqualTo(NODE_ID_1);
         assertThat(notification.getValue().snapshots())
@@ -172,7 +172,7 @@ class SnapshotServiceTest {
         service.start();
 
         // then
-        final ArgumentCaptor<SnapshotEvent> notification = ArgumentCaptor.forClass(SnapshotEvent.class);
+        final ArgumentCaptor<PlatformSnapshotEvent> notification = ArgumentCaptor.forClass(PlatformSnapshotEvent.class);
         verify(subscriber, times(3)).accept(notification.capture());
         assertThat(notification.getValue().nodeId()).isEqualTo(NODE_ID_2);
         assertThat(notification.getValue().snapshots())
@@ -188,7 +188,7 @@ class SnapshotServiceTest {
         service.start();
 
         // then
-        final ArgumentCaptor<SnapshotEvent> notification = ArgumentCaptor.forClass(SnapshotEvent.class);
+        final ArgumentCaptor<PlatformSnapshotEvent> notification = ArgumentCaptor.forClass(PlatformSnapshotEvent.class);
         verify(subscriber, times(2)).accept(notification.capture());
         assertThat(notification.getValue().nodeId()).isEqualTo(NODE_ID_1);
         assertThat(notification.getValue().snapshots())
@@ -200,7 +200,8 @@ class SnapshotServiceTest {
         // given
         final Duration loopDelay = metricsConfig.getMetricsSnapshotDuration();
         final Time time = new FakeTime(Duration.ofMillis(100));
-        final SnapshotService service = new SnapshotService(globalMetrics, executorService, loopDelay, time);
+        final PlatformSnapshotService service =
+                new PlatformSnapshotService(globalMetrics, executorService, loopDelay, time);
 
         // when
         service.start();
@@ -230,7 +231,8 @@ class SnapshotServiceTest {
         // given
         final Duration loopDelay = metricsConfig.getMetricsSnapshotDuration();
         final Time time = new FakeTime(Duration.ofSeconds(10 * metricsConfig.csvWriteFrequency()));
-        final SnapshotService service = new SnapshotService(globalMetrics, executorService, loopDelay, time);
+        final PlatformSnapshotService service =
+                new PlatformSnapshotService(globalMetrics, executorService, loopDelay, time);
 
         final ArgumentCaptor<Runnable> mainLoop = ArgumentCaptor.forClass(Runnable.class);
         final ArgumentCaptor<Long> delay = ArgumentCaptor.forClass(Long.class);

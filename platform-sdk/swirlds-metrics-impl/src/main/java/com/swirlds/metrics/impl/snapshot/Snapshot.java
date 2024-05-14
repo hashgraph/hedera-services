@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,20 @@
  * limitations under the License.
  */
 
-package com.swirlds.metrics.impl;
+package com.swirlds.metrics.impl.snapshot;
 
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metric.ValueType;
+import com.swirlds.metrics.impl.AbstractMetric;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * An instance of {@code Snapshot} contains the data of a single snapshot of a {@link Metric}.
  */
-public record Snapshot(Metric metric, List<SnapshotEntry> entries) {
+public record Snapshot(@NonNull Metric metric, @NonNull List<SnapshotEntry> entries, @NonNull Set<Label> labels) {
 
     /**
      * Create a {@code Snapshot} of a {@link AbstractMetric}
@@ -33,9 +36,10 @@ public record Snapshot(Metric metric, List<SnapshotEntry> entries) {
      * @return the {@code Snapshot}
      * @throws NullPointerException in case {@code metric} parameter is {@code null}
      */
-    public static Snapshot of(final AbstractMetric metric) {
+    @NonNull
+    public static <M extends Metric & SnapshotSupport> Snapshot of(@NonNull final M metric) {
         Objects.requireNonNull(metric, "metric must not be null");
-        return new Snapshot(metric, metric.takeSnapshot());
+        return new Snapshot(metric, metric.takeSnapshot(), Set.of());
     }
 
     /**

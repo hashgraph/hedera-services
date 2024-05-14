@@ -32,7 +32,7 @@ import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.metrics.api.IntegerGauge;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.impl.DefaultIntegerGauge;
-import com.swirlds.metrics.impl.Snapshot.SnapshotEntry;
+import com.swirlds.metrics.impl.snapshot.Snapshot.SnapshotEntry;
 import java.util.List;
 import java.util.function.BiFunction;
 import org.junit.jupiter.api.DisplayName;

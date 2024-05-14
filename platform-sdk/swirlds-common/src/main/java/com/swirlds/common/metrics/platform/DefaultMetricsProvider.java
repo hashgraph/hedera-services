@@ -59,7 +59,7 @@ public class DefaultMetricsProvider implements PlatformMetricsProvider, Lifecycl
     private final @NonNull DefaultPlatformMetrics globalMetrics;
     private final @NonNull ConcurrentMap<NodeId, DefaultPlatformMetrics> platformMetrics = new ConcurrentHashMap<>();
     private final @Nullable PrometheusEndpoint prometheusEndpoint;
-    private final @NonNull SnapshotService snapshotService;
+    private final @NonNull PlatformSnapshotService snapshotService;
     private final @NonNull MetricsConfig metricsConfig;
     private final @NonNull Configuration configuration;
 
@@ -78,7 +78,8 @@ public class DefaultMetricsProvider implements PlatformMetricsProvider, Lifecycl
         globalMetrics = new DefaultPlatformMetrics(null, metricKeyRegistry, executor, factory, metricsConfig);
 
         // setup SnapshotService
-        snapshotService = new SnapshotService(globalMetrics, executor, metricsConfig.getMetricsSnapshotDuration());
+        snapshotService =
+                new PlatformSnapshotService(globalMetrics, executor, metricsConfig.getMetricsSnapshotDuration());
 
         // setup Prometheus endpoint
         PrometheusEndpoint endpoint = null;

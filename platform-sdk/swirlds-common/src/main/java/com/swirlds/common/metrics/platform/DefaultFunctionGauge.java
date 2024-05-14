@@ -21,7 +21,7 @@ import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.metrics.api.MetricConfig;
-import com.swirlds.metrics.impl.Snapshot.SnapshotEntry;
+import com.swirlds.metrics.impl.snapshot.Snapshot.SnapshotEntry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.Supplier;

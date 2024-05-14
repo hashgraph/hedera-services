@@ -38,7 +38,7 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.IntegerGauge;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.impl.DefaultIntegerGauge;
-import com.swirlds.metrics.impl.Snapshot.SnapshotEntry;
+import com.swirlds.metrics.impl.snapshot.Snapshot.SnapshotEntry;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;

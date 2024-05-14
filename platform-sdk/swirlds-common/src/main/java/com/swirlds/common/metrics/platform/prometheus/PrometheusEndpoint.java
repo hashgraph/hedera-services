@@ -32,13 +32,13 @@ import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.StatEntry;
 import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricsEvent;
-import com.swirlds.common.metrics.platform.SnapshotEvent;
+import com.swirlds.common.metrics.platform.PlatformSnapshotEvent;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ThresholdLimitingHandler;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.metrics.impl.Snapshot;
+import com.swirlds.metrics.impl.snapshot.Snapshot;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.HTTPServer;
 import java.io.IOException;
@@ -144,9 +144,9 @@ public class PrometheusEndpoint implements AutoCloseableNonThrowing {
      * the {@link com.swirlds.common.notification.NotificationEngine}.
      *
      * @param notification
-     * 		the {@link SnapshotEvent}
+     * 		the {@link PlatformSnapshotEvent}
      */
-    public void handleSnapshots(final SnapshotEvent notification) {
+    public void handleSnapshots(final PlatformSnapshotEvent notification) {
         Objects.requireNonNull(notification, "notification must not be null");
 
         for (final Snapshot snapshot : notification.snapshots()) {
