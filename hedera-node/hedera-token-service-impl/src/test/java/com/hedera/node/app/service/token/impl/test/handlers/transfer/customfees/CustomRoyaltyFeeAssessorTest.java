@@ -121,9 +121,10 @@ public class CustomRoyaltyFeeAssessorTest {
         assertThat(result.getAssessedCustomFees()).isEmpty();
         verify(fixedFeeAssessor, never()).assessFixedFee(any(), any(), any(), any());
 
-        // We add to the set of royalties paid to track the royalties paid. But since nothing is paid, the set should
-        // be empty.
-        assertThat(result.getRoyaltiesPaid()).isEmpty();
+        // We add to the set of royalties paid to track the royalties paid.
+        // Even though nothing is paid, once its analyzed it should be added to the set
+        assertThat(result.getRoyaltiesPaid()).contains(Pair.of(funding, feeMeta.tokenId()));
+        assertThat(result.getAssessedCustomFees()).isEmpty();
     }
 
     @Test

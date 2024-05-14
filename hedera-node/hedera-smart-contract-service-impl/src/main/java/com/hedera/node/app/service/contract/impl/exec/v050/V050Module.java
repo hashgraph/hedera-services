@@ -142,7 +142,7 @@ public interface V050Module {
 
         oneTimeEVMModuleInitialization();
 
-        // Use Cancun EVM with 0.49 custom operations and 0x00 chain id (set at runtime)
+        // Use Cancun EVM with 0.50 custom operations and 0x00 chain id (set at runtime)
         final var operationRegistry = new OperationRegistry();
         registerCancunOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         customOperations.forEach(operationRegistry::put);

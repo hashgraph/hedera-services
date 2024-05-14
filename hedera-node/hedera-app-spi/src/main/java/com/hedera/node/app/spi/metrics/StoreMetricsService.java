@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.metrics;
 
+import com.swirlds.state.spi.metrics.StoreMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public interface StoreMetricsService {

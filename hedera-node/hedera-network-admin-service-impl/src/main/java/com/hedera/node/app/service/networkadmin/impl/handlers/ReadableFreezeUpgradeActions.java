@@ -20,6 +20,7 @@ import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
@@ -31,11 +32,9 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -94,7 +93,7 @@ public class ReadableFreezeUpgradeActions {
 
     protected void writeMarker(@NonNull final String file, @Nullable final Timestamp now) {
         requireNonNull(file);
-        final Path artifactsDirPath = Paths.get(adminServiceConfig.upgradeArtifactsPath());
+        final Path artifactsDirPath = getAbsolutePath(adminServiceConfig.upgradeArtifactsPath());
         final var filePath = artifactsDirPath.resolve(file);
         try {
             if (!artifactsDirPath.toFile().exists()) {
@@ -198,7 +197,7 @@ public class ReadableFreezeUpgradeActions {
         requireNonNull(marker);
 
         final long size = archiveData.length();
-        final String artifactsLoc = adminServiceConfig.upgradeArtifactsPath();
+        final Path artifactsLoc = getAbsolutePath(adminServiceConfig.upgradeArtifactsPath());
         requireNonNull(artifactsLoc);
         log.info("About to unzip {} bytes for {} update into {}", size, desc, artifactsLoc);
         // we spin off a separate thread to avoid blocking handleTransaction
@@ -207,10 +206,10 @@ public class ReadableFreezeUpgradeActions {
     }
 
     private void extractAndReplaceArtifacts(
-            String artifactsLoc, Bytes archiveData, long size, String desc, String marker, Timestamp now) {
+            Path artifactsLoc, Bytes archiveData, long size, String desc, String marker, Timestamp now) {
         try {
-            FileUtils.cleanDirectory(new File(artifactsLoc));
-            UnzipUtility.unzip(archiveData.toByteArray(), Paths.get(artifactsLoc));
+            FileUtils.cleanDirectory(artifactsLoc.toFile());
+            UnzipUtility.unzip(archiveData.toByteArray(), artifactsLoc);
             log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
             writeSecondMarker(marker, now);
         } catch (final IOException e) {
