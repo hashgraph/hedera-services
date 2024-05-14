@@ -512,7 +512,9 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> tokenAddr.set(
                                         HapiPropertySource.asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
                         uploadInitCode(ERC_20_CONTRACT),
-                        contractCreate(ERC_20_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(ERC_20_CONTRACT).refusingEthConversion(),
                         tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
                         tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
                         tokenAssociate(ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
@@ -602,7 +604,9 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> tokenAddr.set(
                                         HapiPropertySource.asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
                         uploadInitCode(ERC_20_CONTRACT),
-                        contractCreate(ERC_20_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(ERC_20_CONTRACT).refusingEthConversion(),
                         tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
                         tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
                         tokenAssociate(ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
@@ -646,8 +650,10 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(ERC_20_CONTRACT, nestedContract),
-                        contractCreate(ERC_20_CONTRACT),
-                        contractCreate(nestedContract),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(ERC_20_CONTRACT).refusingEthConversion(),
+                        contractCreate(nestedContract).refusingEthConversion(),
                         tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
                         tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
                         tokenAssociate(ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
@@ -725,8 +731,14 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(ERC_20_CONTRACT, nestedContract),
                         newKeyNamed(TRANSFER_SIG_NAME).shape(SIMPLE.signedWith(ON)),
-                        contractCreate(ERC_20_CONTRACT).adminKey(TRANSFER_SIG_NAME),
-                        contractCreate(nestedContract).adminKey(TRANSFER_SIG_NAME))
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(ERC_20_CONTRACT)
+                                .adminKey(TRANSFER_SIG_NAME)
+                                .refusingEthConversion(),
+                        contractCreate(nestedContract)
+                                .adminKey(TRANSFER_SIG_NAME)
+                                .refusingEthConversion())
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
@@ -853,7 +865,9 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(ERC_20_CONTRACT),
-                        contractCreate(ERC_20_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(ERC_20_CONTRACT).refusingEthConversion(),
                         tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                         tokenAssociate(ERC_20_CONTRACT, FUNGIBLE_TOKEN))
                 .when(withOpContext((spec, opLog) -> allRunFor(
@@ -1468,7 +1482,12 @@ public class ERCPrecompileSuite extends HapiSuite {
                         cryptoCreate(B_CIVILIAN)
                                 .exposingCreatedIdTo(id -> bCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
                         uploadInitCode(SOME_ERC_721_SCENARIOS),
-                        contractCreate(SOME_ERC_721_SCENARIOS).adminKey(MULTI_KEY_NAME),
+                        contractCreate(SOME_ERC_721_SCENARIOS)
+                                .adminKey(MULTI_KEY_NAME)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         tokenCreate(NF_TOKEN)
                                 .supplyKey(MULTI_KEY_NAME)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
@@ -1582,7 +1601,12 @@ public class ERCPrecompileSuite extends HapiSuite {
                         cryptoCreate(B_CIVILIAN)
                                 .exposingCreatedIdTo(id -> bCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
                         uploadInitCode(SOME_ERC_721_SCENARIOS),
-                        contractCreate(SOME_ERC_721_SCENARIOS).adminKey(MULTI_KEY_NAME),
+                        contractCreate(SOME_ERC_721_SCENARIOS)
+                                .adminKey(MULTI_KEY_NAME)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         tokenCreate(NF_TOKEN)
                                 .supplyKey(MULTI_KEY_NAME)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
@@ -1783,7 +1807,12 @@ public class ERCPrecompileSuite extends HapiSuite {
                         cryptoCreate(B_CIVILIAN)
                                 .exposingCreatedIdTo(id -> bCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
                         uploadInitCode(SOME_ERC_20_SCENARIOS),
-                        contractCreate(SOME_ERC_20_SCENARIOS).adminKey(MULTI_KEY_NAME),
+                        contractCreate(SOME_ERC_20_SCENARIOS)
+                                .adminKey(MULTI_KEY_NAME)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         tokenCreate(TOKEN)
                                 .supplyKey(MULTI_KEY_NAME)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -1935,7 +1964,12 @@ public class ERCPrecompileSuite extends HapiSuite {
                         cryptoCreate(B_CIVILIAN)
                                 .exposingCreatedIdTo(id -> bCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
                         uploadInitCode(SOME_ERC_20_SCENARIOS),
-                        contractCreate(SOME_ERC_20_SCENARIOS).adminKey(MULTI_KEY_NAME),
+                        contractCreate(SOME_ERC_20_SCENARIOS)
+                                .adminKey(MULTI_KEY_NAME)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         tokenCreate(TOKEN)
                                 .supplyKey(MULTI_KEY_NAME)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -2071,7 +2105,12 @@ public class ERCPrecompileSuite extends HapiSuite {
                         cryptoCreate(B_CIVILIAN)
                                 .exposingCreatedIdTo(id -> bCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
                         uploadInitCode(SOME_ERC_20_SCENARIOS),
-                        contractCreate(SOME_ERC_20_SCENARIOS).adminKey(MULTI_KEY_NAME),
+                        contractCreate(SOME_ERC_20_SCENARIOS)
+                                .adminKey(MULTI_KEY_NAME)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         tokenCreate(TOKEN)
                                 .supplyKey(MULTI_KEY_NAME)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -2270,7 +2309,12 @@ public class ERCPrecompileSuite extends HapiSuite {
                         cryptoCreate(A_CIVILIAN)
                                 .exposingCreatedIdTo(id -> aCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
                         uploadInitCode(SOME_ERC_721_SCENARIOS),
-                        contractCreate(SOME_ERC_721_SCENARIOS).adminKey(MULTI_KEY_NAME),
+                        contractCreate(SOME_ERC_721_SCENARIOS)
+                                .adminKey(MULTI_KEY_NAME)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         tokenCreate(NF_TOKEN)
                                 .supplyKey(MULTI_KEY_NAME)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
@@ -2401,7 +2445,12 @@ public class ERCPrecompileSuite extends HapiSuite {
                         cryptoCreate(A_CIVILIAN)
                                 .exposingCreatedIdTo(id -> aCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
                         uploadInitCode(SOME_ERC_721_SCENARIOS),
-                        contractCreate(SOME_ERC_721_SCENARIOS).adminKey(MULTI_KEY_NAME),
+                        contractCreate(SOME_ERC_721_SCENARIOS)
+                                .adminKey(MULTI_KEY_NAME)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         tokenCreate(NF_TOKEN)
                                 .supplyKey(MULTI_KEY_NAME)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
@@ -2626,7 +2675,9 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(ERC_721_CONTRACT),
-                        contractCreate(ERC_721_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(ERC_721_CONTRACT).refusingEthConversion(),
                         mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META)),
                         tokenAssociate(ACCOUNT, List.of(NON_FUNGIBLE_TOKEN)),
                         tokenAssociate(RECIPIENT, List.of(NON_FUNGIBLE_TOKEN)),
@@ -2733,7 +2784,9 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(ERC_20_CONTRACT),
-                        contractCreate(ERC_20_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(ERC_20_CONTRACT).refusingEthConversion(),
                         tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                         tokenAssociate(RECIPIENT, FUNGIBLE_TOKEN),
                         tokenAssociate(ERC_20_CONTRACT, FUNGIBLE_TOKEN),
@@ -2827,7 +2880,9 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(ERC_20_CONTRACT),
-                        contractCreate(ERC_20_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(ERC_20_CONTRACT).refusingEthConversion(),
                         tokenAssociate(RECIPIENT, FUNGIBLE_TOKEN),
                         tokenAssociate(ERC_20_CONTRACT, FUNGIBLE_TOKEN),
                         cryptoTransfer(moving(10, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ERC_20_CONTRACT)))
@@ -2877,7 +2932,9 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(ERC_721_CONTRACT),
-                        contractCreate(ERC_721_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(ERC_721_CONTRACT).refusingEthConversion(),
                         tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                         tokenAssociate(SPENDER, NON_FUNGIBLE_TOKEN),
                         tokenAssociate(RECIPIENT, NON_FUNGIBLE_TOKEN),
@@ -2960,7 +3017,9 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(ERC_721_CONTRACT),
-                        contractCreate(ERC_721_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(ERC_721_CONTRACT).refusingEthConversion(),
                         tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                         tokenAssociate(SPENDER, NON_FUNGIBLE_TOKEN),
                         tokenAssociate(RECIPIENT, NON_FUNGIBLE_TOKEN),

@@ -98,7 +98,8 @@ public class SigningReqsSuite extends HapiSuite {
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
                         contractCreate(MINIMAL_CREATIONS_CONTRACT)
                                 .exposingNumTo(contractId::set)
-                                .gas(GAS_TO_OFFER),
+                                .gas(GAS_TO_OFFER)
+                                .refusingEthConversion(),
                         cryptoCreate(autoRenew)
                                 .keyShape(origKey.signedWith(sigs(ON, MINIMAL_CREATIONS_CONTRACT)))
                                 .exposingCreatedIdTo(id -> autoRenewMirrorAddr.set(idAsHeadlongAddress(id))))

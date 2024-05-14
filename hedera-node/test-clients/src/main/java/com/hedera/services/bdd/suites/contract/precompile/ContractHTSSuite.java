@@ -142,12 +142,19 @@ public class ContractHTSSuite extends HapiSuite {
                                 .initialSupply(TOTAL_SUPPLY)
                                 .treasury(TOKEN_TREASURY),
                         uploadInitCode(VERSATILE_TRANSFERS_CONTRACT, FEE_DISTRIBUTOR_CONTRACT),
-                        contractCreate(FEE_DISTRIBUTOR_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(FEE_DISTRIBUTOR_CONTRACT).refusingEthConversion(),
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
                                 contractCreate(
-                                        VERSATILE_TRANSFERS_CONTRACT,
-                                        asHeadlongAddress(getNestedContractAddress(FEE_DISTRIBUTOR_CONTRACT, spec))))),
+                                                VERSATILE_TRANSFERS_CONTRACT,
+                                                asHeadlongAddress(
+                                                        getNestedContractAddress(FEE_DISTRIBUTOR_CONTRACT, spec)))
+                                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                        // tokenAssociate,
+                                        // since we have CONTRACT_ID key
+                                        .refusingEthConversion())),
                         tokenAssociate(ACCOUNT, List.of(A_TOKEN)),
                         tokenAssociate(VERSATILE_TRANSFERS_CONTRACT, List.of(A_TOKEN)),
                         tokenAssociate(RECEIVER, List.of(A_TOKEN)),

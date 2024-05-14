@@ -686,6 +686,8 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
+    // To be consistent with the mono behaviour we shouldn't change the memo when we provide empty memo value.
+    // We should think of a method/function to reset the memo value.
     final Stream<DynamicTest> tokenUpdateCanClearMemo() {
         final var token = "token";
         final var multiKey = "multiKey";

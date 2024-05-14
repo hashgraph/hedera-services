@@ -18,6 +18,10 @@ package com.hedera.node.app.spi.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.swirlds.platform.state.spi.WritableKVStateBaseTest;
+import com.swirlds.platform.state.spi.WritableSingletonStateBase;
+import com.swirlds.platform.state.spi.WritableSingletonStateBaseTest;
+import com.swirlds.state.spi.WritableSingletonState;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

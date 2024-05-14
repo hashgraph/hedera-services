@@ -92,11 +92,12 @@ public class MixedOpsStateCreation extends HapiSuite {
         AtomicInteger nftId = new AtomicInteger(0);
         AtomicInteger scheduleId = new AtomicInteger(0);
         AtomicInteger contractId = new AtomicInteger(0);
+        AtomicInteger topicId = new AtomicInteger(1);
         final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
         final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
         Random r = new Random(38582L);
         Supplier<HapiSpecOperation[]> mixedOpsBurst =
-                new MixedOperations(NUM_SUBMISSIONS).mixedOps(tokenId, nftId, scheduleId, contractId, r);
+                new MixedOperations(NUM_SUBMISSIONS).mixedOps(tokenId, nftId, scheduleId, contractId, topicId, r);
         return defaultHapiSpec("RestartMixedOps")
                 .given(
                         newKeyNamed(CONTRACT_ADMIN_KEY),

@@ -95,10 +95,13 @@ public class ContractGetInfoSuite extends HapiSuite {
                         cryptoCreate(CIVILIAN_PAYER).balance(ONE_HUNDRED_HBARS),
                         balanceSnapshot("beforeQuery", CIVILIAN_PAYER),
                         uploadInitCode(contract),
+                        // refuse eth conversion because ethereum transaction is missing admin key and memo is same as
+                        // parent
                         contractCreate(contract)
                                 .adminKey("adminKey")
                                 .entityMemo(MEMO)
-                                .autoRenewSecs(6999999L),
+                                .autoRenewSecs(6999999L)
+                                .refusingEthConversion(),
                         withOpContext((spec, opLog) -> canonicalQueryFeeAtActiveRate.set(spec.ratesProvider()
                                 .toTbWithActiveRates((long) (canonicalUsdPrice * 100 * TINY_PARTS_PER_WHOLE)))))
                 .when(withTargetLedgerId(ledgerId -> getContractInfo(contract)

@@ -251,7 +251,9 @@ public class ContractCallLocalSuite extends HapiSuite {
     @HapiTest
     final Stream<DynamicTest> successOnDeletedContract() {
         return defaultHapiSpec("SuccessOnDeletedContract", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                // since we have CONTRACT_ID key
+                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).refusingEthConversion())
                 .when(contractDelete(CONTRACT))
                 .then(contractCallLocal(CONTRACT, "create")
                         .nodePayment(1_234_567)
