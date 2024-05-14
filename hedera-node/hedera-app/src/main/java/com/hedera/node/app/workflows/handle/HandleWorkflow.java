@@ -96,7 +96,6 @@ import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
 import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
@@ -125,6 +124,7 @@ import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -826,11 +826,17 @@ public class HandleWorkflow {
         return switch (function) {
             case CONTRACT_CREATE -> txnBody.contractCreateInstance().gas();
             case CONTRACT_CALL -> txnBody.contractCall().gas();
-            case ETHEREUM_TRANSACTION -> EthTxData.populateEthTxData(
-                            txnBody.ethereumTransaction().ethereumData().toByteArray())
-                    .gasLimit();
+            case ETHEREUM_TRANSACTION -> getGasLimitFromEthTxData(txnBody);
             default -> 0L;
         };
+    }
+
+    private static long getGasLimitFromEthTxData(final TransactionBody txn) {
+        final var ethTxBody = txn.ethereumTransaction();
+        if (ethTxBody == null) return 0L;
+        final var ethTxData =
+                EthTxData.populateEthTxData(ethTxBody.ethereumData().toByteArray());
+        return ethTxData != null ? ethTxData.gasLimit() : 0L;
     }
 
     private ValidationResult validate(

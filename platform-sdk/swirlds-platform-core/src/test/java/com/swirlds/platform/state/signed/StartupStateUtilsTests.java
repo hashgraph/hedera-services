@@ -61,7 +61,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("StartupStateUtilities Tests")
-class StartupStateUtilsTests {
+public class StartupStateUtilsTests {
 
     /**
      * Temporary directory provided by JUnit

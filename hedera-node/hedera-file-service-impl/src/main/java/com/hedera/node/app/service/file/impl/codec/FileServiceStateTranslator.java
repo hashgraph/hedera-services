@@ -116,6 +116,11 @@ public class FileServiceStateTranslator {
         return new FileMetadataAndContent(data, hFileMeta);
     }
 
+    /***
+     * Provides a record for the file metadata and content
+     * @param data bytes of file
+     * @param metadata all the metadata of the file
+     */
     @SuppressWarnings("java:S6218")
     public record FileMetadataAndContent(
             @Nullable byte[] data, @NonNull com.hedera.node.app.service.mono.files.HFileMeta metadata) {}

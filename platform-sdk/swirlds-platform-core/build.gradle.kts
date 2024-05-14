@@ -15,8 +15,8 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.sdk.conventions")
-    id("com.hedera.hashgraph.platform-maven-publish")
+    id("com.hedera.gradle.platform")
+    id("com.hedera.gradle.platform-publish")
     id("com.hedera.hashgraph.benchmark-conventions")
     id("com.hedera.hashgraph.java-test-fixtures")
 }
@@ -43,11 +43,15 @@ testModuleInfo {
     requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.logging.test.fixtures")
     requires("com.swirlds.platform.core")
+    requires("com.swirlds.platform.core.test.fixtures")
     requires("com.swirlds.config.extensions.test.fixtures")
+    requires("com.swirlds.platform.core.test.fixtures")
     requires("jakarta.inject")
     requires("org.assertj.core")
+    requires("io.github.classgraph")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("org.mockito")
+    requires("org.mockito.junit.jupiter")
     requiresStatic("com.github.spotbugs.annotations")
 }

@@ -19,27 +19,28 @@ module com.hedera.node.app {
     requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
-    requires transitive com.swirlds.merkle;
-    requires transitive com.swirlds.merkledb;
     requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.platform.core;
-    requires transitive com.swirlds.virtualmap;
+    requires transitive com.swirlds.state.api;
     requires transitive dagger;
     requires transitive grpc.stub;
     requires transitive javax.inject;
     requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.app.service.consensus;
     requires com.hedera.node.app.service.contract;
-    requires com.hedera.node.app.service.evm;
     requires com.hedera.node.app.service.file;
     requires com.hedera.node.app.service.network.admin;
     requires com.hedera.node.app.service.util;
     requires com.google.common;
     requires com.google.protobuf;
+    requires com.hedera.evm;
     requires com.swirlds.base;
     requires com.swirlds.config.extensions;
     requires com.swirlds.fcqueue;
     requires com.swirlds.logging;
+    requires com.swirlds.merkle;
+    requires com.swirlds.merkledb;
+    requires com.swirlds.virtualmap;
     requires grpc.netty;
     requires io.grpc;
     requires io.netty.handler;
@@ -59,10 +60,6 @@ module com.hedera.node.app {
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.state.merkle to
             com.hedera.node.services.cli;
-    exports com.hedera.node.app.state.merkle.disk to
-            com.hedera.node.services.cli;
-    exports com.hedera.node.app.state.merkle.memory to
-            com.hedera.node.services.cli;
     exports com.hedera.node.app.workflows.dispatcher;
     exports com.hedera.node.app.config;
     exports com.hedera.node.app.workflows.handle.validation;
@@ -74,8 +71,6 @@ module com.hedera.node.app {
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.workflows.handle.record to
             com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.state.merkle.queue to
-            com.swirlds.platform;
     exports com.hedera.node.app.version to
             com.hedera.node.app.test.fixtures,
             com.swirlds.platform;
