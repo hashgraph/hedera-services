@@ -43,7 +43,7 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -96,7 +96,7 @@ class ShadowgraphTest {
     }
 
     private void initShadowgraph(final Random random, final int numEvents, final int numNodes) {
-        addressBook = new RandomAddressBookGenerator(random).setSize(numNodes).build();
+        addressBook = RandomAddressBookBuilder.create(random).withSize(numNodes).build();
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
@@ -724,7 +724,7 @@ class ShadowgraphTest {
 
         final Random random = RandomUtils.getRandomPrintSeed();
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(numNodes).build();
+                RandomAddressBookBuilder.create(random).withSize(numNodes).build();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
