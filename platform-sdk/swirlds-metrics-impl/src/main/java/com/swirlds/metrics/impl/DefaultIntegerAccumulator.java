@@ -36,7 +36,7 @@ public class DefaultIntegerAccumulator extends AbstractMetric implements Integer
     private final IntBinaryOperator accumulator;
     private final IntSupplier initializer;
 
-    public DefaultIntegerAccumulator(final Config config) {
+    public DefaultIntegerAccumulator(@NonNull final Config config) {
         super(config);
         this.accumulator = config.getAccumulator();
         final int initialValue = config.getInitialValue();

@@ -35,7 +35,7 @@ public abstract class AbstractMetric implements Metric {
     private final String unit;
     private final String format;
 
-    protected AbstractMetric(MetricConfig<?, ?> config) {
+    protected AbstractMetric(@NonNull final MetricConfig<?, ?> config) {
         Objects.requireNonNull(config, "config must not be null");
         this.category = config.getCategory();
         this.name = config.getName();

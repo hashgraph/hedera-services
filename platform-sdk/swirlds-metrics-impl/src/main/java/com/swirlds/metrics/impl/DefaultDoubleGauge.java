@@ -31,7 +31,7 @@ public class DefaultDoubleGauge extends AbstractMetric implements DoubleGauge {
 
     private final AtomicDouble value;
 
-    public DefaultDoubleGauge(final Config config) {
+    public DefaultDoubleGauge(@NonNull final Config config) {
         super(config);
         value = new AtomicDouble(config.getInitialValue());
     }

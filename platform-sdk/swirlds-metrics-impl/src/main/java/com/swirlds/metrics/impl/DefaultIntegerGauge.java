@@ -32,7 +32,7 @@ public class DefaultIntegerGauge extends AbstractMetric implements IntegerGauge 
 
     private final AtomicInteger value;
 
-    public DefaultIntegerGauge(final Config config) {
+    public DefaultIntegerGauge(@NonNull final Config config) {
         super(config);
         this.value = new AtomicInteger(config.getInitialValue());
     }

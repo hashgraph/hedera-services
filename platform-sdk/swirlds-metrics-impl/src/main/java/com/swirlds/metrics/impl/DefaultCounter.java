@@ -34,7 +34,7 @@ public class DefaultCounter extends AbstractMetric implements Counter {
 
     private final LongAdder adder = new LongAdder();
 
-    public DefaultCounter(final Config config) {
+    public DefaultCounter(@NonNull final Config config) {
         super(config);
     }
 

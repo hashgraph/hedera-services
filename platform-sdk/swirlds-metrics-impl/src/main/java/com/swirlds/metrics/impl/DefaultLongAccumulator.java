@@ -36,7 +36,7 @@ public class DefaultLongAccumulator extends AbstractMetric implements LongAccumu
     private final LongBinaryOperator accumulator;
     private final LongSupplier initializer;
 
-    public DefaultLongAccumulator(final Config config) {
+    public DefaultLongAccumulator(@NonNull final Config config) {
         super(config);
         final long initialValue = config.getInitialValue();
         final LongSupplier configInitializer = config.getInitializer();

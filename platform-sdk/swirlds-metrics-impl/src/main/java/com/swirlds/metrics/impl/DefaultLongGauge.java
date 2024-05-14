@@ -32,7 +32,7 @@ public class DefaultLongGauge extends AbstractMetric implements LongGauge {
 
     private final AtomicLong value;
 
-    public DefaultLongGauge(final Config config) {
+    public DefaultLongGauge(@NonNull final Config config) {
         super(config);
         this.value = new AtomicLong(config.getInitialValue());
     }
