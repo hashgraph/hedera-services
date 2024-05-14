@@ -19,7 +19,6 @@ package com.swirlds.platform.wiring;
 import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder.UNLIMITED_CAPACITY;
 
-import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.wiring.counters.ObjectCounter;
@@ -35,6 +34,7 @@ import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateHasher;
 import com.swirlds.platform.state.signed.StateSavingResult;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -60,7 +60,7 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
         @NonNull TaskScheduler<GossipEvent> postHashCollectorScheduler,
         @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
-        @NonNull TaskScheduler<StateSignaturePayload> stateSignerScheduler,
+        @NonNull TaskScheduler<ConsensusTransactionImpl> stateSignerScheduler,
         @NonNull TaskScheduler<NoInput> pcesReplayerScheduler,
         @NonNull TaskScheduler<StateAndRound> consensusRoundHandlerScheduler,
         @NonNull TaskScheduler<RunningEventHashOverride> runningHashUpdateScheduler,
