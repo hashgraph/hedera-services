@@ -269,9 +269,9 @@ public final class CryptoStatic {
             return signature.verifySignature(sig);
         } catch (final NoSuchAlgorithmException | NoSuchProviderException e) {
             // should never happen
-            throw new CryptographyException(e);
+            throw new CryptographyException("Exception occurred while validating a signature:", e, LogMarker.EXCEPTION);
         } catch (final InvalidKeyException | SignatureException e) {
-            logger.error(LogMarker.EXCEPTION.getMarker(), "", e);
+            logger.error(LogMarker.EXCEPTION.getMarker(), "Exception occurred while validating a signature:", e);
             return false;
         }
     }
