@@ -139,9 +139,6 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     private FeeCalculator feeCalculator;
 
     @Mock
-    private FeeManager feeManager;
-
-    @Mock
     private FeeAccumulator feeAccumulator;
 
     @Mock
