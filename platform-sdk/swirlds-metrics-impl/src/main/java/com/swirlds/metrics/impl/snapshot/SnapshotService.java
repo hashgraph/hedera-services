@@ -128,10 +128,6 @@ public class SnapshotService implements Startable, Stoppable {
     }
 
     private void mainLoop() {
-        if (!isRunning()) {
-            return;
-        }
-
         final Map<String, Snapshot> allSnapshots = new HashMap<>();
         metrics.getAll().forEach(m -> {
             if (m instanceof AbstractMetric metric) {
@@ -142,7 +138,6 @@ public class SnapshotService implements Startable, Stoppable {
                 final Snapshot snapshot = new Snapshot(metric, metric.takeSnapshot(), labels);
                 allSnapshots.put(identifier, snapshot);
             }
-
             final SnapshotEvent event = new SnapshotEvent(allSnapshots.values());
             subscribers.forEach(subscriber -> subscriber.accept(event));
         });

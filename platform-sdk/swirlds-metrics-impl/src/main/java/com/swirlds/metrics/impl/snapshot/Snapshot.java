@@ -20,6 +20,7 @@ import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metric.ValueType;
 import com.swirlds.metrics.impl.AbstractMetric;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -27,7 +28,8 @@ import java.util.Set;
 /**
  * An instance of {@code Snapshot} contains the data of a single snapshot of a {@link Metric}.
  */
-public record Snapshot(@NonNull Metric metric, @NonNull List<SnapshotEntry> entries, @NonNull Set<Label> labels) {
+public record Snapshot(
+        @NonNull Metric metric, @NonNull List<SnapshotEntry> entries, @NonNull Collection<Label> labels) {
 
     /**
      * Create a {@code Snapshot} of a {@link AbstractMetric}
