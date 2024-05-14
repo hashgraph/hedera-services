@@ -10,7 +10,7 @@ SCRIPT_PATH="$(dirname "$(readlink -f "$0")")"
 
 pcli diagram \
     -l 'TransactionPrehandler:futures:consensusRoundHandler' \
-    -l 'EventCreationManager:get transactions:transactionPool' \
+    -l 'EventCreationManager:get transactions:TransactionPool' \
     -l 'RunningEventHasher:future hash:consensusRoundHandler' \
     -l 'ConsensusEventStream:future hash:consensusRoundHandler' \
     -s 'eventWindowManager:event window:🌀' \
@@ -20,8 +20,9 @@ pcli diagram \
     -s 'OrphanBufferSplitter:events to gossip:📬' \
     -s 'getKeystoneEventSequenceNumber:flush request:🚽' \
     -s 'extractOldestMinimumGenerationOnDisk:minimum identifier to store:📀' \
-    -s 'SelfEventSigner:non-validated events:🍎' \
+    -s 'StaleEventDetectorRouter:non-validated events:🍎' \
     -s 'Mystery Input:mystery data:❔' \
+    -s 'stateSigner:submit transaction:🖋️' \
     -s 'stateSigner:signature transactions:🖋️' \
     -s 'IssDetectorSplitter:IssNotification:💥' \
     -s 'getStatusAction:PlatformStatusAction:💀' \
@@ -29,6 +30,8 @@ pcli diagram \
     -s 'latestCompleteStateNotifier:complete state notification:💢' \
     -s 'OrphanBufferSplitter:preconsensus signatures:🔰' \
     -s 'RunningEventHashOverride:hash override:💨' \
+    -s 'TransactionResubmitterSplitter:submit transaction:♻️' \
+    -s 'StaleEventDetectorRouter:publishStaleEvent:⚰️' \
     -s 'toStateWrittenToDiskAction:PlatformStatusAction:💾' \
     -s 'StatusStateMachine:PlatformStatus:🚦' \
     -g 'Event Validation:InternalEventValidator,EventDeduplicator,EventSignatureValidator' \
@@ -40,7 +43,7 @@ pcli diagram \
     -g 'State Signature Collector:StateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions,latestCompleteStateNotifier' \
     -g 'State Signature Collection:State Signature Collector,latestCompleteStateNexus,💢' \
     -g 'Preconsensus Event Stream:PcesSequencer,PcesWriter' \
-    -g 'Event Creation:EventCreationManager,transactionPool,SelfEventSigner,🍎' \
+    -g 'Event Creation:EventCreationManager,TransactionPool,SelfEventSigner' \
     -g 'ISS Detector:IssDetector,IssDetectorSplitter,issHandler,getStatusAction' \
     -g 'Heartbeat:heartbeat,❤️' \
     -g 'PCES Replay:pcesReplayer,✅' \
@@ -50,6 +53,9 @@ pcli diagram \
     -g 'State Verification:stateSigner,hashLogger,ISS Detector,🖋️,💥,💀' \
     -g 'Transaction Handling:Consensus Round Handler,latestImmutableStateNexus' \
     -g 'Round Durability Buffer:RoundDurabilityBuffer,RoundDurabilityBufferSplitter' \
+    -g 'Stale Event Detector:StaleEventDetector,StaleEventDetectorSplitter,StaleEventDetectorRouter' \
+    -g 'Transaction Resubmitter:TransactionResubmitter,TransactionResubmitterSplitter' \
+    -g 'Stale Events:Stale Event Detector,Transaction Resubmitter,⚰️,♻️,🍎' \
     -c 'Orphan Buffer' \
     -c 'Consensus Engine' \
     -c 'State Signature Collector' \
@@ -59,4 +65,6 @@ pcli diagram \
     -c 'ISS Detector' \
     -c 'Round Durability Buffer' \
     -c 'Wait For Crash Durability' \
+    -c 'Stale Event Detector' \
+    -c 'Transaction Resubmitter' \
     -o "${SCRIPT_PATH}/../../../../../../../../docs/core/wiring-diagram.svg"

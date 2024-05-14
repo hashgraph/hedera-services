@@ -20,7 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
 
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.swirlds.platform.state.spi.WritableKVStateBase;
+import com.swirlds.platform.state.spi.WritableKVStateBaseTest;
+import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
@@ -88,8 +90,10 @@ class WrappedWritableKVStateTest extends WritableKVStateBaseTest {
             // Instead, modifications on delegate have increased.
             // Since modifications are increased, size of delegate also increases.
             state.commit();
-            Mockito.verify(state, Mockito.times(1)).putIntoDataSource(C_KEY, CHERRY);
-            Mockito.verify(state, Mockito.never()).removeFromDataSource(anyString());
+            Mockito.verify((WrappedWritableKVState<String, String>) state, Mockito.times(1))
+                    .putIntoDataSource(C_KEY, CHERRY);
+            Mockito.verify((WrappedWritableKVState<String, String>) state, Mockito.never())
+                    .removeFromDataSource(anyString());
             assertEquals(3, state.size());
             assertEquals(3, delegate.size());
             assertEquals(1, delegate.modifiedKeys().size());
@@ -120,8 +124,10 @@ class WrappedWritableKVStateTest extends WritableKVStateBaseTest {
             // Commit should cause change in modifications on delegate.
             // So the size of the delegate also decreases by 1.
             state.commit();
-            Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
-            Mockito.verify(state, Mockito.times(1)).removeFromDataSource(A_KEY);
+            Mockito.verify((WrappedWritableKVState<String, String>) state, Mockito.never())
+                    .putIntoDataSource(anyString(), anyString());
+            Mockito.verify((WrappedWritableKVState<String, String>) state, Mockito.times(1))
+                    .removeFromDataSource(A_KEY);
             assertEquals(1, state.size());
             assertEquals(1, delegate.size());
             assertEquals(1, delegate.modifiedKeys().size());
