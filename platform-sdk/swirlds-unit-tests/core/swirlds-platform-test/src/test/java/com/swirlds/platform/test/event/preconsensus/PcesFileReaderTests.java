@@ -33,7 +33,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.io.utility.RecycleBinImpl;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.metrics.noop.NoOpPlatformMetrics;
 import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -114,7 +114,7 @@ class PcesFileReaderTests {
                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, ancientMode == BIRTH_ROUND_THRESHOLD)
                 .getOrCreateConfig();
 
-        final Metrics metrics = new NoOpMetrics();
+        final Metrics metrics = new NoOpPlatformMetrics();
 
         final TestFileSystemManager fileSystemManager = new TestFileSystemManager(testDirectory);
         fileSystemManager.setBin(TestRecycleBin.getInstance());
@@ -137,7 +137,7 @@ class PcesFileReaderTests {
                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, ancientMode == BIRTH_ROUND_THRESHOLD)
                 .getOrCreateConfig();
 
-        final Metrics metrics = new NoOpMetrics();
+        final Metrics metrics = new NoOpPlatformMetrics();
 
         final TestFileSystemManager fileSystemManager = new TestFileSystemManager(testDirectory);
         fileSystemManager.setBin(recycleBinProvider.apply(metrics, Time.getCurrent()));

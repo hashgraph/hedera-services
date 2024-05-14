@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,29 +16,15 @@
 
 package com.swirlds.common.metrics.noop.internal;
 
-import com.swirlds.metrics.api.LongGauge;
-import com.swirlds.metrics.api.MetricConfig;
+import com.swirlds.common.metrics.PlatformMetric;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
-/**
- * A no-op implementation of a long gauge.
- */
-public class NoOpLongGauge extends AbstractNoOpMetric implements LongGauge {
+public interface NoOpPlatformMetric extends PlatformMetric {
 
-    public NoOpLongGauge(final MetricConfig<?, ?> config) {
-        super(config);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
+    @Nullable
     @Override
-    public long get() {
-        return 0;
+    default StatsBuffered getStatsBuffered() {
+        return NoOpPlatformStatsBuffered.getInstance();
     }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void set(final long newValue) {}
 }

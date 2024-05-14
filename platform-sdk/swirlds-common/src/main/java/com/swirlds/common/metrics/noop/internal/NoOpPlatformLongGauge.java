@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,33 +16,23 @@
 
 package com.swirlds.common.metrics.noop.internal;
 
-import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.metrics.api.MetricConfig;
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A no-op implementation of a running average metric.
+ * A no-op implementation of a long gauge.
  */
-public class NoOpRunningAverageMetric extends AbstractNoOpMetric implements RunningAverageMetric {
+public class NoOpPlatformLongGauge extends AbstractPlatformNoOpMetric implements LongGauge {
 
-    public NoOpRunningAverageMetric(final @NonNull MetricConfig<?, ?> config) {
+    public NoOpPlatformLongGauge(final MetricConfig<?, ?> config) {
         super(config);
     }
 
     /**
      * {@inheritDoc}
      */
-    @NonNull
     @Override
-    public Double get(@NonNull final ValueType valueType) {
-        return 0.0;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public double getHalfLife() {
+    public long get() {
         return 0;
     }
 
@@ -50,13 +40,5 @@ public class NoOpRunningAverageMetric extends AbstractNoOpMetric implements Runn
      * {@inheritDoc}
      */
     @Override
-    public void update(final double value) {}
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public double get() {
-        return 0;
-    }
+    public void set(final long newValue) {}
 }

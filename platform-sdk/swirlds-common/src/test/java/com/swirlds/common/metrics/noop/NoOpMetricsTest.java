@@ -78,7 +78,7 @@ class NoOpMetricsTest {
     @DisplayName("Counter Test")
     void counterTest() {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = new NoOpPlatformMetrics();
             final Counter metric = metrics.getOrCreate(new Counter.Config("asdf", "asdf"));
 
             metric.increment();
@@ -92,7 +92,7 @@ class NoOpMetricsTest {
     @DisplayName("Double Accumulator Test")
     void doubleAccumulatorTest() {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = new NoOpPlatformMetrics();
             final DoubleAccumulator metric = metrics.getOrCreate(new DoubleAccumulator.Config("asdf", "asdf"));
 
             metric.getInitialValue();
@@ -105,7 +105,7 @@ class NoOpMetricsTest {
     @DisplayName("Double Gauge Test")
     void doubleGaugeTest() {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = new NoOpPlatformMetrics();
             final DoubleGauge metric = metrics.getOrCreate(new DoubleGauge.Config("asdf", "asdf"));
 
             metric.get();
@@ -118,7 +118,7 @@ class NoOpMetricsTest {
     @DisplayName("Duration Gauge Test")
     void durationGaugeTest() {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = new NoOpPlatformMetrics();
             final DurationGauge metric =
                     metrics.getOrCreate(new DurationGauge.Config("asdf", "asdf", ChronoUnit.NANOS));
 
@@ -133,7 +133,7 @@ class NoOpMetricsTest {
     @DisplayName("Function Gauge Test")
     void functionGaugeTest() {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = new NoOpPlatformMetrics();
             final Supplier<Integer> supplier = () -> 0;
             final FunctionGauge<Integer> metric =
                     metrics.getOrCreate(new FunctionGauge.Config<>("asdf", "asdf", Integer.class, supplier));
@@ -146,7 +146,7 @@ class NoOpMetricsTest {
     @DisplayName("Integer Accumulator Test")
     void integerAccumulatorTest() {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = new NoOpPlatformMetrics();
             final IntegerAccumulator metric = metrics.getOrCreate(new IntegerAccumulator.Config("asdf", "asdf"));
 
             metric.get();
@@ -160,7 +160,7 @@ class NoOpMetricsTest {
     @DisplayName("Integer Gauge Test")
     void integerGaugeTest() {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = new NoOpPlatformMetrics();
             final IntegerGauge metric = metrics.getOrCreate(new IntegerGauge.Config("asdf", "asdf"));
 
             metric.get();
@@ -173,7 +173,7 @@ class NoOpMetricsTest {
     @DisplayName("Integer Pair Accumulator Test")
     void IntegerPairAccumulatorTest() {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = new NoOpPlatformMetrics();
             final IntegerPairAccumulator<Integer> metric = metrics.getOrCreate(
                     new IntegerPairAccumulator.Config<>("asdf", "asdf", Integer.class, (x, y) -> 0));
 
@@ -190,7 +190,7 @@ class NoOpMetricsTest {
     @DisplayName("Long Accumulator Test")
     void longAccumulatorTest() {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = new NoOpPlatformMetrics();
             final LongAccumulator metric = metrics.getOrCreate(new LongAccumulator.Config("asdf", "asdf"));
 
             metric.get();
@@ -204,7 +204,7 @@ class NoOpMetricsTest {
     @DisplayName("Long Gauge Test")
     void longGaugeTest() {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = new NoOpPlatformMetrics();
             final LongGauge metric = metrics.getOrCreate(new LongGauge.Config("asdf", "asdf"));
 
             metric.get();
@@ -217,7 +217,7 @@ class NoOpMetricsTest {
     @DisplayName("Running Average Metric Test")
     void runningAverageMetricTest() {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = new NoOpPlatformMetrics();
             final RunningAverageMetric metric = metrics.getOrCreate(new RunningAverageMetric.Config("asdf", "asdf"));
 
             metric.get(Metric.ValueType.VALUE);
@@ -232,7 +232,7 @@ class NoOpMetricsTest {
     @DisplayName("Speedometer Metric Test")
     void speedometerMetricTest() {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = new NoOpPlatformMetrics();
             final SpeedometerMetric metric = metrics.getOrCreate(new SpeedometerMetric.Config("asdf", "asdf"));
 
             metric.get(Metric.ValueType.VALUE);
@@ -249,7 +249,7 @@ class NoOpMetricsTest {
     @DisplayName("Create Stat Entry Test")
     void createStatEntryTest() {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = new NoOpPlatformMetrics();
             final StatEntry metric =
                     metrics.getOrCreate(new StatEntry.Config<>("asdf", "asdf", Integer.class, () -> 0));
 
@@ -270,7 +270,7 @@ class NoOpMetricsTest {
     @Test
     @DisplayName("getMetric() Test")
     void getMetricTest() {
-        final Metrics metrics = new NoOpMetrics();
+        final Metrics metrics = new NoOpPlatformMetrics();
 
         // no category or metric
         assertNull(metrics.getMetric("foo", "bar"));
@@ -289,7 +289,7 @@ class NoOpMetricsTest {
     @Test
     @DisplayName("Find Metrics By Category Test")
     void findMetricsByCategoryTest() {
-        final Metrics metrics = new NoOpMetrics();
+        final Metrics metrics = new NoOpPlatformMetrics();
 
         final Metric foo1 = metrics.getOrCreate(new Counter.Config("foo", "1"));
         final Metric foo2 = metrics.getOrCreate(new Counter.Config("foo", "2"));
@@ -338,7 +338,7 @@ class NoOpMetricsTest {
     @Test
     @DisplayName("getAll() Test")
     void getAllTest() {
-        final Metrics metrics = new NoOpMetrics();
+        final Metrics metrics = new NoOpPlatformMetrics();
 
         final Metric foo1 = metrics.getOrCreate(new Counter.Config("foo", "1"));
         final Metric foo2 = metrics.getOrCreate(new Counter.Config("foo", "2"));
@@ -373,7 +373,7 @@ class NoOpMetricsTest {
     @Test
     @DisplayName("getOrCreate() Test")
     void getOrCreate() {
-        final Metrics metrics = new NoOpMetrics();
+        final Metrics metrics = new NoOpPlatformMetrics();
         final Metric foo1 = metrics.getOrCreate(new Counter.Config("foo", "1"));
         assertSame(foo1, metrics.getOrCreate(new Counter.Config("foo", "1")));
 
@@ -386,7 +386,7 @@ class NoOpMetricsTest {
     @Test
     @DisplayName("Misc Metrics Test")
     void miscMetricsTest() {
-        final Metrics metrics = new NoOpMetrics();
+        final Metrics metrics = new NoOpPlatformMetrics();
 
         // The following operations should not throw.
         assertDoesNotThrow(() -> {
@@ -399,7 +399,7 @@ class NoOpMetricsTest {
     @Test
     @DisplayName("remove() Test")
     void removeTest() {
-        final Metrics metrics = new NoOpMetrics();
+        final Metrics metrics = new NoOpPlatformMetrics();
 
         metrics.getOrCreate(new Counter.Config("foo", "1"));
         metrics.getOrCreate(new Counter.Config("foo", "2"));

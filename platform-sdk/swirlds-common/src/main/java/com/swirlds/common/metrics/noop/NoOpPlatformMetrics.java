@@ -17,7 +17,7 @@
 package com.swirlds.common.metrics.noop;
 
 import com.swirlds.common.metrics.PlatformMetrics;
-import com.swirlds.common.metrics.noop.internal.NoOpMetricsFactory;
+import com.swirlds.common.metrics.noop.internal.NoOpPlatformMetricsFactory;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.MetricConfig;
@@ -38,11 +38,11 @@ import java.util.Objects;
  * parties are warned not to rely on this class.
  */
 @Deprecated(forRemoval = true)
-public class NoOpMetrics implements PlatformMetrics {
+public class NoOpPlatformMetrics implements PlatformMetrics {
 
     private final Map<String /* category */, Map<String /* name */, Metric>> metrics = new HashMap<>();
 
-    private static final NoOpMetricsFactory FACTORY = new NoOpMetricsFactory();
+    private static final NoOpPlatformMetricsFactory FACTORY = new NoOpPlatformMetricsFactory();
 
     @Override
     public NodeId getNodeId() {

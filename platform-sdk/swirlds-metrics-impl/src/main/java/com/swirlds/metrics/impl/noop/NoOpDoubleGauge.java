@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,35 +14,26 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics.noop.internal;
+package com.swirlds.metrics.impl.noop;
 
-import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.metrics.api.DoubleGauge;
 import com.swirlds.metrics.api.MetricConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A no-op implementation of a speedometer metric.
+ * A no-op implementation of a double gauge.
  */
-public class NoOpSpeedometerMetric extends AbstractNoOpMetric implements SpeedometerMetric {
+public class NoOpDoubleGauge extends AbstractNoOpMetric implements DoubleGauge {
 
-    public NoOpSpeedometerMetric(final @NonNull MetricConfig<?, ?> config) {
+    public NoOpDoubleGauge(final @NonNull MetricConfig<?, ?> config) {
         super(config);
     }
 
     /**
      * {@inheritDoc}
      */
-    @NonNull
     @Override
-    public Double get(final @NonNull ValueType valueType) {
-        return 0.0;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public double getHalfLife() {
+    public final double get() {
         return 0;
     }
 
@@ -50,19 +41,5 @@ public class NoOpSpeedometerMetric extends AbstractNoOpMetric implements Speedom
      * {@inheritDoc}
      */
     @Override
-    public void update(final double value) {}
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void cycle() {}
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public double get() {
-        return 0;
-    }
+    public final void set(final double newValue) {}
 }

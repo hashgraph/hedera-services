@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.metrics.noop.NoOpPlatformMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -284,7 +284,7 @@ class RecycleBinTests {
 
     private RecycleBinImpl createRecycleBin(final Time time, final Duration minimumPeriod) {
         return new RecycleBinImpl(
-                new NoOpMetrics(),
+                new NoOpPlatformMetrics(),
                 getStaticThreadManager(),
                 time,
                 recycleBinDirectory,

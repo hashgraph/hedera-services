@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.metrics.noop.NoOpPlatformMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.metrics.IssMetrics;
@@ -44,7 +44,7 @@ class IssMetricsTests {
         final AddressBook addressBook =
                 RandomAddressBookBuilder.create(randotron).withSize(100).build();
 
-        final IssMetrics issMetrics = new IssMetrics(new NoOpMetrics(), addressBook);
+        final IssMetrics issMetrics = new IssMetrics(new NoOpPlatformMetrics(), addressBook);
 
         assertThrows(
                 IllegalArgumentException.class,
@@ -64,7 +64,7 @@ class IssMetricsTests {
         final AddressBook addressBook =
                 RandomAddressBookBuilder.create(random).withSize(100).build();
 
-        final IssMetrics issMetrics = new IssMetrics(new NoOpMetrics(), addressBook);
+        final IssMetrics issMetrics = new IssMetrics(new NoOpPlatformMetrics(), addressBook);
 
         assertEquals(0, issMetrics.getIssCount(), "there shouldn't be any nodes in an ISS state");
         assertEquals(0, issMetrics.getIssWeight(), "there shouldn't be any weight in an ISS state");

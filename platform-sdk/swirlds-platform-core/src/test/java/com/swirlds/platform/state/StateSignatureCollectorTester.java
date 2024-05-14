@@ -17,7 +17,7 @@
 package com.swirlds.platform.state;
 
 import com.hedera.hapi.platform.event.StateSignaturePayload;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.metrics.noop.NoOpPlatformMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
@@ -62,7 +62,7 @@ public class StateSignatureCollectorTester extends DefaultStateSignatureCollecto
             @NonNull final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer,
             @NonNull final StateLacksSignaturesConsumer stateLacksSignaturesConsumer) {
         final LatestCompleteStateNexus latestSignedState =
-                new DefaultLatestCompleteStateNexus(stateConfig, new NoOpMetrics());
+                new DefaultLatestCompleteStateNexus(stateConfig, new NoOpPlatformMetrics());
         return new StateSignatureCollectorTester(
                 stateConfig,
                 signedStateMetrics,

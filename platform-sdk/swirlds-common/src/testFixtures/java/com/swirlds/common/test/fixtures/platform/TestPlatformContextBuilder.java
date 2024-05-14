@@ -27,7 +27,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
 import com.swirlds.common.io.utility.RecycleBin;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.metrics.noop.NoOpPlatformMetrics;
 import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.config.api.Configuration;
@@ -46,7 +46,7 @@ import java.util.function.BiFunction;
  */
 public final class TestPlatformContextBuilder {
 
-    private static final Metrics defaultMetrics = new NoOpMetrics();
+    private static final Metrics defaultMetrics = new NoOpPlatformMetrics();
     private static final Configuration defaultConfig =
             ConfigurationBuilder.create().autoDiscoverExtensions().build();
     private static final Cryptography defaultCryptography = CryptographyHolder.get();

@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.metrics.noop.NoOpPlatformMetrics;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusConstants;
@@ -49,7 +49,7 @@ class SignedStateNexusTest {
                                 .withConfigDataType(StateConfig.class)
                                 .build()
                                 .getConfigData(StateConfig.class),
-                        new NoOpMetrics())));
+                        new NoOpPlatformMetrics())));
     }
 
     private static Stream<SignedStateNexus> raceConditionInstances() {

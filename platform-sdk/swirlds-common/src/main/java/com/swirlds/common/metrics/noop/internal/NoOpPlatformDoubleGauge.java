@@ -16,40 +16,16 @@
 
 package com.swirlds.common.metrics.noop.internal;
 
-import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.metrics.api.MetricConfig;
+import com.swirlds.metrics.impl.noop.NoOpDoubleGauge;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A no-op implementation of a function gauge.
- *
- * @param <T>
- * 		the type of the function gauge
+ * A no-op implementation of a double gauge.
  */
-public class NoOpFunctionGauge<T> extends AbstractNoOpMetric implements FunctionGauge<T> {
+public class NoOpPlatformDoubleGauge extends NoOpDoubleGauge implements NoOpPlatformMetric {
 
-    private final T value;
-
-    public NoOpFunctionGauge(final @NonNull MetricConfig<?, ?> config, final @NonNull T value) {
+    public NoOpPlatformDoubleGauge(final @NonNull MetricConfig<?, ?> config) {
         super(config);
-        this.value = value;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public T get() {
-        return value;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public DataType getDataType() {
-        return DataType.INT;
     }
 }

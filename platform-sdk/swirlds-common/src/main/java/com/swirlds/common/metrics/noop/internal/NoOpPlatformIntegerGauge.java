@@ -16,29 +16,15 @@
 
 package com.swirlds.common.metrics.noop.internal;
 
-import com.swirlds.metrics.api.IntegerGauge;
 import com.swirlds.metrics.api.MetricConfig;
+import com.swirlds.metrics.impl.noop.NoOpIntegerGauge;
 
 /**
  * A no-op implementation of an integer gauge.
  */
-public class NoOpIntegerGauge extends AbstractNoOpMetric implements IntegerGauge {
+public class NoOpPlatformIntegerGauge extends NoOpIntegerGauge implements NoOpPlatformMetric {
 
-    public NoOpIntegerGauge(final MetricConfig<?, ?> config) {
+    public NoOpPlatformIntegerGauge(final MetricConfig<?, ?> config) {
         super(config);
     }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int get() {
-        return 0;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void set(final int newValue) {}
 }

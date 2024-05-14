@@ -23,7 +23,7 @@ import com.swirlds.common.context.internal.PlatformUncaughtExceptionHandler;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.filesystem.FileSystemManager;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.metrics.noop.NoOpPlatformMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -40,7 +40,7 @@ import java.lang.Thread.UncaughtExceptionHandler;
 public interface PlatformContext {
 
     /**
-     * Creates a new instance of the platform context. The instance uses a {@link NoOpMetrics} implementation for
+     * Creates a new instance of the platform context. The instance uses a {@link NoOpPlatformMetrics} implementation for
      * metrics. The instance uses the static {@link CryptographyHolder#get()} call to get the cryptography. The instance
      * uses the static {@link Time#getCurrent()} call to get the time.
      *
@@ -51,7 +51,7 @@ public interface PlatformContext {
     @Deprecated(forRemoval = true)
     @NonNull
     static PlatformContext create(@NonNull final Configuration configuration) {
-        final Metrics metrics = new NoOpMetrics();
+        final Metrics metrics = new NoOpPlatformMetrics();
         final Cryptography cryptography = CryptographyHolder.get();
         return create(configuration, metrics, cryptography);
     }

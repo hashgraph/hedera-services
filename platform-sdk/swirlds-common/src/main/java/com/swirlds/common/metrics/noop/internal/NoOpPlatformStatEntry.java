@@ -28,9 +28,9 @@ import java.util.function.Supplier;
 /**
  * A no-op implementation of a stat entry.
  */
-public class NoOpStatEntry extends AbstractNoOpMetric implements StatEntry {
+public class NoOpPlatformStatEntry extends AbstractPlatformNoOpMetric implements StatEntry {
 
-    public NoOpStatEntry(final @NonNull MetricConfig<?, ?> config) {
+    public NoOpPlatformStatEntry(final @NonNull MetricConfig<?, ?> config) {
         super(config);
     }
 
@@ -49,7 +49,7 @@ public class NoOpStatEntry extends AbstractNoOpMetric implements StatEntry {
     @Override
     @NonNull
     public StatsBuffered getBuffered() {
-        return new NoOpStatsBuffered();
+        return new NoOpPlatformStatsBuffered();
     }
 
     /**

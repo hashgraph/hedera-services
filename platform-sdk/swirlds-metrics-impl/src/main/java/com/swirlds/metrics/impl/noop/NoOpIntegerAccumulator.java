@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics.noop.internal;
+package com.swirlds.metrics.impl.noop;
 
-import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.IntegerAccumulator;
 import com.swirlds.metrics.api.MetricConfig;
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A no-op counter.
+ * A no-op implementation of an integer accumulator.
  */
-public class NoOpCounter extends AbstractNoOpMetric implements Counter {
+public class NoOpIntegerAccumulator extends AbstractNoOpMetric implements IntegerAccumulator {
 
-    public NoOpCounter(final @NonNull MetricConfig<?, ?> config) {
+    public NoOpIntegerAccumulator(final MetricConfig<?, ?> config) {
         super(config);
     }
 
@@ -33,7 +32,7 @@ public class NoOpCounter extends AbstractNoOpMetric implements Counter {
      * {@inheritDoc}
      */
     @Override
-    public long get() {
+    public final int get() {
         return 0;
     }
 
@@ -41,11 +40,13 @@ public class NoOpCounter extends AbstractNoOpMetric implements Counter {
      * {@inheritDoc}
      */
     @Override
-    public void add(final long value) {}
+    public final int getInitialValue() {
+        return 0;
+    }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void increment() {}
+    public final void update(final int other) {}
 }

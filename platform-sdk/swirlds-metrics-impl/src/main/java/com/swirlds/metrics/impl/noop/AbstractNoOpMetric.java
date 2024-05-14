@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics.noop.internal;
+package com.swirlds.metrics.impl.noop;
 
-import com.swirlds.common.metrics.PlatformMetric;
-import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.MetricConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -26,7 +24,7 @@ import java.util.EnumSet;
 /**
  * Boilerplate for a no-op metric.
  */
-public abstract class AbstractNoOpMetric implements Metric, PlatformMetric {
+public abstract class AbstractNoOpMetric implements Metric {
 
     private final MetricConfig<?, ?> config;
 
@@ -39,7 +37,7 @@ public abstract class AbstractNoOpMetric implements Metric, PlatformMetric {
      */
     @NonNull
     @Override
-    public String getCategory() {
+    public final String getCategory() {
         return config.getCategory();
     }
 
@@ -48,7 +46,7 @@ public abstract class AbstractNoOpMetric implements Metric, PlatformMetric {
      */
     @NonNull
     @Override
-    public String getName() {
+    public final String getName() {
         return config.getName();
     }
 
@@ -57,7 +55,7 @@ public abstract class AbstractNoOpMetric implements Metric, PlatformMetric {
      */
     @NonNull
     @Override
-    public String getDescription() {
+    public final String getDescription() {
         return config.getDescription();
     }
 
@@ -66,7 +64,7 @@ public abstract class AbstractNoOpMetric implements Metric, PlatformMetric {
      */
     @NonNull
     @Override
-    public String getUnit() {
+    public final String getUnit() {
         return config.getUnit();
     }
 
@@ -75,7 +73,7 @@ public abstract class AbstractNoOpMetric implements Metric, PlatformMetric {
      */
     @NonNull
     @Override
-    public String getFormat() {
+    public final String getFormat() {
         return config.getFormat();
     }
 
@@ -84,7 +82,7 @@ public abstract class AbstractNoOpMetric implements Metric, PlatformMetric {
      */
     @NonNull
     @Override
-    public EnumSet<ValueType> getValueTypes() {
+    public final EnumSet<ValueType> getValueTypes() {
         return EnumSet.noneOf(ValueType.class);
     }
 
@@ -92,16 +90,7 @@ public abstract class AbstractNoOpMetric implements Metric, PlatformMetric {
      * {@inheritDoc}
      */
     @Override
-    public void reset() {
+    public final void reset() {
         // intentional no-op
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public StatsBuffered getStatsBuffered() {
-        return new NoOpStatsBuffered();
     }
 }

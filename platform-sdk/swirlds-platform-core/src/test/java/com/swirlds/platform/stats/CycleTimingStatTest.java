@@ -19,7 +19,7 @@ package com.swirlds.platform.stats;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.metrics.noop.NoOpPlatformMetrics;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.stats.cycle.CycleDefinition;
 import java.time.temporal.ChronoUnit;
@@ -48,7 +48,7 @@ class CycleTimingStatTest {
     @MethodSource({"validConstructorArgs", "invalidConstructorArgs"})
     void testConstructor(
             final String name, final boolean validArgs, final List<String> detailedNames, final List<String> descList) {
-        final Metrics metrics = new NoOpMetrics();
+        final Metrics metrics = new NoOpPlatformMetrics();
         final Runnable constructor = () -> new CycleTimingStat(
                 metrics, ChronoUnit.MICROS, new CycleDefinition("cat", name, detailedNames, descList));
         if (validArgs) {

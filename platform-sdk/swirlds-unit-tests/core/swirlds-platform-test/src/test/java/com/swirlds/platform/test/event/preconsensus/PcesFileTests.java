@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBinImpl;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.metrics.noop.NoOpPlatformMetrics;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
@@ -322,7 +322,7 @@ class PcesFileTests {
 
         TestFileSystemManager fsm = new TestFileSystemManager(testDirectory);
         fsm.setBin(new RecycleBinImpl(
-                new NoOpMetrics(),
+                new NoOpPlatformMetrics(),
                 getStaticThreadManager(),
                 Time.getCurrent(),
                 recycleDirectory,

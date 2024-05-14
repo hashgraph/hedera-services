@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,39 +16,40 @@
 
 package com.swirlds.common.metrics.noop.internal;
 
-import com.swirlds.common.metrics.DurationGauge;
+import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.metrics.api.MetricConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Duration;
 
 /**
- * A no-op implementation of a duration gauge.
+ * A no-op implementation of a function gauge.
+ *
+ * @param <T>
+ * 		the type of the function gauge
  */
-public class NoOpDurationGauge extends AbstractNoOpMetric implements DurationGauge {
+public class NoOpPlatformFunctionGauge<T> extends AbstractPlatformNoOpMetric implements FunctionGauge<T> {
 
-    public NoOpDurationGauge(final @NonNull MetricConfig<?, ?> config) {
+    private final T value;
+
+    public NoOpPlatformFunctionGauge(final @NonNull MetricConfig<?, ?> config, final @NonNull T value) {
         super(config);
+        this.value = value;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public long getNanos() {
-        return 0;
+    @NonNull
+    public T get() {
+        return value;
     }
 
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
-    public void set(final Duration duration) {}
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public double get() {
-        return 0;
+    public DataType getDataType() {
+        return DataType.INT;
     }
 }

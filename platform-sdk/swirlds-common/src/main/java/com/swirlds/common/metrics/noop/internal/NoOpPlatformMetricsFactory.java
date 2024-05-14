@@ -35,14 +35,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Builds no-op metrics.
  */
-public class NoOpMetricsFactory implements PlatformMetricsFactory {
+public class NoOpPlatformMetricsFactory implements PlatformMetricsFactory {
 
     /**
      * {@inheritDoc}
      */
     @Override
     public @NonNull Counter createCounter(final @NonNull Counter.Config config) {
-        return new NoOpCounter(config);
+        return new NoOpPlatformCounter(config);
     }
 
     /**
@@ -50,7 +50,7 @@ public class NoOpMetricsFactory implements PlatformMetricsFactory {
      */
     @Override
     public @NonNull DoubleAccumulator createDoubleAccumulator(final @NonNull DoubleAccumulator.Config config) {
-        return new NoOpDoubleAccumulator(config);
+        return new NoOpPlatformDoubleAccumulator(config);
     }
 
     /**
@@ -58,7 +58,7 @@ public class NoOpMetricsFactory implements PlatformMetricsFactory {
      */
     @Override
     public @NonNull DoubleGauge createDoubleGauge(final @NonNull DoubleGauge.Config config) {
-        return new NoOpDoubleGauge(config);
+        return new NoOpPlatformDoubleGauge(config);
     }
 
     /**
@@ -66,7 +66,7 @@ public class NoOpMetricsFactory implements PlatformMetricsFactory {
      */
     @Override
     public @NonNull DurationGauge createDurationGauge(final @NonNull DurationGauge.Config config) {
-        return new NoOpDurationGauge(config);
+        return new NoOpPlatformDurationGauge(config);
     }
 
     /**
@@ -74,7 +74,7 @@ public class NoOpMetricsFactory implements PlatformMetricsFactory {
      */
     @Override
     public <T> @NonNull FunctionGauge<T> createFunctionGauge(final @NonNull FunctionGauge.Config<T> config) {
-        return new NoOpFunctionGauge<>(config, config.getSupplier().get());
+        return new NoOpPlatformFunctionGauge<>(config, config.getSupplier().get());
     }
 
     /**
@@ -82,7 +82,7 @@ public class NoOpMetricsFactory implements PlatformMetricsFactory {
      */
     @Override
     public @NonNull IntegerAccumulator createIntegerAccumulator(final @NonNull IntegerAccumulator.Config config) {
-        return new NoOpIntegerAccumulator(config);
+        return new NoOpPlatformIntegerAccumulator(config);
     }
 
     /**
@@ -90,7 +90,7 @@ public class NoOpMetricsFactory implements PlatformMetricsFactory {
      */
     @Override
     public @NonNull IntegerGauge createIntegerGauge(final @NonNull IntegerGauge.Config config) {
-        return new NoOpIntegerGauge(config);
+        return new NoOpPlatformIntegerGauge(config);
     }
 
     /**
@@ -99,7 +99,7 @@ public class NoOpMetricsFactory implements PlatformMetricsFactory {
     @Override
     public <T> @NonNull IntegerPairAccumulator<T> createIntegerPairAccumulator(
             final @NonNull IntegerPairAccumulator.Config<T> config) {
-        return new NoOpIntegerPairAccumulator<>(
+        return new NoOpPlatformIntegerPairAccumulator<>(
                 config, config.getResultFunction().apply(0, 0));
     }
 
@@ -108,7 +108,7 @@ public class NoOpMetricsFactory implements PlatformMetricsFactory {
      */
     @Override
     public @NonNull LongAccumulator createLongAccumulator(final @NonNull LongAccumulator.Config config) {
-        return new NoOpLongAccumulator(config);
+        return new NoOpPlatformLongAccumulator(config);
     }
 
     /**
@@ -116,7 +116,7 @@ public class NoOpMetricsFactory implements PlatformMetricsFactory {
      */
     @Override
     public @NonNull LongGauge createLongGauge(final @NonNull LongGauge.Config config) {
-        return new NoOpLongGauge(config);
+        return new NoOpPlatformLongGauge(config);
     }
 
     /**
@@ -124,7 +124,7 @@ public class NoOpMetricsFactory implements PlatformMetricsFactory {
      */
     @Override
     public @NonNull RunningAverageMetric createRunningAverageMetric(final @NonNull RunningAverageMetric.Config config) {
-        return new NoOpRunningAverageMetric(config);
+        return new NoOpPlatformRunningAverageMetric(config);
     }
 
     /**
@@ -132,7 +132,7 @@ public class NoOpMetricsFactory implements PlatformMetricsFactory {
      */
     @Override
     public @NonNull SpeedometerMetric createSpeedometerMetric(final @NonNull SpeedometerMetric.Config config) {
-        return new NoOpSpeedometerMetric(config);
+        return new NoOpPlatformSpeedometerMetric(config);
     }
 
     /**
@@ -140,6 +140,6 @@ public class NoOpMetricsFactory implements PlatformMetricsFactory {
      */
     @Override
     public @NonNull StatEntry createStatEntry(final @NonNull StatEntry.Config<?> config) {
-        return new NoOpStatEntry(config);
+        return new NoOpPlatformStatEntry(config);
     }
 }

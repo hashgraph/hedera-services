@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics.noop.internal;
+package com.swirlds.metrics.impl.noop;
 
-import com.swirlds.metrics.api.DoubleGauge;
+import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.metrics.api.MetricConfig;
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A no-op implementation of a double gauge.
+ * A no-op implementation of a long gauge.
  */
-public class NoOpDoubleGauge extends AbstractNoOpMetric implements DoubleGauge {
+public class NoOpLongGauge extends AbstractNoOpMetric implements LongGauge {
 
-    public NoOpDoubleGauge(final @NonNull MetricConfig<?, ?> config) {
+    public NoOpLongGauge(final MetricConfig<?, ?> config) {
         super(config);
     }
 
@@ -33,7 +32,7 @@ public class NoOpDoubleGauge extends AbstractNoOpMetric implements DoubleGauge {
      * {@inheritDoc}
      */
     @Override
-    public double get() {
+    public final long get() {
         return 0;
     }
 
@@ -41,5 +40,5 @@ public class NoOpDoubleGauge extends AbstractNoOpMetric implements DoubleGauge {
      * {@inheritDoc}
      */
     @Override
-    public void set(final double newValue) {}
+    public final void set(final long newValue) {}
 }

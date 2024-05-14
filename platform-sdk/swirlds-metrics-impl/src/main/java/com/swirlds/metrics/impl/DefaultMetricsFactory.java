@@ -27,6 +27,10 @@ import com.swirlds.metrics.api.MetricsFactory;
 
 public class DefaultMetricsFactory implements MetricsFactory {
 
+    private static final class InstanceHolder {
+        private static final MetricsFactory INSTANCE = new DefaultMetricsFactory();
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -81,5 +85,9 @@ public class DefaultMetricsFactory implements MetricsFactory {
     @Override
     public LongGauge createLongGauge(final LongGauge.Config config) {
         return new DefaultLongGauge(config);
+    }
+
+    public static MetricsFactory getInstance() {
+        return InstanceHolder.INSTANCE;
     }
 }

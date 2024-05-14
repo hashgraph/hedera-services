@@ -16,38 +16,15 @@
 
 package com.swirlds.common.metrics.noop.internal;
 
-import com.swirlds.metrics.api.DoubleAccumulator;
 import com.swirlds.metrics.api.MetricConfig;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.swirlds.metrics.impl.noop.NoOpIntegerAccumulator;
 
 /**
- * A no-op double accumulator.
+ * A no-op implementation of an integer accumulator.
  */
-public class NoOpDoubleAccumulator extends AbstractNoOpMetric implements DoubleAccumulator {
+public class NoOpPlatformIntegerAccumulator extends NoOpIntegerAccumulator implements NoOpPlatformMetric {
 
-    public NoOpDoubleAccumulator(final @NonNull MetricConfig<?, ?> config) {
+    public NoOpPlatformIntegerAccumulator(final MetricConfig<?, ?> config) {
         super(config);
     }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public double get() {
-        return 0;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public double getInitialValue() {
-        return 0;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void update(final double other) {}
 }

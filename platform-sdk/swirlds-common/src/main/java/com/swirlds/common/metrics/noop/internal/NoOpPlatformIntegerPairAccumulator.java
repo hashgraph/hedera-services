@@ -16,23 +16,37 @@
 
 package com.swirlds.common.metrics.noop.internal;
 
-import com.swirlds.metrics.api.LongAccumulator;
+import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.metrics.api.MetricConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A no-op implementation of a long accumulator.
+ * A no-op implementation of an integer pair accumulator.
  */
-public class NoOpLongAccumulator extends AbstractNoOpMetric implements LongAccumulator {
+public class NoOpPlatformIntegerPairAccumulator<T> extends AbstractPlatformNoOpMetric
+        implements IntegerPairAccumulator<T> {
 
-    public NoOpLongAccumulator(final MetricConfig<?, ?> config) {
+    private final @NonNull T value;
+
+    public NoOpPlatformIntegerPairAccumulator(final @NonNull MetricConfig<?, ?> config, final @NonNull T value) {
         super(config);
+        this.value = value;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public T get() {
+        return value;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public long get() {
+    public int getLeft() {
         return 0;
     }
 
@@ -40,7 +54,7 @@ public class NoOpLongAccumulator extends AbstractNoOpMetric implements LongAccum
      * {@inheritDoc}
      */
     @Override
-    public long getInitialValue() {
+    public int getRight() {
         return 0;
     }
 
@@ -48,5 +62,14 @@ public class NoOpLongAccumulator extends AbstractNoOpMetric implements LongAccum
      * {@inheritDoc}
      */
     @Override
-    public void update(final long other) {}
+    public void update(final int leftValue, final int rightValue) {}
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public DataType getDataType() {
+        return DataType.INT;
+    }
 }
