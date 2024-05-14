@@ -16,30 +16,31 @@
 
 package com.hedera.services.bdd.suites.file.positive;
 
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.suites.HapiSuite;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileUndelete;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModifiedWithFixedPayer;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.time.Instant;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 @HapiTestSuite
 public class SysDelSysUndelSpec extends HapiSuite {
@@ -69,7 +70,7 @@ public class SysDelSysUndelSpec extends HapiSuite {
         return defaultHapiSpec("sysDelIdVariantsTreatedAsExpected")
                 .given(fileCreate("misc").contents(ORIG_FILE))
                 .when()
-                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> systemFileDelete("misc")
+                .then(submitModifiedWithFixedPayer(withSuccessivelyVariedBodyIds(), () -> systemFileDelete("misc")
                         .payingWith(SYSTEM_DELETE_ADMIN)));
     }
 
@@ -78,7 +79,7 @@ public class SysDelSysUndelSpec extends HapiSuite {
         return defaultHapiSpec("sysUndelIdVariantsTreatedAsExpected")
                 .given(fileCreate("misc").contents(ORIG_FILE))
                 .when(systemFileDelete("misc").payingWith(SYSTEM_DELETE_ADMIN))
-                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> systemFileUndelete("misc")
+                .then(submitModifiedWithFixedPayer(withSuccessivelyVariedBodyIds(), () -> systemFileUndelete("misc")
                         .payingWith(SYSTEM_UNDELETE_ADMIN)));
     }
 
