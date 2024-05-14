@@ -113,34 +113,6 @@ public class Address implements SelfSerializable {
         this(NodeId.FIRST_NODE_ID, "", "", 1, null, -1, null, -1, null, null, "");
     }
 
-    public Address(
-            @NonNull final NodeId id,
-            @NonNull final String nickname,
-            @NonNull final String selfName,
-            final long weight,
-            @Nullable final String hostnameInternal,
-            final int portInternal,
-            @Nullable final String hostnameExternal,
-            final int portExternal,
-            @NonNull final String memo) {
-        this(
-                id,
-                nickname,
-                selfName,
-                weight, // weight
-                hostnameInternal,
-                portInternal,
-                hostnameExternal,
-                portExternal,
-                null,
-                null,
-                memo);
-    }
-
-    private byte[] clone(byte[] x) {
-        return x == null ? x : x.clone();
-    }
-
     /**
      * constructor for a mutable address for one member.
      *

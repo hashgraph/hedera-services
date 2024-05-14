@@ -30,7 +30,7 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.util.TokenRelListCalculator;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
