@@ -231,7 +231,6 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void validateWhenZeroShardId() throws PreCheckException {
         txn = new CryptoCreateBuilder().withShardId(0).build();
         assertDoesNotThrow(() -> subject.pureChecks(txn));
-        // TODO
     }
 
     @Test
@@ -317,12 +316,11 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
         final var context = new FakePreHandleContext(readableStore, noReceiverSigTxn);
         subject.preHandle(context);
-
-        assertEquals(expected.body(), context.body());
+        assertThat(expected.body()).isEqualTo(context.body());
         assertFalse(context.requiredNonPayerKeys().contains(key));
         basicMetaAssertions(context, 0);
         assertThat(context.requiredNonPayerKeys()).isEmpty();
-        assertEquals(key, context.payerKey());
+        assertThat(key).isEqualTo(context.payerKey());
     }
 
     @Test
