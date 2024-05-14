@@ -938,7 +938,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .build();
     }
 
-    public static CustomFee withFractionalFee(final FractionalFee fractionalFee, final AccountID feeCollectorId, final boolean allCollectorsExempt) {
+    public static CustomFee withFractionalFee(
+            final FractionalFee fractionalFee, final AccountID feeCollectorId, final boolean allCollectorsExempt) {
         return CustomFee.newBuilder()
                 .fractionalFee(fractionalFee)
                 .feeCollectorAccountId(feeCollectorId)

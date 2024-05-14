@@ -106,7 +106,8 @@ public class CustomRoyaltyFeeAssessor {
                 }
             }
         }
-        // We check this outside the for loop above because a sender should only be marked as paid royalty, after assessing
+        // We check this outside the for loop above because a sender should only be marked as paid royalty, after
+        // assessing
         // all the fees for the given token. If a sender is sending multiple NFTs of the same token, royalty fee
         // should be paid only once.
         // We don't want to charge the fallback fee for each nft transfer, if the receiver has already
