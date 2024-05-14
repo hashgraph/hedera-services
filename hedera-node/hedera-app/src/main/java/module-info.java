@@ -22,6 +22,7 @@ module com.hedera.node.app {
     requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.platform.core;
     requires transitive com.swirlds.state.api;
+    requires transitive com.swirlds.virtualmap;
     requires transitive dagger;
     requires transitive grpc.stub;
     requires transitive javax.inject;
@@ -40,7 +41,6 @@ module com.hedera.node.app {
     requires com.swirlds.logging;
     requires com.swirlds.merkle;
     requires com.swirlds.merkledb;
-    requires com.swirlds.virtualmap;
     requires grpc.netty;
     requires io.grpc;
     requires io.netty.handler;
