@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.bls;
+package com.swirlds.platform.tss;
 
-public record BlsPrivateKey(byte[] share) {}
+import edu.umd.cs.findbugs.annotations.NonNull;
+
+public record TssPublicShare(@NonNull TssShareId shareId, @NonNull TssPublicKey publicKey) {}

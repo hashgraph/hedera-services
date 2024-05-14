@@ -14,13 +14,6 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.keying;
+package com.swirlds.platform.tss;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-
-public record DkgProof(
-        @NonNull GroupElement f,
-        @NonNull GroupElement a,
-        @NonNull GroupElement y,
-        @NonNull FieldElement z_r,
-        @NonNull FieldElement z_a) {}
+public interface TssKeyGenerator {}

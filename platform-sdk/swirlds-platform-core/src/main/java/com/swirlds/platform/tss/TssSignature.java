@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.keying;
+package com.swirlds.platform.tss;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.bouncycastle.cms.SignerId;
 
-public record DkgMessage(
-        @NonNull SignerId signerId,
-        @NonNull DkgCipherText cipherText,
-        @NonNull DkgPolynomialCommitment polynomialCommitment,
-        @NonNull DkgProof proof) {}
+public interface TssSignature {
+
+    /**
+     * Verify a signed message with the known public key.
+     *
+     * @param publicKey the public key to verify with
+     * @param message   the message that was signed
+     * @return true if the signature is valid, false otherwise
+     */
+    boolean verifySignature(@NonNull TssPublicKey publicKey, @NonNull final byte[] message);
+}

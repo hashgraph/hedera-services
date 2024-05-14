@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.bls;
+package com.swirlds.platform.tss;
 
-public record BlsSignature(byte[] groupElement) {}
+public record TssPolynomialCommitment(GroupElement[] coefficientCommitments) {
+    // length is threshold
+}

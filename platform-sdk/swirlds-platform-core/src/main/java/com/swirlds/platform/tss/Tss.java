@@ -22,11 +22,25 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.Set;
 
-public class TssUtils implements TssKeyGenerator {
+public interface Tss {
 
-    private TssUtils() {
-        throw new UnsupportedOperationException("Utility class");
-    }
+    /**
+     * If a threshold number of {@link TssSignature}s by shares is provided a signature by the {@link TssDirectory}'s
+     * secret private key is computed.
+     *
+     * @param signatures the map of share ids to signatures created by each share.
+     * @return the interpolated signature if the threshold is met, otherwise null.
+     */
+    TssSignature aggregateSignatures(@NonNull final Map<TssShareId, TssSignature> signatures);
+
+    /**
+     * If a threshold number of {@link TssPublicKey}s of shares is provided a public key for the {@link TssDirectory}'s
+     * secret private key is computed.
+     *
+     * @param publicKeys the map of share ids to public keys created by each share.
+     * @return the interpolated public key if the threshold is met, otherwise null.
+     */
+    TssPublicKey aggregatePublicKeys(@NonNull final Map<TssShareId, TssPublicKey> publicKeys);
 
     /**
      * Generate a DKG message with the given secret using the {@link EcdhPublicKey}s of the signers in the next
@@ -40,15 +54,12 @@ public class TssUtils implements TssKeyGenerator {
      * @return the DKG message for the given signer use to initialize the keys in the next {@link TssDirectory}.
      */
     @NonNull
-    public TssMessage generateDkgMessage(
+    TssMessage generateDkgMessage(
             @NonNull final TssDirectory nextTssDirectory,
             @NonNull final TssSignerId signerId,
             final byte[] secret,
             final int threshold,
-            Map<TssShareId, TssSignerId> shareOwnership) {
-        // https://github.com/rsinha/groth21_dkg/blob/40d82993d1ec9ea295d56e9d9cb955af60c00ebb/src/dkg.rs#L54
-        throw new UnsupportedOperationException("Not implemented");
-    }
+            Map<TssShareId, TssSignerId> shareOwnership);
 
     /**
      * Process a threshold number of {@link TssMessage}s to create the first {@link TssDirectory} with the given
@@ -64,14 +75,11 @@ public class TssUtils implements TssKeyGenerator {
      *                                  {@link TssDirectory}.
      */
     @NonNull
-    public TssDirectory setup(
+    TssDirectory setup(
             @NonNull TssDirectory genesisDirectory,
             @NonNull final TssSignerId tssSigner,
             Set<TssShareId> shares,
-            @NonNull final Map<TssSignerId, TssMessage> dkgMessages) {
-        // https://github.com/rsinha/groth21_dkg/blob/40d82993d1ec9ea295d56e9d9cb955af60c00ebb/src/dkg.rs#L163
-        throw new UnsupportedOperationException("Not implemented");
-    }
+            @NonNull final Map<TssSignerId, TssMessage> dkgMessages);
 
     /**
      * Process a threshold number of {@link TssMessage}s to initialize the next {@link TssDirectory}'s shares' public
@@ -89,13 +97,10 @@ public class TssUtils implements TssKeyGenerator {
      *                                  {@link TssDirectory}.
      */
     @NonNull
-    public TssDirectory rekey(
+    TssDirectory rekey(
             @NonNull final TssDirectory previousDirectory,
             @NonNull final TssDirectory nextDirectory,
             @NonNull final TssSignerId tssSigner,
             Set<TssShareId> shares,
-            @NonNull final Map<TssSignerId, TssMessage> dkgMessages) {
-        // https://github.com/rsinha/groth21_dkg/blob/40d82993d1ec9ea295d56e9d9cb955af60c00ebb/src/dkg.rs#L247
-        throw new UnsupportedOperationException("Not implemented");
-    }
+            @NonNull final Map<TssSignerId, TssMessage> dkgMessages);
 }

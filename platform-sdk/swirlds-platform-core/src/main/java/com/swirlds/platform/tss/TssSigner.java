@@ -16,10 +16,6 @@
 
 package com.swirlds.platform.tss;
 
-import com.swirlds.platform.tss.bls.BlsCryptography;
-import com.swirlds.platform.tss.bls.BlsPrivateKey;
-import com.swirlds.platform.tss.bls.BlsPublicKey;
-import com.swirlds.platform.tss.bls.BlsSignature;
 import com.swirlds.platform.tss.ecdh.EcdhPrivateKey;
 import com.swirlds.platform.tss.ecdh.EcdhPublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,16 +31,16 @@ import java.util.Objects;
  * @param ecdhPublicKey    the signer's {@link EcdhPublicKey}
  * @param ecdhPrivateKey   the signer's {@link EcdhPrivateKey}
  * @param numberOfShares   the number of shares the signer has
- * @param sharePublicKeys  the {@link BlsPublicKey}s for the signer's shares
- * @param sharePrivateKeys the {@link BlsPrivateKey}s for the signer's shares
+ * @param sharePublicKeys  the {@link TssPublicKey}s for the signer's shares
+ * @param sharePrivateKeys the {@link TssPrivateKey}s for the signer's shares
  */
 public record TssSigner(
         @NonNull TssSignerId tssSignerId,
         @NonNull EcdhPublicKey ecdhPublicKey,
         @Nullable EcdhPrivateKey ecdhPrivateKey,
         int numberOfShares,
-        @Nullable Map<TssShareId, BlsPublicKey> sharePublicKeys,
-        @Nullable Map<TssShareId, BlsPrivateKey> sharePrivateKeys) {
+        @Nullable Map<TssShareId, TssPublicKey> sharePublicKeys,
+        @Nullable Map<TssShareId, TssPrivateKey> sharePrivateKeys) {
 
     /**
      * Sign a message with the private keys of the shares. If the keys do not exist, this method will return null.
@@ -54,13 +50,13 @@ public record TssSigner(
      * @return a map of share ids to signatures signed by the shares' private keys.
      */
     @Nullable
-    public Map<TssShareId, BlsSignature> sign(@NonNull BlsCryptography blsCryptography, byte[] message) {
+    public Map<TssShareId, TssSignature> sign(@NonNull BlsCryptography blsCryptography, byte[] message) {
         if (sharePrivateKeys == null || sharePrivateKeys.isEmpty()) {
             return null;
         }
-        final Map<TssShareId, BlsSignature> signatures = new HashMap<>();
+        final Map<TssShareId, TssSignature> signatures = new HashMap<>();
         for (final TssShareId tssShareId : sharePublicKeys.keySet()) {
-            final BlsSignature signature = blsCryptography.sign(sharePrivateKeys.get(tssShareId), message);
+            final TssSignature signature = blsCryptography.sign(sharePrivateKeys.get(tssShareId), message);
             signatures.put(tssShareId, signature);
         }
         return signatures;
@@ -91,9 +87,9 @@ public record TssSigner(
             @NonNull TssSignerId tssSignerId,
             @NonNull EcdhPublicKey ecdhPublicKey,
             int numberOfShares,
-            @NonNull Map<TssShareId, BlsPublicKey> sharePublicKeys,
+            @NonNull Map<TssShareId, TssPublicKey> sharePublicKeys,
             @Nullable EcdhPrivateKey ecdhPrivateKey,
-            @Nullable Map<TssShareId, BlsPrivateKey> sharePrivateKeys) {
+            @Nullable Map<TssShareId, TssPrivateKey> sharePrivateKeys) {
         Objects.requireNonNull(tssSignerId);
         Objects.requireNonNull(ecdhPublicKey);
         Objects.requireNonNull(sharePublicKeys);
@@ -111,8 +107,8 @@ public record TssSigner(
             // Is there a better way of doing this?  Maybe a BLS library method?
             final byte[] message = {0x01, 0x02, 0x03, 0x04, 0x05};
             for (TssShareId tssShareId : sharePublicKeys.keySet()) {
-                final BlsPrivateKey privateKey = sharePrivateKeys.get(tssShareId);
-                final BlsSignature signature = blsCryptography.sign(privateKey, message);
+                final TssPrivateKey privateKey = sharePrivateKeys.get(tssShareId);
+                final TssSignature signature = blsCryptography.sign(privateKey, message);
                 if (!blsCryptography.verifySignature(sharePublicKeys.get(tssShareId), signature, message)) {
                     throw new IllegalArgumentException(
                             "Public and private keys do not match for share id " + tssShareId);

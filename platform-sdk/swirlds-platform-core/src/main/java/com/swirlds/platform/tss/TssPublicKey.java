@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.keying;
+package com.swirlds.platform.tss;
 
-public record DkgPolynomialCommitment(GroupElement[] coefficientCommitments) {
-    // length is threshold
-}
+public interface TssPublicKey {}
