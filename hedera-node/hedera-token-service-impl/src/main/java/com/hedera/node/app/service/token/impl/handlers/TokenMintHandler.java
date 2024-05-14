@@ -79,6 +79,10 @@ import javax.inject.Singleton;
 public class TokenMintHandler extends BaseTokenHandler implements TransactionHandler {
     private final TokenSupplyChangeOpsValidator validator;
 
+    /**
+     * Default constructor for injection.
+     * @param validator the token supply change ops validator
+     */
     @Inject
     public TokenMintHandler(@NonNull final TokenSupplyChangeOpsValidator validator) {
         this.validator = requireNonNull(validator);

@@ -368,7 +368,8 @@ public abstract class HapiSpecOperation {
                 .andThen(opDef);
 
         setKeyControlOverrides(spec);
-        final List<Key> keys = signersToUseFor(spec);
+        List<Key> keys = signersToUseFor(spec);
+
         final Transaction.Builder builder = spec.txns().getReadyToSign(netDef, spec, bodyMutation);
         final Transaction provisional = getSigned(spec, builder, keys);
         if (fee.isPresent()) {
@@ -456,7 +457,7 @@ public abstract class HapiSpecOperation {
     public List<Key> signersToUseFor(final HapiSpec spec) {
         final List<Key> active = signers.orElse(defaultSigners()).stream()
                 .map(f -> f.apply(spec))
-                .filter(k -> k != Key.getDefaultInstance())
+                .filter(k -> k != null && k != Key.getDefaultInstance())
                 .collect(toList());
         if (!signers.isPresent()) {
             active.addAll(variableDefaultSigners().apply(spec));

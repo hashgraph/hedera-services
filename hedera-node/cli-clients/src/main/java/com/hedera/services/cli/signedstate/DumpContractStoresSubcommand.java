@@ -29,18 +29,18 @@ import com.hedera.node.app.service.mono.state.migration.ContractStateMigrator;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.node.app.state.merkle.memory.InMemoryKey;
-import com.hedera.node.app.state.merkle.memory.InMemoryValue;
-import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
 import com.hedera.services.cli.signedstate.DumpStateCommand.EmitSummary;
 import com.hedera.services.cli.signedstate.DumpStateCommand.WithMigration;
 import com.hedera.services.cli.signedstate.DumpStateCommand.WithSlots;
 import com.hedera.services.cli.signedstate.DumpStateCommand.WithValidation;
 import com.hedera.services.cli.signedstate.SignedStateCommand.Verbosity;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.platform.state.merkle.memory.InMemoryKey;
+import com.swirlds.platform.state.merkle.memory.InMemoryValue;
+import com.swirlds.platform.state.merkle.memory.InMemoryWritableKVState;
+import com.swirlds.platform.state.spi.WritableKVStateBase;
+import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.FileNotFoundException;
@@ -272,8 +272,12 @@ public class DumpContractStoresSubcommand {
         final var contractMerkleMap =
                 new NonAtomicReference<MerkleMap<InMemoryKey<SlotKey>, InMemoryValue<SlotKey, SlotValue>>>(
                         new MerkleMap<>(expectedNumberOfSlots));
-        final var toStore = new NonAtomicReference<WritableKVState<SlotKey, SlotValue>>(
-                new InMemoryWritableKVState<>(contractStoreSchemaMetadata, contractMerkleMap.get()));
+        final var toStore = new NonAtomicReference<WritableKVState<SlotKey, SlotValue>>(new InMemoryWritableKVState<>(
+                contractStoreStateDefinition.stateKey(),
+                contractStoreSchemaMetadata.inMemoryValueClassId(),
+                contractStoreStateDefinition.keyCodec(),
+                contractStoreStateDefinition.valueCodec(),
+                contractMerkleMap.get()));
 
         final var flushCounter = new AtomicInteger();
 
@@ -283,7 +287,12 @@ public class DumpContractStoresSubcommand {
             // Copy the underlying map, which does the flush
             contractMerkleMap.set(contractMerkleMap.get().copy());
             // Create a new store to go on with
-            toStore.set(new InMemoryWritableKVState<>(contractStoreSchemaMetadata, contractMerkleMap.get()));
+            toStore.set(new InMemoryWritableKVState<>(
+                    contractStoreStateDefinition.stateKey(),
+                    contractStoreSchemaMetadata.inMemoryValueClassId(),
+                    contractStoreStateDefinition.keyCodec(),
+                    contractStoreStateDefinition.valueCodec(),
+                    contractMerkleMap.get()));
 
             flushCounter.incrementAndGet();
 

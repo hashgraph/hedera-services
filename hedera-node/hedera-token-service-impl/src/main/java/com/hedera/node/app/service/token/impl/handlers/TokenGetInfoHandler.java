@@ -62,6 +62,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenGetInfoHandler extends PaidQueryHandler {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenGetInfoHandler() {
         // Exists for injection
@@ -207,7 +210,7 @@ public class TokenGetInfoHandler extends PaidQueryHandler {
         final var query = queryContext.query();
         final var tokenStore = queryContext.createStore(ReadableTokenStore.class);
         final var op = query.tokenGetInfoOrThrow();
-        final var tokenId = op.tokenOrThrow();
+        final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
         final var token = tokenStore.get(tokenId);
 
         return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetTokenInfoResourceUsage()

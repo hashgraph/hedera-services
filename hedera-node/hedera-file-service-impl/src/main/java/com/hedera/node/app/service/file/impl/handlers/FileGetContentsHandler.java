@@ -50,6 +50,10 @@ import javax.inject.Singleton;
 public class FileGetContentsHandler extends FileQueryBase {
     private final FileFeeBuilder usageEstimator;
 
+    /**
+     * Constructs a {@link FileGetContentsHandler} with the given {@link FileFeeBuilder}.
+     * @param usageEstimator the file fee builder to be used for fee calculation
+     */
     @Inject
     public FileGetContentsHandler(final FileFeeBuilder usageEstimator) {
         this.usageEstimator = usageEstimator;
@@ -82,7 +86,7 @@ public class FileGetContentsHandler extends FileQueryBase {
         final var query = queryContext.query();
         final var fileStore = queryContext.createStore(ReadableFileStore.class);
         final var op = query.fileGetContentsOrThrow();
-        final var fileId = op.fileIDOrThrow();
+        final var fileId = op.fileIDOrElse(FileID.DEFAULT);
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         final FileContents fileContents = contentFile(fileId, fileStore);
         return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetFileContentsResourceUsage(

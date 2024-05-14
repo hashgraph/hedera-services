@@ -18,23 +18,26 @@ package com.swirlds.platform.wiring;
 
 import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.counters.ObjectCounter;
+import com.swirlds.common.wiring.transformers.RoutableData;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
-import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
+import com.swirlds.platform.event.stale.StaleEventDetector;
+import com.swirlds.platform.event.stale.StaleEventDetectorOutput;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.pool.TransactionPool;
+import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
-import com.swirlds.platform.wiring.components.ShadowgraphWiring;
+import com.swirlds.platform.wiring.components.GossipWiring;
 import com.swirlds.platform.wiring.components.StateHasherWiring;
-import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
@@ -55,15 +58,17 @@ public class PlatformCoordinator {
     private final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring;
     private final ComponentWiring<EventSignatureValidator, GossipEvent> eventSignatureValidatorWiring;
     private final ComponentWiring<OrphanBuffer, List<GossipEvent>> orphanBufferWiring;
-    private final ComponentWiring<InOrderLinker, EventImpl> inOrderLinkerWiring;
-    private final ShadowgraphWiring shadowgraphWiring;
+    private final GossipWiring gossipWiring;
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
     private final ComponentWiring<EventCreationManager, BaseEventHashedData> eventCreationManagerWiring;
     private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
-    private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
+    private final ComponentWiring<StateSignatureCollector, List<ReservedSignedState>> stateSignatureCollectorWiring;
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
     private final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring;
     private final StateHasherWiring stateHasherWiring;
+    private final ComponentWiring<StaleEventDetector, List<RoutableData<StaleEventDetectorOutput>>>
+            staleEventDetectorWiring;
+    private final ComponentWiring<TransactionPool, Void> transactionPoolWiring;
 
     /**
      * Constructor
@@ -73,8 +78,7 @@ public class PlatformCoordinator {
      * @param eventDeduplicatorWiring                the event deduplicator wiring
      * @param eventSignatureValidatorWiring          the event signature validator wiring
      * @param orphanBufferWiring                     the orphan buffer wiring
-     * @param inOrderLinkerWiring                    the in order linker wiring
-     * @param shadowgraphWiring                      the shadowgraph wiring
+     * @param gossipWiring                           gossip wiring
      * @param consensusEngineWiring                  the consensus engine wiring
      * @param eventCreationManagerWiring             the event creation manager wiring
      * @param applicationTransactionPrehandlerWiring the application transaction prehandler wiring
@@ -82,6 +86,8 @@ public class PlatformCoordinator {
      * @param consensusRoundHandlerWiring            the consensus round handler wiring
      * @param roundDurabilityBufferWiring            the round durability buffer wiring
      * @param stateHasherWiring                      the state hasher wiring
+     * @param staleEventDetectorWiring               the stale event detector wiring
+     * @param transactionPoolWiring                  the transaction pool wiring
      */
     public PlatformCoordinator(
             @NonNull final ObjectCounter hashingObjectCounter,
@@ -89,23 +95,27 @@ public class PlatformCoordinator {
             @NonNull final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring,
             @NonNull final ComponentWiring<EventSignatureValidator, GossipEvent> eventSignatureValidatorWiring,
             @NonNull final ComponentWiring<OrphanBuffer, List<GossipEvent>> orphanBufferWiring,
-            @NonNull final ComponentWiring<InOrderLinker, EventImpl> inOrderLinkerWiring,
-            @NonNull final ShadowgraphWiring shadowgraphWiring,
+            @NonNull final GossipWiring gossipWiring,
             @NonNull final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring,
             @NonNull final ComponentWiring<EventCreationManager, BaseEventHashedData> eventCreationManagerWiring,
             @NonNull final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring,
-            @NonNull final StateSignatureCollectorWiring stateSignatureCollectorWiring,
+            @NonNull
+                    final ComponentWiring<StateSignatureCollector, List<ReservedSignedState>>
+                            stateSignatureCollectorWiring,
             @NonNull final ConsensusRoundHandlerWiring consensusRoundHandlerWiring,
             @NonNull final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring,
-            @NonNull final StateHasherWiring stateHasherWiring) {
+            @NonNull final StateHasherWiring stateHasherWiring,
+            @NonNull
+                    final ComponentWiring<StaleEventDetector, List<RoutableData<StaleEventDetectorOutput>>>
+                            staleEventDetectorWiring,
+            @NonNull final ComponentWiring<TransactionPool, Void> transactionPoolWiring) {
 
         this.hashingObjectCounter = Objects.requireNonNull(hashingObjectCounter);
         this.internalEventValidatorWiring = Objects.requireNonNull(internalEventValidatorWiring);
         this.eventDeduplicatorWiring = Objects.requireNonNull(eventDeduplicatorWiring);
         this.eventSignatureValidatorWiring = Objects.requireNonNull(eventSignatureValidatorWiring);
         this.orphanBufferWiring = Objects.requireNonNull(orphanBufferWiring);
-        this.inOrderLinkerWiring = Objects.requireNonNull(inOrderLinkerWiring);
-        this.shadowgraphWiring = Objects.requireNonNull(shadowgraphWiring);
+        this.gossipWiring = Objects.requireNonNull(gossipWiring);
         this.consensusEngineWiring = Objects.requireNonNull(consensusEngineWiring);
         this.eventCreationManagerWiring = Objects.requireNonNull(eventCreationManagerWiring);
         this.applicationTransactionPrehandlerWiring = Objects.requireNonNull(applicationTransactionPrehandlerWiring);
@@ -113,6 +123,8 @@ public class PlatformCoordinator {
         this.consensusRoundHandlerWiring = Objects.requireNonNull(consensusRoundHandlerWiring);
         this.roundDurabilityBufferWiring = Objects.requireNonNull(roundDurabilityBufferWiring);
         this.stateHasherWiring = Objects.requireNonNull(stateHasherWiring);
+        this.staleEventDetectorWiring = Objects.requireNonNull(staleEventDetectorWiring);
+        this.transactionPoolWiring = Objects.requireNonNull(transactionPoolWiring);
     }
 
     /**
@@ -135,8 +147,7 @@ public class PlatformCoordinator {
         eventDeduplicatorWiring.flush();
         eventSignatureValidatorWiring.flush();
         orphanBufferWiring.flush();
-        inOrderLinkerWiring.flush();
-        shadowgraphWiring.flushRunnable().run();
+        gossipWiring.flush();
         consensusEngineWiring.flush();
         applicationTransactionPrehandlerWiring.flush();
         eventCreationManagerWiring.flush();
@@ -159,6 +170,7 @@ public class PlatformCoordinator {
         consensusEngineWiring.flush();
         eventCreationManagerWiring.startSquelching();
         eventCreationManagerWiring.flush();
+        staleEventDetectorWiring.startSquelching();
 
         // Also squelch the consensus round handler. It isn't strictly necessary to do this to prevent dataflow through
         // the system, but it prevents the consensus round handler from wasting time handling rounds that don't need to
@@ -173,20 +185,26 @@ public class PlatformCoordinator {
         stateSignatureCollectorWiring.flush();
         roundDurabilityBufferWiring.flush();
         consensusRoundHandlerWiring.flushRunnable().run();
+        staleEventDetectorWiring.flush();
 
         // Phase 3: stop squelching
         // Once everything has been flushed out of the system, it's safe to stop squelching.
         consensusEngineWiring.stopSquelching();
         eventCreationManagerWiring.stopSquelching();
         consensusRoundHandlerWiring.stopSquelchingRunnable().run();
+        staleEventDetectorWiring.stopSquelching();
 
         // Phase 4: clear
         // Data is no longer moving through the system. Clear all the internal data structures in the wiring objects.
         eventDeduplicatorWiring.getInputWire(EventDeduplicator::clear).inject(NoInput.getInstance());
         orphanBufferWiring.getInputWire(OrphanBuffer::clear).inject(NoInput.getInstance());
-        inOrderLinkerWiring.getInputWire(InOrderLinker::clear).inject(NoInput.getInstance());
-        stateSignatureCollectorWiring.getClearInput().inject(NoInput.getInstance());
+        gossipWiring.getClearInput().inject(NoInput.getInstance());
+        stateSignatureCollectorWiring
+                .getInputWire(StateSignatureCollector::clear)
+                .inject(NoInput.getInstance());
         eventCreationManagerWiring.getInputWire(EventCreationManager::clear).inject(NoInput.getInstance());
         roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::clear).inject(NoInput.getInstance());
+        staleEventDetectorWiring.getInputWire(StaleEventDetector::clear).inject(NoInput.getInstance());
+        transactionPoolWiring.getInputWire(TransactionPool::clear).inject(NoInput.getInstance());
     }
 }

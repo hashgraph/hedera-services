@@ -23,7 +23,8 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.sy
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallAddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CallType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -38,16 +39,16 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 @Singleton
 public class HtsCallFactory {
     private final SyntheticIds syntheticIds;
-    private final HtsCallAddressChecks addressChecks;
+    private final CallAddressChecks addressChecks;
     private final VerificationStrategies verificationStrategies;
-    private final List<HtsCallTranslator> callTranslators;
+    private final List<CallTranslator> callTranslators;
 
     @Inject
     public HtsCallFactory(
             @NonNull final SyntheticIds syntheticIds,
-            @NonNull final HtsCallAddressChecks addressChecks,
+            @NonNull final CallAddressChecks addressChecks,
             @NonNull final VerificationStrategies verificationStrategies,
-            @NonNull final List<HtsCallTranslator> callTranslators) {
+            @NonNull final List<CallTranslator> callTranslators) {
         this.syntheticIds = requireNonNull(syntheticIds);
         this.addressChecks = requireNonNull(addressChecks);
         this.verificationStrategies = requireNonNull(verificationStrategies);

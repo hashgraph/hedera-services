@@ -294,7 +294,7 @@ public class PrngPrecompileSuite extends HapiSuite {
                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
                 .then(getTxnRecord(TX)
                         .andAllChildRecords()
-                        .hasChildRecordCount(1)
+                        .hasNonStakingChildRecordCount(1)
                         .hasChildRecords(recordWith().status(INVALID_FEE_SUBMITTED)));
     }
 

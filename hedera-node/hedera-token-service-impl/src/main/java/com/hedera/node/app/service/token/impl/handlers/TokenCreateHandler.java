@@ -71,6 +71,11 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
     private final CustomFeesValidator customFeesValidator;
     private final TokenCreateValidator tokenCreateValidator;
 
+    /**
+     * Default constructor for injection.
+     * @param customFeesValidator custom fees validator
+     * @param tokenCreateValidator token create validator
+     */
     @Inject
     public TokenCreateHandler(
             @NonNull final CustomFeesValidator customFeesValidator,
@@ -437,6 +442,12 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 .calculate();
     }
 
+    /**
+     * Get the token subtype to be used for the fees calculation.
+     * @param tokenType the token type
+     * @param hasCustomFees if the token has custom fees
+     * @return the token subtype
+     */
     public static SubType tokenSubTypeFrom(final TokenType tokenType, boolean hasCustomFees) {
         return switch (tokenType) {
             case FUNGIBLE_COMMON -> hasCustomFees

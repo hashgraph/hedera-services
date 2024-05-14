@@ -40,7 +40,6 @@ import java.time.Duration;
  * @param eventSignatureValidator                  configuration for the event signature validator scheduler
  * @param orphanBuffer                             configuration for the orphan buffer scheduler
  * @param consensusEngine                          configuration for the consensus engine scheduler
- * @param inOrderLinker                            configuration for the in order linker scheduler
  * @param eventCreationManager                     configuration for the event creation manager scheduler
  * @param selfEventSigner                          configuration for the self event signer scheduler
  * @param signedStateFileManagerSchedulerType      the signed state file manager scheduler type
@@ -52,15 +51,11 @@ import java.time.Duration;
  * @param pcesWriter                               configuration for the preconsensus event writer scheduler
  * @param pcesSequencer                            configuration for the preconsensus event sequencer scheduler
  * @param applicationTransactionPrehandler         configuration for the application transaction prehandler scheduler
- * @param stateSignatureCollectorSchedulerType     the state signature collector scheduler type
- * @param stateSignatureCollectorUnhandledCapacity number of unhandled tasks allowed for the state signature collector
- * @param shadowgraphSchedulerType                 the shadowgraph scheduler type
- * @param shadowgraphUnhandledCapacity             number of unhandled tasks allowed for the shadowgraph
+ * @param stateSignatureCollector                  configuration for the state signature collector scheduler
  * @param consensusRoundHandlerSchedulerType       the consensus round handler scheduler type
  * @param consensusRoundHandlerUnhandledCapacity   number of unhandled tasks allowed for the consensus round handler
  * @param runningEventHasher                       configuration for the running event hasher scheduler
- * @param issDetectorSchedulerType                 the ISS detector scheduler type
- * @param issDetectorUnhandledCapacity             number of unhandled tasks allowed for the ISS detector
+ * @param issDetector                              configuration for the ISS detector scheduler
  * @param hashLoggerSchedulerType                  the hash logger scheduler type
  * @param hashLoggerUnhandledTaskCapacity          number of unhandled tasks allowed in the hash logger task scheduler
  * @param completeStateNotifierUnhandledCapacity   number of unhandled tasks allowed for the state completion notifier
@@ -72,11 +67,15 @@ import java.time.Duration;
  * @param platformPublisher                        configuration for the platform publisher scheduler
  * @param consensusEventStream                     configuration for the consensus event stream scheduler
  * @param roundDurabilityBuffer                    configuration for the round durability buffer scheduler
- * @param statusStateMachine                       configuration for the status state machine scheduler
- * @param platformStatusNexus                      configuration for the status nexus scheduler
  * @param signedStateSentinel                      configuration for the signed state sentinel scheduler
  * @param signedStateSentinelHeartbeatPeriod       the frequency that heartbeats should be sent to the signed state
  *                                                 sentinel
+ * @param statusStateMachine                       configuration for the status state machine scheduler
+ * @param platformStatusNexus                      configuration for the status nexus scheduler
+ * @param staleEventDetector                       configuration for the stale event detector scheduler
+ * @param transactionResubmitter                   configuration for the transaction resubmitter scheduler
+ * @param transactionPool                          configuration for the transaction pool scheduler
+ * @param gossip                                   configuration for the gossip scheduler
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -95,8 +94,6 @@ public record PlatformSchedulersConfig(
                         defaultValue =
                                 "SEQUENTIAL_THREAD CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
                 TaskSchedulerConfiguration consensusEngine,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
-                TaskSchedulerConfiguration inOrderLinker,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventCreationManager,
         @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration selfEventSigner,
@@ -109,16 +106,14 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration pcesSequencer,
         @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration applicationTransactionPrehandler,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType stateSignatureCollectorSchedulerType,
-        @ConfigProperty(defaultValue = "500") int stateSignatureCollectorUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType shadowgraphSchedulerType,
-        @ConfigProperty(defaultValue = "500") int shadowgraphUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration stateSignatureCollector,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType consensusRoundHandlerSchedulerType,
         @ConfigProperty(defaultValue = "5") int consensusRoundHandlerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(5) UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
                 TaskSchedulerConfiguration runningEventHasher,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType issDetectorSchedulerType,
-        @ConfigProperty(defaultValue = "500") int issDetectorUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration issDetector,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType hashLoggerSchedulerType,
         @ConfigProperty(defaultValue = "100") int hashLoggerUnhandledTaskCapacity,
         @ConfigProperty(defaultValue = "1000") int completeStateNotifierUnhandledCapacity,
@@ -137,4 +132,10 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration roundDurabilityBuffer,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration statusStateMachine,
-        @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration platformStatusNexus) {}
+        @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration platformStatusNexus,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration staleEventDetector,
+        @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration transactionResubmitter,
+        @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration transactionPool,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration gossip) {}

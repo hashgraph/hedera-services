@@ -18,7 +18,10 @@ package com.hedera.node.app.service.mono.fees.calculation.contract.txns;
 
 import static com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils.lookupAccountExpiry;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromContractId;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asTimestamp;
+import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -26,6 +29,8 @@ import com.hedera.node.app.service.mono.fees.calculation.TxnResourceUsageEstimat
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -57,5 +62,21 @@ public class ContractUpdateResourceUsage implements TxnResourceUsageEstimator {
             log.debug("Unable to deduce ContractUpdate usage for {}, using defaults", txn.getTransactionID(), e);
             return FeeData.getDefaultInstance();
         }
+    }
+
+    /**
+     * Returns the estimated resource usage for the given txn relative to the given state of the
+     * world.
+     * @param txn the txn in question
+     * @param sigUsage the signature usage
+     * @param contract the contract
+     * @return the estimated resource usage
+     */
+    public FeeData usageGiven(@NonNull TransactionBody txn, @NonNull SigValueObj sigUsage, @Nullable Account contract) {
+        if (contract == null) {
+            return CONSTANT_FEE_DATA;
+        }
+        Timestamp expiry = asTimestamp(contract.expirationSecond());
+        return usageEstimator.getContractUpdateTxFeeMatrices(txn, expiry, sigUsage);
     }
 }
