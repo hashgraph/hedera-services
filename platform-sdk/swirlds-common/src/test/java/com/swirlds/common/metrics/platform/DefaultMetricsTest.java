@@ -582,8 +582,8 @@ class DefaultMetricsTest {
                 .withValue(MetricsConfig_.METRICS_UPDATE_PERIOD_MILLIS, 0L)
                 .getOrCreateConfig();
         metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        final DefaultPlatformMetrics metrics = new DefaultPlatformMetrics(NODE_ID, registry, executor, factory,
-                metricsConfig);
+        final DefaultPlatformMetrics metrics =
+                new DefaultPlatformMetrics(NODE_ID, registry, executor, factory, metricsConfig);
         metrics.addUpdater(updater);
 
         // when
@@ -603,8 +603,8 @@ class DefaultMetricsTest {
     void testUpdaterAddedAfterStart(@Mock final Runnable updater) {
         // given
         final ScheduledExecutorService executor1 = Executors.newSingleThreadScheduledExecutor();
-        final DefaultPlatformMetrics metrics = new DefaultPlatformMetrics(NODE_ID, registry, executor1, factory,
-                metricsConfig);
+        final DefaultPlatformMetrics metrics =
+                new DefaultPlatformMetrics(NODE_ID, registry, executor1, factory, metricsConfig);
         metrics.start();
 
         // when
@@ -620,8 +620,8 @@ class DefaultMetricsTest {
         when(newCounter.getCategory()).thenReturn(CATEGORY_1);
         when(newCounter.getName()).thenReturn("New Counter");
         when(factory.createMetric(any())).thenReturn(newCounter);
-        final DefaultPlatformMetrics globalMetric = new DefaultPlatformMetrics(null, registry, executor, factory,
-                metricsConfig);
+        final DefaultPlatformMetrics globalMetric =
+                new DefaultPlatformMetrics(null, registry, executor, factory, metricsConfig);
         globalMetric.subscribe(metrics::handleGlobalMetrics);
 
         // when
@@ -638,8 +638,8 @@ class DefaultMetricsTest {
         when(newCounter.getCategory()).thenReturn(CATEGORY_1);
         when(newCounter.getName()).thenReturn("New Counter");
         when(factory.createMetric(any())).thenReturn(newCounter);
-        final DefaultPlatformMetrics globalMetric = new DefaultPlatformMetrics(null, registry, executor, factory,
-                metricsConfig);
+        final DefaultPlatformMetrics globalMetric =
+                new DefaultPlatformMetrics(null, registry, executor, factory, metricsConfig);
         globalMetric.subscribe(metrics::handleGlobalMetrics);
         globalMetric.getOrCreate(new Counter.Config(CATEGORY_1, "New Counter"));
 

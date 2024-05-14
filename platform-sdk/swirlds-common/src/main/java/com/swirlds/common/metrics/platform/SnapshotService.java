@@ -88,7 +88,8 @@ public class SnapshotService implements Startable {
      *
      */
     public SnapshotService(
-            final DefaultPlatformMetrics globalMetrics, final ScheduledExecutorService executor,
+            final DefaultPlatformMetrics globalMetrics,
+            final ScheduledExecutorService executor,
             final Duration interval) {
         this(globalMetrics, executor, interval, Time.getCurrent());
     }

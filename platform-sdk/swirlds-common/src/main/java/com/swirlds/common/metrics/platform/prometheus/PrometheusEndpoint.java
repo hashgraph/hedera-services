@@ -60,8 +60,8 @@ public class PrometheusEndpoint implements AutoCloseableNonThrowing {
     /** Prometheus-label to differentiate between value-types (mean, min, max, stddev) */
     public static final String TYPE_LABEL = "type";
 
-    private static final String TIME_METRIC_KEY = DefaultPlatformMetrics.calculateMetricKey(Metrics.INFO_CATEGORY,
-            "time");
+    private static final String TIME_METRIC_KEY =
+            DefaultPlatformMetrics.calculateMetricKey(Metrics.INFO_CATEGORY, "time");
 
     /** Scope of a metric */
     public enum AdapterType {
