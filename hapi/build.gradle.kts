@@ -28,7 +28,7 @@ tasks.cloneHederaProtobufs {
     // uncomment below to use a specific tag
     //    tag = "v0.50.0-release"
     // uncomment below to use a specific branch
-    branch = "hip-904-max-auto-assciations-and-token-reject"
+    branch = "main"
 }
 
 sourceSets {
