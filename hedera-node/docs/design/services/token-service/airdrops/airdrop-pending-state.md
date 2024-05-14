@@ -4,9 +4,7 @@
 
 In order for the `TokenAirdropTransaction` to work we should define a new section of state, where airdrops to be stored. It should be a special storage of incoming airdrop information, that could potentially be used to build `CryptoTransfer` transactions upon it.
 
-The pending airdrop state would be part of the token state, since the airdrops are tightly connected to tokens and we can keep them at the same place.
-
-The additional new `TokenClaimAirdrop` and `TokenCancelAirdrop` transactions would operate tightly with the pending state and it would serve as a mediator between them and the persisted state. These operations would trigger a removal of entities from the pending state. The `claim` operation would delegate a crypto transfer operation and remove the airdrop information, that is being claimed from the pending state and the `cancel` would directly remove the airdrop from the pending state.
+The additional new `TokenClaimAirdrop` and `TokenCancelAirdrop` transactions would operate tightly with the pending state. These operations would trigger a removal of entities from the pending state. The `claim` operation would create a synthetic crypto transfer operation and remove the airdrop information, that is being claimed from the pending state and the `cancel` would directly remove the airdrop from the pending state.
 
 ## Prerequisite reading
 * [HIP-904](https://hips.hedera.com/hip/hip-904)
@@ -20,11 +18,14 @@ The additional new `TokenClaimAirdrop` and `TokenCancelAirdrop` transactions wou
 
 ## Architecture
 
-The newly defined entity state won’t be able to persist anything in the state directly. If we want to commit something from the pending state to the persisted state, we would have to delegate a given pending airdrop by creating a synthetic crypto transfer transaction, send it to a suitable handler and delete it from the pending state. The writable nature of the pending state would be limited only to adding new entries for a pending airdrop to be transferred or to remove already added ones.
+The pending airdrop state would be part of the token state, since the airdrops are tightly connected to tokens and we can keep them at the same place. The pending nature of this state can be described as keeping incoming airdrops, without directly updating the sender and the receiver balances as in a regular transfer. This is needed to avoid transferring spam tokens and the receiver to retain full control of which airdrop to claim or ignore. Canceling an airdrop could be performed only from sender's side.
 
-The `WritableStore` of the airdrops, should contain a handler method and if a given pending airdrop is claimed, it could be delegated to the `CryptoTransferHandler` and executed.
+New airdrop specific operations are also introduced - those are `TokenAirdrop`, `TokenClaimAirdrop` and `TokenCancelAirdrop`.
 
-Details for `TokenClaimAirdrop` and `TokenCancelAirdrop` would be covered in their own design, docs but basically the `claim` operation would take a pending airdrop and submit it to the delegate function for actual handling and execution. The `cancel` operation would clear an added pending airdrop from the state and it won’t be executed at all.
+Details for all of them would be covered in their own design docs, but here is a general overview of how they would interact with the pending state:
+- `TokenAirdrop` would add a new airdrop to the pending state
+- `TokenClaimAirdrop` would have a handle logic, which would take and remove a pending airdrop from this state, create a synthetic `CryptoTransfer` and execute it
+- `TokenCancelAirdrop` operation would remove an existing airdrop from the state
 
 ### Structure
 
@@ -42,7 +43,7 @@ It would extend `ReadableAirdropStoreImpl` that implements the following interfa
 
 ```java
 public interface ReadableAirdropStore {
-	PendingAirdropValue get(@NonNull final PendingAirdropId airdropId);
+	PendingAirdropValue getFungibleAirdropAmount(@NonNull final PendingAirdropId airdropId);
 	long sizeOfState();
 	void warm(@NonNull final PendingAirdropId airdropId);
     List<PendingAirdropId> getPendingAirdropIdsBySender(final AccountId sender);
@@ -51,7 +52,9 @@ public interface ReadableAirdropStore {
 
 The `ReadableAirdropStoreImpl` would keep an instance of `ReadableKVState<PendingAirdropId, PendingAirdropValue> airdropsState`.
 
-An additional method `getPendingAirdropIdsBySender` would be added to the `ReadableAirdropStore` to get all PendingAirdropIds for a specific sender. This would be useful for traversing all sender's airdrops when their account expires or gets deleted. Then we should iterate over all of their pending airdrops and cancel them.
+An additional method `getPendingAirdropIdsBySender` would be added to the `ReadableAirdropStore` to get all `PendingAirdropIds` for a specific sender. This would be done via filtering all `PendingAirdropIds` kept in state by the `sender` that is passed as a parameter.
+
+This would be useful for traversing all sender's airdrops when their account expires or gets deleted. Then we should iterate over all of their pending airdrops and cancel them.
 
 The `WritableAirdropStore` would add additional methods for operating over the airdrops state, so it would have the following methods:
 
@@ -76,7 +79,7 @@ public class WritableAirdropStore {
    - Only a single fungible or non-fungible airdrop for a specific token defined - we just put a new entry in the map
    - An airdrop for an existing `PendingAirdropId` is already defined - we should replace the existing `PendingAirdropValue` for this `PendingAirdropId` with the aggregated new fungible amount
 3. Handling an airdrop `cancel` in state - we remove the `PendingAirdropId` key for the airdrop we want to cancel
-4. Handling an airdrop `claim` in state - we remove the `PendingAirdropId` key for the airdrop after we claim it and create a synthetic crypto transfer for it
+4. Handling an airdrop `claim` in state - we remove the `PendingAirdropId` key for the airdrop after we claim it and create a synthetic crypto transfer for it inside the `TokenClaimAirdropHandler`
 
 ## Acceptance tests
 
@@ -106,17 +109,15 @@ Note: For all cases the recipient account shouldn’t be associated with the air
 5. Airdrop a fungible token X with amount Y to Alice and an NFT Z and serial number 1 to Bob. Cancel the airdrop for fungible token X to Alice and for NFT Z and serial number 1 to Bob → pending state shouldn’t keep the airdrops for Alice and Bob
 6. Airdrop a fungible token X with amount Y to Alice, an NFT Z and serial number 1 to Bob and the same NFT with serial number 2 to Carol. Cancel the airdrop for NFT Z and serial number 2 to Carol → pending state shouldn’t keep the airdrop to Carol, but should keep the airdrops to Alice and Bob
 
-### Synthetic transfer and execution on claim (perform transfers and change persisted state)
-
-We should also validate that the pending state properly creates and propagates the synthetic transfer in case of airdrop claims.
+### State management on claim (erase pending airdrop state only after successful claim)
 
 1. Claim an airdrop with a fungible token X with amount Y airdropped from Alice to Bob
 2. Claim an airdrop with an NFT with token X and a serial number 1 airdropped from Alice to Bob
-3. Claim multiple fungible airdrops - a fungible token X with amount Y airdropped from Alice to Bob and a fungible token Z with amount Y from Carol to Bob 
+3. Claim multiple fungible airdrops - a fungible token X with amount Y airdropped from Alice to Bob and a fungible token Z with amount Y from Carol to Bob
 4. Claim multiple nft airdrops with the same sender and TokenId but different serial numbers - an NFT X with serial numbers 1 and 2 airdropped to Bob
 5. Claim multiple nft airdrops with the same TokenId but different senders and serial numbers - NFT X with serial number 1 airdropped from Alice to Bob and NFT X with serial number 2 airdropped from Carol to Bob
 6. Claim multiple nft airdrops with different TokenIds but same sender and serial numbers - NFT X with serial number 1 airdropped from Alice to Bob and NFT Y with serial number 1 airdropped from Alice to Bob
 7. Claim multiple nft airdrops with different TokenIds, different serial numbers but same sender - NFT X with serial number 1 airdropped from Alice to Bob and NFT Y with serial number 2 airdropped from Alice to Bob
 8. Claim multiple nft airdrops with different TokenIds, different serial numbers and different senders - NFT X with serial number 1 airdropped from Alice to Bob, NFT Y with serial number 2 airdropped from Carol to Bob
 
-For all the cases the WritableStore should create a synthetic crypto transfer with information from the airdrop entry and delegate it to the `CryptoTransferHandler` for execution. The pending state should delete the airdrop entry after the transfer is executed. The operations should be atomic and no pending airdrop should be left after a synthetic transfer.
+For all cases the pending state shouldn't keep the airdrops for Bob, if they are claimed successfully.
