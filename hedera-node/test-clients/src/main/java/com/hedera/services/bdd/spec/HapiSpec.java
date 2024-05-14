@@ -373,7 +373,8 @@ public class HapiSpec implements Runnable {
                     Stream.of(given, when, then).flatMap(Arrays::stream).toList(),
                     SECP_256K1_SOURCE_KEY,
                     adminKey,
-                    hapiSetup.defaultCreateGas()));
+                    hapiSetup.defaultCreateGas(),
+                    this));
         }
 
         try {

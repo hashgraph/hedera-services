@@ -16,7 +16,7 @@
 
 plugins {
     id("application")
-    id("com.hedera.hashgraph.sdk.conventions")
+    id("com.hedera.gradle.platform")
 }
 
 mainModuleInfo {

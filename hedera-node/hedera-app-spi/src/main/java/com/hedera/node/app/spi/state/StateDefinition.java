@@ -17,6 +17,7 @@
 package com.hedera.node.app.spi.state;
 
 import com.hedera.pbj.runtime.Codec;
+import com.swirlds.state.spi.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
