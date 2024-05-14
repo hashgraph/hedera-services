@@ -45,6 +45,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
@@ -116,6 +118,24 @@ public class ContractDeleteSuite extends HapiSuite {
                 cannotDeleteOrSelfDestructContractWithNonZeroBalance(),
                 cannotSendValueToTokenAccount(),
                 cannotUseMoreThanChildContractLimit());
+    }
+
+    @HapiTest
+    public HapiSpec idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed("adminKey"),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT),
+                        cryptoCreate("transferAccount"))
+                .when(
+                        contractCreate("a").bytecode(CONTRACT).adminKey("adminKey"),
+                        contractCreate("b").bytecode(CONTRACT).adminKey("adminKey"))
+                .then(
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> contractDelete("a")
+                                .transferAccount("transferAccount")),
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> contractDelete("b")
+                                .transferContract(CONTRACT)));
     }
 
     @HapiTest
@@ -222,10 +242,18 @@ public class ContractDeleteSuite extends HapiSuite {
                         uploadInitCode(selfDestructCallable),
                         contractCustomCreate(selfDestructCallable, "1")
                                 .adminKey(multiKey)
-                                .balance(123),
+                                .balance(123)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         contractCustomCreate(selfDestructCallable, "2")
                                 .adminKey(multiKey)
-                                .balance(321),
+                                .balance(321)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         tokenCreate(someToken).adminKey(multiKey).treasury(selfDestructCallable + "1"))
                 .when(
                         contractDelete(selfDestructCallable + "1").hasKnownStatus(ACCOUNT_IS_TREASURY),
@@ -257,9 +285,15 @@ public class ContractDeleteSuite extends HapiSuite {
                         uploadInitCode(selfDestructableContract),
                         contractCreate(selfDestructableContract)
                                 .adminKey(multiKey)
-                                .balance(123),
+                                .balance(123)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         uploadInitCode(otherMiscContract),
-                        contractCreate(otherMiscContract),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(otherMiscContract).refusingEthConversion(),
                         tokenCreate(someToken)
                                 .initialSupply(0L)
                                 .adminKey(multiKey)
@@ -282,7 +316,9 @@ public class ContractDeleteSuite extends HapiSuite {
     @HapiTest
     HapiSpec rejectsWithoutProperSig() {
         return defaultHapiSpec("rejectsWithoutProperSig")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                // since we have CONTRACT_ID key
+                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).refusingEthConversion())
                 .when()
                 .then(contractDelete(CONTRACT).signedBy(GENESIS).hasKnownStatus(INVALID_SIGNATURE));
     }
@@ -310,8 +346,13 @@ public class ContractDeleteSuite extends HapiSuite {
                 .given(
                         fileCreate(tbdFile),
                         fileDelete(tbdFile),
-                        createDefaultContract(tbdContract).bytecode(tbdFile).hasKnownStatus(FILE_DELETED))
-                .when(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                        // refuse eth conversion because we can't set invalid bytecode to callData in ethereum
+                        // transaction + trying to delete immutable contract
+                        createDefaultContract(tbdContract)
+                                .bytecode(tbdFile)
+                                .hasKnownStatus(FILE_DELETED)
+                                .refusingEthConversion())
+                .when(uploadInitCode(CONTRACT), contractCreate(CONTRACT).refusingEthConversion())
                 .then(
                         contractDelete(CONTRACT)
                                 .claimingPermanentRemoval()
@@ -334,7 +375,12 @@ public class ContractDeleteSuite extends HapiSuite {
                 .given(
                         cryptoCreate(RECEIVER_CONTRACT_NAME).balance(0L),
                         uploadInitCode(PAYABLE_CONSTRUCTOR),
-                        contractCreate(PAYABLE_CONSTRUCTOR).balance(1L))
+                        contractCreate(PAYABLE_CONSTRUCTOR)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion()
+                                .balance(1L))
                 .when(contractDelete(PAYABLE_CONSTRUCTOR).transferAccount(RECEIVER_CONTRACT_NAME))
                 .then(getAccountBalance(RECEIVER_CONTRACT_NAME).hasTinyBars(1L));
     }
@@ -346,7 +392,12 @@ public class ContractDeleteSuite extends HapiSuite {
         return defaultHapiSpec("DeleteTransfersToContract")
                 .given(
                         uploadInitCode(PAYABLE_CONSTRUCTOR),
-                        contractCreate(PAYABLE_CONSTRUCTOR).balance(0L),
+                        contractCreate(PAYABLE_CONSTRUCTOR)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion()
+                                .balance(0L),
                         contractCustomCreate(PAYABLE_CONSTRUCTOR, suffix).balance(1L))
                 .when(contractDelete(PAYABLE_CONSTRUCTOR).transferContract(PAYABLE_CONSTRUCTOR + suffix))
                 .then(getAccountBalance(PAYABLE_CONSTRUCTOR + suffix).hasTinyBars(1L));
@@ -355,7 +406,10 @@ public class ContractDeleteSuite extends HapiSuite {
     @HapiTest
     HapiSpec localCallToDeletedContract() {
         return defaultHapiSpec("LocalCallToDeletedContract")
-                .given(uploadInitCode(SIMPLE_STORAGE_CONTRACT), contractCreate(SIMPLE_STORAGE_CONTRACT))
+                // refuse eth conversion because MODIFYING_IMMUTABLE_CONTRACT
+                .given(
+                        uploadInitCode(SIMPLE_STORAGE_CONTRACT),
+                        contractCreate(SIMPLE_STORAGE_CONTRACT).refusingEthConversion())
                 .when(
                         contractCallLocal(SIMPLE_STORAGE_CONTRACT, "get")
                                 .hasCostAnswerPrecheck(OK)

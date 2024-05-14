@@ -23,7 +23,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -36,7 +36,7 @@ import javax.inject.Singleton;
  * Translates "classic" {@code cryptoTransfer()} calls to the HTS system contract.
  */
 @Singleton
-public class ClassicTransfersTranslator extends AbstractHtsCallTranslator {
+public class ClassicTransfersTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     public static final Function CRYPTO_TRANSFER =
             new Function("cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])", ReturnTypes.INT_64);
     public static final Function CRYPTO_TRANSFER_V2 = new Function(

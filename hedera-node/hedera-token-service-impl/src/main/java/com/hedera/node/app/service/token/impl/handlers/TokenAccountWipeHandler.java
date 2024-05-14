@@ -80,6 +80,10 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
     @NonNull
     private final TokenSupplyChangeOpsValidator validator;
 
+    /**
+     * Default constructor for injection.
+     * @param validator the {@link TokenSupplyChangeOpsValidator} to use
+     */
     @Inject
     public TokenAccountWipeHandler(@NonNull final TokenSupplyChangeOpsValidator validator) {
         this.validator = validator;
@@ -140,6 +144,7 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
                 tokensConfig);
         final var acct = validated.account();
         final var token = validated.token();
+        final var unaliasedId = acct.accountIdOrThrow();
 
         final long newTotalSupply;
         final long newAccountBalance;
@@ -167,7 +172,7 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
                 validateTrue(nft != null, INVALID_NFT_ID);
 
                 final var nftOwner = nft.ownerId();
-                validateTrue(Objects.equals(nftOwner, accountId), ACCOUNT_DOES_NOT_OWN_WIPED_NFT);
+                validateTrue(Objects.equals(nftOwner, unaliasedId), ACCOUNT_DOES_NOT_OWN_WIPED_NFT);
             }
 
             // Check that the new token balance will not be negative
@@ -176,7 +181,7 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
 
             // Remove the NFTs
             nftSerialNums.forEach(serialNum -> {
-                if (!accountId.equals(token.treasuryAccountId())) {
+                if (!unaliasedId.equals(token.treasuryAccountId())) {
                     removeFromList(
                             NftID.newBuilder()
                                     .serialNumber(serialNum)
@@ -191,7 +196,7 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
         }
 
         final Account.Builder updatedAcctBuilder =
-                requireNonNull(accountStore.get(accountId)).copyBuilder();
+                requireNonNull(accountStore.getAccountById(unaliasedId)).copyBuilder();
         // Update the NFT count for the account
         updatedAcctBuilder.numberOwnedNfts(acct.numberOwnedNfts() - nftSerialNums.size());
         // Finally, record all the changes
@@ -245,15 +250,15 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
             @NonNull final TokensConfig tokensConfig) {
         validateTrue(fungibleWipeCount > -1, INVALID_WIPING_AMOUNT);
 
-        final var account =
-                TokenHandlerHelper.getIfUsable(accountId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
+        final var account = TokenHandlerHelper.getIfUsableForAliasedId(
+                accountId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
 
         validator.validateWipe(fungibleWipeCount, nftSerialNums, tokensConfig);
 
         final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
         validateTrue(token.wipeKey() != null, ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY);
 
-        final var accountRel = TokenHandlerHelper.getIfUsable(accountId, tokenId, tokenRelStore);
+        final var accountRel = TokenHandlerHelper.getIfUsable(account.accountIdOrThrow(), tokenId, tokenRelStore);
         if (token.hasKycKey()) {
             validateTrue(accountRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
         }

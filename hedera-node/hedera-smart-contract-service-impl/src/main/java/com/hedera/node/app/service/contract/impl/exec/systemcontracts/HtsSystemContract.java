@@ -37,7 +37,7 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.PRECOMPILE_ER
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -76,7 +76,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
         if (callType == UNQUALIFIED_DELEGATE) {
             return haltResult(PRECOMPILE_ERROR, frame.getRemainingGas());
         }
-        final HtsCall call;
+        final Call call;
         final HtsCallAttempt attempt;
         try {
             validateTrue(input.size() >= 4, INVALID_TRANSACTION_BODY);
@@ -98,10 +98,10 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
     @SuppressWarnings({"java:S2637", "java:S2259"}) // this function is going to be refactored soon.
     private static FullResult resultOfExecuting(
             @NonNull final HtsCallAttempt attempt,
-            @NonNull final HtsCall call,
+            @NonNull final Call call,
             @NonNull final Bytes input,
             @NonNull final MessageFrame frame) {
-        final HtsCall.PricedResult pricedResult;
+        final Call.PricedResult pricedResult;
         try {
             pricedResult = call.execute(frame);
             final var gasRequirement = pricedResult.fullResult().gasRequirement();

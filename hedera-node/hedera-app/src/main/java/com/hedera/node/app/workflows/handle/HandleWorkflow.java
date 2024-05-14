@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.node.base.HederaFunctionality.NONE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
@@ -56,9 +57,11 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
+import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
@@ -77,6 +80,7 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
+import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
@@ -313,8 +317,8 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
-        // Determine if this is the first transaction after startup. This needs to be determined BEFORE starting the
-        // user transaction
+        // (FUTURE) We actually want consider exporting synthetic transactions on every
+        // first post-upgrade transaction, not just the first transaction after genesis.
         final var consTimeOfLastHandledTxn = blockRecordManager.consTimeOfLastHandledTxn();
         final var isFirstTransaction = !consTimeOfLastHandledTxn.isAfter(Instant.EPOCH);
 
@@ -330,7 +334,15 @@ public class HandleWorkflow {
         final var feeAccumulator = createFeeAccumulator(stack, configuration, recordBuilder);
 
         final var tokenServiceContext = new TokenContextImpl(
-                configuration, storeMetricsService, stack, recordListBuilder, blockRecordManager, isFirstTransaction);
+                configuration,
+                state,
+                storeMetricsService,
+                stack,
+                recordListBuilder,
+                blockRecordManager,
+                isFirstTransaction);
+        // Do any one-time work for the first transaction after genesis;
+        // overhead for all following transactions is effectively zero
         genesisRecordsTimeHook.process(tokenServiceContext);
         try {
             // If this is the first user transaction after midnight, then handle staking updates prior to handling the
@@ -357,10 +369,11 @@ public class HandleWorkflow {
         }
 
         final long handleStart = System.nanoTime();
-        TransactionBody txBody;
+        TransactionBody txBody = null;
         AccountID payer = null;
         Fees fees = null;
         TransactionInfo transactionInfo = null;
+        HederaFunctionality functionality = NONE;
         Map<AccountID, Long> prePaidRewards = emptyMap();
         try {
             final var preHandleResult = getCurrentPreHandleResult(readableStoreFactory, creator, platformTxn);
@@ -377,6 +390,7 @@ public class HandleWorkflow {
             final var transaction = transactionInfo.transaction();
             txBody = transactionInfo.txBody();
             payer = transactionInfo.payerID();
+            functionality = transactionInfo.functionality();
 
             final Bytes transactionBytes;
             if (transaction.signedTransactionBytes().length() > 0) {
@@ -410,7 +424,7 @@ public class HandleWorkflow {
             // Setup context
             final var context = new HandleContextImpl(
                     txBody,
-                    transactionInfo.functionality(),
+                    functionality,
                     signatureMapSize,
                     payer,
                     preHandleResult.getPayerKey(),
@@ -453,7 +467,7 @@ public class HandleWorkflow {
                     stack,
                     platformEvent.getCreatorId().id());
 
-            final var hasWaivedFees = authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody);
+            final var hasWaivedFees = authorizer.hasWaivedFees(payer, functionality, txBody);
             if (validationResult.status() != SO_FAR_SO_GOOD) {
                 recordBuilder.status(validationResult.responseCodeEnum());
                 try {
@@ -490,7 +504,7 @@ public class HandleWorkflow {
                     // as a result of transaction being handled.
                     Set<Account> hollowAccounts = preHandleResult.getHollowAccounts();
                     SignatureVerification maybeEthTxVerification = null;
-                    if (transactionInfo.functionality() == ETHEREUM_TRANSACTION) {
+                    if (functionality == ETHEREUM_TRANSACTION) {
                         final var maybeEthTxSigs = CONTRACT_SERVICE
                                 .handlers()
                                 .ethereumTransactionHandler()
@@ -539,8 +553,7 @@ public class HandleWorkflow {
                     // only if not a contract operation, since these dispatches were already
                     // charged using gas. [FUTURE - stop setting transactionFee in recordBuilder
                     // at the point of dispatch, so we no longer need this special case here.]
-                    final var isContractOp =
-                            DISPATCHING_CONTRACT_TRANSACTIONS.contains(transactionInfo.functionality());
+                    final var isContractOp = DISPATCHING_CONTRACT_TRANSACTIONS.contains(functionality);
                     if (!isContractOp
                             && !recordListBuilder.precedingRecordBuilders().isEmpty()) {
                         // We intentionally charge fees even if the transaction failed (may need to update
@@ -577,9 +590,40 @@ public class HandleWorkflow {
                         feeAccumulator.chargeFees(payer, creator.accountId(), fees);
                     }
                 }
+
+                // After a contract operation was handled (i.e., not throttled), update the
+                // gas throttle by leaking any unused gas
+                if (isGasThrottled(functionality)
+                        && recordBuilder.status() != CONSENSUS_GAS_EXHAUSTED
+                        && recordBuilder.hasContractResult()) {
+                    final var gasUsed = recordBuilder.getGasUsedForContractTxn();
+                    handleWorkflowMetrics.addGasUsed(gasUsed);
+                    final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
+                    if (contractsConfig.throttleThrottleByGas()) {
+                        final var gasLimitForContractTx =
+                                getGasLimitForContractTx(transactionInfo.txBody(), functionality);
+                        final var excessAmount = gasLimitForContractTx - gasUsed;
+                        networkUtilizationManager.leakUnusedGasPreviouslyReserved(transactionInfo, excessAmount);
+                    }
+                }
             }
         } catch (final Exception e) {
             logger.error("Possibly CATASTROPHIC failure while handling a user transaction", e);
+            if (transactionInfo == null) {
+                final var baseData = extractTransactionBaseData(platformTxn.getContents());
+                if (baseData.transaction() == null) {
+                    // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement
+                    logger.error("Failed to parse transaction from creator: {}", creator);
+                    return;
+                }
+                functionality = baseData.functionality();
+                txBody = baseData.txBody();
+                payer = baseData.payer();
+                recordBuilder.transaction(baseData.transaction()).transactionBytes(baseData.transactionBytes());
+                if (txBody != null && txBody.hasTransactionID()) {
+                    recordBuilder.transactionID(txBody.transactionIDOrThrow());
+                }
+            }
             // We should always rollback stack including gas charges when there is an unexpected exception
             rollback(true, ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);
             if (payer != null && fees != null) {
@@ -599,52 +643,50 @@ public class HandleWorkflow {
             handleWorkflowMetrics.switchConsensusSecond();
         }
 
-        // After a contract operation was handled (i.e., not throttled), update the
-        // gas throttle by leaking any unused gas
-        if (isGasThrottled(transactionInfo.functionality())
-                && recordBuilder.status() != CONSENSUS_GAS_EXHAUSTED
-                && recordBuilder.hasContractResult()) {
-            final var gasUsed = recordBuilder.getGasUsedForContractTxn();
-            handleWorkflowMetrics.addGasUsed(gasUsed);
-            final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
-            if (contractsConfig.throttleThrottleByGas()) {
-                final var gasLimitForContractTx =
-                        getGasLimitForContractTx(transactionInfo.txBody(), transactionInfo.functionality());
-                final var excessAmount = gasLimitForContractTx - gasUsed;
-                networkUtilizationManager.leakUnusedGasPreviouslyReserved(transactionInfo, excessAmount);
-            }
-        }
         // If a transaction appeared to try an auto-creation, and hence used
         // frontend throttle capacity; but then failed, we need to reclaim the
         // frontend throttle capacity on the node that submitted the transaction
-        if (canAutoCreate(transactionInfo.functionality()) && recordBuilder.status() != SUCCESS) {
+        if (txBody != null && canAutoCreate(functionality) && recordBuilder.status() != SUCCESS) {
             final var numImplicitCreations = throttleServiceManager.numImplicitCreations(
-                    transactionInfo.txBody(), tokenServiceContext.readableStore(ReadableAccountStore.class));
-            if (usedSelfFrontendThrottleCapacity(numImplicitCreations, transactionInfo.txBody())) {
+                    txBody, tokenServiceContext.readableStore(ReadableAccountStore.class));
+            if (usedSelfFrontendThrottleCapacity(numImplicitCreations, txBody)) {
                 throttleServiceManager.reclaimFrontendThrottleCapacity(numImplicitCreations);
             }
         }
 
         throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
-        final var function = transactionInfo.functionality();
-        transactionFinalizer.finalizeParentRecord(
-                payer,
-                tokenServiceContext,
-                function,
-                extraRewardReceivers(transactionInfo, recordBuilder),
-                prePaidRewards);
+        try {
+            transactionFinalizer.finalizeParentRecord(
+                    payer,
+                    tokenServiceContext,
+                    functionality,
+                    extraRewardReceivers(txBody, functionality, recordBuilder),
+                    prePaidRewards);
+        } catch (final Exception e) {
+            logger.error(
+                    "Possibly CATASTROPHIC error: failed to finalize parent record for transaction {}",
+                    transactionInfo.transactionID(),
+                    e);
+
+            // Undo any changes made to the state
+            final var userTransactionRecordBuilder = recordListBuilder.userTransactionRecordBuilder();
+            userTransactionRecordBuilder.nullOutSideEffectFields();
+            rollback(true, ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);
+        }
 
         // Commit all state changes
         stack.commitFullStack();
 
         // store all records at once, build() records end of transaction to log
         final var recordListResult = recordListBuilder.build();
-        recordCache.add(creator.nodeId(), payer, recordListResult.records());
+        if (payer != null) { // temporary check to avoid NPE
+            recordCache.add(creator.nodeId(), payer, recordListResult.records());
+        }
 
         blockRecordManager.endUserTransaction(recordListResult.records().stream(), state);
 
         final int handleDuration = (int) (System.nanoTime() - handleStart);
-        handleWorkflowMetrics.updateTransactionDuration(transactionInfo.functionality(), handleDuration);
+        handleWorkflowMetrics.updateTransactionDuration(functionality, handleDuration);
     }
 
     /**
@@ -665,21 +707,16 @@ public class HandleWorkflow {
      *     token transfer).</li>
      * </ol>
      *
-     * @param transactionInfo the transaction info
+     * @param body the {@link TransactionBody} of the transaction
+     * @param function the {@link HederaFunctionality} of the transaction
      * @param recordBuilder the record builder
      * @return the set of extra account ids
      */
     static Set<AccountID> extraRewardReceivers(
-            @NonNull final TransactionInfo transactionInfo,
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
-        return extraRewardReceivers(transactionInfo.txBody(), transactionInfo.functionality(), recordBuilder);
-    }
-
-    static Set<AccountID> extraRewardReceivers(
-            @NonNull final TransactionBody body,
+            @Nullable final TransactionBody body,
             @NonNull final HederaFunctionality function,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
-        if (recordBuilder.status() != SUCCESS) {
+        if (recordBuilder.status() != SUCCESS || body == null) {
             return emptySet();
         }
         return switch (function) {
@@ -789,11 +826,17 @@ public class HandleWorkflow {
         return switch (function) {
             case CONTRACT_CREATE -> txnBody.contractCreateInstance().gas();
             case CONTRACT_CALL -> txnBody.contractCall().gas();
-            case ETHEREUM_TRANSACTION -> EthTxData.populateEthTxData(
-                            txnBody.ethereumTransaction().ethereumData().toByteArray())
-                    .gasLimit();
+            case ETHEREUM_TRANSACTION -> getGasLimitFromEthTxData(txnBody);
             default -> 0L;
         };
+    }
+
+    private static long getGasLimitFromEthTxData(final TransactionBody txn) {
+        final var ethTxBody = txn.ethereumTransaction();
+        if (ethTxBody == null) return 0L;
+        final var ethTxData =
+                EthTxData.populateEthTxData(ethTxBody.ethereumData().toByteArray());
+        return ethTxData != null ? ethTxData.gasLimit() : 0L;
     }
 
     private ValidationResult validate(
@@ -982,5 +1025,47 @@ public class HandleWorkflow {
                 storeFactory.getStore(ReadableAccountStore.class),
                 platformTxn,
                 previousResult);
+    }
+
+    private record TransactionBaseData(
+            @NonNull HederaFunctionality functionality,
+            @NonNull Bytes transactionBytes,
+            @Nullable Transaction transaction,
+            @Nullable TransactionBody txBody,
+            @Nullable AccountID payer) {}
+
+    private TransactionBaseData extractTransactionBaseData(@Nullable final byte[] contents) {
+        // This method is only called if something fatal happened. We do a best effort approach to extract the
+        // type of the transaction, the TransactionBody and the payer if not known.
+        if (contents == null || contents.length == 0) {
+            return new TransactionBaseData(NONE, Bytes.EMPTY, null, null, null);
+        }
+
+        HederaFunctionality function = NONE;
+        Bytes transactionBytes = Bytes.wrap(contents);
+        Transaction transaction = null;
+        TransactionBody txBody = null;
+        AccountID payer = null;
+        try {
+            transaction = Transaction.PROTOBUF.parseStrict(transactionBytes);
+
+            final Bytes bodyBytes;
+            if (transaction.signedTransactionBytes().length() > 0) {
+                final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
+                        transaction.signedTransactionBytes().toReadableSequentialData());
+                bodyBytes = signedTransaction.bodyBytes();
+                transactionBytes = bodyBytes;
+            } else {
+                bodyBytes = transaction.bodyBytes();
+            }
+            txBody = TransactionBody.PROTOBUF.parseStrict(bodyBytes.toReadableSequentialData());
+
+            payer = txBody.transactionIDOrElse(TransactionID.DEFAULT).accountID();
+
+            function = HapiUtils.functionOf(txBody);
+        } catch (Exception ex) {
+            // ignore
+        }
+        return new TransactionBaseData(function, transactionBytes, transaction, txBody, payer);
     }
 }

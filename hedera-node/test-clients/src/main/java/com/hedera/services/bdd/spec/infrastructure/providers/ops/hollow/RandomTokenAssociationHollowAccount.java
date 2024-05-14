@@ -24,6 +24,7 @@ import com.hedera.services.bdd.spec.infrastructure.listeners.TokenAccountRegistr
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenAssociation;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.HashSet;
 import java.util.Optional;
@@ -37,7 +38,7 @@ public class RandomTokenAssociationHollowAccount extends RandomTokenAssociation 
             RegistrySourcedNameProvider<AccountID> accounts,
             RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels,
             String... signers) {
-        super(tokens, accounts, tokenRels);
+        super(tokens, accounts, tokenRels, new ResponseCodeEnum[] {});
         this.signers = signers;
     }
 

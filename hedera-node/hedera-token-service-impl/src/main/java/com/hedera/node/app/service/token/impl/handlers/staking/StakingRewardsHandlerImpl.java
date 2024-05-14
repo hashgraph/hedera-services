@@ -49,6 +49,9 @@ import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * This handler manages the paying staking rewards for the accounts.
+ */
 @Singleton
 public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
     private static final Logger log = LogManager.getLogger(StakingRewardsHandlerImpl.class);
@@ -56,6 +59,12 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
     private final StakePeriodManager stakePeriodManager;
     private final StakeInfoHelper stakeInfoHelper;
 
+    /**
+     * Default constructor for injection.
+     * @param rewardsPayer the rewards payer
+     * @param stakePeriodManager the stake period manager
+     * @param stakeInfoHelper the stake info helper
+     */
     @Inject
     public StakingRewardsHandlerImpl(
             @NonNull final StakingRewardsDistributor rewardsPayer,
@@ -95,6 +104,9 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         final var rewardsPaid = rewardsPayer.payRewardsIfPending(
                 rewardReceivers, writableStore, stakingRewardsStore, stakingInfoStore, consensusNow, recordBuilder);
 
+        // Decrease staking reward account balance by rewardPaid amount
+        decreaseStakeRewardAccountBalance(rewardsPaid, stakingRewardAccountId, writableStore);
+
         if (!context.isScheduleDispatch()) {
             // We only manage stake metadata once, at the end of a transaction; but to do
             // this correctly, we need to include information about any rewards paid during
@@ -107,10 +119,15 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             // Adjust stakes for nodes and account's staking metadata
             adjustStakeMetadata(
                     writableStore, stakingInfoStore, stakingRewardsStore, consensusNow, rewardsPaid, rewardReceivers);
+
+            // Don't double-report prepaid rewards in the parent record
+            if (!prePaidRewards.isEmpty()) {
+                for (AccountID accountID : prePaidRewards.keySet()) {
+                    rewardsPaid.remove(accountID);
+                }
+            }
         }
 
-        // Decrease staking reward account balance by rewardPaid amount
-        decreaseStakeRewardAccountBalance(rewardsPaid, stakingRewardAccountId, writableStore);
         return rewardsPaid;
     }
 

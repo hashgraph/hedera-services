@@ -58,6 +58,10 @@ import javax.inject.Singleton;
 public class FileCreateHandler implements TransactionHandler {
     private final FileOpsUsage fileOpsUsage;
 
+    /**
+     * Constructs a {@link FileCreateHandler} with the given {@link FileOpsUsage}.
+     * @param fileOpsUsage the file operation usage calculator
+     */
     @Inject
     public FileCreateHandler(final FileOpsUsage fileOpsUsage) {
         this.fileOpsUsage = fileOpsUsage;

@@ -73,37 +73,50 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
     private final SoftwareVersion softwareVersion;
 
     /**
-     * Creates a new instance with the provided state.
+     * Constructor.
      *
      * @param platformContext       the platform context
      * @param addressBook           the address book
      * @param selfId                this node's id
-     * @param swirldStateMetrics    metrics related to SwirldState
      * @param statusActionSubmitter enables submitting platform status actions
-     * @param state                 the genesis state
      * @param softwareVersion       the current software version
      */
     public SwirldStateManager(
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
-            @NonNull final SwirldStateMetrics swirldStateMetrics,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
-            @NonNull final State state,
             @NonNull final SoftwareVersion softwareVersion) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(selfId);
-        this.stats = Objects.requireNonNull(swirldStateMetrics);
+        this.stats = new SwirldStateMetrics(platformContext.getMetrics());
         Objects.requireNonNull(statusActionSubmitter);
-        Objects.requireNonNull(state);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
 
         this.transactionHandler = new TransactionHandler(selfId, stats);
         this.uptimeTracker =
                 new UptimeTracker(platformContext, addressBook, statusActionSubmitter, selfId, Time.getCurrent());
-        initialState(state);
+    }
+
+    /**
+     * Set the initial state for the platform. This method should only be called once.
+     *
+     * @param state the initial state
+     */
+    public void setInitialState(@NonNull final State state) {
+        Objects.requireNonNull(state);
+        state.throwIfDestroyed("state must not be destroyed");
+        state.throwIfImmutable("state must be mutable");
+
+        if (stateRef.get() != null) {
+            throw new IllegalStateException("Attempt to set initial state when there is already a state reference.");
+        }
+
+        // Create a fast copy so there is always an immutable state to
+        // invoke handleTransaction on for pre-consensus transactions
+        fastCopyAndUpdateRefs(state);
     }
 
     /**
@@ -155,19 +168,6 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
         state.throwIfDestroyed("state must not be destroyed");
         state.throwIfImmutable("state must be mutable");
 
-        fastCopyAndUpdateRefs(state);
-    }
-
-    private void initialState(final State state) {
-        state.throwIfDestroyed("state must not be destroyed");
-        state.throwIfImmutable("state must be mutable");
-
-        if (stateRef.get() != null) {
-            throw new IllegalStateException("Attempt to set initial state when there is already a state reference.");
-        }
-
-        // Create a fast copy so there is always an immutable state to
-        // invoke handleTransaction on for pre-consensus transactions
         fastCopyAndUpdateRefs(state);
     }
 

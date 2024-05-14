@@ -16,6 +16,7 @@ module com.swirlds.common {
     exports com.swirlds.common.io.exceptions;
     exports com.swirlds.common.io.extendable;
     exports com.swirlds.common.io.extendable.extensions;
+    exports com.swirlds.common.io.filesystem;
     exports com.swirlds.common.io.streams;
     exports com.swirlds.common.io.utility;
     exports com.swirlds.common.merkle;
@@ -142,6 +143,7 @@ module com.swirlds.common {
     exports com.swirlds.common.startup;
     exports com.swirlds.common.threading.atomic;
     exports com.swirlds.common.wiring.model.diagram;
+    exports com.swirlds.common.concurrent;
 
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.config.api;

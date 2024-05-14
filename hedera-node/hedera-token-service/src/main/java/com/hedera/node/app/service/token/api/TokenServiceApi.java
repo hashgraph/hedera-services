@@ -45,8 +45,20 @@ public interface TokenServiceApi {
      */
     boolean checkForCustomFees(@NonNull CryptoTransferTransactionBody op);
 
+    /**
+     * Whether to free the alias when account is deleted or not.
+     * Aliases are always freed when we use ContractDeleteTransactionBody.
+     * Aliases are freed when we use CryptoDeleteTransactionBody based on the value of the
+     * accountsConfig#releaseAliasAfterDeletion
+     */
     enum FreeAliasOnDeletion {
+        /**
+         * Free the alias on deletion.
+         */
         YES,
+        /**
+         * Do not free the alias on deletion.
+         */
         NO
     }
 
@@ -76,6 +88,7 @@ public interface TokenServiceApi {
      * @param stakedAccountIdInOp    staked account id
      * @param stakedNodeIdInOp       staked node id
      * @param accountStore           readable account store
+     * @param networkInfo            network info
      * @throws HandleException if the staking election is invalid
      */
     void assertValidStakingElectionForCreation(
@@ -96,6 +109,7 @@ public interface TokenServiceApi {
      * @param stakedAccountIdInOp    staked account id
      * @param stakedNodeIdInOp       staked node id
      * @param accountStore           readable account store
+     * @param networkInfo            network info
      * @throws HandleException if the staking election is invalid
      */
     void assertValidStakingElectionForUpdate(
@@ -110,12 +124,15 @@ public interface TokenServiceApi {
     /**
      * Marks an account as a contract.
      *
+     * @param accountId the id of the account to mark as a contract
+     * @param autoRenewAccountId the id of the account to use for auto-renewing the contract
      */
     void markAsContract(@NonNull AccountID accountId, @Nullable AccountID autoRenewAccountId);
 
     /**
      * Finalizes a hollow account as a contract.
      *
+     * @param hollowAccountId the id of the hollow account to finalize as a contract
      */
     void finalizeHollowAccountAsContract(@NonNull AccountID hollowAccountId);
 

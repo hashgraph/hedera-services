@@ -18,10 +18,10 @@ module com.hedera.node.app.service.contract.impl {
     requires transitive org.hyperledger.besu.evm;
     requires transitive tuweni.bytes;
     requires transitive tuweni.units;
-    requires com.hedera.node.app.service.evm;
     requires com.github.benmanes.caffeine;
     requires com.google.common;
     requires com.google.protobuf;
+    requires com.hedera.evm;
     requires com.swirlds.base;
     requires com.swirlds.common;
     requires org.bouncycastle.provider;
