@@ -18,7 +18,6 @@ package com.swirlds.metrics.impl.snapshot;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
-import com.swirlds.base.time.Time;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.metrics.impl.AbstractMetric;
@@ -58,27 +57,16 @@ public class SnapshotService implements Startable, Stoppable {
 
     private final Lock executionLock = new ReentrantLock();
 
-    private final Time time;
-
     private final long delayNanos;
 
     public SnapshotService(
             @NonNull final Metrics metrics,
             @NonNull final ScheduledExecutorService executor,
             @NonNull final Duration interval) {
-        this(metrics, executor, interval, Time.getCurrent());
-    }
-
-    public SnapshotService(
-            @NonNull final Metrics metrics,
-            @NonNull final ScheduledExecutorService executor,
-            @NonNull final Duration interval,
-            @NonNull final Time time) {
         this.metrics = Objects.requireNonNull(metrics, "metrics must not be null");
         this.executor = Objects.requireNonNull(executor, "executor must not be null");
         this.delayNanos =
                 Objects.requireNonNull(interval, "interval must not be null").toNanos();
-        this.time = Objects.requireNonNull(time, "time must not be null");
 
         addLabelFactory(m -> new Label("category", m.getCategory()));
         addLabelFactory(m -> new Label("name", m.getName()));
@@ -133,7 +121,7 @@ public class SnapshotService implements Startable, Stoppable {
         labelFactories.add(labelFactory);
     }
 
-    public Runnable subscribe(@NonNull final Consumer<? super SnapshotEvent> subscriber) {
+    public Subscription subscribe(@NonNull final Consumer<? super SnapshotEvent> subscriber) {
         Objects.requireNonNull(subscriber, "subscriber must not be null");
         subscribers.add(subscriber);
         return () -> subscribers.remove(subscriber);
