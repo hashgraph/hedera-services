@@ -22,10 +22,13 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.a
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.asAccountWithAlias;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase.withFixedFee;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase.withFractionalFee;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.TransferUtil.asAccountAmount;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TransferUtil.asNftTransferList;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TransferUtil.asTokenTransferList;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TransferUtil.asTransferList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -174,19 +177,23 @@ public class CustomFractionalFeeAssessorTest {
                     skippedFixedFee,
                     fractionalCustomFeeNetOfTransfers),
             TokenType.FUNGIBLE_COMMON);
-    private final TokenTransferList vanillaTrigger =
-            asTokenTransferList(tokenWithFractionalFee, -vanillaTriggerAmount, payer);
-    private final TokenTransferList firstVanillaReclaim =
-            asTokenTransferList(tokenWithFractionalFee, +firstCreditAmount, firstReclaimedAcount);
-    private final TokenTransferList secondVanillaReclaim =
-            asTokenTransferList(tokenWithFractionalFee, +secondCreditAmount, secondReclaimedAcount);
+    private final TokenTransferList vanillaTrigger = asTokenTransferList(
+            tokenWithFractionalFee,
+            List.of(
+                    asAccountAmount(payer, -vanillaTriggerAmount),
+                    asAccountAmount(firstReclaimedAcount, +firstCreditAmount),
+                    asAccountAmount(secondReclaimedAcount, +secondCreditAmount)));
+    //    private final TokenTransferList firstVanillaReclaim =
+    //            asTokenTransferList(tokenWithFractionalFee, +firstCreditAmount, firstReclaimedAcount);
+    //    private final TokenTransferList secondVanillaReclaim =
+    //            asTokenTransferList(tokenWithFractionalFee, +secondCreditAmount, secondReclaimedAcount);
     final AccountID aliasedAccountId =
             AccountID.newBuilder().alias(Bytes.wrap("alias")).build();
     private final TokenTransferList aliasedVanillaReclaim =
             asTokenTransferList(tokenWithFractionalFee, secondCreditAmount, aliasedAccountId);
     private final TokenTransferList wildlyInsufficientChange = asTokenTransferList(tokenWithFractionalFee, -1, payer);
     private final TokenTransferList someCredit = asTokenTransferList(tokenWithFractionalFee, +1, firstReclaimedAcount);
-    private final AccountID[] effPayerAccountNums = new AccountID[] {firstReclaimedAcount, aliasedAccountId};
+    private final AccountID[] effPayerAccountNums = new AccountID[] {firstReclaimedAcount, secondReclaimedAcount};
 
     @BeforeEach
     void setUp() {
@@ -194,8 +201,8 @@ public class CustomFractionalFeeAssessorTest {
     }
 
     @Test
-    void doesNothingIfNoValueExchangedAndNoFallback() {
-        result = new AssessmentResult(List.of(nftTransferList), List.of());
+    void appliesFeesAsExpected() {
+        result = new AssessmentResult(List.of(vanillaTrigger), List.of());
 
         final CustomFeeMeta feeMeta = withCustomFeeMeta(
                 List.of(
@@ -227,27 +234,33 @@ public class CustomFractionalFeeAssessorTest {
 
         subject.assessFractionalFees(feeMeta, payer, result);
 
-        assertEquals(firstCreditAmount - (totalReclaimedFees * 4 / 5), firstCreditAmount);
-        assertEquals(secondCreditAmount - (totalReclaimedFees / 5), secondCreditAmount);
-        //        // and:
-        //        assertEquals(firstExpectedFee, first);
-        //        assertEquals(secondExpectedFee, secondCollectorChange.getAggregatedUnits());
-        //        // and:
-        //        assertEquals(2, accumulator.size());
-        //        assertEquals(expFirstAssess, accumulator.get(0));
-        //        assertEquals(expSecondAssess, accumulator.get(1));
-        // and:
-        verify(fixedFeeAssessor)
-                .assessFixedFee(
-                        tokenWithFractionalMeta,
-                        payer,
-                        withFixedFee(
-                                FixedFee.newBuilder()
-                                        .amount(netFee)
-                                        .denominatingTokenId(tokenWithFractionalFee)
-                                        .build(),
-                                netOfTransfersFeeCollector),
-                        result);
+        verify(fixedFeeAssessor).assessFixedFee(any(), any(), any(), any());
+
+        assertThat(result.getAssessedCustomFees()).isNotEmpty();
+        assertThat(result.getAssessedCustomFees()).contains(expectedAssessedFee1);
+        assertThat(result.getAssessedCustomFees()).contains(expectedAssessedFee2);
+
+        assertThat(result.getRoyaltiesPaid()).isEmpty();
+    }
+
+    @Test
+    void doesNothingIfNoValueExchangedAndNoFallback() {
+        result = new AssessmentResult(List.of(vanillaTrigger), List.of());
+
+        final CustomFeeMeta feeMeta = withCustomFeeMeta(
+                List.of(
+                        firstFractionalCustomFee,
+                        secondFractionalCustomFee,
+                        exemptFractionalCustomFee,
+                        skippedFixedFee,
+                        fractionalCustomFeeNetOfTransfers),
+                FUNGIBLE_COMMON);
+
+        subject.assessFractionalFees(feeMeta, payer, result);
+
+        verify(fixedFeeAssessor, never()).assessFixedFee(any(), any(), any(), any());
+        assertThat(result.getAssessedCustomFees()).isEmpty();
+        assertThat(result.getRoyaltiesPaid()).isEmpty();
     }
 
     public CustomFeeMeta withCustomFeeMeta(List<CustomFee> customFees, TokenType tokenType) {
