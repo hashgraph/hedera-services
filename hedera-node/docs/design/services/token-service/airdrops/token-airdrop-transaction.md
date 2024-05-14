@@ -162,16 +162,17 @@ If the airdrop transaction fees from the list above are covered by a separate pa
         - In the case where an account is a spender and has allowances for a given token, check that the spender has enough allowance balance to cover the airdrop amount
         - Check that the token being airdropped, does not contain a custom fee, which needs to be covered by the recipient. This includes `fractionalFees` with `net_of_transfers=false` and `royaltyFees`, including `fallbackRoyaltyFees`.
         - Such transactions should be reverted and rejected.
-        - The business logic for sending pending airdrops
+        - The business logic for sending pending airdrops:
+            - Based on the association status between the recipient and the token being airdropped, the handler will either create a synthetic CryptoTransfer and execute it or add the airdrop entry in the pending state
             - Check the association status and the existence of the recipient:
               - It is an existing one and has `max_auto_associations` set to -1 and is not associated to the token →<br/>
                 Тhe token is auto associated and is directly transferred to the recipient and a `TokenTransferList` is added to the `TransactionRecord`, as well as a new `TokenAssociation` entry in the `automatic_token_associations`
               - It is an existing one and has `max_auto_associations`, which is a positive number and there are free auto association slots and the recipient is not associated to the token →<br/>
                 Тhe token is auto associated and is directly transferred to the recipient and a `TokenTransferList` is added to the `TransactionRecord`, as well as a new `TokenAssociation` entry in the `automatic_token_associations`
               - It is an existing one and has `max_auto_associations`, which is a positive number but there are no free auto association slots and the recipient is not associated to the token →<br/>
-                Тhe token transfer is interpreted as a pending and a `TokenPendingAirdrop` entry is added to the `TransactionRecord`. In addition, the airdrop `PendingAirdropId`/`PendingAirdropValue` entry is added to the `PendingAirdrop` airdrop store in state
+                Тhe token transfer is interpreted as a pending and a `TokenPendingAirdrop` entry is added to the `TransactionRecord`. In addition, the airdrop `PendingAirdropId`/`PendingAirdropValue` entry is added to the `PendingAirdrop` store in state
               - It is an existing one and has `max_auto_associations` set to 0 and the recipient is not associated to the token →<br/>
-                Тhe token transfer is interpreted as a pending and a `TokenPendingAirdrop` entry is added to the `TransactionRecord`. In addition, the airdrop `PendingAirdropId`/`PendingAirdropValue` entry is added to the `PendingAirdrop` airdrop store in state
+                Тhe token transfer is interpreted as a pending and a `TokenPendingAirdrop` entry is added to the `TransactionRecord`. In addition, the airdrop `PendingAirdropId`/`PendingAirdropValue` entry is added to the `PendingAirdrop` store in state
               - It is an existing one and is associated to the token →<br/>
                 Тhe airdrop is handled as a regular crypto transfer and a `TokenTransferList` is added to the `TransactionRecord`
               - It’s not existing and the AccountID is a public `ECDSA` key →<br/>
