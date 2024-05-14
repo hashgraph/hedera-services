@@ -35,13 +35,28 @@ public class SimulatedGossip implements Gossip {
 
     private final SimulatedNetwork network;
     private final NodeId selfId;
+    private IntakeEventCounter intakeEventCounter;
 
     private StandardOutputWire<GossipEvent> eventOutput;
 
-    public SimulatedGossip(@NonNull final SimulatedNetwork network, @NonNull final NodeId selfId, @NonNull final
-            IntakeEventCounter intakeEventCounter) {
+    /**
+     * Constructor.
+     *
+     * @param network the network on which this gossip system will run
+     * @param selfId  the ID of the node running this gossip system
+     */
+    public SimulatedGossip(@NonNull final SimulatedNetwork network, @NonNull final NodeId selfId) {
         this.network = Objects.requireNonNull(network);
         this.selfId = Objects.requireNonNull(selfId);
+    }
+
+    /**
+     * Add an intake event counter that gets incremented for all events that enter the intake pipeline.
+     *
+     * @param intakeEventCounter the intake event counter
+     */
+    public void provideIntakeEventCounter(@NonNull final IntakeEventCounter intakeEventCounter) {
+        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
     }
 
     /**
@@ -58,7 +73,12 @@ public class SimulatedGossip implements Gossip {
             @NonNull final BindableInputWire<NoInput, Void> clearInput) {
 
         this.eventOutput = Objects.requireNonNull(eventOutput);
-        eventInput.bindConsumer(event -> network.submitEvent(selfId, event));
+        eventInput.bindConsumer(event -> {
+            if (intakeEventCounter != null) {
+                intakeEventCounter.eventEnteredIntakePipeline(event.getSenderId());
+            }
+            network.submitEvent(selfId, event);
+        });
 
         eventWindowInput.bindConsumer(ignored -> {});
         startInput.bindConsumer(ignored -> {});

@@ -34,6 +34,7 @@ import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedGossip;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig_;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -89,9 +90,8 @@ public class TurtleTestRunner {
                 .withConfiguration(configuration)
                 .build();
 
-        final RandomAddressBookBuilder addressBookBuilder = RandomAddressBookBuilder.create(randotron)
-                .withSize(nodeCount)
-                .withRealKeysEnabled(true);
+        final RandomAddressBookBuilder addressBookBuilder =
+                RandomAddressBookBuilder.create(randotron).withSize(nodeCount).withRealKeysEnabled(true);
         final AddressBook addressBook = addressBookBuilder.build();
 
         final DeterministicWiringModel model = WiringModelBuilder.create(platformContext)
@@ -108,8 +108,13 @@ public class TurtleTestRunner {
                     .withBootstrapAddressBook(addressBook)
                     .withKeysAndCerts(addressBookBuilder.getPrivateKeys(nodeId));
 
-            final PlatformComponentBuilder platformComponentBuilder =
-                    platformBuilder.buildComponentBuilder().withGossip(network.getGossipInstance(nodeId));
+            final PlatformComponentBuilder platformComponentBuilder = platformBuilder.buildComponentBuilder();
+
+            final SimulatedGossip gossip = network.getGossipInstance(nodeId);
+            gossip.provideIntakeEventCounter(
+                    platformComponentBuilder.getBuildingBlocks().intakeEventCounter());
+
+            platformComponentBuilder.withGossip(network.getGossipInstance(nodeId));
 
             final Platform platform = platformComponentBuilder.build();
             platform.start();

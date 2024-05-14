@@ -80,7 +80,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -468,7 +467,9 @@ public final class PlatformBuilder {
 
         checkNodesToRun(List.of(selfId));
 
-        final KeysAndCerts keysAndCerts = this.keysAndCerts == null ? initNodeSecurity(boostrapAddressBook, configuration).get(selfId) : this.keysAndCerts;
+        final KeysAndCerts keysAndCerts = this.keysAndCerts == null
+                ? initNodeSecurity(boostrapAddressBook, configuration).get(selfId)
+                : this.keysAndCerts;
 
         // the AddressBook is not changed after this point, so we calculate the hash now
         platformContext.getCryptography().digestSync(boostrapAddressBook);

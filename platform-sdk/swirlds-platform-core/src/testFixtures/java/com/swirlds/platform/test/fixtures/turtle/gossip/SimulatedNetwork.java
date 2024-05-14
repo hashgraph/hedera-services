@@ -21,7 +21,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -108,7 +107,8 @@ public class SimulatedNetwork {
      * @param nodeId the id of the node
      * @return the gossip instance for the node
      */
-    public Gossip getGossipInstance(@NonNull final NodeId nodeId) {
+    @NonNull
+    public SimulatedGossip getGossipInstance(@NonNull final NodeId nodeId) {
         return gossipInstances.get(nodeId);
     }
 
