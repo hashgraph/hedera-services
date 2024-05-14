@@ -16,10 +16,25 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+import static com.hedera.node.app.spi.key.KeyUtils.isValid;
+import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.token.TokenReference;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -28,6 +43,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashSet;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -43,13 +59,61 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        // Todo implement the preHandle logic
+        final var txn = context.body();
+        final var op = txn.tokenRejectOrThrow();
+
+        // If owner account is specified, verify that it's valid and require that it signs the transaction.
+        // If not specified, payer account is considered as the one rejecting the tokens.
+        if (op.hasOwner()) {
+            final var accountStore = context.createStore(ReadableAccountStore.class);
+            verifySenderAndRequireKey(op.owner(), context, accountStore);
+        }
     }
 
+    private void verifySenderAndRequireKey(
+            final AccountID senderId, final PreHandleContext context, final ReadableAccountStore accountStore)
+            throws PreCheckException {
+
+        final var senderAccount = accountStore.getAliasedAccountById(senderId);
+        validateTruePreCheck(senderAccount != null, INVALID_ACCOUNT_ID);
+
+        // If the sender account is immutable, then we throw an exception.
+        final var key = senderAccount.key();
+        if (key == null || !isValid(key)) {
+            throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
+        }
+        context.requireKey(key);
+    }
+
+    @SuppressWarnings("java:S2259")
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-        // Todo: Implement the pureChecks logic
-        throw new UnsupportedOperationException("Not implemented yet.");
+        requireNonNull(txn, "Transaction body cannot be null");
+        final var op = txn.tokenRejectOrThrow();
+
+        validateFalsePreCheck(op.rejections().isEmpty(), INVALID_TRANSACTION_BODY);
+        if (op.hasOwner()) {
+            validateAccountID(op.owner(), null);
+        }
+
+        var uniqueTokenReferences = new HashSet<TokenReference>();
+        for (final var rejection : op.rejections()) {
+            if (!uniqueTokenReferences.add(rejection)) {
+                throw new PreCheckException(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
+            }
+            // Ensure one token type per single rejection reference.
+            validateFalsePreCheck(rejection.hasFungibleToken() && rejection.hasNft(), INVALID_TRANSACTION_BODY);
+
+            if (rejection.hasFungibleToken()) {
+                final var tokenID = rejection.fungibleToken();
+                validateTruePreCheck(tokenID != null && !tokenID.equals(TokenID.DEFAULT), INVALID_TOKEN_ID);
+            }
+            if (rejection.hasNft()) {
+                final var nftID = rejection.nft();
+                validateTruePreCheck(nftID != null && nftID.tokenId() != null, INVALID_NFT_ID);
+                validateTruePreCheck(nftID.serialNumber() > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
+            }
+        }
     }
 
     @Override
