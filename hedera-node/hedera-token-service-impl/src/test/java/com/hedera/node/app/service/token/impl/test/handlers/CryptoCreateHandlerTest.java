@@ -205,10 +205,9 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         final var context = new FakePreHandleContext(readableStore, txn);
         subject.pureChecks(txn);
         subject.preHandle(context);
-
-        assertEquals(txn, context.body());
+        assertThat(txn).isEqualTo(context.body());
         basicMetaAssertions(context, 1);
-        assertEquals(key, context.payerKey());
+        assertThat(key).isEqualTo(context.payerKey());
     }
 
     @Test
@@ -216,7 +215,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void whenInitialBalanceIsNegative() throws PreCheckException {
         txn = new CryptoCreateBuilder().withInitialBalance(-1L).build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertEquals(INVALID_INITIAL_BALANCE, msg.responseCode());
+        assertThat(INVALID_INITIAL_BALANCE).isEqualTo(msg.responseCode());
     }
 
     @Test
@@ -224,7 +223,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void whenNoAutoRenewPeriodSpecified() throws PreCheckException {
         txn = new CryptoCreateBuilder().withNoAutoRenewPeriod().build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertEquals(INVALID_RENEWAL_PERIOD, msg.responseCode());
+        assertThat(INVALID_RENEWAL_PERIOD).isEqualTo(msg.responseCode());
     }
 
     @Test
@@ -232,6 +231,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void validateWhenZeroShardId() throws PreCheckException {
         txn = new CryptoCreateBuilder().withShardId(0).build();
         assertDoesNotThrow(() -> subject.pureChecks(txn));
+        // TODO
     }
 
     @Test
@@ -239,7 +239,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void failsWhenInvalidMaxAutoAssociations() throws PreCheckException {
         txn = new CryptoCreateBuilder().withMaxAutoAssociations(-5).build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertEquals(INVALID_TRANSACTION_BODY, msg.responseCode());
+        assertThat(msg.responseCode()).isEqualTo(INVALID_TRANSACTION_BODY);
     }
 
     @Test
@@ -247,7 +247,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void sendRecordThresholdIsNegative() throws PreCheckException {
         txn = new CryptoCreateBuilder().withSendRecordThreshold(-1).build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertEquals(INVALID_SEND_RECORD_THRESHOLD, msg.responseCode());
+        assertThat(msg.responseCode()).isEqualTo(INVALID_SEND_RECORD_THRESHOLD);
     }
 
     @Test
@@ -255,7 +255,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void receiveRecordThresholdIsNegative() throws PreCheckException {
         txn = new CryptoCreateBuilder().withReceiveRecordThreshold(-1).build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertEquals(INVALID_RECEIVE_RECORD_THRESHOLD, msg.responseCode());
+        assertThat(msg.responseCode()).isEqualTo(INVALID_RECEIVE_RECORD_THRESHOLD);
     }
 
     @Test
@@ -263,7 +263,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void whenProxyAccountIdIsSpecified() throws PreCheckException {
         txn = new CryptoCreateBuilder().withProxyAccountNum(1).build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, msg.responseCode());
+        assertThat(msg.responseCode()).isEqualTo(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
     }
 
     @Test
@@ -273,10 +273,9 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         final var context = new FakePreHandleContext(readableStore, txn);
         subject.pureChecks(txn);
         subject.preHandle(context);
-
-        assertEquals(txn, context.body());
+        assertThat(txn).isEqualTo(context.body());
         basicMetaAssertions(context, 1);
-        assertEquals(key, context.payerKey());
+        assertThat(key).isEqualTo(context.payerKey());
     }
 
     @Test
@@ -288,12 +287,10 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .withStakedAccountId(3)
                 .build();
         final var context = new FakePreHandleContext(readableStore, txn);
-        subject.pureChecks(txn);
         subject.preHandle(context);
-
-        assertEquals(txn, context.body());
+        assertThat(txn).isEqualTo(context.body());
         basicMetaAssertions(context, 1);
-        assertEquals(key, context.payerKey());
+        assertThat(key).isEqualTo(context.payerKey());
     }
 
     @Test
@@ -306,7 +303,6 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .withStakedAccountId(3)
                 .build();
         final var context = new FakePreHandleContext(readableStore, txn);
-        subject.pureChecks(txn);
         assertThatThrownBy(() -> subject.preHandle(context))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_ALIAS_KEY));
