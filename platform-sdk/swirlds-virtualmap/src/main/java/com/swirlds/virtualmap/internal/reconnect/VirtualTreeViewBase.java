@@ -92,6 +92,10 @@ public abstract class VirtualTreeViewBase<K extends VirtualKey, V extends Virtua
         throw new UnsupportedOperationException("Nested virtual maps not supported " + node);
     }
 
+    public VirtualStateAccessor getReconnectState() {
+        return reconnectState;
+    }
+
     /**
      * {@inheritDoc}
      */

@@ -17,20 +17,21 @@
 package com.swirlds.virtualmap.internal.reconnect;
 
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.exceptions.MerkleSerializationException;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
+import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
-import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.Path;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,50 +50,44 @@ public class TeacherPullVirtualTreeReceiveTask {
     private static final String NAME = "reconnect-teacher-receiver";
 
     private final StandardWorkGroup workGroup;
-    private final int viewId;
     private final AsyncInputStream in;
     private final AsyncOutputStream out;
-    private final TeacherPullVirtualTreeView<?, ?> view;
+    private final Map<Integer, TeacherTreeView<?>> views;
 
-    private final RateLimiter rateLimiter;
-    private final int sleepNanos;
+    private final Consumer<Integer> completeListener;
+    private final Consumer<Exception> exceptionListener;
 
-    private final Consumer<Boolean> completeListener;
+    private final AtomicInteger tasksRunning;
+    private final Set<Integer> viewsInProgress;
 
     /**
      * Create new thread that will send data lessons and queries for a subtree.
      *
-     * @param time                  the wall clock time
      * @param reconnectConfig       the configuration for reconnect
      * @param workGroup             the work group managing the reconnect
      * @param in                    the input stream
      * @param out                   the output stream
-     * @param view                  an object that interfaces with the subtree
      */
     public TeacherPullVirtualTreeReceiveTask(
-            final int viewId,
-            @NonNull final Time time,
             @NonNull final ReconnectConfig reconnectConfig,
             final StandardWorkGroup workGroup,
             final AsyncInputStream in,
             final AsyncOutputStream out,
-            final TeacherPullVirtualTreeView<?, ?> view,
-            final Consumer<Boolean> completeListener) {
+            final Map<Integer, TeacherTreeView<?>> views,
+            final Consumer<Integer> completeListener,
+            final Consumer<Exception> exceptionListener,
+            final AtomicInteger tasksRunning,
+            final Set<Integer> viewsInProgress) {
         this.workGroup = workGroup;
-        this.viewId = viewId;
         this.in = in;
         this.out = out;
-        this.view = view;
+        this.views = views;
         this.completeListener = completeListener;
+        this.exceptionListener = exceptionListener;
+        this.tasksRunning = tasksRunning;
+        this.viewsInProgress = viewsInProgress;
 
-        final int maxRate = reconnectConfig.teacherMaxNodesPerSecond();
-        if (maxRate > 0) {
-            rateLimiter = new RateLimiter(time, maxRate);
-            sleepNanos = (int) reconnectConfig.teacherRateLimiterSleep().toNanos();
-        } else {
-            rateLimiter = null;
-            sleepNanos = -1;
-        }
+        // TODO: rate limiting
     }
 
     /**
@@ -103,36 +98,33 @@ public class TeacherPullVirtualTreeReceiveTask {
     }
 
     /**
-     * Enforce the rate limit.
-     *
-     * @throws InterruptedException if the thread is interrupted while sleeping
-     */
-    private void rateLimit() throws InterruptedException {
-        if (rateLimiter != null) {
-            while (!rateLimiter.requestAndTrigger()) {
-                NANOSECONDS.sleep(sleepNanos);
-            }
-        }
-    }
-
-    /**
      * This thread is responsible for sending lessons (and nested queries) to the learner.
      */
     private void run() {
-        boolean success = false;
         long requestCounter = 0;
         final long start = System.currentTimeMillis();
         try {
-            in.anticipateMessage(); // anticipate root node request
             while (true) {
-                rateLimit();
-                final PullVirtualTreeRequest request = in.readAnticipatedMessage(viewId);
-                if (request.getPath() == Path.INVALID_PATH) {
-                    logger.info(RECONNECT.getMarker(), "Teacher receiver is complete as requested by the learner");
-                    break;
+                final PullVirtualTreeRequest request = in.readAnticipatedMessage();
+                if (request == null) {
+                    if (!in.isAlive()) {
+                        break;
+                    }
+                    Thread.sleep(1);
+                    continue;
                 }
-                in.anticipateMessage();
+                final int viewId = request.getViewId();
+                if (request.getPath() == Path.INVALID_PATH) {
+                    logger.info(
+                            RECONNECT.getMarker(),
+                            "Teaching is complete for view={} as requested by the learner",
+                            viewId);
+                    completeListener.accept(viewId);
+                    viewsInProgress.remove(viewId);
+                    continue;
+                }
                 requestCounter++;
+                final TeacherPullVirtualTreeView<?, ?> view = (TeacherPullVirtualTreeView<?, ?>) views.get(viewId);
                 final long path = request.getPath();
                 final Hash learnerHash = request.getHash();
                 assert learnerHash != null;
@@ -140,17 +132,24 @@ public class TeacherPullVirtualTreeReceiveTask {
                 // The only valid scenario, when teacherHash may be null, is the empty tree
                 if ((teacherHash == null) && (path != 0)) {
                     throw new MerkleSerializationException(
-                            "Cannot load node hash (bad request from learner?), path = " + path);
+                            "Cannot load node hash (bad request from learner?), view=" + viewId + " path=" + path);
                 }
                 final boolean isClean = (teacherHash == null) || teacherHash.equals(learnerHash);
                 final VirtualLeafRecord<?, ?> leafData = (!isClean && view.isLeaf(path)) ? view.loadLeaf(path) : null;
-                final long firstLeafPath = view.reconnectState.getFirstLeafPath();
-                final long lastLeafPath = view.reconnectState.getLastLeafPath();
+                final long firstLeafPath = view.getReconnectState().getFirstLeafPath();
+                final long lastLeafPath = view.getReconnectState().getLastLeafPath();
                 final PullVirtualTreeResponse response =
                         new PullVirtualTreeResponse(view, path, isClean, firstLeafPath, lastLeafPath, leafData);
                 // All real work is done in the async output thread. This call just registers a response
                 // and returns immediately
                 out.sendAsync(viewId, response);
+            }
+            if (tasksRunning.decrementAndGet() == 0) {
+                // Check if all views have been fully synchronized
+                if (!viewsInProgress.isEmpty()) {
+                    exceptionListener.accept(new MerkleSynchronizationException(
+                            "Teacher receiving tasks are complete, but some views aren't synchronized still"));
+                }
             }
             final long end = System.currentTimeMillis();
             final double requestRate = (end == start) ? 0.0 : (double) requestCounter / (end - start);
@@ -160,14 +159,11 @@ public class TeacherPullVirtualTreeReceiveTask {
                     end - start,
                     requestCounter,
                     requestRate);
-            success = true;
-        } catch (final InterruptedException ex) {
-            logger.warn(RECONNECT.getMarker(), "Teacher's receiving task is interrupted");
-            Thread.currentThread().interrupt();
+            //        } catch (final InterruptedException ex) {
+            //            logger.warn(RECONNECT.getMarker(), "Teacher's receiving task is interrupted");
+            //            Thread.currentThread().interrupt();
         } catch (final Exception ex) {
-            throw new MerkleSynchronizationException("Exception in the teacher's receiving task", ex);
-        } finally {
-            completeListener.accept(success);
+            exceptionListener.accept(ex);
         }
     }
 }

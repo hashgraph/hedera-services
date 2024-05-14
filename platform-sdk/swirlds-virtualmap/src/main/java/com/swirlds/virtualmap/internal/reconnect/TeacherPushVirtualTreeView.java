@@ -48,6 +48,7 @@ import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualPipeline;
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -137,14 +138,21 @@ public final class TeacherPushVirtualTreeView<K extends VirtualKey, V extends Vi
             final AsyncInputStream in,
             final AsyncOutputStream out,
             final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
-            final Consumer<Boolean> completeListener) {
+            final Map<Integer, TeacherTreeView<?>> views,
+            final Consumer<Integer> completeListener,
+            final Consumer<Exception> exceptionListener) {
         final AtomicBoolean senderIsFinished = new AtomicBoolean(false);
 
+        in.setNeedsDedicatedQueue(viewId);
+
+        // For testing purposes
+        final TeacherTreeView<Long> thisView = (TeacherTreeView<Long>) views.getOrDefault(viewId, this);
+
         final TeacherPushSendTask<Long> teacherSendTask = new TeacherPushSendTask<>(
-                viewId, time, reconnectConfig, workGroup, in, out, subtreeListener, this, senderIsFinished);
+                viewId, time, reconnectConfig, workGroup, in, out, subtreeListener, thisView, senderIsFinished);
         teacherSendTask.start();
-        final TeacherPushReceiveTask<Long> teacherReceiveTask =
-                new TeacherPushReceiveTask<>(workGroup, viewId, in, this, senderIsFinished, completeListener);
+        final TeacherPushReceiveTask<Long> teacherReceiveTask = new TeacherPushReceiveTask<>(
+                workGroup, viewId, in, thisView, senderIsFinished, completeListener, exceptionListener);
         teacherReceiveTask.start();
     }
 
@@ -160,7 +168,7 @@ public final class TeacherPushVirtualTreeView<K extends VirtualKey, V extends Vi
      * {@inheritDoc}
      */
     @Override
-    public SelfSerializable createMessage() {
+    public SelfSerializable createMessage(final int viewId) {
         return new QueryResponse();
     }
 

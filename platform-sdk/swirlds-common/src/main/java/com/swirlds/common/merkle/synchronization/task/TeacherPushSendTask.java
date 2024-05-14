@@ -120,7 +120,7 @@ public class TeacherPushSendTask<T> {
      * prepares for the responses to those queries.
      */
     private void prepareForQueryResponse(final T parent, final int childIndex) {
-        in.anticipateMessage();
+        //        in.anticipateMessage();
         final T child = view.getChildAndPrepareForQueryResponse(parent, childIndex);
         view.addToHandleQueue(child);
     }

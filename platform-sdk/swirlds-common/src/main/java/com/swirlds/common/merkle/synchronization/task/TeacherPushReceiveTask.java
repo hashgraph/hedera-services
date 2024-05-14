@@ -16,11 +16,9 @@
 
 package com.swirlds.common.merkle.synchronization.task;
 
-import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
-import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -46,7 +44,8 @@ public class TeacherPushReceiveTask<T> {
     private final TeacherTreeView<T> view;
     private final AtomicBoolean senderIsFinished;
 
-    private final Consumer<Boolean> completeListener;
+    private final Consumer<Integer> completeListener;
+    private final Consumer<Exception> exceptionListener;
 
     /**
      * Create a thread for receiving responses to queries from the learner.
@@ -66,13 +65,15 @@ public class TeacherPushReceiveTask<T> {
             final AsyncInputStream in,
             final TeacherTreeView<T> view,
             final AtomicBoolean senderIsFinished,
-            final Consumer<Boolean> completeListener) {
+            final Consumer<Integer> completeListener,
+            final Consumer<Exception> exceptionListener) {
         this.workGroup = workGroup;
         this.viewId = viewId;
         this.in = in;
         this.view = view;
         this.senderIsFinished = senderIsFinished;
         this.completeListener = completeListener;
+        this.exceptionListener = exceptionListener;
     }
 
     public void start() {
@@ -80,12 +81,11 @@ public class TeacherPushReceiveTask<T> {
     }
 
     private void run() {
-        boolean success = false;
         try {
             boolean finished = senderIsFinished.get();
             boolean responseExpected = view.isResponseExpected();
 
-            while (!finished || responseExpected) {
+            while ((in.isAlive()) && (!finished || responseExpected)) {
                 if (responseExpected) {
                     final QueryResponse response = in.readAnticipatedMessage(viewId);
                     final T node = view.getNodeForNextResponse();
@@ -97,14 +97,12 @@ public class TeacherPushReceiveTask<T> {
                 finished = senderIsFinished.get();
                 responseExpected = view.isResponseExpected();
             }
-            success = true;
-        } catch (final InterruptedException ex) {
-            logger.warn(RECONNECT.getMarker(), "teacher's receiving thread interrupted");
-            Thread.currentThread().interrupt();
+            completeListener.accept(viewId);
+            //        } catch (final InterruptedException ex) {
+            //            logger.warn(RECONNECT.getMarker(), "teacher's receiving thread interrupted");
+            //            Thread.currentThread().interrupt();
         } catch (final Exception ex) {
-            throw new MerkleSynchronizationException("exception in the teacher's receiving thread", ex);
-        } finally {
-            completeListener.accept(success);
+            exceptionListener.accept(ex);
         }
     }
 }

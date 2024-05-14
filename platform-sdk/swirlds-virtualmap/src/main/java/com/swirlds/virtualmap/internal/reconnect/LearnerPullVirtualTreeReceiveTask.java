@@ -17,7 +17,6 @@
 package com.swirlds.virtualmap.internal.reconnect;
 
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
-import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -116,7 +115,7 @@ public class LearnerPullVirtualTreeReceiveTask {
             }
             success = true;
         } catch (final Exception ex) {
-            throw new MerkleSynchronizationException("Exception in the learner's receiving task", ex);
+            workGroup.handleError(ex);
         } finally {
             completeListener.accept(success);
         }

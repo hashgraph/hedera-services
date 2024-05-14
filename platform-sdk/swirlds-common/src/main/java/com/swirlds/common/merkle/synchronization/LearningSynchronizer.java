@@ -216,14 +216,15 @@ public class LearningSynchronizer implements ReconnectNodeCount {
                 createStandardWorkGroup(threadManager, breakConnection, reconnectExceptionListener);
 
         final AsyncInputStream in = new AsyncInputStream(inputStream, workGroup, this::createMessage, reconnectConfig);
-        in.start();
         final AsyncOutputStream out = buildOutputStream(workGroup, outputStream);
-        out.start();
 
         final List<AtomicReference<MerkleNode>> reconstructedRoots = new ArrayList<>();
 
         final boolean rootScheduled = receiveNextSubtree(workGroup, in, out, reconstructedRoots);
         assert rootScheduled;
+
+        in.start();
+        out.start();
 
         InterruptedException interruptException = null;
         try {
@@ -240,7 +241,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
 
             for (final AtomicReference<MerkleNode> root : reconstructedRoots) {
                 final MerkleNode merkleRoot = root.get();
-                if (merkleRoot.getReservationCount() == 0) {
+                if ((merkleRoot != null) && (merkleRoot.getReservationCount() == 0)) {
                     // If the root has a reference count of 0 then it is not underneath any other tree,
                     // and this thread holds the implicit reference to the root.
                     // This is the last chance to release that tree in this scenario.

@@ -67,10 +67,12 @@ class AsyncStreamTest {
             final StandardWorkGroup workGroup = new StandardWorkGroup(getStaticThreadManager(), "test", null);
 
             final int viewId = 11;
+
             final AsyncInputStream in = new AsyncInputStream(
                     streams.getTeacherInput(), workGroup, vi -> new SerializableLong(), reconnectConfig);
-
             final AsyncOutputStream out = new AsyncOutputStream(streams.getLearnerOutput(), workGroup, reconnectConfig);
+
+            in.setNeedsDedicatedQueue(viewId);
 
             in.start();
             out.start();
@@ -79,7 +81,6 @@ class AsyncStreamTest {
 
             for (int i = 0; i < count; i++) {
                 out.sendAsync(viewId, new SerializableLong(i));
-                in.anticipateMessage();
                 final SerializableLong message = in.readAnticipatedMessage(viewId);
                 assertEquals(i, message.getValue(), "message should match the value that was serialized");
             }
@@ -103,19 +104,17 @@ class AsyncStreamTest {
             final StandardWorkGroup workGroup = new StandardWorkGroup(getStaticThreadManager(), "test", null);
 
             final int viewId = 12;
+
             final AsyncInputStream in = new AsyncInputStream(
                     streams.getTeacherInput(), workGroup, vi -> new SerializableLong(), reconnectConfig);
-
             final AsyncOutputStream out = new AsyncOutputStream(streams.getLearnerOutput(), workGroup, reconnectConfig);
+
+            in.setNeedsDedicatedQueue(viewId);
 
             in.start();
             out.start();
 
             final int count = 100;
-
-            for (int i = 0; i < count; i++) {
-                in.anticipateMessage();
-            }
 
             for (int i = 0; i < count; i++) {
                 out.sendAsync(viewId, new SerializableLong(i));
@@ -232,11 +231,8 @@ class AsyncStreamTest {
 
         final AsyncInputStream in = new AsyncInputStream(
                 new SerializableDataInputStream(blockingIn), workGroup, vi -> new SerializableLong(), reconnectConfig);
+        in.setNeedsDedicatedQueue(viewId);
         in.start();
-
-        for (int i = 0; i < count; i++) {
-            in.anticipateMessage();
-        }
 
         // Give the stream some time to accept as much data as it wants. Stream will stop accepting when queue fills up.
         MILLISECONDS.sleep(100);
@@ -309,7 +305,6 @@ class AsyncStreamTest {
             teacherOut.start();
 
             teacherOut.sendAsync(viewId, new ExplodingSelfSerializable());
-            learnerIn.anticipateMessage();
             Thread.sleep(100);
 
             teacherOut.close();

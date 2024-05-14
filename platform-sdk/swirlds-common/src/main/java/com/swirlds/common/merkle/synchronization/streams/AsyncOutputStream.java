@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -80,6 +81,8 @@ public class AsyncOutputStream implements AutoCloseable {
      * If this becomes false then this object's worker thread will stop transmitting messages.
      */
     private final AtomicBoolean alive = new AtomicBoolean(true);
+
+    private final CountDownLatch finishedLatch = new CountDownLatch(1);
 
     /**
      * The number of messages that have been written to the stream but have not yet been flushed
@@ -133,30 +136,37 @@ public class AsyncOutputStream implements AutoCloseable {
     }
 
     public void run() {
-        while ((alive.get() || !streamQueue.isEmpty()) && !Thread.currentThread().isInterrupted()) {
-            flushIfRequired();
-            boolean workDone = handleQueuedMessages();
-            if (!workDone) {
-                workDone = flush();
+        try {
+            while ((alive.get() || !streamQueue.isEmpty())
+                    && !Thread.currentThread().isInterrupted()) {
+                flushIfRequired();
+                boolean workDone = handleQueuedMessages();
                 if (!workDone) {
-                    try {
-                        Thread.sleep(0, 1);
-                    } catch (final InterruptedException e) {
-                        logger.warn(RECONNECT.getMarker(), "AsyncOutputStream interrupted");
-                        alive.set(false);
-                        Thread.currentThread().interrupt();
-                        return;
+                    workDone = flush();
+                    if (!workDone) {
+                        try {
+                            Thread.sleep(0, 1);
+                        } catch (final InterruptedException e) {
+                            logger.warn(RECONNECT.getMarker(), "AsyncOutputStream interrupted");
+                            alive.set(false);
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
                     }
                 }
             }
-        }
-        flush();
-        try {
-            // Send reconnect termination marker
-            outputStream.writeInt(-1);
-            outputStream.flush();
-        } catch (final IOException e) {
-            throw new MerkleSynchronizationException(e);
+            flush();
+            try {
+                // Send reconnect termination marker
+                outputStream.writeInt(-1);
+                outputStream.flush();
+            } catch (final IOException e) {
+                throw new MerkleSynchronizationException(e);
+            }
+        } catch (final Exception e) {
+            workGroup.handleError(e);
+        } finally {
+            finishedLatch.countDown();
         }
     }
 
@@ -176,10 +186,6 @@ public class AsyncOutputStream implements AutoCloseable {
     }
 
     private void sendAsync(final QueueItem item) throws InterruptedException {
-        if (!isAlive()) {
-            throw new MerkleSynchronizationException("Messages can not be sent after close has been called.");
-        }
-
         final boolean success = streamQueue.offer(item, timeout.toMillis(), TimeUnit.MILLISECONDS);
         if (!success) {
             try {
@@ -198,6 +204,10 @@ public class AsyncOutputStream implements AutoCloseable {
     @Override
     public void close() {
         alive.set(false);
+    }
+
+    public void waitForCompletion() throws InterruptedException {
+        finishedLatch.await();
     }
 
     /**

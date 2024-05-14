@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -84,14 +85,18 @@ public class TeacherPushMerkleTreeView implements TeacherTreeView<NodeToSend> {
             final AsyncInputStream in,
             final AsyncOutputStream out,
             final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
-            final Consumer<Boolean> completeListener) {
+            final Map<Integer, TeacherTreeView<?>> views,
+            final Consumer<Integer> completeListener,
+            final Consumer<Exception> exceptionListener) {
         final AtomicBoolean senderIsFinished = new AtomicBoolean(false);
+
+        in.setNeedsDedicatedQueue(viewId);
 
         final TeacherPushSendTask<NodeToSend> teacherPushSendTask = new TeacherPushSendTask<>(
                 viewId, time, reconnectConfig, workGroup, in, out, subtreeListener, this, senderIsFinished);
         teacherPushSendTask.start();
-        final TeacherPushReceiveTask<NodeToSend> teacherPushReceiveTask =
-                new TeacherPushReceiveTask<>(workGroup, viewId, in, this, senderIsFinished, completeListener);
+        final TeacherPushReceiveTask<NodeToSend> teacherPushReceiveTask = new TeacherPushReceiveTask<>(
+                workGroup, viewId, in, this, senderIsFinished, completeListener, exceptionListener);
         teacherPushReceiveTask.start();
     }
 
@@ -104,7 +109,7 @@ public class TeacherPushMerkleTreeView implements TeacherTreeView<NodeToSend> {
     }
 
     @Override
-    public SelfSerializable createMessage() {
+    public SelfSerializable createMessage(final int viewId) {
         return new QueryResponse();
     }
 

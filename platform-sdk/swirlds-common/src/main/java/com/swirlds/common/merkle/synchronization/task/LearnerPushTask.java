@@ -206,7 +206,7 @@ public class LearnerPushTask<T> {
             out.sendAsync(viewId, new QueryResponse(nodeAlreadyPresent));
 
             view.expectLessonFor(newParent, childIndex, originalChild, nodeAlreadyPresent);
-            in.anticipateMessage();
+            //            in.anticipateMessage();
         }
     }
 
@@ -240,7 +240,7 @@ public class LearnerPushTask<T> {
 
         try (view) {
             view.expectLessonFor(null, 0, view.getOriginalRoot(), false);
-            in.anticipateMessage();
+            //            in.anticipateMessage();
 
             while (view.hasNextExpectedLesson()) {
 

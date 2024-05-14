@@ -25,6 +25,7 @@ import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -57,7 +58,9 @@ public interface TeacherTreeView<T>
             final AsyncInputStream in,
             final AsyncOutputStream out,
             final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
-            final Consumer<Boolean> completeListener);
+            final Map<Integer, TeacherTreeView<?>> views,
+            final Consumer<Integer> completeListener,
+            final Consumer<Exception> exceptionListener);
 
     /**
      * Aborts the reconnect process on the teacher side. It may be used to release resources, when
@@ -137,5 +140,5 @@ public interface TeacherTreeView<T>
      *
      * @return a new message object used by this teacher view to receive data from the learner
      */
-    SelfSerializable createMessage();
+    SelfSerializable createMessage(final int viewId);
 }

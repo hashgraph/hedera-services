@@ -72,6 +72,7 @@ public class LearnerPushMerkleTreeView implements LearnerTreeView<MerkleNode> {
             final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
             final AtomicReference<MerkleNode> reconstructedRoot,
             final Consumer<Boolean> completeListener) {
+        in.setNeedsDedicatedQueue(viewId);
         final LearnerPushTask<MerkleNode> learnerThread = new LearnerPushTask<>(
                 workGroup,
                 viewId,

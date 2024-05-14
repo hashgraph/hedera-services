@@ -40,7 +40,12 @@ import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualPipeline;
 import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -61,8 +66,8 @@ import org.apache.logging.log4j.Logger;
  * @param <V>
  * 		The value
  */
-public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends VirtualValue>
-        extends VirtualTreeViewBase<K, V> implements TeacherTreeView<Long> {
+public class TeacherPullVirtualTreeView<K extends VirtualKey, V extends VirtualValue> extends VirtualTreeViewBase<K, V>
+        implements TeacherTreeView<Long> {
 
     private static final Logger logger = LogManager.getLogger(TeacherPullVirtualTreeView.class);
 
@@ -99,6 +104,10 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
         // There is no distinction between originalState and reconnectState in this implementation
         super(root, state, state);
         this.reconnectConfig = reconnectConfig;
+        prepareReady(threadManager, pipeline);
+    }
+
+    public void prepareReady(final ThreadManager threadManager, final VirtualPipeline pipeline) {
         new ThreadConfiguration(threadManager)
                 .setRunnable(() -> {
                     records = pipeline.detachCopy(root);
@@ -119,15 +128,40 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
             final AsyncInputStream in,
             final AsyncOutputStream out,
             final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
-            final Consumer<Boolean> completeListener) {
-        final TeacherPullVirtualTreeReceiveTask teacherReceiveTask = new TeacherPullVirtualTreeReceiveTask(
-                viewId, time, reconnectConfig, workGroup, in, out, this, completeListener);
-        teacherReceiveTask.exec();
+            final Map<Integer, TeacherTreeView<?>> views,
+            final Consumer<Integer> completeListener,
+            final Consumer<Exception> exceptionListener) {
+        //        final TeacherPullVirtualTreeReceiveTask teacherReceiveTask = new TeacherPullVirtualTreeReceiveTask(
+        //                viewId, time, reconnectConfig, workGroup, in, out, this, completeListener);
+        //        teacherReceiveTask.exec();
+        final AtomicInteger teacherTasksRunning =
+                teachingSynchronizer.computeViewMetadata("TasksRunning", new AtomicInteger(0));
+        final Set<Integer> viewsInProgress =
+                teachingSynchronizer.computeViewMetadata("ViewsInProgress", ConcurrentHashMap.newKeySet());
+        viewsInProgress.add(viewId);
+        final AtomicBoolean pullTeacherTasksStarted =
+                teachingSynchronizer.computeViewMetadata("POOL", new AtomicBoolean(false));
+        if (pullTeacherTasksStarted.compareAndSet(false, true)) {
+            for (int i = 0; i < 16; i++) {
+                teacherTasksRunning.incrementAndGet();
+                final TeacherPullVirtualTreeReceiveTask teacherReceiveTask = new TeacherPullVirtualTreeReceiveTask(
+                        reconnectConfig,
+                        workGroup,
+                        in,
+                        out,
+                        views,
+                        completeListener,
+                        exceptionListener,
+                        teacherTasksRunning,
+                        viewsInProgress);
+                teacherReceiveTask.exec();
+            }
+        }
     }
 
     @Override
-    public SelfSerializable createMessage() {
-        return new PullVirtualTreeRequest();
+    public SelfSerializable createMessage(final int viewId) {
+        return new PullVirtualTreeRequest(viewId);
     }
 
     public boolean isLeaf(final long path) {
@@ -143,6 +177,7 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
      * @return the virtual node hash
      */
     public Hash loadHash(final long path) {
+        assert !closed.get() : "View is closed";
         return records.findHash(path);
     }
 
@@ -259,11 +294,14 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
         return node == ROOT_PATH;
     }
 
+    public final AtomicBoolean closed = new AtomicBoolean(false);
+
     /**
      * {@inheritDoc}
      */
     @Override
     public void close() {
+        closed.set(true);
         try {
             try {
                 waitUntilReady();

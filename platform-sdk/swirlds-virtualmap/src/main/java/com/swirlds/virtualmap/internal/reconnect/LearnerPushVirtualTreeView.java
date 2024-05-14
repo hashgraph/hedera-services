@@ -143,6 +143,7 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
             final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
             final AtomicReference<MerkleNode> reconstructedRoot,
             final Consumer<Boolean> completeListener) {
+        in.setNeedsDedicatedQueue(viewId);
         final LearnerPushTask<Long> learnerThread = new LearnerPushTask<>(
                 workGroup,
                 viewId,

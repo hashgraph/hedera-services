@@ -40,7 +40,11 @@ import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -107,6 +111,19 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
     private boolean firstLeaf = true;
 
     /**
+     * Responses from teacher may come in a different order than they are sent by learner. The order
+     * is important for hashing, so it's restored using this queue. Once hashing is improved to work
+     * with unsorted dirty leaves stream, this code may be cleaned up.
+     */
+    private final Queue<Long> anticipatedPaths = new ConcurrentLinkedQueue<>();
+
+    /**
+     * Related to the queue above. If a response is received out of order, it's temporarily stored
+     * in this map.
+     */
+    private final Map<Long, PullVirtualTreeResponse> responses = new HashMap<>();
+
+    /**
      * Create a new {@link LearnerPullVirtualTreeView}.
      *
      * @param root
@@ -148,6 +165,8 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
             final AtomicReference<MerkleNode> reconstructedRoot,
             final Consumer<Boolean> completeListener) {
         this.nodeCount = learningSynchronizer;
+
+        in.setNeedsDedicatedQueue(viewId);
 
         final AtomicBoolean senderIsFinished = new AtomicBoolean();
         final CountDownLatch rootResponseReceived = new CountDownLatch(1);
@@ -199,7 +218,20 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         firstNodeResponse = false;
     }
 
-    public void responseReceived(final PullVirtualTreeResponse response) {
+    void responseReceived(final PullVirtualTreeResponse response) {
+        responses.put(response.getPath(), response);
+        while (!anticipatedPaths.isEmpty()) {
+            final long nextExpectedPath = anticipatedPaths.peek();
+            final PullVirtualTreeResponse r = responses.get(nextExpectedPath);
+            if (r == null) {
+                break;
+            }
+            handleResponse(r);
+            anticipatedPaths.remove();
+        }
+    }
+
+    private void handleResponse(final PullVirtualTreeResponse response) {
         assert !firstNodeResponse : "Root node must be the first node received from the teacher";
         final long path = response.getPath();
         if (reconnectState.getLastLeafPath() <= 0) {
@@ -260,6 +292,10 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
             throw new MerkleSynchronizationException("Node found, but hash was null. path=" + originalChild);
         }
         return hash;
+    }
+
+    void anticipatePath(final long path) {
+        anticipatedPaths.add(path);
     }
 
     /**

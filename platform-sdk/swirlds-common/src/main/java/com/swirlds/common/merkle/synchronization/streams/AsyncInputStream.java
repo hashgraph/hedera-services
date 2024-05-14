@@ -30,12 +30,13 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -65,10 +66,10 @@ public class AsyncInputStream implements AutoCloseable {
 
     private final SerializableDataInputStream inputStream;
 
-    private final AtomicInteger anticipatedMessages;
-
     // Messages read from the underlying input stream so far, per merkle sub-tree
-    private final Map<Integer, BlockingQueue<SelfSerializable>> viewMessages;
+    private final Map<Integer, BlockingQueue<SelfSerializable>> viewQueues;
+
+    private final Queue<SelfSerializable> sharedQueue;
 
     /**
      * The maximum amount of time to wait when reading a message.
@@ -105,10 +106,10 @@ public class AsyncInputStream implements AutoCloseable {
         this.workGroup = Objects.requireNonNull(workGroup, "workGroup must not be null");
         this.messagesFactory = Objects.requireNonNull(messagesFactory, "Messages factory must not be null");
         this.pollTimeout = config.asyncStreamTimeout();
-        this.anticipatedMessages = new AtomicInteger(0);
         this.finishedLatch = new CountDownLatch(1);
 
-        this.viewMessages = new ConcurrentHashMap<>();
+        this.sharedQueue = new ConcurrentLinkedQueue<>();
+        this.viewQueues = new ConcurrentHashMap<>();
     }
 
     /**
@@ -129,12 +130,8 @@ public class AsyncInputStream implements AutoCloseable {
                 message = null;
                 final int viewId = inputStream.readInt();
                 if (viewId < 0) {
-                    if (anticipatedMessages.get() > 0) {
-                        logger.error(RECONNECT.getMarker(),
-                                "Async input stream is done, but more messages are expected");
-                        throw new MerkleSynchronizationException("Could not read all messages from async input stream");
-                    }
                     logger.info(RECONNECT.getMarker(), "Async input stream is done");
+                    alive.set(false);
                     break;
                 }
                 message = messagesFactory.apply(viewId);
@@ -144,15 +141,17 @@ public class AsyncInputStream implements AutoCloseable {
                 }
                 message.deserialize(inputStream, message.getVersion());
 
-                final BlockingQueue<SelfSerializable> viewQueue = viewMessages.computeIfAbsent(
-                        viewId, id -> new ArrayBlockingQueue<>(reconnectConfig.asyncStreamBufferSize()));
-                final boolean accepted = viewQueue.offer(message, pollTimeout.toMillis(), MILLISECONDS);
-                if (!accepted) {
-                    throw new MerkleSynchronizationException(
-                            "Timed out waiting to add message to received messages queue");
+                final BlockingQueue<SelfSerializable> viewQueue = viewQueues.get(viewId);
+                if (viewQueue != null) {
+                    final boolean accepted = viewQueue.offer(message, pollTimeout.toMillis(), MILLISECONDS);
+                    if (!accepted) {
+                        throw new MerkleSynchronizationException(
+                                "Timed out waiting to add message to received messages queue");
+                    }
+                } else {
+                    // TODO: throttling
+                    sharedQueue.add(message);
                 }
-
-                anticipatedMessages.decrementAndGet();
             }
         } catch (final IOException e) {
             final String exceptionMessage = message == null
@@ -160,20 +159,27 @@ public class AsyncInputStream implements AutoCloseable {
                     : String.format(
                             "Failed to deserialize object with class ID %d(0x%08X) (%s)",
                             message.getClassId(), message.getClassId(), message.getClass());
-            throw new MerkleSynchronizationException(exceptionMessage, e);
+            workGroup.handleError(new MerkleSynchronizationException(exceptionMessage, e));
         } catch (final InterruptedException e) {
             logger.warn(RECONNECT.getMarker(), "AsyncInputStream interrupted");
-            Thread.currentThread().interrupt();
+            workGroup.handleError(e);
         } finally {
             finishedLatch.countDown();
         }
     }
 
-    /**
-     * Inform the buffer that a message is anticipated to be received at a future time.
-     */
-    public void anticipateMessage() {
-        anticipatedMessages.getAndIncrement();
+    public void setNeedsDedicatedQueue(final int viewId) {
+        assert !viewQueues.containsKey(viewId) : "View " + viewId + " is already registered in this async input stream";
+        viewQueues.put(viewId, new ArrayBlockingQueue<>(reconnectConfig.asyncStreamBufferSize()));
+    }
+
+    public boolean isAlive() {
+        return alive.get();
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends SelfSerializable> T readAnticipatedMessage() {
+        return (T) sharedQueue.poll();
     }
 
     /**
@@ -182,8 +188,8 @@ public class AsyncInputStream implements AutoCloseable {
      */
     @SuppressWarnings("unchecked")
     public <T extends SelfSerializable> T readAnticipatedMessage(final int viewId) throws InterruptedException {
-        final BlockingQueue<SelfSerializable> viewQueue = viewMessages.computeIfAbsent(
-                viewId, id -> new ArrayBlockingQueue<>(reconnectConfig.asyncStreamBufferSize()));
+        final BlockingQueue<SelfSerializable> viewQueue = viewQueues.get(viewId);
+        assert viewQueue != null;
         final SelfSerializable data = viewQueue.poll(pollTimeout.toMillis(), MILLISECONDS);
         if (data == null) {
             try {
@@ -193,10 +199,8 @@ public class AsyncInputStream implements AutoCloseable {
             } catch (IOException e) {
                 throw new MerkleSynchronizationException("Unable to close stream", e);
             }
-
             throw new MerkleSynchronizationException("Timed out waiting for data");
         }
-
         return (T) data;
     }
 
@@ -213,12 +217,17 @@ public class AsyncInputStream implements AutoCloseable {
             Thread.currentThread().interrupt();
         }
 
-        for (final BlockingQueue<SelfSerializable> viewQueue : viewMessages.values()) {
-            while (!viewQueue.isEmpty()) {
-                final SelfSerializable message = viewQueue.remove();
-                if (message instanceof Releasable) {
-                    ((Releasable) message).release();
-                }
+        abortQueue(sharedQueue);
+        for (final BlockingQueue<SelfSerializable> queue : viewQueues.values()) {
+            abortQueue(queue);
+        }
+    }
+
+    private void abortQueue(final Queue<SelfSerializable> queue) {
+        while (!queue.isEmpty()) {
+            final SelfSerializable message = queue.remove();
+            if (message instanceof Releasable) {
+                ((Releasable) message).release();
             }
         }
     }
@@ -229,5 +238,9 @@ public class AsyncInputStream implements AutoCloseable {
     @Override
     public void close() {
         alive.set(false);
+    }
+
+    public void waitForCompletion() throws InterruptedException {
+        finishedLatch.await();
     }
 }

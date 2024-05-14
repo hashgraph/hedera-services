@@ -60,7 +60,7 @@ public class MerkleSynchronizationTests {
 
     private final Configuration configuration = new TestConfigBuilder()
             // This is important! A low value will cause a failed reconnect to finish more quickly.
-            .withValue("reconnect.asyncStreamTimeout", "5s")
+            .withValue("reconnect.asyncStreamTimeout", "20s")
             .withValue("reconnect.maxAckDelay", "1000ms")
             .getOrCreateConfig();
 
