@@ -783,7 +783,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         latestImmutableStateNexusWiring.bind(latestImmutableStateNexus);
         latestCompleteStateNexusWiring.bind(latestCompleteStateNexus);
         savedStateControllerWiring.bind(savedStateController);
-        stateHasherWiring.bind(builder.buildStateHasher()); // TODO
+        stateHasherWiring.bind(builder::buildStateHasher);
         notifierWiring.bind(notifier);
         platformPublisherWiring.bind(platformPublisher);
         stateGarbageCollectorWiring.bind(builder::buildStateGarbageCollector);
