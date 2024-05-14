@@ -33,6 +33,8 @@ public class NoOpMetricsFactory implements MetricsFactory {
         private static final MetricsFactory INSTANCE = new NoOpMetricsFactory();
     }
 
+    private NoOpMetricsFactory() {}
+
     @NonNull
     @Override
     public Counter createCounter(@NonNull Config config) {

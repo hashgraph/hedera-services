@@ -37,6 +37,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class NoOpPlatformMetricsFactory implements PlatformMetricsFactory {
 
+    private final class InstanceHolder {
+        private static final NoOpPlatformMetricsFactory INSTANCE = new NoOpPlatformMetricsFactory();
+    }
+
+    private NoOpPlatformMetricsFactory() {}
+
     /**
      * {@inheritDoc}
      */
@@ -141,5 +147,9 @@ public class NoOpPlatformMetricsFactory implements PlatformMetricsFactory {
     @Override
     public @NonNull StatEntry createStatEntry(final @NonNull StatEntry.Config<?> config) {
         return new NoOpPlatformStatEntry(config);
+    }
+
+    public static PlatformMetricsFactory getInstance() {
+        return InstanceHolder.INSTANCE;
     }
 }

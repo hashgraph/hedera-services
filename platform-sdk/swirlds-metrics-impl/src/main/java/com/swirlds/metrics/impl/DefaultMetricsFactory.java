@@ -31,6 +31,8 @@ public class DefaultMetricsFactory implements MetricsFactory {
         private static final MetricsFactory INSTANCE = new DefaultMetricsFactory();
     }
 
+    private DefaultMetricsFactory() {}
+
     /**
      * {@inheritDoc}
      */

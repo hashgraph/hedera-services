@@ -17,6 +17,7 @@
 package com.swirlds.common.metrics.noop;
 
 import com.swirlds.common.metrics.PlatformMetrics;
+import com.swirlds.common.metrics.PlatformMetricsFactory;
 import com.swirlds.common.metrics.noop.internal.NoOpPlatformMetricsFactory;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.Metric;
@@ -42,7 +43,7 @@ public class NoOpPlatformMetrics implements PlatformMetrics {
 
     private final Map<String /* category */, Map<String /* name */, Metric>> metrics = new HashMap<>();
 
-    private static final NoOpPlatformMetricsFactory FACTORY = new NoOpPlatformMetricsFactory();
+    private final PlatformMetricsFactory factory = NoOpPlatformMetricsFactory.getInstance();
 
     @Override
     public NodeId getNodeId() {
@@ -110,7 +111,7 @@ public class NoOpPlatformMetrics implements PlatformMetrics {
         final String name = config.getName();
 
         final Map<String, Metric> metricsInCategory = metrics.computeIfAbsent(category, k -> new HashMap<>());
-        return (T) metricsInCategory.computeIfAbsent(name, k -> FACTORY.createMetric(config));
+        return (T) metricsInCategory.computeIfAbsent(name, k -> factory.createMetric(config));
     }
 
     /**
