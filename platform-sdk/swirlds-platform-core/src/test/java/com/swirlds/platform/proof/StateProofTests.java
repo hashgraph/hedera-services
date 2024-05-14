@@ -49,7 +49,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -145,7 +145,7 @@ class StateProofTests {
         MerkleCryptoFactory.getInstance().digestTreeSync(root);
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(10).build();
+                RandomAddressBookBuilder.create(random).withSize(10).build();
 
         final MerkleLeaf nodeD =
                 root.getNodeAtRoute(MerkleRouteFactory.buildRoute(2, 0)).asLeaf();
@@ -182,7 +182,7 @@ class StateProofTests {
         MerkleCryptoFactory.getInstance().digestTreeSync(root);
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(10).build();
+                RandomAddressBookBuilder.create(random).withSize(10).build();
 
         final Map<NodeId, Signature> signatures =
                 generateThresholdOfSignatures(random, addressBook, signatureBuilder, root.getHash(), SUPER_MAJORITY);
@@ -216,8 +216,8 @@ class StateProofTests {
 
         MerkleCryptoFactory.getInstance().digestTreeSync(root);
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(random.nextInt(1, 10))
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withSize(random.nextInt(1, 10))
                 .build();
 
         final Map<NodeId, Signature> signatures =
@@ -310,8 +310,8 @@ class StateProofTests {
         // Now, rehash the tree using the incorrect leaf hashes.
         MerkleCryptoFactory.getInstance().digestTreeSync(root);
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(random.nextInt(1, 10))
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withSize(random.nextInt(1, 10))
                 .build();
 
         final Map<NodeId, Signature> signatures =
@@ -461,7 +461,7 @@ class StateProofTests {
         // For this test, there will be 9 total weight,
         // with the node at index 9 having 0 stake, and all others having a weight of 1.
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(10).build();
+                RandomAddressBookBuilder.create(random).withSize(10).build();
         for (int index = 0; index < 10; index++) {
             final NodeId nodeId = addressBook.getNodeId(index);
             if (index == 9) {
@@ -521,7 +521,7 @@ class StateProofTests {
 
         // For this test, there will be 9 total weight, with each node having a weight of 1.
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(9).build();
+                RandomAddressBookBuilder.create(random).withSize(9).build();
         for (int index = 0; index < 9; index++) {
             final NodeId nodeId = addressBook.getNodeId(index);
             addressBook.add(addressBook.getAddress(nodeId).copySetWeight(1));
@@ -588,7 +588,7 @@ class StateProofTests {
 
         // For this test, there will be 9 total weight, with each node having a weight of 1.
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(9).build();
+                RandomAddressBookBuilder.create(random).withSize(9).build();
         for (int index = 0; index < 9; index++) {
             final NodeId nodeId = addressBook.getNodeId(index);
             addressBook.add(addressBook.getAddress(nodeId).copySetWeight(1));
@@ -653,7 +653,7 @@ class StateProofTests {
 
         // For this test, there will be 9 total weight, with each node having a weight of 1.
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(9).build();
+                RandomAddressBookBuilder.create(random).withSize(9).build();
         for (int index = 0; index < 9; index++) {
             final NodeId nodeId = addressBook.getNodeId(index);
             addressBook.add(addressBook.getAddress(nodeId).copySetWeight(1));
@@ -711,7 +711,7 @@ class StateProofTests {
         // For this test, there will be 12 total weight, with each node having a weight of 1.
         // 12 is chosen because it is divisible by both 2 and 3.
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(12).build();
+                RandomAddressBookBuilder.create(random).withSize(12).build();
         for (int index = 0; index < 12; index++) {
             final NodeId nodeId = addressBook.getNodeId(index);
             addressBook.add(addressBook.getAddress(nodeId).copySetWeight(1));
