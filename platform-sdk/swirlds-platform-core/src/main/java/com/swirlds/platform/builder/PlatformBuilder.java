@@ -102,6 +102,16 @@ public final class PlatformBuilder {
     private ConfigurationBuilder configurationBuilder;
 
     /**
+     * An address book that is used to bootstrap the system. Traditionally read from config.txt.
+     */
+    private AddressBook bootstrapAddressBook;
+
+    /**
+     * This node's cryptographic keys.
+     */
+    private KeysAndCerts keysAndCerts;
+
+    /**
      * The path to the configuration file (i.e. the file with the address book).
      */
     private Path configPath = getAbsolutePath(DEFAULT_CONFIG_FILE_NAME);
@@ -328,6 +338,33 @@ public final class PlatformBuilder {
     }
 
     /**
+     * Provide the address book to use for bootstrapping the system. If not provided then the address book is read from
+     * the config.txt file.
+     *
+     * @param bootstrapAddressBook the address book to use for bootstrapping
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withBootstrapAddressBook(@NonNull final AddressBook bootstrapAddressBook) {
+        throwIfAlreadyUsed();
+        this.bootstrapAddressBook = Objects.requireNonNull(bootstrapAddressBook);
+        return this;
+    }
+
+    /**
+     * Provide the cryptographic keys to use for this node.
+     *
+     * @param keysAndCerts the cryptographic keys to use
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withKeysAndCerts(@NonNull final KeysAndCerts keysAndCerts) {
+        throwIfAlreadyUsed();
+        this.keysAndCerts = Objects.requireNonNull(keysAndCerts);
+        return this;
+    }
+
+    /**
      * Build the configuration for the node.
      *
      * @param configurationBuilder used to build configuration
@@ -409,7 +446,6 @@ public final class PlatformBuilder {
      */
     @NonNull
     public PlatformComponentBuilder buildComponentBuilder() {
-
         throwIfAlreadyUsed();
         used = true;
 
@@ -427,17 +463,24 @@ public final class PlatformBuilder {
 
         final boolean firstPlatform = doStaticSetup(configuration, configPath);
 
-        final AddressBook configAddressBook = loadConfigAddressBook();
+        final AddressBook boostrapAddressBook =
+                this.bootstrapAddressBook == null ? loadConfigAddressBook() : this.bootstrapAddressBook;
 
         checkNodesToRun(List.of(selfId));
 
-        final Map<NodeId, KeysAndCerts> keysAndCerts = initNodeSecurity(configAddressBook, configuration);
+        final KeysAndCerts keysAndCerts = this.keysAndCerts == null ? initNodeSecurity(boostrapAddressBook, configuration).get(selfId) : this.keysAndCerts;
 
         // the AddressBook is not changed after this point, so we calculate the hash now
-        platformContext.getCryptography().digestSync(configAddressBook);
+        platformContext.getCryptography().digestSync(boostrapAddressBook);
 
         final ReservedSignedState initialState = getInitialState(
-                platformContext, softwareVersion, genesisStateBuilder, appName, swirldName, selfId, configAddressBook);
+                platformContext,
+                softwareVersion,
+                genesisStateBuilder,
+                appName,
+                swirldName,
+                selfId,
+                boostrapAddressBook);
 
         final boolean softwareUpgrade = detectSoftwareUpgrade(softwareVersion, initialState.get());
 
@@ -447,7 +490,7 @@ public final class PlatformBuilder {
                 softwareVersion,
                 softwareUpgrade,
                 initialState.get(),
-                configAddressBook.copy(),
+                boostrapAddressBook.copy(),
                 platformContext);
 
         if (addressBookInitializer.hasAddressBookChanged()) {
@@ -522,7 +565,7 @@ public final class PlatformBuilder {
 
         final PlatformBuildingBlocks buildingBlocks = new PlatformBuildingBlocks(
                 platformContext,
-                keysAndCerts.get(selfId),
+                keysAndCerts,
                 selfId,
                 appName,
                 swirldName,

@@ -180,13 +180,14 @@ public class PlatformComponentBuilder {
         } finally {
 
             // Future work: eliminate the static variables that require this code to exist
-            if (blocks.firstPlatform()) {
-                MetricsDocUtils.writeMetricsDocumentToFile(
-                        getGlobalMetrics(),
-                        getPlatforms(),
-                        blocks.platformContext().getConfiguration());
-                getMetricsProvider().start();
-            }
+            // TODO this code is really annoying
+//            if (blocks.firstPlatform()) {
+//                MetricsDocUtils.writeMetricsDocumentToFile(
+//                        getGlobalMetrics(),
+//                        getPlatforms(),
+//                        blocks.platformContext().getConfiguration());
+//                getMetricsProvider().start();
+//            }
         }
     }
 

@@ -22,6 +22,7 @@ import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -37,7 +38,8 @@ public class SimulatedGossip implements Gossip {
 
     private StandardOutputWire<GossipEvent> eventOutput;
 
-    public SimulatedGossip(@NonNull final SimulatedNetwork network, @NonNull final NodeId selfId) {
+    public SimulatedGossip(@NonNull final SimulatedNetwork network, @NonNull final NodeId selfId, @NonNull final
+            IntakeEventCounter intakeEventCounter) {
         this.network = Objects.requireNonNull(network);
         this.selfId = Objects.requireNonNull(selfId);
     }

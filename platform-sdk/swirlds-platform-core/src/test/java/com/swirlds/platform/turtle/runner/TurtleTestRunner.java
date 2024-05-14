@@ -1,0 +1,131 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.swirlds.platform.turtle.runner;
+
+import com.swirlds.base.test.fixtures.time.FakeTime;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.common.wiring.model.DeterministicWiringModel;
+import com.swirlds.common.wiring.model.WiringModelBuilder;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.builder.PlatformBuilder;
+import com.swirlds.platform.builder.PlatformComponentBuilder;
+import com.swirlds.platform.eventhandling.EventConfig_;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
+import com.swirlds.platform.wiring.PlatformSchedulersConfig_;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
+import java.time.Instant;
+
+/**
+ * Runs a TURTLE multi-node network test.
+ * <pre>
+ *    _________________
+ *  /   Testing        \
+ * |    Utility         |
+ * |    Running         |    _ -
+ * |    Totally in a    |=<( o 0 )
+ * |    Local           |   \===/
+ *  \   Environment    /
+ *   ------------------
+ *   / /       | | \ \
+ *  """        """ """
+ * </pre>
+ */
+public class TurtleTestRunner {
+
+    // TODO we need a builder
+
+    private final Randotron randotron;
+    private final FakeTime time;
+
+    /**
+     * Constructor.
+     *
+     * @param nodeCount the number of nodes to run
+     * @param timeStep  the time step to use
+     */
+    public TurtleTestRunner(final int nodeCount, @NonNull final Duration timeStep) {
+        randotron = Randotron.create();
+
+        try {
+            ConstructableRegistry.getInstance().registerConstructables("");
+        } catch (final ConstructableRegistryException e) {
+            throw new RuntimeException(e);
+        }
+
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(EventConfig_.USE_OLD_STYLE_INTAKE_QUEUE, false)
+                .withValue(PlatformSchedulersConfig_.CONSENSUS_EVENT_STREAM, "NO_OP")
+                .withValue(PlatformSchedulersConfig_.RUNNING_EVENT_HASHER, "NO_OP")
+                .getOrCreateConfig();
+
+        time = new FakeTime(Instant.now(), Duration.ZERO);
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withTime(time)
+                .withConfiguration(configuration)
+                .build();
+
+        final RandomAddressBookBuilder addressBookBuilder = RandomAddressBookBuilder.create(randotron)
+                .withSize(nodeCount)
+                .withRealKeysEnabled(true);
+        final AddressBook addressBook = addressBookBuilder.build();
+
+        final DeterministicWiringModel model = WiringModelBuilder.create(platformContext)
+                .withDeterministicModeEnabled(true)
+                .build();
+
+        final SimulatedNetwork network =
+                new SimulatedNetwork(randotron, addressBook, Duration.ofMillis(200), Duration.ofMillis(10));
+
+        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
+            final PlatformBuilder platformBuilder = PlatformBuilder.create(
+                            "foo", "bar", new BasicSoftwareVersion(1), TurtleTestingToolState::new, nodeId)
+                    .withPlatformContext(platformContext)
+                    .withBootstrapAddressBook(addressBook)
+                    .withKeysAndCerts(addressBookBuilder.getPrivateKeys(nodeId));
+
+            final PlatformComponentBuilder platformComponentBuilder =
+                    platformBuilder.buildComponentBuilder().withGossip(network.getGossipInstance(nodeId));
+
+            final Platform platform = platformComponentBuilder.build();
+            platform.start();
+        }
+
+        model.start();
+
+        long tickCount = 0;
+        while (true) {
+            if (tickCount % 1000 == 0) {
+                System.out.println("tick " + tickCount++);
+            }
+
+            time.tick(timeStep);
+            network.tick(time.now());
+            model.tick();
+        }
+    }
+}
