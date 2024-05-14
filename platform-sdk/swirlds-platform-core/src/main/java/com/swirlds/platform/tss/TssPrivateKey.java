@@ -18,12 +18,15 @@ package com.swirlds.platform.tss;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * A TSS private key.
+ */
 public interface TssPrivateKey {
 
     /**
-     * Sign a message using the BLS private key.
+     * Sign a message using the TSS private key.
      *
-     * @param message    the message to sign
+     * @param message the message to sign
      * @return the signature
      */
     @NonNull

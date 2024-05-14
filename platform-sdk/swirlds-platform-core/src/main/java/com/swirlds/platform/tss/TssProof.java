@@ -16,11 +16,9 @@
 
 package com.swirlds.platform.tss;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-
-public record TssProof(
-        @NonNull GroupElement f,
-        @NonNull GroupElement a,
-        @NonNull GroupElement y,
-        @NonNull FieldElement z_r,
-        @NonNull FieldElement z_a) {}
+/**
+ * A TSS proof.
+ */
+public interface TssProof {
+    // TODO: what methods belong here?
+}

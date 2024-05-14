@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss;
+package com.swirlds.platform.tss.bls;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.swirlds.platform.tss.TssPublicKey;
 
 /**
- * A record that contains a share ID, and the corresponding private key.
- *
- * @param shareId    the share ID
- * @param privateKey the private key
+ * A BLS implementation of a TSS public key.
  */
-public record TssPrivateShare(@NonNull TssShareId shareId, @NonNull TssPrivateKey privateKey) {}
+public class BlsPublicKey implements TssPublicKey {}

@@ -14,14 +14,19 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss;
+package com.swirlds.platform.tss.bls;
 
+import com.swirlds.platform.tss.TssPrivateKey;
+import com.swirlds.platform.tss.TssSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A record that contains a share ID, and the corresponding private key.
- *
- * @param shareId    the share ID
- * @param privateKey the private key
+ * A BLS implementation of a TSS private key.
  */
-public record TssPrivateShare(@NonNull TssShareId shareId, @NonNull TssPrivateKey privateKey) {}
+public class BlsPrivateKey implements TssPrivateKey {
+    @NonNull
+    @Override
+    public TssSignature sign(@NonNull final byte[] message) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+}

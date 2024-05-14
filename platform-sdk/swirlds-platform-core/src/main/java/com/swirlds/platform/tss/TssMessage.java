@@ -17,10 +17,19 @@
 package com.swirlds.platform.tss;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.bouncycastle.cms.SignerId;
 
+/**
+ * A message sent as part of either genesis keying, or rekeying.
+ * <p>
+ * // TODO: this will be sent over the wire, so it probably needs to be a protobuf
+ *
+ * @param shareId              the ID of the share used to generate this message
+ * @param cipherText           contains secrets that are being distributed
+ * @param polynomialCommitment a commitment to the polynomial that was used to generate the secrets
+ * @param proof                a proof that the polynomial commitment is valid
+ */
 public record TssMessage(
-        @NonNull SignerId signerId,
-        @NonNull TssCipherText cipherText,
+        @NonNull TssShareId shareId,
+        @NonNull TssCiphertext cipherText,
         @NonNull TssPolynomialCommitment polynomialCommitment,
         @NonNull TssProof proof) {}

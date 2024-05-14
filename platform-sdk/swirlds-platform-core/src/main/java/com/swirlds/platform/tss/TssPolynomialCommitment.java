@@ -16,6 +16,11 @@
 
 package com.swirlds.platform.tss;
 
-public record TssPolynomialCommitment(GroupElement[] coefficientCommitments) {
+/**
+ * A commitment to a polynomial.
+ */
+public interface TssPolynomialCommitment {
     // length is threshold
+
+    // TODO: what methods belong here? anything?
 }

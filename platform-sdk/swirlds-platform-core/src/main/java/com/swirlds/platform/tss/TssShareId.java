@@ -16,4 +16,7 @@
 
 package com.swirlds.platform.tss;
 
-public record TssShareId(FieldElement id) {}
+/**
+ * The ID of a TSS share.
+ */
+public interface TssShareId {}

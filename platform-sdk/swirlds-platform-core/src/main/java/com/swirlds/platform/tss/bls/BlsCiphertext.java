@@ -14,29 +14,33 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss;
+package com.swirlds.platform.tss.bls;
 
+import com.swirlds.platform.tss.TssCiphertext;
+import com.swirlds.platform.tss.TssPrivateKey;
+import com.swirlds.platform.tss.TssPublicShare;
+import com.swirlds.platform.tss.TssShareId;
 import com.swirlds.platform.tss.ecdh.EcdhPrivateKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 
-public record TssCipherText(@NonNull GroupElement[] c1, @NonNull Map<TssShareId, GroupElement[]> c2) {
-    // The length of the above arrays must be CHUNKS_PER_SHARE
-    public static final int CHUNKS_PER_SHARE = 16;
-    // This is stored in the state and needs to be in protobuf.
-
-    public List<TssPrivateShare> decryptPrivateShares(
-            @NonNull final EcdhPrivateKey ecdhPrivateKey, @NonNull final List<TssShareId> shareIds) {
+/**
+ * A BLS implementation of a TSS ciphertext.
+ */
+public class BlsCiphertext implements TssCiphertext {
+    @NonNull
+    @Override
+    public TssPrivateKey decryptPrivateKey(@NonNull EcdhPrivateKey ecdhPrivateKey, @NonNull TssShareId shareId) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    public List<TssPublicShare> getAllPublicShares() {
+    @NonNull
+    @Override
+    public TssPublicShare extractPublicShare(@NonNull TssShareId shareId) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    public List<TssPublicShare> getPublicShares(@NonNull final List<TssShareId> shareIds) {
+    @Override
+    public byte[] toBytes() {
         throw new UnsupportedOperationException("Not implemented");
     }
-
-    //return bytes for serialization.
 }

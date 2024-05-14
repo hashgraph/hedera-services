@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss;
+package com.swirlds.platform.tss.bls;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.swirlds.platform.tss.TssPolynomialCommitment;
 
 /**
- * A record that contains a share ID, and the corresponding private key.
+ * A BLS implementation of a TSS polynomial commitment.
  *
- * @param shareId    the share ID
- * @param privateKey the private key
+ * @param coefficientCommitments TODO: an array of longs is currently used so this compiles, but it should actually
+ *                               be group elements
  */
-public record TssPrivateShare(@NonNull TssShareId shareId, @NonNull TssPrivateKey privateKey) {}
+public record BlsPolynomialCommitment(Long[] coefficientCommitments) implements TssPolynomialCommitment {}

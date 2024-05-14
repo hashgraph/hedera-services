@@ -16,86 +16,94 @@
 
 package com.swirlds.platform.tss;
 
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.roster.Roster;
+import com.swirlds.platform.tss.bls.BlsShareId;
 import com.swirlds.platform.tss.ecdh.EcdhPrivateKey;
-import com.swirlds.platform.tss.ecdh.EcdhPublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-public class TssUtils implements TssKeyGenerator {
+/**
+ * Utility methods for a Threshold Signature Scheme.
+ */
+public final class TssUtils {
+    /**
+     * Hidden constructor
+     */
+    private TssUtils() {}
 
-    private TssUtils() {
-        throw new UnsupportedOperationException("Utility class");
+    /**
+     * Compute the private shares that belong to this node.
+     *
+     * @return the private shares, or null if there aren't enough shares to meet the threshold
+     */
+    @Nullable
+    public static List<TssPrivateShare> decryptPrivateShares(
+            @NonNull final Tss tss,
+            @NonNull final NodeId selfId,
+            @NonNull final Roster roster,
+            @NonNull final EcdhPrivateKey ecdhPrivateKey,
+            @NonNull final List<TssCiphertext> cipherTexts) {
+
+        // final List<TssShareId> shareIds = roster.getShareIds(selfId); // TODO: Implement this roster method
+        final List<TssShareId> shareIds = List.of(new BlsShareId(0L)); // TODO placeholder
+
+        // TODO: check if there are enough shares to meet the threshold, and return null if not
+
+        // decrypt the partial private shares from the cipher texts
+        final Map<TssShareId, List<TssPrivateKey>> partialPrivateShares = new HashMap<>();
+        for (final TssCiphertext cipherText : cipherTexts) {
+            for (final TssShareId shareId : shareIds) {
+                partialPrivateShares
+                        .computeIfAbsent(shareId, k -> new ArrayList<>())
+                        .add(cipherText.decryptPrivateKey(ecdhPrivateKey, shareId));
+            }
+        }
+
+        // aggregate the decrypted partial private keys, creating the actual private shares
+        final List<TssPrivateShare> privateShares = new ArrayList<>();
+        for (final Map.Entry<TssShareId, List<TssPrivateKey>> entry : partialPrivateShares.entrySet()) {
+            final TssShareId shareId = entry.getKey();
+            final List<TssPrivateKey> partialSharesForId = entry.getValue();
+
+            privateShares.add(new TssPrivateShare(shareId, tss.aggregatePrivateKeys(partialSharesForId)));
+        }
+
+        return privateShares;
     }
 
     /**
-     * Generate a DKG message with the given secret using the {@link EcdhPublicKey}s of the signers in the next
-     * {@link TssDirectory}.
+     * Compute the public shares for the whole roster from a list of cipher texts.
      *
-     * @param nextTssDirectory the next {@link TssDirectory} of signers
-     * @param signerId         the id of the signer generating the DKG message.
-     * @param secret           the secret to use for generating new keys.
-     * @param threshold        the threshold for recovering the secret.
-     * @param shareOwnership   the mapping from share id to its owning signer id.
-     * @return the DKG message for the given signer use to initialize the keys in the next {@link TssDirectory}.
+     * @param tss         the TSS instance
+     * @param roster      the roster
+     * @param cipherTexts the cipher texts
+     * @return the public shares, or null if there aren't enough shares to meet the threshold
      */
-    @NonNull
-    public TssMessage generateDkgMessage(
-            @NonNull final TssDirectory nextTssDirectory,
-            @NonNull final TssSignerId signerId,
-            final byte[] secret,
-            final int threshold,
-            Map<TssShareId, TssSignerId> shareOwnership) {
-        // https://github.com/rsinha/groth21_dkg/blob/40d82993d1ec9ea295d56e9d9cb955af60c00ebb/src/dkg.rs#L54
-        throw new UnsupportedOperationException("Not implemented");
-    }
+    @Nullable
+    public static Map<TssShareId, TssPublicKey> computePublicShares(
+            @NonNull final Tss tss, @NonNull final Roster roster, @NonNull final List<TssCiphertext> cipherTexts) {
 
-    /**
-     * Process a threshold number of {@link TssMessage}s to create the first {@link TssDirectory} with the given
-     * signer's private keys initialized.
-     *
-     * @param genesisDirectory the genesis directory of signers without keys initialized
-     * @param tssSigner        the id of the signer whose shares' private keys should be initialized
-     * @param shares           the shares belonging to the signer
-     * @param dkgMessages      the DKG messages from signers in the genesis directory
-     * @return the genesis directory with keys initialized
-     * @throws IllegalArgumentException if the signer does not have an {@link EcdhPrivateKey} set or the number of
-     *                                  {@link TssMessage}s is less than the threshold in the genesis
-     *                                  {@link TssDirectory}.
-     */
-    @NonNull
-    public TssDirectory setup(
-            @NonNull TssDirectory genesisDirectory,
-            @NonNull final TssSignerId tssSigner,
-            Set<TssShareId> shares,
-            @NonNull final Map<TssSignerId, TssMessage> dkgMessages) {
-        // https://github.com/rsinha/groth21_dkg/blob/40d82993d1ec9ea295d56e9d9cb955af60c00ebb/src/dkg.rs#L163
-        throw new UnsupportedOperationException("Not implemented");
-    }
+        // TODO: check if there are enough shares to meet the threshold, and return null if not
 
-    /**
-     * Process a threshold number of {@link TssMessage}s to initialize the next {@link TssDirectory}'s shares' public
-     * keys and the given signer's shares' private keys. The threshold that must be met is from the previous
-     * {@link TssDirectory}.
-     *
-     * @param previousDirectory the previous directory of signers
-     * @param nextDirectory     the next directory of signers
-     * @param tssSigner         the signer whose shares' private keys are to be initialized
-     * @param shares            the shares belonging to the signer
-     * @param dkgMessages       the DKG messages from signers in the previous directory
-     * @return the next {@link TssDirectory} with keys initialized
-     * @throws IllegalArgumentException if the signer does not have an {@link EcdhPrivateKey} set or the number of
-     *                                  {@link TssMessage}s is less than the threshold in the previous
-     *                                  {@link TssDirectory}.
-     */
-    @NonNull
-    public TssDirectory rekey(
-            @NonNull final TssDirectory previousDirectory,
-            @NonNull final TssDirectory nextDirectory,
-            @NonNull final TssSignerId tssSigner,
-            Set<TssShareId> shares,
-            @NonNull final Map<TssSignerId, TssMessage> dkgMessages) {
-        // https://github.com/rsinha/groth21_dkg/blob/40d82993d1ec9ea295d56e9d9cb955af60c00ebb/src/dkg.rs#L247
-        throw new UnsupportedOperationException("Not implemented");
+        final Map<TssShareId, TssPublicKey> publicShares = new HashMap<>();
+        roster.getNodeIds().forEach(nodeId -> {
+            // final List<TssShareId> shareIds = roster.getShareIds(selfId); // TODO: Implement this roster method
+            final List<TssShareId> shareIds = List.of(new BlsShareId(0L)); // TODO placeholder
+
+            for (final TssShareId shareId : shareIds) {
+                final List<TssPublicShare> partialSharesForId = new ArrayList<>();
+                for (final TssCiphertext cipherText : cipherTexts) {
+                    partialSharesForId.add(cipherText.extractPublicShare(shareId));
+                }
+                publicShares.put(shareId, tss.aggregatePublicShares(partialSharesForId));
+            }
+        });
+
+        return publicShares;
     }
 }

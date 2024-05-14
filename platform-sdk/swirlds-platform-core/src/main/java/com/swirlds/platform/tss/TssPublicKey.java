@@ -16,4 +16,7 @@
 
 package com.swirlds.platform.tss;
 
+/**
+ * A public key that can be used to verify a signature.
+ */
 public interface TssPublicKey {}

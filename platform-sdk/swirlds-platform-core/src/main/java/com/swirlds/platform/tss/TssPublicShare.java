@@ -18,4 +18,10 @@ package com.swirlds.platform.tss;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * A record that contains a share ID, and the corresponding public key.
+ *
+ * @param shareId   the share ID
+ * @param publicKey the public key
+ */
 public record TssPublicShare(@NonNull TssShareId shareId, @NonNull TssPublicKey publicKey) {}

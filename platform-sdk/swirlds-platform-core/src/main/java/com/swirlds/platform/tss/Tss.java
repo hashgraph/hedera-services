@@ -16,91 +16,52 @@
 
 package com.swirlds.platform.tss;
 
-import com.swirlds.platform.tss.ecdh.EcdhPrivateKey;
-import com.swirlds.platform.tss.ecdh.EcdhPublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Map;
-import java.util.Set;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 
+/**
+ * A Threshold Signature Scheme.
+ */
 public interface Tss {
-
     /**
-     * If a threshold number of {@link TssSignature}s by shares is provided a signature by the {@link TssDirectory}'s
-     * secret private key is computed.
+     * Aggregate a threshold number of {@link TssSignature}s.
      *
-     * @param signatures the map of share ids to signatures created by each share.
+     * @param partialSignatures the list of signatures to aggregate
      * @return the interpolated signature if the threshold is met, otherwise null.
      */
-    TssSignature aggregateSignatures(@NonNull final Map<TssShareId, TssSignature> signatures);
+    @Nullable
+    TssSignature aggregateSignatures(@NonNull final List<TssSignature> partialSignatures);
 
     /**
-     * If a threshold number of {@link TssPublicKey}s of shares is provided a public key for the {@link TssDirectory}'s
-     * secret private key is computed.
+     * Aggregate a threshold number of {@link TssPublicShare}s.
      *
-     * @param publicKeys the map of share ids to public keys created by each share.
+     * @param partialShares the public shares to aggregate
      * @return the interpolated public key if the threshold is met, otherwise null.
      */
-    TssPublicKey aggregatePublicKeys(@NonNull final Map<TssShareId, TssPublicKey> publicKeys);
+    @Nullable
+    TssPublicKey aggregatePublicShares(@NonNull final List<TssPublicShare> partialShares);
 
     /**
-     * Generate a DKG message with the given secret using the {@link EcdhPublicKey}s of the signers in the next
-     * {@link TssDirectory}.
+     * Aggregate a threshold number of {@link TssPrivateKey}s.
      *
-     * @param nextTssDirectory the next {@link TssDirectory} of signers
-     * @param signerId         the id of the signer generating the DKG message.
-     * @param secret           the secret to use for generating new keys.
-     * @param threshold        the threshold for recovering the secret.
-     * @param shareOwnership   the mapping from share id to its owning signer id.
-     * @return the DKG message for the given signer use to initialize the keys in the next {@link TssDirectory}.
+     * @param partialKeys the private keys to aggregate
+     * @return the aggregate private key, or null if the threshold is not met
      */
-    @NonNull
-    TssMessage generateDkgMessage(
-            @NonNull final TssDirectory nextTssDirectory,
-            @NonNull final TssSignerId signerId,
-            final byte[] secret,
-            final int threshold,
-            Map<TssShareId, TssSignerId> shareOwnership);
+    @Nullable
+    TssPrivateKey aggregatePrivateKeys(@NonNull final List<TssPrivateKey> partialKeys);
 
     /**
-     * Process a threshold number of {@link TssMessage}s to create the first {@link TssDirectory} with the given
-     * signer's private keys initialized.
+     * Generate a TSS message for a set of share claims, from a private share.
      *
-     * @param genesisDirectory the genesis directory of signers without keys initialized
-     * @param tssSigner        the id of the signer whose shares' private keys should be initialized
-     * @param shares           the shares belonging to the signer
-     * @param dkgMessages      the DKG messages from signers in the genesis directory
-     * @return the genesis directory with keys initialized
-     * @throws IllegalArgumentException if the signer does not have an {@link EcdhPrivateKey} set or the number of
-     *                                  {@link TssMessage}s is less than the threshold in the genesis
-     *                                  {@link TssDirectory}.
+     * @param pendingShareClaims the share claims that we should generate the message for
+     * @param privateShare       the secret to use for generating new keys
+     * @param threshold          the threshold for recovering the secret
+     * @return the TSS message produced for the input share claims
      */
     @NonNull
-    TssDirectory setup(
-            @NonNull TssDirectory genesisDirectory,
-            @NonNull final TssSignerId tssSigner,
-            Set<TssShareId> shares,
-            @NonNull final Map<TssSignerId, TssMessage> dkgMessages);
-
-    /**
-     * Process a threshold number of {@link TssMessage}s to initialize the next {@link TssDirectory}'s shares' public
-     * keys and the given signer's shares' private keys. The threshold that must be met is from the previous
-     * {@link TssDirectory}.
-     *
-     * @param previousDirectory the previous directory of signers
-     * @param nextDirectory     the next directory of signers
-     * @param tssSigner         the signer whose shares' private keys are to be initialized
-     * @param shares            the shares belonging to the signer
-     * @param dkgMessages       the DKG messages from signers in the previous directory
-     * @return the next {@link TssDirectory} with keys initialized
-     * @throws IllegalArgumentException if the signer does not have an {@link EcdhPrivateKey} set or the number of
-     *                                  {@link TssMessage}s is less than the threshold in the previous
-     *                                  {@link TssDirectory}.
-     */
-    @NonNull
-    TssDirectory rekey(
-            @NonNull final TssDirectory previousDirectory,
-            @NonNull final TssDirectory nextDirectory,
-            @NonNull final TssSignerId tssSigner,
-            Set<TssShareId> shares,
-            @NonNull final Map<TssSignerId, TssMessage> dkgMessages);
+    TssMessage generateTssMessage(
+            @NonNull final List<TssShareClaim> pendingShareClaims,
+            @NonNull final TssPrivateShare privateShare,
+            final int threshold);
 }

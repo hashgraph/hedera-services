@@ -16,4 +16,9 @@
 
 package com.swirlds.platform.tss.ecdh;
 
+/**
+ * An ECDH private key, for use in TSS
+ * <p>
+ * TODO: should this actually be an implementation, and then we create a more generic private key interface?
+ */
 public interface EcdhPrivateKey {}

@@ -18,8 +18,10 @@ package com.swirlds.platform.tss;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * A signature that has been produced by a {@link TssPrivateKey}.
+ */
 public interface TssSignature {
-
     /**
      * Verify a signed message with the known public key.
      *
