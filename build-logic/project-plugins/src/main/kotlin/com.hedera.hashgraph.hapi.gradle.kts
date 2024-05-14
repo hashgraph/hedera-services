@@ -23,7 +23,7 @@ plugins {
 }
 
 tasks.register<GitClone>("cloneHederaProtobufs") {
-    url = "https://github.com/LimeChain/hedera-protobufs.git"
+    url = "https://github.com/hashgraph/hedera-protobufs.git"
     offline = gradle.startParameter.isOffline
     localCloneDirectory = layout.buildDirectory.dir("hedera-protobufs")
 }
