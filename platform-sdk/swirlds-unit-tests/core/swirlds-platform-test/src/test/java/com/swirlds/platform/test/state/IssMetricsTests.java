@@ -24,10 +24,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,9 +39,10 @@ class IssMetricsTests {
     @Test
     @DisplayName("Update Non-Existent Node")
     void updateNonExistentNode() {
+        final Randotron randotron = Randotron.create();
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator().setSize(100).build();
+                RandomAddressBookBuilder.create(randotron).withSize(100).build();
 
         final IssMetrics issMetrics = new IssMetrics(new NoOpMetrics(), addressBook);
 
@@ -60,7 +62,7 @@ class IssMetricsTests {
         final Hash hashB = randomHash(random);
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(100).build();
+                RandomAddressBookBuilder.create(random).withSize(100).build();
 
         final IssMetrics issMetrics = new IssMetrics(new NoOpMetrics(), addressBook);
 

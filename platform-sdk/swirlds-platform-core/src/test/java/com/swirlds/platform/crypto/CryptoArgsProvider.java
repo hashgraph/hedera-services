@@ -17,10 +17,11 @@
 package com.swirlds.platform.crypto;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.ResourceLoader;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator.WeightDistributionStrategy;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder.WeightDistributionStrategy;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.URISyntaxException;
 import java.security.KeyStoreException;
@@ -58,9 +59,9 @@ public class CryptoArgsProvider {
     }
 
     public static AddressBook createAddressBook(final int size) {
-        final AddressBook addresses = new RandomAddressBookGenerator()
-                .setSize(size)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
+        final AddressBook addresses = RandomAddressBookBuilder.create(Randotron.create())
+                .withSize(size)
+                .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
 
         for (int i = 0; i < addresses.getSize(); i++) {
