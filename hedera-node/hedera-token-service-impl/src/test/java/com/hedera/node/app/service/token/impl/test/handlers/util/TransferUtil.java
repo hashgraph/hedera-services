@@ -56,6 +56,18 @@ public class TransferUtil {
                 .build();
     }
 
+    public static TokenTransferList asTokenTransferList(
+            final TokenID tokenId,
+            final AccountID sender,
+            final AccountID receiver,
+            final long serialNumber) {
+        final var nftTransfer = as(tokenId, sender, receiver, serialNumber);
+        return TokenTransferList.newBuilder()
+                .token(tokenId)
+                .nftTransfers(nftTransfer)
+                .build();
+    }
+
     public static NftTransfer asNftTransfer(
             final TokenID nonFungibleTokenId,
             final AccountID sender,
