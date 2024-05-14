@@ -498,10 +498,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         // From the orphan buffer, extract signatures from preconsensus events for input to the StateSignatureCollector.
         final WireTransformer<GossipEvent, List<ScopedSystemTransaction<StateSignaturePayload>>>
                 preConsensusTransformer = new WireTransformer<>(
-                model,
-                "extractPreconsensusSignatureTransactions",
-                "preconsensus signatures",
-                event -> SystemTransactionExtractionUtils.extractFromEvent(event, StateSignaturePayload.class));
+                        model,
+                        "extractPreconsensusSignatureTransactions",
+                        "preconsensus signatures",
+                        event -> SystemTransactionExtractionUtils.extractFromEvent(event, StateSignaturePayload.class));
         splitOrphanBufferOutput.solderTo(preConsensusTransformer.getInputWire());
         preConsensusTransformer
                 .getOutputWire()
@@ -544,8 +544,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         // specified ordering, relative to the wire carrying consensus rounds to the round handler
         final WireTransformer<ConsensusRound, Long> keystoneEventSequenceNumberTransformer = new WireTransformer<>(
                 model, "getKeystoneEventSequenceNumber", "rounds", round -> round.getKeystoneEvent()
-                .getBaseEvent()
-                .getStreamSequenceNumber());
+                        .getBaseEvent()
+                        .getStreamSequenceNumber());
         keystoneEventSequenceNumberTransformer
                 .getOutputWire()
                 .solderTo(pcesWriterWiring.getInputWire(PcesWriter::submitFlushRequest));
@@ -618,10 +618,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         // Extract signatures from post-consensus events for input to the StateSignatureCollector.
         final WireTransformer<ConsensusRound, List<ScopedSystemTransaction<StateSignaturePayload>>>
                 postConsensusTransformer = new WireTransformer<>(
-                model,
-                "extractConsensusSignatureTransactions",
-                "consensus events",
-                round -> SystemTransactionExtractionUtils.extractFromRound(round, StateSignaturePayload.class));
+                        model,
+                        "extractConsensusSignatureTransactions",
+                        "consensus events",
+                        round -> SystemTransactionExtractionUtils.extractFromRound(round, StateSignaturePayload.class));
         hashedConsensusRoundOutput.solderTo(postConsensusTransformer.getInputWire());
         postConsensusTransformer
                 .getOutputWire()
