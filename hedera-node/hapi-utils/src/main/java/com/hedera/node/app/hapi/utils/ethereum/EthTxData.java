@@ -159,7 +159,7 @@ public record EthTxData(
                     gasPrice,
                     Integers.toBytes(gasLimit),
                     to,
-                    Integers.toBytesUnsigned(value),
+                    value.toByteArray(),
                     callData,
                     v,
                     r,
@@ -172,7 +172,7 @@ public record EthTxData(
                             gasPrice,
                             Integers.toBytes(gasLimit),
                             to,
-                            Integers.toBytesUnsigned(value),
+                            value.toByteArray(),
                             callData,
                             List.of(/*accessList*/ ),
                             Integers.toBytes(recId),
@@ -187,7 +187,7 @@ public record EthTxData(
                             maxGas,
                             Integers.toBytes(gasLimit),
                             to,
-                            Integers.toBytesUnsigned(value),
+                            value.toByteArray(),
                             callData,
                             List.of(/*accessList*/ ),
                             Integers.toBytes(recId),
@@ -391,7 +391,7 @@ public record EthTxData(
                 null, // maxGas
                 rlpList.get(2).asLong(), // gasLimit
                 rlpList.get(3).data(), // to
-                rlpList.get(4).asBigInt(), // value
+                toValue(rlpList.get(4).data()), // value
                 rlpList.get(5).data(), // callData
                 null, // accessList
                 recId,
@@ -426,7 +426,7 @@ public record EthTxData(
                 rlpList.get(3).data(), // maxGas
                 rlpList.get(4).asLong(), // gasLimit
                 rlpList.get(5).data(), // to
-                rlpList.get(6).asBigInt(), // value
+                toValue(rlpList.get(6).data()), // value
                 rlpList.get(7).data(), // callData
                 rlpList.get(8).data(), // accessList
                 rlpList.get(9).asByte(), // recId
@@ -461,7 +461,7 @@ public record EthTxData(
                 null, // maxGas
                 rlpList.get(3).asLong(), // gasLimit
                 rlpList.get(4).data(), // to
-                rlpList.get(5).asBigInt(), // value
+                toValue(rlpList.get(5).data()), // value
                 rlpList.get(6).data(), // callData
                 rlpList.get(7).data(), // accessList
                 rlpList.get(8).asByte(), // recId
@@ -469,6 +469,12 @@ public record EthTxData(
                 rlpList.get(9).data(), // r
                 rlpList.get(10).data() // s
                 );
+    }
+
+    // Wrapping the bytes in a BigInteger to handle when there is a negative value. If we use the RLPItem.asBigInt()
+    // method it doesn't handle two's complement correctly.
+    private static BigInteger toValue(final byte[] value) {
+        return value.length == 0 ? BigInteger.ZERO : new BigInteger(value);
     }
 
     // before EIP155 the value of v in

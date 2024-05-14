@@ -31,7 +31,7 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.event.creation.DefaultEventCreationManager;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.creation.EventCreator;
-import com.swirlds.platform.eventhandling.TransactionPool;
+import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.status.PlatformStatus;
 import java.time.Duration;
@@ -69,7 +69,7 @@ class EventCreationManagerTests {
         intakeQueueSize = new AtomicLong(0);
 
         manager = new DefaultEventCreationManager(
-                platformContext, mock(TransactionPool.class), intakeQueueSize::get, creator);
+                platformContext, mock(TransactionPoolNexus.class), intakeQueueSize::get, creator);
 
         manager.updatePlatformStatus(PlatformStatus.ACTIVE);
     }

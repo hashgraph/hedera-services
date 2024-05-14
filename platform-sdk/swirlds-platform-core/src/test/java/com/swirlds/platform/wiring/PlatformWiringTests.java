@@ -22,6 +22,7 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.StateSigner;
+import com.swirlds.platform.builder.ApplicationCallbacks;
 import com.swirlds.platform.builder.PlatformBuildingBlocks;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.components.AppNotifier;
@@ -39,11 +40,14 @@ import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
 import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.SelfEventSigner;
+import com.swirlds.platform.event.stale.DefaultStaleEventDetector;
+import com.swirlds.platform.event.stale.TransactionResubmitter;
 import com.swirlds.platform.event.stream.ConsensusEventStream;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
+import com.swirlds.platform.pool.TransactionPool;
 import com.swirlds.platform.publisher.PlatformPublisher;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
@@ -71,7 +75,9 @@ class PlatformWiringTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final PlatformWiring wiring = new PlatformWiring(platformContext, true, true);
+        final ApplicationCallbacks applicationCallbacks = new ApplicationCallbacks(x -> {}, x -> {}, x -> {});
+
+        final PlatformWiring wiring = new PlatformWiring(platformContext, applicationCallbacks);
 
         final PlatformComponentBuilder componentBuilder =
                 new PlatformComponentBuilder(mock(PlatformBuildingBlocks.class));
@@ -94,7 +100,10 @@ class PlatformWiringTests {
                 .withTransactionPrehandler(mock(TransactionPrehandler.class))
                 .withPcesWriter(mock(PcesWriter.class))
                 .withSignedStateSentinel(mock(SignedStateSentinel.class))
-                .withIssDetector(mock(IssDetector.class));
+                .withIssDetector(mock(IssDetector.class))
+                .withStaleEventDetector(mock(DefaultStaleEventDetector.class))
+                .withTransactionResubmitter(mock(TransactionResubmitter.class))
+                .withTransactionPool(mock(TransactionPool.class));
 
         // Gossip is a special case, it's not like other components.
         // Currently we just have a facade between gossip and the wiring framework.
