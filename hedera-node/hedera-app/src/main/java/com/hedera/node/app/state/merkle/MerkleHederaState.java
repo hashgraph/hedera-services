@@ -22,28 +22,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.spi.state.CommittableWritableStates;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
-import com.hedera.node.app.spi.state.ReadableKVState;
-import com.hedera.node.app.spi.state.ReadableQueueState;
-import com.hedera.node.app.spi.state.ReadableSingletonState;
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
-import com.hedera.node.app.spi.state.WritableQueueState;
-import com.hedera.node.app.spi.state.WritableQueueStateBase;
-import com.hedera.node.app.spi.state.WritableSingletonState;
-import com.hedera.node.app.spi.state.WritableSingletonStateBase;
-import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.state.merkle.disk.OnDiskReadableKVState;
-import com.hedera.node.app.state.merkle.disk.OnDiskWritableKVState;
-import com.hedera.node.app.state.merkle.memory.InMemoryReadableKVState;
-import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
-import com.hedera.node.app.state.merkle.queue.QueueNode;
-import com.hedera.node.app.state.merkle.queue.ReadableQueueStateImpl;
-import com.hedera.node.app.state.merkle.queue.WritableQueueStateImpl;
-import com.hedera.node.app.state.merkle.singleton.ReadableSingletonStateImpl;
-import com.hedera.node.app.state.merkle.singleton.SingletonNode;
-import com.hedera.node.app.state.merkle.singleton.WritableSingletonStateImpl;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -53,6 +31,20 @@ import com.swirlds.common.utility.Labeled;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.merkle.StateUtils;
+import com.swirlds.platform.state.merkle.disk.OnDiskReadableKVState;
+import com.swirlds.platform.state.merkle.disk.OnDiskWritableKVState;
+import com.swirlds.platform.state.merkle.memory.InMemoryReadableKVState;
+import com.swirlds.platform.state.merkle.memory.InMemoryWritableKVState;
+import com.swirlds.platform.state.merkle.queue.QueueNode;
+import com.swirlds.platform.state.merkle.queue.ReadableQueueStateImpl;
+import com.swirlds.platform.state.merkle.queue.WritableQueueStateImpl;
+import com.swirlds.platform.state.merkle.singleton.ReadableSingletonStateImpl;
+import com.swirlds.platform.state.merkle.singleton.SingletonNode;
+import com.swirlds.platform.state.merkle.singleton.WritableSingletonStateImpl;
+import com.swirlds.platform.state.spi.WritableKVStateBase;
+import com.swirlds.platform.state.spi.WritableQueueStateBase;
+import com.swirlds.platform.state.spi.WritableSingletonStateBase;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -62,6 +54,15 @@ import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
+import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.ReadableQueueState;
+import com.swirlds.state.spi.ReadableSingletonState;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableQueueState;
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableStates;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -267,8 +268,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         logger.info("Closing MerkleHederaState");
         for (final var svc : services.values()) {
             for (final var md : svc.values()) {
-                final var index =
-                        findNodeIndex(md.serviceName(), md.stateDefinition().stateKey());
+                final var index = findNodeIndex(md.serviceName(), extractStateKey(md));
                 if (index >= 0) {
                     final var node = getChild(index);
                     if (node instanceof VirtualMap<?, ?> virtualMap) {
@@ -600,12 +600,11 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
          */
         @NonNull
         MerkleNode findNode(@NonNull final StateMetadata<?, ?> md) {
-            final var index =
-                    findNodeIndex(md.serviceName(), md.stateDefinition().stateKey());
+            final var index = findNodeIndex(md.serviceName(), extractStateKey(md));
             if (index == -1) {
                 // This can only happen if there WAS a node here, and it was removed!
                 throw new IllegalStateException("State '"
-                        + md.stateDefinition().stateKey()
+                        + extractStateKey(md)
                         + "' for service '"
                         + md.serviceName()
                         + "' is missing from the merkle tree!");
@@ -633,27 +632,31 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         @NonNull
         protected ReadableKVState<?, ?> createReadableKVState(
                 @NonNull final StateMetadata md, @NonNull final VirtualMap v) {
-            return new OnDiskReadableKVState<>(md, v);
+            return new OnDiskReadableKVState<>(
+                    extractStateKey(md),
+                    md.onDiskKeyClassId(),
+                    md.stateDefinition().keyCodec(),
+                    v);
         }
 
         @Override
         @NonNull
         protected ReadableKVState<?, ?> createReadableKVState(
                 @NonNull final StateMetadata md, @NonNull final MerkleMap m) {
-            return new InMemoryReadableKVState<>(md, m);
+            return new InMemoryReadableKVState<>(extractStateKey(md), m);
         }
 
         @Override
         @NonNull
         protected ReadableSingletonState<?> createReadableSingletonState(
                 @NonNull final StateMetadata md, @NonNull final SingletonNode<?> s) {
-            return new ReadableSingletonStateImpl<>(md, s);
+            return new ReadableSingletonStateImpl<>(extractStateKey(md), s);
         }
 
         @NonNull
         @Override
         protected ReadableQueueState createReadableQueueState(@NonNull StateMetadata md, @NonNull QueueNode<?> q) {
-            return new ReadableQueueStateImpl(md, q);
+            return new ReadableQueueStateImpl(extractStateKey(md), q);
         }
     }
 
@@ -715,28 +718,39 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         @NonNull
         protected WritableKVState<?, ?> createReadableKVState(
                 @NonNull final StateMetadata md, @NonNull final VirtualMap v) {
-            return new OnDiskWritableKVState<>(md, v);
+            return new OnDiskWritableKVState<>(
+                    extractStateKey(md),
+                    md.onDiskKeyClassId(),
+                    md.stateDefinition().keyCodec(),
+                    md.onDiskValueClassId(),
+                    md.stateDefinition().valueCodec(),
+                    v);
         }
 
         @Override
         @NonNull
         protected WritableKVState<?, ?> createReadableKVState(
                 @NonNull final StateMetadata md, @NonNull final MerkleMap m) {
-            return new InMemoryWritableKVState<>(md, m);
+            return new InMemoryWritableKVState<>(
+                    extractStateKey(md),
+                    md.inMemoryValueClassId(),
+                    md.stateDefinition().keyCodec(),
+                    md.stateDefinition().valueCodec(),
+                    m);
         }
 
         @Override
         @NonNull
         protected WritableSingletonState<?> createReadableSingletonState(
                 @NonNull final StateMetadata md, @NonNull final SingletonNode<?> s) {
-            return new WritableSingletonStateImpl<>(md, s);
+            return new WritableSingletonStateImpl<>(extractStateKey(md), s);
         }
 
         @NonNull
         @Override
         protected WritableQueueState<?> createReadableQueueState(
                 @NonNull final StateMetadata md, @NonNull final QueueNode<?> q) {
-            return new WritableQueueStateImpl<>(md, q);
+            return new WritableQueueStateImpl<>(extractStateKey(md), q);
         }
 
         @Override
@@ -765,5 +779,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             singletonInstances.remove(stateKey);
             queueInstances.remove(stateKey);
         }
+    }
+
+    @NonNull
+    private static String extractStateKey(@NonNull final StateMetadata<?, ?> md) {
+        return md.stateDefinition().stateKey();
     }
 }

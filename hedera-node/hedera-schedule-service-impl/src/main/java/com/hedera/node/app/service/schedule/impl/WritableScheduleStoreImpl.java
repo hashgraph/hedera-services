@@ -27,10 +27,10 @@ import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.config.data.SchedulingConfig;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -152,7 +152,10 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
                 schedule.originalCreateTransaction(),
                 schedule.signatories());
     }
-    /** @inheritDoc */
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void purgeExpiredSchedulesBetween(long firstSecondToExpire, long lastSecondToExpire) {
         for (long i = firstSecondToExpire; i <= lastSecondToExpire; i++) {
