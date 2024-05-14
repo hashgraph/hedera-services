@@ -32,7 +32,6 @@ testModuleInfo {
     requires("io.github.classgraph")
     requires("net.i2p.crypto.eddsa")
     requires("org.apache.logging.log4j.core")
-    requires("org.apache.logging.log4j.core")
     requires("org.assertj.core")
     requires("org.hamcrest")
     requires("org.junit.jupiter.api")

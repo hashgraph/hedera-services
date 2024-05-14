@@ -12,6 +12,13 @@ import org.apache.logging.log4j.spi.ExtendedLogger;
 import org.apache.logging.log4j.spi.LoggerContext;
 import org.apache.logging.log4j.spi.LoggerRegistry;
 
+
+/**
+ * Implementation of Log4j {@link LoggerContext} SPI.
+ * This is a factory to produce {@link BaseLogger} instances.
+ * <p>
+ * This implementation is inspired by {@code org.apache.logging.log4j.tojul.JULLoggerContext}.
+ */
 public class BaseLoggerContext implements LoggerContext {
     /**
      * The log event factory to create log events.
@@ -34,13 +41,27 @@ public class BaseLoggerContext implements LoggerContext {
      */
     private final AtomicBoolean initialisationErrorPrinted = new AtomicBoolean(false);
 
-    private final LoggerRegistry<ExtendedLogger> loggerRegistry = new LoggerRegistry<>();
+    /**
+     * The logger registry to store the loggers.
+     */
+    private static LoggerRegistry<BaseLogger> loggerRegistry = new LoggerRegistry<>();
 
+    /**
+     * Returns the external context. This will always return {@code null}.
+     *
+     * @return {@code null}
+     */
     @Override
     public Object getExternalContext() {
         return null;
     }
 
+    /**
+     * Returns the logger with the given name.
+     *
+     * @param name the name of the logger
+     * @return the logger
+     */
     @Override
     public ExtendedLogger getLogger(final String name) {
         if (!loggerRegistry.hasLogger(name)) {
@@ -55,58 +76,76 @@ public class BaseLoggerContext implements LoggerContext {
         return loggerRegistry.getLogger(name);
     }
 
+    /**
+     * Returns the logger with the given name.
+     *
+     * @param name The name of the Logger to return.
+     * @param messageFactory The message factory is ignored since it is not used in the base logger.
+     *
+     * @return the logger
+     */
     @Override
     public ExtendedLogger getLogger(final String name, final MessageFactory messageFactory) {
-        if (!loggerRegistry.hasLogger(name, messageFactory)) {
-            if(logEventFactory == null || logEventConsumer == null) {
-                if (initialisationErrorPrinted.compareAndSet(false, true)) {
-                    EMERGENCY_LOGGER.log(Level.ERROR, "LogEventFactory and LogEventConsumer must be set before using the logger context.");
-                }
-            } else {
-                loggerRegistry.putIfAbsent(name, null, new BaseLogger(name, messageFactory, logEventConsumer, logEventFactory));
-            }
-        }
-        return loggerRegistry.getLogger(name, messageFactory);
+        return getLogger(name);
     }
 
+    /**
+     * Checks if the logger with the given name exists.
+     *
+     * @param name The name of the Logger to return.
+     *
+     * @return if the logger exists
+     */
     @Override
     public boolean hasLogger(final String name) {
         return loggerRegistry.hasLogger(name);
     }
 
+    /**
+     * Checks if the logger with the given name exists.
+     *
+     * @param name The name of the Logger to return.
+     * @param messageFactory The message factory is ignored since it is not used in the base logger.
+     *
+     * @return if the logger exists
+     */
     @Override
     public boolean hasLogger(final String name, final MessageFactory messageFactory) {
-        return loggerRegistry.hasLogger(name, messageFactory);
+        return loggerRegistry.hasLogger(name);
     }
 
+    /**
+     * Checks if the logger with the given name exists.
+     *
+     * @param name The name of the Logger to return.
+     * @param messageFactoryClass The message factory class is ignored since it is not used in the base logger.
+     *
+     * @return if the logger exists
+     */
     @Override
     public boolean hasLogger(final String name, final Class<? extends MessageFactory> messageFactoryClass) {
-        return loggerRegistry.hasLogger(name, messageFactoryClass);
+        return loggerRegistry.hasLogger(name);
     }
 
-    /**
-     * Sets the log event consumer to consume log events.
-     *
-     * @param logEventConsumer the log event consumer from the swirlds-logging API.
-     */
-    public static void setLogEventConsumer(@NonNull final LogEventConsumer logEventConsumer) {
-        if (logEventConsumer == null) {
-            EMERGENCY_LOGGER.logNPE("logEventConsumer");
-            return;
-        }
-        BaseLoggerContext.logEventConsumer = logEventConsumer;
-    }
 
     /**
-     * Sets the log event factory to create log events.
+     * Sets the log event factory and log event consumer to create log events.
      *
-     * @param logEventFactory the log event factory from the swirlds-logging API.
+     * @param logEventFactory the log event factory from the base logger.
+     * @param logEventConsumer the log event consumer from the base logger.
      */
-    public static void setLogEventFactory(@NonNull final LogEventFactory logEventFactory) {
+    public static void initBaseLogging(@NonNull final LogEventFactory logEventFactory, @NonNull final LogEventConsumer logEventConsumer) {
         if (logEventFactory == null) {
             EMERGENCY_LOGGER.logNPE("logEventFactory");
             return;
         }
+        if (logEventConsumer == null) {
+            EMERGENCY_LOGGER.logNPE("logEventConsumer");
+            return;
+        }
+
+        BaseLoggerContext.loggerRegistry = new LoggerRegistry<>();
         BaseLoggerContext.logEventFactory = logEventFactory;
+        BaseLoggerContext.logEventConsumer = logEventConsumer;
     }
 }

@@ -3,54 +3,61 @@ package com.swirlds.logging.log4j.factory;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.event.LogEventConsumer;
 import com.swirlds.logging.api.extensions.event.LogEventFactory;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.Serial;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogBuilder;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.ThreadContext;
 import org.apache.logging.log4j.message.Message;
-import org.apache.logging.log4j.message.MessageFactory;
 import org.apache.logging.log4j.spi.AbstractLogger;
-import org.apache.logging.log4j.util.Constants;
 
-
+/**
+ * Implementation of {@link org.apache.logging.log4j.Logger} that's backed by a {@link LogEventConsumer}.
+ * <p>
+ * This implementations translates Level and Marker to the base logging.
+ * <p>
+ * This implementation is inspired by {@code org.apache.logging.log4j.tojul.JULLogger}.
+ */
 public class BaseLogger extends AbstractLogger {
 
+    /**
+     * Serial version UID.
+     */
     @Serial
     private static final long serialVersionUID = 1L;
-    private static final ThreadLocal<BaseLoggingBuilder> logBuilder = ThreadLocal.withInitial(BaseLoggingBuilder::new);
 
+    /**
+     * The log event consumer to consume log events by the base logging.
+     */
     private final LogEventConsumer logEventConsumer;
+    /**
+     * The log event factory to create log events for the base logging.
+     */
     private final LogEventFactory logEventFactory;
 
-
-    public BaseLogger(final String name, final MessageFactory messageFactory, final LogEventConsumer logEventConsumer,
-            final LogEventFactory logEventFactory) {
-        super(name, messageFactory);
-        this.logEventConsumer = logEventConsumer;
-        this.logEventFactory = logEventFactory;
-    }
-
-    public BaseLogger(final String name, final LogEventConsumer logEventConsumer, final LogEventFactory logEventFactory) {
+    /**
+     * Creates a new base logger.
+     *
+     * @param name the name of the logger
+     * @param logEventConsumer the log event consumer
+     * @param logEventFactory the log event factory
+     */
+    public BaseLogger(@Nullable final String name, @NonNull final LogEventConsumer logEventConsumer, @NonNull final LogEventFactory logEventFactory) {
         super(name);
-        this.logEventConsumer = logEventConsumer;
-        this.logEventFactory = logEventFactory;
+        this.logEventConsumer = Objects.requireNonNull(logEventConsumer, "logEventConsumer is required");
+        this.logEventFactory = Objects.requireNonNull(logEventFactory, "logEventFactory is required");
     }
 
-    private com.swirlds.logging.api.Level convertLevel(final Level level) {
-        return switch (level.getStandardLevel()) {
-            case DEBUG -> com.swirlds.logging.api.Level.DEBUG;
-            case TRACE -> com.swirlds.logging.api.Level.TRACE;
-            case WARN -> com.swirlds.logging.api.Level.WARN;
-            case ERROR -> com.swirlds.logging.api.Level.ERROR;
-            default -> com.swirlds.logging.api.Level.INFO;
-        };
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
+    @NonNull
     public Level getLevel() {
         if (logEventConsumer.isEnabled(getName(), com.swirlds.logging.api.Level.TRACE, null)) {
             return Level.TRACE;
@@ -71,71 +78,84 @@ public class BaseLogger extends AbstractLogger {
         return Level.OFF;
     }
 
-    @Nullable
-    private static com.swirlds.logging.api.Marker getMarker(@Nullable final Marker marker) {
-        // No marker is provided in the common case, small methods
-        // are optimized more effectively.
-        return marker == null ? null : convertMarker(marker);
-    }
-
-    private static com.swirlds.logging.api.Marker convertMarker(final Marker marker) {
-        if (marker.getParents() != null) {
-            final List<Marker> parents = new ArrayList<>(List.of(marker.getParents()));
-            final Marker parent = parents.getFirst();
-            parents.removeFirst();
-            return new com.swirlds.logging.api.Marker(marker.getName(), convertMarker(parent));
-        }
-        return new com.swirlds.logging.api.Marker(marker.getName(), null);
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isEnabled(final Level level, final Marker marker, final Message data, final Throwable t) {
         return isEnabledFor(level, marker);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isEnabled(final Level level, final Marker marker, final CharSequence data, final Throwable t) {
         return isEnabledFor(level, marker);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isEnabled(final Level level, final Marker marker, final Object data, final Throwable t) {
         return isEnabledFor(level, marker);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isEnabled(final Level level, final Marker marker, final String data) {
         return isEnabledFor(level, marker);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isEnabled(final Level level, final Marker marker, final String data, final Object... p1) {
         return isEnabledFor(level, marker);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isEnabled(final Level level, final Marker marker, final String message, final Object p0) {
         return isEnabledFor(level, marker);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isEnabled(final Level level, final Marker marker, final String message, final Object p0,
             final Object p1) {
         return isEnabledFor(level, marker);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isEnabled(final Level level, final Marker marker, final String message, final Object p0,
             final Object p1, final Object p2) {
         return isEnabledFor(level, marker);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isEnabled(final Level level, final Marker marker, final String message, final Object p0,
             final Object p1, final Object p2, final Object p3) {
         return isEnabledFor(level, marker);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isEnabled(final Level level, final Marker marker, final String message, final Object p0,
             final Object p1, final Object p2, final Object p3,
@@ -143,6 +163,9 @@ public class BaseLogger extends AbstractLogger {
         return isEnabledFor(level, marker);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isEnabled(final Level level, final Marker marker, final String message, final Object p0,
             final Object p1, final Object p2, final Object p3,
@@ -150,6 +173,9 @@ public class BaseLogger extends AbstractLogger {
         return isEnabledFor(level, marker);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isEnabled(final Level level, final Marker marker, final String message, final Object p0,
             final Object p1, final Object p2, final Object p3,
@@ -157,6 +183,9 @@ public class BaseLogger extends AbstractLogger {
         return isEnabledFor(level, marker);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isEnabled(final Level level, final Marker marker, final String message, final Object p0,
             final Object p1, final Object p2, final Object p3,
@@ -165,6 +194,9 @@ public class BaseLogger extends AbstractLogger {
         return isEnabledFor(level, marker);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isEnabled(final Level level, final Marker marker, final String message, final Object p0,
             final Object p1, final Object p2, final Object p3,
@@ -173,6 +205,9 @@ public class BaseLogger extends AbstractLogger {
         return isEnabledFor(level, marker);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isEnabled(final Level level, final Marker marker, final String message, final Object p0,
             final Object p1, final Object p2, final Object p3,
@@ -181,16 +216,17 @@ public class BaseLogger extends AbstractLogger {
         return isEnabledFor(level, marker);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isEnabled(final Level level, final Marker marker, final String data, final Throwable t) {
         return isEnabledFor(level, marker);
     }
 
-    private boolean isEnabledFor(final Level level, final Marker marker) {
-        final com.swirlds.logging.api.Marker baseMarker = getMarker(marker);
-        return logEventConsumer.isEnabled(getName(), convertLevel(level), baseMarker);
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void logMessage(final String fqcn, final Level level, final Marker marker, final Message message, final Throwable t) {
         final com.swirlds.logging.api.Marker baseMarker = getMarker(marker);
@@ -201,50 +237,130 @@ public class BaseLogger extends AbstractLogger {
         logEventConsumer.accept(event);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public LogBuilder always() {
         return atLevel(Level.OFF);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public LogBuilder atTrace() {
         return atLevel(Level.TRACE);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public LogBuilder atDebug() {
         return atLevel(Level.DEBUG);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public LogBuilder atInfo() {
         return atLevel(Level.INFO);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public LogBuilder atWarn() {
         return atLevel(Level.WARN);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public LogBuilder atError() {
         return atLevel(Level.ERROR);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public LogBuilder atFatal() {
         return atLevel(Level.TRACE);
     }
 
-    @Override
-    protected LogBuilder getLogBuilder(final Level level) {
-        final BaseLoggingBuilder builder = logBuilder.get();
-        return Constants.ENABLE_THREADLOCALS && !builder.isInUse() ? builder.reset(this, level)
-                : new BaseLoggingBuilder(this, level);
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public LogBuilder atLevel(final Level level) {
         return super.atLevel(level);
+    }
+
+    /**
+     * Checks if the logger is enabled for the given level and marker.
+     *
+     * @param level the level is required
+     * @param marker the marker
+     *
+     * @return if the logger is enabled
+     */
+    private boolean isEnabledFor(@NonNull final Level level, @Nullable final Marker marker) {
+        final com.swirlds.logging.api.Marker baseMarker = getMarker(marker);
+        return logEventConsumer.isEnabled(getName(), convertLevel(level), baseMarker);
+    }
+
+    /**
+     * Converts the log4j marker to the base logging marker.
+     * If the marker is {@code null}, then {@code null} is returned. No marker is provided in the common case, small methods are optimized more effectively.
+     *
+     * @param marker the log4j marker
+     *
+     * @return the base logging marker
+     */
+    @Nullable
+    private static com.swirlds.logging.api.Marker getMarker(@Nullable final Marker marker) {
+        return marker == null ? null : convertMarker(marker);
+    }
+
+    /**
+     * Converts the log4j marker to the base logging marker.
+     *
+     * @param marker the log4j marker
+     *
+     * @return the base logging marker
+     */
+    @NonNull
+    private static com.swirlds.logging.api.Marker convertMarker(@NonNull final Marker marker) {
+        if (marker.getParents() != null) {
+            final List<Marker> parents = new ArrayList<>(List.of(marker.getParents()));
+            final Marker parent = parents.getFirst();
+            parents.removeFirst();
+            return new com.swirlds.logging.api.Marker(marker.getName(), convertMarker(parent));
+        }
+        return new com.swirlds.logging.api.Marker(marker.getName(), null);
+    }
+
+    /**
+     * Converts the log4j level to the base logging level.
+     *
+     * @param level the log4j level
+     *
+     * @return the base logging level
+     */
+    @NonNull
+    private com.swirlds.logging.api.Level convertLevel(@NonNull final Level level) {
+        Objects.requireNonNull(level, "level is required");
+        return switch (level.getStandardLevel()) {
+            case DEBUG -> com.swirlds.logging.api.Level.DEBUG;
+            case TRACE -> com.swirlds.logging.api.Level.TRACE;
+            case WARN -> com.swirlds.logging.api.Level.WARN;
+            case ERROR -> com.swirlds.logging.api.Level.ERROR;
+            default -> com.swirlds.logging.api.Level.INFO;
+        };
     }
 }

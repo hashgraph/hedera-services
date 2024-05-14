@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.log4j.appender;
+package com.swirlds.logging.log4j.factory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.logging.api.Level;
-import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.legacy.LogMarker;
 import java.nio.file.Files;
@@ -76,7 +75,7 @@ class SwirldsLogAppenderTest {
         log4jLogger.info("This is an info message");
         log4jLogger.debug("This is a debug message");
         log4jLogger.trace("This is a trace message");
-        loggingSystem.getHandlers().forEach(LogHandler::flush);
+        loggingSystem.stopAndFinalize();
 
         // then
         assertThat(filePath).exists();
