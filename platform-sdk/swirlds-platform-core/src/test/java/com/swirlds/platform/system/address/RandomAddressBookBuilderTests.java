@@ -109,7 +109,7 @@ class RandomAddressBookBuilderTests {
             final PublicKey signaturePublicKey = address.getSigPublicKey();
             final KeysAndCerts privateKeys = builderA.getPrivateKeys(id);
 
-            final byte[] data = randotron.randomByteArray(64);
+            final byte[] data = randotron.nextByteArray(64);
             final com.swirlds.common.crypto.Signature signature = new PlatformSigner(privateKeys).sign(data);
 
             assertTrue(CryptoStatic.verifySignature(data, signature.getSignatureBytes(), signaturePublicKey));
@@ -121,7 +121,7 @@ class RandomAddressBookBuilderTests {
             assertFalse(CryptoStatic.verifySignature(data, signature.getSignatureBytes(), wrongPublicKey));
 
             // Sanity check: validating against the wrong data should fail
-            final byte[] wrongData = randotron.randomByteArray(64);
+            final byte[] wrongData = randotron.nextByteArray(64);
             assertFalse(CryptoStatic.verifySignature(wrongData, signature.getSignatureBytes(), signaturePublicKey));
 
             // Sanity check: validating with a modified signature should fail
