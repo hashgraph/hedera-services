@@ -216,6 +216,7 @@ public class StateAccess {
     private static List<BBMHederaAccount> readAccounts(
             List<SavedStateInfo> savedStates, PlatformContext platformContext) {
         List<BBMHederaAccount> dumpableAccounts = new ArrayList<>();
+        boolean readAtLeastOneState = false;
         for (SavedStateInfo savedStateInfo : savedStates) {
             Path stateFilePath = savedStateInfo.stateFile();
             try {
@@ -227,10 +228,13 @@ public class StateAccess {
                 VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accountsMap =
                         hederaState.getChild(hederaState.findNodeIndex(TokenService.NAME, ACCOUNTS_KEY));
                 dumpableAccounts.addAll(Arrays.asList(gatherAccounts(accountsMap)));
+                readAtLeastOneState = true;
             } catch (IOException e) {
                 log.error("Error reading state file");
-                throw new IllegalArgumentException("Error reading state file ");
             }
+        }
+        if (!readAtLeastOneState) {
+            throw new IllegalArgumentException("Error reading state file");
         }
         return dumpableAccounts;
     }
