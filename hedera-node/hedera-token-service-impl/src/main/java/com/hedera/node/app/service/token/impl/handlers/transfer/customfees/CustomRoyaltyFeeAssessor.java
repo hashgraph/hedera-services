@@ -112,6 +112,7 @@ public class CustomRoyaltyFeeAssessor {
         // should be paid only once.
         // We don't want to charge the fallback fee for each nft transfer, if the receiver has already
         // paid it for this token.
+
         if (exchangedValue.isEmpty()) {
             // Receiver pays fallback fees
             result.addToRoyaltiesPaid(Pair.of(receiver, tokenId));
