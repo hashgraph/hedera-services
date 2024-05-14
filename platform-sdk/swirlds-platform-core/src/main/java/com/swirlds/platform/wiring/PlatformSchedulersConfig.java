@@ -67,11 +67,14 @@ import java.time.Duration;
  * @param platformPublisher                       configuration for the platform publisher scheduler
  * @param consensusEventStream                    configuration for the consensus event stream scheduler
  * @param roundDurabilityBuffer                   configuration for the round durability buffer scheduler
- * @param statusStateMachine                      configuration for the status state machine scheduler
- * @param platformStatusNexus                     configuration for the status nexus scheduler
  * @param signedStateSentinel                     configuration for the signed state sentinel scheduler
  * @param signedStateSentinelHeartbeatPeriod      the frequency that heartbeats should be sent to the signed state
  *                                                sentinel
+ * @param statusStateMachine                      configuration for the status state machine scheduler
+ * @param platformStatusNexus                     configuration for the status nexus scheduler
+ * @param staleEventDetector                      configuration for the stale event detector scheduler
+ * @param transactionResubmitter                  configuration for the transaction resubmitter scheduler
+ * @param transactionPool                         configuration for the transaction pool scheduler
  * @param gossip                                  configuration for the gossip scheduler
  * @param eventHasher                             configuration for the event hasher scheduler
  * @param postHashCollector                       configuration for the post hash collector scheduler
@@ -132,9 +135,13 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration statusStateMachine,
         @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration platformStatusNexus,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration staleEventDetector,
+        @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration transactionResubmitter,
+        @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration transactionPool,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration gossip,
-        @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(0) UNHANDLED_TASK_METRIC")
+        @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(-1) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventHasher,
-        @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(0) UNHANDLED_TASK_METRIC")
+        @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(-1) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration postHashCollector) {}

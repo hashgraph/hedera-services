@@ -18,7 +18,6 @@ package com.swirlds.platform.wiring;
 
 import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
 
-import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.wiring.model.WiringModel;
@@ -31,6 +30,7 @@ import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateHasher;
 import com.swirlds.platform.state.signed.StateSavingResult;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -52,7 +52,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
-        @NonNull TaskScheduler<StateSignaturePayload> stateSignerScheduler,
+        @NonNull TaskScheduler<ConsensusTransactionImpl> stateSignerScheduler,
         @NonNull TaskScheduler<NoInput> pcesReplayerScheduler,
         @NonNull TaskScheduler<StateAndRound> consensusRoundHandlerScheduler,
         @NonNull TaskScheduler<RunningEventHashOverride> runningHashUpdateScheduler,
