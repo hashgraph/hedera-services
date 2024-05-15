@@ -134,6 +134,11 @@ public final class PlatformBuilder {
      */
     private WiringModel model;
 
+    /**
+     * The source of non-cryptographic randomness for this platform.
+     */
+    private RandomBuilder randomBuilder;
+
     private Consumer<GossipEvent> preconsensusEventConsumer;
     private Consumer<ConsensusSnapshot> snapshotOverrideConsumer;
     private Consumer<GossipEvent> staleEventConsumer;
@@ -390,6 +395,19 @@ public final class PlatformBuilder {
     }
 
     /**
+     * Provide the source of non-cryptographic randomness for this platform.
+     *
+     * @param randomBuilder the source of non-cryptographic randomness
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withRandomBuilder(@NonNull final RandomBuilder randomBuilder) {
+        throwIfAlreadyUsed();
+        this.randomBuilder = Objects.requireNonNull(randomBuilder);
+        return this;
+    }
+
+    /**
      * Build the configuration for the node.
      *
      * @param configurationBuilder used to build configuration
@@ -606,6 +624,10 @@ public final class PlatformBuilder {
                     .build();
         }
 
+        if (randomBuilder == null) {
+            randomBuilder = new RandomBuilder();
+        }
+
         final PlatformBuildingBlocks buildingBlocks = new PlatformBuildingBlocks(
                 platformContext,
                 model,
@@ -619,7 +641,7 @@ public final class PlatformBuilder {
                 preconsensusEventConsumer,
                 snapshotOverrideConsumer,
                 intakeEventCounter,
-                new RandomBuilder(),
+                randomBuilder,
                 new TransactionPoolNexus(platformContext),
                 new AtomicReference<>(),
                 new AtomicReference<>(),

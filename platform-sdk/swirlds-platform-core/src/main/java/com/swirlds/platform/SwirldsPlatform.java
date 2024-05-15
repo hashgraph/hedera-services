@@ -30,7 +30,6 @@ import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RESTART;
 import static com.swirlds.platform.system.SoftwareVersion.NO_VERSION;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -257,7 +256,7 @@ public class SwirldsPlatform implements Platform {
         final SignedStateFileManager signedStateFileManager = new SignedStateFileManager(
                 platformContext,
                 new SignedStateMetrics(platformContext.getMetrics()),
-                Time.getCurrent(),
+                platformContext.getTime(),
                 actualMainClassName,
                 selfId,
                 swirldName);
@@ -707,7 +706,7 @@ public class SwirldsPlatform implements Platform {
         platformWiring
                 .getStatusActionSubmitter()
                 .submitStatusAction(
-                        new DoneReplayingEventsAction(Time.getCurrent().now()));
+                        new DoneReplayingEventsAction(platformContext.getTime().now()));
     }
 
     /**

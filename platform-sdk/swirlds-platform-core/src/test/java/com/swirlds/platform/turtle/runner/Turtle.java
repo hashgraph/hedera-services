@@ -36,11 +36,17 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedGossip;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
+import com.swirlds.platform.util.RandomBuilder;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig_;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Runs a TURTLE network. All nodes run in this JVM, and if configured properly the execution is expected to be
@@ -65,6 +71,8 @@ public class Turtle {
     private final Randotron randotron;
     private final FakeTime time;
 
+    private final ExecutorService threadPool;
+
     /**
      * Constructor.
      *
@@ -79,6 +87,8 @@ public class Turtle {
         } catch (final ConstructableRegistryException e) {
             throw new RuntimeException(e);
         }
+
+        threadPool = Executors.newFixedThreadPool(nodeCount);
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(EventConfig_.USE_OLD_STYLE_INTAKE_QUEUE, false)
@@ -112,6 +122,7 @@ public class Turtle {
             final PlatformBuilder platformBuilder = PlatformBuilder.create(
                             "foo", "bar", new BasicSoftwareVersion(1), TurtleTestingToolState::new, nodeId)
                     .withModel(model)
+                    .withRandomBuilder(new RandomBuilder(randotron.nextLong()))
                     .withPlatformContext(platformContext)
                     .withBootstrapAddressBook(addressBook)
                     .withKeysAndCerts(addressBookBuilder.getPrivateKeys(nodeId));
@@ -132,16 +143,44 @@ public class Turtle {
         }
 
         long tickCount = 0;
+        Instant previousStatusUpdateRealTime = Instant.now();
+        Instant previousStatusUpdateSimulatedTime = time.now();
+
         while (true) {
-            if (tickCount % 1_000_000 == 0) {
-                System.out.println("tick " + tickCount + ": " + time.now());
+            if (tickCount % 1_000 == 0) {
+                final Instant now = Instant.now();
+                final Duration realElapsedTime = Duration.between(previousStatusUpdateRealTime, now);
+                final Duration simulatedElapsedTime = Duration.between(previousStatusUpdateSimulatedTime, time.now());
+                final double temporalVelocity = simulatedElapsedTime.toNanos() / (double) realElapsedTime.toNanos();
+
+                System.out.println("tick %d, temporal velocity = %.2f, simulated time = %s"
+                        .formatted(tickCount, temporalVelocity, time.now()));
+
+                previousStatusUpdateSimulatedTime = time.now();
+                previousStatusUpdateRealTime = now;
             }
             tickCount++;
 
             time.tick(timeStep);
             network.tick(time.now());
+
+            final List<Future<Void>> futures = new ArrayList<>(nodeCount);
             for (final DeterministicWiringModel model : models) {
-                model.tick();
+                final Future<Void> future = threadPool.submit(() -> {
+                    model.tick();
+                    return null;
+                });
+                futures.add(future);
+            }
+
+            for (final Future<Void> future : futures) {
+                try {
+                    future.get();
+                } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (final ExecutionException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
     }
