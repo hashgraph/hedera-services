@@ -4587,7 +4587,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
                                                 .setCallOperationType(CallOperationType.OP_CALL)
                                                 .setGas(978936)
-                                                .setGasUsed(3172)
+                                                .setGasUsed(963748)
                                                 .setOutput(EMPTY)
                                                 /*
                                                    For EVM v0.34 use this code block instead:
@@ -4609,6 +4609,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                                 .encodeCallWithArgs(BigInteger.valueOf(234))
                                                                 .array()))
                                                 .setGas(960576)
+                                                .setGasUsed(960576)
                                                 .setRecipientContract(ContractID.newBuilder()
                                                         .setContractNum(0)
                                                         .build())

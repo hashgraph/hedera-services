@@ -554,8 +554,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                 .then(getTxnRecord("callToSystemAddress")
                         .hasPriority(recordWith()
                                 .status(SUCCESS)
-                                .contractCallResult(
-                                        resultWith().gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))));
+                                .contractCallResult(resultWith().gasUsed(GAS_LIMIT_FOR_CALL))));
     }
 
     @HapiTest
