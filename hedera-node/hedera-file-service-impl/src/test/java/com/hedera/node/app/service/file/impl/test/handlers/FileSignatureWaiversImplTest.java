@@ -16,8 +16,7 @@
 
 package com.hedera.node.app.service.file.impl.test.handlers;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -60,7 +59,8 @@ public class FileSignatureWaiversImplTest {
         when(authorizer.hasPrivilegedAuthorization(payer, HederaFunctionality.FILE_UPDATE, fileUpdateTxn))
                 .thenReturn(SystemPrivilege.AUTHORIZED);
 
-        assertTrue(fileSignatureWaivers.areFileUpdateSignaturesWaived(fileUpdateTxn, payer));
+        assertThat(fileSignatureWaivers.areFileUpdateSignaturesWaived(fileUpdateTxn, payer))
+                .isTrue();
     }
 
     @Test
@@ -69,6 +69,7 @@ public class FileSignatureWaiversImplTest {
         when(authorizer.hasPrivilegedAuthorization(payer, HederaFunctionality.FILE_UPDATE, fileUpdateTxn))
                 .thenReturn(SystemPrivilege.UNAUTHORIZED);
 
-        assertFalse(fileSignatureWaivers.areFileUpdateSignaturesWaived(fileUpdateTxn, payer));
+        assertThat(fileSignatureWaivers.areFileUpdateSignaturesWaived(fileUpdateTxn, payer))
+                .isFalse();
     }
 }
