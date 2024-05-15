@@ -829,6 +829,8 @@ public class TestHelpers {
                 org.apache.tuweni.bytes.Bytes.of(subSelector));
     }
 
+    // Encode given a ByteBuffer and accountId input bytes for a call to a given contract.
+    // Largely, this is used to encode the call to redirectToAccount() proxy contract for testing purposes.
     public static org.apache.tuweni.bytes.Bytes bytesForRedirectAccount(
             final ByteBuffer encodedCall, final AccountID accountID) {
         return bytesForRedirectAccount(encodedCall.array(), asLongZeroAddress(accountID.accountNum()));

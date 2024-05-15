@@ -90,7 +90,7 @@ public interface FeatureFlags {
 
     /**
      *  If true, enable calls to the Hedera Account Service system contract
-     * @return true whether calls to Hedar Account Service system contract are enabled.
+     * @return true whether calls to Hedera Account Service system contract are enabled.
      */
     default boolean isHederaAccountServiceEnabled(@NonNull Configuration config) {
         return false;

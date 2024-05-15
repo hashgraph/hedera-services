@@ -75,7 +75,7 @@ public record ContractsConfig(
                 boolean precompileAtomicCryptoTransferEnabled,
         @ConfigProperty(value = "precompile.hrcFacade.associate.enabled", defaultValue = "true") @NetworkProperty
                 boolean precompileHrcFacadeAssociateEnabled,
-        @ConfigProperty(value = "system_contract.account_service.enabled", defaultValue = "false") @NetworkProperty
+        @ConfigProperty(value = "systemContract.accountService.enabled", defaultValue = "false") @NetworkProperty
                 boolean systemContractAccountServiceEnabled,
         @ConfigProperty(value = "evm.version.dynamic", defaultValue = "false") @NetworkProperty
                 boolean evmVersionDynamic,
