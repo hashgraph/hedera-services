@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.signed;
+package com.swirlds.platform.state.hasher;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.wiring.components.StateAndRound;
@@ -25,7 +25,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * Hashes signed states
  */
 @FunctionalInterface
-public interface SignedStateHasher {
+public interface StateHasher {
     /**
      * Hashes a SignedState.
      *
