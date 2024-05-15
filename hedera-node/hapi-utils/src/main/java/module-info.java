@@ -24,9 +24,9 @@ module com.hedera.node.app.hapi.utils {
     requires transitive javax.inject;
     requires transitive net.i2p.crypto.eddsa;
     requires transitive org.apache.commons.lang3;
-    requires com.hedera.node.app.service.evm;
     requires com.fasterxml.jackson.databind;
     requires com.google.common;
+    requires com.hedera.evm;
     requires com.sun.jna;
     requires com.swirlds.base;
     requires org.apache.commons.codec;

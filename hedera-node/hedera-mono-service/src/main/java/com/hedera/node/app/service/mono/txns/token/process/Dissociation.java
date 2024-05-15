@@ -18,19 +18,18 @@ package com.hedera.node.app.service.mono.txns.token.process;
 
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
 import com.google.common.base.MoreObjects;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.store.TypedTokenStore;
 import com.hedera.node.app.service.mono.store.models.Account;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.models.Token;
 import com.hedera.node.app.service.mono.store.models.TokenRelationship;
-import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
@@ -106,15 +105,14 @@ public class Dissociation {
      *       not own any fungible units or NFTs of the token.
      * </ol>
      *
-     * @param validator the validator use to check for an expired token
      */
-    public void updateModelRelsSubjectTo(final OptionValidator validator) {
+    public void updateModelRelsSubjectTo() {
         Objects.requireNonNull(dissociatingAccountRel);
         final var token = dissociatingAccountRel.getToken();
         if (token.isDeleted() || token.isBelievedToHaveBeenAutoRemoved()) {
             updateModelsForDissociationFromDeletedOrRemovedToken();
         } else {
-            updateModelsForDissociationFromActiveToken(validator);
+            updateModelsForDissociationFromActiveToken();
         }
         dissociatingAccountRel.markAsDestroyed();
         modelsAreUpdated = true;
@@ -132,7 +130,7 @@ public class Dissociation {
         }
     }
 
-    private void updateModelsForDissociationFromActiveToken(final OptionValidator validator) {
+    private void updateModelsForDissociationFromActiveToken() {
         Objects.requireNonNull(dissociatedTokenTreasuryRel);
         final var token = dissociatingAccountRel.getToken();
         final var isAccountTreasuryOfDissociatedToken =
@@ -142,17 +140,11 @@ public class Dissociation {
 
         final var balance = dissociatingAccountRel.getBalance();
         if (balance > 0L) {
-            validateFalse(token.getType() == NON_FUNGIBLE_UNIQUE, ACCOUNT_STILL_OWNS_NFTS);
-
-            final var isTokenExpired = !validator.isAfterConsensusSecond(token.getExpiry());
-            validateTrue(isTokenExpired, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
-
-            /* If the fungible common token is expired, we automatically transfer the
-            dissociating account's balance back to the treasury. */
-            dissociatingAccountRel.setBalance(0L);
-            final var newTreasuryBalance = dissociatedTokenTreasuryRel.getBalance() + balance;
-            dissociatedTokenTreasuryRel.setBalance(newTreasuryBalance);
-            expiredTokenTreasuryReceivedBalance = true;
+            if (token.getType() == NON_FUNGIBLE_UNIQUE) {
+                throw new InvalidTransactionException(ACCOUNT_STILL_OWNS_NFTS);
+            } else {
+                throw new InvalidTransactionException(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+            }
         }
     }
 

@@ -259,13 +259,13 @@ import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_RE
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_REPLACING_TREASURY_AS_CUSTOM_PAYER;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_REPLACING_TREASURY_AS_PAYER;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_REPLACING_WITH_MISSING_TREASURY;
-import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_FREEZE_KEYED_TOKEN;
-import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_KYC_KEYED_TOKEN;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_FREEZE_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_KYC_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_MISSING_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_MISSING_TOKEN_ADMIN_KEY;
-import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_NO_KEYS_AFFECTED;
-import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_SUPPLY_KEYED_TOKEN;
-import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_WIPE_KEYED_TOKEN;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_NO_FIELDS_CHANGED;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_SUPPLY_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_WIPE_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED;
 import static com.hedera.test.factories.scenarios.TokenWipeScenarios.VALID_WIPE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CURRENTLY_UNUSED_ALIAS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT;
@@ -4567,7 +4567,7 @@ public class SigRequirementsTest {
     @Test
     void getsUpdateNoSpecialKeys() throws Throwable {
         // given:
-        setupFor(UPDATE_WITH_NO_KEYS_AFFECTED);
+        setupFor(UPDATE_WITH_NO_FIELDS_CHANGED);
 
         // when:
         var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -4580,7 +4580,7 @@ public class SigRequirementsTest {
     @Test
     void getsUpdateNoSpecialKeysWithCustomPayer() throws Throwable {
         // given:
-        setupFor(UPDATE_WITH_NO_KEYS_AFFECTED);
+        setupFor(UPDATE_WITH_NO_FIELDS_CHANGED);
 
         // when:
         var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
@@ -4593,7 +4593,7 @@ public class SigRequirementsTest {
     @Test
     void getsUpdateWithWipe() throws Throwable {
         // given:
-        setupFor(UPDATE_WITH_WIPE_KEYED_TOKEN);
+        setupFor(UPDATE_WITH_WIPE_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED);
 
         // when:
         var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -4606,7 +4606,7 @@ public class SigRequirementsTest {
     @Test
     void getsUpdateWithWipeWithCustomPayer() throws Throwable {
         // given:
-        setupFor(UPDATE_WITH_WIPE_KEYED_TOKEN);
+        setupFor(UPDATE_WITH_WIPE_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED);
 
         // when:
         var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
@@ -4619,7 +4619,7 @@ public class SigRequirementsTest {
     @Test
     void getsUpdateWithSupply() throws Throwable {
         // given:
-        setupFor(UPDATE_WITH_SUPPLY_KEYED_TOKEN);
+        setupFor(UPDATE_WITH_SUPPLY_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED);
 
         // when:
         var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -4632,7 +4632,7 @@ public class SigRequirementsTest {
     @Test
     void getsUpdateWithSupplyWithCustomPayer() throws Throwable {
         // given:
-        setupFor(UPDATE_WITH_SUPPLY_KEYED_TOKEN);
+        setupFor(UPDATE_WITH_SUPPLY_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED);
 
         // when:
         var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
@@ -4645,7 +4645,7 @@ public class SigRequirementsTest {
     @Test
     void getsUpdateWithKyc() throws Throwable {
         // given:
-        setupFor(UPDATE_WITH_KYC_KEYED_TOKEN);
+        setupFor(UPDATE_WITH_KYC_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED);
 
         // when:
         var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -4658,7 +4658,7 @@ public class SigRequirementsTest {
     @Test
     void getsUpdateWithKycWithCustomPayer() throws Throwable {
         // given:
-        setupFor(UPDATE_WITH_KYC_KEYED_TOKEN);
+        setupFor(UPDATE_WITH_KYC_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED);
 
         // when:
         var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
@@ -4780,7 +4780,7 @@ public class SigRequirementsTest {
     @Test
     void getsUpdateWithFreeze() throws Throwable {
         // given:
-        setupFor(UPDATE_WITH_FREEZE_KEYED_TOKEN);
+        setupFor(UPDATE_WITH_FREEZE_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED);
 
         // when:
         var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -4793,7 +4793,7 @@ public class SigRequirementsTest {
     @Test
     void getsUpdateWithFreezeWithCustomPayer() throws Throwable {
         // given:
-        setupFor(UPDATE_WITH_FREEZE_KEYED_TOKEN);
+        setupFor(UPDATE_WITH_FREEZE_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED);
 
         // when:
         var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);

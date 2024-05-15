@@ -212,7 +212,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 
     @Override
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getContractCallLocal(spec, payment, true);
+        Query query = maybeModified(getContractCallLocal(spec, payment, true), spec);
         Response response =
                 spec.clients().getScSvcStub(targetNodeFor(spec), useTls).contractCallLocalMethod(query);
         return costFrom(response);

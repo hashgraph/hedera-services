@@ -26,7 +26,6 @@ import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_UNDELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -62,7 +61,6 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -74,6 +72,7 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -189,15 +188,15 @@ public final class IngestChecker {
 
             // If the fee offered does not cover the gas cost of the transaction, then
             // we would again end up with uncompensated work
-            final var gasCost = solvencyPreCheck.estimateAdditionalCosts(txBody, CONTRACT_CALL, consensusTime)
-                    - txBody.contractCallOrThrow().amount();
-            validateTruePreCheck(txBody.transactionFee() >= gasCost, INSUFFICIENT_TX_FEE);
+            // final var gasCost = solvencyPreCheck.estimateAdditionalCosts(txBody, CONTRACT_CALL, consensusTime)
+            //         - txBody.contractCallOrThrow().amount();
+            // validateTruePreCheck(txBody.transactionFee() >= gasCost, INSUFFICIENT_TX_FEE);
         } else if (functionality == ETHEREUM_TRANSACTION) {
             final var ethTxData = populateEthTxData(
                     requireNonNull(txBody.ethereumTransactionOrThrow().ethereumData())
                             .toByteArray());
             validateTruePreCheck(nonNull(ethTxData), INVALID_ETHEREUM_TRANSACTION);
-            validateTruePreCheck(requireNonNull(ethTxData.gasLimit()) >= INTRINSIC_GAS_LOWER_BOUND, INSUFFICIENT_GAS);
+            validateTruePreCheck(ethTxData.gasLimit() >= INTRINSIC_GAS_LOWER_BOUND, INSUFFICIENT_GAS);
             // Do not allow sending HBars to Burn Address
             if (ethTxData.value().compareTo(BigInteger.ZERO) > 0) {
                 validateFalsePreCheck(Arrays.equals(ethTxData.to(), new byte[20]), INVALID_SOLIDITY_ADDRESS);

@@ -126,7 +126,7 @@ public class HevmTransactionFactory {
         this.tokenServiceApi = requireNonNull(tokenServiceApi);
         this.expiryValidator = requireNonNull(expiryValidator);
         this.attributeValidator = requireNonNull(attributeValidator);
-        this.ethereumSignatures = ethereumSignatures;
+        this.ethereumSignatures = requireNonNull(ethereumSignatures);
         this.hederaEvmContext = requireNonNull(hederaEvmContext);
     }
 
@@ -202,6 +202,7 @@ public class HevmTransactionFactory {
             @NonNull final AccountID senderId,
             @NonNull final EthTxData ethTxData,
             final long maxGasAllowance) {
+        validateTrue(ethTxData.getAmount() >= 0, CONTRACT_NEGATIVE_VALUE);
         return new HederaEvmTransaction(
                 senderId,
                 relayerId,

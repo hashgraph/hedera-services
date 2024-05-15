@@ -43,7 +43,7 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -96,7 +96,7 @@ class ShadowgraphTest {
     }
 
     private void initShadowgraph(final Random random, final int numEvents, final int numNodes) {
-        addressBook = new RandomAddressBookGenerator(random).setSize(numNodes).build();
+        addressBook = RandomAddressBookBuilder.create(random).withSize(numNodes).build();
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
@@ -104,6 +104,7 @@ class ShadowgraphTest {
         final EventEmitterFactory factory = new EventEmitterFactory(platformContext, random, addressBook);
         emitter = factory.newStandardEmitter();
         shadowgraph = new Shadowgraph(platformContext, mock(AddressBook.class), new NoOpIntakeEventCounter());
+        shadowgraph.updateEventWindow(EventWindow.getGenesisEventWindow(GENERATION_THRESHOLD));
 
         for (int i = 0; i < numEvents; i++) {
             final IndexedEvent event = emitter.emitEvent();
@@ -642,6 +643,7 @@ class ShadowgraphTest {
         r1.close();
 
         shadowgraph.clear();
+        shadowgraph.updateEventWindow(EventWindow.getGenesisEventWindow(GENERATION_THRESHOLD));
 
         assertEquals(0, shadowgraph.getTips().size(), "Shadow graph should not have any tips after being cleared.");
         for (final IndexedEvent generatedEvent : generatedEvents) {
@@ -722,7 +724,7 @@ class ShadowgraphTest {
 
         final Random random = RandomUtils.getRandomPrintSeed();
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(numNodes).build();
+                RandomAddressBookBuilder.create(random).withSize(numNodes).build();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 

@@ -27,11 +27,11 @@ import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.StateSignatureCollectorTester;
+import com.swirlds.platform.state.signed.DefaultStateSignatureCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,13 +39,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for {@link StateSignatureCollector#handlePostconsensusSignatures(List)}
+ * Tests for {@link DefaultStateSignatureCollector#handlePostconsensusSignatures(List)}
  */
 class PostconsensusSignaturesTest extends AbstractStateSignatureCollectorTest {
 
-    private final AddressBook addressBook = new RandomAddressBookGenerator(random)
-            .setSize(4)
-            .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
+    private final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+            .withSize(4)
+            .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
             .build();
 
     /**

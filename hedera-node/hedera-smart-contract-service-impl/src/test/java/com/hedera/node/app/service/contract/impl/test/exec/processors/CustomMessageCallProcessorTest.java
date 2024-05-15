@@ -29,6 +29,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
@@ -68,6 +69,7 @@ class CustomMessageCallProcessorTest {
     private static final long GAS_REQUIREMENT = 2L;
     private static final Bytes INPUT_DATA = Bytes.fromHexString("0x1234");
     private static final Bytes OUTPUT_DATA = Bytes.fromHexString("0x5678");
+    private static final Bytes NOOP_OUTPUT_DATA = Bytes.fromHexString("0x");
     private static final Address NON_EVM_PRECOMPILE_SYSTEM_ADDRESS = Address.fromHexString("0x222");
     private static final Address CODE_ADDRESS = Address.fromHexString("0x111222333");
     private static final Address SENDER_ADDRESS = Address.fromHexString("0x222333444");
@@ -159,10 +161,12 @@ class CustomMessageCallProcessorTest {
         givenHaltableFrame(isHalted);
         givenCallWithCode(NON_EVM_PRECOMPILE_SYSTEM_ADDRESS);
         given(addressChecks.isSystemAccount(NON_EVM_PRECOMPILE_SYSTEM_ADDRESS)).willReturn(true);
+        when(frame.getValue()).thenReturn(Wei.ZERO);
 
         subject.start(frame, operationTracer);
-
-        verifyHalt(ExceptionalHaltReason.PRECOMPILE_ERROR);
+        verify(frame).setOutputData(NOOP_OUTPUT_DATA);
+        verify(frame).setState(MessageFrame.State.COMPLETED_SUCCESS);
+        verify(frame).setExceptionalHaltReason(Optional.empty());
     }
 
     @Test
@@ -171,7 +175,6 @@ class CustomMessageCallProcessorTest {
         givenHaltableFrame(isHalted);
         givenCallWithCode(ADDRESS_6);
         given(addressChecks.isSystemAccount(ADDRESS_6)).willReturn(true);
-        given(registry.get(ADDRESS_6)).willReturn(nativePrecompile);
         given(frame.getValue()).willReturn(Wei.ONE);
 
         subject.start(frame, operationTracer);
