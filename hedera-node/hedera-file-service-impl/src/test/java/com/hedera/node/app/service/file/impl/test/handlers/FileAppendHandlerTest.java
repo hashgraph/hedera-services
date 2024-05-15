@@ -18,12 +18,17 @@ package com.hedera.node.app.service.file.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
@@ -48,6 +53,7 @@ import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -70,7 +76,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class FileAppendTest extends FileTestBase {
+class FileAppendHandlerTest extends FileTestBase {
     private final FileAppendTransactionBody.Builder OP_BUILDER = FileAppendTransactionBody.newBuilder();
 
     @Mock
@@ -113,12 +119,31 @@ class FileAppendTest extends FileTestBase {
     }
 
     @Test
-    void rejectsMissingFile() {
+    void handleRejectsMissingFile() {
         final var txBody = TransactionBody.newBuilder().fileAppend(OP_BUILDER).build();
         when(handleContext.body()).thenReturn(txBody);
 
         // expect:
         assertFailsWith(INVALID_FILE_ID, () -> subject.handle(handleContext));
+    }
+
+    @Test
+    void pureChecksFailWhenMissingFile() {
+        final var txBody = TransactionBody.newBuilder().fileAppend(OP_BUILDER).build();
+        assertThatThrownBy(() -> subject.pureChecks(txBody))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_FILE_ID));
+    }
+
+    @Test
+    void pureChecksPassForValidTxn() {
+        final var txnId = TransactionID.newBuilder().accountID(payerId).build();
+        final var txBody = TransactionBody.newBuilder()
+                .fileAppend(OP_BUILDER.fileID(wellKnownId()))
+                .transactionID(txnId)
+                .build();
+
+        assertThatNoException().isThrownBy(() -> subject.pureChecks(txBody));
     }
 
     @Test
@@ -143,7 +168,7 @@ class FileAppendTest extends FileTestBase {
 
         subject.preHandle(realPreContext);
 
-        assertTrue(realPreContext.requiredNonPayerKeys().size() > 0);
+        assertFalse(realPreContext.requiredNonPayerKeys().isEmpty());
         assertEquals(3, realPreContext.requiredNonPayerKeys().size());
     }
 
@@ -350,6 +375,33 @@ class FileAppendTest extends FileTestBase {
         given(signatureVerification.failed()).willReturn(true);
 
         assertThrows(HandleException.class, () -> subject.handle(handleContext));
+    }
+
+    @Test
+    void calculateFeesHappyPath() {
+        final var txnId = TransactionID.newBuilder()
+                .accountID(payerId)
+                .transactionValidStart(Timestamp.newBuilder().seconds(111111).build())
+                .build();
+        final var txBody = TransactionBody.newBuilder()
+                .fileAppend(OP_BUILDER.fileID(wellKnownId()))
+                .transactionID(txnId)
+                .build();
+
+        final var feeCtx = mock(FeeContext.class);
+        given(feeCtx.body()).willReturn(txBody);
+
+        final var feeCalc = mock(FeeCalculator.class);
+        given(feeCtx.feeCalculator(notNull())).willReturn(feeCalc);
+        given(feeCtx.configuration()).willReturn(testConfig);
+        given(feeCtx.readableStore(ReadableFileStore.class)).willReturn(readableStore);
+        given(feeCalc.addBytesPerTransaction(anyLong())).willReturn(feeCalc);
+        given(feeCalc.addStorageBytesSeconds(anyLong())).willReturn(feeCalc);
+        // The fees wouldn't be free in this scenario, but we don't care about the actual return
+        // value here since we're using a mock calculator
+        given(feeCalc.calculate()).willReturn(Fees.FREE);
+
+        assertNotNull(subject.calculateFees(feeCtx));
     }
 
     private FileID wellKnownId() {

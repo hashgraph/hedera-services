@@ -4,7 +4,6 @@ module com.hedera.evm {
     requires transitive com.google.protobuf;
     requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
-    requires transitive com.swirlds.common;
     requires transitive dagger;
     requires transitive headlong;
     requires transitive javax.inject;
@@ -16,6 +15,7 @@ module com.hedera.evm {
     requires transitive tuweni.units;
     requires com.google.common;
     requires com.sun.jna;
+    requires com.swirlds.common;
     requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;
 
