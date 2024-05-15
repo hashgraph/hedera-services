@@ -23,13 +23,10 @@ import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.safeFractionMultiply;
-import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.asAccountWithAlias;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase.withFixedFee;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase.withFractionalFee;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TransferUtil.asAccountAmount;
-import static com.hedera.node.app.service.token.impl.test.handlers.util.TransferUtil.asNftTransferList;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TransferUtil.asTokenTransferList;
-import static com.hedera.node.app.service.token.impl.test.handlers.util.TransferUtil.asTransferList;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -42,7 +39,6 @@ import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
@@ -52,7 +48,6 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.Custo
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFixedFeeAssessor;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFractionalFeeAssessor;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.math.BigInteger;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,18 +64,11 @@ public class CustomFractionalFeeAssessorTest {
     private CustomFractionalFeeAssessor subject;
     private AssessmentResult result;
 
-    private final long originalUnits = 100;
     private final AccountID payer = asAccount(4001);
-    private final AccountID otherCollector = asAccount(1001);
-    private final AccountID targetCollector = asAccount(2001);
-    private final AccountID funding = asAccount(98);
     private final TokenID tokenWithFractionalFee = asToken(3000);
     private final AccountID minter = asAccount(6000);
     private final AccountID firstReclaimedAcount = asAccount(8000);
     private final AccountID secondReclaimedAcount = asAccount(9000);
-    private final AccountID alias = asAccountWithAlias(Bytes.wrap("01234567890123456789012345678901"));
-    private final TokenID nonFungibleTokenId = asToken(70000);
-
     private final long vanillaTriggerAmount = 5000L;
     private final long firstCreditAmount = 4000L;
     private final long secondCreditAmount = 1000L;
@@ -101,20 +89,10 @@ public class CustomFractionalFeeAssessorTest {
     private final long nonsenseNumerator = Long.MAX_VALUE;
     private final long nonsenseDenominator = 1L;
     private final boolean notNetOfTransfers = false;
-    private final TransferList hbarPayerTransferList = asTransferList(originalUnits, payer);
-    private final TokenTransferList htsPayerTokenTransferList =
-            asTokenTransferList(tokenWithFractionalFee, originalUnits, payer);
-    private final TokenTransferList nftTransferList = asNftTransferList(nonFungibleTokenId, payer, funding, 1);
     private final AccountID firstFractionalFeeCollector = asAccount(6666L);
-    ;
     private final AccountID secondFractionalFeeCollector = asAccount(7777L);
-    ;
     private final AccountID netOfTransfersFeeCollector = asAccount(8888L);
-    ;
-    final FixedFee fixedFee = FixedFee.newBuilder()
-            .denominatingTokenId(tokenWithFractionalFee)
-            .amount(1)
-            .build();
+
     final FractionalFee netOfTransferFractionalFee = FractionalFee.newBuilder()
             .maximumAmount(netOfTransfersMaxAmountOfFractionalFee)
             .minimumAmount(netOfTransfersMinAmountOfFractionalFee)
@@ -175,28 +153,12 @@ public class CustomFractionalFeeAssessorTest {
             withFractionalFee(exemptFractionalFeeWithoutNetOfTransfers, payer, false);
     private final CustomFee nonsenseCustomFee =
             withFractionalFee(nonsenseFractionalFee, secondFractionalFeeCollector, false);
-    private final CustomFeeMeta tokenWithFractionalMeta = new CustomFeeMeta(
-            tokenWithFractionalFee,
-            minter,
-            List.of(
-                    firstFractionalCustomFee,
-                    secondFractionalCustomFee,
-                    exemptFractionalCustomFee,
-                    skippedFixedFee,
-                    fractionalCustomFeeNetOfTransfers),
-            TokenType.FUNGIBLE_COMMON);
     private final TokenTransferList triggerTransferList = asTokenTransferList(
             tokenWithFractionalFee,
             List.of(
                     asAccountAmount(payer, -vanillaTriggerAmount),
                     asAccountAmount(firstReclaimedAcount, +firstCreditAmount),
                     asAccountAmount(secondReclaimedAcount, +secondCreditAmount)));
-    final AccountID aliasedAccountId =
-            AccountID.newBuilder().alias(Bytes.wrap("alias")).build();
-    private final TokenTransferList aliasedVanillaReclaim =
-            asTokenTransferList(tokenWithFractionalFee, secondCreditAmount, aliasedAccountId);
-    private final TokenTransferList wildlyInsufficientChange = asTokenTransferList(tokenWithFractionalFee, -1, payer);
-    private final TokenTransferList someCredit = asTokenTransferList(tokenWithFractionalFee, +1, firstReclaimedAcount);
     private final AccountID[] effPayerAccountNums = new AccountID[] {firstReclaimedAcount, secondReclaimedAcount};
 
     @BeforeEach
