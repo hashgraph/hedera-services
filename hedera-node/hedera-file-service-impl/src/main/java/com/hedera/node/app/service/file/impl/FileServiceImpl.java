@@ -22,6 +22,7 @@ import com.hedera.node.app.service.file.impl.schemas.InitialModFileGenesisSchema
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
+import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.config.ConfigProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,7 +30,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 
-/** Standard implementation of the {@link FileService} {@link com.hedera.node.app.spi.Service}. */
+/** Standard implementation of the {@link FileService} {@link Service}. */
 public final class FileServiceImpl implements FileService {
     public static final String BLOBS_KEY = "FILES";
     public static final String UPGRADE_FILE_KEY = "UPGRADE_FILE";

@@ -917,7 +917,13 @@ public class ContractCallSuite extends HapiSuite {
                                 .logged(),
                         sourcing(() -> contractCall(rateAware, "invalidCall")
                                 .sending(minValueToAccessGatedMethodAtCurrentRate.get())
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                        sourcing(() -> contractCall(
+                                        rateAware,
+                                        "callWithValue",
+                                        BigInteger.valueOf(minValueToAccessGatedMethodAtCurrentRate.get()))
+                                .sending(minValueToAccessGatedMethodAtCurrentRate.get())
+                                .hasKnownStatus(INVALID_FEE_SUBMITTED)));
     }
 
     /**

@@ -26,7 +26,7 @@ import com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSV1Secur
 import com.hedera.services.bdd.suites.contract.precompile.ContractHTSV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractKeysHTSV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSV1SecurityModelSuite;
-import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileV2SecurityModelSuite;
+import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DeleteTokenPrecompileV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DissociatePrecompileV1SecurityModelSuite;
@@ -69,7 +69,7 @@ public class LeakySecurityModelV1Suite extends HapiSuite {
                 new ContractKeysHTSV1SecurityModelSuite(),
                 new ContractMintHTSV1SecurityModelSuite(),
                 new Create2OperationV1SecurityModelSuite(),
-                new CreatePrecompileV2SecurityModelSuite(),
+                new CreatePrecompileV1SecurityModelSuite(),
                 new CryptoTransferHTSV1SecurityModelSuite(),
                 new DeleteTokenPrecompileV1SecurityModelSuite(),
                 new DissociatePrecompileV1SecurityModelSuite(),

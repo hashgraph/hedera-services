@@ -41,6 +41,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdateAliased;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCallWithFunctionAbi;
@@ -97,6 +98,8 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
+import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.BddMethodIsNotATest;
@@ -114,6 +117,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
@@ -175,6 +179,7 @@ public class EthereumSuite extends HapiSuite {
                                 callToTokenAddressViaEip2930TxSuccessfully(),
                                 transferTokensViaEip2930TxSuccessfully(),
                                 accountDeletionResetsTheAliasNonce(),
+                                etx007FungibleTokenCreateWithFeesHappyPath(),
                                 legacyUnprotectedEtxBeforeEIP155WithDefaultChainId()))
                 .toList();
     }
@@ -1172,6 +1177,74 @@ public class EthereumSuite extends HapiSuite {
                         getTxnRecord("legacyBeforeEIP155")
                                 .logged()
                                 .hasPriority(recordWith().status(SUCCESS)))));
+    }
+
+    @HapiTest
+    final HapiSpec etx007FungibleTokenCreateWithFeesHappyPath() {
+        final var createdTokenNum = new AtomicLong();
+        final var feeCollectorAndAutoRenew = "feeCollectorAndAutoRenew";
+        final var contract = "TokenCreateContract";
+        final var EXISTING_TOKEN = "EXISTING_TOKEN";
+        final var firstTxn = "firstCreateTxn";
+        final long DEFAULT_AMOUNT_TO_SEND = 20 * ONE_HBAR;
+        return defaultHapiSpec("etx007FungibleTokenCreateWithFeesHappyPath")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
+                        cryptoCreate(feeCollectorAndAutoRenew)
+                                .keyShape(SigControl.ED25519_ON)
+                                .balance(ONE_MILLION_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract).gas(GAS_LIMIT),
+                        tokenCreate(EXISTING_TOKEN).decimals(5),
+                        tokenAssociate(feeCollectorAndAutoRenew, EXISTING_TOKEN),
+                        cryptoUpdate(feeCollectorAndAutoRenew).key(SECP_256K1_SOURCE_KEY))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        ethereumCall(
+                                        contract,
+                                        "createTokenWithAllCustomFeesAvailable",
+                                        spec.registry()
+                                                .getKey(SECP_256K1_SOURCE_KEY)
+                                                .getECDSASecp256K1()
+                                                .toByteArray(),
+                                        asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(feeCollectorAndAutoRenew))),
+                                        asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(EXISTING_TOKEN))),
+                                        asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(feeCollectorAndAutoRenew))),
+                                        8_000_000L)
+                                .via(firstTxn)
+                                .gasLimit(GAS_LIMIT)
+                                .payingWith(feeCollectorAndAutoRenew)
+                                .sending(DEFAULT_AMOUNT_TO_SEND)
+                                .hasKnownStatus(SUCCESS)
+                                .exposingResultTo(result -> {
+                                    log.info("Explicit create result" + " is {}", result[0]);
+                                    final var res = (Address) result[0];
+                                    createdTokenNum.set(res.value().longValueExact());
+                                }))))
+                .then(
+                        getTxnRecord(firstTxn).andAllChildRecords().logged(),
+                        childRecordsCheck(
+                                firstTxn,
+                                SUCCESS,
+                                TransactionRecordAsserts.recordWith().status(ResponseCodeEnum.SUCCESS)),
+                        withOpContext((spec, ignore) -> {
+                            final var op = getTxnRecord(firstTxn);
+                            allRunFor(spec, op);
+
+                            final var callResult = op.getResponseRecord().getContractCallResult();
+                            final var gasUsed = callResult.getGasUsed();
+                            final var amount = callResult.getAmount();
+                            final var gasLimit = callResult.getGas();
+                            Assertions.assertEquals(DEFAULT_AMOUNT_TO_SEND, amount);
+                            Assertions.assertEquals(GAS_LIMIT, gasLimit);
+                            Assertions.assertTrue(gasUsed > 0L);
+                            Assertions.assertTrue(callResult.hasContractID() && callResult.hasSenderId());
+                        }));
     }
 
     @Override
