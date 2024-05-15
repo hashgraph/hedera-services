@@ -923,7 +923,7 @@ public class ContractCallSuite extends HapiSuite {
                                         "callWithValue",
                                         BigInteger.valueOf(minValueToAccessGatedMethodAtCurrentRate.get()))
                                 .sending(minValueToAccessGatedMethodAtCurrentRate.get())
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+                                .hasKnownStatus(INVALID_FEE_SUBMITTED)));
     }
 
     /**
