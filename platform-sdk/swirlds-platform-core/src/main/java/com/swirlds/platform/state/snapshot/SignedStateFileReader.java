@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.signed;
+package com.swirlds.platform.state.snapshot;
 
 import static com.swirlds.common.io.streams.StreamDebugUtils.deserializeAndDebugOnFailure;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.MAX_MERKLE_NODES_IN_STATE;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.VERSIONED_FILE_BYTE;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.MAX_MERKLE_NODES_IN_STATE;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.VERSIONED_FILE_BYTE;
 import static java.nio.file.Files.exists;
 
 import com.swirlds.common.config.StateCommonConfig;
@@ -29,6 +29,8 @@ import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.signed.SigSet;
+import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;

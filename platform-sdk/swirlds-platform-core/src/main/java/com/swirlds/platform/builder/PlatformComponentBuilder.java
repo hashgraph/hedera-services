@@ -77,6 +77,8 @@ import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
+import com.swirlds.platform.state.snapshot.DefaultStateSnapshotManager;
+import com.swirlds.platform.state.snapshot.StateSnapshotManager;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.status.DefaultStatusStateMachine;
@@ -133,6 +135,7 @@ public class PlatformComponentBuilder {
     private TransactionResubmitter transactionResubmitter;
     private TransactionPool transactionPool;
     private StateHasher stateHasher;
+    private StateSnapshotManager stateSnapshotManager;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -1030,5 +1033,42 @@ public class PlatformComponentBuilder {
             stateHasher = new DefaultStateHasher(blocks.platformContext());
         }
         return stateHasher;
+    }
+
+    /**
+     * Provide a state snapshot manager in place of the platform's default state snapshot manager.
+     *
+     * @param stateSnapshotManager the state file manager to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withStateSnaphsotManager(@NonNull final StateSnapshotManager stateSnapshotManager) {
+        throwIfAlreadyUsed();
+        if (this.stateSnapshotManager != null) {
+            throw new IllegalStateException("State file manager has already been set");
+        }
+        this.stateSnapshotManager = Objects.requireNonNull(stateSnapshotManager);
+        return this;
+    }
+
+    /**
+     * Build the state snapshot manager if it has not yet been built. If one has been provided via
+     * {@link #withStateSnaphsotManager(StateSnapshotManager)}, that manager will be used. If this method is called more
+     * than once, only the first call will build the state snapshot manager. Otherwise, the default manager will be
+     * created and returned.
+     *
+     * @return the state snapshot manager
+     */
+    @NonNull
+    public StateSnapshotManager buildStateSnapshotManager() {
+        if (stateSnapshotManager == null) {
+            final StateConfig stateConfig =
+                    blocks.platformContext().getConfiguration().getConfigData(StateConfig.class);
+            final String actualMainClassName = stateConfig.getMainClassName(blocks.mainClassName());
+
+            stateSnapshotManager = new DefaultStateSnapshotManager(
+                    blocks.platformContext(), actualMainClassName, blocks.selfId(), blocks.swirldName());
+        }
+        return stateSnapshotManager;
     }
 }

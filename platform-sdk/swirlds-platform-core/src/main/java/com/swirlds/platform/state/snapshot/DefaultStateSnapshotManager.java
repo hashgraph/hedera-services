@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.signed;
+package com.swirlds.platform.state.snapshot;
 
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectoryAndLog;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
-import static com.swirlds.platform.state.signed.StateToDiskReason.UNKNOWN;
+import static com.swirlds.platform.state.snapshot.StateToDiskReason.UNKNOWN;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateCommonConfig;
@@ -29,6 +29,8 @@ import com.swirlds.common.utility.Threshold;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.payload.InsufficientSignaturesPayload;
 import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.events.EventConstants;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -42,11 +44,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * This class is responsible for managing the signed state writing pipeline.
+ * This class is responsible for managing the state writing pipeline.
  */
-public class SignedStateFileManager {
+public class DefaultStateSnapshotManager implements StateSnapshotManager {
 
-    private static final Logger logger = LogManager.getLogger(SignedStateFileManager.class);
+    private static final Logger logger = LogManager.getLogger(DefaultStateSnapshotManager.class);
 
     /**
      * The ID of this node.
@@ -66,45 +68,50 @@ public class SignedStateFileManager {
     /**
      * Metrics provider
      */
-    private final SignedStateMetrics metrics;
-    /** the configuration */
+    private final StateSnapshotManagerMetrics metrics;
+
+    /**
+     * the configuration
+     */
     private final Configuration configuration;
-    /** the platform context */
+
+    /**
+     * the platform context
+     */
     private final PlatformContext platformContext;
 
     /**
      * Provides system time
      */
     private final Time time;
-    /** Used to determine the path of a signed state */
+
+    /**
+     * Used to determine the path of a signed state
+     */
     private final SignedStateFilePath signedStateFilePath;
 
     /**
      * Creates a new instance.
      *
-     * @param context       the platform context
-     * @param metrics       metrics provider
-     * @param time          provides time
+     * @param platformContext       the platform context
      * @param mainClassName the main class name of this node
      * @param selfId        the ID of this node
      * @param swirldName    the name of the swirld
      */
-    public SignedStateFileManager(
-            @NonNull final PlatformContext context,
-            @NonNull final SignedStateMetrics metrics,
-            @NonNull final Time time,
+    public DefaultStateSnapshotManager(
+            @NonNull final PlatformContext platformContext,
             @NonNull final String mainClassName,
             @NonNull final NodeId selfId,
             @NonNull final String swirldName) {
 
-        this.metrics = Objects.requireNonNull(metrics, "metrics must not be null");
-        this.time = Objects.requireNonNull(time);
+        this.platformContext = Objects.requireNonNull(platformContext);
+        this.time = platformContext.getTime();
         this.selfId = Objects.requireNonNull(selfId);
         this.mainClassName = Objects.requireNonNull(mainClassName);
         this.swirldName = Objects.requireNonNull(swirldName);
-        this.platformContext = Objects.requireNonNull(context);
-        this.configuration = Objects.requireNonNull(context.getConfiguration());
-        this.signedStateFilePath = new SignedStateFilePath(configuration.getConfigData(StateCommonConfig.class));
+        configuration = platformContext.getConfiguration();
+        signedStateFilePath = new SignedStateFilePath(configuration.getConfigData(StateCommonConfig.class));
+        metrics = new StateSnapshotManagerMetrics(platformContext);
     }
 
     /**
@@ -117,7 +124,9 @@ public class SignedStateFileManager {
      *                            this method call and this method will release the reservation when it is done
      * @return the result of the state saving operation, or null if the state was not saved
      */
-    public @Nullable StateSavingResult saveStateTask(@NonNull final ReservedSignedState reservedSignedState) {
+    @Override
+    @Nullable
+    public StateSavingResult saveStateTask(@NonNull final ReservedSignedState reservedSignedState) {
         final long start = time.nanoTime();
         final StateSavingResult stateSavingResult;
 
@@ -154,6 +163,7 @@ public class SignedStateFileManager {
      * @param request a request to dump a state to disk. it is expected that the state inside the request is reserved
      *                prior to this method call and this method will release the reservation when it is done
      */
+    @Override
     public void dumpStateTask(@NonNull final StateDumpRequest request) {
         // the state is reserved before it is handed to this method, and it is released when we are done
         try (final ReservedSignedState reservedSignedState = request.reservedSignedState()) {
@@ -169,7 +179,8 @@ public class SignedStateFileManager {
         request.finishedCallback().run();
     }
 
-    private static @NonNull StateToDiskReason getReason(@NonNull final SignedState state) {
+    @NonNull
+    private static StateToDiskReason getReason(@NonNull final SignedState state) {
         return Optional.ofNullable(state.getStateToDiskReason()).orElse(UNKNOWN);
     }
 
@@ -212,9 +223,9 @@ public class SignedStateFileManager {
             logger.info(
                     STATE_TO_DISK.getMarker(),
                     """
-                    Freeze state written to disk for round {} was not fully signed. This is expected.
-                    Collected signatures representing {}/{} ({}%) weight.
-                    """,
+                            Freeze state written to disk for round {} was not fully signed. This is expected.
+                            Collected signatures representing {}/{} ({}%) weight.
+                            """,
                     reservedState.getRound(),
                     reservedState.getSigningWeight(),
                     reservedState.getAddressBook().getTotalWeight(),
@@ -226,10 +237,10 @@ public class SignedStateFileManager {
                     EXCEPTION.getMarker(),
                     new InsufficientSignaturesPayload(
                             ("""
-                            State written to disk for round %d did not have enough signatures.
-                            This log adds debug information for #11422.
-                            Pre-check weight: %d/%d (%f%%)  Post-check weight: %d/%d (%f%%)
-                            Pre-check threshold: %s   Post-check threshold: %s"""
+                                    State written to disk for round %d did not have enough signatures.
+                                    This log adds debug information for #11422.
+                                    Pre-check weight: %d/%d (%f%%)  Post-check weight: %d/%d (%f%%)
+                                    Pre-check threshold: %s   Post-check threshold: %s"""
                                     .formatted(
                                             reservedState.getRound(),
                                             signingWeight1,
@@ -249,12 +260,14 @@ public class SignedStateFileManager {
      * @param round the round number for the signed state
      * @return the File that represents the directory of the signed state for the particular round
      */
+    @NonNull
     private Path getSignedStateDir(final long round) {
         return signedStateFilePath.getSignedStateDirectory(mainClassName, selfId, swirldName, round);
     }
 
     /**
      * Purge old states on the disk.
+     *
      * @return the minimum generation non-ancient of the oldest state that was not deleted
      */
     private long deleteOldStates() {

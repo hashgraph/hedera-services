@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.signed;
+package com.swirlds.platform.state.snapshot;
 
 import static com.swirlds.common.io.utility.FileUtils.executeAndRename;
 import static com.swirlds.common.io.utility.FileUtils.writeAndFlush;
@@ -22,11 +22,11 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.writeSettingsUsed;
 import static com.swirlds.platform.event.preconsensus.BestEffortPcesFileCopy.copyPcesFilesRetryOnFailure;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.CURRENT_ADDRESS_BOOK_FILE_NAME;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.FILE_VERSION;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.HASH_INFO_FILE_NAME;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.VERSIONED_FILE_BYTE;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.CURRENT_ADDRESS_BOOK_FILE_NAME;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.FILE_VERSION;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.HASH_INFO_FILE_NAME;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.VERSIONED_FILE_BYTE;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
@@ -36,6 +36,7 @@ import com.swirlds.logging.legacy.payload.StateSavedToDiskPayload;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

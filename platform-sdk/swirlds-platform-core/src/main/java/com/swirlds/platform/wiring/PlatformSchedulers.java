@@ -27,8 +27,8 @@ import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.state.iss.IssHandler;
-import com.swirlds.platform.state.signed.SignedStateFileManager;
-import com.swirlds.platform.state.signed.StateSavingResult;
+import com.swirlds.platform.state.snapshot.StateSavingResult;
+import com.swirlds.platform.state.snapshot.StateSnapshotManager;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.StateAndRound;
@@ -74,7 +74,7 @@ public record PlatformSchedulers(
                         .withType(config.signedStateFileManagerSchedulerType())
                         .withUnhandledTaskCapacity(config.signedStateFileManagerUnhandledCapacity())
                         .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(SignedStateFileManager.class))
+                        .withHyperlink(platformCoreHyperlink(StateSnapshotManager.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("stateSigner")

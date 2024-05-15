@@ -90,11 +90,10 @@ import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
-import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
+import com.swirlds.platform.state.snapshot.StateDumpRequest;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.state.notifications.IssNotification;
@@ -755,7 +754,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * Bind components to the wiring.
      *
      * @param builder                   builds platform components that need to be bound to wires
-     * @param signedStateFileManager    the signed state file manager to bind
      * @param stateSigner               the state signer to bind
      * @param pcesReplayer              the PCES replayer to bind
      * @param stateSignatureCollector   the signed state manager to bind
@@ -775,7 +773,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     public void bind(
             @NonNull final PlatformComponentBuilder builder,
-            @NonNull final SignedStateFileManager signedStateFileManager,
             @NonNull final StateSigner stateSigner,
             @NonNull final PcesReplayer pcesReplayer,
             @NonNull final StateSignatureCollector stateSignatureCollector,
@@ -798,7 +795,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventSignatureValidatorWiring.bind(builder::buildEventSignatureValidator);
         orphanBufferWiring.bind(builder::buildOrphanBuffer);
         consensusEngineWiring.bind(builder::buildConsensusEngine);
-        signedStateFileManagerWiring.bind(signedStateFileManager);
+        signedStateFileManagerWiring.bind(builder.buildStateSnapshotManager()); // TODO convert to lambda
         stateSignerWiring.bind(stateSigner);
         pcesReplayerWiring.bind(pcesReplayer);
         pcesWriterWiring.bind(builder::buildPcesWriter);

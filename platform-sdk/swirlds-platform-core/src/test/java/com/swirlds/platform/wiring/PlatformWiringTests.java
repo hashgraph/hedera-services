@@ -54,10 +54,10 @@ import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
-import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
+import com.swirlds.platform.state.snapshot.StateSnapshotManager;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.status.PlatformStatusNexus;
 import com.swirlds.platform.system.status.StatusStateMachine;
@@ -104,7 +104,8 @@ class PlatformWiringTests {
                 .withStateHasher(mock(StateHasher.class))
                 .withStaleEventDetector(mock(DefaultStaleEventDetector.class))
                 .withTransactionResubmitter(mock(TransactionResubmitter.class))
-                .withTransactionPool(mock(TransactionPool.class));
+                .withTransactionPool(mock(TransactionPool.class))
+                .withStateSnaphsotManager(mock(StateSnapshotManager.class));
 
         // Gossip is a special case, it's not like other components.
         // Currently we just have a facade between gossip and the wiring framework.
@@ -121,7 +122,6 @@ class PlatformWiringTests {
 
         wiring.bind(
                 componentBuilder,
-                mock(SignedStateFileManager.class),
                 mock(StateSigner.class),
                 mock(PcesReplayer.class),
                 mock(StateSignatureCollector.class),

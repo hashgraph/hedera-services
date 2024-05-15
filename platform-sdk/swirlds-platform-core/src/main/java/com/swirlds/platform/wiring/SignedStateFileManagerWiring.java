@@ -24,15 +24,15 @@ import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SignedStateFileManager;
-import com.swirlds.platform.state.signed.StateDumpRequest;
-import com.swirlds.platform.state.signed.StateSavingResult;
+import com.swirlds.platform.state.snapshot.StateDumpRequest;
+import com.swirlds.platform.state.snapshot.StateSavingResult;
+import com.swirlds.platform.state.snapshot.StateSnapshotManager;
 import com.swirlds.platform.system.status.actions.PlatformStatusAction;
 import com.swirlds.platform.system.status.actions.StateWrittenToDiskAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * The wiring for the {@link SignedStateFileManager}
+ * The wiring for the {@link StateSnapshotManager}
  *
  * @param saveStateToDisk                         the input wire for saving the state to disk
  * @param saveToDiskFilter                        the input wire that filters out states that should not be saved
@@ -98,13 +98,12 @@ public record SignedStateFileManagerWiring(
     }
 
     /**
-     * Bind the wires to the {@link SignedStateFileManager}
+     * Bind the wires to the {@link StateSnapshotManager}
      *
-     * @param signedStateFileManager the signed state file manager
+     * @param stateSnapshotManager the signed state file manager
      */
-    public void bind(@NonNull final SignedStateFileManager signedStateFileManager) {
-        saveStateToDisk.bind(signedStateFileManager::saveStateTask);
-        ((BindableInputWire<StateDumpRequest, Void>) dumpStateToDisk)
-                .bindConsumer(signedStateFileManager::dumpStateTask);
+    public void bind(@NonNull final StateSnapshotManager stateSnapshotManager) {
+        saveStateToDisk.bind(stateSnapshotManager::saveStateTask);
+        ((BindableInputWire<StateDumpRequest, Void>) dumpStateToDisk).bindConsumer(stateSnapshotManager::dumpStateTask);
     }
 }
