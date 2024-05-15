@@ -18,7 +18,6 @@ import com.adarshr.gradle.testlogger.theme.ThemeType
 import com.autonomousapps.AbstractExtension
 import com.autonomousapps.DependencyAnalysisSubExtension
 import com.hedera.gradle.services.TaskLockService
-import com.hedera.gradle.utils.Utils.testLogger
 import com.hedera.gradle.utils.Utils.versionTxt
 
 plugins {
@@ -239,7 +238,6 @@ testing {
                     group = "build"
                     shouldRunAfter(tasks.test)
                     maxHeapSize = "8g"
-                    addTestListener(testLogger())
                 }
             }
         }
