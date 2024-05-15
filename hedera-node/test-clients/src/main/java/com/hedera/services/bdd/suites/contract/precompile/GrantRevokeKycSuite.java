@@ -16,8 +16,10 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
@@ -27,10 +29,14 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -44,9 +50,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -101,7 +111,10 @@ public class GrantRevokeKycSuite extends HapiSuite {
     }
 
     List<HapiSpec> positiveSpecs() {
-        return List.of(grantRevokeKycSpecWithAliasLocalCall());
+        return List.of(
+                grantRevokeKycSpecWithAliasLocalCall(),
+                createFungibleTokenKycKeyFromHollowAccountAlias(),
+                createNFTTokenKycKeyFromHollowAccountAlias());
     }
 
     @HapiTest
@@ -339,5 +352,140 @@ public class GrantRevokeKycSuite extends HapiSuite {
                         //                                                                .withStatus(INVALID_TOKEN_ID)
                         //                                                                .withIsFrozen(false)))))))
                         );
+    }
+
+    @HapiTest
+    final HapiSpec createFungibleTokenKycKeyFromHollowAccountAlias() {
+        return defaultHapiSpec("CreateFungibleTokenKycKeyFromHollowAccountAlias")
+                .given(
+                        // Create an ECDSA key
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+                        uploadInitCode(GRANT_REVOKE_KYC_CONTRACT),
+                        contractCreate(GRANT_REVOKE_KYC_CONTRACT),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry()
+                            .getKey(SECP_256K1_SOURCE_KEY)
+                            .getECDSASecp256K1()
+                            .toByteArray();
+                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                    spec.registry()
+                            .saveAccountAlias(
+                                    SECP_256K1_SOURCE_KEY,
+                                    AccountID.newBuilder().setAlias(evmAddress).build());
+
+                    allRunFor(
+                            spec,
+                            // Transfer money to the alias --> creates HOLLOW ACCOUNT
+                            cryptoTransfer(
+                                    movingHbar(ONE_HUNDRED_HBARS).distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
+                            // Verify that the account is created and is hollow
+                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                    .has(accountWith().hasEmptyKey()),
+                            // Create a token with the ECDSA alias key as KYC key
+                            tokenCreate(VANILLA_TOKEN)
+                                    .tokenType(FUNGIBLE_COMMON)
+                                    .kycKey(SECP_256K1_SOURCE_KEY)
+                                    .initialSupply(100L)
+                                    .treasury(TOKEN_TREASURY),
+                            // Associate token to the completed account
+                            tokenAssociate(ACCOUNT, VANILLA_TOKEN));
+                }))
+                .then(withOpContext((spec, opLog) -> {
+                    allRunFor(
+                            spec,
+                            grantTokenKyc(VANILLA_TOKEN, ACCOUNT)
+                                    .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
+                                    .payingWith(ACCOUNT),
+                            contractCall(
+                                            GRANT_REVOKE_KYC_CONTRACT,
+                                            IS_KYC_GRANTED,
+                                            asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(VANILLA_TOKEN))),
+                                            asHeadlongAddress(
+                                                    asAddress(spec.registry().getAccountID(ACCOUNT))))
+                                    .via("isKycGrantedTx"),
+                            childRecordsCheck(
+                                    "isKycGrantedTx",
+                                    SUCCESS,
+                                    recordWith()
+                                            .status(SUCCESS)
+                                            .contractCallResult(resultWith()
+                                                    .contractCallResult(htsPrecompileResult()
+                                                            .forFunction(FunctionType.HAPI_IS_KYC)
+                                                            .withIsKyc(true)
+                                                            .withStatus(SUCCESS)))));
+                }));
+    }
+
+    @HapiTest
+    final HapiSpec createNFTTokenKycKeyFromHollowAccountAlias() {
+        return defaultHapiSpec("CreateNFTTokenKycKeyFromHollowAccountAlias")
+                .given(
+                        // Create an ECDSA key
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+                        uploadInitCode(GRANT_REVOKE_KYC_CONTRACT),
+                        contractCreate(GRANT_REVOKE_KYC_CONTRACT),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry()
+                            .getKey(SECP_256K1_SOURCE_KEY)
+                            .getECDSASecp256K1()
+                            .toByteArray();
+                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                    spec.registry()
+                            .saveAccountAlias(
+                                    SECP_256K1_SOURCE_KEY,
+                                    AccountID.newBuilder().setAlias(evmAddress).build());
+
+                    allRunFor(
+                            spec,
+                            // Transfer money to the alias --> creates HOLLOW ACCOUNT
+                            cryptoTransfer(
+                                    movingHbar(ONE_HUNDRED_HBARS).distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
+                            // Verify that the account is created and is hollow
+                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                    .has(accountWith().hasEmptyKey()),
+                            // Create a token with the ECDSA alias key as KYC key
+                            tokenCreate(VANILLA_TOKEN)
+                                    .tokenType(NON_FUNGIBLE_UNIQUE)
+                                    .kycKey(SECP_256K1_SOURCE_KEY)
+                                    .supplyKey(SECP_256K1_SOURCE_KEY)
+                                    .initialSupply(0L)
+                                    .treasury(TOKEN_TREASURY),
+                            // Mint the NFT
+                            mintToken(VANILLA_TOKEN, List.of(ByteString.copyFromUtf8("metadata1")))
+                                    .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
+                                    .payingWith(ACCOUNT),
+                            // Associate token to the completed account
+                            tokenAssociate(ACCOUNT, VANILLA_TOKEN));
+                }))
+                .then(withOpContext((spec, opLog) -> {
+                    allRunFor(
+                            spec,
+                            grantTokenKyc(VANILLA_TOKEN, ACCOUNT)
+                                    .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
+                                    .payingWith(ACCOUNT),
+                            contractCall(
+                                            GRANT_REVOKE_KYC_CONTRACT,
+                                            IS_KYC_GRANTED,
+                                            asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(VANILLA_TOKEN))),
+                                            asHeadlongAddress(
+                                                    asAddress(spec.registry().getAccountID(ACCOUNT))))
+                                    .via("isKycGrantedTx"),
+                            childRecordsCheck(
+                                    "isKycGrantedTx",
+                                    SUCCESS,
+                                    recordWith()
+                                            .status(SUCCESS)
+                                            .contractCallResult(resultWith()
+                                                    .contractCallResult(htsPrecompileResult()
+                                                            .forFunction(FunctionType.HAPI_IS_KYC)
+                                                            .withIsKyc(true)
+                                                            .withStatus(SUCCESS)))));
+                }));
     }
 }
