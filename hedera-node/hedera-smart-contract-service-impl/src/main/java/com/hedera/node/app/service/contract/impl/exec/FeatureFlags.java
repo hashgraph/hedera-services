@@ -87,4 +87,12 @@ public interface FeatureFlags {
     default boolean isChargeGasOnPreEvmException(@NonNull Configuration config) {
         return false;
     }
+
+    /**
+     *  If true, enable calls to the Hedera Account Service system contract
+     * @return true whether calls to Hedar Account Service system contract are enabled.
+     */
+    default boolean isHederaAccountServiceEnabled(@NonNull Configuration config) {
+        return false;
+    }
 }

@@ -62,6 +62,7 @@ import dagger.multibindings.IntoSet;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Set;
+import javax.inject.Named;
 import javax.inject.Singleton;
 
 /**
@@ -71,6 +72,7 @@ import javax.inject.Singleton;
 public interface HtsTranslatorsModule {
     @Provides
     @Singleton
+    @Named("HtsTranslators")
     static List<CallTranslator> provideCallAttemptTranslators(@NonNull final Set<CallTranslator> translators) {
         return List.copyOf(translators);
     }
