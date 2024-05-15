@@ -22,33 +22,14 @@ plugins {
     id("com.hedera.hashgraph.jpms-module-dependencies")
 }
 
-// Project paths to ignore, keep in sync with 'codecov.yml' and the config at
-// https://app.codacy.com/gh/hashgraph/hedera-services/settings/ignoreFiles
-val ignore =
-    listOf(
-        "example-apps",
-        "hapi",
-        "hedera-node/cli-clients",
-        "hedera-node/test-clients",
-        "platform-sdk/platform-apps",
-    )
-
 dependencies {
     rootProject.subprojects
         .filter { prj -> prj != project }
-        .filter { prj ->
-            ignore.none {
-                prj.projectDir.relativeTo(rootProject.layout.projectDirectory.asFile).startsWith(it)
-            }
-        }
         .forEach {
             if (it.name == "hedera-dependency-versions") {
                 jacocoAggregation(platform(project(it.path)))
             } else {
-                jacocoAggregation(project(it.path)) {
-                    // exclude generated protobuf code from coverage statistics
-                    exclude(group = "com.hedera.hashgraph", module = "hapi")
-                }
+                jacocoAggregation(project(it.path))
             }
         }
 }
