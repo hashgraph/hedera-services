@@ -25,8 +25,8 @@ import com.swirlds.common.wiring.model.diagram.ModelGroup;
 import com.swirlds.common.wiring.model.diagram.ModelManualLink;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.builder.ApplicationCallbacks;
 import com.swirlds.platform.config.DefaultConfiguration;
-import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.util.VirtualTerminal;
 import com.swirlds.platform.wiring.PlatformWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -114,9 +114,9 @@ public final class DiagramCommand extends AbstractCommand {
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
         final PlatformContext platformContext = PlatformContext.create(configuration);
 
-        final PlatformWiring platformWiring = new PlatformWiring(platformContext, true, true);
+        final ApplicationCallbacks callbacks = new ApplicationCallbacks(x -> {}, x -> {}, x -> {});
 
-        platformWiring.wireExternalComponents(new TransactionPool(platformContext));
+        final PlatformWiring platformWiring = new PlatformWiring(platformContext, callbacks);
 
         final String diagramString = platformWiring
                 .getModel()

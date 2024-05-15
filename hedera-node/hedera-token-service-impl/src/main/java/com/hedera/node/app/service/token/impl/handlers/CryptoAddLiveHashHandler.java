@@ -40,6 +40,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoAddLiveHashHandler implements TransactionHandler {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public CryptoAddLiveHashHandler() {
         // Exists for injection

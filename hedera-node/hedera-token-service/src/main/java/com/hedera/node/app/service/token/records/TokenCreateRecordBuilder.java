@@ -37,6 +37,10 @@ public interface TokenCreateRecordBuilder extends TokenBaseRecordBuilder {
     @NonNull
     TokenCreateRecordBuilder tokenID(@NonNull TokenID tokenID);
 
+    /**
+     * Gets the token ID of the token created
+     * @return the token ID of the token created
+     */
     TokenID tokenID();
 
     /**

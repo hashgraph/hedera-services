@@ -23,10 +23,10 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -79,6 +79,7 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
      * Returns the {@link Token} with the given number using {@link WritableKVState#getForModify}.
      * If no such token exists, returns {@code Optional.empty()}
      * @param tokenId - the id of the token to be retrieved.
+     * @return the token with the given tokenId, or {@code Optional.empty()} if no such token exists.
      */
     @NonNull
     public Optional<Token> getForModify(final TokenID tokenId) {
@@ -117,6 +118,10 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
         return tokenState.getOriginalValue(tokenId);
     }
 
+    /**
+     * Checks if the given tokenId is not the default tokenId. If it is, throws an {@link IllegalArgumentException}.
+     * @param tokenId The tokenId to check.
+     */
     public static void requireNotDefault(@NonNull final TokenID tokenId) {
         if (tokenId.equals(TokenID.DEFAULT)) {
             throw new IllegalArgumentException("Token ID cannot be default");

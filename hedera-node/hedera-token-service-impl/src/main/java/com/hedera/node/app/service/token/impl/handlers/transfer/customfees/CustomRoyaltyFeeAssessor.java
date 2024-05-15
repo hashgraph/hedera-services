@@ -47,6 +47,10 @@ public class CustomRoyaltyFeeAssessor {
 
     private final CustomFixedFeeAssessor fixedFeeAssessor;
 
+    /**
+     * Constructs a {@link CustomRoyaltyFeeAssessor} instance.
+     * @param fixedFeeAssessor the fixed fee assessor
+     */
     @Inject
     public CustomRoyaltyFeeAssessor(final CustomFixedFeeAssessor fixedFeeAssessor) {
         this.fixedFeeAssessor = fixedFeeAssessor;
@@ -103,7 +107,8 @@ public class CustomRoyaltyFeeAssessor {
             }
         }
         // We don't want to charge the fallback fee for each nft transfer, if the receiver has already
-        // paid it for this token
+        // paid it for this token. This should be added only once per token transfer, so this is
+        // added here.
         if (exchangedValue.isEmpty()) {
             // Receiver pays fallback fees
             result.addToRoyaltiesPaid(Pair.of(receiver, tokenId));
