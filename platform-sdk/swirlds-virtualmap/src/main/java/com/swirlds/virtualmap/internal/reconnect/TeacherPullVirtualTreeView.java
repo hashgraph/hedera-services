@@ -131,9 +131,6 @@ public class TeacherPullVirtualTreeView<K extends VirtualKey, V extends VirtualV
             final Map<Integer, TeacherTreeView<?>> views,
             final Consumer<Integer> completeListener,
             final Consumer<Exception> exceptionListener) {
-        //        final TeacherPullVirtualTreeReceiveTask teacherReceiveTask = new TeacherPullVirtualTreeReceiveTask(
-        //                viewId, time, reconnectConfig, workGroup, in, out, this, completeListener);
-        //        teacherReceiveTask.exec();
         final AtomicInteger teacherTasksRunning =
                 teachingSynchronizer.computeViewMetadata("TasksRunning", new AtomicInteger(0));
         final Set<Integer> viewsInProgress =
@@ -142,7 +139,8 @@ public class TeacherPullVirtualTreeView<K extends VirtualKey, V extends VirtualV
         final AtomicBoolean pullTeacherTasksStarted =
                 teachingSynchronizer.computeViewMetadata("POOL", new AtomicBoolean(false));
         if (pullTeacherTasksStarted.compareAndSet(false, true)) {
-            for (int i = 0; i < 16; i++) {
+            // FUTURE work: pool size config
+            for (int i = 0; i < 32; i++) {
                 teacherTasksRunning.incrementAndGet();
                 final TeacherPullVirtualTreeReceiveTask teacherReceiveTask = new TeacherPullVirtualTreeReceiveTask(
                         reconnectConfig,
