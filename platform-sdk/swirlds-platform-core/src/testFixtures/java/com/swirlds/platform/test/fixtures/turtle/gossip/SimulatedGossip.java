@@ -73,12 +73,7 @@ public class SimulatedGossip implements Gossip {
             @NonNull final BindableInputWire<NoInput, Void> clearInput) {
 
         this.eventOutput = Objects.requireNonNull(eventOutput);
-        eventInput.bindConsumer(event -> {
-            if (intakeEventCounter != null) {
-                intakeEventCounter.eventEnteredIntakePipeline(event.getSenderId());
-            }
-            network.submitEvent(selfId, event);
-        });
+        eventInput.bindConsumer(event -> network.submitEvent(selfId, event));
 
         eventWindowInput.bindConsumer(ignored -> {});
         startInput.bindConsumer(ignored -> {});
@@ -92,6 +87,9 @@ public class SimulatedGossip implements Gossip {
      * @param event the event that was received
      */
     void receiveEvent(@NonNull final GossipEvent event) {
+        if (intakeEventCounter != null) {
+            intakeEventCounter.eventEnteredIntakePipeline(event.getSenderId());
+        }
         eventOutput.forward(event);
     }
 }

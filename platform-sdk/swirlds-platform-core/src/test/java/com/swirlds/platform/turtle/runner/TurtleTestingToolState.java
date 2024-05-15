@@ -20,6 +20,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.swirlds.common.utility.NonCryptographicHashing;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldState;
@@ -71,7 +72,11 @@ public class TurtleTestingToolState extends PartialMerkleLeaf implements SwirldS
      */
     @Override
     public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformState platformState) {
-        // TODO
+        state = NonCryptographicHashing.hash64(
+                state,
+                round.getRoundNum(),
+                round.getConsensusTimestamp().getNano(),
+                round.getConsensusTimestamp().getEpochSecond());
     }
 
     /**

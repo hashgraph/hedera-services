@@ -240,7 +240,7 @@ public class SwirldsPlatform implements Platform {
 
         currentAddressBook = initialState.getAddressBook();
 
-        platformWiring = new PlatformWiring(platformContext, blocks.applicationCallbacks());
+        platformWiring = new PlatformWiring(platformContext, blocks.model(), blocks.applicationCallbacks());
 
         final Metrics metrics = platformContext.getMetrics();
 

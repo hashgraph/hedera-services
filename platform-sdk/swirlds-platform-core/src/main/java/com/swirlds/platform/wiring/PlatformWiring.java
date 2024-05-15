@@ -20,7 +20,6 @@ import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformC
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration.NO_OP_CONFIGURATION;
 import static com.swirlds.common.wiring.wires.SolderType.INJECT;
 import static com.swirlds.common.wiring.wires.SolderType.OFFER;
-import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.event.stale.StaleEventDetectorOutput.SELF_EVENT;
 import static com.swirlds.platform.event.stale.StaleEventDetectorOutput.STALE_SELF_EVENT;
 
@@ -35,7 +34,6 @@ import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.transformers.RoutableData;
@@ -118,7 +116,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ForkJoinPool;
 import java.util.function.LongSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -187,25 +184,18 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * Constructor.
      *
      * @param platformContext      the platform context
+     * @param model                the wiring model
      * @param applicationCallbacks the application callbacks (some wires are only created if the application wants a
      *                             callback for something)
      */
     public PlatformWiring(
-            @NonNull final PlatformContext platformContext, @NonNull final ApplicationCallbacks applicationCallbacks) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final WiringModel model,
+            @NonNull final ApplicationCallbacks applicationCallbacks) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
-
+        this.model = Objects.requireNonNull(model);
         config = platformContext.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
-
-        final int coreCount = Runtime.getRuntime().availableProcessors();
-        final int parallelism =
-                (int) Math.max(1, config.defaultPoolMultiplier() * coreCount + config.defaultPoolConstant());
-        final ForkJoinPool defaultPool = platformContext.getExecutorFactory().createForkJoinPool(parallelism);
-        logger.info(STARTUP.getMarker(), "Default platform pool parallelism: {}", parallelism);
-
-        model = WiringModelBuilder.create(platformContext)
-                .withDefaultPool(defaultPool)
-                .build();
 
         // This counter spans both the event hasher and the post hash collector. This is a workaround for the current
         // inability of concurrent schedulers to handle backpressure from an immediately subsequent scheduler.

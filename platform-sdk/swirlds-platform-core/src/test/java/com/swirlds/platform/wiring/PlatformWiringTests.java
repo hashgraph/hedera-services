@@ -21,6 +21,8 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.builder.ApplicationCallbacks;
 import com.swirlds.platform.builder.PlatformBuildingBlocks;
@@ -77,7 +79,9 @@ class PlatformWiringTests {
 
         final ApplicationCallbacks applicationCallbacks = new ApplicationCallbacks(x -> {}, x -> {}, x -> {});
 
-        final PlatformWiring wiring = new PlatformWiring(platformContext, applicationCallbacks);
+        final WiringModel model = WiringModelBuilder.create(platformContext).build();
+
+        final PlatformWiring wiring = new PlatformWiring(platformContext, model, applicationCallbacks);
 
         final PlatformComponentBuilder componentBuilder =
                 new PlatformComponentBuilder(mock(PlatformBuildingBlocks.class));
@@ -110,7 +114,7 @@ class PlatformWiringTests {
         // In the future when gossip is refactored to operate within the wiring
         // framework like other components, such things will not be needed.
         componentBuilder.withGossip(
-                (model, eventInput, eventWindowInput, eventOutput, startInput, stopInput, clearInput) -> {
+                (wiringModel, eventInput, eventWindowInput, eventOutput, startInput, stopInput, clearInput) -> {
                     eventInput.bindConsumer(event -> {});
                     eventWindowInput.bindConsumer(eventWindow -> {});
                     startInput.bindConsumer(noInput -> {});

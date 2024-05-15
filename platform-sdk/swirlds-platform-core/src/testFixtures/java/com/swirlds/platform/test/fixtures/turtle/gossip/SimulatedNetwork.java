@@ -168,12 +168,12 @@ public class SimulatedNetwork {
                 for (final Map.Entry<NodeId, PriorityQueue<EventInTransit>> receiverEntry :
                         eventsInTransit.entrySet()) {
                     final NodeId receiver = receiverEntry.getKey();
-                    final PriorityQueue<EventInTransit> receiverEvents = receiverEntry.getValue();
-
                     if (sender.equals(receiver)) {
                         // Don't gossip to ourselves
                         continue;
                     }
+
+                    final PriorityQueue<EventInTransit> receiverEvents = receiverEntry.getValue();
 
                     final Instant deliveryTime = now.plusNanos(
                             (long) (averageDelayNanos + random.nextGaussian() * standardDeviationDelayNanos));

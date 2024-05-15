@@ -19,10 +19,10 @@ package com.swirlds.platform.turtle.runner;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
-class TurtleTestRunnerTest {
+class TurtleTests {
 
     @Test
     void turtleTest() {
-        new TurtleTestRunner(4, Duration.ofMillis(10));
+        new Turtle(4, Duration.ofMillis(10));
     }
 }

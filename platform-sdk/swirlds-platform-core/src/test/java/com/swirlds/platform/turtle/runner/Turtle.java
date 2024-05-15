@@ -39,10 +39,12 @@ import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig_;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
-import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Runs a TURTLE multi-node network test.
+ * Runs a TURTLE network. All nodes run in this JVM, and if configured properly the execution is expected to be
+ * deterministic.
  * <pre>
  *    _________________
  *  /   Testing        \
@@ -56,7 +58,7 @@ import java.time.Instant;
  *  """        """ """
  * </pre>
  */
-public class TurtleTestRunner {
+public class Turtle {
 
     // TODO we need a builder
 
@@ -69,7 +71,7 @@ public class TurtleTestRunner {
      * @param nodeCount the number of nodes to run
      * @param timeStep  the time step to use
      */
-    public TurtleTestRunner(final int nodeCount, @NonNull final Duration timeStep) {
+    public Turtle(final int nodeCount, @NonNull final Duration timeStep) {
         randotron = Randotron.create();
 
         try {
@@ -84,7 +86,7 @@ public class TurtleTestRunner {
                 .withValue(PlatformSchedulersConfig_.RUNNING_EVENT_HASHER, "NO_OP")
                 .getOrCreateConfig();
 
-        time = new FakeTime(Instant.now(), Duration.ZERO);
+        time = new FakeTime(randotron.nextInstant(), Duration.ZERO);
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withTime(time)
                 .withConfiguration(configuration)
@@ -94,16 +96,22 @@ public class TurtleTestRunner {
                 RandomAddressBookBuilder.create(randotron).withSize(nodeCount).withRealKeysEnabled(true);
         final AddressBook addressBook = addressBookBuilder.build();
 
-        final DeterministicWiringModel model = WiringModelBuilder.create(platformContext)
-                .withDeterministicModeEnabled(true)
-                .build();
-
         final SimulatedNetwork network =
                 new SimulatedNetwork(randotron, addressBook, Duration.ofMillis(200), Duration.ofMillis(10));
 
+        final List<Platform> platforms = new ArrayList<>(nodeCount);
+        final List<DeterministicWiringModel> models = new ArrayList<>(nodeCount);
+
         for (final NodeId nodeId : addressBook.getNodeIdSet()) {
+
+            final DeterministicWiringModel model = WiringModelBuilder.create(platformContext)
+                    .withDeterministicModeEnabled(true)
+                    .build();
+            models.add(model);
+
             final PlatformBuilder platformBuilder = PlatformBuilder.create(
                             "foo", "bar", new BasicSoftwareVersion(1), TurtleTestingToolState::new, nodeId)
+                    .withModel(model)
                     .withPlatformContext(platformContext)
                     .withBootstrapAddressBook(addressBook)
                     .withKeysAndCerts(addressBookBuilder.getPrivateKeys(nodeId));
@@ -116,21 +124,25 @@ public class TurtleTestRunner {
 
             platformComponentBuilder.withGossip(network.getGossipInstance(nodeId));
 
-            final Platform platform = platformComponentBuilder.build();
+            platforms.add(platformComponentBuilder.build());
+        }
+
+        for (final Platform platform : platforms) {
             platform.start();
         }
 
-        model.start();
-
         long tickCount = 0;
         while (true) {
-            if (tickCount % 1000 == 0) {
-                System.out.println("tick " + tickCount++);
+            if (tickCount % 1_000_000 == 0) {
+                System.out.println("tick " + tickCount + ": " + time.now());
             }
+            tickCount++;
 
             time.tick(timeStep);
             network.tick(time.now());
-            model.tick();
+            for (final DeterministicWiringModel model : models) {
+                model.tick();
+            }
         }
     }
 }
