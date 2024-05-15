@@ -29,6 +29,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
+import com.swirlds.platform.config.BasicConfig_;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
@@ -88,12 +89,14 @@ public class Turtle {
             throw new RuntimeException(e);
         }
 
-        threadPool = Executors.newFixedThreadPool(nodeCount);
+        threadPool = Executors.newFixedThreadPool(
+                Math.min(nodeCount, Runtime.getRuntime().availableProcessors()));
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(EventConfig_.USE_OLD_STYLE_INTAKE_QUEUE, false)
                 .withValue(PlatformSchedulersConfig_.CONSENSUS_EVENT_STREAM, "NO_OP")
                 .withValue(PlatformSchedulersConfig_.RUNNING_EVENT_HASHER, "NO_OP")
+                .withValue(BasicConfig_.JVM_PAUSE_DETECTOR_SLEEP_MS, "0")
                 .getOrCreateConfig();
 
         time = new FakeTime(randotron.nextInstant(), Duration.ZERO);
@@ -147,7 +150,7 @@ public class Turtle {
         Instant previousStatusUpdateSimulatedTime = time.now();
 
         while (true) {
-            if (tickCount % 1_000 == 0) {
+            if (tickCount % 1000 == 0) {
                 final Instant now = Instant.now();
                 final Duration realElapsedTime = Duration.between(previousStatusUpdateRealTime, now);
                 final Duration simulatedElapsedTime = Duration.between(previousStatusUpdateSimulatedTime, time.now());
