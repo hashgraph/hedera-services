@@ -18,6 +18,7 @@ package com.swirlds.platform.event;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 
+import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.io.SelfSerializable;
@@ -78,6 +79,9 @@ public class GossipEvent implements Event, SelfSerializable {
      */
     private NodeId senderId;
 
+    /** The consensus data for this event */
+    private EventConsensusData consensusData;
+
     /**
      * This latch counts down when prehandle has been called on all application transactions contained in this event.
      */
@@ -103,6 +107,7 @@ public class GossipEvent implements Event, SelfSerializable {
         this.signature = signature;
         this.timeReceived = Instant.now();
         this.senderId = null;
+        this.consensusData = null;
     }
 
     /**
@@ -246,6 +251,24 @@ public class GossipEvent implements Event, SelfSerializable {
      */
     public void setSenderId(@NonNull final NodeId senderId) {
         this.senderId = senderId;
+    }
+
+    /**
+     * @return this event's consensus data, this will be null if the event has not reached consensus
+     */
+    @Nullable
+    public EventConsensusData getConsensusData() {
+        return consensusData;
+    }
+
+    /**
+     * Set the consensus data for this event
+     *
+     * @param consensusData the consensus data for this event
+     */
+    public void setConsensusData(@NonNull final EventConsensusData consensusData) {
+        Objects.requireNonNull(consensusData, "consensusData");
+        this.consensusData = consensusData;
     }
 
     /**
