@@ -25,6 +25,7 @@ plugins {
 dependencies {
     rootProject.subprojects
         .filter { prj -> prj != project }
+        .filter { prj -> prj.name != "test-clients" }
         .forEach {
             if (it.name == "hedera-dependency-versions") {
                 jacocoAggregation(platform(project(it.path)))

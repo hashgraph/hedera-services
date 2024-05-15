@@ -108,6 +108,9 @@ gradlew.bat                                     @hashgraph/release-engineering @
 /README.md                                      @hashgraph/release-engineering @hashgraph/release-engineering-managers
 **/LICENSE                                      @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
+# CodeCov configuration
+**/codecov.yml                                  @hashgraph/release-engineering @hashgraph/release-engineering-managers
+
 # Git Ignore definitions
 **/.gitignore                                   @hashgraph/release-engineering @hashgraph/release-engineering-managers
 **/.gitignore.*                                 @hashgraph/release-engineering @hashgraph/release-engineering-managers
