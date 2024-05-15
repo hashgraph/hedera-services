@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec.utils;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CallType.DIRECT_OR_TOKEN_REDIRECT;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CallType.DIRECT_OR_PROXY_REDIRECT;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CallType.QUALIFIED_DELEGATE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CallType.UNQUALIFIED_DELEGATE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.HAPI_RECORD_BUILDER_CONTEXT_VARIABLE;
@@ -171,7 +171,7 @@ class FrameUtilsTest {
         given(worldUpdater.get(EIP_1014_ADDRESS)).willReturn(account);
         given(account.getNonce()).willReturn(TOKEN_PROXY_ACCOUNT_NONCE);
 
-        assertEquals(DIRECT_OR_TOKEN_REDIRECT, FrameUtils.callTypeOf(frame));
+        assertEquals(DIRECT_OR_PROXY_REDIRECT, FrameUtils.callTypeOf(frame));
     }
 
     @Test

@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.has;
 
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CallType.QUALIFIED_DELEGATE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.systemContractGasCalculatorOf;
@@ -26,7 +25,8 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategi
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallAddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallFactory;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
-import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CallType;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.SyntheticIds;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import javax.inject.Inject;
@@ -35,17 +35,17 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
- * Factory to create a new {@link HtsCallAttempt} for a given input and message frame.
+ * Factory to create a new {@link HasCallAttempt} for a given input and message frame.
  */
 @Singleton
-public class HtsCallFactory implements CallFactory {
+public class HasCallFactory implements CallFactory {
     private final SyntheticIds syntheticIds;
     private final CallAddressChecks addressChecks;
     private final VerificationStrategies verificationStrategies;
     private final List<CallTranslator> callTranslators;
 
     @Inject
-    public HtsCallFactory(
+    public HasCallFactory(
             @NonNull final SyntheticIds syntheticIds,
             @NonNull final CallAddressChecks addressChecks,
             @NonNull final VerificationStrategies verificationStrategies,
@@ -57,31 +57,25 @@ public class HtsCallFactory implements CallFactory {
     }
 
     /**
-     * Creates a new {@link HtsCallAttempt} for the given input and message frame.
+     * Creates a new {@link HasCallAttempt} for the given input and message frame.
      *
      * @param input the input
      * @param frame the message frame
-     * @param callType the call type
      * @return the new attempt
      * @throws RuntimeException if the call cannot be created
      */
     @Override
-    public @NonNull HtsCallAttempt createCallAttemptFrom(
-            @NonNull final Bytes input, @NonNull final CallType callType, @NonNull final MessageFrame frame) {
+    public @NonNull HasCallAttempt createCallAttemptFrom(
+            @NonNull final Bytes input,
+            @NonNull final FrameUtils.CallType callType,
+            @NonNull final MessageFrame frame) {
         requireNonNull(input);
         requireNonNull(frame);
         final var enhancement = proxyUpdaterFor(frame).enhancement();
-        return new HtsCallAttempt(
+        return new HasCallAttempt(
                 input,
                 frame.getSenderAddress(),
-                // We only need to distinguish between the EVM sender id and the
-                // "authorizing id" for qualified delegate calls; and even then, only
-                // for classic transfers. In that specific case, the qualified delegate
-                // contracts need to use their own address as the authorizing id in order
-                // to have signatures waived correctly during preHandle() for the
-                // dispatched CryptoTransfer. (FUTURE - add here a link to a HashScan
-                // transaction that demonstrates this.)
-                callType == QUALIFIED_DELEGATE ? frame.getRecipientAddress() : frame.getSenderAddress(),
+                frame.getSenderAddress(),
                 addressChecks.hasParentDelegateCall(frame),
                 enhancement,
                 configOf(frame),
