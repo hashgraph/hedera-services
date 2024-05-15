@@ -16,9 +16,11 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
@@ -28,6 +30,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -37,8 +40,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
@@ -55,6 +60,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_NOT_PROVID
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
@@ -133,7 +139,10 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     }
 
     List<HapiSpec> positiveCases() {
-        return List.of(tokenUpdateSingleFieldCases());
+        return List.of(
+                tokenUpdateSingleFieldCases(),
+                createFungibleTokenAdminKeyFromHollowAccountAlias(),
+                createNFTTokenAdminKeyFromHollowAccountAlias());
     }
 
     @HapiTest
@@ -1096,5 +1105,106 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 recordWith().status(SUCCESS)),
                         childRecordsCheck(
                                 "updateOnlyPauseKey", SUCCESS, recordWith().status(SUCCESS)));
+    }
+
+    @HapiTest
+    public HapiSpec createFungibleTokenAdminKeyFromHollowAccountAlias() {
+        final var freezeKey = "freezeKey";
+        final var newFreezeKey = "newFreezeKey";
+        return defaultHapiSpec("CreateFungibleTokenAdminKeyFromHollowAccountAlias")
+                .given(
+                        // Create an ECDSA key
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(freezeKey),
+                        newKeyNamed(newFreezeKey),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry()
+                            .getKey(SECP_256K1_SOURCE_KEY)
+                            .getECDSASecp256K1()
+                            .toByteArray();
+                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                    spec.registry()
+                            .saveAccountAlias(
+                                    SECP_256K1_SOURCE_KEY,
+                                    AccountID.newBuilder().setAlias(evmAddress).build());
+
+                    allRunFor(
+                            spec,
+                            // Transfer money to the alias --> creates HOLLOW ACCOUNT
+                            cryptoTransfer(
+                                    movingHbar(ONE_HUNDRED_HBARS).distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
+                            // Verify that the account is created and is hollow
+                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                    .has(accountWith().hasEmptyKey()),
+                            // Create a token with the ECDSA alias key as ADMIN key
+                            tokenCreate(VANILLA_TOKEN)
+                                    .tokenType(FUNGIBLE_COMMON)
+                                    .adminKey(SECP_256K1_SOURCE_KEY)
+                                    .freezeKey(freezeKey)
+                                    .initialSupply(100L)
+                                    .treasury(TOKEN_TREASURY));
+                }))
+                .then(withOpContext((spec, opLog) -> {
+                    allRunFor(
+                            spec,
+                            tokenUpdate(VANILLA_TOKEN)
+                                    .freezeKey(newFreezeKey)
+                                    .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
+                                    .payingWith(ACCOUNT),
+                            getTokenInfo(VANILLA_TOKEN).searchKeysGlobally().hasFreezeKey(newFreezeKey));
+                }));
+    }
+
+    @HapiTest
+    public HapiSpec createNFTTokenAdminKeyFromHollowAccountAlias() {
+        final var freezeKey = "freezeKey";
+        final var newFreezeKey = "newFreezeKey";
+        return defaultHapiSpec("CreateNFTTokenAdminKeyFromHollowAccountAlias")
+                .given(
+                        // Create an ECDSA key
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(freezeKey),
+                        newKeyNamed(newFreezeKey),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry()
+                            .getKey(SECP_256K1_SOURCE_KEY)
+                            .getECDSASecp256K1()
+                            .toByteArray();
+                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                    spec.registry()
+                            .saveAccountAlias(
+                                    SECP_256K1_SOURCE_KEY,
+                                    AccountID.newBuilder().setAlias(evmAddress).build());
+
+                    allRunFor(
+                            spec,
+                            // Transfer money to the alias --> creates HOLLOW ACCOUNT
+                            cryptoTransfer(
+                                    movingHbar(ONE_HUNDRED_HBARS).distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
+                            // Verify that the account is created and is hollow
+                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                    .has(accountWith().hasEmptyKey()),
+                            // Create a token with the ECDSA alias key as ADMIN key
+                            tokenCreate(NFT_TOKEN)
+                                    .tokenType(NON_FUNGIBLE_UNIQUE)
+                                    .adminKey(SECP_256K1_SOURCE_KEY)
+                                    .supplyKey(SECP_256K1_SOURCE_KEY)
+                                    .freezeKey(freezeKey)
+                                    .initialSupply(0L)
+                                    .treasury(TOKEN_TREASURY));
+                }))
+                .then(withOpContext((spec, opLog) -> {
+                    allRunFor(
+                            spec,
+                            tokenUpdate(NFT_TOKEN)
+                                    .freezeKey(newFreezeKey)
+                                    .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
+                                    .payingWith(ACCOUNT),
+                            getTokenInfo(NFT_TOKEN).searchKeysGlobally().hasFreezeKey(newFreezeKey));
+                }));
     }
 }

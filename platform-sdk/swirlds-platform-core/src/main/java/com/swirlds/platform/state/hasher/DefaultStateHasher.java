@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.signed;
+package com.swirlds.platform.state.hasher;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.platform.system.SystemExitCode.FATAL_ERROR;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,35 +32,21 @@ import org.apache.logging.log4j.Logger;
 /**
  * Hashes signed states after all modifications for a round have been completed.
  */
-public class DefaultSignedStateHasher implements SignedStateHasher {
-    /**
-     * The logger for the SignedStateHasher class.
-     */
-    private static final Logger logger = LogManager.getLogger(DefaultSignedStateHasher.class);
-    /**
-     * The SignedStateMetrics object to record time spent hashing.  May be null.
-     */
-    private final SignedStateMetrics signedStateMetrics;
+public class DefaultStateHasher implements StateHasher {
 
-    /**
-     * The FatalErrorConsumer to notify with any fatal errors that occur during hashing.
-     */
-    private final FatalErrorConsumer fatalErrorConsumer;
+    private static final Logger logger = LogManager.getLogger(DefaultStateHasher.class);
+    private final StateHasherMetrics metrics;
 
     /**
      * Constructs a SignedStateHasher to hash SignedStates.  If the signedStateMetrics object is not null, the time
      * spent hashing is recorded. Any fatal errors that occur are passed to the provided FatalErrorConsumer. The hash is
      * dispatched to the provided StateHashedTrigger.
      *
-     * @param signedStateMetrics the SignedStateMetrics instance to record time spent hashing.
-     * @param fatalErrorConsumer the FatalErrorConsumer to consume any fatal errors during hashing.
-     * @throws NullPointerException if any of the {@code fatalErrorConsumer} parameter is {@code null}.
+     * @param platformContext the platform context
      */
-    public DefaultSignedStateHasher(
-            @Nullable final SignedStateMetrics signedStateMetrics,
-            @NonNull final FatalErrorConsumer fatalErrorConsumer) {
-        this.fatalErrorConsumer = Objects.requireNonNull(fatalErrorConsumer, "fatalErrorConsumer must not be null");
-        this.signedStateMetrics = signedStateMetrics;
+    public DefaultStateHasher(@NonNull final PlatformContext platformContext) {
+
+        metrics = new StateHasherMetrics(platformContext.getMetrics());
     }
 
     /**
@@ -77,15 +61,11 @@ public class DefaultSignedStateHasher implements SignedStateHasher {
                     .digestTreeAsync(stateAndRound.reservedSignedState().get().getState())
                     .get();
 
-            if (signedStateMetrics != null) {
-                signedStateMetrics
-                        .getSignedStateHashingTimeMetric()
-                        .update(Duration.between(start, Instant.now()).toMillis());
-            }
+            metrics.reportHashingTime(Duration.between(start, Instant.now()));
 
             return stateAndRound;
         } catch (final ExecutionException e) {
-            fatalErrorConsumer.fatalError("Exception occurred during SignedState hashing", e, FATAL_ERROR);
+            logger.fatal(EXCEPTION.getMarker(), "Exception occurred during SignedState hashing", e);
         } catch (final InterruptedException e) {
             logger.error(EXCEPTION.getMarker(), "Interrupted while hashing state. Expect buggy behavior.");
             Thread.currentThread().interrupt();
