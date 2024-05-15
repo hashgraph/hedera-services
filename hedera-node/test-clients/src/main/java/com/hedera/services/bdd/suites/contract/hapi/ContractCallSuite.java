@@ -87,7 +87,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2M
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.SALT;
-import static com.hedera.services.bdd.suites.perf.mixedops.MixedOpsLoadTest.TOKEN;
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.randomHeadlongAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
@@ -151,6 +150,7 @@ import org.junit.jupiter.api.Tag;
 @Tag(SMART_CONTRACT)
 public class ContractCallSuite extends HapiSuite {
 
+    public static final String TOKEN = "yahcliToken";
     private static final Logger LOG = LogManager.getLogger(ContractCallSuite.class);
 
     private static final String ALICE = "Alice";

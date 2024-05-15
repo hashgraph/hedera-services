@@ -26,7 +26,6 @@ import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -50,7 +49,9 @@ public class FetchSystemFiles extends HapiSuite {
         return List.of(fetchFiles());
     }
 
-    /** Fetches the system files from a running network and saves them to the local file system. */
+    /**
+     * Fetches the system files from a running network and validates they can be
+     * parsed as the expected protobuf messages. */
     @HapiTest
     final Stream<DynamicTest> fetchFiles() {
         return customHapiSpec("FetchFiles")
@@ -60,32 +61,18 @@ public class FetchSystemFiles extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        getFileContents(NODE_DETAILS)
-                                .saveTo(path("nodeDetails.bin"))
-                                .saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("nodeDetails.txt")),
-                        getFileContents(ADDRESS_BOOK)
-                                .saveTo(path("addressBook.bin"))
-                                .saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("addressBook.txt")),
-                        getFileContents(NODE_DETAILS)
-                                .saveTo(path("nodeDetails.bin"))
-                                .saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("nodeDetails.txt")),
-                        getFileContents(EXCHANGE_RATES)
-                                .saveTo(path("exchangeRates.bin"))
-                                .saveReadableTo(unchecked(ExchangeRateSet::parseFrom), path("exchangeRates.txt")),
+                        getFileContents(NODE_DETAILS).andValidate(unchecked(NodeAddressBook::parseFrom)::apply),
+                        getFileContents(ADDRESS_BOOK).andValidate(unchecked(NodeAddressBook::parseFrom)::apply),
+                        getFileContents(NODE_DETAILS).andValidate(unchecked(NodeAddressBook::parseFrom)::apply),
+                        getFileContents(EXCHANGE_RATES).andValidate(unchecked(ExchangeRateSet::parseFrom)::apply),
                         getFileContents(APP_PROPERTIES)
-                                .saveTo(path("appProperties.bin"))
-                                .saveReadableTo(
-                                        unchecked(ServicesConfigurationList::parseFrom), path("appProperties.txt")),
+                                .andValidate(unchecked(ServicesConfigurationList::parseFrom)::apply),
                         getFileContents(API_PERMISSIONS)
-                                .saveTo(path("apiPermissions.bin"))
-                                .saveReadableTo(
-                                        unchecked(ServicesConfigurationList::parseFrom), path("appPermissions.txt")),
+                                .andValidate(unchecked(ServicesConfigurationList::parseFrom)::apply),
                         getFileContents(FEE_SCHEDULE)
-                                .saveTo(path("feeSchedule.bin"))
                                 .fee(300_000L)
                                 .nodePayment(40L)
-                                .saveReadableTo(
-                                        unchecked(CurrentAndNextFeeSchedule::parseFrom), path("feeSchedule.txt")));
+                                .andValidate(unchecked(CurrentAndNextFeeSchedule::parseFrom)::apply));
     }
 
     @FunctionalInterface
@@ -102,10 +89,6 @@ public class FetchSystemFiles extends HapiSuite {
                 return "<N/A> due to " + e.getMessage() + "!";
             }
         };
-    }
-
-    private String path(String file) {
-        return Path.of(TARGET_DIR, file).toString();
     }
 
     @Override

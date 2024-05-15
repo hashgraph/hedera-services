@@ -83,7 +83,6 @@ import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
 import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion;
 import com.hedera.services.bdd.suites.TargetNetworkType;
-import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -93,7 +92,6 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
@@ -121,11 +119,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
-import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -291,19 +287,6 @@ public class HapiSpec implements Runnable, Executable {
 
     public synchronized void saveSingleAccountBalances(SingleAccountBalances sab) {
         accountBalances.add(sab);
-    }
-
-    public void exportAccountBalances(Supplier<String> dir) {
-        AllAccountBalances.Builder allAccountBalancesBuilder =
-                AllAccountBalances.newBuilder().addAllAllAccounts(accountBalances);
-        try (FileOutputStream fout = FileUtils.openOutputStream(new File(dir.get()))) {
-            allAccountBalancesBuilder.build().writeTo(fout);
-        } catch (IOException e) {
-            log.error(String.format("Could not export to '%s'!", dir), e);
-            return;
-        }
-
-        log.info("Export {} account balances registered to file {}", accountBalances.size(), dir);
     }
 
     public void updatePrecheckCounts(ResponseCodeEnum finalStatus) {

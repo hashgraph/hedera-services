@@ -71,7 +71,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
-import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -139,7 +138,6 @@ import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
 import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
-import com.hedera.services.bdd.spec.utilops.streams.RecordFileChecker;
 import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.AssertingBiConsumer;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.CryptoCreateAssertion;
@@ -153,7 +151,6 @@ import com.hedera.services.bdd.spec.utilops.throughput.StartThroughputObs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
-import com.hedera.services.bdd.suites.utils.RecordStreamType;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.FeesJsonToGrpcBytes;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -167,7 +164,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Setting;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -728,10 +724,6 @@ public class UtilVerbs {
                 }));
     }
 
-    public static CustomSpecAssert exportAccountBalances(Supplier<String> acctBalanceFile) {
-        return new CustomSpecAssert((spec, log) -> spec.exportAccountBalances(acctBalanceFile));
-    }
-
     /* Stream validation. */
     public static RecordStreamVerification verifyRecordStreams(Supplier<String> baseDir) {
         return new RecordStreamVerification(baseDir);
@@ -771,14 +763,6 @@ public class UtilVerbs {
     public static Function<HapiSpec, RecordStreamAssertion> recordedChildBodyWithId(
             final String specTxnId, final int nonce, final AssertingBiConsumer<HapiSpec, TransactionBody> assertion) {
         return spec -> new TransactionBodyAssertion(specTxnId, spec, txnId -> txnId.getNonce() == nonce, assertion);
-    }
-
-    public static RecordFileChecker verifyRecordFile(
-            Timestamp timestamp, List<Transaction> transactions, TransactionRecord... transactionRecord) {
-        var recordFileName = generateStreamFileNameFromInstant(
-                Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos()), new RecordStreamType());
-
-        return new RecordFileChecker(recordFileName, transactions, transactionRecord);
     }
 
     /* Some more complicated ops built from primitive sub-ops */
@@ -947,10 +931,6 @@ public class UtilVerbs {
                 }
             }
         });
-    }
-
-    public static HapiSpecOperation makeFree(HederaFunctionality function) {
-        return reduceFeeFor(function, 0L, 0L, 0L);
     }
 
     public static HapiSpecOperation reduceFeeFor(

@@ -117,6 +117,9 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 
+/**
+ * <b>(FUTURE)</b> - Re-enable after long-term scheduled transactions are restored.
+ */
 public class ScheduleLongTermExecutionSpecs extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(ScheduleLongTermExecutionSpecs.class);

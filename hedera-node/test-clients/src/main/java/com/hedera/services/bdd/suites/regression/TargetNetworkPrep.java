@@ -62,7 +62,6 @@ import org.junit.jupiter.api.DynamicTest;
 @HapiTestSuite
 public class TargetNetworkPrep extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TargetNetworkPrep.class);
-    public static final int SYSTEM_ENTITY_EXPIRY = 1812637686;
 
     public static void main(String... args) {
         var hero = new TargetNetworkPrep();

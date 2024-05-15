@@ -39,6 +39,9 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 
+/**
+ * (FUTURE) Integrate this function to CI in some form?
+ */
 public class UpdateServerFiles extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UpdateServerFiles.class);
     private static final String zipFile = "Archive.zip";
