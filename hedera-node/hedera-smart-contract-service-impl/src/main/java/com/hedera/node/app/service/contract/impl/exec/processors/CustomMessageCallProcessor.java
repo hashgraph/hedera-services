@@ -171,6 +171,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
     private void handleNonExtantSystemAccount(
             @NonNull final MessageFrame frame, @NonNull final OperationTracer tracer) {
         final PrecompileContractResult result = PrecompileContractResult.success(Bytes.EMPTY);
+        frame.decrementRemainingGas(frame.getRemainingGas());
         finishPrecompileExecution(frame, result, PRECOMPILE, (ActionSidecarContentTracer) tracer);
     }
 
