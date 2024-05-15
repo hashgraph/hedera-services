@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,22 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.hedera.gradle.services")
-    id("com.hedera.gradle.services-publish")
-}
+package com.hedera.node.app.service.schedule;
 
-description = "Hedera Scheduled Service API"
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-testModuleInfo {
-    requires("org.assertj.core")
-    requires("org.junit.jupiter.api")
+class ScheduleServiceTest {
+
+    private final ScheduleService subject = new ScheduleService() {};
+
+    @Test
+    void verifyServiceName() {
+        Assertions.assertThat(subject.getServiceName()).isEqualTo("ScheduleService");
+    }
+
+    @Test
+    void verifyRpcDefs() {
+        Assertions.assertThat(subject.rpcDefinitions()).containsExactlyInAnyOrder(ScheduleServiceDefinition.INSTANCE);
+    }
 }
