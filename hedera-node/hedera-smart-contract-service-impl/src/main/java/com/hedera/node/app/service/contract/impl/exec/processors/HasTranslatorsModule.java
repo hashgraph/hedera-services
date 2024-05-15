@@ -36,13 +36,15 @@ public interface HasTranslatorsModule {
     @Provides
     @Singleton
     @Named("HasTranslators")
-    static List<CallTranslator> provideCallAttemptTranslators(@NonNull final Set<CallTranslator> translators) {
+    static List<CallTranslator> provideCallAttemptTranslators(
+            @NonNull @Named("HasTranslators") final Set<CallTranslator> translators) {
         return List.copyOf(translators);
     }
 
     @Provides
     @Singleton
     @IntoSet
+    @Named("HasTranslators")
     static CallTranslator provideHbarAllowanceTranslator(@NonNull final HbarAllowanceTranslator translator) {
         return translator;
     }
@@ -50,6 +52,7 @@ public interface HasTranslatorsModule {
     @Provides
     @Singleton
     @IntoSet
+    @Named("HasTranslators")
     static CallTranslator provideHbarApproveTranslator(@NonNull final HbarApproveTranslator translator) {
         return translator;
     }
