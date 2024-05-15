@@ -38,8 +38,8 @@ pcli diagram \
     -g 'Event Hashing:EventHasher,PostHashCollector' \
     -g 'Orphan Buffer:OrphanBuffer,OrphanBufferSplitter' \
     -g 'Consensus Engine:ConsensusEngine,ConsensusEngineSplitter,eventWindowManager,getKeystoneEventSequenceNumber,getConsensusEvents' \
-    -g 'State File Manager:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction,toNotification' \
-    -g 'State File Management:State File Manager,📦,📀,💾' \
+    -g 'State Snapshot Manager:saveToDiskFilter,StateSnapshotManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction,toNotification' \
+    -g 'State File Management:State Snapshot Manager,📦,📀,💾' \
     -g 'State Signature Collector:StateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions,latestCompleteStateNotifier' \
     -g 'State Signature Collection:State Signature Collector,latestCompleteStateNexus,💢' \
     -g 'Preconsensus Event Stream:PcesSequencer,PcesWriter' \
@@ -59,7 +59,7 @@ pcli diagram \
     -c 'Orphan Buffer' \
     -c 'Consensus Engine' \
     -c 'State Signature Collector' \
-    -c 'State File Manager' \
+    -c 'State Snapshot Manager' \
     -c 'Consensus Round Handler' \
     -c 'State Hasher' \
     -c 'ISS Detector' \

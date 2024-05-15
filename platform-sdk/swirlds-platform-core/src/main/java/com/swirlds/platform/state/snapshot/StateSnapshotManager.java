@@ -16,7 +16,10 @@
 
 package com.swirlds.platform.state.snapshot;
 
+import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.system.status.actions.PlatformStatusAction;
+import com.swirlds.platform.system.status.actions.StateWrittenToDiskAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -46,4 +49,38 @@ public interface StateSnapshotManager {
      *                prior to this method call and this method will release the reservation when it is done
      */
     void dumpStateTask(@NonNull StateDumpRequest request);
+
+    /**
+     * Convert a {@link StateSavingResult} to a {@link StateWriteToDiskCompleteNotification}.
+     *
+     * @param result the result of the state saving operation
+     * @return the notification
+     */
+    @NonNull
+    default StateWriteToDiskCompleteNotification toNotification(@NonNull final StateSavingResult result) {
+        return new StateWriteToDiskCompleteNotification(
+                result.round(), result.consensusTimestamp(), result.freezeState());
+    }
+
+    /**
+     * Extract the oldest minimum generation on disk from a {@link StateSavingResult}.
+     *
+     * @param result the result of the state saving operation
+     * @return the oldest minimum generation on disk
+     */
+    @NonNull
+    default Long extractOldestMinimumGenerationOnDisk(@NonNull final StateSavingResult result) {
+        return result.oldestMinimumGenerationOnDisk();
+    }
+
+    /**
+     * Convert a {@link StateSavingResult} to a {@link PlatformStatusAction}.
+     *
+     * @param result the result of the state saving operation
+     * @return the action
+     */
+    @NonNull
+    default PlatformStatusAction toStateWrittenToDiskAction(@NonNull final StateSavingResult result) {
+        return new StateWrittenToDiskAction(result.round(), result.freezeState());
+    }
 }

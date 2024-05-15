@@ -27,8 +27,6 @@ import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.state.iss.IssHandler;
-import com.swirlds.platform.state.snapshot.StateSavingResult;
-import com.swirlds.platform.state.snapshot.StateSnapshotManager;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.StateAndRound;
@@ -39,7 +37,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * <p>
  * This class is being phased out. Do not add additional schedulers to this class!
  *
- * @param signedStateFileManagerScheduler           the scheduler for the signed state file manager
  * @param stateSignerScheduler                      the scheduler for the state signer
  * @param pcesReplayerScheduler                     the scheduler for the pces replayer
  * @param consensusRoundHandlerScheduler            the scheduler for the consensus round handler
@@ -49,7 +46,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param latestCompleteStateNotifierScheduler      the scheduler for the latest complete state notifier
  */
 public record PlatformSchedulers(
-        @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
         @NonNull TaskScheduler<ConsensusTransactionImpl> stateSignerScheduler,
         @NonNull TaskScheduler<NoInput> pcesReplayerScheduler,
         @NonNull TaskScheduler<StateAndRound> consensusRoundHandlerScheduler,
@@ -70,13 +66,6 @@ public record PlatformSchedulers(
                 context.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
 
         return new PlatformSchedulers(
-                model.schedulerBuilder("signedStateFileManager")
-                        .withType(config.signedStateFileManagerSchedulerType())
-                        .withUnhandledTaskCapacity(config.signedStateFileManagerUnhandledCapacity())
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(StateSnapshotManager.class))
-                        .build()
-                        .cast(),
                 model.schedulerBuilder("stateSigner")
                         .withType(config.stateSignerSchedulerType())
                         .withUnhandledTaskCapacity(config.stateSignerUnhandledCapacity())

@@ -40,6 +40,7 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.transformers.RoutableData;
+import com.swirlds.common.wiring.transformers.WireFilter;
 import com.swirlds.common.wiring.transformers.WireTransformer;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
@@ -94,6 +95,8 @@ import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.state.snapshot.StateDumpRequest;
+import com.swirlds.platform.state.snapshot.StateSavingResult;
+import com.swirlds.platform.state.snapshot.StateSnapshotManager;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.state.notifications.IssNotification;
@@ -143,7 +146,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
     private final ComponentWiring<EventCreationManager, BaseEventHashedData> eventCreationManagerWiring;
     private final ComponentWiring<SelfEventSigner, GossipEvent> selfEventSignerWiring;
-    private final SignedStateFileManagerWiring signedStateFileManagerWiring;
+    private final ComponentWiring<StateSnapshotManager, StateSavingResult> stateSnapshotManagerWiring;
     private final StateSignerWiring stateSignerWiring;
     private final PcesReplayerWiring pcesReplayerWiring;
     private final ComponentWiring<PcesWriter, Long> pcesWriterWiring;
@@ -255,8 +258,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 new ComponentWiring<>(model, TransactionPrehandler.class, config.applicationTransactionPrehandler());
         stateSignatureCollectorWiring =
                 new ComponentWiring<>(model, StateSignatureCollector.class, config.stateSignatureCollector());
-        signedStateFileManagerWiring =
-                SignedStateFileManagerWiring.create(model, schedulers.signedStateFileManagerScheduler());
+        stateSnapshotManagerWiring =
+                new ComponentWiring<>(model, StateSnapshotManager.class, config.stateSnapshotManager());
         stateSignerWiring = StateSignerWiring.create(schedulers.stateSignerScheduler());
         consensusRoundHandlerWiring = ConsensusRoundHandlerWiring.create(schedulers.consensusRoundHandlerScheduler());
         consensusEventStreamWiring =
@@ -440,8 +443,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         latestCompleteStateNotifierWiring
                 .getOutputWire()
                 .solderTo(notifierWiring.getInputWire(AppNotifier::sendLatestCompleteStateNotification));
-        signedStateFileManagerWiring
-                .stateWrittenToDiskNotificationOutput()
+        stateSnapshotManagerWiring
+                .getTransformedOutput(StateSnapshotManager::toNotification)
                 .solderTo(notifierWiring.getInputWire(AppNotifier::sendStateWrittenToDiskNotification));
 
         final OutputWire<IssNotification> issNotificationOutputWire = issDetectorWiring.getSplitOutput();
@@ -553,8 +556,23 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         // Add another reservation to the signed states since we are soldering to two different input wires
         final OutputWire<ReservedSignedState> allReservedSignedStatesWire =
                 splitReservedSignedStateWire.buildAdvancedTransformer(new SignedStateReserver("allStatesReserver"));
-        // All reserved signed states are saved to disk.
-        allReservedSignedStatesWire.solderTo(signedStateFileManagerWiring.saveToDiskFilter());
+
+        // Future work: this should be a full component in its own right or folded in with the state file manager.
+        final WireFilter<ReservedSignedState> saveToDiskFilter =
+                new WireFilter<>(model, "saveToDiskFilter", "states", state -> {
+                    if (state.get().isStateToSave()) {
+                        return true;
+                    }
+                    state.close();
+                    return false;
+                });
+
+        allReservedSignedStatesWire.solderTo(saveToDiskFilter.getInputWire());
+
+        saveToDiskFilter
+                .getOutputWire()
+                .solderTo(stateSnapshotManagerWiring.getInputWire(StateSnapshotManager::saveStateTask));
+
         // Filter to complete states only and add a 3rd reservation since completes states are used in two input wires.
         final OutputWire<ReservedSignedState> completeReservedSignedStatesWire = allReservedSignedStatesWire
                 .buildFilter("completeStateFilter", "states", rs -> {
@@ -680,11 +698,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                         .roundDurabilityBufferHeartbeatPeriod())
                 .solderTo(roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::checkForStaleRounds));
 
-        signedStateFileManagerWiring
-                .oldestMinimumGenerationOnDiskOutputWire()
+        stateSnapshotManagerWiring
+                .getTransformedOutput(StateSnapshotManager::extractOldestMinimumGenerationOnDisk)
                 .solderTo(pcesWriterWiring.getInputWire(PcesWriter::setMinimumAncientIdentifierToStore), INJECT);
-        signedStateFileManagerWiring
-                .stateWrittenToDiskOutputWire()
+        stateSnapshotManagerWiring
+                .getTransformedOutput(StateSnapshotManager::toStateWrittenToDiskAction)
                 .solderTo(statusStateMachineWiring.getInputWire(StatusStateMachine::submitStatusAction));
 
         runningEventHashOverrideWiring
@@ -748,6 +766,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         staleEventDetectorWiring.getInputWire(StaleEventDetector::setInitialEventWindow);
         staleEventDetectorWiring.getInputWire(StaleEventDetector::clear);
         transactionPoolWiring.getInputWire(TransactionPool::clear);
+        stateSnapshotManagerWiring.getInputWire(StateSnapshotManager::dumpStateTask);
     }
 
     /**
@@ -795,7 +814,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventSignatureValidatorWiring.bind(builder::buildEventSignatureValidator);
         orphanBufferWiring.bind(builder::buildOrphanBuffer);
         consensusEngineWiring.bind(builder::buildConsensusEngine);
-        signedStateFileManagerWiring.bind(builder.buildStateSnapshotManager()); // TODO convert to lambda
+        stateSnapshotManagerWiring.bind(builder::buildStateSnapshotManager);
         stateSignerWiring.bind(stateSigner);
         pcesReplayerWiring.bind(pcesReplayer);
         pcesWriterWiring.bind(builder::buildPcesWriter);
@@ -868,7 +887,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     @NonNull
     public InputWire<StateDumpRequest> getDumpStateToDiskInput() {
-        return signedStateFileManagerWiring.dumpStateToDisk();
+        return stateSnapshotManagerWiring.getInputWire(StateSnapshotManager::dumpStateTask);
     }
 
     /**
