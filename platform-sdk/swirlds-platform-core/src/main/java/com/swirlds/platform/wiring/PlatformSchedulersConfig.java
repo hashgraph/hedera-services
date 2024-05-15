@@ -59,8 +59,7 @@ import java.time.Duration;
  * @param hashLoggerSchedulerType                 the hash logger scheduler type
  * @param hashLoggerUnhandledTaskCapacity         number of unhandled tasks allowed in the hash logger task scheduler
  * @param completeStateNotifierUnhandledCapacity  number of unhandled tasks allowed for the state completion notifier
- * @param stateHasherSchedulerType                the state hasher scheduler type
- * @param stateHasherUnhandledCapacity            number of unhandled tasks allowed for the state hasher
+ * @param stateHasher                             configuration for the state hasher scheduler
  * @param stateGarbageCollector                   configuration for the state garbage collector scheduler
  * @param stateGarbageCollectorHeartbeatPeriod    the frequency that heartbeats should be sent to the state garbage
  *                                                collector
@@ -119,8 +118,10 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType hashLoggerSchedulerType,
         @ConfigProperty(defaultValue = "100") int hashLoggerUnhandledTaskCapacity,
         @ConfigProperty(defaultValue = "1000") int completeStateNotifierUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateHasherSchedulerType,
-        @ConfigProperty(defaultValue = "2") int stateHasherUnhandledCapacity,
+        @ConfigProperty(
+                        defaultValue =
+                                "SEQUENTIAL_THREAD CAPACITY(2) FLUSHABLE UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
+                TaskSchedulerConfiguration stateHasher,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(60) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration stateGarbageCollector,
         @ConfigProperty(defaultValue = "200ms") Duration stateGarbageCollectorHeartbeatPeriod,
