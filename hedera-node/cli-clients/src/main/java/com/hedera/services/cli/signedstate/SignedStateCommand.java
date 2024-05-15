@@ -23,7 +23,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
-import org.apache.logging.log4j.Level;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
@@ -76,15 +75,6 @@ public final class SignedStateCommand extends AbstractCommand {
     }
 
     Verbosity verbosity;
-
-    static class LogLevelConverter implements CommandLine.ITypeConverter<Level> {
-
-        @Override
-        public Level convert(String value) throws Exception {
-            return new org.apache.logging.log4j.core.config.plugins.convert.TypeConverters.LevelConverter()
-                    .convert(value);
-        }
-    }
 
     // We want to open the signed state file only once but run a bunch of dumps against it
     // (because it takes a long time to open the signed state file).  So we can specify

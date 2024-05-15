@@ -21,7 +21,6 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
-import static com.swirlds.platform.builder.PlatformBuildConstants.LOG4J_FILE_NAME;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.addPlatforms;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.moveBrowserWindowToFront;
@@ -34,9 +33,7 @@ import static com.swirlds.platform.util.BootstrapUtils.loadSwirldMains;
 import static com.swirlds.platform.util.BootstrapUtils.setupBrowserWindow;
 
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.metrics.api.Metrics;
@@ -57,7 +54,6 @@ import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.GraphicsEnvironment;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -122,14 +118,6 @@ public class Browser {
     public static void launch(@NonNull final CommandLineArgs commandLineArgs, final boolean pcesRecovery) {
         if (STARTED.getAndSet(true)) {
             return;
-        }
-
-        final Path log4jPath = getAbsolutePath(LOG4J_FILE_NAME);
-        try {
-            Log4jSetup.startLoggingFramework(log4jPath).await();
-        } catch (final InterruptedException e) {
-            CommonUtils.tellUserConsole("Interrupted while waiting for log4j to initialize");
-            Thread.currentThread().interrupt();
         }
 
         logger = LogManager.getLogger(Browser.class);

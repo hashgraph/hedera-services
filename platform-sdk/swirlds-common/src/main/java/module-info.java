@@ -140,7 +140,6 @@ module com.swirlds.common {
             com.swirlds.platform.core,
             com.swirlds.platform.test,
             com.swirlds.platform.gui;
-    exports com.swirlds.common.startup;
     exports com.swirlds.common.threading.atomic;
     exports com.swirlds.common.wiring.model.diagram;
 
@@ -160,7 +159,6 @@ module com.swirlds.common {
     requires java.desktop;
     requires jdk.httpserver;
     requires jdk.management;
-    requires org.apache.logging.log4j.core;
     requires org.bouncycastle.provider;
     requires org.hyperledger.besu.nativelib.secp256k1;
     requires static com.github.spotbugs.annotations;

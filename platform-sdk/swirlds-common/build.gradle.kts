@@ -38,5 +38,6 @@ testModuleInfo {
     requires("org.junit.jupiter.params")
     requires("org.mockito")
     requires("org.mockito.junit.jupiter")
+    requires("org.apache.logging.log4j.core")
     requiresStatic("com.github.spotbugs.annotations")
 }

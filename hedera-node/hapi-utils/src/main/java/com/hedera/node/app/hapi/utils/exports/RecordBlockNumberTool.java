@@ -34,7 +34,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
-import org.apache.logging.log4j.core.LoggerContext;
 
 /**
  * This is a standalone utility tool to read record stream file and check if block number is
@@ -171,9 +170,7 @@ public class RecordBlockNumberTool {
                 ? getAbsolutePath().resolve(DEFAULT_LOG_CONFIG).toFile()
                 : new File(logConfigPath);
         if (logConfigFile.exists()) {
-            final LoggerContext context = (LoggerContext) LogManager.getContext(false);
-            context.setConfigLocation(logConfigFile.toURI());
-
+            // FIXME: Use other method
             final String fileName = System.getProperty(FILE_NAME_PROPERTY);
             final String fileDirName = System.getProperty(DIR_PROPERTY);
 

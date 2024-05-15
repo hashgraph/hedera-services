@@ -69,7 +69,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
-import org.apache.logging.log4j.core.LoggerContext;
 
 /**
  * This is a standalone utility tool to generate signature files for event/record stream, and
@@ -445,9 +444,7 @@ public class FileSignTool {
                 ? getAbsolutePath().resolve(DEFAULT_LOG_CONFIG).toFile()
                 : new File(logConfigPath);
         if (logConfigFile.exists()) {
-            final LoggerContext context = (LoggerContext) LogManager.getContext(false);
-            context.setConfigLocation(logConfigFile.toURI());
-
+            // FIXME: Use other method
             final String fileName = System.getProperty(FILE_NAME_PROPERTY);
             final String keyFileName = System.getProperty(KEY_PROPERTY);
             final String destDirName = System.getProperty(DEST_DIR_PROPERTY);

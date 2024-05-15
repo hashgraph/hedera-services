@@ -23,10 +23,8 @@ import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.PlatformCliLogo;
 import com.swirlds.cli.utility.PlatformCliPreParser;
 import com.swirlds.common.formatting.TextEffect;
-import com.swirlds.common.startup.Log4jSetup;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
@@ -178,8 +176,6 @@ public class PlatformCli extends AbstractCommand {
         // Will lack actual color if color has been disabled
         System.out.println(PlatformCliLogo.getColorizedLogo());
 
-        final CountDownLatch log4jLatch = Log4jSetup.startLoggingFramework(preParser.getLog4jPath());
-
         preParser.runBootstrapFunction();
 
         whitelistCliPackage("com.swirlds.platform.cli");
@@ -190,8 +186,6 @@ public class PlatformCli extends AbstractCommand {
             }
         }
         final CommandLine commandLine = buildCommandLine(PlatformCli.class);
-
-        log4jLatch.await();
         System.exit(commandLine.execute(preParser.getUnparsedArgs()));
     }
 }

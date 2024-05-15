@@ -16,15 +16,12 @@
 
 package com.swirlds.platform.builder.internal;
 
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.builder.PlatformBuildConstants.LOG4J_FILE_NAME;
 import static com.swirlds.platform.util.BootstrapUtils.startJVMPauseDetectorThread;
 import static com.swirlds.platform.util.BootstrapUtils.writeSettingsUsed;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
-import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.payload.NodeStartPayload;
 import com.swirlds.metrics.api.Metrics;
@@ -93,17 +90,6 @@ public final class StaticPlatformBuilder {
         staticSetupCompleted = true;
 
         ConfigurationHolder.getInstance().setConfiguration(configuration);
-
-        // Setup logging
-        final Path log4jPath = getAbsolutePath(LOG4J_FILE_NAME);
-        try {
-            Log4jSetup.startLoggingFramework(log4jPath).await();
-        } catch (final InterruptedException e) {
-            // since the logging framework has not been instantiated, also log to stderr
-            e.printStackTrace();
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Interrupted while waiting for log4j to initialize", e);
-        }
 
         // Now that we have a logger, we can start using it for further messages
         logger.info(STARTUP.getMarker(), "\n\n" + STARTUP_MESSAGE + "\n");

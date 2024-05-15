@@ -30,7 +30,6 @@ module com.hedera.node.app.hapi.utils {
     requires com.sun.jna;
     requires com.swirlds.base;
     requires org.apache.commons.codec;
-    requires org.apache.logging.log4j.core;
     requires org.apache.logging.log4j;
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
