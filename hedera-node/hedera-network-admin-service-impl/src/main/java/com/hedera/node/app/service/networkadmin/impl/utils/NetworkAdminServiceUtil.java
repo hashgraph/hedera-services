@@ -28,7 +28,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public final class NetworkAdminServiceUtil {
     private NetworkAdminServiceUtil() {
-        throw new UnsupportedOperationException("Utility class");
     }
 
     /**
