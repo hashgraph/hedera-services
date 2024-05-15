@@ -38,9 +38,9 @@ include(":app-service-contract", "hedera-node/hedera-smart-contract-service")
 
 include(":app-service-contract-impl", "hedera-node/hedera-smart-contract-service-impl")
 
-include(":app-service-evm", "hedera-node/hedera-evm")
+include(":hedera-evm", "hedera-node/hedera-evm")
 
-include(":app-service-evm-impl", "hedera-node/hedera-evm-impl")
+include(":hedera-evm-impl", "hedera-node/hedera-evm-impl")
 
 include(":app-service-file", "hedera-node/hedera-file-service")
 
@@ -108,6 +108,8 @@ include(":swirlds-merkledb", "platform-sdk/swirlds-jasperdb")
 include(":swirlds-virtualmap", "platform-sdk/swirlds-virtualmap")
 
 include(":swirlds-platform-core", "platform-sdk/swirlds-platform-core")
+
+include(":swirlds-state-api", "platform-sdk/swirlds-state-api")
 
 include(":swirlds-cli", "platform-sdk/swirlds-cli")
 

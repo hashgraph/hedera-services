@@ -115,12 +115,12 @@ public record EventStreamReport(List<EventStreamInfo> granularInfo, EventStreamI
                         lastEvent.getConsensusData().getConsensusTimestamp())
                 .addRow(
                         "hash",
-                        firstEvent.getHash().toShortString(HASH_STRING_LENGTH),
-                        lastEvent.getHash().toShortString(HASH_STRING_LENGTH))
+                        firstEvent.getHash().toHex(HASH_STRING_LENGTH),
+                        lastEvent.getHash().toHex(HASH_STRING_LENGTH))
                 .addRow(
                         "running hash",
-                        firstEvent.getRunningHash().getHash().toShortString(HASH_STRING_LENGTH),
-                        lastEvent.getRunningHash().getHash().toShortString(HASH_STRING_LENGTH))
+                        firstEvent.getRunningHash().getHash().toHex(HASH_STRING_LENGTH),
+                        lastEvent.getRunningHash().getHash().toHex(HASH_STRING_LENGTH))
                 .addRow(
                         "consensus order",
                         commaSeparatedNumber(firstEvent.getConsensusData().getConsensusOrder()),

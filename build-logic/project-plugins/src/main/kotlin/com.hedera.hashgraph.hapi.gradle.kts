@@ -18,7 +18,7 @@ import com.google.protobuf.gradle.id
 import com.hedera.hashgraph.gradlebuild.tasks.GitClone
 
 plugins {
-    id("com.hedera.hashgraph.conventions")
+    id("com.hedera.gradle.services")
     id("com.google.protobuf")
 }
 

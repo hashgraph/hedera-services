@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.gossip;
 
-import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_UNDEFINED;
 
 import com.swirlds.base.state.Startable;
@@ -103,6 +102,8 @@ import java.util.function.Supplier;
  * Boilerplate code for gossip.
  */
 public class SyncGossip implements ConnectionTracker, Gossip {
+    public static final String PLATFORM_THREAD_POOL_NAME = "platform-core";
+
     private boolean started = false;
 
     private final PlatformContext platformContext;

@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.wiring;
 
-import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -32,7 +32,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param stateSignature the output wire for the state signature
  */
 public record StateSignerWiring(
-        @NonNull InputWire<ReservedSignedState> signState, @NonNull OutputWire<StateSignaturePayload> stateSignature) {
+        @NonNull InputWire<ReservedSignedState> signState,
+        @NonNull OutputWire<ConsensusTransactionImpl> stateSignature) {
 
     /**
      * Create a new instance of this wiring
@@ -40,7 +41,7 @@ public record StateSignerWiring(
      * @param scheduler the task scheduler for this wiring
      * @return the new wiring instance
      */
-    public static StateSignerWiring create(@NonNull final TaskScheduler<StateSignaturePayload> scheduler) {
+    public static StateSignerWiring create(@NonNull final TaskScheduler<ConsensusTransactionImpl> scheduler) {
         return new StateSignerWiring(scheduler.buildInputWire("state to sign"), scheduler.getOutputWire());
     }
 
@@ -50,6 +51,6 @@ public record StateSignerWiring(
      * @param stateSigner the state signer
      */
     public void bind(@NonNull final StateSigner stateSigner) {
-        ((BindableInputWire<ReservedSignedState, StateSignaturePayload>) signState).bind(stateSigner::signState);
+        ((BindableInputWire<ReservedSignedState, ConsensusTransactionImpl>) signState).bind(stateSigner::signState);
     }
 }

@@ -28,5 +28,4 @@ import com.swirlds.config.api.ConfigProperty;
  */
 @ConfigData("networkAdmin")
 public record NetworkAdminConfig(
-        @ConfigProperty(defaultValue = "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade/current") @NodeProperty
-                String upgradeArtifactsPath) {}
+        @ConfigProperty(defaultValue = "data/upgrade/current") @NodeProperty String upgradeArtifactsPath) {}
