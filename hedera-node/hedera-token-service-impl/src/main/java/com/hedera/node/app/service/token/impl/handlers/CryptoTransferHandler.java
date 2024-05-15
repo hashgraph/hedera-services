@@ -103,11 +103,20 @@ public class CryptoTransferHandler implements TransactionHandler {
     private final CryptoTransferValidator validator;
     private final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
 
+    /**
+     * Default constructor for injection.
+     * @param validator the validator to use to validate the transaction
+     */
     @Inject
     public CryptoTransferHandler(@NonNull final CryptoTransferValidator validator) {
         this(validator, true);
     }
 
+    /**
+     * Constructor for injection with the option to enforce mono-service restrictions on auto-creation custom fee
+     * @param validator the validator to use to validate the transaction
+     * @param enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments whether to enforce mono-service restrictions
+     */
     public CryptoTransferHandler(
             @NonNull final CryptoTransferValidator validator,
             final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments) {
@@ -171,13 +180,14 @@ public class CryptoTransferHandler implements TransactionHandler {
             }
             final List<NftTransfer> nftTransfers = tokenTransferList.nftTransfers();
             for (final NftTransfer nftTransfer : nftTransfers) {
-                warmNftTransfer(accountStore, nftStore, tokenRelationStore, tokenID, nftTransfer);
+                warmNftTransfer(accountStore, tokenStore, nftStore, tokenRelationStore, tokenID, nftTransfer);
             }
         });
     }
 
     private void warmNftTransfer(
             @NonNull final ReadableAccountStore accountStore,
+            @NonNull final ReadableTokenStore tokenStore,
             @NonNull final ReadableNftStore nftStore,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final TokenID tokenID,
@@ -195,7 +205,10 @@ public class CryptoTransferHandler implements TransactionHandler {
         nftTransfer.ifReceiverAccountID(receiverAccountID -> {
             final Account receiver = accountStore.getAliasedAccountById(receiverAccountID);
             if (receiver != null) {
-                receiver.ifHeadTokenId(headTokenID -> tokenRelationStore.warm(receiverAccountID, headTokenID));
+                receiver.ifHeadTokenId(headTokenID -> {
+                    tokenRelationStore.warm(receiverAccountID, headTokenID);
+                    tokenStore.warm(headTokenID);
+                });
                 receiver.ifHeadNftId(nftStore::warm);
             }
             tokenRelationStore.warm(receiverAccountID, tokenID);

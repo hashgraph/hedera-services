@@ -45,7 +45,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
@@ -207,9 +209,11 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(HTS_APPROVE_ALLOWANCE_CONTRACT),
-                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT).refusingEthConversion(),
                         uploadInitCode(nestedContract),
-                        contractCreate(nestedContract).adminKey(MULTI_KEY),
+                        contractCreate(nestedContract).adminKey(MULTI_KEY).refusingEthConversion(),
                         tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                         tokenAssociate(HTS_APPROVE_ALLOWANCE_CONTRACT, FUNGIBLE_TOKEN),
                         tokenAssociate(nestedContract, FUNGIBLE_TOKEN))
@@ -254,10 +258,47 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
+    public HapiSpec idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed("supplyKey"),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(OWNER).maxAutomaticTokenAssociations(2),
+                        cryptoCreate("delegatingOwner").maxAutomaticTokenAssociations(1),
+                        cryptoCreate(SPENDER))
+                .when(
+                        tokenCreate("fungibleToken").initialSupply(123).treasury(TOKEN_TREASURY),
+                        tokenCreate("nonFungibleToken")
+                                .treasury(TOKEN_TREASURY)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .supplyKey("supplyKey"),
+                        mintToken(
+                                "nonFungibleToken",
+                                List.of(
+                                        ByteString.copyFromUtf8("A"),
+                                        ByteString.copyFromUtf8("B"),
+                                        ByteString.copyFromUtf8("C"))),
+                        cryptoTransfer(
+                                movingUnique("nonFungibleToken", 1L, 2L).between(TOKEN_TREASURY, OWNER),
+                                moving(10, "fungibleToken").between(TOKEN_TREASURY, OWNER)),
+                        cryptoTransfer(movingUnique("nonFungibleToken", 3L).between(TOKEN_TREASURY, "delegatingOwner")))
+                .then(
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> cryptoApproveAllowance()
+                                .addNftAllowance("delegatingOwner", "nonFungibleToken", OWNER, true, List.of())
+                                .signedBy(DEFAULT_PAYER, "delegatingOwner")),
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> cryptoApproveAllowance()
+                                .addNftAllowance(OWNER, "nonFungibleToken", SPENDER, false, List.of(1L))
+                                .addTokenAllowance(OWNER, "fungibleToken", SPENDER, 1L)
+                                .addDelegatedNftAllowance(
+                                        "delegatingOwner", "nonFungibleToken", SPENDER, OWNER, false, List.of(3L))
+                                .signedBy(DEFAULT_PAYER, OWNER)));
+    }
+
+    @HapiTest
     final HapiSpec htsTokenAllowance() {
         final var theSpender = SPENDER;
         final var allowanceTxn = ALLOWANCE_TX;
-        final var notAnAddress = new byte[20];
 
         return defaultHapiSpec("htsTokenAllowance", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
@@ -361,7 +402,9 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(HTS_APPROVE_ALLOWANCE_CONTRACT),
-                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT).refusingEthConversion(),
                         tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                         tokenAssociate(HTS_APPROVE_ALLOWANCE_CONTRACT, FUNGIBLE_TOKEN))
                 .when(withOpContext((spec, opLog) -> allRunFor(
@@ -633,7 +676,9 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .treasury(TOKEN_TREASURY),
                         uploadInitCode(HTS_APPROVE_ALLOWANCE_CONTRACT),
-                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT).refusingEthConversion(),
                         tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                         tokenAssociate(HTS_APPROVE_ALLOWANCE_CONTRACT, NON_FUNGIBLE_TOKEN),
                         mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("a")))
@@ -723,9 +768,12 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
                         uploadInitCode(PRETEND_PAIR),
-                        contractCreate(PRETEND_PAIR).adminKey(DEFAULT_PAYER),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(PRETEND_PAIR).adminKey(DEFAULT_PAYER).refusingEthConversion(),
                         uploadInitCode(callee),
                         contractCreate(callee)
+                                .refusingEthConversion()
                                 .adminKey(DEFAULT_PAYER)
                                 .exposingNumTo(num -> calleeMirrorAddr.set(asHexedSolidityAddress(0, 0, num))),
                         tokenAssociate(PRETEND_PAIR, FUNGIBLE_TOKEN),

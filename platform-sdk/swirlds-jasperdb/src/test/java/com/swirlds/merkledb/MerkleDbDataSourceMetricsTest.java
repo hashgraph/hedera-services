@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.TestType;
@@ -60,7 +60,7 @@ class MerkleDbDataSourceMetricsTest {
 
     @BeforeAll
     static void setup() throws Exception {
-        testDirectory = TemporaryFileBuilder.buildTemporaryFile("MerkleDbDataSourceMetricsTest");
+        testDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("MerkleDbDataSourceMetricsTest");
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.merkledb");
     }
 

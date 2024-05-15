@@ -20,12 +20,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomToken;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.Optional;
 
@@ -34,11 +32,10 @@ public class RandomTokenHollowAccount extends RandomToken {
     private String[] signers;
 
     public RandomTokenHollowAccount(
-            EntityNameProvider<Key> keys,
             RegistrySourcedNameProvider<TokenID> tokens,
             RegistrySourcedNameProvider<AccountID> accounts,
             String... signers) {
-        super(keys, tokens, accounts);
+        super(tokens, accounts, accounts);
         this.signers = signers;
     }
 
@@ -50,7 +47,6 @@ public class RandomTokenHollowAccount extends RandomToken {
 
         int id = opNo.getAndIncrement();
         HapiTokenCreate op = tokenCreate(my("token" + id))
-                .advertisingCreation()
                 .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
                 .hasKnownStatusFrom(INVALID_SIGNATURE)
                 .signedBy(signers);

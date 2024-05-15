@@ -37,11 +37,19 @@ public final class FileServiceImpl implements FileService {
     private final ConfigProvider configProvider;
     private InitialModFileGenesisSchema initialFileSchema;
 
+    /**
+     * Constructs a {@link FileServiceImpl} with the given {@link ConfigProvider}.
+     * @param configProvider the configuration provider
+     */
     @Inject
     public FileServiceImpl(@NonNull final ConfigProvider configProvider) {
         this.configProvider = configProvider;
     }
 
+    /**
+     * Sets the {@link Supplier} for the {@link VirtualMapLike} that will be used to store file data.
+     * @param fss the file data storage supplier
+     */
     public void setFs(@Nullable final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fss) {
         initialFileSchema.setFs(fss);
     }

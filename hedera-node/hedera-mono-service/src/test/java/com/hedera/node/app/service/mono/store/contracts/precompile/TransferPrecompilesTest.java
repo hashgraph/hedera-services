@@ -83,7 +83,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.T
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile.decodeTransferTokens;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
@@ -1588,7 +1588,7 @@ class TransferPrecompilesTest {
         when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
         given(dynamicProperties.isAtomicCryptoTransferEnabled()).willReturn(true);
         given(dynamicProperties.isImplicitCreationEnabled()).willReturn(true);
-        given(creator.createUnsuccessfulSyntheticRecord(ResponseCodeEnum.INVALID_ALIAS_KEY))
+        given(creator.createUnsuccessfulSyntheticRecord(ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT))
                 .willReturn(mockRecordBuilder);
         given(worldUpdater.aliases()).willReturn(aliases);
         given(aliases.isMirror(Address.wrap(Bytes.of(balanceChangesForLazyCreateFailing
@@ -1604,7 +1604,7 @@ class TransferPrecompilesTest {
         final var result = subject.computeInternal(frame);
 
         // then:
-        assertEquals(UInt256.valueOf(INVALID_ALIAS_KEY.getNumber()), result);
+        assertEquals(UInt256.valueOf(INVALID_RECEIVING_NODE_ACCOUNT.getNumber()), result);
         // and:
         verify(frame, never()).getGasPrice();
         verify(autoCreationLogic, never()).create(any(), any(), any());

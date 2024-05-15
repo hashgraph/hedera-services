@@ -16,17 +16,10 @@
 
 package com.swirlds.platform.cli;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-
-import com.swirlds.base.time.Time;
 import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.wiring.model.diagram.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.diagram.ModelGroup;
 import com.swirlds.common.wiring.model.diagram.ModelManualLink;
@@ -34,7 +27,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.eventhandling.TransactionPool;
-import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.util.VirtualTerminal;
 import com.swirlds.platform.wiring.PlatformWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -120,15 +112,11 @@ public final class DiagramCommand extends AbstractCommand {
     @Override
     public Integer call() throws IOException {
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
-        final PlatformContext platformContext = new DefaultPlatformContext(
-                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
+        final PlatformContext platformContext = PlatformContext.create(configuration);
 
         final PlatformWiring platformWiring = new PlatformWiring(platformContext, true, true);
 
-        final ThreadManager threadManager = getStaticThreadManager();
-        platformWiring.wireExternalComponents(
-                new PlatformStatusManager(platformContext, platformContext.getTime(), threadManager, a -> {}),
-                new TransactionPool(platformContext));
+        platformWiring.wireExternalComponents(new TransactionPool(platformContext));
 
         final String diagramString = platformWiring
                 .getModel()

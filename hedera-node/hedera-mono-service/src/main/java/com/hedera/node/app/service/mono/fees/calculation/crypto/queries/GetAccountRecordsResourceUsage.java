@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.fees.calculation.crypto.queries;
 import static com.hedera.node.app.service.mono.queries.meta.GetTxnRecordAnswer.PAYER_RECORDS_CTX_KEY;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.putIfNotNull;
+import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionRecord;
@@ -73,10 +74,9 @@ public final class GetAccountRecordsResourceUsage implements QueryResourceUsageE
      */
     public FeeData usageGivenFor(final Account account, List<TransactionRecord> pbjRecords) {
         if (account == null) {
-            return FeeData.getDefaultInstance();
+            return CONSTANT_FEE_DATA;
         }
-        final var records =
-                pbjRecords.stream().map(k -> PbjConverter.fromPbj(k)).toList();
+        final var records = pbjRecords.stream().map(PbjConverter::fromPbj).toList();
         return usageEstimator.getCryptoAccountRecordsQueryFeeMatrices(records, null);
     }
 

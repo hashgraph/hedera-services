@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
+import static com.hedera.node.app.service.evm.exceptions.InvalidTransactionException.*;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.node.app.service.mono.contracts.ContractsModule.SYSTEM_ACCOUNT_BOUNDARY;
@@ -340,8 +341,15 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final List<BalanceChange> changes,
             final Map<ByteString, EntityNum> completedLazyCreates) {
         final var receiverAlias = change.getNonEmptyAliasIfPresent();
-        validateTrueOrRevert(
-                !updater.aliases().isMirror(Address.wrap(Bytes.of(receiverAlias.toByteArray()))), INVALID_ALIAS_KEY);
+        final var isMirrorAddress = updater.aliases().isMirror(Address.wrap(Bytes.of(receiverAlias.toByteArray())));
+        if (isMirrorAddress) {
+            final var receiverAddress =
+                    updater.aliases().resolveForEvm(Address.wrap(Bytes.of(receiverAlias.toByteArray())));
+            final var addrToPass = receiverAddress == null ? Address.ZERO : receiverAddress;
+            final var receiverAddressNum = EntityNum.fromEvmAddress(addrToPass).intValue();
+            validateTrueOrRevert(receiverAddressNum >= SYSTEM_ACCOUNT_BOUNDARY, INVALID_RECEIVING_NODE_ACCOUNT);
+        }
+        validateTrueOrRevert(!isMirrorAddress, INVALID_ALIAS_KEY);
         if (completedLazyCreates.containsKey(receiverAlias)) {
             change.replaceNonEmptyAliasWith(completedLazyCreates.get(receiverAlias));
         } else {

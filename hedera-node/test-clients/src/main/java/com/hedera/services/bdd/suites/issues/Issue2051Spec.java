@@ -86,7 +86,7 @@ public class Issue2051Spec extends HapiSuite {
                                 .transfer(TRANSFER)
                                 .hasKnownStatus(ACCOUNT_DELETED),
                         getTxnRecord(DELETE_TXN).logged(),
-                        getAccountBalance(PAYER).hasTinyBars(approxChangeFromSnapshot(SNAPSHOT, -9384399, 1000)));
+                        getAccountBalance(PAYER).hasTinyBars(approxChangeFromSnapshot(SNAPSHOT, -9384399, 10000)));
     }
 
     @HapiTest

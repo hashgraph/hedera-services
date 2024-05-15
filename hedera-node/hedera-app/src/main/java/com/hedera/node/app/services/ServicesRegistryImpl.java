@@ -22,7 +22,6 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
-import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
@@ -44,7 +43,7 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
      * If the version changes the class id will be different and the upgrade will have issues.
      */
     private final SemanticVersion VERSION =
-            SemanticVersion.newBuilder().major(0).minor(48).patch(0).build();
+            SemanticVersion.newBuilder().major(0).minor(49).patch(0).build();
     /** We have to register with the {@link ConstructableRegistry} based on the schemas of the services */
     private final ConstructableRegistry constructableRegistry;
     /** The set of registered services */
@@ -67,9 +66,8 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
      * Register the given service.
      *
      * @param service The service to register
-     * @param version
      */
-    public void register(@NonNull final Service service, final HederaSoftwareVersion version) {
+    public void register(@NonNull final Service service) {
         final var serviceName = service.getServiceName();
 
         logger.debug("Registering schemas for service {}", serviceName);

@@ -90,7 +90,7 @@ public class HapiGetTokenNftInfos extends HapiQueryOp<HapiGetTokenNftInfos> {
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getTokenNftInfosQuery(spec, payment, false);
+        Query query = maybeModified(getTokenNftInfosQuery(spec, payment, false), spec);
         response = spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getTokenNftInfos(query);
         if (verboseLoggingOn) {
             String message = String.format("NftInfo for '%s': ", token);
@@ -101,7 +101,7 @@ public class HapiGetTokenNftInfos extends HapiQueryOp<HapiGetTokenNftInfos> {
 
     @Override
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getTokenNftInfosQuery(spec, payment, true);
+        Query query = maybeModified(getTokenNftInfosQuery(spec, payment, true), spec);
         Response response =
                 spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getTokenNftInfos(query);
         return costFrom(response);

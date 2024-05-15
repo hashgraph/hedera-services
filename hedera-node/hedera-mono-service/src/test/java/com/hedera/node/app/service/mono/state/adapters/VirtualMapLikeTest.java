@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.adapters;
 
-import static com.swirlds.common.io.utility.TemporaryFileBuilder.buildTemporaryDirectory;
+import static com.swirlds.common.io.utility.LegacyTemporaryFileBuilder.buildTemporaryDirectory;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.verify;

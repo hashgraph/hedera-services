@@ -109,7 +109,7 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getContractRecordsQuery(spec, payment, false);
+        Query query = maybeModified(getContractRecordsQuery(spec, payment, false), spec);
         response = spec.clients().getScSvcStub(targetNodeFor(spec), useTls).getTxRecordByContractID(query);
         List<TransactionRecord> records =
                 response.getContractGetRecordsResponse().getRecordsList();
@@ -133,7 +133,7 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
 
     @Override
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getContractRecordsQuery(spec, payment, true);
+        Query query = maybeModified(getContractRecordsQuery(spec, payment, true), spec);
         Response response =
                 spec.clients().getScSvcStub(targetNodeFor(spec), useTls).getTxRecordByContractID(query);
         return costFrom(response);

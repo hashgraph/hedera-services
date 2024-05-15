@@ -94,7 +94,7 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) {
-        Query query = getVersionInfoQuery(payment, false);
+        Query query = maybeModified(getVersionInfoQuery(payment, false), spec);
         response = spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls).getVersionInfo(query);
         var info = response.getNetworkGetVersionInfo();
         if (verboseLoggingOn) {
@@ -134,7 +134,7 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
 
     @Override
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getVersionInfoQuery(payment, true);
+        Query query = maybeModified(getVersionInfoQuery(payment, true), spec);
         Response response =
                 spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls).getVersionInfo(query);
         return costFrom(response);

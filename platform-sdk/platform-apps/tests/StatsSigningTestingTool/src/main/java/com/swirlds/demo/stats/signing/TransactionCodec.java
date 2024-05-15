@@ -16,6 +16,7 @@
 
 package com.swirlds.demo.stats.signing;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.demo.stats.signing.algorithms.ECSecP256K1Algorithm;
@@ -105,53 +106,54 @@ final class TransactionCodec {
         return buffer.array();
     }
 
-    public static boolean txIsSigned(final byte[] tx) {
+    public static boolean txIsSigned(final Bytes tx) {
         if (tx == null) {
             throw new IllegalArgumentException("Invalid Transaction: Null Reference");
         }
 
-        if (tx.length <= TX_PREAMBLE_SIGNED_OFFSET) {
+        if (tx.length() <= TX_PREAMBLE_SIGNED_OFFSET) {
             throw new IllegalArgumentException("Invalid Transaction: Truncated Preamble");
         }
 
-        return tx[TX_PREAMBLE_SIGNED_OFFSET] == 1;
+        return tx.getByte(TX_PREAMBLE_SIGNED_OFFSET) == 1;
     }
 
-    public static long txId(final byte[] tx) {
+    public static long txId(final Bytes tx) {
         if (tx == null) {
             throw new IllegalArgumentException("Invalid Transaction: Null Reference");
         }
 
-        if (tx.length <= PREAMBLE_SIZE) {
+        if (tx.length() <= PREAMBLE_SIZE) {
             throw new IllegalArgumentException("Invalid Transaction: Truncated Preamble");
         }
 
-        return ByteBuffer.wrap(tx).getLong();
+        return tx.getLong(0);
     }
 
-    public static TransactionSignature extractSignature(final byte[] tx) {
+    public static TransactionSignature extractSignature(final Bytes tx) {
         if (tx == null) {
             throw new IllegalArgumentException("Invalid Transaction: Null Reference");
         }
 
-        if (tx.length <= PREAMBLE_SIZE) {
+        if (tx.length() <= PREAMBLE_SIZE) {
             throw new IllegalArgumentException("Invalid Transaction: Truncated Preamble");
         }
 
-        final boolean signed = tx[TX_PREAMBLE_SIGNED_OFFSET] == 1;
+        final boolean signed = tx.getByte(TX_PREAMBLE_SIGNED_OFFSET) == 1;
 
         if (!signed) {
             throw new IllegalStateException("Invalid Signature: Transaction Is Unsigned");
         }
 
-        final ByteBuffer wrapper = ByteBuffer.wrap(tx).position(TX_PREAMBLE_SIG_ALG_ID_OFFSET);
+        final byte[] txBytes = tx.toByteArray();
+        final ByteBuffer wrapper = ByteBuffer.wrap(txBytes).position(TX_PREAMBLE_SIG_ALG_ID_OFFSET);
         final byte algorithmId = wrapper.get();
         final SigningAlgorithm algorithm = activeAlgorithms.get(algorithmId);
         final SignatureType signatureType = (algorithm != null) ? algorithm.getSignatureType() : SignatureType.ED25519;
 
         return (signatureType == SignatureType.ECDSA_SECP256K1)
                 ? readEcdsaSignature(wrapper, algorithm, signatureType)
-                : readStandardSignature(wrapper, tx, signatureType);
+                : readStandardSignature(wrapper, txBytes, signatureType);
     }
 
     private static TransactionSignature readStandardSignature(

@@ -37,8 +37,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -190,6 +192,14 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
+    public HapiSpec idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
+                .when(contractCall(CONTRACT, "create").gas(785_000))
+                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> contractCallLocal(CONTRACT, "getIndirect")));
+    }
+
+    @HapiTest
     final HapiSpec vanillaSuccess() {
         return defaultHapiSpec("vanillaSuccess", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
@@ -240,7 +250,9 @@ public class ContractCallLocalSuite extends HapiSuite {
     @HapiTest
     final HapiSpec successOnDeletedContract() {
         return defaultHapiSpec("SuccessOnDeletedContract", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                // since we have CONTRACT_ID key
+                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).refusingEthConversion())
                 .when(contractDelete(CONTRACT))
                 .then(contractCallLocal(CONTRACT, "create")
                         .nodePayment(1_234_567)

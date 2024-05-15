@@ -85,7 +85,7 @@ public class ContractUpdateHandler implements TransactionHandler {
 
         if (isAdminSigRequired(op)) {
             final var accountStore = context.createStore(ReadableAccountStore.class);
-            final var targetId = op.contractIDOrElse(ContractID.DEFAULT);
+            final var targetId = op.contractIDOrThrow();
             final var maybeContract = accountStore.getContractById(targetId);
             if (maybeContract != null && maybeContract.keyOrThrow().key().kind() == Key.KeyOneOfType.CONTRACT_ID) {
                 throw new PreCheckException(MODIFYING_IMMUTABLE_CONTRACT);
@@ -104,6 +104,10 @@ public class ContractUpdateHandler implements TransactionHandler {
     public void pureChecks(@NonNull TransactionBody txn) throws PreCheckException {
         final var op = txn.contractUpdateInstanceOrThrow();
         mustExist(op.contractID(), INVALID_CONTRACT_ID);
+
+        if (op.hasAdminKey() && processAdminKey(op)) {
+            throw new PreCheckException(INVALID_ADMIN_KEY);
+        }
     }
 
     private boolean isAdminSigRequired(final ContractUpdateTransactionBody op) {
@@ -143,10 +147,6 @@ public class ContractUpdateHandler implements TransactionHandler {
             @NonNull final ReadableAccountStore accountStore) {
         validateTrue(contract != null, INVALID_CONTRACT_ID);
         validateTrue(!contract.deleted(), INVALID_CONTRACT_ID);
-
-        if (op.hasAdminKey() && processAdminKey(op)) {
-            throw new HandleException(INVALID_ADMIN_KEY);
-        }
 
         if (op.hasExpirationTime()) {
             try {
@@ -298,8 +298,11 @@ public class ContractUpdateHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
         final var op = feeContext.body();
+        final var contractId = op.contractUpdateInstanceOrThrow().contractIDOrElse(ContractID.DEFAULT);
+        final var accountStore = feeContext.readableStore(ReadableAccountStore.class);
+        final var contract = accountStore.getContractById(contractId);
         return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new ContractUpdateResourceUsage(
                         new SmartContractFeeBuilder())
-                .usageGiven(fromPbj(op), sigValueObj, null));
+                .usageGiven(fromPbj(op), sigValueObj, contract));
     }
 }

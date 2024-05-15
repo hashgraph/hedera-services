@@ -73,6 +73,7 @@ public class MixedOperations {
             final AtomicInteger nftId,
             final AtomicInteger scheduleId,
             final AtomicInteger contractId,
+            final AtomicInteger topicId,
             final Random r) {
         return () -> new HapiSpecOperation[] {
             // Submit some mixed operations
@@ -80,7 +81,7 @@ public class MixedOperations {
             inParallel(IntStream.range(0, 2 * numSubmissions)
                     .mapToObj(ignore -> cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L))
                             .payingWith(PAYER)
-                            .logging()
+                            .noLogging()
                             .signedBy(SENDER, PAYER))
                     .toArray(HapiSpecOperation[]::new)),
             sleepFor(10000),
@@ -95,7 +96,7 @@ public class MixedOperations {
                             .adminKey(ADMIN_KEY)
                             .supplyKey(SUPPLY_KEY)
                             .payingWith(PAYER)
-                            .logging())
+                            .noLogging())
                     .toArray(HapiSpecOperation[]::new)),
             sleepFor(10000),
             inParallel(IntStream.range(0, numSubmissions)
@@ -107,29 +108,32 @@ public class MixedOperations {
                             .adminKey(ADMIN_KEY)
                             .supplyKey(SUPPLY_KEY)
                             .payingWith(PAYER)
-                            .logging())
+                            .noLogging())
+                    .toArray(HapiSpecOperation[]::new)),
+            sleepFor(10000),
+            inParallel(IntStream.range(0, numSubmissions)
+                    .mapToObj(ignore -> createTopic(TOPIC + topicId.getAndIncrement())
+                            .submitKeyName(SUBMIT_KEY)
+                            .payingWith(PAYER)
+                            .noLogging())
                     .toArray(HapiSpecOperation[]::new)),
             sleepFor(10000),
             inParallel(IntStream.range(0, numSubmissions)
                     .mapToObj(i -> tokenAssociate(SENDER, TOKEN + i)
                             .payingWith(PAYER)
-                            .logging()
+                            .noLogging()
                             .signedBy(SENDER, PAYER))
                     .toArray(HapiSpecOperation[]::new)),
             sleepFor(10000),
             inParallel(IntStream.range(0, numSubmissions)
-                    .mapToObj(i ->
-                            createTopic(TOPIC + i).submitKeyName(SUBMIT_KEY).payingWith(PAYER))
-                    .toArray(HapiSpecOperation[]::new)),
-            sleepFor(10000),
-            inParallel(IntStream.range(0, numSubmissions)
-                    .mapToObj(i -> submitMessageTo(TOPIC + i)
+                    .mapToObj(ignore -> submitMessageTo(TOPIC + topicId.getAndDecrement())
                             .message(ArrayUtils.addAll(
                                     ByteBuffer.allocate(8)
                                             .putLong(Instant.now().toEpochMilli())
                                             .array(),
                                     randomUtf8Bytes(1000)))
                             .payingWith(SENDER)
+                            .noLogging()
                             .signedBy(SENDER, SUBMIT_KEY))
                     .toArray(HapiSpecOperation[]::new)),
             sleepFor(10000),
@@ -140,13 +144,13 @@ public class MixedOperations {
                             .payingWith(PAYER)
                             .signedBy(SENDER, PAYER)
                             .adminKey(SENDER)
-                            .logging())
+                            .noLogging())
                     .toArray(HapiSpecOperation[]::new)),
             sleepFor(10000),
             inParallel(IntStream.range(0, 100)
                     .mapToObj(ignore -> contractCreate(CONTRACT_NAME_PREFIX + contractId.getAndIncrement())
                             .bytecode(SOME_BYTE_CODE)
-                            .logging())
+                            .noLogging())
                     .toArray(HapiSpecOperation[]::new))
         };
     }

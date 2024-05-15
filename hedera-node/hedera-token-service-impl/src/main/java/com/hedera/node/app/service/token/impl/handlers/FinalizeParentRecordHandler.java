@@ -48,6 +48,7 @@ import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +68,10 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
 
     private final StakingRewardsHandler stakingRewardsHandler;
 
+    /**
+     * Constructs a {@link FinalizeParentRecordHandler} instance.
+     * @param stakingRewardsHandler the {@link StakingRewardsHandler} instance
+     */
     @Inject
     public FinalizeParentRecordHandler(@NonNull final StakingRewardsHandler stakingRewardsHandler) {
         this.stakingRewardsHandler = stakingRewardsHandler;
@@ -74,7 +79,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
 
     @Override
     public void finalizeParentRecord(
-            @NonNull final AccountID payer,
+            @Nullable final AccountID payer,
             @NonNull final FinalizeContext context,
             @NonNull final HederaFunctionality functionality,
             @NonNull final Set<AccountID> explicitRewardReceivers,
@@ -159,7 +164,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
     // invoke logger parameters conditionally
     @SuppressWarnings("java:S2629")
     private void logHbarFinalizationFailInvalid(
-            @NonNull final AccountID payerId,
+            @Nullable final AccountID payerId,
             @NonNull final SingleTransactionRecordBuilder recordBuilder,
             @NonNull final WritableAccountStore accountStore) {
         logger.error(

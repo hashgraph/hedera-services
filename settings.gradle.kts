@@ -28,6 +28,8 @@ include(":app-hapi-fees", "hedera-node/hapi-fees")
 
 include(":app-hapi-utils", "hedera-node/hapi-utils")
 
+include(":app-service-addressbook", "hedera-node/hedera-addressbook-service")
+
 include(":app-service-consensus", "hedera-node/hedera-consensus-service")
 
 include(":app-service-consensus-impl", "hedera-node/hedera-consensus-service-impl")
@@ -36,9 +38,9 @@ include(":app-service-contract", "hedera-node/hedera-smart-contract-service")
 
 include(":app-service-contract-impl", "hedera-node/hedera-smart-contract-service-impl")
 
-include(":app-service-evm", "hedera-node/hedera-evm")
+include(":hedera-evm", "hedera-node/hedera-evm")
 
-include(":app-service-evm-impl", "hedera-node/hedera-evm-impl")
+include(":hedera-evm-impl", "hedera-node/hedera-evm-impl")
 
 include(":app-service-file", "hedera-node/hedera-file-service")
 
@@ -148,7 +150,7 @@ fun includeAllProjects(containingFolder: String) {
 }
 
 // The HAPI API version to use for Protobuf sources.
-val hapiProtoVersion = "0.48.0"
+val hapiProtoVersion = "0.50.0"
 
 dependencyResolutionManagement {
     // Protobuf tool versions
@@ -157,6 +159,6 @@ dependencyResolutionManagement {
         version("grpc-proto", "1.45.1")
         version("hapi-proto", hapiProtoVersion)
 
-        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.8.5")
+        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.8.7")
     }
 }
