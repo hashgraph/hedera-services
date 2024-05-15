@@ -38,16 +38,29 @@ plugins {
 version =
     providers.fileContents(rootProject.layout.projectDirectory.versionTxt()).asText.get().trim()
 
-// Fail the build if Gradle is started with a Java version that does not exactly match
-val javaVersion = "21.0.1"
-val currentJavaVersion = providers.systemProperty("java.version").get()
+val javaVersionMajor = JavaVersion.VERSION_21
+val javaVersionPatch = "0.1"
 
-if (currentJavaVersion != javaVersion) {
-    throw RuntimeException(
-        "Gradle runs with Java $currentJavaVersion. This project requires Gradle to run with Java $javaVersion. " +
-            "\n - From commandline: change JAVA_HOME and/or PATH to point at Java $javaVersion installation." +
-            "\n - From IntelliJ: change 'Gradle JVM' in 'Gradle Settings' to point at Java $javaVersion installation."
-    )
+val currentJavaVersionMajor = JavaVersion.current()
+val currentJavaVersion = providers.systemProperty("java.version").get()
+val expectedJavaVersion = "$javaVersionMajor.$javaVersionPatch"
+
+if (currentJavaVersion != expectedJavaVersion) {
+    val message =
+        "Gradle runs with Java $currentJavaVersion. This project works best running with Java $expectedJavaVersion. " +
+            "\n - From commandline: change JAVA_HOME and/or PATH to point at Java $expectedJavaVersion installation." +
+            "\n - From IntelliJ: change 'Gradle JVM' in 'Gradle Settings' to point at Java $expectedJavaVersion installation."
+
+    if (currentJavaVersionMajor.ordinal < javaVersionMajor.ordinal) { // fail if version is too old
+        throw (RuntimeException(message))
+    } else {
+        logger.lifecycle("WARN: $message")
+    }
+}
+
+java {
+    sourceCompatibility = javaVersionMajor
+    targetCompatibility = javaVersionMajor
 }
 
 configurations.all {
