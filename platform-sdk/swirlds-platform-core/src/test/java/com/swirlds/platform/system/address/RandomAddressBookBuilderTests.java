@@ -111,7 +111,7 @@ class RandomAddressBookBuilderTests {
             final KeysAndCerts privateKeys = builderA.getPrivateKeys(id);
 
             final byte[] dataArray = randotron.nextByteArray(64);
-            final Bytes dataBytes = randotron.nextHashBytes();
+            final Bytes dataBytes = Bytes.wrap(dataArray);
             final com.swirlds.common.crypto.Signature signature = new PlatformSigner(privateKeys).sign(dataArray);
 
             assertTrue(CryptoStatic.verifySignature(dataBytes, signature.getBytes(), signaturePublicKey));
