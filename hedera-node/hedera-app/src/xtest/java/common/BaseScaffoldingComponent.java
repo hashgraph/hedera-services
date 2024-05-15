@@ -24,9 +24,9 @@ import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.HederaState;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 

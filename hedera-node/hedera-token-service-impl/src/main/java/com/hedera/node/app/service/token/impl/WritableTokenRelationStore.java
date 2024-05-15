@@ -26,10 +26,10 @@ import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -99,6 +99,8 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
      *
      * @param accountId - the number of the account to be retrieved
      * @param tokenId   - the number of the token to be retrieved
+     * @return the token relation with the given token number and account number, or {@code Optional.empty()} if no such
+     * token relation exists
      */
     @Nullable
     public TokenRelation getForModify(@NonNull final AccountID accountId, @NonNull final TokenID tokenId) {

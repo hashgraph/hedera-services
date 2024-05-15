@@ -32,6 +32,8 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_SELF;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.lenient;
@@ -57,6 +59,7 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -66,6 +69,9 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.utils.TxnUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
@@ -137,6 +143,14 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
     }
 
     @Test
+    @DisplayName("pureChecks works as expected")
+    void pureCheckWorksAsExpexcted() {
+        givenValidTopic();
+        final var txn = newDefaultSubmitMessageTxn(topicEntityNum);
+        assertDoesNotThrow(() -> subject.pureChecks(txn));
+    }
+
+    @Test
     @DisplayName("Topic submission key sig required")
     void submissionKeySigRequired() throws PreCheckException {
         readableStore = mock(ReadableTopicStore.class);
@@ -198,6 +212,28 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
         assertNotEquals(
                 initialTopic.runningHash().toString(),
                 expectedTopic.runningHash().toString());
+    }
+
+    @Test
+    @DisplayName("Handle throws IOException")
+    void handleThrowsIOException() {
+        givenValidTopic();
+        subject = new ConsensusSubmitMessageHandler() {
+            @Override
+            public Topic updateRunningHashAndSequenceNumber(
+                    @NonNull final TransactionBody txn, @NonNull final Topic topic, @Nullable Instant consensusNow)
+                    throws IOException {
+                throw new IOException();
+            }
+        };
+
+        final var txn = newSubmitMessageTxn(topicEntityNum, "");
+        given(handleContext.body()).willReturn(txn);
+
+        given(handleContext.consensusNow()).willReturn(consensusTimestamp);
+
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertThat(msg.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_TRANSACTION);
     }
 
     @Test
@@ -302,6 +338,30 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID, msg.getStatus());
+    }
+
+    @Test
+    void calculateFeesHappyPath() {
+        givenValidTopic();
+        final var chunkTxnId =
+                TransactionID.newBuilder().accountID(anotherPayer).build();
+        final var txn = newSubmitMessageTxnWithChunksAndPayer(topicEntityNum, 1, 2, chunkTxnId);
+        final var feeCtx = mock(FeeContext.class);
+        readableStore = mock(ReadableTopicStore.class);
+        given(feeCtx.body()).willReturn(txn);
+
+        final var feeCalc = mock(FeeCalculator.class);
+        given(feeCtx.feeCalculator(notNull())).willReturn(feeCalc);
+        given(feeCalc.addBytesPerTransaction(anyLong())).willReturn(feeCalc);
+        given(feeCalc.addNetworkRamByteSeconds(anyLong())).willReturn(feeCalc);
+        // The fees wouldn't be free in this scenario, but we don't care about the actual return
+        // value here since we're using a mock calculator
+        given(feeCalc.calculate()).willReturn(Fees.FREE);
+
+        subject.calculateFees(feeCtx);
+
+        verify(feeCalc).addBytesPerTransaction(28);
+        verify(feeCalc).addNetworkRamByteSeconds(10080);
     }
 
     /* ----------------- Helper Methods ------------------- */

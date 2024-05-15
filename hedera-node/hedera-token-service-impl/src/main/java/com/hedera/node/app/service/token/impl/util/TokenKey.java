@@ -46,6 +46,9 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * All the keys that can be updated on a Token. This provides a way to update token keys.
  */
 public enum TokenKey {
+    /**
+     * The admin key.
+     */
     ADMIN_KEY {
         @Override
         public boolean isPresentInUpdate(TokenUpdateTransactionBody update) {
@@ -82,7 +85,9 @@ public enum TokenKey {
             return INVALID_ADMIN_KEY;
         }
     },
-
+    /**
+     * The fee schedule key.
+     */
     FEE_SCHEDULE_KEY {
         @Override
         public boolean isPresentInUpdate(TokenUpdateTransactionBody update) {
@@ -119,7 +124,9 @@ public enum TokenKey {
             return INVALID_CUSTOM_FEE_SCHEDULE_KEY;
         }
     },
-
+    /**
+     * The supply key.
+     */
     SUPPLY_KEY {
         @Override
         public boolean isPresentInUpdate(TokenUpdateTransactionBody update) {
@@ -156,7 +163,9 @@ public enum TokenKey {
             return INVALID_SUPPLY_KEY;
         }
     },
-
+    /**
+     * The wipe key.
+     */
     WIPE_KEY {
         @Override
         public boolean isPresentInUpdate(TokenUpdateTransactionBody update) {
@@ -193,7 +202,9 @@ public enum TokenKey {
             return INVALID_WIPE_KEY;
         }
     },
-
+    /**
+     * The pause key.
+     */
     PAUSE_KEY {
         @Override
         public boolean isPresentInUpdate(TokenUpdateTransactionBody update) {
@@ -230,7 +241,9 @@ public enum TokenKey {
             return INVALID_PAUSE_KEY;
         }
     },
-
+    /**
+     * The freeze key.
+     */
     FREEZE_KEY {
         @Override
         public boolean isPresentInUpdate(TokenUpdateTransactionBody update) {
@@ -267,7 +280,9 @@ public enum TokenKey {
             return INVALID_FREEZE_KEY;
         }
     },
-
+    /**
+     * The KYC key.
+     */
     KYC_KEY {
         @Override
         public boolean isPresentInUpdate(TokenUpdateTransactionBody update) {
@@ -304,7 +319,9 @@ public enum TokenKey {
             return INVALID_KYC_KEY;
         }
     },
-
+    /**
+     * The metadata key.
+     */
     METADATA_KEY {
         @Override
         public ResponseCodeEnum invalidKeyStatus() {

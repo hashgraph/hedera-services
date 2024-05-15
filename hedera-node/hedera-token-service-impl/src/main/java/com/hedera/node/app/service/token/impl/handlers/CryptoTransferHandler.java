@@ -103,11 +103,20 @@ public class CryptoTransferHandler implements TransactionHandler {
     private final CryptoTransferValidator validator;
     private final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
 
+    /**
+     * Default constructor for injection.
+     * @param validator the validator to use to validate the transaction
+     */
     @Inject
     public CryptoTransferHandler(@NonNull final CryptoTransferValidator validator) {
         this(validator, true);
     }
 
+    /**
+     * Constructor for injection with the option to enforce mono-service restrictions on auto-creation custom fee
+     * @param validator the validator to use to validate the transaction
+     * @param enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments whether to enforce mono-service restrictions
+     */
     public CryptoTransferHandler(
             @NonNull final CryptoTransferValidator validator,
             final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments) {

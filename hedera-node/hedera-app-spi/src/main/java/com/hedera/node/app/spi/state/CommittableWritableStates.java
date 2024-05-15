@@ -17,6 +17,7 @@
 package com.hedera.node.app.spi.state;
 
 import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
+import com.swirlds.state.spi.WritableStates;
 
 /**
  * A {@link WritableStates} implementation at the "bottom" of a {@link SavepointStack}; i.e., an
