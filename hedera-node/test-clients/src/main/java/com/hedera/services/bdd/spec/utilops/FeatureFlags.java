@@ -65,6 +65,6 @@ public enum FeatureFlags {
         // Not being tested
         "contracts.evm.version.dynamic",
         // HIP-904
-        "entities.unlimitedAutoAssociations"
+        "entities.unlimitedAutoAssociationsEnabled"
     };
 }
