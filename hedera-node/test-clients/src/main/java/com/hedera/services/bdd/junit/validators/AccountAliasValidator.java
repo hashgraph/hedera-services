@@ -138,7 +138,8 @@ public class AccountAliasValidator implements RecordStreamValidator {
                 }
 
                 if (item.getRecord().hasContractCreateResult()) {
-                    final var evmAddress = item.getRecord().getContractCreateResult().getEvmAddress();
+                    final var evmAddress =
+                            item.getRecord().getContractCreateResult().getEvmAddress();
                     recordStreamBytes.add(evmAddress.toByteString().substring(2));
                 }
 
