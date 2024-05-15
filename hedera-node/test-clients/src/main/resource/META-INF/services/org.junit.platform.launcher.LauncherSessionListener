@@ -1,1 +1,1 @@
-com.hedera.services.bdd.suites.HelloWorldLauncherSessionListener
+com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener

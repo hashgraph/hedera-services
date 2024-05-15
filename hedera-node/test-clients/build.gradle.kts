@@ -203,11 +203,17 @@ tasks.register<Test>("hapiTestNDReconnect") {
 }
 
 tasks.test {
-    // Disable these EET tests from being executed as part of the gradle "test" task.
-    // We should maybe remove them from src/test into src/eet,
-    // so it can be part of an eet test task instead. See issue #3412
-    // (https://github.com/hashgraph/hedera-services/issues/3412).
-    exclude("**/*")
+    testClassesDirs = sourceSets.main.get().output.classesDirs
+    classpath = sourceSets.main.get().runtimeClasspath
+
+    useJUnitPlatform()
+
+    // Limit heap and number of processors
+    maxHeapSize = "8g"
+    jvmArgs("-XX:ActiveProcessorCount=6")
+
+    // Do not yet run things on the '--module-path'
+    modularity.inferModulePath.set(false)
 }
 
 tasks.itest {

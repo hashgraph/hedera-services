@@ -23,7 +23,16 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.support.AnnotationSupport;
 
-public class TargetingExtension implements BeforeEachCallback, AfterEachCallback {
+/**
+ * An extension that binds the target network to the thread before invoking
+ * each {@link HederaTest}-annotated test method.
+ *
+ * <p><b>TODO</b> - implement {@link org.junit.jupiter.api.extension.BeforeAllCallback}
+ * and {@link org.junit.jupiter.api.extension.AfterAllCallback} to handle
+ * creating {@link @Isolated} networks for annotated test classes and targeting
+ * them for the duration of the test class.
+ */
+public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachCallback {
     @Override
     public void beforeEach(@NonNull final ExtensionContext extensionContext) {
         extensionContext

@@ -32,6 +32,7 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.spec.verification.traceability;
     exports com.hedera.services.bdd.spec.assertions;
     exports com.hedera.services.bdd.spec.assertions.matchers;
+    exports com.hedera.services.bdd.junit;
 
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;

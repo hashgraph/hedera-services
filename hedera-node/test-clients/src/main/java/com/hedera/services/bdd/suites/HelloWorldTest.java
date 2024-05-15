@@ -16,35 +16,18 @@
 
 package com.hedera.services.bdd.suites;
 
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 
 import com.hedera.services.bdd.junit.hedera.HederaTest;
-import com.hedera.services.bdd.spec.HapiSpec;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestFactory;
-import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(HelloWorldExtension.class)
 public class HelloWorldTest {
-    @Test
-    public void testHelloWorld() {
-        System.out.println("Hello, World!");
-    }
-
-    @TestFactory
-    public DynamicTest testDynamicHelloWorld() {
-        return DynamicTest.dynamicTest("Dynamic Hello, World!", () -> {
-            System.out.println("DYNAMIC EXECUTION");
-        });
-    }
-
     @HederaTest
-    @TestFactory
     public Stream<DynamicTest> hwHapiSpec() {
-        return HapiSpec.defaultHapiSpec("hwHapiSpec")
+        return defaultHapiSpec("hwHapiSpec")
                 .given()
                 .when()
                 .then(getAccountInfo(DEFAULT_PAYER).logged());

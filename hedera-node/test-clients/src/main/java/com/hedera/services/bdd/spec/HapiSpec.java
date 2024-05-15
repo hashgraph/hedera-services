@@ -52,6 +52,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -131,6 +132,13 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.function.Executable;
 
 public class HapiSpec implements Runnable, Executable {
+    /**
+     * The name of the DynamicTest that executes the HapiSpec as written,
+     * without modifications such as replacing ContractCall and ContractCreate
+     * operations with equivalent EthereumTransactions
+     */
+    private static final String AS_WRITTEN_DISPLAY_NAME = "as written";
+
     public static final ThreadLocal<HederaNetwork> TARGET_NETWORK = new ThreadLocal<>();
 
     private static final long FIRST_NODE_ACCOUNT_NUM = 3L;
@@ -230,7 +238,8 @@ public class HapiSpec implements Runnable, Executable {
     /** These nodes can be used by some ops for controlling the nodes, such as restart, reconnect, etc. */
     List<HapiTestNode> nodes = emptyList();
 
-    List<HederaNode> networkNodes = emptyList();
+    @Nullable
+    HederaNetwork targetNetwork;
 
     List<SingleAccountBalances> accountBalances = new ArrayList<>();
     private final SnapshotMatchMode[] snapshotMatchModes;
@@ -351,12 +360,12 @@ public class HapiSpec implements Runnable, Executable {
         if (nodes != null) this.nodes = nodes;
     }
 
-    public void setNetworkNodes(@NonNull final List<HederaNode> nodes) {
-        this.networkNodes = nodes;
+    public void setTargetNetwork(@NonNull final HederaNetwork targetNetwork) {
+        this.targetNetwork = requireNonNull(targetNetwork);
     }
 
     public List<HederaNode> getNetworkNodes() {
-        return networkNodes;
+        return requireNonNull(targetNetwork).nodes();
     }
 
     public List<HapiTestNode> getNodes() {
@@ -373,6 +382,8 @@ public class HapiSpec implements Runnable, Executable {
 
     @Override
     public void execute() throws Throwable {
+        // Only JUnit will use execute(), and in that case the target network must be set
+        requireNonNull(targetNetwork).waitForReady();
         run();
         if (failure != null) {
             throw failure.cause;
@@ -1017,7 +1028,7 @@ public class HapiSpec implements Runnable, Executable {
     public static Def.Setup hapiSpec(
             String name, List<String> propertiesToPreserve, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
         return setup -> given -> when -> then -> Stream.of(DynamicTest.dynamicTest(
-                name,
+                AS_WRITTEN_DISPLAY_NAME,
                 targeted(new HapiSpec(
                         name, false, setup, given, when, then, propertiesToPreserve, snapshotMatchModes))));
     }
@@ -1027,7 +1038,7 @@ public class HapiSpec implements Runnable, Executable {
             final List<String> propertiesToPreserve,
             @NonNull final SnapshotMatchMode... snapshotMatchModes) {
         return setup -> given -> when -> then -> Stream.of(DynamicTest.dynamicTest(
-                name,
+                AS_WRITTEN_DISPLAY_NAME,
                 targeted(
                         new HapiSpec(name, true, setup, given, when, then, propertiesToPreserve, snapshotMatchModes))));
     }
@@ -1037,10 +1048,12 @@ public class HapiSpec implements Runnable, Executable {
         if (targetNetwork != null) {
             log.info("Targeting network '{}' for spec '{}'", targetNetwork.name(), spec.name);
             spec.setTargetNetworkType(targetNetwork.type());
-            final var nodes = targetNetwork.nodes();
             spec.addOverrideProperties(Map.of(
-                    "nodes", nodes.stream().map(HederaNode::hapiSpecIdentifier).collect(joining(","))));
-            spec.setNetworkNodes(nodes);
+                    "nodes",
+                    targetNetwork.nodes().stream()
+                            .map(HederaNode::hapiSpecIdentifier)
+                            .collect(joining(","))));
+            spec.setTargetNetwork(targetNetwork);
         }
         return spec;
     }
