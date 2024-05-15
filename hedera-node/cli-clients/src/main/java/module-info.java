@@ -26,7 +26,6 @@ module com.hedera.node.services.cli {
     requires com.swirlds.virtualmap;
     requires io.github.classgraph;
     requires org.apache.commons.lang3;
-    requires org.apache.logging.log4j;
     requires tuweni.bytes;
     requires tuweni.units;
     requires static com.github.spotbugs.annotations;

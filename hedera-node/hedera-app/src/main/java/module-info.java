@@ -49,6 +49,7 @@ module com.hedera.node.app {
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
+    requires static com.swirlds.logging.log4j.appender;
     requires static java.compiler; // javax.annotation.processing.Generated
 
     exports com.hedera.node.app to
