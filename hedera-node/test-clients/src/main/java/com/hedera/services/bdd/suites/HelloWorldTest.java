@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 
 import com.hedera.services.bdd.junit.hedera.HederaTest;
 import java.util.stream.Stream;
@@ -31,5 +32,13 @@ public class HelloWorldTest {
                 .given()
                 .when()
                 .then(getAccountInfo(DEFAULT_PAYER).logged());
+    }
+
+    @HederaTest
+    public Stream<DynamicTest> secondHwHapiSpec() {
+        return defaultHapiSpec("secondHwHapiSpec")
+                .given()
+                .when()
+                .then(getAccountInfo(FUNDING).logged());
     }
 }

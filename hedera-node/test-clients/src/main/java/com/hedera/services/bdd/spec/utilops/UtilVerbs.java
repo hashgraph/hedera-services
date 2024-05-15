@@ -153,7 +153,6 @@ import com.hedera.services.bdd.spec.utilops.throughput.StartThroughputObs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
-import com.hedera.services.bdd.suites.perf.topic.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.utils.RecordStreamType;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.FeesJsonToGrpcBytes;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
@@ -211,6 +210,8 @@ import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.junit.jupiter.api.Assertions;
 
 public class UtilVerbs {
+
+    public static final int DEFAULT_COLLISION_AVOIDANCE_FACTOR = 2;
 
     /**
      * Private constructor to prevent instantiation.
@@ -866,7 +867,7 @@ public class UtilVerbs {
                     if (ciProperties.has("threads")) {
                         threads = ciProperties.getInteger("threads");
                     }
-                    int factor = HCSChunkingRealisticPerfSuite.DEFAULT_COLLISION_AVOIDANCE_FACTOR;
+                    int factor = DEFAULT_COLLISION_AVOIDANCE_FACTOR;
                     if (ciProperties.has("collisionAvoidanceFactor")) {
                         factor = ciProperties.getInteger("collisionAvoidanceFactor");
                     }

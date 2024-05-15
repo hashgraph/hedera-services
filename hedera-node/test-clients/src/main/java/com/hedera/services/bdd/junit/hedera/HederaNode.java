@@ -91,6 +91,6 @@ public interface HederaNode {
      * @return this node's HAPI spec identifier
      */
     default String hapiSpecIdentifier() {
-        return "127.0.0.1:" + getPort() + ":0.0." + getNodeId();
+        return "127.0.0.1:" + getPort() + ":0.0." + getAccountId().accountNumOrThrow();
     }
 }

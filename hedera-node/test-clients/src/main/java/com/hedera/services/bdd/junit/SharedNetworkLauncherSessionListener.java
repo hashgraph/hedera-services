@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.junit;
 
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
+import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import org.apache.logging.log4j.LogManager;
@@ -24,7 +25,6 @@ import org.apache.logging.log4j.Logger;
 import org.junit.platform.launcher.LauncherSession;
 import org.junit.platform.launcher.LauncherSessionListener;
 import org.junit.platform.launcher.TestExecutionListener;
-import org.junit.platform.launcher.TestIdentifier;
 import org.junit.platform.launcher.TestPlan;
 
 public class SharedNetworkLauncherSessionListener implements LauncherSessionListener {
@@ -49,12 +49,8 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
 
         @Override
         public void testPlanExecutionFinished(@NonNull final TestPlan testPlan) {
+            HapiApiClients.tearDown();
             HederaNetwork.SHARED_NETWORK.get().terminate();
-        }
-
-        @Override
-        public void dynamicTestRegistered(TestIdentifier testIdentifier) {
-            log.info("Registered {}", testIdentifier.getDisplayName());
         }
     }
 }

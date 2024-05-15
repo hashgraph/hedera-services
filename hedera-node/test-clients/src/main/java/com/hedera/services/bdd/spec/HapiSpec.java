@@ -489,6 +489,19 @@ public class HapiSpec implements Runnable, Executable {
     }
 
     private boolean init() {
+        hapiClients = clientsFor(hapiSetup);
+        try {
+            hapiRegistry = new HapiSpecRegistry(hapiSetup);
+            keyFactory = new KeyFactory(hapiSetup, hapiRegistry);
+            txnFactory = new TxnFactory(hapiSetup, keyFactory);
+            FeesAndRatesProvider scheduleProvider =
+                    new FeesAndRatesProvider(txnFactory, keyFactory, hapiSetup, hapiClients, hapiRegistry);
+            feeCalculator = new FeeCalculator(hapiSetup, scheduleProvider);
+            this.ratesProvider = scheduleProvider;
+        } catch (Throwable t) {
+            log.error("Initialization failed for spec '{}'!", name, t);
+            status = ERROR;
+        }
         if (!tryReinitializingFees()) {
             status = ERROR;
             return false;
@@ -1048,11 +1061,10 @@ public class HapiSpec implements Runnable, Executable {
         if (targetNetwork != null) {
             log.info("Targeting network '{}' for spec '{}'", targetNetwork.name(), spec.name);
             spec.setTargetNetworkType(targetNetwork.type());
-            spec.addOverrideProperties(Map.of(
-                    "nodes",
-                    targetNetwork.nodes().stream()
-                            .map(HederaNode::hapiSpecIdentifier)
-                            .collect(joining(","))));
+            final var specNodes = targetNetwork.nodes().stream()
+                    .map(HederaNode::hapiSpecIdentifier)
+                    .collect(joining(","));
+            spec.addOverrideProperties(Map.of("nodes", specNodes));
             spec.setTargetNetwork(targetNetwork);
         }
         return spec;
@@ -1076,19 +1088,6 @@ public class HapiSpec implements Runnable, Executable {
         this.then = then;
         this.onlySpecToRunInSuite = onlySpecToRunInSuite;
         this.propertiesToPreserve = propertiesToPreserve;
-        hapiClients = clientsFor(hapiSetup);
-        try {
-            hapiRegistry = new HapiSpecRegistry(hapiSetup);
-            keyFactory = new KeyFactory(hapiSetup, hapiRegistry);
-            txnFactory = new TxnFactory(hapiSetup, keyFactory);
-            FeesAndRatesProvider scheduleProvider =
-                    new FeesAndRatesProvider(txnFactory, keyFactory, hapiSetup, hapiClients, hapiRegistry);
-            feeCalculator = new FeeCalculator(hapiSetup, scheduleProvider);
-            this.ratesProvider = scheduleProvider;
-        } catch (Throwable t) {
-            log.error("Initialization failed for spec '{}'!", name, t);
-            status = ERROR;
-        }
     }
 
     interface Def {

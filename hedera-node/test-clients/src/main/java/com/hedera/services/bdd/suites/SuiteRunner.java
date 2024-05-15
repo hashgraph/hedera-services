@@ -83,7 +83,6 @@ import com.hedera.services.bdd.suites.file.ProtectedFilesUpdateSuite;
 import com.hedera.services.bdd.suites.file.ValidateNewAddressBook;
 import com.hedera.services.bdd.suites.file.negative.UpdateFailuresSpec;
 import com.hedera.services.bdd.suites.file.positive.SysDelSysUndelSpec;
-import com.hedera.services.bdd.suites.freeze.CryptoTransferThenFreezeTest;
 import com.hedera.services.bdd.suites.freeze.FreezeAbort;
 import com.hedera.services.bdd.suites.freeze.FreezeSuite;
 import com.hedera.services.bdd.suites.freeze.FreezeUpgrade;
@@ -102,11 +101,7 @@ import com.hedera.services.bdd.suites.misc.MemoValidation;
 import com.hedera.services.bdd.suites.misc.MixedOpsTransactionsSuite;
 import com.hedera.services.bdd.suites.misc.OneOfEveryTransaction;
 import com.hedera.services.bdd.suites.misc.ZeroStakeNodeTest;
-import com.hedera.services.bdd.suites.perf.AccountBalancesClientSaveLoadTest;
 import com.hedera.services.bdd.suites.perf.AdjustFeeScheduleSuite;
-import com.hedera.services.bdd.suites.perf.FileContractMemoPerfSuite;
-import com.hedera.services.bdd.suites.perf.QueryOnlyLoadTest;
-import com.hedera.services.bdd.suites.perf.contract.ContractCallLoadTest;
 import com.hedera.services.bdd.suites.perf.contract.ContractCallLocalPerfSuite;
 import com.hedera.services.bdd.suites.perf.contract.ContractCallPerfSuite;
 import com.hedera.services.bdd.suites.perf.contract.ContractPerformanceSuite;
@@ -114,53 +109,24 @@ import com.hedera.services.bdd.suites.perf.contract.FibonacciPlusLoadProvider;
 import com.hedera.services.bdd.suites.perf.contract.MixedSmartContractOpsLoadTest;
 import com.hedera.services.bdd.suites.perf.contract.opcodes.SStoreOperationLoadTest;
 import com.hedera.services.bdd.suites.perf.crypto.*;
-import com.hedera.services.bdd.suites.perf.file.FileUpdateLoadTest;
-import com.hedera.services.bdd.suites.perf.file.MixedFileOpsLoadTest;
 import com.hedera.services.bdd.suites.perf.mixedops.MixedOpsLoadTest;
-import com.hedera.services.bdd.suites.perf.mixedops.MixedOpsMemoPerfSuite;
-import com.hedera.services.bdd.suites.perf.mixedops.MixedTransferAndSubmitLoadTest;
-import com.hedera.services.bdd.suites.perf.mixedops.MixedTransferCallAndSubmitLoadTest;
-import com.hedera.services.bdd.suites.perf.schedule.ReadyToRunScheduledXfersLoad;
-import com.hedera.services.bdd.suites.perf.token.TokenRelStatusChanges;
-import com.hedera.services.bdd.suites.perf.token.TokenTransferBasicLoadTest;
-import com.hedera.services.bdd.suites.perf.token.TokenTransfersLoadProvider;
-import com.hedera.services.bdd.suites.perf.token.UniqueTokenStateSetup;
-import com.hedera.services.bdd.suites.perf.topic.CreateTopicPerfSuite;
-import com.hedera.services.bdd.suites.perf.topic.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.perf.topic.SubmitMessageLoadTest;
 import com.hedera.services.bdd.suites.reconnect.AutoAccountCreationValidationsAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.AutoAccountCreationsBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForReconnect;
-import com.hedera.services.bdd.suites.reconnect.CheckUnavailableNode;
 import com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.CreateFilesBeforeReconnect;
-import com.hedera.services.bdd.suites.reconnect.CreateSchedulesBeforeReconnect;
-import com.hedera.services.bdd.suites.reconnect.CreateTokensBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.CreateTopicsBeforeReconnect;
-import com.hedera.services.bdd.suites.reconnect.MixedValidationsAfterReconnect;
-import com.hedera.services.bdd.suites.reconnect.SchedulesExpiryDuringReconnect;
-import com.hedera.services.bdd.suites.reconnect.SubmitMessagesForReconnect;
-import com.hedera.services.bdd.suites.reconnect.UpdateAllProtectedFilesDuringReconnect;
-import com.hedera.services.bdd.suites.reconnect.UpdatePermissionsDuringReconnect;
-import com.hedera.services.bdd.suites.reconnect.ValidateAppPropertiesStateAfterReconnect;
-import com.hedera.services.bdd.suites.reconnect.ValidateCongestionPricingAfterReconnect;
-import com.hedera.services.bdd.suites.reconnect.ValidateDuplicateTransactionAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateExchangeRateStateAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateFeeScheduleStateAfterReconnect;
-import com.hedera.services.bdd.suites.reconnect.ValidatePermissionStateAfterReconnect;
-import com.hedera.services.bdd.suites.reconnect.ValidateTokensDeleteAfterReconnect;
-import com.hedera.services.bdd.suites.reconnect.ValidateTokensStateAfterReconnect;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.DuplicateManagementTest;
 import com.hedera.services.bdd.suites.records.FileRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.RecordCreationSuite;
 import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite;
-import com.hedera.services.bdd.suites.regression.AddWellKnownEntities;
-import com.hedera.services.bdd.suites.regression.JrsRestartTestTemplate;
 import com.hedera.services.bdd.suites.regression.SteadyStateThrottlingCheck;
 import com.hedera.services.bdd.suites.regression.TargetNetworkPrep;
-import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.schedule.ScheduleCreateSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleDeleteSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecStateful;
@@ -219,123 +185,31 @@ public class SuiteRunner {
     @SuppressWarnings({"java:S1171", "java:S3599", "java:S125"})
     private static final Map<String, Supplier<HapiSuite[]>> CATEGORY_MAP = new HashMap<>() {
         {
-            /* Convenience entries, uncomment locally to run CI jobs */
-            //		put("CiConsensusAndCryptoJob", aof(
-            //				SignedTransactionBytesRecordsSuite::new,
-            //				DuplicateManagementTest::new,
-            //				TopicCreateSuite::new,
-            //				TopicUpdateSuite::new,
-            //				TopicDeleteSuite::new,
-            //				SubmitMessageSuite::new,
-            //				ChunkingSuite::new,
-            //				TopicGetInfoSuite::new,
-            //				SpecialAccountsAreExempted::new,
-            //				CryptoTransferSuite::new,
-            //				CryptoUpdateSuite::new,
-            //				CryptoRecordsSanityCheckSuite::new,
-            //				PrivilegedOpsSuite::new,
-            //				CannotDeleteSystemEntitiesSuite::new));
-            //		put("CiScheduleJob", aof(
-            //				ScheduleDeleteSpecs::new,
-            //				ScheduleExecutionSpecs::new,
-            //				ScheduleCreateSpecs::new,
-            //				ScheduleSignSpecs::new,
-            //				ScheduleRecordSpecs::new));
-            //		put("CiTokenJob", aof(
-            //				TokenAssociationSpecs::new,
-            //				TokenUpdateSpecs::new,
-            //				TokenCreateSpecs::new,
-            //				TokenDeleteSpecs::new,
-            //				TokenManagementSpecs::new,
-            //				TokenTransactSpecs::new));
-            //		put("CiFileJob", aof(
-            //				FileRecordsSanityCheckSuite::new,
-            //				VersionInfoSpec::new,
-            //				ProtectedFilesUpdateSuite::new,
-            //				PermissionSemanticsSpec::new,
-            //				SysDelSysUndelSpec::new));
-            //		put("CiSmartContractJob", aof(
-            //				ContractQueriesStressTests::new,
-            //				ContractCallLocalSuite::new,
-            //				ContractCreateSuite::new,
-            //				SStoreSuite::new,
-            //				ContractDeleteSuite::new,
-            //				ContractGetBytecodeSuite::new,
-            //				ContractGetInfoSuite::new,
-            //				ContractUpdateSuite::new,
-            //				ContractRecordsSanityCheckSuite::new,
-            //				ContractCallSuite::new,
-            //				BalanceOperationSuite::new,
-            //				CallCodeOperationSuite::new,
-            //				CallOperationSuite::new,
-            //				CreateOperationSuite::new,
-            //				DelegateCallOperationSuite::new,
-            //				ExtCodeCopyOperationSuite::new,
-            //				ExtCodeHashOperationSuite::new,
-            //				ExtCodeSizeOperationSuite::new,
-            //				GlobalPropertiesSuite::new,
-            //				StaticCallOperationSuite::new,
-            //				SStoreOperationLoadTest::new,
-            //				ContractCallLoadTest::new,
-            //				ContractCallLocalPerfSuite::new,
-            //				ContractCallPerfSuite::new,
-            //				ContractPerformanceSuite::new,
-            //				MixedSmartContractOpsLoadTest::new));
-            /* Adjust fee schedules */
+            /*
+                       ** -->> FROM Neeha <<-- **
+            - [ ] CryptoTransferLoadTestWithStakedAccounts
+            - [ ] VersionInfoSpec
+            - [ ] UpdateFileForUpgrade
+            - [ ] PrepareUpgrade
+            - [ ] FreezeUpgrade
+            - [ ] SimpleFreezeOnly
+            - [ ] FreezeAbort
+            - [ ] ResetThrottleSuite
+            - [x] CreateAccountsBeforeReconnect
+            - [x] CreateTopicsBeforeReconnect
+            - [x] CreateFilesBeforeReconnect
+            - [x] SubmitMessageLoadTest
+            - [x] AdjustFeeSchedule
+                        */
             put("AdjustFeeSchedule", aof(AdjustFeeScheduleSuite::new));
-            /* Umbrella Redux */
-            put("UmbrellaRedux", aof(UmbrellaRedux::new));
-            /* Regression saved state management helpers */
-            put("AddWellKnownEntities", aof(AddWellKnownEntities::new));
-            /* JRS restart tests */
-            put("RestartWithScheduledEntities", aof(JrsRestartTestTemplate::new));
-            /* Load tests. */
-            put("SimpleXfersAvoidingHotspot", aof(SimpleXfersAvoidingHotspot::new));
-            put("NWayDistNoHotspots", aof(NWayDistNoHotspots::new));
-            put("QueryOnlyLoadTest", aof(QueryOnlyLoadTest::new));
-            put("TokenTransfersBasicLoadTest", aof(TokenTransferBasicLoadTest::new));
-            put("AccountBalancesLoadTest", aof(AccountBalancesClientSaveLoadTest::new));
-            put("TokenTransfersLoad", aof(TokenTransfersLoadProvider::new));
-            put("ReadyToRunScheduledXfersLoad", aof(ReadyToRunScheduledXfersLoad::new));
-            put("TokenRelChangesLoad", aof(TokenRelStatusChanges::new));
-            put("FileUpdateLoadTest", aof(FileUpdateLoadTest::new));
-            put("ContractCallLoadTest", aof(ContractCallLoadTest::new));
             put("SubmitMessageLoadTest", aof(SubmitMessageLoadTest::new));
-            put("CryptoTransferLoadTest", aof(CryptoTransferLoadTest::new));
             put("CryptoTransferLoadTestWithStakedAccounts", aof(CryptoTransferLoadTestWithStakedAccounts::new));
-            put("CryptoTransferLoadTestWithAutoAccounts", aof(CryptoTransferLoadTestWithAutoAccounts::new));
-            put("CryptoTransferLoadTestWithInvalidAccounts", aof(CryptoTransferLoadTestWithInvalidAccounts::new));
-            put("MixedTransferAndSubmitLoadTest", aof(MixedTransferAndSubmitLoadTest::new));
-            put("MixedTransferCallAndSubmitLoadTest", aof(MixedTransferCallAndSubmitLoadTest::new));
-            put("HCSChunkingRealisticPerfSuite", aof(HCSChunkingRealisticPerfSuite::new));
-            put("CryptoCreatePerfSuite", aof(CryptoCreatePerfSuite::new));
-            put("CreateTopicPerfSuite", aof(CreateTopicPerfSuite::new));
-            put("MixedOpsMemoPerfSuite", aof(MixedOpsMemoPerfSuite::new));
-            put("FileContractMemoPerfSuite", aof(FileContractMemoPerfSuite::new));
-            // put("MixedSmartContractOpsLoadTest",
-            // aof(MixedSmartContractOpsLoadTest::new));
-            put("MixedFileOpsLoadTest", aof(MixedFileOpsLoadTest::new));
-            put("UniqueTokenStateSetup", aof(UniqueTokenStateSetup::new));
-            /* Functional tests - RECONNECT */
             put("CreateAccountsBeforeReconnect", aof(CreateAccountsBeforeReconnect::new));
             put("CreateTopicsBeforeReconnect", aof(CreateTopicsBeforeReconnect::new));
-            put("SubmitMessagesForReconnect", aof(SubmitMessagesForReconnect::new));
             put("CreateFilesBeforeReconnect", aof(CreateFilesBeforeReconnect::new));
-            put("CreateTokensBeforeReconnect", aof(CreateTokensBeforeReconnect::new));
-            put("CreateSchedulesBeforeReconnect", aof(CreateSchedulesBeforeReconnect::new));
-            put("CheckUnavailableNode", aof(CheckUnavailableNode::new));
-            put("MixedValidationsAfterReconnect", aof(MixedValidationsAfterReconnect::new));
-            put("UpdateApiPermissionsDuringReconnect", aof(UpdatePermissionsDuringReconnect::new));
-            put("ValidateDuplicateTransactionAfterReconnect", aof(ValidateDuplicateTransactionAfterReconnect::new));
-            put("ValidateApiPermissionStateAfterReconnect", aof(ValidatePermissionStateAfterReconnect::new));
-            put("ValidateAppPropertiesStateAfterReconnect", aof(ValidateAppPropertiesStateAfterReconnect::new));
             put("ValidateFeeScheduleStateAfterReconnect", aof(ValidateFeeScheduleStateAfterReconnect::new));
             put("ValidateExchangeRateStateAfterReconnect", aof(ValidateExchangeRateStateAfterReconnect::new));
-            put("UpdateAllProtectedFilesDuringReconnect", aof(UpdateAllProtectedFilesDuringReconnect::new));
             put("AutoRenewEntitiesForReconnect", aof(AutoRenewEntitiesForReconnect::new));
-            put("SchedulesExpiryDuringReconnect", aof(SchedulesExpiryDuringReconnect::new));
-            put("ValidateTokensStateAfterReconnect", aof(ValidateTokensStateAfterReconnect::new));
-            put("ValidateCongestionPricingAfterReconnect", aof(ValidateCongestionPricingAfterReconnect::new));
             /* Functional tests - AutoAccountCreations */
             put("AutoAccountCreationValidationsAfterReconnect", aof(AutoAccountCreationValidationsAfterReconnect::new));
             put("AutoAccountCreationSuite", aof(AutoAccountCreationSuite::new));
@@ -455,13 +329,11 @@ public class SuiteRunner {
             put("QueryPaymentSuite", aof(QueryPaymentSuite::new));
             put("SimpleFreezeOnly", aof(SimpleFreezeOnly::new));
             /* Transfer then freeze */
-            put("CryptoTransferThenFreezeTest", aof(CryptoTransferThenFreezeTest::new));
             put("MixedOpsTransactionsSuite", aof(MixedOpsTransactionsSuite::new));
             put("MixedOpsLoadTest", aof(MixedOpsLoadTest::new));
             /* Validate new AddressBook */
             put("ValidateNewAddressBook", aof(ValidateNewAddressBook::new));
             put("CryptoTransferPerfSuiteWOpProvider", aof(CryptoTransferPerfSuiteWOpProvider::new));
-            put("ValidateTokensDeleteAfterReconnect", aof(ValidateTokensDeleteAfterReconnect::new));
             /* Freeze with upgrade */
             put("UpdateFileForUpgrade", aof(UpdateFileForUpgrade::new));
             put("PrepareUpgrade", aof(PrepareUpgrade::new));

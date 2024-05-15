@@ -72,6 +72,8 @@ import org.junit.jupiter.api.DynamicTest;
  * <p>SCHEDULES - pendingXfer (1tℏ from sender to receiver; has sender sig only)
  *
  * <p>CONTRACTS - multipurpose
+ *
+ * <p><b>(ATROPHIED)</b>
  */
 public class JrsRestartTestTemplate extends HapiSuite {
     private static final Logger log = LogManager.getLogger(JrsRestartTestTemplate.class);
