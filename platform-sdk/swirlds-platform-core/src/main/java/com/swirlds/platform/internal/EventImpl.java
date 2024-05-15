@@ -217,7 +217,7 @@ public class EventImpl extends EventMetadata
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        DetailedConsensusEvent.serialize(out, baseEvent.getHashedData(), baseEvent.getSignature(), consensusData);
+        DetailedConsensusEvent.serialize(out, baseEvent, consensusData);
     }
 
     /**
@@ -236,7 +236,7 @@ public class EventImpl extends EventMetadata
      * @param consensusEvent the consensus event to build from
      */
     void buildFromConsensusEvent(final DetailedConsensusEvent consensusEvent) {
-        baseEvent = new GossipEvent(consensusEvent.getBaseEventHashedData(), consensusEvent.getSignature());
+        baseEvent = consensusEvent.getGossipEvent();
         consensusData = consensusEvent.getConsensusData();
         // clears metadata in case there is any
         super.clear();

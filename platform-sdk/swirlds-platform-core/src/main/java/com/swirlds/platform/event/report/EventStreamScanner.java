@@ -126,8 +126,7 @@ public class EventStreamScanner {
     private void collectEventData(final DetailedConsensusEvent mostRecentEvent) {
         eventCount++;
         granularEventCount++;
-        for (final ConsensusTransactionImpl transaction :
-                mostRecentEvent.getBaseEventHashedData().getTransactions()) {
+        mostRecentEvent.getGossipEvent().transactionIterator().forEachRemaining(transaction-> {
             transactionCount++;
             granularTransactionCount++;
             if (transaction.isSystem()) {
@@ -137,7 +136,7 @@ public class EventStreamScanner {
                 applicationTransactionCount++;
                 granularApplicationTransactionCount++;
             }
-        }
+        });
     }
 
     /**
