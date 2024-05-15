@@ -231,6 +231,11 @@ public class StateAccess {
                 readAtLeastOneState = true;
             } catch (IOException e) {
                 log.error("Error reading state file");
+            } catch (IllegalArgumentException e) {
+                // this happens during node death reconnect,
+                // but we probably shouldn't fail the recordStream validation
+                log.error("Error reading state file with illegal argument");
+                return dumpableAccounts;
             }
         }
         if (!readAtLeastOneState) {
