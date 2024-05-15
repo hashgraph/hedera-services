@@ -17,8 +17,12 @@
 package com.swirlds.platform.tss.bls;
 
 import com.swirlds.platform.tss.TssPublicKey;
+import com.swirlds.platform.tss.blscrypto.GroupElement;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A BLS implementation of a TSS public key.
+ *
+ * @param keyMaterial the public key material
  */
-public class BlsPublicKey implements TssPublicKey {}
+public record BlsPublicKey(@NonNull GroupElement keyMaterial) implements TssPublicKey {}

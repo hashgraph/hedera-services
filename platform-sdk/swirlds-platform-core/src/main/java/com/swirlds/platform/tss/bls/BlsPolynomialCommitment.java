@@ -17,11 +17,14 @@
 package com.swirlds.platform.tss.bls;
 
 import com.swirlds.platform.tss.TssPolynomialCommitment;
+import com.swirlds.platform.tss.blscrypto.GroupElement;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 
 /**
  * A BLS implementation of a TSS polynomial commitment.
  *
- * @param coefficientCommitments TODO: an array of longs is currently used so this compiles, but it should actually
- *                               be group elements
+ * @param coefficientCommitments TODO
  */
-public record BlsPolynomialCommitment(Long[] coefficientCommitments) implements TssPolynomialCommitment {}
+public record BlsPolynomialCommitment(@NonNull List<GroupElement> coefficientCommitments)
+        implements TssPolynomialCommitment {}

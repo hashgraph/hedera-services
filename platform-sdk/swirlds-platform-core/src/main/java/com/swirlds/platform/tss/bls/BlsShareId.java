@@ -17,10 +17,12 @@
 package com.swirlds.platform.tss.bls;
 
 import com.swirlds.platform.tss.TssShareId;
+import com.swirlds.platform.tss.blscrypto.FieldElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A BLS implementation of a TSS share ID.
- * @param id TODO: the share ID should actually be a field element, but it's a long for now so it compiles
+ *
+ * @param id the share ID
  */
-public record BlsShareId(@NonNull Long id) implements TssShareId {}
+public record BlsShareId(@NonNull FieldElement id) implements TssShareId {}

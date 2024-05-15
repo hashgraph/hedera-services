@@ -19,15 +19,16 @@ package com.swirlds.platform.tss.bls;
 import com.swirlds.platform.tss.TssPublicKey;
 import com.swirlds.platform.tss.TssShareId;
 import com.swirlds.platform.tss.TssSignature;
+import com.swirlds.platform.tss.blscrypto.GroupElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A BLS implementation of a TSS signature.
  *
  * @param shareId   the ID of the share that produced the signature
- * @param signature the signature. TODO: this should be a group element, but it's a long for now so it compiles
+ * @param signature the signature
  */
-public record BlsSignature(@NonNull TssShareId shareId, @NonNull Long signature) implements TssSignature {
+public record BlsSignature(@NonNull TssShareId shareId, @NonNull GroupElement signature) implements TssSignature {
     @Override
     public boolean verifySignature(@NonNull final TssPublicKey publicKey, @NonNull final byte[] message) {
         throw new UnsupportedOperationException("Not implemented");

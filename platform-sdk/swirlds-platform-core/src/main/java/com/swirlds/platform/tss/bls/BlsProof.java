@@ -17,14 +17,9 @@
 package com.swirlds.platform.tss.bls;
 
 import com.swirlds.platform.tss.TssProof;
+import com.swirlds.platform.tss.blscrypto.FieldElement;
+import com.swirlds.platform.tss.blscrypto.GroupElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-// TODO: this is how it should be:
-// @NonNull GroupElement f,
-// @NonNull GroupElement a,
-// @NonNull GroupElement y,
-// @NonNull FieldElement z_r,
-// @NonNull FieldElement z_a
 
 /**
  * A BLS implementation of a TSS proof.
@@ -34,5 +29,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param z_r
  * @param z_a
  */
-public record BlsProof(@NonNull Long f, @NonNull Long a, @NonNull Long y, @NonNull Long z_r, @NonNull Long z_a)
+public record BlsProof(
+        @NonNull GroupElement f,
+        @NonNull GroupElement a,
+        @NonNull GroupElement y,
+        @NonNull FieldElement z_r,
+        @NonNull FieldElement z_a)
         implements TssProof {}

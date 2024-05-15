@@ -18,12 +18,15 @@ package com.swirlds.platform.tss.bls;
 
 import com.swirlds.platform.tss.TssPrivateKey;
 import com.swirlds.platform.tss.TssSignature;
+import com.swirlds.platform.tss.blscrypto.FieldElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A BLS implementation of a TSS private key.
+ *
+ * @param keyMaterial the private key material
  */
-public class BlsPrivateKey implements TssPrivateKey {
+public record BlsPrivateKey(@NonNull FieldElement keyMaterial) implements TssPrivateKey {
     @NonNull
     @Override
     public TssSignature sign(@NonNull final byte[] message) {
