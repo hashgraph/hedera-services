@@ -16,6 +16,7 @@
 
 package com.swirlds.platform;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
@@ -24,6 +25,7 @@ import com.swirlds.platform.internal.Serializer;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.Arrays;
@@ -95,34 +97,34 @@ public final class Utilities {
      * A null array is considered less than a non-null array.
      * This is the same as Java.Util.Arrays#compar
      *
-     * @param sig1
+     * @param b1
      * 		first array
-     * @param sig2
+     * @param b2
      * 		second array
      * @return 1 if first is bigger, -1 if second, 0 otherwise
      */
-    public static int arrayCompare(byte[] sig1, byte[] sig2) {
-        if (sig1 == null && sig2 == null) {
+    public static int arrayCompare(@Nullable final Bytes b1, @Nullable final Bytes b2) {
+        if (b1 == null && b2 == null) {
             return 0;
         }
-        if (sig1 == null && sig2 != null) {
+        if (b1 == null && b2 != null) {
             return -1;
         }
-        if (sig1 != null && sig2 == null) {
+        if (b1 != null && b2 == null) {
             return 1;
         }
-        for (int i = 0; i < Math.min(sig1.length, sig2.length); i++) {
-            if (sig1[i] < sig2[i]) {
+        for (int i = 0; i < Math.min(b1.length(), b2.length()); i++) {
+            if (b1.getByte(i) < b2.getByte(i)) {
                 return -1;
             }
-            if (sig1[i] > sig2[i]) {
+            if (b1.getByte(i) > b2.getByte(i)) {
                 return 1;
             }
         }
-        if (sig1.length < sig2.length) {
+        if (b1.length() < b2.length()) {
             return -1;
         }
-        if (sig1.length > sig2.length) {
+        if (b1.length() > b2.length()) {
             return 1;
         }
         return 0;

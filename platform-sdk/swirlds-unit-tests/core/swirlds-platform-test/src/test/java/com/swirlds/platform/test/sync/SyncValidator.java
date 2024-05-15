@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
@@ -223,7 +222,7 @@ public class SyncValidator {
         if (!expectedAndNotFound.isEmpty()) {
             List<String> missingHashes = expectedAndNotFound.stream()
                     .map(EventImpl::getBaseHash)
-                    .map(h -> CommonUtils.hex(h.getValue(), 4))
+                    .map(h -> h.toHex(4))
                     .collect(Collectors.toList());
             fail(format(
                     "Actual list is missing %s expected event(s) with hash(es) %s",
