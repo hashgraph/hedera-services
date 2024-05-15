@@ -1917,10 +1917,8 @@ public class CryptoTransferSuite extends HapiSuite {
     final HapiSpec vanillaTransferSucceeds() {
         long initialBalance = HapiSpecSetup.getDefaultInstance().defaultBalance();
 
-        return propertyPreservingHapiSpec("VanillaTransferSucceeds", FULLY_NONDETERMINISTIC)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+        return defaultHapiSpec("VanillaTransferSucceeds", FULLY_NONDETERMINISTIC)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", "false"),
                         cryptoCreate("somebody")
                                 .maxAutomaticTokenAssociations(5001)
                                 .hasPrecheck(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),

@@ -256,7 +256,6 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         setUpTxnContext();
         configuration = HederaTestConfigBuilder.create()
                 .withValue("entities.limitTokenAssociations", "true")
-                .withValue("entities.unlimitedAutoAssociationsEnabled", "false")
                 .withValue("tokens.maxPerAccount", "0")
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(configuration);

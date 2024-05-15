@@ -99,6 +99,7 @@ public class CryptoCreateValidator {
             @NonNull final EntitiesConfig entitiesConfig,
             @NonNull final TokensConfig tokensConfig) {
         return (entitiesConfig.limitTokenAssociations() && n > tokensConfig.maxPerAccount())
-                || (!entitiesConfig.unlimitedAutoAssociationsEnabled() && n > ledgerConfig.maxAutoAssociations());
+                || n > ledgerConfig.maxAutoAssociations()
+                || (n == -1 && !entitiesConfig.unlimitedAutoAssociationsEnabled());
     }
 }

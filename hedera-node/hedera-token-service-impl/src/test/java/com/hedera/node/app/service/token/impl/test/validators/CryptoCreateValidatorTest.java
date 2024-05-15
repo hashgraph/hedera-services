@@ -58,8 +58,7 @@ class CryptoCreateValidatorTest {
                 .withValue("cryptoCreateWithAlias.enabled", true)
                 .withValue("ledger.maxAutoAssociations", 5000)
                 .withValue("entities.limitTokenAssociations", false)
-                .withValue("tokens.maxPerAccount", 1000)
-                .withValue("entities.unlimitedAutoAssociationsEnabled", true);
+                .withValue("tokens.maxPerAccount", 1000);
     }
 
     //    @Test
@@ -113,7 +112,6 @@ class CryptoCreateValidatorTest {
 
     @Test
     void checkTooManyAutoAssociations() {
-        testConfigBuilder = testConfigBuilder.withValue("entities.unlimitedAutoAssociationsEnabled", false);
         configuration = testConfigBuilder.getOrCreateConfig();
         getConfigs(configuration);
         assertTrue(subject.tooManyAutoAssociations(5001, ledgerConfig, entitiesConfig, tokensConfig));
@@ -127,6 +125,9 @@ class CryptoCreateValidatorTest {
         getConfigs(configuration);
         assertTrue(subject.tooManyAutoAssociations(1001, ledgerConfig, entitiesConfig, tokensConfig));
         assertFalse(subject.tooManyAutoAssociations(999, ledgerConfig, entitiesConfig, tokensConfig));
+        assertFalse(subject.tooManyAutoAssociations(-1, ledgerConfig, entitiesConfig, tokensConfig));
+        assertFalse(subject.tooManyAutoAssociations(-2, ledgerConfig, entitiesConfig, tokensConfig));
+        assertFalse(subject.tooManyAutoAssociations(-100000, ledgerConfig, entitiesConfig, tokensConfig));
     }
 
     private void getConfigs(Configuration configuration) {
