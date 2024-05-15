@@ -186,7 +186,6 @@ public class CustomFractionalFeeAssessorTest {
                 subject.amountOwed(vanillaTriggerAmount, secondFractionalCustomFee.fractionalFee());
 
         final var netFee = subject.amountOwed(vanillaTriggerAmount, fractionalCustomFeeNetOfTransfers.fractionalFee());
-        final var totalReclaimedFees = firstExpectedFee + secondExpectedFee;
         final var fixedFee = withFixedFee(
                 FixedFee.newBuilder()
                         .denominatingTokenId(tokenWithFractionalFee)
@@ -437,7 +436,58 @@ public class CustomFractionalFeeAssessorTest {
     }
 
     @Test
-    void reclaimsAsExpected() {}
+    void reclaimsRemainderAsExpected() {
+        final TokenTransferList triggerTransferList = asTokenTransferList(
+                tokenWithFractionalFee,
+                List.of(
+                        asAccountAmount(payer, -vanillaTriggerAmount),
+                        asAccountAmount(firstReclaimedAcount, firstCreditAmount + 12_345L),
+                        asAccountAmount(secondReclaimedAcount, secondCreditAmount + 2_345L)));
+        result = new AssessmentResult(List.of(triggerTransferList), List.of());
+        final CustomFeeMeta feeMeta =
+                withCustomFeeMeta(List.of(firstFractionalCustomFee, secondFractionalCustomFee), FUNGIBLE_COMMON);
+
+        subject.assessFractionalFees(feeMeta, payer, result);
+
+        // firstExpectedFee = 5000 * 1 / 100 = 50
+        // Amount to reclaim is 50. The amount to reclaim from credits is 19690 (16345 + 3345).
+        // The claims happen from the first credit amount is 50 * (16345/19690) = 41
+        // The claims happen from the second credit amount is 50 * (3345/19690) = 8
+        // So 1 is left to reclaim, which is the remainder.So, we go through credits again and reclaim 1 from the first
+        final var firstExpectedFee = subject.amountOwed(vanillaTriggerAmount, firstFractionalCustomFee.fractionalFee());
+        final var secondExpectedFee =
+                subject.amountOwed(vanillaTriggerAmount, secondFractionalCustomFee.fractionalFee());
+
+        final var netFee = subject.amountOwed(vanillaTriggerAmount, fractionalCustomFeeNetOfTransfers.fractionalFee());
+        final var fixedFee = withFixedFee(
+                FixedFee.newBuilder()
+                        .denominatingTokenId(tokenWithFractionalFee)
+                        .amount(netFee)
+                        .build(),
+                netOfTransfersFeeCollector,
+                true);
+
+        final var expectedAssessedFee1 = AssessedCustomFee.newBuilder()
+                .feeCollectorAccountId(firstFractionalFeeCollector)
+                .effectivePayerAccountId(effPayerAccountNums)
+                .amount(firstExpectedFee)
+                .tokenId(tokenWithFractionalFee)
+                .build();
+        final var expectedAssessedFee2 = AssessedCustomFee.newBuilder()
+                .feeCollectorAccountId(secondFractionalFeeCollector)
+                .effectivePayerAccountId(effPayerAccountNums)
+                .amount(secondExpectedFee)
+                .tokenId(tokenWithFractionalFee)
+                .build();
+
+        verify(fixedFeeAssessor, never()).assessFixedFee(any(), any(), any(), any());
+
+        assertThat(result.getAssessedCustomFees()).isNotEmpty();
+        assertThat(result.getAssessedCustomFees()).contains(expectedAssessedFee1);
+        assertThat(result.getAssessedCustomFees()).contains(expectedAssessedFee2);
+
+        assertThat(result.getRoyaltiesPaid()).isEmpty();
+    }
 
     @Test
     void doesNothingIfNoValueExchangedAndNoFallback() {
