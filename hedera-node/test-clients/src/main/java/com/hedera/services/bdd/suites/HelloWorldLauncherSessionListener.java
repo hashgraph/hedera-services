@@ -16,7 +16,9 @@
 
 package com.hedera.services.bdd.suites;
 
+import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -41,12 +43,26 @@ public class HelloWorldLauncherSessionListener implements LauncherSessionListene
     }
 
     private static class HwExecutionListener implements TestExecutionListener {
+        private static final String SHARED_NETWORK = "sharedNetwork";
+        private HederaNetwork network;
+
         @Override
         public void testPlanExecutionStarted(@NonNull final TestPlan testPlan) {
-            log.info("Starting the test plan!");
+            log.info("Started the test plan");
             visitTests(testPlan, testIdentifier -> {
                 log.info("Hello, {}!", testIdentifier.getDisplayName());
             });
+            network = HederaNetwork.newLiveNetwork(SHARED_NETWORK, 2);
+            network.startWithin(Duration.ofSeconds(30));
+            log.info("Network started");
+            network.waitForReady();
+            log.info("Network is ready");
+        }
+
+        @Override
+        public void testPlanExecutionFinished(@NonNull final TestPlan testPlan) {
+            log.info("Finished the test plan");
+            network.terminate();
         }
 
         @Override

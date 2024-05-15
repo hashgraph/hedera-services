@@ -62,6 +62,8 @@ import com.google.common.io.ByteSource;
 import com.google.common.io.CharSink;
 import com.google.common.io.Files;
 import com.hedera.services.bdd.junit.HapiTestNode;
+import com.hedera.services.bdd.junit.hedera.HederaNetwork;
+import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
 import com.hedera.services.bdd.spec.fees.Payment;
@@ -129,6 +131,8 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.function.Executable;
 
 public class HapiSpec implements Runnable, Executable {
+    public static final ThreadLocal<HederaNetwork> TARGET_NETWORK = new ThreadLocal<>();
+
     private static final long FIRST_NODE_ACCOUNT_NUM = 3L;
     private static final int NUM_IN_USE_NODE_ACCOUNTS = 4;
     private static final TransferList DEFAULT_NODE_BALANCE_FUNDING = TransferList.newBuilder()
@@ -225,6 +229,8 @@ public class HapiSpec implements Runnable, Executable {
     EnumMap<ResponseCodeEnum, AtomicInteger> finalizedStatusCounts = new EnumMap<>(ResponseCodeEnum.class);
     /** These nodes can be used by some ops for controlling the nodes, such as restart, reconnect, etc. */
     List<HapiTestNode> nodes = emptyList();
+
+    List<HederaNode> networkNodes = emptyList();
 
     List<SingleAccountBalances> accountBalances = new ArrayList<>();
     private final SnapshotMatchMode[] snapshotMatchModes;
@@ -343,6 +349,14 @@ public class HapiSpec implements Runnable, Executable {
 
     public void setNodes(List<HapiTestNode> nodes) {
         if (nodes != null) this.nodes = nodes;
+    }
+
+    public void setNetworkNodes(@NonNull final List<HederaNode> nodes) {
+        this.networkNodes = nodes;
+    }
+
+    public List<HederaNode> getNetworkNodes() {
+        return networkNodes;
     }
 
     public List<HapiTestNode> getNodes() {
@@ -1003,7 +1017,9 @@ public class HapiSpec implements Runnable, Executable {
     public static Def.Setup hapiSpec(
             String name, List<String> propertiesToPreserve, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
         return setup -> given -> when -> then -> Stream.of(DynamicTest.dynamicTest(
-                name, new HapiSpec(name, false, setup, given, when, then, propertiesToPreserve, snapshotMatchModes)));
+                name,
+                targeted(new HapiSpec(
+                        name, false, setup, given, when, then, propertiesToPreserve, snapshotMatchModes))));
     }
 
     public static Def.Setup onlyHapiSpec(
@@ -1011,7 +1027,22 @@ public class HapiSpec implements Runnable, Executable {
             final List<String> propertiesToPreserve,
             @NonNull final SnapshotMatchMode... snapshotMatchModes) {
         return setup -> given -> when -> then -> Stream.of(DynamicTest.dynamicTest(
-                name, new HapiSpec(name, true, setup, given, when, then, propertiesToPreserve, snapshotMatchModes)));
+                name,
+                targeted(
+                        new HapiSpec(name, true, setup, given, when, then, propertiesToPreserve, snapshotMatchModes))));
+    }
+
+    private static HapiSpec targeted(@NonNull final HapiSpec spec) {
+        final var targetNetwork = TARGET_NETWORK.get();
+        if (targetNetwork != null) {
+            log.info("Targeting network '{}' for spec '{}'", targetNetwork.name(), spec.name);
+            spec.setTargetNetworkType(targetNetwork.type());
+            final var nodes = targetNetwork.nodes();
+            spec.addOverrideProperties(Map.of(
+                    "nodes", nodes.stream().map(HederaNode::hapiSpecIdentifier).collect(joining(","))));
+            spec.setNetworkNodes(nodes);
+        }
+        return spec;
     }
 
     public HapiSpec(

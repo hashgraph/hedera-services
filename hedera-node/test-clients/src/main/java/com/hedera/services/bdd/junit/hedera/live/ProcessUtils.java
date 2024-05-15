@@ -40,7 +40,7 @@ public class ProcessUtils {
      *
      * @param nodeId the id of the node whose processes should be destroyed
      */
-    public static void destroyAnySubProcessNode(final long nodeId) {
+    public static void destroyAnySubProcessNodeWithId(final long nodeId) {
         ProcessHandle.allProcesses()
                 .filter(p -> p.info().command().orElse("").contains("java"))
                 .filter(p -> endsWith(p.info().arguments().orElse(EMPTY_STRING_ARRAY), Long.toString(nodeId)))

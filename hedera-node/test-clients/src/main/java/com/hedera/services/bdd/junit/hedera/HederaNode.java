@@ -17,16 +17,24 @@
 package com.hedera.services.bdd.junit.hedera;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.CompletableFuture;
 
 public interface HederaNode {
     /**
+     * Gets the port number of the gRPC service.
+     *
+     * @return the port number of the gRPC service
+     */
+    int getPort();
+
+    /**
      * Gets the node ID, such as 0, 1, 2, or 3.
      * @return the node ID
      */
-    long getId();
+    long getNodeId();
 
     /**
      * The name of the node, such as "Alice" or "Bob".
@@ -43,17 +51,17 @@ public interface HederaNode {
     /**
      * Starts the node software.
      */
-    void start();
+    void start(String configTxt);
 
     /**
      * Stops the node software gracefully
      */
-    void stop();
+    boolean stop();
 
     /**
      * Stops the node software forcibly.
      */
-    void terminate();
+    boolean terminate();
 
     /**
      * Returns a future that resolves when the node has the given status.
@@ -69,4 +77,20 @@ public interface HederaNode {
      * @return a future that resolves when the node has stopped
      */
     CompletableFuture<Void> waitForStopped();
+
+    /**
+     * Returns the string that would identify this node as a target
+     * server in a {@link HapiSpec} that is submitting transactions
+     * and sending queries via gRPC.
+     *
+     * <p><b>(FUTURE)</b> Remove this method once {@link HapiSpec} is
+     * refactored to be agnostic about how a target node should
+     * receive transactions and queries. (E.g. an embedded node
+     * can have its workflows directly invoked.)
+     *
+     * @return this node's HAPI spec identifier
+     */
+    default String hapiSpecIdentifier() {
+        return "127.0.0.1:" + getPort() + ":0.0." + getNodeId();
+    }
 }

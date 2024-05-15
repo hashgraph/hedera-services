@@ -16,33 +16,9 @@
 
 package com.hedera.services.bdd.junit.hedera;
 
-import com.hedera.hapi.node.base.AccountID;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-public abstract class AbstractNode implements HederaNode {
-    protected final NodeMetadata metadata;
-
-    protected AbstractNode(@NonNull final NodeMetadata metadata) {
-        this.metadata = metadata;
-    }
-
-    @Override
-    public int getPort() {
-        return metadata.grpcPort();
-    }
-
-    @Override
-    public long getNodeId() {
-        return metadata.nodeId();
-    }
-
-    @Override
-    public String getName() {
-        return metadata.name();
-    }
-
-    @Override
-    public AccountID getAccountId() {
-        return metadata.accountId();
-    }
-}
+@TestFactory
+@ExtendWith(TargetingExtension.class)
+public @interface HederaTest {}

@@ -16,6 +16,12 @@
 
 package com.hedera.services.bdd.suites;
 
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+
+import com.hedera.services.bdd.junit.hedera.HederaTest;
+import com.hedera.services.bdd.spec.HapiSpec;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
@@ -33,5 +39,14 @@ public class HelloWorldTest {
         return DynamicTest.dynamicTest("Dynamic Hello, World!", () -> {
             System.out.println("DYNAMIC EXECUTION");
         });
+    }
+
+    @HederaTest
+    @TestFactory
+    public Stream<DynamicTest> hwHapiSpec() {
+        return HapiSpec.defaultHapiSpec("hwHapiSpec")
+                .given()
+                .when()
+                .then(getAccountInfo(DEFAULT_PAYER).logged());
     }
 }

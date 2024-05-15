@@ -16,20 +16,21 @@
 
 package com.hedera.services.bdd.junit.hedera.live;
 
-import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.destroyAnySubProcessNode;
+import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.destroyAnySubProcessNodeWithId;
 import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.startSubProcessNodeFrom;
+import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.initWorkingDir;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.hedera.services.bdd.junit.hedera.AbstractNode;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
+import com.swirlds.base.function.BooleanFunction;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 
 /**
  * A node running in its own OS process as a subprocess of the JUnit test runner.
@@ -55,20 +56,21 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
     }
 
     @Override
-    public void start() {
+    public void start(@NonNull final String configTxt) {
         assertStopped();
-        destroyAnySubProcessNode(metadata.nodeId());
+        destroyAnySubProcessNodeWithId(metadata.nodeId());
+        initWorkingDir(metadata.workingDir(), configTxt);
         processHandle = startSubProcessNodeFrom(metadata);
     }
 
     @Override
-    public void stop() {
-        stopWith(ProcessHandle::destroy);
+    public boolean stop() {
+        return stopWith(ProcessHandle::destroy);
     }
 
     @Override
-    public void terminate() {
-        stopWith(ProcessHandle::destroyForcibly);
+    public boolean terminate() {
+        return stopWith(ProcessHandle::destroyForcibly);
     }
 
     @Override
@@ -100,21 +102,18 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
         });
     }
 
-    private void stopWith(@NonNull final Consumer<ProcessHandle> stop) {
-        assertStarted();
-        stop.accept(processHandle);
+    private boolean stopWith(@NonNull final BooleanFunction<ProcessHandle> stop) {
+        if (processHandle == null) {
+            return false;
+        }
+        final var result = stop.apply(processHandle);
         processHandle = null;
+        return result;
     }
 
     private void assertStopped() {
         if (processHandle != null) {
             throw new IllegalStateException("Node is still running");
-        }
-    }
-
-    private void assertStarted() {
-        if (processHandle == null) {
-            throw new IllegalStateException("Node is not running");
         }
     }
 }

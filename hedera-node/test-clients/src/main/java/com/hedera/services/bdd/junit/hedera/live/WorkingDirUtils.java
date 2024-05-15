@@ -16,58 +16,104 @@
 
 package com.hedera.services.bdd.junit.hedera.live;
 
-import com.hedera.services.bdd.junit.hedera.HederaNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.parallel.Isolated;
 
 public class WorkingDirUtils {
-    private static final int FIRST_GOSSIP_PORT = 60000;
-    private static final int FIRST_GOSSIP_TLS_PORT = 60001;
+    private static final String DATA_DIR = "data";
+    private static final String OUTPUT_DIR = "output";
+    private static final String KEYS_FOLDER = "keys";
+    private static final String CONFIG_FOLDER = "config";
+    private static final List<String> WORKING_DIR_DATA_FOLDERS = List.of(KEYS_FOLDER, CONFIG_FOLDER);
+    private static final String CONFIG_TXT = "config.txt";
+    private static final String LOG4J2_XML = "log4j2.xml";
+    private static final String BASE_WORKING_DIR = "./build/hapi-test/node";
+    private static final String BOOTSTRAP_ASSETS_LOC = "../configuration/dev";
 
     private WorkingDirUtils() {
         throw new UnsupportedOperationException("Utility Class");
     }
 
     /**
-     * Creates an address book (i.e., <i>config.txt</i>) for the given
-     * network name and nodes.
+     * Returns the path to the working directory for the given node ID.
      *
-     * @param networkName the name of the network
-     * @param nodes the nodes of the network
-     * @return the address book
+     * <p><b>(FUTURE)</b> We will likely want to pass in the network name
+     * here as well once we support {@link Isolated} test execution.
+     *
+     * @param nodeId the ID of the node
+     * @return the path to the working directory
      */
-    public static String configTxtFor(@NonNull final String networkName, @NonNull final List<HederaNode> nodes) {
-        final var sb = new StringBuilder();
-        sb.append("swirld, ")
-                .append(networkName)
-                .append("\n")
-                .append("\n# This next line is, hopefully, ignored.\n")
-                .append("app, HederaNode.jar\n\n#The following nodes make up this network\n");
-        for (final var node : nodes) {
-            sb.append("address, ")
-                    .append(node.getId())
-                    .append(", ")
-                    .append(node.getName().charAt(0))
-                    .append(", ")
-                    .append(node.getName())
-                    .append(", 1, 127.0.0.1, ")
-                    .append(FIRST_GOSSIP_PORT + (node.getId() * 2))
-                    .append(", 127.0.0.1, ")
-                    .append(FIRST_GOSSIP_TLS_PORT + (node.getId() * 2))
-                    .append(", ")
-                    .append("0.0.")
-                    .append(node.getAccountId().accountNumOrThrow())
-                    .append("\n");
-        }
-        sb.append("\nnextNodeId, ").append(nodes.size()).append("\n");
-        return sb.toString();
+    public static Path workingDirFor(final long nodeId) {
+        return Path.of(BASE_WORKING_DIR + nodeId).normalize();
+    }
+
+    /**
+     * Initializes the working directory by deleting it and creating a new one
+     * with the given <i>config.txt</i> file.
+     *
+     * @param workingDir the path to the working directory
+     * @param configTxt the contents of the <i>config.txt</i> file
+     */
+    public static void initWorkingDir(@NonNull final Path workingDir, @NonNull final String configTxt) {
+        // Clean up any existing directory structure
+        rm(workingDir);
+        // Initialize the data folders
+        WORKING_DIR_DATA_FOLDERS.forEach(folder ->
+                createDirectoriesUnchecked(workingDir.resolve(DATA_DIR).resolve(folder)));
+        // Write the address book (config.txt)
+        writeStringUnchecked(workingDir.resolve(CONFIG_TXT), configTxt);
+        // Copy the bootstrap assets into the working directory
+        copyBootstrapAssets(Path.of(BOOTSTRAP_ASSETS_LOC).toAbsolutePath().normalize(), workingDir);
+        // Update the log4j2.xml file with the correct output directory
+        updateLog4j2XmlOutputDir(workingDir);
+    }
+
+    private static void updateLog4j2XmlOutputDir(@NonNull final Path workingDir) {
+        final var path = workingDir.resolve(LOG4J2_XML);
+        final var log4j2Xml = readStringUnchecked(path);
+        final var updatedLog4j2Xml = log4j2Xml
+                .replace(
+                        "</Appenders>\n" + "  <Loggers>",
+                        """
+                                  <RollingFile name="TestClientRollingFile" fileName="output/test-clients.log"
+                                    filePattern="output/test-clients-%d{yyyy-MM-dd}-%i.log.gz">
+                                    <PatternLayout>
+                                      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m{nolookups}%n</pattern>
+                                    </PatternLayout>
+                                    <Policies>
+                                      <TimeBasedTriggeringPolicy/>
+                                      <SizeBasedTriggeringPolicy size="100 MB"/>
+                                    </Policies>
+                                    <DefaultRolloverStrategy max="10">
+                                      <Delete basePath="output" maxDepth="3">
+                                        <IfFileName glob="test-clients-*.log.gz">
+                                          <IfLastModified age="P3D"/>
+                                        </IfFileName>
+                                      </Delete>
+                                    </DefaultRolloverStrategy>
+                                  </RollingFile>
+                                </Appenders>
+                                <Loggers>
+
+                                  <Logger name="com.hedera.services.bdd" level="info" additivity="false">
+                                    <AppenderRef ref="Console"/>
+                                    <AppenderRef ref="TestClientRollingFile"/>
+                                  </Logger>
+                                  """)
+                .replace(
+                        "output/",
+                        workingDir.resolve(OUTPUT_DIR).toAbsolutePath().normalize() + "/");
+        writeStringUnchecked(path, updatedLog4j2Xml, StandardOpenOption.WRITE);
     }
 
     /**
@@ -82,6 +128,58 @@ public class WorkingDirUtils {
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
+        }
+    }
+
+    private static String readStringUnchecked(@NonNull final Path path) {
+        try {
+            return Files.readString(path);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static void writeStringUnchecked(
+            @NonNull final Path path, @NonNull final String content, @NonNull final OpenOption... options) {
+        try {
+            Files.writeString(path, content, options);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static void createDirectoriesUnchecked(@NonNull final Path path) {
+        try {
+            Files.createDirectories(path);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static void copyBootstrapAssets(@NonNull final Path assetDir, @NonNull final Path workingDir) {
+        try (final var files = Files.walk(assetDir)) {
+            files.filter(file -> !file.equals(assetDir)).forEach(file -> {
+                if (file.getFileName().endsWith(".properties")) {
+                    copyUnchecked(
+                            file,
+                            workingDir
+                                    .resolve(DATA_DIR)
+                                    .resolve(CONFIG_FOLDER)
+                                    .resolve(file.getFileName().toString()));
+                } else {
+                    copyUnchecked(file, workingDir.resolve(file.getFileName().toString()));
+                }
+            });
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static void copyUnchecked(@NonNull final Path source, @NonNull final Path target) {
+        try {
+            Files.copy(source, target);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 }
