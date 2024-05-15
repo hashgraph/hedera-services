@@ -50,7 +50,7 @@ public final class TssUtils {
             @NonNull final List<TssCiphertext> cipherTexts) {
 
         // final List<TssShareId> shareIds = roster.getShareIds(selfId); // TODO: Implement this roster method
-        final List<TssShareId> shareIds = List.of(new BlsShareId(0L)); // TODO placeholder
+        final List<TssShareId> shareIds = List.of(); // TODO placeholder
 
         // TODO: check if there are enough shares to meet the threshold, and return null if not
 
@@ -93,7 +93,7 @@ public final class TssUtils {
         final Map<TssShareId, TssPublicKey> publicShares = new HashMap<>();
         roster.getNodeIds().forEach(nodeId -> {
             // final List<TssShareId> shareIds = roster.getShareIds(selfId); // TODO: Implement this roster method
-            final List<TssShareId> shareIds = List.of(new BlsShareId(0L)); // TODO placeholder
+            final List<TssShareId> shareIds = List.of(); // TODO placeholder
 
             for (final TssShareId shareId : shareIds) {
                 final List<TssPublicShare> partialSharesForId = new ArrayList<>();
