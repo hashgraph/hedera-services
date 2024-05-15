@@ -43,6 +43,7 @@ public class Log4JProviderFactory implements LogProviderFactory {
     @NonNull
     @Override
     public LogProvider create(@NonNull final Configuration configuration) {
+        System.out.println("********** Log4JProviderFactory.create **********");
         return new Log4JProvider(configuration);
     }
 }
