@@ -47,7 +47,6 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -176,7 +175,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // Transaction info is a pure function of the transaction, so we can
             // always reuse it from a prior result
             txInfo = previousResult == null
-                    ? transactionChecker.parseAndCheck(Bytes.wrap(platformTx.getContents()))
+                    ? transactionChecker.parseAndCheck(platformTx.getApplicationPayload())
                     : previousResult.txInfo();
             if (txInfo == null) {
                 // In particular, a null transaction info means we already know the transaction's final failure status
