@@ -73,7 +73,7 @@ public class StateEditor {
         final FileSystemManager fileSystemManager =
                 FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, new NoOpRecycleBin());
         platformContext = new DefaultPlatformContext(
-                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent(),fileSystemManager);
+                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent(), fileSystemManager);
 
         final DeserializedSignedState deserializedSignedState =
                 SignedStateFileReader.readStateFile(platformContext, statePath);

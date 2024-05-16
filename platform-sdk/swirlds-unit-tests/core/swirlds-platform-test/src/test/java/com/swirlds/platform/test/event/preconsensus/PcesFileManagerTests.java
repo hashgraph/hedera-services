@@ -106,7 +106,8 @@ class PcesFileManagerTests {
 
         final FileSystemManager fileSystemManager =
                 FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, new NoOpRecycleBin());
-        return new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get(), time,fileSystemManager);
+        return new DefaultPlatformContext(
+                configuration, new NoOpMetrics(), CryptographyHolder.get(), time, fileSystemManager);
     }
 
     @ParameterizedTest

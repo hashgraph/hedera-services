@@ -77,7 +77,7 @@ public class GenesisPlatformStateCommand extends AbstractCommand {
         final FileSystemManager fileSystemManager =
                 FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, new NoOpRecycleBin());
         final PlatformContext platformContext = new DefaultPlatformContext(
-                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent(),fileSystemManager);
+                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent(), fileSystemManager);
 
         System.out.printf("Reading from %s %n", statePath.toAbsolutePath());
         final DeserializedSignedState deserializedSignedState =

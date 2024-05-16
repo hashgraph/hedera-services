@@ -362,7 +362,7 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
         final FileSystemManager fileSystemManager =
                 FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, new NoOpRecycleBin());
         final var platformContext = new DefaultPlatformContext(
-                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent(),fileSystemManager);
+                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent(), fileSystemManager);
 
         ReservedSignedState rss;
         try {

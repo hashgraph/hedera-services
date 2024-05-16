@@ -67,7 +67,7 @@ public class GuiEventStorage {
         final FileSystemManager fileSystemManager =
                 FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, new NoOpRecycleBin());
         final PlatformContext platformContext = new DefaultPlatformContext(
-                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent(),fileSystemManager);
+                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent(), fileSystemManager);
 
         this.consensus = new ConsensusImpl(platformContext, new NoOpConsensusMetrics(), addressBook);
         // Future work: birth round compatibility for GUI

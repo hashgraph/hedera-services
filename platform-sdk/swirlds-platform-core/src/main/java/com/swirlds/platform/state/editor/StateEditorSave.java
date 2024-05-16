@@ -82,7 +82,7 @@ public class StateEditorSave extends StateEditorOperation {
             final FileSystemManager fileSystemManager =
                     FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, new NoOpRecycleBin());
             final PlatformContext platformContext = new DefaultPlatformContext(
-                    configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent(),fileSystemManager);
+                    configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent(), fileSystemManager);
 
             try (final ReservedSignedState signedState = getStateEditor().getSignedStateCopy()) {
                 writeSignedStateFilesToDirectory(platformContext, NO_NODE_ID, directory, signedState.get());

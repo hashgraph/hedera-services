@@ -92,7 +92,8 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
         notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
         final FileSystemManager fileSystemManager =
                 FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, new NoOpRecycleBin());
-        context = new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get(), Time.getCurrent(), fileSystemManager);
+        context = new DefaultPlatformContext(
+                configuration, metrics, CryptographyHolder.get(), Time.getCurrent(), fileSystemManager);
 
         setLatestState(initialState);
     }

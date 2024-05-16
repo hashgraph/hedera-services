@@ -279,7 +279,11 @@ class PcesWriterTests {
                 FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, new NoOpRecycleBin());
 
         return new DefaultPlatformContext(
-                configuration, new NoOpMetrics(), CryptographyHolder.get(), new FakeTime(Duration.ofMillis(1)), fileSystemManager);
+                configuration,
+                new NoOpMetrics(),
+                CryptographyHolder.get(),
+                new FakeTime(Duration.ofMillis(1)),
+                fileSystemManager);
     }
 
     /**
