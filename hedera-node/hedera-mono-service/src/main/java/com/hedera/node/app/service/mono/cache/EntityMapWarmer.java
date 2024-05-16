@@ -220,7 +220,8 @@ public class EntityMapWarmer {
                 final PlatformTxnAccessor txnAccess;
                 final TransactionBody txnBody;
                 try {
-                    txnAccess = PlatformTxnAccessor.from(txn.getApplicationPayload().toByteArray());
+                    txnAccess =
+                            PlatformTxnAccessor.from(txn.getApplicationPayload().toByteArray());
                     txnBody = txnAccess.getTxn();
                 } catch (InvalidProtocolBufferException e) {
                     log.error(
