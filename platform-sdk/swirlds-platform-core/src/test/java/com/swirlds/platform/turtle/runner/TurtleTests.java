@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.turtle.runner;
 
+import com.swirlds.common.test.fixtures.Randotron;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
@@ -23,6 +24,11 @@ class TurtleTests {
 
     @Test
     void turtleTest() {
-        new Turtle(4, Duration.ofMillis(10));
+        final Randotron randotron = Randotron.create();
+
+        TurtleBuilder.create(randotron)
+                .withNodeCount(4)
+                .withSimulationGranularity(Duration.ofMillis(10))
+                .build();
     }
 }

@@ -67,8 +67,6 @@ import java.util.concurrent.Future;
  */
 public class Turtle {
 
-    // TODO we need a builder
-
     private final Randotron randotron;
     private final FakeTime time;
 
@@ -77,11 +75,11 @@ public class Turtle {
     /**
      * Constructor.
      *
-     * @param nodeCount the number of nodes to run
-     * @param timeStep  the time step to use
+     * @param builder the turtle builder
      */
-    public Turtle(final int nodeCount, @NonNull final Duration timeStep) {
-        randotron = Randotron.create();
+    Turtle(@NonNull final TurtleBuilder builder) {
+
+        randotron = builder.getRandotron();
 
         try {
             ConstructableRegistry.getInstance().registerConstructables("");
@@ -90,7 +88,7 @@ public class Turtle {
         }
 
         threadPool = Executors.newFixedThreadPool(
-                Math.min(nodeCount, Runtime.getRuntime().availableProcessors()));
+                Math.min(builder.getNodeCount(), Runtime.getRuntime().availableProcessors()));
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(EventConfig_.USE_OLD_STYLE_INTAKE_QUEUE, false)
@@ -105,15 +103,16 @@ public class Turtle {
                 .withConfiguration(configuration)
                 .build();
 
-        final RandomAddressBookBuilder addressBookBuilder =
-                RandomAddressBookBuilder.create(randotron).withSize(nodeCount).withRealKeysEnabled(true);
+        final RandomAddressBookBuilder addressBookBuilder = RandomAddressBookBuilder.create(randotron)
+                .withSize(builder.getNodeCount())
+                .withRealKeysEnabled(true);
         final AddressBook addressBook = addressBookBuilder.build();
 
         final SimulatedNetwork network =
                 new SimulatedNetwork(randotron, addressBook, Duration.ofMillis(200), Duration.ofMillis(10));
 
-        final List<Platform> platforms = new ArrayList<>(nodeCount);
-        final List<DeterministicWiringModel> models = new ArrayList<>(nodeCount);
+        final List<Platform> platforms = new ArrayList<>(builder.getNodeCount());
+        final List<DeterministicWiringModel> models = new ArrayList<>(builder.getNodeCount());
 
         for (final NodeId nodeId : addressBook.getNodeIdSet()) {
 
@@ -164,10 +163,10 @@ public class Turtle {
             }
             tickCount++;
 
-            time.tick(timeStep);
+            time.tick(builder.getSimulationGranularity());
             network.tick(time.now());
 
-            final List<Future<Void>> futures = new ArrayList<>(nodeCount);
+            final List<Future<Void>> futures = new ArrayList<>(builder.getNodeCount());
             for (final DeterministicWiringModel model : models) {
                 final Future<Void> future = threadPool.submit(() -> {
                     model.tick();
