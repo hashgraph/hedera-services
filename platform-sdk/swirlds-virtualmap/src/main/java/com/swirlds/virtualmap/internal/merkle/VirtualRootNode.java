@@ -55,6 +55,7 @@ import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationEx
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
+import com.swirlds.common.merkle.utility.DebugIterationEndpoint;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualKey;
@@ -129,6 +130,7 @@ import org.apache.logging.log4j.Logger;
  * @param <V>
  * 		The value
  */
+@DebugIterationEndpoint
 public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue> extends PartialBinaryMerkleInternal
         implements CustomReconnectRoot<Long, Long>, ExternalSelfSerializable, VirtualRoot, MerkleInternal {
 
