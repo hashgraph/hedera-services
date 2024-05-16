@@ -51,7 +51,7 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
 
     private int copyIndex;
 
-    private long estimatedSize = 0;
+    private volatile long estimatedSize = 0;
 
     /**
      * If set, automatically cause a copy to be flushable based on copy index. Only applies to copies made
