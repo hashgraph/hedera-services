@@ -27,37 +27,39 @@ import java.util.Objects;
  */
 public class ReconnectMapMetrics implements ReconnectMapStats {
 
-    private static final String RECONNECT_MAP_CATEGORY = "ReconnectMap";
+    private static final String RECONNECT_MAP_CATEGORY = "reconnect_vmap";
 
     private final ReconnectMapStats aggregateStats;
 
     private final Counter transfersFromTeacher;
     private final Counter transfersFromLearner;
 
-    private final Counter internalHash;
-    private final Counter internalCleanHash;
+    private final Counter internalHashes;
+    private final Counter internalCleanHashes;
     private final Counter internalData;
     private final Counter internalCleanData;
 
-    private final Counter leafHash;
-    private final Counter leafCleanHash;
+    private final Counter leafHashes;
+    private final Counter leafCleanHashes;
     private final Counter leafData;
     private final Counter leafCleanData;
 
     /**
      * Create an instance of ReconnectMapMetrics.
      * @param metrics a non-null Metrics object
-     * @param label an optional label, e.g. a VirtualMap name or similar, may be null.
+     * @param originalLabel an optional label, e.g. a VirtualMap name or similar, may be null.
      *     If specified, the label is added to the names of the metrics.
      * @param aggregateStats an optional aggregateStats object to which all ReconnectMapStats calls will delegate
      *     in addition to emitting metrics for this object, may be null.
      */
     public ReconnectMapMetrics(
             @NonNull final Metrics metrics,
-            @Nullable final String label,
+            @Nullable final String originalLabel,
             @Nullable final ReconnectMapStats aggregateStats) {
         Objects.requireNonNull(metrics, "metrics must not be null");
         this.aggregateStats = aggregateStats;
+        // Normalize the label
+        final String label = originalLabel.replace('.', '_');
 
         this.transfersFromTeacher = metrics.getOrCreate(
                 new Counter.Config(RECONNECT_MAP_CATEGORY, formatName("transfersFromTeacher", label))
@@ -66,11 +68,11 @@ public class ReconnectMapMetrics implements ReconnectMapStats {
                 new Counter.Config(RECONNECT_MAP_CATEGORY, formatName("transfersFromLearner", label))
                         .withDescription("number of transfers from learner to teacher"));
 
-        this.internalHash =
-                metrics.getOrCreate(new Counter.Config(RECONNECT_MAP_CATEGORY, formatName("internalHash", label))
+        this.internalHashes =
+                metrics.getOrCreate(new Counter.Config(RECONNECT_MAP_CATEGORY, formatName("internalHashes", label))
                         .withDescription("number of internal node hashes transferred"));
-        this.internalCleanHash =
-                metrics.getOrCreate(new Counter.Config(RECONNECT_MAP_CATEGORY, formatName("internalCleanHash", label))
+        this.internalCleanHashes =
+                metrics.getOrCreate(new Counter.Config(RECONNECT_MAP_CATEGORY, formatName("internalCleanHashes", label))
                         .withDescription("number of clean internal node hashes transferred"));
         this.internalData =
                 metrics.getOrCreate(new Counter.Config(RECONNECT_MAP_CATEGORY, formatName("internalData", label))
@@ -79,10 +81,10 @@ public class ReconnectMapMetrics implements ReconnectMapStats {
                 metrics.getOrCreate(new Counter.Config(RECONNECT_MAP_CATEGORY, formatName("internalCleanData", label))
                         .withDescription("number of clean internal node data transferred"));
 
-        this.leafHash = metrics.getOrCreate(new Counter.Config(RECONNECT_MAP_CATEGORY, formatName("leafHash", label))
+        this.leafHashes = metrics.getOrCreate(new Counter.Config(RECONNECT_MAP_CATEGORY, formatName("leafHashes", label))
                 .withDescription("number of leaf node hashes transferred"));
-        this.leafCleanHash =
-                metrics.getOrCreate(new Counter.Config(RECONNECT_MAP_CATEGORY, formatName("leafCleanHash", label))
+        this.leafCleanHashes =
+                metrics.getOrCreate(new Counter.Config(RECONNECT_MAP_CATEGORY, formatName("leafCleanHashes", label))
                         .withDescription("number of clean leaf node hashes transferred"));
         this.leafData = metrics.getOrCreate(new Counter.Config(RECONNECT_MAP_CATEGORY, formatName("leafData", label))
                 .withDescription("number of leaf node data transferred"));
@@ -122,8 +124,8 @@ public class ReconnectMapMetrics implements ReconnectMapStats {
      */
     @Override
     public void incrementInternalHashes(final int hashNum, final int cleanHashNum) {
-        internalHash.add(hashNum);
-        internalCleanHash.add(cleanHashNum);
+        internalHashes.add(hashNum);
+        internalCleanHashes.add(cleanHashNum);
         if (aggregateStats != null) {
             aggregateStats.incrementInternalHashes(hashNum, cleanHashNum);
         }
@@ -146,8 +148,8 @@ public class ReconnectMapMetrics implements ReconnectMapStats {
      */
     @Override
     public void incrementLeafHashes(final int hashNum, final int cleanHashNum) {
-        leafHash.add(hashNum);
-        leafCleanHash.add(cleanHashNum);
+        leafHashes.add(hashNum);
+        leafCleanHashes.add(cleanHashNum);
         if (aggregateStats != null) {
             aggregateStats.incrementLeafHashes(hashNum, cleanHashNum);
         }
