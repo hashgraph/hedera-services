@@ -77,6 +77,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_G
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
@@ -686,6 +687,30 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
+    final HapiSpec tryContractCreateWithMaxAutoAssoc() {
+        final var contract = "CreateTrivial";
+        return defaultHapiSpec("tryContractCreateWithMaxAutoAssoc")
+                .given(uploadInitCode(contract))
+                .when()
+                .then(
+                        contractCreate(contract)
+                                .adminKey(THRESHOLD)
+                                .refusingEthConversion()
+                                .maxAutomaticTokenAssociations(-2)
+                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                        contractCreate(contract)
+                                .adminKey(THRESHOLD)
+                                .refusingEthConversion()
+                                .maxAutomaticTokenAssociations(-200000)
+                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                        contractCreate(contract)
+                                .adminKey(THRESHOLD)
+                                .refusingEthConversion()
+                                .maxAutomaticTokenAssociations(-1)
+                                .hasKnownStatus(SUCCESS));
+    }
+
+    @HapiTest
     HapiSpec vanillaSuccess() {
         final var contract = "CreateTrivial";
         return defaultHapiSpec(
@@ -782,7 +807,7 @@ public class ContractCreateSuite extends HapiSuite {
                                 .refusingEthConversion()
                                 .logged(),
                         getContractInfo(contract)
-                                .has(ContractInfoAsserts.contractWith().autoRenewAccountId(autoRenewAccount))
+                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(0))
                                 .logged())
                 .when()
                 .then();

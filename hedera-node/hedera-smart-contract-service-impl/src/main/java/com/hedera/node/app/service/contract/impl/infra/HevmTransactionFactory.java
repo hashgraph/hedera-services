@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
@@ -71,6 +72,7 @@ import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
@@ -89,6 +91,7 @@ public class HevmTransactionFactory {
     private final GasCalculator gasCalculator;
     private final StakingConfig stakingConfig;
     private final ContractsConfig contractsConfig;
+    private final EntitiesConfig entitiesConfig;
     private final ReadableFileStore fileStore;
     private final TokenServiceApi tokenServiceApi;
     private final ReadableAccountStore accountStore;
@@ -97,7 +100,6 @@ public class HevmTransactionFactory {
     private final HydratedEthTxData hydratedEthTxData;
     private final EthTxSigsCache ethereumSignatures;
     private final HederaEvmContext hederaEvmContext;
-
     @Inject
     public HevmTransactionFactory(
             @NonNull final NetworkInfo networkInfo,
@@ -106,6 +108,7 @@ public class HevmTransactionFactory {
             @NonNull final GasCalculator gasCalculator,
             @NonNull final StakingConfig stakingConfig,
             @NonNull final ContractsConfig contractsConfig,
+            @NonNull final EntitiesConfig entitiesConfig,
             @Nullable final HydratedEthTxData hydratedEthTxData,
             @NonNull @InitialState final ReadableAccountStore accountStore,
             @NonNull final ExpiryValidator expiryValidator,
@@ -123,6 +126,7 @@ public class HevmTransactionFactory {
         this.hederaConfig = requireNonNull(hederaConfig);
         this.stakingConfig = requireNonNull(stakingConfig);
         this.contractsConfig = requireNonNull(contractsConfig);
+        this.entitiesConfig = requireNonNull(entitiesConfig);
         this.tokenServiceApi = requireNonNull(tokenServiceApi);
         this.expiryValidator = requireNonNull(expiryValidator);
         this.attributeValidator = requireNonNull(attributeValidator);
@@ -313,7 +317,10 @@ public class HevmTransactionFactory {
         validateTrue(body.gas() <= contractsConfig.maxGasPerSec(), MAX_GAS_LIMIT_EXCEEDED);
         final var usesUnsupportedAutoAssociations =
                 body.maxAutomaticTokenAssociations() > 0 && !contractsConfig.allowAutoAssociations();
+        final var usesInvalidAutoAssociations = body.maxAutomaticTokenAssociations() < -1
+                && entitiesConfig.unlimitedAutoAssociationsEnabled();
         validateFalse(usesUnsupportedAutoAssociations, NOT_SUPPORTED);
+        validateFalse(usesInvalidAutoAssociations, INVALID_MAX_AUTO_ASSOCIATIONS);
         validateTrue(
                 body.maxAutomaticTokenAssociations() <= ledgerConfig.maxAutoAssociations(),
                 REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);

@@ -46,6 +46,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_DATA;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CONSTRUCTOR_PARAMS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONTRACTS_CONFIG;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_ENTITIES_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_HEDERA_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_LEDGER_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_STAKING_CONFIG;
@@ -155,6 +156,7 @@ class HevmTransactionFactoryTest {
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 DEFAULT_CONTRACTS_CONFIG,
+                DEFAULT_ENTITIES_CONFIG,
                 null,
                 accountStore,
                 expiryValidator,
@@ -682,6 +684,7 @@ class HevmTransactionFactoryTest {
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 AUTO_ASSOCIATING_CONTRACTS_CONFIG,
+                DEFAULT_ENTITIES_CONFIG,
                 null,
                 accountStore,
                 expiryValidator,
@@ -700,6 +703,7 @@ class HevmTransactionFactoryTest {
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 AUTO_ASSOCIATING_CONTRACTS_CONFIG,
+                DEFAULT_ENTITIES_CONFIG,
                 HydratedEthTxData.failureFrom(CONTRACT_FILE_EMPTY),
                 accountStore,
                 expiryValidator,
@@ -718,6 +722,7 @@ class HevmTransactionFactoryTest {
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 DEFAULT_CONTRACTS_CONFIG,
+                DEFAULT_ENTITIES_CONFIG,
                 HydratedEthTxData.successFrom(ethTxData),
                 accountStore,
                 expiryValidator,
@@ -736,6 +741,7 @@ class HevmTransactionFactoryTest {
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 DEV_CHAIN_ID_CONTRACTS_CONFIG,
+                DEFAULT_ENTITIES_CONFIG,
                 HydratedEthTxData.successFrom(ethTxData),
                 accountStore,
                 expiryValidator,
