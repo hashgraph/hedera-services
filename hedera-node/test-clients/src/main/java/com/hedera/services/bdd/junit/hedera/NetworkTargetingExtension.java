@@ -27,7 +27,7 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 /**
- * An extension that binds the target network to the thread before invoking
+ * An extension that binds the target network to the current thread before invoking
  * each {@link HederaTest}-annotated test method.
  *
  * <p><b>TODO</b> - implement {@link org.junit.jupiter.api.extension.BeforeAllCallback}
@@ -52,7 +52,7 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
     @Override
     public void beforeAll(@NonNull final ExtensionContext extensionContext) throws Exception {}
 
-    private static boolean isHederaTest(@NonNull final Method method) {
+    public static boolean isHederaTest(@NonNull final Method method) {
         return isAnnotated(method, HederaTest.class) || isAnnotated(method, LeakyHederaTest.class);
     }
 }

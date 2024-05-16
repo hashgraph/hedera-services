@@ -58,9 +58,17 @@ tasks.test {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform()
+    useJUnitPlatform {
+        val expression = System.getProperty("tagExpression") ?: "any() | none()"
+        includeTags(expression)
+    }
+
     systemProperty("junit.jupiter.execution.parallel.enabled", true)
     systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
+    systemProperty(
+        "junit.jupiter.testclass.order.default",
+        "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation"
+    )
 
     // Limit heap and number of processors
     maxHeapSize = "8g"

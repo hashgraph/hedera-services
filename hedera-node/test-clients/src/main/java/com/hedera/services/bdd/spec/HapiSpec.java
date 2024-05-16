@@ -136,6 +136,7 @@ public class HapiSpec implements Runnable, Executable {
     private static final String AS_WRITTEN_DISPLAY_NAME = "as written";
 
     public static final ThreadLocal<HederaNetwork> TARGET_NETWORK = new ThreadLocal<>();
+    public static final ThreadLocal<String> SPEC_NAME = new ThreadLocal<>();
 
     private static final long FIRST_NODE_ACCOUNT_NUM = 3L;
     private static final int NUM_IN_USE_NODE_ACCOUNTS = 4;
@@ -1037,6 +1038,20 @@ public class HapiSpec implements Runnable, Executable {
                 AS_WRITTEN_DISPLAY_NAME,
                 targeted(
                         new HapiSpec(name, true, setup, given, when, then, propertiesToPreserve, snapshotMatchModes))));
+    }
+
+    public static Stream<DynamicTest> hapiTest(@NonNull final HapiSpecOperation... ops) {
+        return Stream.of(DynamicTest.dynamicTest(
+                AS_WRITTEN_DISPLAY_NAME,
+                targeted(new HapiSpec(
+                        SPEC_NAME.get(),
+                        false,
+                        setupFrom(HapiSpecSetup.getDefaultPropertySource()),
+                        new HapiSpecOperation[0],
+                        new HapiSpecOperation[0],
+                        ops,
+                        List.of(),
+                        new SnapshotMatchMode[0]))));
     }
 
     private static HapiSpec targeted(@NonNull final HapiSpec spec) {

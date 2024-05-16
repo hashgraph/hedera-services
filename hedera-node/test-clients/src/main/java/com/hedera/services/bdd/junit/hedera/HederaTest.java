@@ -18,6 +18,7 @@ package com.hedera.services.bdd.junit.hedera;
 
 import static org.junit.jupiter.api.parallel.ResourceAccessMode.READ;
 
+import com.hedera.services.bdd.junit.SpecNamingExtension;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -29,6 +30,6 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @TestFactory
-@ExtendWith(NetworkTargetingExtension.class)
+@ExtendWith({NetworkTargetingExtension.class, SpecNamingExtension.class})
 @ResourceLock(value = "NETWORK", mode = READ)
 public @interface HederaTest {}
