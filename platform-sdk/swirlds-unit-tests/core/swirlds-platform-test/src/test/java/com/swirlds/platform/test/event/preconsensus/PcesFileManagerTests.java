@@ -31,7 +31,10 @@ import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.config.FileSystemManagerConfig_;
+import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
 import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.common.io.utility.NoOpRecycleBin;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CompareTo;
@@ -101,7 +104,9 @@ class PcesFileManagerTests {
                 .withValue(PcesConfig_.COMPACT_LAST_FILE_ON_STARTUP, false)
                 .getOrCreateConfig();
 
-        return new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get(), time);
+        final FileSystemManager fileSystemManager =
+                FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, new NoOpRecycleBin());
+        return new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get(), time,fileSystemManager);
     }
 
     @ParameterizedTest

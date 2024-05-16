@@ -23,6 +23,9 @@ import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
+import com.swirlds.common.io.utility.NoOpRecycleBin;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.wiring.model.diagram.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.diagram.ModelGroup;
@@ -116,8 +119,10 @@ public final class DiagramCommand extends AbstractCommand {
     @Override
     public Integer call() throws IOException {
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
+        final FileSystemManager fileSystemManager =
+                FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, new NoOpRecycleBin());
         final PlatformContext platformContext = new DefaultPlatformContext(
-                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
+                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent(),fileSystemManager);
 
         final PlatformWiring platformWiring = new PlatformWiring(platformContext, true, true);
 

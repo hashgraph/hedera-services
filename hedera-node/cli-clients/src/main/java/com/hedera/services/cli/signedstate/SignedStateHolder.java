@@ -43,6 +43,9 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
+import com.swirlds.common.io.utility.NoOpRecycleBin;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -355,8 +358,11 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
 
         registerConstructables();
 
+        final Configuration configuration = buildConfiguration(configurationPaths);
+        final FileSystemManager fileSystemManager =
+                FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, new NoOpRecycleBin());
         final var platformContext = new DefaultPlatformContext(
-                buildConfiguration(configurationPaths), new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
+                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent(),fileSystemManager);
 
         ReservedSignedState rss;
         try {

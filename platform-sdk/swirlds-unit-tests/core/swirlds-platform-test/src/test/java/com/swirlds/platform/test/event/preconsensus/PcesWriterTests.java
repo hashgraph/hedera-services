@@ -37,7 +37,10 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.config.FileSystemManagerConfig_;
+import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
 import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.common.io.utility.NoOpRecycleBin;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -272,8 +275,11 @@ class PcesWriterTests {
                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, ancientMode == BIRTH_ROUND_THRESHOLD)
                 .getOrCreateConfig();
 
+        final FileSystemManager fileSystemManager =
+                FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, new NoOpRecycleBin());
+
         return new DefaultPlatformContext(
-                configuration, new NoOpMetrics(), CryptographyHolder.get(), new FakeTime(Duration.ofMillis(1)));
+                configuration, new NoOpMetrics(), CryptographyHolder.get(), new FakeTime(Duration.ofMillis(1)), fileSystemManager);
     }
 
     /**
