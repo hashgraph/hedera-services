@@ -18,7 +18,6 @@ package com.swirlds.common.crypto;
 
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static com.swirlds.common.utility.CommonUtils.unhex;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -91,7 +90,7 @@ class CryptographyTests {
         for (int i = 0; i < messages.length; i++) {
             messages[i] = digestPool.next();
             final Hash hash = cryptography.digestSync(messages[i].getPayloadDirect(), DigestType.SHA_384);
-            assertTrue(digestPool.isValid(messages[i], hash.getValue()));
+            assertTrue(digestPool.isValid(messages[i], hash.copyToByteArray()));
         }
     }
 
@@ -104,7 +103,7 @@ class CryptographyTests {
 
         final Hash hash = hashable.getHash();
         assertEquals(KNOWN_DUMMY_SERIALIZABLE_HASH, hash);
-        assertArrayEquals(KNOWN_DUMMY_SERIALIZABLE_HASH.getValue(), hash.getValue());
+        assertEquals(KNOWN_DUMMY_SERIALIZABLE_HASH.getBytes(), hash.getBytes());
     }
 
     @ParameterizedTest

@@ -28,7 +28,7 @@ import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.util.HashMap;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,9 +43,9 @@ public class SequentialSignaturesTest extends AbstractStateSignatureCollectorTes
 
     private final int roundAgeToSign = 3;
 
-    private final AddressBook addressBook = new RandomAddressBookGenerator(random)
-            .setSize(4)
-            .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
+    private final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+            .withSize(4)
+            .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
             .build();
 
     /**

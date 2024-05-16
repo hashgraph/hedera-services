@@ -16,7 +16,7 @@
 
 plugins {
     id("com.hedera.gradle.platform")
-    id("com.hedera.hashgraph.benchmark-conventions")
+    id("com.hedera.gradle.benchmark")
 }
 
 testModuleInfo {

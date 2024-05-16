@@ -15,7 +15,7 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.versions")
+    id("com.hedera.gradle.versions")
 }
 
 val besuNativeVersion = "0.8.2"
@@ -58,7 +58,7 @@ moduleInfo {
     version("com.google.jimfs", "1.2")
     version("com.google.protobuf", protobufVersion)
     version("com.google.protobuf.util", protobufVersion)
-    version("com.hedera.pbj.runtime", "0.8.7")
+    version("com.hedera.pbj.runtime", "0.8.9")
     version("com.squareup.javapoet", "1.13.0")
     version("com.sun.jna", "5.12.1")
     version("dagger", daggerVersion)
@@ -101,8 +101,7 @@ moduleInfo {
     version("org.hyperledger.besu.evm", besuVersion)
     version("org.hyperledger.besu.nativelib.secp256k1", besuNativeVersion)
     version("org.json", "20231013")
-    version("org.junit.jupiter.api", "5.9.1")
-    version("org.junit.platform.engine", "1.9.1")
+    version("org.junit.jupiter.api", "5.10.1")
     version("org.junitpioneer", "2.0.1")
     version("org.mockito", mockitoVersion)
     version("org.mockito.junit.jupiter", mockitoVersion)

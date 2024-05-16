@@ -19,6 +19,7 @@ package com.swirlds.platform.event;
 import static com.swirlds.platform.event.DetGenerateUtils.generateRandomByteArray;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -77,6 +78,8 @@ public class DetailedConsensusEventTest {
         BaseEventHashedData hashedData = DetGenerateUtils.generateBaseEventHashedData(random);
         ConsensusData consensusData = DetGenerateUtils.generateConsensusEventData(random);
         return new DetailedConsensusEvent(
-                hashedData, generateRandomByteArray(random, SignatureType.RSA.signatureLength()), consensusData);
+                new GossipEvent(
+                        hashedData, Bytes.wrap(generateRandomByteArray(random, SignatureType.RSA.signatureLength()))),
+                consensusData);
     }
 }

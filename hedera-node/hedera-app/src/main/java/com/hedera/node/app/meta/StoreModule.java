@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.meta;
 
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.state.HederaState;
 import dagger.Module;
 import dagger.Provides;
 import java.util.function.Supplier;

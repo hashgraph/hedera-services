@@ -32,7 +32,7 @@ public interface SelfEventSigner {
      * @param event the event to sign
      * @return the signed event
      */
-    @InputWireLabel("self event")
+    @InputWireLabel("self events")
     @NonNull
     GossipEvent signEvent(@NonNull BaseEventHashedData event);
 }
