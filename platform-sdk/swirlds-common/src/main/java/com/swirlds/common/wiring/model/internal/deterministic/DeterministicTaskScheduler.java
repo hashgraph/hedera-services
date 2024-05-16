@@ -80,7 +80,7 @@ public class DeterministicTaskScheduler<OUT> extends TaskScheduler<OUT> {
      */
     @Override
     public void flush() {
-        // TODO: flushing is incompatible with deterministic task schedulers
+        // Future work: flushing is incompatible with deterministic task schedulers
     }
 
     /**

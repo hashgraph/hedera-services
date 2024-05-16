@@ -107,7 +107,7 @@ public class TurtleNode {
         gossip.provideIntakeEventCounter(
                 platformComponentBuilder.getBuildingBlocks().intakeEventCounter());
 
-        platformComponentBuilder.withGossip(network.getGossipInstance(nodeId));
+        platformComponentBuilder.withMetricsDocumentationEnabled(false).withGossip(network.getGossipInstance(nodeId));
 
         platform = platformComponentBuilder.build();
     }
