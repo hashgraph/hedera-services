@@ -492,6 +492,11 @@ public class TokenHandlers {
         return tokenUpdateNftsHandler;
     }
 
+    /**
+     * Gets the tokenRejectHandler.
+     *
+     * @return the tokenRejectHandler
+     */
     public TokenRejectHandler tokenRejectHandler() {
         return tokenRejectHandler;
     }

@@ -131,6 +131,7 @@ public class TokenHandlersTest {
         tokenGetNftInfoHandler = mock(TokenGetNftInfoHandler.class);
         tokenGetNftInfosHandler = mock(TokenGetNftInfosHandler.class);
         tokenUpdateNftsHandler = mock(TokenUpdateNftsHandler.class);
+        tokenRejectHandler = mock(TokenRejectHandler.class);
 
         tokenHandlers = new TokenHandlers(
                 cryptoCreateHandler,
@@ -332,5 +333,10 @@ public class TokenHandlersTest {
     @Test
     public void tokenUpdateNftsHandlerReturnsCorrectInstance() {
         assertEquals(tokenUpdateNftsHandler, tokenHandlers.tokenUpdateNftsHandler());
+    }
+
+    @Test
+    public void setTokenRejectHandlerReturnsCorrectInstance() {
+        assertEquals(tokenRejectHandler, tokenHandlers.tokenRejectHandler());
     }
 }
