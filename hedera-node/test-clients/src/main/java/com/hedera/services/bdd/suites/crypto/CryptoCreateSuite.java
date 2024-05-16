@@ -228,6 +228,7 @@ public class CryptoCreateSuite extends HapiSuite {
         final var noAutoAssocSlots = "noAutoAssocSlots";
         final var oneAutoAssocSlot = "oneAutoAssocSlot";
         final var tenAutoAssocSlots = "tenAutoAssocSlots";
+        final var unlimitedAutoAssocSlots = "unlimitedAutoAssocSlots";
         final var token = "token";
 
         return defaultHapiSpec("usdFeeAsExpected")
@@ -253,7 +254,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
                                 .signedBy(CIVILIAN)
                                 .payingWith(CIVILIAN),
-                        cryptoCreate("oneAutoAssoc")
+                        cryptoCreate(oneAutoAssocSlot)
                                 .key(CIVILIAN)
                                 .balance(0L)
                                 .maxAutomaticTokenAssociations(1)
@@ -262,7 +263,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
                                 .signedBy(CIVILIAN)
                                 .payingWith(CIVILIAN),
-                        cryptoCreate("tenAutoAssoc")
+                        cryptoCreate(tenAutoAssocSlots)
                                 .key(CIVILIAN)
                                 .balance(0L)
                                 .maxAutomaticTokenAssociations(10)
@@ -270,12 +271,22 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .blankMemo()
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
                                 .signedBy(CIVILIAN)
+                                .payingWith(CIVILIAN)/*,
+                        cryptoCreate(unlimitedAutoAssocSlots)
+                                .key(CIVILIAN)
+                                .balance(0L)
+                                .maxAutomaticTokenAssociations(-1)
+                                .via(unlimitedAutoAssocSlots)
+                                .blankMemo()
+                                .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+                                .signedBy(CIVILIAN)
                                 .payingWith(CIVILIAN),
-                        getTxnRecord(tenAutoAssocSlots).logged())
+                        getTxnRecord(tenAutoAssocSlots).logged()*/)
                 .then(
                         validateChargedUsd(noAutoAssocSlots, v13PriceUsd),
-                        validateChargedUsd(oneAutoAssocSlot, v13PriceUsdOneAutoAssociation),
-                        validateChargedUsd(tenAutoAssocSlots, v13PriceUsdTenAutoAssociations));
+                        validateChargedUsd(oneAutoAssocSlot, v13PriceUsd),
+                        validateChargedUsd(tenAutoAssocSlots, v13PriceUsd)/*,
+                        validateChargedUsd(unlimitedAutoAssocSlots, v13PriceUsd)*/);
     }
 
     @HapiTest
