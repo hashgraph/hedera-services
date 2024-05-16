@@ -57,8 +57,10 @@ class UnzipUtilityTest {
 
     @TempDir
     private Path zipSourceDir; // contains test zips
+
     @TempDir
     private Path zipSourceDirTooBig; // contains test zips
+
     private File testZipWithOneFile;
     private File testZipWithSubdirectory;
     private File testZipWithSubdirectoryTooBig;
@@ -101,18 +103,16 @@ class UnzipUtilityTest {
         // set up large test zip files in a subdirectory
         testZipWithSubdirectoryTooBig = new File(zipSourceDirTooBig + "/testZipWithSubdirectoryTooBig.zip");
         try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(testZipWithSubdirectoryTooBig))) {
+            byte[] data = populateLargeRandomBytes();
+
             ZipEntry e1 = new ZipEntry(FILENAME_1);
             out.putNextEntry(e1);
-            byte[] data = populateRandomBytes();
-
-            out.write(data, 0, data.length);    // Write the byte array to the output stream
+            out.write(data, 0, data.length); // Write the byte array to the output stream
             out.closeEntry();
-
             ZipEntry e2 = new ZipEntry(FILENAME_2);
             out.putNextEntry(e2);
             out.write(data, 0, data.length);
             out.closeEntry();
-
             ZipEntry e3 = new ZipEntry(FILENAME_3);
             out.putNextEntry(e3);
             out.write(data, 0, data.length);
@@ -121,11 +121,11 @@ class UnzipUtilityTest {
     }
 
     @NotNull
-    private static byte[] populateRandomBytes() {
-        int targetSize = 104857600;             // 100MB in bytes
-        byte[] data = new byte[targetSize+1];   // Initialize byte array, size greater than threshold 1GB
+    private static byte[] populateLargeRandomBytes() {
+        int targetSize = 104857600; // 100MB in bytes
+        byte[] data = new byte[targetSize + 1]; // Initialize byte array, size greater than threshold 100MB
         SecureRandom random = new SecureRandom();
-        random.nextBytes(data);                 // Fill byte array with random bytes
+        random.nextBytes(data); // Fill byte array with random bytes
         return data;
     }
 
@@ -176,5 +176,4 @@ class UnzipUtilityTest {
                 .isThrownBy(() -> UnzipUtility.unzip(data, dstDirMock))
                 .withMessage("Unable to create the parent directories for the file: " + dstDirMock + "/fileToZip.txt");
     }
-
 }
