@@ -27,7 +27,7 @@ public class SpecNamingExtension implements BeforeEachCallback {
     public void beforeEach(@NonNull final ExtensionContext extensionContext) throws Exception {
         extensionContext
                 .getTestMethod()
-                .filter(NetworkTargetingExtension::isHederaTest)
+                .filter(NetworkTargetingExtension::isHapiTest)
                 .ifPresent(method -> HapiSpec.SPEC_NAME.set(
                         extensionContext.getRequiredTestClass().getSimpleName() + "." + method.getName()));
     }

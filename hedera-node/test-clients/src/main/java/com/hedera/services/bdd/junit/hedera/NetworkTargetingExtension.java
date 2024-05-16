@@ -18,29 +18,29 @@ package com.hedera.services.bdd.junit.hedera;
 
 import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
 
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.reflect.Method;
 import org.junit.jupiter.api.extension.AfterEachCallback;
-import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 /**
  * An extension that binds the target network to the current thread before invoking
- * each {@link HederaTest}-annotated test method.
+ * each {@link HapiTest}-annotated test method.
  *
- * <p><b>TODO</b> - implement {@link org.junit.jupiter.api.extension.BeforeAllCallback}
- * and {@link org.junit.jupiter.api.extension.AfterAllCallback} to handle
- * creating {@link @Isolated} networks for annotated test classes and targeting
- * them for the duration of the test class.
+ * <p><b>(FUTURE)</b> - implement {@link org.junit.jupiter.api.extension.BeforeAllCallback}
+ * and {@link org.junit.jupiter.api.extension.AfterAllCallback} to handle creating "private"
+ * networks for annotated test classes and targeting them instead of the shared network.
  */
-public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback {
+public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachCallback {
     @Override
     public void beforeEach(@NonNull final ExtensionContext extensionContext) {
         extensionContext
                 .getTestMethod()
-                .filter(NetworkTargetingExtension::isHederaTest)
+                .filter(NetworkTargetingExtension::isHapiTest)
                 .ifPresent(ignore -> HapiSpec.TARGET_NETWORK.set(HederaNetwork.SHARED_NETWORK.get()));
     }
 
@@ -49,10 +49,7 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
         HapiSpec.TARGET_NETWORK.remove();
     }
 
-    @Override
-    public void beforeAll(@NonNull final ExtensionContext extensionContext) throws Exception {}
-
-    public static boolean isHederaTest(@NonNull final Method method) {
-        return isAnnotated(method, HederaTest.class) || isAnnotated(method, LeakyHederaTest.class);
+    public static boolean isHapiTest(@NonNull final Method method) {
+        return isAnnotated(method, HapiTest.class) || isAnnotated(method, LeakyHapiTest.class);
     }
 }

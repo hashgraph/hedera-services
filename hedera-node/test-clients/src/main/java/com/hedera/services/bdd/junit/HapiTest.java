@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.junit;
 
+import static org.junit.jupiter.api.parallel.ResourceAccessMode.READ;
+
 import com.hedera.services.bdd.junit.hedera.NetworkTargetingExtension;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -23,12 +25,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.api.parallel.ResourceLock;
 
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @TestFactory
-@ExtendWith(NetworkTargetingExtension.class)
-@Execution(ExecutionMode.CONCURRENT)
+@ExtendWith({NetworkTargetingExtension.class, SpecNamingExtension.class})
+@ResourceLock(value = "NETWORK", mode = READ)
 public @interface HapiTest {}

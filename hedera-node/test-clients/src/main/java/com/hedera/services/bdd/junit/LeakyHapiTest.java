@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.hedera;
+package com.hedera.services.bdd.junit;
 
 import static org.junit.jupiter.api.parallel.ResourceAccessMode.READ_WRITE;
 
+import com.hedera.services.bdd.junit.hedera.NetworkTargetingExtension;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -31,4 +32,4 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 @TestFactory
 @ExtendWith(NetworkTargetingExtension.class)
 @ResourceLock(value = "NETWORK", mode = READ_WRITE)
-public @interface LeakyHederaTest {}
+public @interface LeakyHapiTest {}
