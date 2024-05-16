@@ -100,6 +100,7 @@ public class HevmTransactionFactory {
     private final HydratedEthTxData hydratedEthTxData;
     private final EthTxSigsCache ethereumSignatures;
     private final HederaEvmContext hederaEvmContext;
+
     @Inject
     public HevmTransactionFactory(
             @NonNull final NetworkInfo networkInfo,
@@ -317,8 +318,8 @@ public class HevmTransactionFactory {
         validateTrue(body.gas() <= contractsConfig.maxGasPerSec(), MAX_GAS_LIMIT_EXCEEDED);
         final var usesUnsupportedAutoAssociations =
                 body.maxAutomaticTokenAssociations() > 0 && !contractsConfig.allowAutoAssociations();
-        final var usesInvalidAutoAssociations = body.maxAutomaticTokenAssociations() < -1
-                && entitiesConfig.unlimitedAutoAssociationsEnabled();
+        final var usesInvalidAutoAssociations =
+                body.maxAutomaticTokenAssociations() < -1 && entitiesConfig.unlimitedAutoAssociationsEnabled();
         validateFalse(usesUnsupportedAutoAssociations, NOT_SUPPORTED);
         validateFalse(usesInvalidAutoAssociations, INVALID_MAX_AUTO_ASSOCIATIONS);
         validateTrue(

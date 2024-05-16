@@ -271,7 +271,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .blankMemo()
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
                                 .signedBy(CIVILIAN)
-                                .payingWith(CIVILIAN)/*,
+                                .payingWith(CIVILIAN) /*,
                         cryptoCreate(unlimitedAutoAssocSlots)
                                 .key(CIVILIAN)
                                 .balance(0L)
@@ -285,7 +285,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then(
                         validateChargedUsd(noAutoAssocSlots, v13PriceUsd),
                         validateChargedUsd(oneAutoAssocSlot, v13PriceUsd),
-                        validateChargedUsd(tenAutoAssocSlots, v13PriceUsd)/*,
+                        validateChargedUsd(tenAutoAssocSlots, v13PriceUsd) /*,
                         validateChargedUsd(unlimitedAutoAssocSlots, v13PriceUsd)*/);
     }
 
