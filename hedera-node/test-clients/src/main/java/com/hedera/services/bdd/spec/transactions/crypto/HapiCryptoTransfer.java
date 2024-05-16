@@ -507,9 +507,9 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
         final var involved = extra.getLeft();
         final var fromAccount = TxnUtils.asId(involved[0], spec);
         final var fromPartitionToken = TxnUtils.asTokenId(involved[1], spec);
-        final var toAccount = (this.PARTITION_TOKEN_OPERATION_MODE != "PartitionMoveWithoutUserSignature")
-                ? TxnUtils.asId(involved[2], spec)
-                : fromAccount;
+        final var toAccount = (this.PARTITION_TOKEN_OPERATION_MODE == "PartitionMoveWithoutUserSignature")
+                ? fromAccount
+                : TxnUtils.asId(involved[2], spec);
         final var toPartitionToken = (this.PARTITION_TOKEN_OPERATION_MODE == "PartitionMoveWithoutUserSignature")
                 ? TxnUtils.asTokenId(involved[2], spec)
                 : TxnUtils.asTokenId(involved[3], spec);
