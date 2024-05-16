@@ -59,6 +59,15 @@ public class SubmitModificationsOp extends UtilOp {
         this.modificationsFn = modificationsFn;
     }
 
+    public SubmitModificationsOp(
+            final boolean useCivilianPayer,
+            @NonNull final Supplier<HapiTxnOp<?>> txnOpSupplier,
+            @NonNull final Function<Transaction, List<TxnModification>> modificationsFn) {
+        this.useCivilianPayer = useCivilianPayer;
+        this.txnOpSupplier = txnOpSupplier;
+        this.modificationsFn = modificationsFn;
+    }
+
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
         final List<TxnModification> modifications = new ArrayList<>();
