@@ -49,7 +49,6 @@ public final class UnzipUtility {
     private static final double THRESHOLD_RATIO = 10;
 
     private UnzipUtility() {
-        throw new UnsupportedOperationException("Utility Class");
     }
 
     /**
