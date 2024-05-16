@@ -16,8 +16,10 @@
 
 package com.swirlds.platform.system;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
 /**
@@ -32,6 +34,7 @@ public class BasicSoftwareVersion implements SoftwareVersion {
     }
 
     private long softwareVersion;
+    private SemanticVersion semanticVersion;
 
     /**
      * Zero arg constructor used for deserialization.
@@ -46,6 +49,10 @@ public class BasicSoftwareVersion implements SoftwareVersion {
      */
     public BasicSoftwareVersion(final long softwareVersion) {
         this.softwareVersion = softwareVersion;
+        this.semanticVersion = SemanticVersion
+                .newBuilder()
+                .major(Math.toIntExact(softwareVersion))
+                .build();
     }
 
     /**
@@ -80,6 +87,10 @@ public class BasicSoftwareVersion implements SoftwareVersion {
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         softwareVersion = in.readLong();
+        this.semanticVersion = SemanticVersion
+                .newBuilder()
+                .major(Math.toIntExact(softwareVersion))
+                .build();
     }
 
     /**
@@ -118,5 +129,11 @@ public class BasicSoftwareVersion implements SoftwareVersion {
     @Override
     public String toString() {
         return Long.toString(softwareVersion);
+    }
+
+    @NonNull
+    @Override
+    public SemanticVersion getPbjSemanticVersion() {
+        return semanticVersion;
     }
 }
