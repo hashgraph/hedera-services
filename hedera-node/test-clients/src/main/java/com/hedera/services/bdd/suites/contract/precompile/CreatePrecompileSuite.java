@@ -37,6 +37,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -45,19 +48,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.List;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
@@ -65,17 +63,13 @@ import org.junit.jupiter.api.Tag;
 // since they use admin keys, which are held by the txn payer.
 // In the case of an eth txn, we revoke the payers keys and the txn would fail.
 // The only way an eth account to create a token is the admin key to be of a contractId type.
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class CreatePrecompileSuite extends HapiSuite {
+public class CreatePrecompileSuite {
     public static final String ACCOUNT_2 = "account2";
     public static final String CONTRACT_ADMIN_KEY = "contractAdminKey";
-    public static final String ACCOUNT_TO_ASSOCIATE = "account3";
-    public static final String ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
 
     public static final String FALSE = "false";
     public static final String CREATE_TOKEN_WITH_ALL_CUSTOM_FEES_AVAILABLE = "createTokenWithAllCustomFeesAvailable";
-    private static final Logger log = LogManager.getLogger(CreatePrecompileSuite.class);
     private static final long GAS_TO_OFFER = 1_000_000L;
     public static final long AUTO_RENEW_PERIOD = 8_000_000L;
     public static final String TOKEN_SYMBOL = "tokenSymbol";
@@ -92,39 +86,6 @@ public class CreatePrecompileSuite extends HapiSuite {
     public static final String EXISTING_TOKEN = "EXISTING_TOKEN";
     public static final String EXPLICIT_CREATE_RESULT = "Explicit create result is {}";
     private static final String CREATE_NFT_WITH_KEYS_AND_EXPIRY_FUNCTION = "createNFTTokenWithKeysAndExpiry";
-
-    public static void main(String... args) {
-        new CreatePrecompileSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    // TODO: Fix contract name in TokenCreateContract.sol
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return allOf(positiveSpecs(), negativeSpecs());
-    }
-
-    List<Stream<DynamicTest>> positiveSpecs() {
-        return List.of(
-                // TODO: where are the security model V2 _positive_ tests?
-                );
-    }
-
-    List<Stream<DynamicTest>> negativeSpecs() {
-        return List.of(
-                tokenCreateWithEmptyKeysReverts(),
-                tokenCreateWithKeyWithMultipleKeyValuesReverts(),
-                tokenCreateWithFixedFeeWithMultiplePaymentsReverts(),
-                createTokenWithEmptyTokenStruct(),
-                createTokenWithInvalidExpiry(),
-                createTokenWithInvalidTreasury(),
-                createTokenWithInsufficientValueSent(),
-                delegateCallTokenCreateFails());
-    }
 
     // TEST-007 & TEST-016
     // Should fail on insufficient value sent
@@ -474,10 +435,5 @@ public class CreatePrecompileSuite extends HapiSuite {
                         getAccountBalance(ACCOUNT),
                         getAccountBalance(TOKEN_CREATE_CONTRACT),
                         getContractInfo(TOKEN_CREATE_CONTRACT));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

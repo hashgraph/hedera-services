@@ -39,6 +39,8 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.asHexedAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -50,23 +52,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class HRCPrecompileSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(HRCPrecompileSuite.class);
+public class HRCPrecompileSuite {
     private static final String MULTI_KEY = "multikey";
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
     private static final String FUNGIBLE_TOKEN_2 = "fungibleToken2";
@@ -85,26 +79,6 @@ public class HRCPrecompileSuite extends HapiSuite {
     private static final String RANDOM_KEY = "randomKey";
     private static final String ASSOCIATE = "associate";
     private static final String DISSOCIATE = "dissociate";
-
-    public static void main(String... args) {
-        new HRCPrecompileSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                hrcNftAndFungibleTokenAssociateFromEOA(),
-                hrcNFTAndFungibleTokenAssociateFromContract(),
-                hrcTokenAssociateFromSameEOATwiceShouldFail(),
-                hrcTokenDissociateWhenNotAssociatedShouldFail(),
-                hrcTokenDissociateWhenBalanceNotZeroShouldFail(),
-                hrcTooManyTokenAssociateShouldFail());
-    }
 
     @HapiTest
     final Stream<DynamicTest> hrcNftAndFungibleTokenAssociateFromEOA() {
@@ -627,10 +601,5 @@ public class HRCPrecompileSuite extends HapiSuite {
                                                 .contractCallResult(resultWith()
                                                         .contractCallResult(htsPrecompileResult()
                                                                 .withStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)))))));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

@@ -28,25 +28,22 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.*;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.TRANSFER_TXN_2;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.createHollowAccountFrom;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.List;
 import java.util.OptionalLong;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class TransferWithCustomFractionalFees extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(TransferWithCustomFractionalFees.class);
+public class TransferWithCustomFractionalFees {
     private static final long tokenTotal = 1_000L;
     private static final long numerator = 1L;
     private static final long denominator = 10L;
@@ -65,51 +62,6 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     private static final String bob = "bob";
     private static final String carol = "carol";
     private static final String ivan = "ivan";
-
-    public static void main(String... args) {
-        new TransferWithCustomFractionalFees().runSuiteAsync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return allOf(positiveTests(), negativeTests());
-    }
-
-    private List<Stream<DynamicTest>> positiveTests() {
-        return List.of(
-                transferWithFractionalCustomFee(),
-                transferWithFractionalCustomFeeAndHollowAccountCollector(),
-                transferWithFractionalCustomFeeNumeratorBiggerThanDenominator(),
-                transferWithFractionalCustomFeeBellowMinimumAmount(),
-                transferWithFractionalCustomFeeAboveMaximumAmount(),
-                transferWithFractionalCustomFeeNetOfTransfers(),
-                transferWithFractionalCustomFeeNetOfTransfersBellowMinimumAmount(),
-                transferWithFractionalCustomFeeNetOfTransfersAboveMaximumAmount(),
-                transferWithFractionalCustomFeeAllowance(),
-                transferWithFractionalCustomFeeAllowanceTokenOwnerIsCollector(),
-                transferWithFractionalCustomFeesThreeCollectors(),
-                transferWithFractionalCustomFeesAllCollectorsExempt(),
-                transferWithFractionalCustomFeesDenominatorMin(),
-                transferWithFractionalCustomFeesDenominatorMax(),
-                transferWithFractionalCustomFeeEqToAmount(),
-                transferWithFractionalCustomFeeGreaterThanAmount(),
-                transferWithFractionalCustomFeeGreaterThanAmountNetOfTransfers(),
-                transferWithFractionalCustomFeeMultipleRecipientsShouldRoundFee(),
-                transferWithFractionalCustomFeeMultipleRecipientsShouldRoundFeeNetOfTransfers(),
-                transferMultipleTimesWithFractionalFeeTakenFromSender(),
-                transferMultipleTimesWithFractionalFeeTakenFromReceiver());
-    }
-
-    private List<Stream<DynamicTest>> negativeTests() {
-        return List.of(
-                transferWithFractionalCustomFeeNegativeMoreThanTen(),
-                transferWithFractionalCustomFeeZeroDenominator(),
-                transferWithFractionalCustomFeeNegativeNotEnoughAllowance(),
-                transferWithFractionalCustomFeeGreaterThanAmountNegative(),
-                transferWithFractionalCustomFeeNotEnoughBalance(),
-                transferWithFractionalCustomFeeMultipleRecipientsHasNotEnoughBalance(),
-                transferWithFractionalCustomFeeMultipleRecipientsNotEnoughBalance());
-    }
 
     @HapiTest
     final Stream<DynamicTest> transferWithFractionalCustomFeeNegativeMoreThanTen() {
@@ -1075,10 +1027,5 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
                             getAccountBalance(tokenReceiver).hasTokenBalance(token, 90L),
                             getAccountBalance(hollowAccountCollector).hasTokenBalance(token, 10L));
                 }));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

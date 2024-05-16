@@ -55,7 +55,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
-import static com.hedera.services.bdd.suites.TargetNetworkType.HAPI_TEST_NETWORK;
+import static com.hedera.services.bdd.suites.TargetNetworkType.SHARED_HAPI_TEST_NETWORK;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite.SIDECARS_PROP;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
@@ -257,11 +257,11 @@ public class UtilVerbs {
     }
 
     public static NetworkTypeFilterOp ifHapiTest(@NonNull final HapiSpecOperation... ops) {
-        return new NetworkTypeFilterOp(EnumSet.of(HAPI_TEST_NETWORK), ops);
+        return new NetworkTypeFilterOp(EnumSet.of(SHARED_HAPI_TEST_NETWORK), ops);
     }
 
     public static NetworkTypeFilterOp ifNotHapiTest(@NonNull final HapiSpecOperation... ops) {
-        return new NetworkTypeFilterOp(EnumSet.complementOf(EnumSet.of(HAPI_TEST_NETWORK)), ops);
+        return new NetworkTypeFilterOp(EnumSet.complementOf(EnumSet.of(SHARED_HAPI_TEST_NETWORK)), ops);
     }
 
     public static EnvFilterOp ifCi(@NonNull final HapiSpecOperation... ops) {

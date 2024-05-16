@@ -76,7 +76,7 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
     public static String recordStreamLocFor(@NonNull final HapiSpec spec) {
         Objects.requireNonNull(spec);
         return switch (spec.targetNetworkType()) {
-            case HAPI_TEST_NETWORK -> HAPI_TEST_STREAMS_LOC_TEST_NETWORK;
+            case SHARED_HAPI_TEST_NETWORK -> HAPI_TEST_STREAMS_LOC_TEST_NETWORK;
             case CI_DOCKER_NETWORK -> TEST_CONTAINER_NODE0_STREAMS;
             case STANDALONE_MONO_NETWORK -> spec.setup().defaultRecordLoc();
         };

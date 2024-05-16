@@ -33,35 +33,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class TopicGetInfoSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(TopicGetInfoSuite.class);
+public class TopicGetInfoSuite {
     public static final String TEST_TOPIC = "testTopic";
     public static final String TESTMEMO = "testmemo";
-
-    public static void main(String... args) {
-        new TopicGetInfoSuite().runSuiteAsync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(allFieldsSetHappyCase());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
 
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
@@ -130,10 +108,5 @@ public class TopicGetInfoSuite extends HapiSuite {
                         getTopicInfo(TEST_TOPIC)
                                 .hasCostAnswerPrecheck(INVALID_TOPIC_ID)
                                 .logged());
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

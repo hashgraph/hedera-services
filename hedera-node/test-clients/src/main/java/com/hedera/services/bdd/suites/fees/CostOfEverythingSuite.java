@@ -28,37 +28,22 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class CostOfEverythingSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(CostOfEverythingSuite.class);
+public class CostOfEverythingSuite {
     private static final String CIVILIAN = "civilian";
     private static final String COST_SNAPSHOT_MODE = "cost.snapshot.mode";
 
     CostSnapshotMode costSnapshotMode = TAKE;
-
-    public static void main(String... args) {
-        new CostOfEverythingSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(miscContractCreatesAndCalls());
-    }
 
     @HapiTest
     final Stream<DynamicTest> miscContractCreatesAndCalls() {
@@ -107,10 +92,5 @@ public class CostOfEverythingSuite extends HapiSuite {
                 .given(newKeyNamed("key").shape(shape))
                 .when()
                 .then(cryptoCreate("a").key("key"));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

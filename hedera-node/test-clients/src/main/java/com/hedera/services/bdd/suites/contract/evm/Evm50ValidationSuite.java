@@ -29,18 +29,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class Evm50ValidationSuite extends HapiSuite {
+public class Evm50ValidationSuite {
 
     private static final Logger LOG = LogManager.getLogger(Evm50ValidationSuite.class);
     private static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
@@ -50,26 +46,6 @@ public class Evm50ValidationSuite extends HapiSuite {
     private static final String ACCOUNT = "account";
     private static final String Module05OpcodesExist_CONTRACT = "Module050OpcodesExist";
     private static final long A_BUNCH_OF_GAS = 500_000L;
-
-    public static void main(String... args) {
-        new Evm50ValidationSuite().runSuiteSync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return false;
-    }
-
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                verifiesNonExistenceForTransientStorageOpcodesV46(),
-                verifiesNonExistenceForMCOPYOpcodeV46(),
-                verifiesNonExistenceForKZGPrecompileV46(),
-                verifiesExistenceForTransientStorageOpcodesV050(),
-                verifiesExistenceForMCOPYOpcodeV050(),
-                verifiesExistenceForKZGPrecompileV050(),
-                successTestForKZGPrecompileV050());
-    }
 
     @HapiTest
     final Stream<DynamicTest> verifiesNonExistenceForTransientStorageOpcodesV46() {
@@ -217,11 +193,6 @@ public class Evm50ValidationSuite extends HapiSuite {
                         .via(txnName("kzg_success"))
                         .hasKnownStatus(SUCCESS)
                         .logged()));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
     }
 
     private String txnName(final String suffix) {

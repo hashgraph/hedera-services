@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 
 public interface HederaNode {
@@ -47,6 +48,13 @@ public interface HederaNode {
      * @return the node account ID
      */
     AccountID getAccountId();
+
+    /**
+     * Gets the path to the node's record stream.
+     *
+     * @return the path to the node's record stream
+     */
+    Path getRecordStreamPath();
 
     /**
      * Starts the node software.

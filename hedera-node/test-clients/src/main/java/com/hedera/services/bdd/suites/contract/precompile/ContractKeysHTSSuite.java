@@ -57,6 +57,10 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
@@ -78,11 +82,9 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -98,9 +100,8 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class ContractKeysHTSSuite extends HapiSuite {
+public class ContractKeysHTSSuite {
 
     private static final long GAS_TO_OFFER = 1_500_000L;
 
@@ -152,80 +153,6 @@ public class ContractKeysHTSSuite extends HapiSuite {
     private static final String FIRST_STRING_FOR_MINT = "First!";
     private static final String ACCOUNT_NAME = "anybody";
     private static final String TYPE_OF_TOKEN = "fungibleToken";
-
-    public static void main(String... args) {
-        new ContractKeysHTSSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return allOf(hscsKey1(), hscsKey2(), hscsKey3(), hscsKey4(), hscsKey5(), hscsKey6());
-    }
-
-    List<Stream<DynamicTest>> hscsKey1() {
-        return List.of(
-                callForMintWithContractKey(),
-                callForTransferWithContractKey(),
-                callForAssociateWithContractKey(),
-                callForDissociateWithContractKey(),
-                callForBurnWithContractKey(),
-                delegateCallForAssociatePrecompileSignedWithContractKeyFails(),
-                delegateCallForDissociatePrecompileSignedWithContractKeyFails());
-    }
-
-    List<Stream<DynamicTest>> hscsKey2() {
-        return List.of(
-                staticCallForTransferWithContractKey(),
-                staticCallForBurnWithContractKey(),
-                staticCallForMintWithContractKey(),
-                delegateCallForBurnWithContractKey(),
-                delegateCallForMintWithContractKey(),
-                staticCallForDissociatePrecompileFails());
-    }
-
-    List<Stream<DynamicTest>> hscsKey3() {
-        return List.of(
-                callForMintWithDelegateContractKey(),
-                callForTransferWithDelegateContractKey(),
-                callForAssociateWithDelegateContractKey(),
-                callForDissociateWithDelegateContractKey(),
-                callForBurnWithDelegateContractKey(),
-                delegateCallForAssociatePrecompileSignedWithDelegateContractKeyWorks(),
-                delegateCallForDissociatePrecompileSignedWithDelegateContractKeyWorks());
-    }
-
-    List<Stream<DynamicTest>> hscsKey4() {
-        return List.of(
-                associatePrecompileWithDelegateContractKeyForFungibleVanilla(),
-                associatePrecompileWithDelegateContractKeyForFungibleFrozen(),
-                associatePrecompileWithDelegateContractKeyForFungibleWithKYC(),
-                associatePrecompileWithDelegateContractKeyForNonFungibleVanilla(),
-                associatePrecompileWithDelegateContractKeyForNonFungibleFrozen(),
-                associatePrecompileWithDelegateContractKeyForNonFungibleWithKYC(),
-                dissociatePrecompileWithDelegateContractKeyForFungibleVanilla(),
-                dissociatePrecompileWithDelegateContractKeyForFungibleFrozen(),
-                dissociatePrecompileWithDelegateContractKeyForFungibleWithKYC(),
-                dissociatePrecompileWithDelegateContractKeyForNonFungibleVanilla(),
-                dissociatePrecompileWithDelegateContractKeyForNonFungibleFrozen(),
-                dissociatePrecompileWithDelegateContractKeyForNonFungibleWithKYC());
-    }
-
-    List<Stream<DynamicTest>> hscsKey5() {
-        return List.of(
-                staticCallForTransferWithDelegateContractKey(),
-                staticCallForBurnWithDelegateContractKey(),
-                staticCallForMintWithDelegateContractKey(),
-                staticCallForAssociatePrecompileFails());
-    }
-
-    List<Stream<DynamicTest>> hscsKey6() {
-        return List.of(burnWithKeyAsPartOf1OfXThreshold());
-    }
 
     @HapiTest
     final Stream<DynamicTest> burnWithKeyAsPartOf1OfXThreshold() {
@@ -2490,10 +2417,5 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                                 changingFungibleBalances().including(TOKEN_USAGE, TOKEN_TREASURY, -1))
                                         .newTotalSupply(49)))
                 .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN_USAGE, 49));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

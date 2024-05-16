@@ -37,6 +37,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.verifyAddLiveHashNo
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.verifyUserFreezeNotAuthorized;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -44,44 +49,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class MiscCryptoSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(MiscCryptoSuite.class);
-
-    public static void main(String... args) {
-        new MiscCryptoSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return allOf(
-                positiveTests()
-                //				negativeTests()
-                );
-    }
-
-    private List<Stream<DynamicTest>> positiveTests() {
-        return Arrays.asList(
-                //				transferChangesBalance()
-                //				getsGenesisBalance()
-                reduceTransferFee(), sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign());
-    }
-
-    private List<Stream<DynamicTest>> negativeTests() {
-        return List.of(updateWithOutOfDateKeyFails());
-    }
-
+public class MiscCryptoSuite {
     @HapiTest
     final Stream<DynamicTest> unsupportedAndUnauthorizedTransactionsAreNotThrottled() {
         return defaultHapiSpec("unsupportedAndUnauthorizedTransactionsAreNotThrottled")
@@ -220,10 +193,5 @@ public class MiscCryptoSuite extends HapiSuite {
                         .via("invalidKeyUpdateTxn")
                         .deferStatusResolution()
                         .hasKnownStatus(INVALID_SIGNATURE));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

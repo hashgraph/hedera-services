@@ -31,41 +31,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class TopicDeleteSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(TopicDeleteSuite.class);
-
-    public static void main(String... args) {
-        new TopicDeleteSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                pureCheckFails(),
-                cannotDeleteAccountAsTopic(),
-                topicIdIsValidated(),
-                noAdminKeyCannotDelete(),
-                deleteWithAdminKey(),
-                deleteFailedWithWrongKey(),
-                feeAsExpected());
-    }
-
+public class TopicDeleteSuite {
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
@@ -146,10 +116,5 @@ public class TopicDeleteSuite extends HapiSuite {
                 .given(cryptoCreate("payer"), createTopic("testTopic").adminKeyName("payer"))
                 .when(deleteTopic("testTopic").blankMemo().payingWith("payer").via("topicDelete"))
                 .then(validateChargedUsd("topicDelete", 0.005));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

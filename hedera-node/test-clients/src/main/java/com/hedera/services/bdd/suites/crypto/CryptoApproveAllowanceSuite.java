@@ -54,6 +54,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL;
@@ -77,8 +83,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -86,17 +90,11 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class CryptoApproveAllowanceSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(CryptoApproveAllowanceSuite.class);
-
+public class CryptoApproveAllowanceSuite {
     public static final String OWNER = "owner";
     public static final String SPENDER = "spender";
     private static final String RECEIVER = "receiver";
@@ -105,7 +103,6 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     public static final String NON_FUNGIBLE_TOKEN = "nonFungible";
     public static final String TOKEN_WITH_CUSTOM_FEE = "tokenWithCustomFee";
     private static final String SUPPLY_KEY = "supplyKey";
-    private static final String SENDER_TXN = "senderTxn";
     public static final String SCHEDULED_TXN = "scheduledTxn";
     public static final String NFT_TOKEN_MINT_TXN = "nftTokenMint";
     public static final String FUNGIBLE_TOKEN_MINT_TXN = "tokenMint";
@@ -122,47 +119,6 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     public static final String FREEZE_KEY = "freezeKey";
     public static final String KYC_KEY = "kycKey";
     public static final String PAUSE_KEY = "pauseKey";
-
-    public static void main(String... args) {
-        new CryptoApproveAllowanceSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    @SuppressWarnings("java:S3878")
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                canHaveMultipleOwners(),
-                noOwnerDefaultsToPayer(),
-                invalidSpenderFails(),
-                invalidOwnerFails(),
-                happyPathWorks(),
-                emptyAllowancesRejected(),
-                negativeAmountFailsForFungible(),
-                tokenNotAssociatedToAccountFails(),
-                invalidTokenTypeFails(),
-                validatesSerialNums(),
-                tokenExceedsMaxSupplyFails(),
-                succeedsWhenTokenPausedFrozenKycRevoked(),
-                serialsInAscendingOrder(),
-                feesAsExpected(),
-                cannotHaveMultipleAllowedSpendersForTheSameNFTSerial(),
-                approveForAllDoesNotSetExplicitNFTSpender(),
-                canGrantNftAllowancesWithTreasuryOwner(),
-                canGrantFungibleAllowancesWithTreasuryOwner(),
-                approveForAllSpenderCanDelegateOnNFT(),
-                duplicateEntriesGetsReplacedWithDifferentTxn(),
-                duplicateKeysAndSerialsInSameTxnDoesntThrow(),
-                scheduledCryptoApproveAllowanceWorks(),
-                canDeleteAllowanceFromDeletedSpender(),
-                cannotPayForAnyTransactionWithContractAccount(),
-                transferringMissingNftViaApprovalFailsWithInvalidNftId(),
-                approveNegativeCases());
-    }
 
     @HapiTest
     final Stream<DynamicTest> cannotPayForAnyTransactionWithContractAccount() {
@@ -1756,10 +1712,5 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getAccountBalance(SPENDER).hasTokenBalance(FUNGIBLE_TOKEN, 0L),
                         getAccountBalance(OWNER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 3L),
                         getAccountBalance(SPENDER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0L));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

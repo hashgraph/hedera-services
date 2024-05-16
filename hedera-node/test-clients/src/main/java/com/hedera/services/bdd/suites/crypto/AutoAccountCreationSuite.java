@@ -68,6 +68,16 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALL
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
@@ -92,9 +102,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -121,9 +129,8 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class AutoAccountCreationSuite extends HapiSuite {
+public class AutoAccountCreationSuite {
 
     private static final Logger LOG = LogManager.getLogger(AutoAccountCreationSuite.class);
     private static final long INITIAL_BALANCE = 1000L;
@@ -168,62 +175,9 @@ public class AutoAccountCreationSuite extends HapiSuite {
     private static final String HBAR_XFER = "hbarXfer";
     private static final String NFT_XFER = "nftXfer";
     private static final String FT_XFER = "ftXfer";
-    private static final String ERC20_ABI = "ERC20ABI";
-
-    public static void main(String... args) {
-        new AutoAccountCreationSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                /* --- Hbar auto creates */
-                autoAccountCreationsHappyPath(),
-                autoAccountCreationBadAlias(),
-                autoAccountCreationUnsupportedAlias(),
-                transferToAccountAutoCreatedUsingAlias(),
-                transferToAccountAutoCreatedUsingAccount(),
-                transferFromAliasToAlias(),
-                transferFromAliasToAccount(),
-                multipleAutoAccountCreations(),
-                accountCreatedIfAliasUsedAsPubKey(),
-                aliasCanBeUsedOnManyAccountsNotAsAlias(),
-                autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(),
-                canGetBalanceAndInfoViaAlias(),
-                noStakePeriodStartIfNotStakingToNode(),
-                /* -- HTS auto creates -- */
-                canAutoCreateWithFungibleTokenTransfersToAlias(),
-                canAutoCreateWithNftTransferToEvmAddress(),
-                multipleTokenTransfersSucceed(),
-                canAutoCreateWithNftTransfersToAlias(),
-                autoCreateWithNftFallBackFeeFails(),
-                repeatedAliasInSameTransferListFails(),
-                canAutoCreateWithHbarAndTokenTransfers(),
-                payerBalanceIsReflectsAllChangesBeforeFeeCharging(),
-                /* --- HIP 583 --- */
-                hollowAccountCreationWithCryptoTransfer(),
-                failureAfterHollowAccountCreationReclaimsAlias(),
-                transferHbarsToEVMAddressAlias(),
-                transferFungibleToEVMAddressAlias(),
-                transferNonFungibleToEVMAddressAlias(),
-                transferHbarsToECDSAKey(),
-                cannotAutoCreateWithTxnToLongZero(),
-                aliasedPayerDoesntWork());
-    }
 
     @HapiTest
     final Stream<DynamicTest> aliasedPayerDoesntWork() {
-        final AtomicReference<AccountID> aliasId = new AtomicReference<>();
         return defaultHapiSpec("aliasedPayerDoesntWork")
                 .given(
                         newKeyNamed(ALIAS),

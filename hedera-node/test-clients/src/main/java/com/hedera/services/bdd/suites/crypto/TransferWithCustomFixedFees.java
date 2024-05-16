@@ -39,30 +39,30 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.THOUSAND_HBAR;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.TRANSFER_TXN_2;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.createHollowAccountFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class TransferWithCustomFixedFees extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(TransferWithCustomFixedFees.class);
+public class TransferWithCustomFixedFees {
     private static final long hbarFee = 1_000L;
     private static final long htsFee = 100L;
     private static final long tokenTotal = 1_000L;
@@ -92,65 +92,6 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     private static final long carolFee = 300L;
 
     private static final String ivan = "ivan";
-
-    public static void main(String... args) {
-        new TransferWithCustomFixedFees().runSuiteAsync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return allOf(positiveTests(), negativeTests());
-    }
-
-    private List<Stream<DynamicTest>> positiveTests() {
-        return List.of(
-                transferFungibleWithFixedHbarCustomFee(),
-                transferFungibleWithFixedHtsCustomFee(),
-                transferNonFungibleWithFixedHbarCustomFee(),
-                transferNonFungibleWithFixedHtsCustomFee(),
-                transferFungibleToHollowAccountWithFixedHBarFee(),
-                transferFungibleToHollowAccountWithFixedHtsFee(),
-                transferNonFungibleToHollowAccountWithFixedHBarFee(),
-                transferNonFungibleToHollowAccountWithFixedHtsFee(),
-                transferApprovedFungibleWithFixedHbarCustomFee(),
-                transferApprovedFungibleWithFixedHtsCustomFeeAsOwner(),
-                transferApprovedFungibleWithFixedHtsCustomFeeAsSpender(),
-                transferApprovedNonFungibleWithFixedHbarCustomFee(),
-                transferApprovedNonFungibleWithFixedHtsCustomFeeAsOwner(),
-                transferApprovedNonFungibleWithFixedHtsCustomFeeAsSpender(),
-                transferFungibleWithThreeFixedHtsCustomFeesWithoutAllCollectorsExempt(),
-                transferFungibleWithThreeFixedHtsCustomFeesWithAllCollectorsExempt(),
-                transferFungibleWithFixedHtsCustomFees2Layers(),
-                transferNonFungibleWithFixedHtsCustomFees2Layers(),
-                transferMaxFungibleWith10FixedHtsCustomFees2Layers(),
-                multipleTransfersWithMultipleCustomFees(),
-                transferWithFractionalCustomFee(),
-                transferWithInsufficientCustomFee(),
-                transferMultipleTimesWithFixedFeeInHBarShouldVerifyEachTransferIsPaid(),
-                transferMultipleTimesWithFixedFeeInCustomFungibleTokenShouldVerifyEachTransferIsPaid());
-    }
-
-    private List<Stream<DynamicTest>> negativeTests() {
-        return List.of(
-                transferFungibleWithFixedHtsCustomFeeNotEnoughBalanceFeeToken(),
-                transferFungibleWithFixedHtsCustomFeeNotEnoughBalanceTransferToken(),
-                transferFungibleWithFixedHbarCustomFeeNotEnoughBalance(),
-                transferNonFungibleWithFixedHtsCustomFeeNotEnoughBalanceFeeToken(),
-                transferNonFungibleWithFixedHbarCustomFeeNotEnoughBalance(),
-                transferApprovedFungibleWithFixedHbarCustomFeeNoAllowance(),
-                transferApprovedFungibleWithFixedHtsCustomFeeNoAllowance(),
-                transferApprovedNonFungibleWithFixedHbarCustomFeeNoAllowance(),
-                transferApprovedNonFungibleWithFixedHtsCustomFeeNoAllowance(),
-                transferFungibleWithFixedHbarCustomFeeAmount0(),
-                transferFungibleWithFixedHtsCustomFeeAmount0(),
-                transferNonFungibleWithFixedHbarCustomFeeAmount0(),
-                transferNonFungibleWithFixedHtsCustomFeeAmount0(),
-                transferFungibleWithFixedHbarCustomFeeSenderHasOnlyGasAmount(),
-                transferFungibleWithFixedHtsCustomFeeTotalSupply0(),
-                transferFungibleWithFixedHtsCustomFeeNotEnoughForGasAndFee(),
-                transferFungibleWithFixedHtsCustomFees3LayersShouldFail(),
-                transferNonFungibleWithFixedHtsCustomFees3LayersShouldFail());
-    }
 
     @HapiTest
     final Stream<DynamicTest> transferFungibleWithFixedHbarCustomFee() {
@@ -1841,10 +1782,5 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                             getAccountBalance(tokenReceiver).hasTokenBalance(nonFungibleToken, 1L),
                             getAccountBalance(hollowAccountCollector).hasTokenBalance(feeDenom, htsFee));
                 }));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

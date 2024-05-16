@@ -34,27 +34,21 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class PrngSeedOperationSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(PrngSeedOperationSuite.class);
+public class PrngSeedOperationSuite {
     private static final long GAS_TO_OFFER = 400_000L;
     private static final String THE_PRNG_CONTRACT = "PrngSeedOperationContract";
     private static final String BOB = "bob";
@@ -66,29 +60,6 @@ public class PrngSeedOperationSuite extends HapiSuite {
 
     public static final String EVM_VERSION_0_34 = "v0.34";
     public static final String EVM_VERSION_0_30 = "v0.30";
-
-    public static void main(String... args) {
-        new PrngSeedOperationSuite().runSuiteSync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return false;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return allOf(positiveSpecs(), negativeSpecs());
-    }
-
-    List<Stream<DynamicTest>> negativeSpecs() {
-        return List.of();
-    }
-
-    List<Stream<DynamicTest>> positiveSpecs() {
-        return List.of(
-                prngPrecompileHappyPathWorks(), multipleCallsHaveIndependentResults(), prngPrecompileDisabledInV030());
-    }
 
     @HapiTest
     final Stream<DynamicTest> multipleCallsHaveIndependentResults() {
@@ -194,10 +165,5 @@ public class PrngSeedOperationSuite extends HapiSuite {
                                         .resultViaFunctionName(
                                                 GET_SEED, prng, isLiteralResult((new Object[] {new byte[32]})))))
                         .logged());
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

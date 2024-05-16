@@ -27,17 +27,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PROPS;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
@@ -46,34 +44,14 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class GlobalPropertiesSuite extends HapiSuite {
+public class GlobalPropertiesSuite {
 
     private static final Logger LOG = LogManager.getLogger(GlobalPropertiesSuite.class);
     private static final String CONTRACT = "GlobalProperties";
     private static final String GET_CHAIN_ID = "getChainID";
     private static final String GET_BASE_FEE = "getBaseFee";
     private static final String GET_GAS_LIMIT = "getGasLimit";
-
-    public static void main(String... args) {
-        new GlobalPropertiesSuite().runSuiteAsync();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(chainIdWorks(), baseFeeWorks(), coinbaseWorks(), gasLimitWorks());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
 
     @HapiTest
     final Stream<DynamicTest> chainIdWorks() {

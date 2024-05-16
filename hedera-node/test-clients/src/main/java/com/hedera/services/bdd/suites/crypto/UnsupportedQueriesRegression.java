@@ -26,34 +26,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getStakersNotSuppor
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getTokenNftInfosNotSupported;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class UnsupportedQueriesRegression extends HapiSuite {
-    static final Logger log = LogManager.getLogger(UnsupportedQueriesRegression.class);
-
-    public static void main(String... args) {
-        new UnsupportedQueriesRegression().runSuiteSync();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(verifyUnsupportedOps());
-    }
-
+public class UnsupportedQueriesRegression {
     @HapiTest
     final Stream<DynamicTest> verifyUnsupportedOps() {
         return defaultHapiSpec("VerifyUnsupportedOps")

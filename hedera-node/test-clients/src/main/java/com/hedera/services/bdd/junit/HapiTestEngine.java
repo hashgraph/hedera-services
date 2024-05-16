@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -77,7 +78,7 @@ import org.junit.platform.engine.support.hierarchical.Node;
 /**
  * An implementation of a JUnit {@link TestEngine} to execute HAPI Specification Tests.
  *
- * <p>This implementation automatically locates all test classes annotated with {@link HapiTestSuite}. Within those
+ * <p>This implementation automatically locates all test classes annotated with {@code HapiTestSuite}. Within those
  * classes, any methods that take no args and return a {@link HapiSpec} will be picked up as test methods, but will be
  * skipped. Any of those methods that are also annotated with {@link HapiTest} will be executed. Such methods also
  * support the JUnit Jupiter {@link Disabled} annotation.
@@ -91,9 +92,6 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
     }
 
-    /**
-     * Tests whether a class is annotated with {@link HapiTestSuite}.
-     */
     private static final Predicate<Class<?>> IS_HAPI_TEST_SUITE =
             classCandidate -> isAnnotated(classCandidate, HapiTestSuite.class);
 
@@ -127,7 +125,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
      * {@inheritDoc}
      *
      * <p>This method is responsible for discovering the classes and methods that form our tests. It constructs a tree
-     * of {@link TestDescriptor}s, one for each class annotated with {@link HapiTestSuite}, where each such
+     * of {@link TestDescriptor}s, one for each class annotated with {@code HapiTestSuite}, where each such
      * {@link ClassTestDescriptor} has a child for each spec method (whether, or not annotated with {@link HapiTest}).
      */
     @Override
@@ -422,7 +420,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             testMethod.setAccessible(true);
             if (testMethod.getParameterCount() == 0) {
                 final var spec = (HapiSpec) testMethod.invoke(suite);
-                spec.setTargetNetworkType(TargetNetworkType.HAPI_TEST_NETWORK);
+                spec.setTargetNetworkType(TargetNetworkType.SHARED_HAPI_TEST_NETWORK);
                 // Disabling fuzzy matching in CI until we can make them stable
                 if (parent.fuzzyMatch && System.getenv("CI") == null) {
                     spec.addOverrideProperties(Map.of("recordStream.autoSnapshotManagement", "true"));
@@ -487,7 +485,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             runSpec(env, new ClosingTime(), "closeLastStreamFileWithNoBalanceImpact");
 
             // read record stream data
-            var recordLocs = hapiTestStreamLocs();
+            var recordLocs = sharedNetworkStreamLocs();
             RecordStreamAccess.Data data = RecordStreamAccess.Data.EMPTY_DATA;
             for (final var recordLoc : recordLocs) {
                 try {
@@ -528,12 +526,10 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             return Node.super.execute(context, dynamicTestExecutor);
         }
 
-        private List<String> hapiTestStreamLocs() {
-            final List<String> locs = new ArrayList<>(HapiTestEngine.NODE_COUNT);
-            for (int i = 0; i < HapiTestEngine.NODE_COUNT; i++) {
-                locs.add(String.format(HAPI_TEST_STREAMS_LOC_TPL, i, i + 3));
-            }
-            return locs;
+        private List<String> sharedNetworkStreamLocs() {
+            return IntStream.range(0, SharedNetworkLauncherSessionListener.DEFAULT_SHARED_NETWORK_SIZE)
+                    .mapToObj(i -> String.format(HAPI_TEST_STREAMS_LOC_TPL, i, i + 3))
+                    .toList();
         }
     }
 
@@ -545,7 +541,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         // Call the method to get the HapiSpec
         testMethod.setAccessible(true);
         final var spec = (HapiSpec) testMethod.invoke(suite);
-        spec.setTargetNetworkType(TargetNetworkType.HAPI_TEST_NETWORK);
+        spec.setTargetNetworkType(TargetNetworkType.SHARED_HAPI_TEST_NETWORK);
         final var result = suite.runSpecSync(spec, env.getNodes());
         // Report the result. YAY!!
         if (result == HapiSuite.FinalOutcome.SUITE_FAILED) {

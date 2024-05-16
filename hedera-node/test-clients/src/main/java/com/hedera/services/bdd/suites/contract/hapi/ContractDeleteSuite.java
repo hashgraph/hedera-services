@@ -49,6 +49,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_DELETE_ADMIN;
+import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_UNDELETE_ADMIN;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -67,59 +73,28 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class ContractDeleteSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(ContractDeleteSuite.class);
+public class ContractDeleteSuite {
     private static final String CONTRACT = "Multipurpose";
     private static final String PAYABLE_CONSTRUCTOR = "PayableConstructor";
     private static final String CONTRACT_DESTROY = "destroy";
     private static final String RECEIVER_CONTRACT_NAME = "receiver";
     private static final String SIMPLE_STORAGE_CONTRACT = "SimpleStorage";
-
-    public static void main(final String... args) {
-        new ContractDeleteSuite().runSuiteSync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                rejectsWithoutProperSig(),
-                systemCannotDeleteOrUndeleteContracts(),
-                deleteWorksWithMutableContract(),
-                deleteFailsWithImmutableContract(),
-                deleteTransfersToAccount(),
-                deleteTransfersToContract(),
-                cannotDeleteOrSelfDestructTokenTreasury(),
-                cannotDeleteOrSelfDestructContractWithNonZeroBalance(),
-                cannotSendValueToTokenAccount(),
-                cannotUseMoreThanChildContractLimit());
-    }
 
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
@@ -419,10 +394,5 @@ public class ContractDeleteSuite extends HapiSuite {
                 .then(contractCallLocal(SIMPLE_STORAGE_CONTRACT, "get")
                         .hasCostAnswerPrecheck(OK)
                         .has(resultWith().contractCallResult(() -> Bytes.EMPTY)));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

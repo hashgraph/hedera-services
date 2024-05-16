@@ -42,6 +42,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -57,11 +63,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -77,9 +81,8 @@ import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class ContractCallLocalSuite extends HapiSuite {
+public class ContractCallLocalSuite {
 
     private static final Logger log = LogManager.getLogger(ContractCallLocalSuite.class);
     private static final String CONTRACT = "CreateTrivial";
@@ -92,31 +95,6 @@ public class ContractCallLocalSuite extends HapiSuite {
     private static final String SECOND_MEMO = "secondMemo";
     private static final String SYMBOL = "ħT";
     private static final int DECIMALS = 13;
-
-    public static void main(String... args) {
-        new ContractCallLocalSuite().runSuiteSync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                successOnDeletedContract(),
-                gasBelowIntrinsicGasFails(),
-                insufficientGasFails(),
-                invalidContractID(),
-                impureCallFails(),
-                insufficientFeeFails(),
-                lowBalanceFails(),
-                erc20Query(),
-                vanillaSuccess(),
-                callLocalDoesNotCheckSignaturesNorPayer(),
-                htsOwnershipCheckWorksWithAliasAddress());
-    }
 
     @HapiTest
     final Stream<DynamicTest> htsOwnershipCheckWorksWithAliasAddress() {
@@ -341,10 +319,5 @@ public class ContractCallLocalSuite extends HapiSuite {
                             .hasAnswerOnlyPrecheckFrom(OK, BUSY);
                     allRunFor(spec, create, callLocal);
                 })));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

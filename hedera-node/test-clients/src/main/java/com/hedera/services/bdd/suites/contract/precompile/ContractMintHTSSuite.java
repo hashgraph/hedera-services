@@ -50,6 +50,9 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACC
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.assertTxnRecordHasNoTraceabilityEnrichedContractFnResult;
 import static com.hedera.services.bdd.suites.contract.Utils.expectedPrecompileGasFor;
@@ -70,28 +73,20 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.FunctionParameters;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class ContractMintHTSSuite extends HapiSuite {
-
-    private static final Logger LOG = LogManager.getLogger(ContractMintHTSSuite.class);
-
+public class ContractMintHTSSuite {
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final long TOTAL_SUPPLY = 1_000;
     private static final String CONTRACT_KEY = "ContractKey";
@@ -112,32 +107,6 @@ public class ContractMintHTSSuite extends HapiSuite {
     private static final String TEST_METADATA_1 = "Test metadata 1";
     private static final String TEST_METADATA_2 = "Test metadata 2";
     private static final String RECIPIENT = "recipient";
-    public static final String MINT_FUNGIBLE_TOKEN_WITH_EVENT = "mintFungibleTokenWithEvent";
-
-    public static void main(final String... args) {
-        new ContractMintHTSSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return allOf(positiveSpecs(), negativeSpecs());
-    }
-
-    List<Stream<DynamicTest>> negativeSpecs() {
-        return List.of(
-                rollbackOnFailedMintAfterFungibleTransfer(),
-                mintTokensWithExtremeValues(),
-                mintTokensWithInvalidValues());
-    }
-
-    List<Stream<DynamicTest>> positiveSpecs() {
-        return List.of(transferNftAfterNestedMint());
-    }
 
     @HapiTest
     final Stream<DynamicTest> mintTokensWithExtremeValues() {
@@ -550,10 +519,5 @@ public class ContractMintHTSSuite extends HapiSuite {
                                                         .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
                                                         .withTotalSupply(0L)
                                                         .withSerialNumbers()))));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
     }
 }

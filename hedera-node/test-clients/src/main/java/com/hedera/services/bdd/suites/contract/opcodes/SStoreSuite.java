@@ -29,15 +29,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -50,29 +50,14 @@ import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 /** - CONCURRENCY STATUS - . Can run concurrent without temporarySStoreRefundTest() */
-public class SStoreSuite extends HapiSuite {
+public class SStoreSuite {
 
     private static final Logger log = LogManager.getLogger(SStoreSuite.class);
     public static final int MAX_CONTRACT_STORAGE_KB = 1024;
     public static final int MAX_CONTRACT_GAS = 15_000_000;
     private static final String GET_CHILD_VALUE = "getChildValue";
-
-    public static void main(String... args) {
-        new SStoreSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(multipleSStoreOpsSucceed(), benchmarkSingleSetter(), childStorage());
-    }
 
     // This test is failing with CONSENSUS_GAS_EXHAUSTED prior the refactor.
     @HapiTest
@@ -200,10 +185,5 @@ public class SStoreSuite extends HapiSuite {
                                                 Utils.getABIFor(FUNCTION, "counter", contract),
                                                 ContractFnResultAsserts.isLiteralResult(
                                                         new Object[] {BigInteger.valueOf(1L)}))));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

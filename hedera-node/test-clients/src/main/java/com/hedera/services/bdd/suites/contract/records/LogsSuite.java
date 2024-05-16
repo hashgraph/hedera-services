@@ -31,43 +31,18 @@ import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class LogsSuite extends HapiSuite {
+public class LogsSuite {
 
     private static final long GAS_TO_OFFER = 25_000L;
 
-    private static final Logger log = LogManager.getLogger(LogsSuite.class);
     private static final String CONTRACT = "Logs";
-
-    public static void main(String... args) {
-        new LogsSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(log0Works(), log1Works(), log2Works(), log3Works(), log4Works());
-    }
 
     @HapiTest
     final Stream<DynamicTest> log0Works() {

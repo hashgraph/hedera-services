@@ -28,29 +28,23 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class NftTransferSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(NftTransferSuite.class);
-
+public class NftTransferSuite {
     private static final String KEY = "multipurpose";
     private static final String USER_ACCOUNT_PREFIX = "party-";
     private static final String FEE_COLLECTOR = "feeCollector";
@@ -60,23 +54,6 @@ public class NftTransferSuite extends HapiSuite {
     // hard to stabilize HapiSpec behavior in this event
     private static final int NUM_TOKEN_TYPES = 10;
     private static final int NUM_ROUNDS = 100;
-
-    private static void runTestTask() {
-        final long startTimeMillis = System.currentTimeMillis();
-        new NftTransferSuite().runSuiteSync();
-        final long endTimeMillis = System.currentTimeMillis();
-        final long deltaMillis = endTimeMillis - startTimeMillis;
-        System.out.printf("Total time: %.3f%n", deltaMillis / 1000f);
-    }
-
-    public static void main(String... args) throws ExecutionException, InterruptedException {
-        runTestTask();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(transferNfts());
-    }
 
     private static HapiSpecOperation mintTokensFor(String tokenName, int numTokens) {
         return mintToken(
@@ -202,10 +179,5 @@ public class NftTransferSuite extends HapiSuite {
                 .given(setupNftTest(), transferInitial())
                 .when(seqFor(0, NUM_ROUNDS, NftTransferSuite::transferRound))
                 .then();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

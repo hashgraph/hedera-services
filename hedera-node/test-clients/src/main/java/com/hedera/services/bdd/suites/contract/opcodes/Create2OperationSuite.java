@@ -77,6 +77,15 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
@@ -119,14 +128,12 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -148,9 +155,8 @@ import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class Create2OperationSuite extends HapiSuite {
+public class Create2OperationSuite {
 
     public static final String GET_BYTECODE = "getBytecode";
     public static final String DEPLOY = "deploy";
@@ -169,41 +175,6 @@ public class Create2OperationSuite extends HapiSuite {
     private static final String ADMIN_KEY = "adminKey";
     private static final String ENTITY_MEMO = "JUST DO IT";
     private static final String DELETED_CREATE_2_LOG = "Deleted the deployed CREATE2 contract using HAPI";
-
-    public static void main(String... args) {
-        new Create2OperationSuite().runSuiteSync();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return false;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                create2FactoryWorksAsExpected(),
-                payableCreate2WorksAsExpected(),
-                canDeleteViaAlias(),
-                cannotSelfDestructToMirrorAddress(),
-                priorityAddressIsCreate2ForStaticHapiCalls(),
-                create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
-                canUseAliasesInPrecompilesAndContractKeys(),
-                inlineCreateCanFailSafely(),
-                inlineCreate2CanFailSafely(),
-                allLogOpcodesResolveExpectedContractId(),
-                eip1014AliasIsPriorityInErcOwnerPrecompile(),
-                canAssociateInConstructor(),
-                /* --- HIP 583 --- */
-                canMergeCreate2ChildWithHollowAccount(),
-                canMergeCreate2MultipleCreatesWithHollowAccount(),
-                canCallFinalizedContractViaHapi());
-    }
 
     @SuppressWarnings("java:S5669")
     @HapiTest

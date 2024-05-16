@@ -91,11 +91,7 @@ import com.hedera.services.bdd.suites.token.TokenManagementSpecs;
 import com.hedera.services.bdd.suites.token.TokenPauseSpecs;
 import com.hedera.services.bdd.suites.token.TokenTransactSpecs;
 import com.hedera.services.bdd.suites.token.TokenUpdateSpecs;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import java.util.Map;
-import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /** The set of BDD tests that we can execute in parallel. */
 public class ConcurrentSuites {
@@ -185,23 +181,6 @@ public class ConcurrentSuites {
             VersionInfoSpec::new,
             Evm46ValidationSuite::new,
             NonceSuite::new
-        };
-    }
-
-    /**
-     * Wrap a suite supplier with a call to set the auto-scheduling override for the given functions.
-     *
-     * @param suiteSupplier the suite supplier to wrap
-     * @param functions the functions to auto-schedule
-     * @return the wrapped suite supplier
-     */
-    private static Supplier<HapiSuite> withAutoScheduling(
-            final Supplier<HapiSuite> suiteSupplier, final Set<HederaFunctionality> functions) {
-        return () -> {
-            final var suite = suiteSupplier.get();
-            final var commaSeparated = functions.stream().map(Enum::toString).collect(Collectors.joining(","));
-            suite.setOverrides(Map.of("spec.autoScheduledTxns", commaSeparated));
-            return suite;
         };
     }
 

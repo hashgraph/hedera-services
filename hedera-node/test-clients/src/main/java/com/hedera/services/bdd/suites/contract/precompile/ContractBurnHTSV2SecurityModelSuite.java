@@ -34,17 +34,20 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.contract.Utils.*;
+import static com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSSuite.ALICE;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
@@ -56,9 +59,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
 @SuppressWarnings("java:S1192")
-public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
+public class ContractBurnHTSV2SecurityModelSuite {
 
     private static final Logger LOG = LogManager.getLogger(ContractMintHTSV1SecurityModelSuite.class);
 
@@ -109,36 +111,6 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     private static final String ORDINARY_CALLS_CONTRACT = "HTSCalls";
     private static final String ADMIN_KEY = "ADMIN_KEY";
     private static final String SUPPLY_KEY = "SUPPLY_KEY";
-
-    public static void main(final String... args) {
-        new ContractBurnHTSV2SecurityModelSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return allOf(positiveSpecs(), negativeSpecs());
-    }
-
-    List<Stream<DynamicTest>> positiveSpecs() {
-        return List.of(V2Security004FungibleTokenBurnPositive(), V2Security005NonFungibleTokenBurnPositive());
-    }
-
-    List<Stream<DynamicTest>> negativeSpecs() {
-        return List.of(
-                V2Security004FungibleTokenBurnNegative(),
-                V2Security004NonFungibleTokenBurnNegative(),
-                V2Security039FungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall(),
-                V2Security039NonFungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall(),
-                V2SecurityBurnTokenWithFullPrefixAndPartialPrefixKeys(),
-                V2SecurityHscsPreC020RollbackBurnThatFailsAfterAPrecompileTransfer(),
-                V2SecurityHscsPrec004TokenBurnOfFungibleTokenUnits(),
-                V2SecurityHscsPrec011BurnAfterNestedMint(),
-                V2SecurityHscsPrec005TokenBurnOfNft());
-    }
 
     @HapiTest
     final Stream<DynamicTest> V2Security004FungibleTokenBurnPositive() {
@@ -1076,10 +1048,5 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                                 .gasUsed(gasUsed))
                                         .newTotalSupply(1)))
                 .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
     }
 }

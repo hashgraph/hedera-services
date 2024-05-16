@@ -16,8 +16,11 @@
 
 package com.hedera.services.bdd.junit.hedera;
 
+import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.OVERRIDE_RECORD_STREAM_FOLDER;
+
 import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.Path;
 
 public abstract class AbstractNode implements HederaNode {
     protected final NodeMetadata metadata;
@@ -44,5 +47,10 @@ public abstract class AbstractNode implements HederaNode {
     @Override
     public AccountID getAccountId() {
         return metadata.accountId();
+    }
+
+    @Override
+    public Path getRecordStreamPath() {
+        return metadata.workingDir().resolve(OVERRIDE_RECORD_STREAM_FOLDER);
     }
 }

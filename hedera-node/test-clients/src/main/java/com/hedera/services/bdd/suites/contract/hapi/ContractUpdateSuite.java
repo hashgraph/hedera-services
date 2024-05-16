@@ -43,6 +43,12 @@ import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuc
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PROPS;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -56,13 +62,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Instant;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
@@ -70,9 +73,8 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class ContractUpdateSuite extends HapiSuite {
+public class ContractUpdateSuite {
 
     private static final Logger log = LogManager.getLogger(ContractUpdateSuite.class);
 
@@ -84,34 +86,6 @@ public class ContractUpdateSuite extends HapiSuite {
     public static final String NEW_ADMIN_KEY = "newAdminKey";
     private static final String CONTRACT = "Multipurpose";
     public static final String INITIAL_ADMIN_KEY = "initialAdminKey";
-
-    public static void main(String... args) {
-        new ContractUpdateSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                updateWithBothMemoSettersWorks(),
-                updatingExpiryWorks(),
-                rejectsExpiryTooFarInTheFuture(),
-                updateAutoRenewWorks(),
-                updateAdminKeyWorks(),
-                canMakeContractImmutableWithEmptyKeyList(),
-                givenAdminKeyMustBeValid(),
-                fridayThe13thSpec(),
-                updateDoesNotChangeBytecode(),
-                eip1014AddressAlwaysHasPriority(),
-                immutableContractKeyFormIsStandard(),
-                updateAutoRenewAccountWorks(),
-                updateStakingFieldsWorks(),
-                cannotUpdateMaxAutomaticAssociations());
-    }
 
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
@@ -523,10 +497,5 @@ public class ContractUpdateSuite extends HapiSuite {
                         contractCreate(CONTRACT).adminKey(ADMIN_KEY))
                 .when()
                 .then(contractUpdate(CONTRACT).newMaxAutomaticAssociations(20).hasKnownStatus(NOT_SUPPORTED));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

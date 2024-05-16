@@ -25,6 +25,8 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -33,43 +35,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetReceipt;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class TxnReceiptRegression extends HapiSuite {
-    static final Logger log = LogManager.getLogger(TxnReceiptRegression.class);
-
-    public static void main(final String... args) {
-        new TxnReceiptRegression().runSuiteSync();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                returnsInvalidForUnspecifiedTxnId(),
-                returnsNotSupportedForMissingOp(),
-                receiptAvailableWithinCacheTtl(),
-                receiptUnavailableAfterCacheTtl(),
-                receiptUnavailableIfRejectedInPrecheck(),
-                receiptNotFoundOnUnknownTransactionID(),
-                receiptUnknownBeforeConsensus());
-    }
-
+public class TxnReceiptRegression {
     @HapiTest
     final Stream<DynamicTest> returnsInvalidForUnspecifiedTxnId() {
         return defaultHapiSpec("ReturnsInvalidForUnspecifiedTxnId")

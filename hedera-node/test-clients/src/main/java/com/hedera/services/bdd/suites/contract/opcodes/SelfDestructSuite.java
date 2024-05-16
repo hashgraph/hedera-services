@@ -37,6 +37,8 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXP
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.existingSystemAccounts;
 import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.nonExistingSystemAccounts;
@@ -48,25 +50,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MOD
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class SelfDestructSuite extends HapiSuite {
-
-    private final Logger LOGGER = LogManager.getLogger(SelfDestructSuite.class);
-
+public class SelfDestructSuite {
     private static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
     private static final String DYNAMIC_EVM_PROPERTY = "contracts.evm.version.dynamic";
     private static final String EVM_VERSION_046 = "v0.46";
@@ -75,35 +69,6 @@ public class SelfDestructSuite extends HapiSuite {
     private static final String SELF_DESTRUCT_CALLABLE_CONTRACT = "SelfDestructCallable";
     private static final String DESTROY_EXPLICIT_BENEFICIARY = "destroyExplicitBeneficiary";
     private static final String BENEFICIARY = "beneficiary";
-
-    public static void main(String... args) {
-        new SelfDestructSuite().runSuiteAsync();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOGGER;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                hscsEvm008SelfDestructInConstructorWorks(),
-                hscsEvm008SelfDestructWhenCalling(),
-                selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn(EVM_VERSION_046),
-                selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn(EVM_VERSION_050),
-                selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed(EVM_VERSION_046),
-                selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed(EVM_VERSION_050),
-                testSelfDestructForSystemAccounts(EVM_VERSION_046),
-                testSelfDestructForSystemAccounts(EVM_VERSION_050),
-                deletedContractsCannotBeUpdated(EVM_VERSION_046),
-                deletedContractsCannotBeUpdated(EVM_VERSION_050));
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return false;
-    }
 
     @HapiTest
     final Stream<DynamicTest> hscsEvm008SelfDestructInConstructorWorks() {

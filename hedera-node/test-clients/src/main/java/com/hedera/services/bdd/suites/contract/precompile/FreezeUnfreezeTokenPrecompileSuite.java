@@ -36,6 +36,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
@@ -44,24 +49,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(FreezeUnfreezeTokenPrecompileSuite.class);
+public class FreezeUnfreezeTokenPrecompileSuite {
     public static final String FREEZE_CONTRACT = "FreezeUnfreezeContract";
     private static final String IS_FROZEN_FUNC = "isTokenFrozen";
     public static final String TOKEN_FREEZE_FUNC = "tokenFreeze";
@@ -71,25 +68,6 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
     private static final String MULTI_KEY = "purpose";
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final String INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
-
-    public static void main(String... args) {
-        new FreezeUnfreezeTokenPrecompileSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(isFrozenHappyPathWithAliasLocalCall(), noTokenIdReverts());
-    }
 
     @HapiTest
     final Stream<DynamicTest> noTokenIdReverts() {

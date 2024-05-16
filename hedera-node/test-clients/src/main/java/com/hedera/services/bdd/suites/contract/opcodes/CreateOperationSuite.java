@@ -39,63 +39,34 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIG
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class CreateOperationSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(CreateOperationSuite.class);
+public class CreateOperationSuite {
     private static final String CONTRACT = "FactoryContract";
     private static final String CALL_RECORD_TRANSACTION_NAME = "callRecord";
     private static final String DEPLOYMENT_SUCCESS_FUNCTION = "deploymentSuccess";
     private static final String DEPLOYMENT_SUCCESS_TXN = "deploymentSuccessTxn";
     private static final String CONTRACT_INFO = "contractInfo";
     private static final String PARENT_INFO = "parentInfo";
-
-    public static void main(final String... args) {
-        new CreateOperationSuite().runSuiteAsync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                simpleFactoryWorks(),
-                stackedFactoryWorks(),
-                resetOnFactoryFailureWorks(),
-                resetOnFactoryFailureAfterDeploymentWorks(),
-                resetOnStackedFactoryFailureWorks(),
-                inheritanceOfNestedCreatedContracts(),
-                factoryQuickSelfDestructContract(),
-                contractCreateWithNewOpInConstructorAbandoningParent(),
-                childContractStorageWorks());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
 
     @HapiTest
     final Stream<DynamicTest> factoryQuickSelfDestructContract() {
@@ -376,10 +347,5 @@ public class CreateOperationSuite extends HapiSuite {
                     Assertions.assertTrue(createdContractInfo.hasAccountID());
                     Assertions.assertTrue(createdContractInfo.hasExpirationTime());
                 }));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

@@ -30,24 +30,17 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class PushZeroOperationSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(PushZeroOperationSuite.class);
+public class PushZeroOperationSuite {
     private static final long GAS_TO_OFFER = 400_000L;
     private static final String CONTRACT = "OpcodesContract";
     private static final String BOB = "bob";
@@ -59,23 +52,6 @@ public class PushZeroOperationSuite extends HapiSuite {
 
     public static final String EVM_VERSION_0_34 = "v0.34";
     public static final String EVM_VERSION_0_38 = "v0.38";
-
-    public static void main(String... args) {
-        new PushZeroOperationSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return allOf(positiveSpecs(), negativeSpecs());
-    }
-
-    List<Stream<DynamicTest>> negativeSpecs() {
-        return List.of();
-    }
-
-    List<Stream<DynamicTest>> positiveSpecs() {
-        return List.of(pushZeroHappyPathWorks(), pushZeroDisabledInV034());
-    }
 
     @HapiTest
     final Stream<DynamicTest> pushZeroHappyPathWorks() {
@@ -122,10 +98,5 @@ public class PushZeroOperationSuite extends HapiSuite {
                         .via(pushResult)
                         .hasKnownStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION)
                         .logged()));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

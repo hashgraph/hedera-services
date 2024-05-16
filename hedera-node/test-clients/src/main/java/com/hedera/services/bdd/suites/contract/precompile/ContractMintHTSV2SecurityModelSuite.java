@@ -42,6 +42,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THOUSAND_HBAR;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
@@ -53,28 +56,20 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintTranslator;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
-public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
-
-    private static final Logger LOG = LogManager.getLogger(ContractMintHTSV1SecurityModelSuite.class);
+public class ContractMintHTSV2SecurityModelSuite {
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final String TOKEN_TREASURY = "treasury";
     private static final KeyShape TRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
@@ -124,34 +119,6 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
     private static final String SERVICE_CONTRACT = "ServiceContract";
     static final byte[][] EMPTY_METADATA = new byte[][] {};
     static final byte[][] TEST_METADATA_2 = new byte[][] {TEST_METADATA_1.getBytes()};
-
-    public static void main(final String... args) {
-        new ContractMintHTSV2SecurityModelSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return allOf(positiveSpecs(), negativeSpecs());
-    }
-
-    List<Stream<DynamicTest>> negativeSpecs() {
-        return List.of(
-                V2Security002FungibleTokenMintInTreasuryNegative(),
-                V2Security003NonFungibleTokenMintInTreasuryNegative(),
-                V2Security035TokenWithDelegateContractKeyCanNotMintFromDelegatecall(),
-                V2Security040TokenWithDelegateContractKeyCanNotMintFromStaticcall(),
-                V2Security040TokenWithDelegateContractKeyCanNotMintFromCallcode());
-    }
-
-    List<Stream<DynamicTest>> positiveSpecs() {
-        return List.of(
-                V2Security002FungibleTokenMintInTreasuryPositive(),
-                V2Security003NonFungibleTokenMintInTreasuryPositive());
-    }
 
     @HapiTest
     final Stream<DynamicTest> V2Security002FungibleTokenMintInTreasuryPositive() {
@@ -981,10 +948,5 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                 .then(
                         childRecordsCheck(CALLCODE_WHEN_FUNGIBLE_TOKEN_HAS_CONTRACT_ID, CONTRACT_REVERT_EXECUTED),
                         childRecordsCheck(CALLCODE_WHEN_NON_FUNGIBLE_TOKEN_HAS_CONTRACT_ID, CONTRACT_REVERT_EXECUTED));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
     }
 }

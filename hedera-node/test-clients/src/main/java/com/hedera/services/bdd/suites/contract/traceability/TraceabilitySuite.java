@@ -55,6 +55,27 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.FIVE_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.MAX_UINT256_VALUE;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
+import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.assertNoMismatchedSidecars;
+import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.expectContractActionSidecarFor;
+import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.expectContractBytecode;
+import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.expectContractBytecodeSidecarFor;
+import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.expectContractBytecodeWithMinimalFieldsSidecarFor;
+import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.expectContractStateChangesSidecarFor;
+import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.expectFailedContractBytecodeSidecarFor;
+import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.initializeSidecarWatcher;
+import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.tearDownSidecarWatcher;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
@@ -95,7 +116,6 @@ import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.assertions.StateChange;
 import com.hedera.services.bdd.spec.assertions.StorageChange;
@@ -103,7 +123,6 @@ import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.SidecarAwareHapiSuite;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -128,10 +147,9 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestMethodOrder;
 
-@HapiTestSuite(fuzzyMatch = true)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @Tag(SMART_CONTRACT)
-public class TraceabilitySuite extends SidecarAwareHapiSuite {
+public class TraceabilitySuite {
 
     private static final Logger log = LogManager.getLogger(TraceabilitySuite.class);
 
@@ -158,43 +176,6 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     private static final String CHAIN_ID_PROPERTY = "contracts.chainId";
     private static final String LAZY_CREATE_PROPERTY = "lazyCreation.enabled";
     public static final String SIDECARS_PROP = "contracts.sidecars";
-
-    public static void main(final String... args) {
-        new TraceabilitySuite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                suiteSetup(),
-                traceabilityE2EScenario1(),
-                traceabilityE2EScenario2(),
-                traceabilityE2EScenario3(),
-                traceabilityE2EScenario4(),
-                traceabilityE2EScenario5(),
-                traceabilityE2EScenario6(),
-                traceabilityE2EScenario7(),
-                traceabilityE2EScenario8(),
-                traceabilityE2EScenario9(),
-                traceabilityE2EScenario10(),
-                traceabilityE2EScenario11(),
-                traceabilityE2EScenario12(),
-                traceabilityE2EScenario13(),
-                traceabilityE2EScenario14(),
-                traceabilityE2EScenario15(),
-                traceabilityE2EScenario16(),
-                traceabilityE2EScenario17(),
-                traceabilityE2EScenario18(),
-                traceabilityE2EScenario19(),
-                traceabilityE2EScenario20(),
-                traceabilityE2EScenario21(),
-                vanillaBytecodeSidecar(),
-                vanillaBytecodeSidecar2(),
-                actionsShowPropagatedRevert(),
-                ethereumLazyCreateExportsExpectedSidecars(),
-                hollowAccountCreate2MergeExportsExpectedSidecars(),
-                assertSidecars());
-    }
 
     @HapiTest
     @Order(1)
@@ -5150,10 +5131,5 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                 .given()
                 .when(tearDownSidecarWatcher())
                 .then(assertNoMismatchedSidecars());
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

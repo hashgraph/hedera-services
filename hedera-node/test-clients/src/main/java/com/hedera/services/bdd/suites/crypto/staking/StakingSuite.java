@@ -44,15 +44,22 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilJustBeforeNextStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.NODE;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
+import static com.hedera.services.bdd.suites.HapiSuite.TINY_PARTS_PER_WHOLE;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enableContractAutoRenewWith;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY_RECEIVABLE_CONTRACT;
 import static com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite.PAYABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -63,20 +70,15 @@ import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestMethodOrder;
 
-@HapiTestSuite
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @Tag(TIME_CONSUMING)
-public class StakingSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(StakingSuite.class);
+public class StakingSuite {
     public static final String END_OF_STAKING_PERIOD_CALCULATIONS_MEMO = "End of staking period calculation record";
     private static final long ONE_STAKING_PERIOD = 60_000L;
     private static final long BUFFER = 10_000L;
@@ -92,37 +94,6 @@ public class StakingSuite extends HapiSuite {
     public static final String FIRST_TRANSFER = "firstTransfer";
     public static final String FIRST_TXN = "firstTxn";
     private static final long STAKING_PERIOD_MINS = 1L;
-
-    public static void main(String... args) {
-        new StakingSuite().runSuiteSync();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return false;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                setUp(),
-                losingEvenAZeroBalanceStakerTriggersStakeeRewardSituation(),
-                evenOneTinybarChangeInIndirectStakingAccountTriggersStakeeRewardSituation(),
-                stakingMetadataUpdateIsRewardOpportunity(),
-                secondOrderRewardSituationsWork(),
-                endOfStakingPeriodRecTest(),
-                rewardsOfDeletedAreRedirectedToBeneficiary(),
-                canBeRewardedWithoutMinStakeIfSoConfigured(),
-                zeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP(),
-                autoRenewalsCanTriggerStakingRewards(),
-                stakeIsManagedCorrectlyInTxnsAroundPeriodBoundaries(),
-                zeroStakeAccountsHaveMetadataResetOnFirstDayTheyReceiveFunds());
-    }
 
     @HapiTest
     final Stream<DynamicTest> setUp() {

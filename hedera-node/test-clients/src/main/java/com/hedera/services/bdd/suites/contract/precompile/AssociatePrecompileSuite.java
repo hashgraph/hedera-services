@@ -46,6 +46,7 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
@@ -59,28 +60,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class AssociatePrecompileSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(AssociatePrecompileSuite.class);
-
+public class AssociatePrecompileSuite {
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT);
     private static final String TOKEN_TREASURY = "treasury";
@@ -100,36 +92,6 @@ public class AssociatePrecompileSuite extends HapiSuite {
     private static final String TOKEN1 = "Token1";
     private static final String CONTRACT_KEY = "ContractKey";
     private static final KeyShape KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
-
-    public static void main(String... args) {
-        new AssociatePrecompileSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return allOf(positiveSpecs(), negativeSpecs());
-    }
-
-    List<Stream<DynamicTest>> negativeSpecs() {
-        return List.of(
-                functionCallWithLessThanFourBytesFailsWithinSingleContractCall(),
-                nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls(),
-                invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls(),
-                nonSupportedAbiCallGracefullyFailsWithinSingleContractCall(),
-                invalidAbiCallGracefullyFailsWithinSingleContractCall(),
-                invalidSingleAbiCallConsumesAllProvidedGas(),
-                associateTokensNegativeScenarios(),
-                associateTokenNegativeScenarios());
-    }
-
-    List<Stream<DynamicTest>> positiveSpecs() {
-        return List.of(associateWithMissingEvmAddressHasSaneTxnAndRecord());
-    }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     @HapiTest
@@ -544,10 +506,5 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                 nullToken,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(INVALID_TOKEN_ID)));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

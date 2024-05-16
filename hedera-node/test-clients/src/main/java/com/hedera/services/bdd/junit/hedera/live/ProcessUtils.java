@@ -29,6 +29,7 @@ public class ProcessUtils {
     private static final int FIRST_AGENT_PORT = 5005;
     private static final long NODE_ID_TO_SUSPEND = -1;
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
+    public static final String OVERRIDE_RECORD_STREAM_FOLDER = "recordStreams";
 
     private ProcessUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -72,7 +73,7 @@ public class ProcessUtils {
                             // JVM system
                             "-Dfile.encoding=UTF-8",
                             "-Dprometheus.endpointPortNumber=" + metadata.prometheusPort(),
-                            "-Dhedera.recordStream.logDir=data/recordStreams",
+                            "-Dhedera.recordStream.logDir=data/" + OVERRIDE_RECORD_STREAM_FOLDER,
                             "-Dhedera.profiles.active=DEV",
                             "-Dhedera.workflows.enabled=true",
                             "com.hedera.node.app.ServicesMain",

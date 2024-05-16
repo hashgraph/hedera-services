@@ -57,7 +57,7 @@ public abstract class HapiSuite {
     protected static String RED_PARTITION = "RED_PARTITION";
     protected static String BLUE_PARTITION = "BLUE_PARTITION";
     protected static String GREEN_PARTITION = "GREEN_PARTITION";
-    protected static String CIVILIAN_PAYER = "CIVILIAN_PAYER";
+    public static String CIVILIAN_PAYER = "CIVILIAN_PAYER";
     public static long FUNGIBLE_INITIAL_SUPPLY = 1_000_000_000L;
     public static long NON_FUNGIBLE_INITIAL_SUPPLY = 10L;
     public static long FUNGIBLE_INITIAL_BALANCE = FUNGIBLE_INITIAL_SUPPLY / 100;
@@ -317,7 +317,7 @@ public abstract class HapiSuite {
         return Arrays.stream(specLists).flatMap(List::stream).toList();
     }
 
-    protected HapiSpecOperation[] asOpArray(int n, IntFunction<HapiSpecOperation> factory) {
+    public static HapiSpecOperation[] asOpArray(int n, IntFunction<HapiSpecOperation> factory) {
         return IntStream.range(0, n).mapToObj(factory).toArray(HapiSpecOperation[]::new);
     }
 

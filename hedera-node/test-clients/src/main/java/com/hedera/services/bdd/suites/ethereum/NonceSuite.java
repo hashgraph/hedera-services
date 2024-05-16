@@ -48,6 +48,13 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIG
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -64,29 +71,21 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.math.BigInteger;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 @SuppressWarnings("java:S5960")
-public class NonceSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(NonceSuite.class);
+public class NonceSuite {
     private static final long LOW_GAS_PRICE = 1L;
     private static final long ENOUGH_GAS_PRICE = 75L;
     private static final long ENOUGH_GAS_LIMIT = 150_000L;
@@ -107,63 +106,6 @@ public class NonceSuite extends HapiSuite {
     private static final String DEPLOYMENT_SUCCESS_FUNCTION = "deploymentSuccess";
     private static final String CHECK_BALANCE_REPEATEDLY_FUNCTION = "checkBalanceRepeatedly";
     private static final String TX = "tx";
-
-    public static void main(String... args) {
-        new NonceSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                // pre-checks
-                nonceNotUpdatedWhenSignerDoesExistPrecheckFailed(),
-                nonceNotUpdatedWhenPayerHasInsufficientBalancePrecheckFailed(),
-                nonceNotUpdatedWhenNegativeMaxGasAllowancePrecheckFailed(),
-                nonceNotUpdatedWhenInsufficientIntrinsicGasPrecheckFailed(),
-                nonceNotUpdatedWhenMaxGasPerSecPrecheckFailed(),
-                // handler checks
-                nonceNotUpdatedWhenIntrinsicGasHandlerCheckFailed(),
-                nonceNotUpdatedWhenUserOfferedGasPriceAndAllowanceAreZeroHandlerCheckFailed(),
-                nonceNotUpdatedWhenOfferedGasPriceIsLessThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailed(),
-                nonceNotUpdatedWhenOfferedGasPriceIsLessThanCurrentAndGasAllowanceIsLessThanRemainingFeeHandlerCheckFailed(),
-                nonceNotUpdatedWhenOfferedGasPriceIsBiggerThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailed(),
-                nonceNotUpdatedWhenSenderDoesNotHaveEnoughBalanceHandlerCheckFailed(),
-                nonceNotUpdatedForNonEthereumTransaction(),
-                revertsWhenSenderDoesNotExist(),
-                // evm smart contract reversions
-                nonceUpdatedAfterEvmReversionDueContractLogic(),
-                nonceUpdatedAfterEvmReversionDueInsufficientGas(),
-                nonceUpdatedAfterEvmReversionDueInsufficientTransferAmount(),
-                // evm hedera specific reversions
-                nonceUpdatedAfterEvmReversionDueSendingValueToEthereumPrecompile0x2(),
-                nonceUpdatedAfterEvmReversionDueSendingValueToHederaPrecompile0x167(),
-                // evm hedera specific resource validation reversions
-                nonceUpdatedAfterEvmReversionDueMaxChildRecordsExceeded(),
-                // successful ethereum transactions via internal calls
-                nonceUpdatedAfterSuccessfulInternalCall(),
-                nonceUpdatedAfterSuccessfulInternalTransfer(),
-                nonceUpdatedAfterSuccessfulInternalContractDeployment(),
-                // handler checks for contract creation
-                nonceNotUpdatedWhenIntrinsicGasHandlerCheckFailedEthContractCreate(),
-                nonceNotUpdatedWhenUserOfferedGasPriceAndAllowanceAreZeroHandlerCheckFailedEthContractCreate(),
-                nonceNotUpdatedWhenOfferedGasPriceIsLessThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailedEthContractCreate(),
-                nonceNotUpdatedWhenOfferedGasPriceIsLessThanCurrentAndGasAllowanceIsLessThanRemainingFeeHandlerCheckFailedEthContractCreate(),
-                nonceNotUpdatedWhenOfferedGasPriceIsBiggerThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailedEthContractCreate(),
-                nonceNotUpdatedWhenSenderDoesNotHaveEnoughBalanceHandlerCheckFailedEthContractCreate(),
-                // evm smart contract reversions for contract creation
-                nonceUpdatedAfterEvmReversionDueContractLogicEthContractCreate(),
-                nonceUpdatedAfterEvmReversionDueInsufficientGasEthContractCreate(),
-                nonceUpdatedAfterEvmReversionDueInsufficientTransferAmountEthContractCreate(),
-                // evm hedera specific reversions for contract creation
-                nonceUpdatedAfterEvmReversionDueSendingValueToEthereumPrecompileEthContractCreate(),
-                // successful ethereum contract deploy
-                nonceUpdatedAfterSuccessfulEthereumContractCreation());
-    }
 
     @HapiTest
     final Stream<DynamicTest> nonceNotUpdatedWhenSignerDoesExistPrecheckFailed() {
@@ -1130,10 +1072,5 @@ public class NonceSuite extends HapiSuite {
                 .then(getTxnRecord(TX)
                         .hasPriority(
                                 recordWith().contractCallResult(resultWith().signerNonce(0L))));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

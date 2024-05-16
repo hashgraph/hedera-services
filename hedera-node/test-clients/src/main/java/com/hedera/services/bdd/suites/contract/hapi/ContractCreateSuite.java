@@ -67,6 +67,16 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
@@ -93,13 +103,11 @@ import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.utility.CommonUtils;
@@ -118,14 +126,12 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class ContractCreateSuite extends HapiSuite {
+public class ContractCreateSuite {
 
     public static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
     public static final String PARENT_INFO = "parentInfo";
     private static final String PAYER = "payer";
-    private static final String PATTERN = "0.0.%d";
 
     private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
 
@@ -136,44 +142,6 @@ public class ContractCreateSuite extends HapiSuite {
             "f8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222";
     private static final String EXPECTED_DEPLOYER_ADDRESS = "4e59b44847b379578588920ca78fbf26c0b4956c";
     private static final String DEPLOYER = "DeployerContract";
-
-    public static void main(String... args) {
-        new ContractCreateSuite().runSuiteAsync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                createDeterministicDeployer(),
-                createEmptyConstructor(),
-                insufficientPayerBalanceUponCreation(),
-                rejectsInvalidMemo(),
-                rejectsInsufficientFee(),
-                rejectsInvalidBytecode(),
-                revertsNonzeroBalance(),
-                createFailsIfMissingSigs(),
-                rejectsInsufficientGas(),
-                createsVanillaContractAsExpectedWithOmittedAdminKey(),
-                childCreationsHaveExpectedKeysWithOmittedAdminKey(),
-                cannotCreateTooLargeContract(),
-                revertedTryExtCallHasNoSideEffects(),
-                cannotSendToNonExistentAccount(),
-                invalidSystemInitcodeFileFailsWithInvalidFileId(),
-                delegateContractIdRequiredForTransferInDelegateCall(),
-                vanillaSuccess(),
-                blockTimestampChangesWithinFewSeconds(),
-                contractWithAutoRenewNeedSignatures(),
-                newAccountsCanUsePureContractIdKey(),
-                createContractWithStakingFields(),
-                disallowCreationsOfEmptyInitCode(),
-                createCallInConstructor(),
-                cannotSetMaxAutomaticAssociations());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
 
     @HapiTest
     final Stream<DynamicTest> createDeterministicDeployer() {
@@ -797,11 +765,6 @@ public class ContractCreateSuite extends HapiSuite {
                 .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
                         .maxAutomaticTokenAssociations(10)
                         .hasKnownStatus(NOT_SUPPORTED));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 
     private EthTxData placeholderEthTx() {

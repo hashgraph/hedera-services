@@ -41,6 +41,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THOUSAND_HBAR;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
@@ -59,25 +62,16 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsTranslator;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(AssociatePrecompileV1SecurityModelSuite.class);
-
+public class AssociatePrecompileV2SecurityModelSuite {
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final long TOTAL_SUPPLY = 1_000;
     private static final String SIGNER = "anybody";
@@ -98,32 +92,6 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
     private static final String CONTRACT_KEY = "ContractKey";
     private static final String MINT_TOKEN_CONTRACT = "MixedMintToken";
     private static final String CALLCODE_CONTRACT = "MixedMintToken";
-
-    public static void main(String... args) {
-        new AssociatePrecompileV2SecurityModelSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return allOf(positiveSpecs(), negativeSpecs());
-    }
-
-    List<Stream<DynamicTest>> negativeSpecs() {
-        return List.of(
-                v2Security006TokenAssociateNegativeTests(), V2Security041TokenAssociateFromStaticcallAndCallcode());
-    }
-
-    List<Stream<DynamicTest>> positiveSpecs() {
-        return List.of(
-                v2Security031AssociateSingleTokenWithDelegateContractKey(),
-                v2Security010NestedAssociateNftAndNonFungibleTokens(),
-                V2Security036TokenAssociateFromDelegateCallWithDelegateContractId());
-    }
 
     @HapiTest
     final Stream<DynamicTest> v2Security031AssociateSingleTokenWithDelegateContractKey() {
@@ -706,10 +674,5 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                         emptyChildRecordsCheck("associateStaticcallFungibleTxn", CONTRACT_REVERT_EXECUTED),
                         emptyChildRecordsCheck("associateCallcodeFungibleTxn", CONTRACT_REVERT_EXECUTED),
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(FUNGIBLE_TOKEN));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

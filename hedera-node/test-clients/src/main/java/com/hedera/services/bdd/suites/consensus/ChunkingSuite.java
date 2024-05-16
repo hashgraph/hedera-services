@@ -27,33 +27,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class ChunkingSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(ChunkingSuite.class);
+public class ChunkingSuite {
     private static final int CHUNK_SIZE = 1024;
-
-    public static void main(String... args) {
-        new ChunkingSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(chunkNumberIsValidated(), chunkTransactionIDIsValidated(), longMessageIsFragmentedIntoChunks());
-    }
 
     @HapiTest
     final Stream<DynamicTest> chunkNumberIsValidated() {
@@ -126,10 +104,5 @@ public class ChunkingSuite extends HapiSuite {
                 .given(cryptoCreate("payer"), createTopic("testTopic"))
                 .when()
                 .then(chunkAFile(fileForLongMessage, CHUNK_SIZE, "payer", "testTopic"));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

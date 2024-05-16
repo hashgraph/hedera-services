@@ -32,6 +32,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
@@ -40,29 +41,21 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class PrngPrecompileSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(PrngPrecompileSuite.class);
+public class PrngPrecompileSuite {
     private static final long GAS_TO_OFFER = 400_000L;
     private static final String THE_GRACEFULLY_FAILING_PRNG_CONTRACT = "GracefullyFailingPrng";
     private static final String THE_PRNG_CONTRACT = "PrngSystemContract";
     private static final String BOB = "bob";
-    private static final String TX = "tx";
 
     private static final String GET_SEED = "getPseudorandomSeed";
     private static final String GET_SEED_PAYABLE = "getPseudorandomSeedPayable";
@@ -72,32 +65,6 @@ public class PrngPrecompileSuite extends HapiSuite {
                     + "5678901234567890000000000000000000000000123456789012345678901234567890123456789000000000"
                     + "000d83bf9a1083bf9a1000d83bf9a10000000d83bf9a10000000000000000026e790000000000000000000000000000"
                     + "00000000d83bf9a1000000000d83bf9a1000";
-
-    public static void main(String... args) {
-        new PrngPrecompileSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return allOf(positiveSpecs(), negativeSpecs());
-    }
-
-    List<Stream<DynamicTest>> negativeSpecs() {
-        return List.of(
-                functionCallWithLessThanFourBytesFailsGracefully(),
-                nonSupportedAbiCallGracefullyFails(),
-                invalidLargeInputFails(),
-                emptyInputCallFails());
-    }
-
-    List<Stream<DynamicTest>> positiveSpecs() {
-        return List.of(prngPrecompileHappyPathWorks(), multipleCallsHaveIndependentResults());
-    }
 
     @HapiTest
     final Stream<DynamicTest> multipleCallsHaveIndependentResults() {
@@ -313,10 +280,5 @@ public class PrngPrecompileSuite extends HapiSuite {
                         .hasKnownStatus(INSUFFICIENT_GAS)
                         .logged()))
                 .then();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

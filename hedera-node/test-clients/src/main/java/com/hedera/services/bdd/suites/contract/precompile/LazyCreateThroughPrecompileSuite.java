@@ -58,6 +58,13 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.headlongFromHexed;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
@@ -80,12 +87,10 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
@@ -103,9 +108,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class LazyCreateThroughPrecompileSuite extends HapiSuite {
+public class LazyCreateThroughPrecompileSuite {
 
     private static final Logger log = LogManager.getLogger(LazyCreateThroughPrecompileSuite.class);
     private static final long GAS_TO_OFFER = 4_000_000L;
@@ -144,32 +148,6 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     private static final String RECIPIENT = "recipient";
     private static final String NOT_ENOUGH_GAS_TXN = "NOT_ENOUGH_GAS_TXN";
     private static final String ECDSA_KEY = "abcdECDSAkey";
-
-    public static void main(String... args) {
-        new LazyCreateThroughPrecompileSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                erc20TransferLazyCreate(),
-                erc20TransferFromLazyCreate(),
-                erc721TransferFromLazyCreate(),
-                htsTransferFromFungibleTokenLazyCreate(),
-                htsTransferFromForNFTLazyCreate(),
-                resourceLimitExceededRevertsAllRecords(),
-                autoCreationFailsWithMirrorAddress());
-    }
 
     @HapiTest
     final Stream<DynamicTest> resourceLimitExceededRevertsAllRecords() {

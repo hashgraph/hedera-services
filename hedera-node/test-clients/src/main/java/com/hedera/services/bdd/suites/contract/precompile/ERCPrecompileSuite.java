@@ -58,6 +58,12 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIG
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asHexedAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
@@ -83,11 +89,9 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -102,9 +106,8 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class ERCPrecompileSuite extends HapiSuite {
+public class ERCPrecompileSuite {
 
     private static final Logger log = LogManager.getLogger(ERCPrecompileSuite.class);
     private static final long GAS_TO_OFFER = 1_000_000L;
@@ -164,64 +167,6 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String NFT_TOKEN_MINT = "nftTokenMint";
     public static final String TRANSFER_SIGNATURE = "Transfer(address,address,uint256)";
     private static final String NESTED_ERC_20_CONTRACT = "NestedERC20Contract";
-
-    public static void main(String... args) {
-        new ERCPrecompileSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return allOf(erc20(), erc721());
-    }
-
-    List<Stream<DynamicTest>> erc20() {
-        return List.of(
-                getErc20TokenName(),
-                getErc20TokenSymbol(),
-                getErc20TokenDecimals(),
-                getErc20TotalSupply(),
-                getErc20BalanceOfAccount(),
-                transferErc20Token(),
-                transferErc20TokenFailWithAccount(),
-                erc20Allowance(),
-                erc20Approve(),
-                someErc20ApproveAllowanceScenariosPass(),
-                someErc20NegativeTransferFromScenariosPass(),
-                someErc20ApproveAllowanceScenarioInOneCall(),
-                getErc20TokenDecimalsFromErc721TokenFails(),
-                transferErc20TokenReceiverContract(),
-                directCallsWorkForErc20(),
-                erc20TransferFromAllowance(),
-                erc20TransferFromSelf(),
-                transferErc20TokenFromContractWithNoApproval());
-    }
-
-    List<Stream<DynamicTest>> erc721() {
-        return List.of(
-                getErc721TokenName(),
-                getErc721Symbol(),
-                getErc721TokenURI(),
-                getErc721OwnerOf(),
-                getErc721BalanceOf(),
-                getErc721TotalSupply(),
-                erc721TokenApprove(),
-                erc721GetApproved(),
-                getErc721TokenURIFromErc20TokenFails(),
-                getErc721OwnerOfFromErc20TokenFails(),
-                directCallsWorkForErc721(),
-                someErc721ApproveAndRemoveScenariosPass(),
-                someErc721NegativeTransferFromScenariosPass(),
-                erc721TransferFromWithApproval(),
-                erc721TransferFromWithApproveForAll(),
-                someErc721IsApprovedForAllScenariosPass(),
-                getErc721IsApprovedForAll(),
-                someErc721SetApprovedForAllScenariosPass());
-    }
 
     @HapiTest
     final Stream<DynamicTest> getErc20TokenName() {
@@ -3056,10 +3001,5 @@ public class ERCPrecompileSuite extends HapiSuite {
                         getAccountDetails(RECIPIENT).logged(),
                         getAccountDetails(OWNER).logged())))
                 .then();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

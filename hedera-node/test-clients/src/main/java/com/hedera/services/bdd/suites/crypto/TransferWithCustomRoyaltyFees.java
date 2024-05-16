@@ -42,6 +42,10 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.TRANSFER_TXN_2;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.createHollowAccountFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
@@ -51,8 +55,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
@@ -62,9 +64,8 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class TransferWithCustomRoyaltyFees extends HapiSuite {
+public class TransferWithCustomRoyaltyFees {
     private static final Logger log = LogManager.getLogger(TransferWithCustomRoyaltyFees.class);
     private static final long numerator = 1L;
     private static final long denominator = 10L;
@@ -83,50 +84,6 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
     private static final String bob = "bob";
     private static final String carol = "carol";
     private static final String dave = "dave";
-
-    public static void main(String... args) {
-        new TransferWithCustomRoyaltyFees().runSuiteAsync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                transferNonFungibleWithRoyaltyHbarFee(),
-                transferNonFungibleWithRoyaltyFungibleFee(),
-                transferNonFungibleWithRoyaltyFallbackHbarFee(),
-                transferNonFungibleWithHollowAccountAndRoyaltyHbarFee(),
-                transferNonFungibleWithHollowAccountAndRoyaltyFungibleFee(),
-                transferNonFungibleWithHollowAccountAndRoyaltyFallbackHbarFee(),
-                transferNonFungibleWithRoyaltyFallbackFungibleFee(),
-                transferNonFungibleWithRoyaltyHbarFeeInsufficientBalance(),
-                transferNonFungibleWithRoyaltyFungibleFeeInsufficientBalance(),
-                transferNonFungibleWithRoyaltyFallbackHbarFeeInsufficientBalance(),
-                transferNonFungibleWithRoyaltyFallbackFungibleFeeInsufficientBalance(),
-                transferNonFungibleWithRoyaltyFallbackFungibleFeeNoAssociation(),
-                transferNonFungibleWithRoyaltyFungibleFeeNoAssociation(),
-                transferNonFungibleWithRoyaltyHtsFee2Transactions(),
-                transferNonFungibleWithRoyaltyHtsFee2TokenFees(),
-                transferNonFungibleWithRoyaltyHtsFeeMinFee(),
-                transferNonFungibleWithRoyaltyAllowancePassFromSpenderToOwner(),
-                transferNonFungibleWithRoyaltyRandomFeeSameCollectorAccount(),
-                transferNonFungibleWithRoyaltyRandomFeeDifCollectorAccount(),
-                transferNonFungibleWithRoyaltySameHTSTreasuryТоRandom(),
-                transferNonFungibleWithRoyaltyAnotherHTSTreasuryТоRandom(),
-                transferNonFungibleWithRoyaltyAllowanceOfTheNFTGiven(),
-                transferNonFungibleWithRoyaltyAllCollectorsExempt(),
-                transferNonFungibleWith2LayersRoyaltyFungibleFee(),
-                transferNonFungibleWith2LayersRoyaltyHbarFee(),
-                transferNonFungibleWithRoyaltyFromFeeCollector(),
-                transferMultipleTimesWithRoyaltyWithFallbackFeeShouldVerifyEachTransferIsPaid(),
-                transferNonFungibleWithMultipleRoyaltyFungibleFee(),
-                transferNonFungibleWithMultipleRoyaltyFungibleFeeToFeeCollector(),
-                transferNonFungibleWithRoyaltyFallbackAllowanceNegative(),
-                transferNonFungibleWithMultipleRoyaltyFungibleFeeNegative(),
-                transferMultipleTimesWithRoyaltyWithFallbackFeeShouldVerifyEachTransferIsPaid(),
-                transferMultipleNonFungibleWithRoyaltyFungibleFee(),
-                transferMultipleNonFungibleWithRoyaltyHbarFee(),
-                transferMultipleNonFungibleWithRoyaltyHbarAndFungibleFee());
-    }
 
     @HapiTest
     final Stream<DynamicTest> transferNonFungibleWithRoyaltyHbarFee() {
@@ -1465,10 +1422,5 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
                                     .hasTinyBars(ONE_MILLION_HBARS - 100),
                             getAccountBalance(hollowAccountCollector).hasTinyBars(ONE_HUNDRED_HBARS + 100));
                 }));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

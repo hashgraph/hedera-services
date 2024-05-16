@@ -28,6 +28,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.NONSENSE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY_RECEIVABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -38,40 +41,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class TopicCreateSuite extends HapiSuite {
+public class TopicCreateSuite {
     private static final Logger log = LogManager.getLogger(TopicCreateSuite.class);
-
-    public static void main(String... args) {
-        new TopicCreateSuite().runSuiteAsync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                signingRequirementsEnforced(),
-                autoRenewPeriodIsValidated(),
-                autoRenewAccountIdNeedsAdminKeyToo(),
-                submitKeyIsValidated(),
-                adminKeyIsValidated(),
-                autoRenewAccountIsValidated(),
-                noAutoRenewPeriod(),
-                allFieldsSetHappyCase(),
-                feeAsExpected());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
 
     @HapiTest
     final Stream<DynamicTest> adminKeyIsValidated() {
@@ -265,10 +241,5 @@ public class TopicCreateSuite extends HapiSuite {
                         .payingWith("payer")
                         .via("topicCreate"))
                 .then(validateChargedUsd("topicCreate", 0.0226));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

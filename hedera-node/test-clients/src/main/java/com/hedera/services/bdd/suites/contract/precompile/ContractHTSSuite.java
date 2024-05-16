@@ -41,6 +41,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
@@ -56,23 +60,15 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class ContractHTSSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(ContractHTSSuite.class);
-
+public class ContractHTSSuite {
     public static final String VERSATILE_TRANSFERS_CONTRACT = "VersatileTransfers";
     public static final String TOKEN_TRANSFERS_CONTRACT = "TokenTransferContract";
     public static final String FEE_DISTRIBUTOR_CONTRACT = "FeeDistributor";
@@ -95,33 +91,6 @@ public class ContractHTSSuite extends HapiSuite {
     private static final String SECOND_RECEIVER = "second_receiver";
 
     private static final String UNIVERSAL_KEY = "multipurpose";
-
-    public static void main(String... args) {
-        new ContractHTSSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return allOf(positiveSpecs(), negativeSpecs());
-    }
-
-    List<Stream<DynamicTest>> negativeSpecs() {
-        return List.of(
-                nonZeroTransfersFail(),
-                shouldFailWhenTransferringTokensWithInvalidParametersAndConditions(),
-                shouldFailOnInvalidTokenTransferParametersAndConditions(),
-                shouldFailWhenTransferringMultipleNFTsWithInvalidParametersAndConditions(),
-                shouldFailOnInvalidTokenTransferParametersAndConditions());
-    }
-
-    List<Stream<DynamicTest>> positiveSpecs() {
-        return List.of();
-    }
 
     @HapiTest
     final Stream<DynamicTest> nonZeroTransfersFail() {
@@ -732,10 +701,5 @@ public class ContractHTSSuite extends HapiSuite {
                                 TXN_ACCOUNT_DOES_NOT_OWN_NFT,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

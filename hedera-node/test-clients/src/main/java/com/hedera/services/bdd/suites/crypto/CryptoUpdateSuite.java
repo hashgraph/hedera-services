@@ -47,6 +47,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
@@ -58,43 +63,30 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyLabel;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class CryptoUpdateSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(CryptoUpdateSuite.class);
-
+public class CryptoUpdateSuite {
     private static final long DEFAULT_MAX_LIFETIME =
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
     public static final String REPEATING_KEY = "repeatingKey";
     public static final String TEST_ACCOUNT = "testAccount";
     public static final String ORIG_KEY = "origKey";
     public static final String UPD_KEY = "updKey";
-
-    public static void main(String... args) {
-        new CryptoUpdateSuite().runSuiteConcurrentWithOverrides(Map.of("spec.autoScheduledTxns", ""));
-    }
 
     private final SigControl twoLevelThresh = SigControl.threshSigs(
             2,
@@ -118,30 +110,6 @@ public class CryptoUpdateSuite extends HapiSuite {
 
     private final String TARGET_KEY = "twoLevelThreshWithOverlap";
     private final String TARGET_ACCOUNT = "complexKeyAccount";
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                updateWithUniqueSigs(),
-                updateWithOverlappingSigs(),
-                updateWithOneEffectiveSig(),
-                canUpdateMemo(),
-                updateFailsWithInsufficientSigs(),
-                cannotSetThresholdNegative(),
-                updateWithEmptyKeyFails(),
-                updateFailsIfMissingSigs(),
-                updateFailsWithContractKey(),
-                updateFailsWithOverlyLongLifetime(),
-                usdFeeAsExpectedCryptoUpdate(),
-                sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
-                updateMaxAutoAssociationsWorks(),
-                updateStakingFieldsWorks());
-    }
 
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
@@ -487,10 +455,5 @@ public class CryptoUpdateSuite extends HapiSuite {
                         contractUpdate(CONTRACT)
                                 .newMaxAutomaticAssociations(maxAllowedAssociations + 1)
                                 .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

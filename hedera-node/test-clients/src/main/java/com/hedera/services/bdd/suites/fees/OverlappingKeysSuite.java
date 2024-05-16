@@ -28,30 +28,13 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.keys.KeyLabel;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class OverlappingKeysSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(OverlappingKeysSuite.class);
-
-    public static void main(String... args) {
-        new OverlappingKeysSuite().runSuiteAsync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(feeCalcUsesNumPayerKeys());
-    }
-
+public class OverlappingKeysSuite {
     @HapiTest
     final Stream<DynamicTest> feeCalcUsesNumPayerKeys() {
         SigControl SHAPE = threshSigs(2, threshSigs(2, ANY, ANY, ANY), threshSigs(2, ANY, ANY, ANY));
@@ -73,10 +56,5 @@ public class OverlappingKeysSuite extends HapiSuite {
                                 .sigControl(forKey("repeatingKey", SIGN_ONCE))
                                 .payingWith("testAccount")
                                 .numPayerSigs(6));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

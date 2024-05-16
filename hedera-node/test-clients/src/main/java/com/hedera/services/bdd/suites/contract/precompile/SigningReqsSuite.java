@@ -33,7 +33,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_P
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.assertions.*;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
@@ -50,11 +49,8 @@ import org.junit.jupiter.api.Tag;
 // since they use admin keys, which are held by the txn payer.
 // In the case of an eth txn, we revoke the payers keys and the txn would fail.
 // The only way an eth account to create a token is the admin key to be of a contractId type.
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class SigningReqsSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(SigningReqsSuite.class);
-
+public class SigningReqsSuite {
     private static final String FIRST_CREATE_TXN = "firstCreateTxn";
     private static final String SECOND_CREATE_TXN = "secondCreateTxn";
     private static final long DEFAULT_AMOUNT_TO_SEND = 20 * ONE_HBAR;
@@ -63,20 +59,6 @@ public class SigningReqsSuite extends HapiSuite {
     private static final String LEGACY_ACTIVATIONS_PROP = "contracts.keys.legacyActivations";
     public static final String AUTO_RENEW = "autoRenew";
     public static final int GAS_TO_OFFER = 1_000_000;
-
-    public static void main(String... args) {
-        new SigningReqsSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(autoRenewAccountCanUseLegacySigActivationIfConfigured());
-    }
 
     @HapiTest
     final Stream<DynamicTest> autoRenewAccountCanUseLegacySigActivationIfConfigured() {
@@ -149,10 +131,5 @@ public class SigningReqsSuite extends HapiSuite {
                                         .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)),
                         sourcing(() ->
                                 getTokenInfo(asTokenString(createdToken.get())).hasAutoRenewAccount(autoRenew)));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

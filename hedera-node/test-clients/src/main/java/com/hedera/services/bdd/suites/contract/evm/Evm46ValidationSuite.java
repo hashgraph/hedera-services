@@ -50,6 +50,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -71,10 +75,8 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.math.BigInteger;
@@ -88,9 +90,8 @@ import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class Evm46ValidationSuite extends HapiSuite {
+public class Evm46ValidationSuite {
 
     private static final Logger LOG = LogManager.getLogger(Evm46ValidationSuite.class);
     private static final long FIRST_NONEXISTENT_CONTRACT_NUM = 4303224382569680425L;
@@ -135,143 +136,6 @@ public class Evm46ValidationSuite extends HapiSuite {
     public static final List<Long> existingSystemAccounts = List.of(999L, 1000L);
     public static final List<Long> systemAccounts =
             List.of(0L, 1L, 9L, 10L, 358L, 359L, 360L, 361L, 750L, 751L, 999L, 1000L);
-
-    public static void main(String... args) {
-        new Evm46ValidationSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                // Top-level calls:
-                // EOA -calls-> NonExistingMirror, expect noop success
-                directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp(),
-                // EOA -calls-> NonExistingNonMirror, expect noop success
-                directCallToNonExistingNonMirrorAddressResultsInSuccessfulNoOp(),
-                // EOA -calls-> ExistingCryptoAccount, expect noop success
-                directCallToExistingCryptoAccountResultsInSuccess(),
-                // EOA -callsWValue-> ExistingCryptoAccount, expect successful transfer
-                directCallWithValueToExistingCryptoAccountResultsInSuccess(),
-                // EOA -calls-> Reverting, expect revert
-                directCallToRevertingContractRevertsWithCorrectRevertReason(),
-
-                // Internal calls:
-                // EOA -calls-> InternalCaller -calls-> NonExistingMirror, expect noop success
-                internalCallToNonExistingMirrorAddressResultsInNoopSuccess(),
-                // EOA -calls-> InternalCaller -calls-> ExistingMirror, expect successful call
-                internalCallToExistingMirrorAddressResultsInSuccessfulCall(),
-                // EOA -calls-> InternalCaller -calls-> NonExistingNonMirror, expect noop success
-                internalCallToNonExistingNonMirrorAddressResultsInNoopSuccess(),
-                // EOA -calls-> InternalCaller -calls-> Existing reverting without revert message
-                internalCallToExistingRevertingResultsInSuccessfulTopLevelTxn(),
-
-                // Internal transfers:
-                // EOA -calls-> InternalCaller -transfer-> NonExistingMirror, expect revert
-                internalTransferToNonExistingMirrorAddressResultsInInvalidAliasKey(),
-                // EOA -calls-> InternalCaller -transfer-> ExistingMirror, expect success
-                internalTransferToExistingMirrorAddressResultsInSuccess(),
-                // EOA -calls-> InternalCaller -transfer-> NonExistingNonMirror, expect revert
-                internalTransferToNonExistingNonMirrorAddressResultsInRevert(),
-                // EOA -calls-> InternalCaller -transfer-> ExistingNonMirror, expect success
-                internalTransferToExistingNonMirrorAddressResultsInSuccess(),
-
-                // Internal sends:
-                // EOA -calls-> InternalCaller -send-> NonExistingMirror, expect revert
-                internalSendToNonExistingMirrorAddressDoesNotLazyCreateIt(),
-                // EOA -calls-> InternalCaller -send-> ExistingMirror, expect success
-                internalSendToExistingMirrorAddressResultsInSuccess(),
-                // EOA -calls-> InternalCaller -send-> NonExistingNonMirror, expect revert
-                internalSendToNonExistingNonMirrorAddressResultsInSuccess(),
-                // EOA -calls-> InternalCaller -send-> ExistingNonMirror, expect success
-                internalSendToExistingNonMirrorAddressResultsInSuccess(),
-
-                // Internal calls with value:
-                // EOA -calls-> InternalCaller -callWValue-> NonExistingMirror, expect revert
-                internalCallWithValueToNonExistingMirrorAddressResultsInInvalidAliasKey(),
-                // EOA -calls-> InternalCaller -callWValue-> ExistingMirror, expect success
-                internalCallWithValueToExistingMirrorAddressResultsInSuccess(),
-                // EOA -calls-> InternalCaller -callWValue-> NonExistingNonMirror and not enough gas for lazy creation,
-                // expect success with no account created
-                internalCallWithValueToNonExistingNonMirrorAddressWithoutEnoughGasForLazyCreationResultsInSuccessNoAccountCreated(),
-                // EOA -calls-> InternalCaller -callWValue-> NonExistingNonMirror and enough gas for lazy creation,
-                // expect success with account created
-                internalCallWithValueToNonExistingNonMirrorAddressWithEnoughGasForLazyCreationResultsInSuccessAccountCreated(),
-                // EOA -calls-> InternalCaller -callWValue-> ExistingNonMirror, expect ?
-                internalCallWithValueToExistingNonMirrorAddressResultsInSuccess(),
-
-                // Internal calls to selfdestruct:
-                // EOA -calls-> InternalCaller -selfdestruct-> NonExistingNonMirror, expect INVALID_SOLIDITY_ADDRESS
-                selfdestructToNonExistingNonMirrorAddressResultsInInvalidSolidityAddress(),
-                // EOA -calls-> InternalCaller -selfdestruct-> NonExistingMirror, expect INVALID_SOLIDITY_ADDRESS
-                selfdestructToNonExistingMirrorAddressResultsInInvalidSolidityAddress(),
-                // EOA -calls-> InternalCaller -selfdestruct-> ExistingNonMirror, expect success
-                selfdestructToExistingNonMirrorAddressResultsInSuccess(),
-                // EOA -calls-> InternalCaller -selfdestruct-> ExistingMirror, expect success
-                selfdestructToExistingMirrorAddressResultsInSuccess(),
-
-                // Calls to deleted contract
-                // EOA -calls-> InternalCaller -call-> deleted contract, expect success noop
-                internalCallToDeletedContractReturnsSuccessfulNoop(),
-                // EOA -calls-> deleted contract, expect success noop
-                directCallToDeletedContractResultsInSuccessfulNoop(),
-                // prerequisite: several successful calls then delete
-                // the contract (bytecode is already cached in AbstractCodeCache)
-                // then: EOA -calls-> deleted contract, expect success noop
-                callingDestructedContractReturnsStatusSuccess(),
-
-                // Internal static calls:
-                // EOA -calls-> InternalCaller -staticcall-> NonExistingMirror, expect success noop
-                internalStaticCallNonExistingMirrorAddressResultsInSuccess(),
-                // EOA -calls-> InternalCaller -staticcall-> ExistingMirror, expect success noop
-                internalStaticCallExistingMirrorAddressResultsInSuccess(),
-                // EOA -calls-> InternalCaller -staticcall-> NonExistingNonMirror, expect success noop
-                internalStaticCallNonExistingNonMirrorAddressResultsInSuccess(),
-                // EOA -calls-> InternalCaller -staticcall-> ExistingNonMirror, expect success noop
-                internalStaticCallExistingNonMirrorAddressResultsInSuccess(),
-
-                // Internal delegate calls:
-                // EOA -calls-> InternalCaller -delegatecall-> NonExistingMirror, expect success noop
-                internalDelegateCallNonExistingMirrorAddressResultsInSuccess(),
-                // EOA -calls-> InternalCaller -delegatecall-> ExistingMirror, expect success noop
-                internalDelegateCallExistingMirrorAddressResultsInSuccess(),
-                // EOA -calls-> InternalCaller -delegatecall-> NonExistingNonMirror, expect success noop
-                internalDelegateCallNonExistingNonMirrorAddressResultsInSuccess(),
-                // EOA -calls-> InternalCaller -delegatecall-> ExistingNonMirror, expect success noop
-                internalDelegateCallExistingNonMirrorAddressResultsInSuccess(),
-
-                // EOA -calls-> InternalCaller -callWithValue-> ExistingMirror
-                // with receiverSigRequired=true, expect INVALID_SIGNATURE
-                internalCallWithValueToAccountWithReceiverSigRequiredTrue(),
-
-                // Internal call to system account
-                // EOA -calls-> MakeCalls -callWithValue-> 0.0.357 (system account)
-                internalCallsAgainstSystemAccountsWithValue(),
-                // EOA -calls-> MakeCalls -call-> 0.0.357 (system account)
-                internalCallsAgainstSystemAccountsWithoutValue(),
-                // EOA -calls-> InternalCaller -call-> 0.0.2 (ethereum precompile)
-                internalCallToEthereumPrecompile0x2ResultsInSuccess(),
-                // EOA -calls-> InternalCaller -callWithValue-> 0.0.2 (ethereum precompile)
-                internalCallWithValueToEthereumPrecompile0x2ResultsInRevert(),
-                // EOA -calls-> InternalCaller -call-> 0.0.564 (system account < 0.0.750)
-                internalCallToSystemAccount564ResultsInSuccessNoop(),
-                // EOA -calls-> InternalCaller -call-> 0.0.800 (existing system account > 0.0.750)
-                internalCallToExistingSystemAccount800ResultsInSuccessNoop(),
-                // EOA -calls-> InternalCaller -call-> 0.0.852 (non-existing system account > 0.0.750)
-                internalCallToNonExistingSystemAccount852ResultsInSuccessNoop(),
-
-                // EOA -calls-> InternalCaller -callWithValue-> 0.0.564 (system account < 0.0.750)
-                internalCallWithValueToSystemAccount564ResultsInSuccessNoopNoTransfer(),
-                // EOA -calls-> InternalCaller -callWithValue-> 0.0.800 (existing system account > 0.0.750)
-                internalCallWithValueToExistingSystemAccount800ResultsInSuccessfulTransfer(),
-                // EOA -calls-> InternalCaller -callWithValue-> 0.0.852 (non-existing system account > 0.0.750)
-                internalCallWithValueToNonExistingSystemAccount852ResultsInInvalidAliasKey(),
-                testBalanceOfForSystemAccounts());
-    }
 
     @HapiTest
     final Stream<DynamicTest> directCallToDeletedContractResultsInSuccessfulNoop() {
@@ -1597,10 +1461,5 @@ public class Evm46ValidationSuite extends HapiSuite {
                 .given(cryptoCreate("testAccount").balance(balance), uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(opsArray);
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
     }
 }

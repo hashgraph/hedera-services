@@ -30,6 +30,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNex
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -38,36 +44,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.primitives.Longs;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class BlockSuite extends HapiSuite {
-
-    private static final Logger LOG = LogManager.getLogger(BlockSuite.class);
+public class BlockSuite {
     public static final String LOG_NOW = "logNow";
     public static final String AUTO_ACCOUNT = "autoAccount";
-
-    public static void main(String... args) {
-        new BlockSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(blck001And002And003And004ReturnsCorrectBlockProperties(), blck003ReturnsTimestampOfTheBlock());
-    }
 
     @SuppressWarnings("java:S5960")
     @HapiTest
@@ -228,11 +217,6 @@ public class BlockSuite extends HapiSuite {
 
                     assertEquals(Bytes32.ZERO, secondBlockHash);
                 }));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
     }
 
     /**

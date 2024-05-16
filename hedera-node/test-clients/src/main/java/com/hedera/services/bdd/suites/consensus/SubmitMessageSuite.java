@@ -36,6 +36,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.HapiSuite.asOpArray;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -47,46 +48,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class SubmitMessageSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(SubmitMessageSuite.class);
-
-    public static void main(String... args) {
-        new SubmitMessageSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                pureCheckFails(),
-                topicIdIsValidated(),
-                messageIsValidated(),
-                messageSubmissionSimple(),
-                messageSubmissionIncreasesSeqNo(),
-                messageSubmissionWithSubmitKey(),
-                messageSubmissionMultiple(),
-                messageSubmissionOverSize(),
-                messageSubmissionCorrectlyUpdatesRunningHash(),
-                feeAsExpected());
-    }
-
+public class SubmitMessageSuite {
     @HapiTest
     final Stream<DynamicTest> pureCheckFails() {
         return defaultHapiSpec("testTopic")
@@ -273,10 +241,5 @@ public class SubmitMessageSuite extends HapiSuite {
                                 .hasRetryPrecheckFrom(BUSY)
                                 .via("submitMessage3"),
                         getTxnRecord("submitMessage3").hasCorrectRunningHash(topic, message3));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

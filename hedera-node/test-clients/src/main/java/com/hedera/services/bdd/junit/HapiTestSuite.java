@@ -23,10 +23,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.junit.platform.commons.annotation.Testable;
 
-/**
- * {@link HapiTestSuite} is used to mark a file as containing a suite of HAPI tests. Each individual test method is
- * annotated with {@link HapiTest}. Classes with this annotation must extend from HapiSuite.
- */
 @Target({ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented

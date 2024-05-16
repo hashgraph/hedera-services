@@ -30,18 +30,19 @@ import org.junit.platform.launcher.TestPlan;
 public class SharedNetworkLauncherSessionListener implements LauncherSessionListener {
     private static final Logger log = LogManager.getLogger(SharedNetworkLauncherSessionListener.class);
 
+    public static final int DEFAULT_SHARED_NETWORK_SIZE = 4;
+
     @Override
     public void launcherSessionOpened(@NonNull final LauncherSession session) {
         session.getLauncher().registerTestExecutionListeners(new SharedNetworkExecutionListener());
     }
 
     private static class SharedNetworkExecutionListener implements TestExecutionListener {
-        private static final int SHARED_NETWORK_SIZE = 2;
         private static final Duration SHARED_NETWORK_STARTUP_TIMEOUT = Duration.ofSeconds(30);
 
         @Override
         public void testPlanExecutionStarted(@NonNull final TestPlan testPlan) {
-            final var sharedNetwork = HederaNetwork.newSharedLiveNetwork(SHARED_NETWORK_SIZE);
+            final var sharedNetwork = HederaNetwork.newSharedSubProcessNetwork(DEFAULT_SHARED_NETWORK_SIZE);
             sharedNetwork.startWithin(SHARED_NETWORK_STARTUP_TIMEOUT);
         }
 

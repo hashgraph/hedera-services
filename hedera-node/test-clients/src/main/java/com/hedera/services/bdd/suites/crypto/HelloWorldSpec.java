@@ -24,31 +24,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class HelloWorldSpec extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(HelloWorldSpec.class);
-
-    public static void main(String... args) {
-        new HelloWorldSpec().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(balancesChangeOnTransfer());
-    }
-
+public class HelloWorldSpec {
     @HapiTest
     final Stream<DynamicTest> balancesChangeOnTransfer() {
         return defaultHapiSpec("BalancesChangeOnTransfer")
@@ -63,10 +47,5 @@ public class HelloWorldSpec extends HapiSuite {
                 .then(
                         getAccountBalance("sponsor").hasTinyBars(changeFromSnapshot("sponsorBefore", -1L)),
                         getAccountBalance("beneficiary").hasTinyBars(changeFromSnapshot("beneficiaryBefore", +1L)));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

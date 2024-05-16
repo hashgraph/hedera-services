@@ -50,6 +50,16 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.FIVE_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.createHollowAccountFrom;
@@ -62,13 +72,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -80,15 +88,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class HollowAccountFinalizationSuite extends HapiSuite {
-    private static final Logger LOG = LogManager.getLogger(HollowAccountFinalizationSuite.class);
+public class HollowAccountFinalizationSuite {
     private static final String ANOTHER_SECP_256K1_SOURCE_KEY = "anotherSecp256k1Alias";
     private static final String PAY_RECEIVABLE = "PayReceivable";
     private static final long INITIAL_BALANCE = 1000L;
@@ -101,40 +105,6 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
     private static final String FT_XFER = "ftXfer";
     private static final String TOKEN_TREASURY = "treasury";
     private static final String VANILLA_TOKEN = "TokenD";
-
-    public static void main(String... args) {
-        new HollowAccountFinalizationSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                hollowAccountCompletionWithCryptoTransfer(),
-                hollowAccountCompletionWithContractCreate(),
-                hollowAccountCompletionWithContractCall(),
-                hollowAccountCompletionWithTokenAssociation(),
-                hollowAccountCompletionWithTokenTransfer(),
-                hollowAccountCompletionViaNonReqSigIsNotAllowed(),
-                hollowAccountCompletionWhenHollowAccountSigRequiredInOtherReqSigs(),
-                tooManyHollowAccountFinalizationsShouldFail(),
-                completedHollowAccountsTransfer(),
-                hollowAccountFinalizationWhenAccountNotPresentInPreHandle(),
-                hollowAccountFinalizationOccursOnlyOnceWhenMultipleFinalizationTensComeInAtTheSameTime(),
-                txnWith2CompletionsAndAnother2PrecedingChildRecords(),
-                hollowPayerAndOtherReqSignerBothGetCompletedInASingleTransaction(),
-                hollowAccountCompletionIsPersistedEvenIfTxnFails(),
-                precompileTransferFromHollowAccountWithNeededSigFailsAndDoesNotFinalizeAccount());
-    }
 
     @HapiTest
     final Stream<DynamicTest> hollowAccountCompletionWithTokenTransfer() {

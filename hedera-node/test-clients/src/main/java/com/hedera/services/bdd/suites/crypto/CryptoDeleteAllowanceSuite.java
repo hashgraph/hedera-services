@@ -43,6 +43,13 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.OWNER;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.SPENDER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
@@ -56,46 +63,16 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class CryptoDeleteAllowanceSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(CryptoDeleteAllowanceSuite.class);
-
-    public static void main(String... args) {
-        new CryptoDeleteAllowanceSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                happyPathWorks(),
-                approvedForAllNotAffectedOnDelete(),
-                noOwnerDefaultsToPayerInDeleteAllowance(),
-                invalidOwnerFails(),
-                canDeleteMultipleOwners(),
-                emptyAllowancesDeleteRejected(),
-                tokenNotAssociatedToAccountFailsOnDeleteAllowance(),
-                invalidTokenTypeFailsInDeleteAllowance(),
-                validatesSerialNums(),
-                exceedsTransactionLimit(),
-                succeedsWhenTokenPausedFrozenKycRevoked(),
-                feesAsExpected(),
-                duplicateEntriesDoesntThrow(),
-                canDeleteAllowanceForDeletedSpender());
-    }
-
+public class CryptoDeleteAllowanceSuite {
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
@@ -1026,10 +1003,5 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .has(accountDetailsWith().nftApprovedForAllAllowancesCount(1)),
                         getTokenNftInfo(nft, 3L).hasNoSpender());
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

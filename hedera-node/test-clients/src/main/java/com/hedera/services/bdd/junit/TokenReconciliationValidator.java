@@ -16,13 +16,11 @@
 
 package com.hedera.services.bdd.junit;
 
-import static com.hedera.services.bdd.junit.HapiTestEngine.runSpec;
 import static com.hedera.services.bdd.junit.TestBase.concurrentExecutionOf;
 
 import com.hedera.services.bdd.junit.utils.AccountClassifier;
 import com.hedera.services.bdd.junit.validators.AccountNumTokenNum;
 import com.hedera.services.bdd.suites.records.TokenBalanceValidation;
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,15 +50,6 @@ public class TokenReconciliationValidator implements RecordStreamValidator {
                 List.of(() -> new TokenBalanceValidation(expectedTokenBalances, accountClassifier)),
                 TestBase::contextualizedSpecsFromConcurrent);
         concurrentExecutionOf(validationSpecs);
-    }
-
-    @Override
-    public void validateRecordsAndSidecarsHapi(
-            final HapiTestEnv env, final List<RecordWithSidecars> recordsWithSidecars)
-            throws InvocationTargetException, IllegalAccessException {
-        getExpectedBalanceFrom(recordsWithSidecars);
-
-        runSpec(env, new TokenBalanceValidation(expectedTokenBalances, accountClassifier), "validateTokenBalances");
     }
 
     private void getExpectedBalanceFrom(final List<RecordWithSidecars> recordsWithSidecars) {

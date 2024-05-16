@@ -30,25 +30,23 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccoun
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class AllBaseOpFeesSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(AllBaseOpFeesSuite.class);
-
+public class AllBaseOpFeesSuite {
     private static final double ALLOWED_DIFFERENCE_PERCENTAGE = 0.01;
 
     private static final String TREASURE_KEY = "treasureKey";
@@ -73,22 +71,6 @@ public class AllBaseOpFeesSuite extends HapiSuite {
     private static final double EXPECTED_NFT_MINT_PRICE_USD = 0.02;
     private static final double EXPECTED_NFT_BURN_PRICE_USD = 0.001;
     private static final double EXPECTED_NFT_WIPE_PRICE_USD = 0.001;
-
-    public static void main(String... args) {
-        new AllBaseOpFeesSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return allOf(List.of(
-                baseNftFreezeUnfreezeChargedAsExpected(),
-                baseCommonFreezeUnfreezeChargedAsExpected(),
-                baseNftMintOperationIsChargedExpectedFee(),
-                baseNftWipeOperationIsChargedExpectedFee(),
-                baseNftBurnOperationIsChargedExpectedFee(),
-                NftMintsScaleLinearlyBasedOnNumberOfSerialNumbers(),
-                NftMintsScaleLinearlyBasedOnNumberOfSignatures()));
-    }
 
     @HapiTest
     final Stream<DynamicTest> baseNftMintOperationIsChargedExpectedFee() {
@@ -294,10 +276,5 @@ public class AllBaseOpFeesSuite extends HapiSuite {
                 .then(
                         validateChargedUsdWithin("freeze", EXPECTED_FREEZE_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE),
                         validateChargedUsdWithin(UNFREEZE, EXPECTED_UNFREEZE_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

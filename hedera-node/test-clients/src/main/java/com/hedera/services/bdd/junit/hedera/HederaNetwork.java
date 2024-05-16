@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.junit.hedera;
 
 import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.workingDirFor;
-import static com.hedera.services.bdd.suites.TargetNetworkType.HAPI_TEST_NETWORK;
+import static com.hedera.services.bdd.suites.TargetNetworkType.SHARED_HAPI_TEST_NETWORK;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -80,12 +80,12 @@ public class HederaNetwork {
     }
 
     /**
-     * Creates a shared network of live (sub-process) nodes with the given size.
+     * Creates a shared network of sub-process nodes with the given size.
      *
      * @param size the number of nodes in the network
      * @return the shared network
      */
-    public static synchronized HederaNetwork newSharedLiveNetwork(final int size) {
+    public static synchronized HederaNetwork newSharedSubProcessNetwork(final int size) {
         if (SHARED_NETWORK.get() != null) {
             throw new UnsupportedOperationException("Only one shared network allowed per launcher session");
         }
@@ -95,14 +95,14 @@ public class HederaNetwork {
     }
 
     /**
-     * Creates a network of live (sub-process) nodes with the given name and size. Unlike the shared
+     * Creates a network of sub-process nodes with the given name and size. Unlike the shared
      * network, this network's nodes will have working directories scoped to the given name.
      *
      * @param name the name of the network
      * @param size the number of nodes in the network
      * @return the network
      */
-    public static HederaNetwork newLiveNetwork(@NonNull final String name, final int size) {
+    public static HederaNetwork newSubProcessNetwork(@NonNull final String name, final int size) {
         return liveNetwork(name, size);
     }
 
@@ -131,12 +131,12 @@ public class HederaNetwork {
 
     /**
      * Returns the network type; for now this is always
-     * {@link TargetNetworkType#HAPI_TEST_NETWORK}.
+     * {@link TargetNetworkType#SHARED_HAPI_TEST_NETWORK}.
      *
      * @return the network type
      */
     public TargetNetworkType type() {
-        return HAPI_TEST_NETWORK;
+        return SHARED_HAPI_TEST_NETWORK;
     }
 
     /**

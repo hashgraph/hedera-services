@@ -41,6 +41,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
@@ -56,15 +61,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.math.BigInteger;
-import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
@@ -76,9 +78,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class Evm38ValidationSuite extends HapiSuite {
+public class Evm38ValidationSuite {
 
     private static final Logger LOG = LogManager.getLogger(Evm38ValidationSuite.class);
     private static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
@@ -95,29 +96,6 @@ public class Evm38ValidationSuite extends HapiSuite {
     private static final String STATIC_CALL = "staticcall";
     private static final String BENEFICIARY = "beneficiary";
     private static final String SIMPLE_UPDATE_CONTRACT = "SimpleUpdate";
-
-    public static void main(String... args) {
-        new Evm38ValidationSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                invalidContractCall(),
-                cannotSendValueToTokenAccount(),
-                verifiesExistenceOfAccountsAndContracts(),
-                verifiesExistenceForCallCodeOperation(),
-                verifiesExistenceForCallOperation(),
-                verifiesExistenceForCallOperationInternal(),
-                verifiesExistenceForDelegateCallOperation(),
-                verifiesExistenceForExtCodeOperation(),
-                verifiesExistenceForExtCodeSize(),
-                verifiesExistenceForExtCodeHash(),
-                verifiesExistenceForStaticCall(),
-                canInternallyCallAliasedAddressesOnlyViaCreate2Address(),
-                callingDestructedContractReturnsStatusDeleted(),
-                factoryAndSelfDestructInConstructorContract());
-    }
 
     @HapiTest
     final Stream<DynamicTest> invalidContractCall() {
@@ -678,10 +656,5 @@ public class Evm38ValidationSuite extends HapiSuite {
                         .payingWith(sender)
                         .hasKnownStatus(SUCCESS))
                 .then(getContractBytecode(contract).hasCostAnswerPrecheck(CONTRACT_DELETED));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
     }
 }

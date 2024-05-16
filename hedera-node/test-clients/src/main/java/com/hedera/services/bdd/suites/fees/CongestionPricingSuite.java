@@ -26,16 +26,21 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THROTTLE_DEFS;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
@@ -45,8 +50,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class CongestionPricingSuite extends HapiSuite {
+public class CongestionPricingSuite {
     private static final Logger log = LogManager.getLogger(CongestionPricingSuite.class);
 
     private static final String FEES_PERCENT_CONGESTION_MULTIPLIERS = "fees.percentCongestionMultipliers";
@@ -59,15 +63,6 @@ public class CongestionPricingSuite extends HapiSuite {
     private static final String CIVILIAN_ACCOUNT = "civilian";
     private static final String SECOND_ACCOUNT = "second";
     private static final String FEE_MONITOR_ACCOUNT = "feeMonitor";
-
-    public static void main(String... args) {
-        new CongestionPricingSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(canUpdateMultipliersDynamically(), canUpdateMultipliersDynamically2());
-    }
 
     @HapiTest
     final Stream<DynamicTest> canUpdateMultipliersDynamically() {
@@ -238,10 +233,5 @@ public class CongestionPricingSuite extends HapiSuite {
                                 (1.0 * sevenXPrice.get()) / normalPrice.get(),
                                 0.1,
                                 "~7x multiplier should be in affect!")));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

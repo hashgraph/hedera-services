@@ -40,6 +40,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
@@ -49,45 +53,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_RE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class CryptoDeleteSuite extends HapiSuite {
-    static final Logger log = LogManager.getLogger(CryptoDeleteSuite.class);
+public class CryptoDeleteSuite {
     private static final long TOKEN_INITIAL_SUPPLY = 500;
     private static final String TRANSFER_ACCOUNT = "transferAccount";
     private static final String TREASURY = "treasury";
     private static final String ACCOUNT_TO_BE_DELETED = "toBeDeleted";
-
-    public static void main(String... args) {
-        new CryptoDeleteSuite().runSuiteSync();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                fundsTransferOnDelete(),
-                cannotDeleteAccountsWithNonzeroTokenBalances(),
-                cannotDeleteAlreadyDeletedAccount(),
-                cannotDeleteAccountWithSameBeneficiary(),
-                cannotDeleteTreasuryAccount(),
-                deletedAccountCannotBePayer(),
-                canQueryForRecordsWithDeletedPayers());
-    }
 
     @HapiTest
     final Stream<DynamicTest> accountIdVariantsTreatedAsExpected() {

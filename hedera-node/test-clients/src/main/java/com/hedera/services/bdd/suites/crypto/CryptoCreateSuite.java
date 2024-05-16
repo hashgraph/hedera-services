@@ -41,6 +41,13 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
@@ -55,29 +62,20 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.swirlds.common.utility.CommonUtils;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class CryptoCreateSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(CryptoCreateSuite.class);
-
+public class CryptoCreateSuite {
     public static final String ACCOUNT = "account";
     public static final String ANOTHER_ACCOUNT = "anotherAccount";
     public static final String ED_25519_KEY = "ed25519Alias";
@@ -88,45 +86,6 @@ public class CryptoCreateSuite extends HapiSuite {
     public static final String SHORT_KEY = "shortKey";
     public static final String EMPTY_KEY_STRING = "emptyKey";
     private static final String ED_KEY = "EDKEY";
-
-    public static void main(String... args) {
-        new CryptoCreateSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                createAnAccountEmptyThresholdKey(),
-                createAnAccountEmptyKeyList(),
-                createAnAccountEmptyNestedKey(),
-                createAnAccountInvalidKeyList(),
-                createAnAccountInvalidNestedKeyList(),
-                createAnAccountInvalidThresholdKey(),
-                createAnAccountInvalidNestedThresholdKey(),
-                createAnAccountThresholdKeyWithInvalidThreshold(),
-                createAnAccountInvalidED25519(),
-                syntaxChecksAreAsExpected(),
-                usdFeeAsExpected(),
-                createAnAccountWithStakingFields(),
-                /* --- HIP-583 --- */
-                createAnAccountWithECDSAAlias(),
-                createAnAccountWithED25519Alias(),
-                createAnAccountWithECKeyAndNoAlias(),
-                createAnAccountWithEDKeyAndNoAlias(),
-                createAnAccountWithED25519KeyAndED25519Alias(),
-                createAnAccountWithECKeyAndECKeyAlias(),
-                createAnAccountWithEVMAddressAliasFromSameKey(),
-                createAnAccountWithEVMAddressAliasFromDifferentKey(),
-                createAnAccountWithECDSAKeyAliasDifferentThanAdminKeyShouldFail(),
-                createAnAccountWithEDKeyAliasDifferentThanAdminKeyShouldFail(),
-                cannotCreateAnAccountWithLongZeroKeyButCanUseEvmAddress(),
-                successfullyRecreateAccountWithSameAliasAfterDeletion());
-    }
 
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
@@ -818,10 +777,5 @@ public class CryptoCreateSuite extends HapiSuite {
                     allRunFor(spec, op1, op2, op3);
                 }))
                 .then(getAccountInfo(ACCOUNT).has(accountWith().balance(ONE_HBAR)));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

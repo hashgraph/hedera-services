@@ -24,17 +24,14 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
@@ -43,31 +40,8 @@ import org.junit.jupiter.api.Tag;
  *
  * <p>Even with a 3s TTL, a number of these tests fail. FUTURE: revisit
  * */
-@HapiTestSuite
 @Tag(CRYPTO)
-public class TxnRecordRegression extends HapiSuite {
-    static final Logger log = LogManager.getLogger(TxnRecordRegression.class);
-
-    public static void main(final String... args) {
-        new TxnRecordRegression().runSuiteSync();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                returnsInvalidForUnspecifiedTxnId(),
-                recordNotFoundIfNotInPayerState(),
-                recordUnavailableIfRejectedInPrecheck(),
-                recordUnavailableBeforeConsensus(),
-                recordsStillQueryableWithDeletedPayerId());
-    }
-
-    // FUTURE: revisit this test, which isn't passing in modular or mono code (even with a 3 second TTL)
+public class TxnRecordRegression {
     @HapiTest
     final Stream<DynamicTest> recordsStillQueryableWithDeletedPayerId() {
         return defaultHapiSpec("DeletedAccountRecordsUnavailableAfterTtl")

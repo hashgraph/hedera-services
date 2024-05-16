@@ -67,6 +67,18 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.ETH_HASH_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.FIVE_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
@@ -95,12 +107,10 @@ import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.BddMethodIsNotATest;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -116,22 +126,17 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 @SuppressWarnings("java:S5960")
-public class EthereumSuite extends HapiSuite {
-
+public class EthereumSuite {
     public static final long GAS_LIMIT = 1_000_000;
     public static final String ERC20_CONTRACT = "ERC20Contract";
     public static final String EMIT_SENDER_ORIGIN_CONTRACT = "EmitSenderOrigin";
-    private static final Logger log = LogManager.getLogger(EthereumSuite.class);
     private static final long DEPOSIT_AMOUNT = 20_000L;
     private static final String PARTY = "party";
     private static final String LAZY_MEMO = "lazy-created account";
@@ -145,40 +150,6 @@ public class EthereumSuite extends HapiSuite {
     private static final String PAY_TXN = "payTxn";
     private static final String TOTAL_SUPPLY_TX = "totalSupplyTx";
     private static final String ERC20_ABI = "ERC20ABI";
-
-    public static void main(String... args) {
-        new EthereumSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return Stream.concat(
-                        feePaymentMatrix().stream(),
-                        Stream.of(
-                                invalidTxData(),
-                                etx008ContractCreateExecutesWithExpectedRecord(),
-                                etx009CallsToTokenAddresses(),
-                                etx010TransferToCryptoAccountSucceeds(),
-                                etx013PrecompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
-                                etx014ContractCreateInheritsSignerProperties(),
-                                etx009CallsToTokenAddresses(),
-                                originAndSenderAreEthereumSigner(),
-                                etx031InvalidNonceEthereumTxFailsAndChargesRelayer(),
-                                etxSvc003ContractGetBytecodeQueryReturnsDeployedCode(),
-                                sendingLargerBalanceThanAvailableFailsGracefully(),
-                                directTransferWorksForERC20(),
-                                transferHbarsViaEip2930TxSuccessfully(),
-                                callToTokenAddressViaEip2930TxSuccessfully(),
-                                transferTokensViaEip2930TxSuccessfully(),
-                                accountDeletionResetsTheAliasNonce(),
-                                legacyUnprotectedEtxBeforeEIP155WithDefaultChainId()))
-                .toList();
-    }
 
     @HapiTest
     final Stream<DynamicTest> sendingLargerBalanceThanAvailableFailsGracefully() {
@@ -1173,10 +1144,5 @@ public class EthereumSuite extends HapiSuite {
                         getTxnRecord("legacyBeforeEIP155")
                                 .logged()
                                 .hasPriority(recordWith().status(SUCCESS)))));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

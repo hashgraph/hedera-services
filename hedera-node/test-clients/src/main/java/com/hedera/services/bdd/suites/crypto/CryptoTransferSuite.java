@@ -96,6 +96,15 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXP
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FEE_COLLECTOR;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.NODE_REWARD;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
@@ -133,13 +142,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -159,9 +166,8 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class CryptoTransferSuite extends HapiSuite {
+public class CryptoTransferSuite {
     private static final Logger LOG = LogManager.getLogger(CryptoTransferSuite.class);
     private static final String OWNER = "owner";
     private static final String OTHER_OWNER = "otherOwner";
@@ -214,52 +220,6 @@ public class CryptoTransferSuite extends HapiSuite {
     private static final String FT_XFER = "ftXfer";
     private static final String OTHER_ACCOUNT = "otheraccount";
     private static final String TOKEN_METADATA = "Please mind the vase.";
-
-    public static void main(String... args) {
-        new CryptoTransferSuite().runSuiteAsync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                transferWithMissingAccountGetsInvalidAccountId(),
-                complexKeyAcctPaysForOwnTransfer(),
-                twoComplexKeysRequired(),
-                specialAccountsBalanceCheck(),
-                tokenTransferFeesScaleAsExpected(),
-                okToSetInvalidPaymentHeaderForCostAnswer(),
-                baseCryptoTransferFeeChargedAsExpected(),
-                autoAssociationRequiresOpenSlots(),
-                royaltyCollectorsCanUseAutoAssociation(),
-                royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
-                dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
-                hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
-                transferToNonAccountEntitiesReturnsInvalidAccountId(),
-                nftSelfTransfersRejectedBothInPrecheckAndHandle(),
-                checksExpectedDecimalsForFungibleTokenTransferList(),
-                allowanceTransfersWorkAsExpected(),
-                allowanceTransfersWithComplexTransfersWork(),
-                canUseMirrorAliasesForNonContractXfers(),
-                canUseEip1014AliasesForXfers(),
-                cannotTransferFromImmutableAccounts(),
-                nftTransfersCannotRepeatSerialNos(),
-                vanillaTransferSucceeds(),
-                aliasKeysAreValidated(),
-                hapiTransferFromForNFTWithCustomFeesWithAllowance(),
-                hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance(),
-                okToRepeatSerialNumbersInWipeList(),
-                okToRepeatSerialNumbersInBurnList(),
-                canUseAliasAndAccountCombinations(),
-                testTransferToSystemAccounts(),
-                testTransferToSystemAccountsAndCheckSenderBalance(),
-                transferInvalidTokenIdWithDecimals(),
-                insufficientBalanceForCustomFeeFails());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
 
     @HapiTest
     final Stream<DynamicTest> insufficientBalanceForCustomFeeFails() {
@@ -2318,10 +2278,5 @@ public class CryptoTransferSuite extends HapiSuite {
                 .when()
                 .then(cryptoTransfer(moving(1L, "ft").between(PARTY, COUNTERPARTY))
                         .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
     }
 }

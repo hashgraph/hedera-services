@@ -28,44 +28,24 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class ContractMusicalChairsSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(ContractMusicalChairsSuite.class);
-
-    public static void main(String... args) {
-        new ContractMusicalChairsSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(playGame());
-    }
-
+public class ContractMusicalChairsSuite {
     @HapiTest
     final Stream<DynamicTest> playGame() {
         final var dj = "dj";
@@ -124,10 +104,5 @@ public class ContractMusicalChairsSuite extends HapiSuite {
                 .given(given.toArray(HapiSpecOperation[]::new))
                 .when(when.toArray(HapiSpecOperation[]::new))
                 .then(then.toArray(HapiSpecOperation[]::new));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }
