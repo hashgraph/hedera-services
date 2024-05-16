@@ -23,6 +23,7 @@ import com.swirlds.common.context.internal.PlatformUncaughtExceptionHandler;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
@@ -53,7 +54,13 @@ public interface PlatformContext {
     static PlatformContext create(@NonNull final Configuration configuration) {
         final Metrics metrics = new NoOpMetrics();
         final Cryptography cryptography = CryptographyHolder.get();
-        return create(configuration, metrics, cryptography);
+        // This new method is used by commands that have no access to nodeId,
+        // we temporary assigning node 0 until we remove recycle bin from the fsManager,
+        // then we can set a dummy impl of the recycle bin
+        final FileSystemManager fileSystemManager =
+                FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, metrics);
+
+        return create(configuration, metrics, cryptography, fileSystemManager);
     }
 
     /**
@@ -61,20 +68,23 @@ public interface PlatformContext {
      * <p>
      * The instance uses the static {@link Time#getCurrent()} call to get the time.
      *
-     * @param configuration the configuration
-     * @param metrics       the metrics
-     * @param cryptography  the cryptography
+     * @param configuration     the configuration
+     * @param metrics           the metrics
+     * @param cryptography      the cryptography
+     * @param fileSystemManager the fileSystemManager
      * @return the platform context
      */
     @NonNull
     static PlatformContext create(
             @NonNull final Configuration configuration,
             @NonNull final Metrics metrics,
-            @NonNull final Cryptography cryptography) {
+            @NonNull final Cryptography cryptography,
+            @NonNull final FileSystemManager fileSystemManager) {
         final Time time = Time.getCurrent();
         final UncaughtExceptionHandler handler = new PlatformUncaughtExceptionHandler();
         final ExecutorFactory executorFactory = ExecutorFactory.create("platform", null, handler);
-        return new DefaultPlatformContext(configuration, metrics, cryptography, time, executorFactory);
+        return new DefaultPlatformContext(
+                configuration, metrics, cryptography, time, executorFactory, fileSystemManager);
     }
 
     /**
