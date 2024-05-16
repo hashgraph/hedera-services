@@ -24,6 +24,7 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
+import com.swirlds.common.io.utility.NoOpRecycleBin;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
@@ -42,9 +43,11 @@ public interface PlatformContext {
 
     /**
      * Creates a new instance of the platform context. The instance uses a {@link NoOpMetrics} implementation for
-     * metrics. The instance uses the static {@link CryptographyHolder#get()} call to get the cryptography. The instance
+     * metrics and a {@link com.swirlds.common.io.utility.NoOpRecycleBin}.
+     * The instance uses the static {@link CryptographyHolder#get()} call to get the cryptography. The instance
      * uses the static {@link Time#getCurrent()} call to get the time.
      *
+     * @apiNote This method is meant for utilities and testing and not for a node's production operation
      * @param configuration the configuration
      * @return the platform context
      * @deprecated since we need to remove the static {@link CryptographyHolder#get()} call in future.
@@ -54,11 +57,8 @@ public interface PlatformContext {
     static PlatformContext create(@NonNull final Configuration configuration) {
         final Metrics metrics = new NoOpMetrics();
         final Cryptography cryptography = CryptographyHolder.get();
-        // This new method is used by commands that have no access to nodeId,
-        // we temporary assigning node 0 until we remove recycle bin from the fsManager,
-        // then we can set a dummy impl of the recycle bin
         final FileSystemManager fileSystemManager =
-                FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, metrics);
+                FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, new NoOpRecycleBin());
 
         return create(configuration, metrics, cryptography, fileSystemManager);
     }

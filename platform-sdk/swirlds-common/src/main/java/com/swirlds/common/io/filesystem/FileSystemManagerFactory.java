@@ -17,6 +17,7 @@
 package com.swirlds.common.io.filesystem;
 
 import com.swirlds.common.io.filesystem.internal.FileSystemManagerFactoryImpl;
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
@@ -32,11 +33,11 @@ public interface FileSystemManagerFactory {
      * property name indicated in {@code rootLocationPropertyName}
      *
      * @param configuration the configuration instance to retrieve properties from
-     * @param metrics       metrics instance of the platform
+     * @param recycleBin    the recycleBin instance to use
      * @return a new instance of {@link FileSystemManager}
      */
     @NonNull
-    FileSystemManager createFileSystemManager(@NonNull Configuration configuration, @NonNull Metrics metrics);
+    FileSystemManager createFileSystemManager(@NonNull Configuration configuration, @NonNull RecycleBin recycleBin);
 
     /**
      * Creates a {@link FileSystemManager} by searching {@code root} path in the {@link Configuration} class under a

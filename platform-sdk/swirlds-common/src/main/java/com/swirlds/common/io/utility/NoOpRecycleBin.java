@@ -22,7 +22,6 @@ import java.nio.file.Path;
 
 /**
  * A no-op {@link RecycleBin} implementation.
- *
  */
 public class NoOpRecycleBin implements RecycleBin {
 

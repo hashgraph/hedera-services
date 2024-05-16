@@ -22,7 +22,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.io.config.FileSystemManagerConfig;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
-import com.swirlds.common.io.utility.NoOpRecycleBin;
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
@@ -43,17 +43,16 @@ public class FileSystemManagerFactoryImpl implements FileSystemManagerFactory {
      * {@code FileSystemManagerConfig} record
      *
      * @param configuration the configuration instance to retrieve properties from
-     * @param metrics       metrics instance
+     * @param recycleBin    the recycle-bin instance to use in the fileSystemManager
      * @return a new instance of {@link FileSystemManager}
      * @throws UncheckedIOException if the dir structure to rootLocation cannot be created
      */
     @NonNull
     @Override
     public FileSystemManager createFileSystemManager(
-            @NonNull final Configuration configuration, @NonNull final Metrics metrics) {
+            @NonNull final Configuration configuration, @NonNull final RecycleBin recycleBin) {
         final FileSystemManagerConfig fsmConfig = configuration.getConfigData(FileSystemManagerConfig.class);
-        return new FileSystemManagerImpl(
-                fsmConfig.rootPath(), fsmConfig.userDataDir(), fsmConfig.tmpDir(), new NoOpRecycleBin());
+        return new FileSystemManagerImpl(fsmConfig.rootPath(), fsmConfig.userDataDir(), fsmConfig.tmpDir(), recycleBin);
     }
 
     /**
