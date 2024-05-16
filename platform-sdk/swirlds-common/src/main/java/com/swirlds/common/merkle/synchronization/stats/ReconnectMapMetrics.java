@@ -81,8 +81,9 @@ public class ReconnectMapMetrics implements ReconnectMapStats {
                 metrics.getOrCreate(new Counter.Config(RECONNECT_MAP_CATEGORY, formatName("internalCleanData", label))
                         .withDescription("number of clean internal node data transferred"));
 
-        this.leafHashes = metrics.getOrCreate(new Counter.Config(RECONNECT_MAP_CATEGORY, formatName("leafHashes", label))
-                .withDescription("number of leaf node hashes transferred"));
+        this.leafHashes =
+                metrics.getOrCreate(new Counter.Config(RECONNECT_MAP_CATEGORY, formatName("leafHashes", label))
+                        .withDescription("number of leaf node hashes transferred"));
         this.leafCleanHashes =
                 metrics.getOrCreate(new Counter.Config(RECONNECT_MAP_CATEGORY, formatName("leafCleanHashes", label))
                         .withDescription("number of clean leaf node hashes transferred"));
