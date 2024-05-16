@@ -257,12 +257,12 @@ public class FrameUtils {
     public enum CallType {
         QUALIFIED_DELEGATE,
         UNQUALIFIED_DELEGATE,
-        DIRECT_OR_TOKEN_REDIRECT,
+        DIRECT_OR_PROXY_REDIRECT,
     }
 
     public static CallType callTypeOf(final MessageFrame frame) {
         if (!isDelegateCall(frame)) {
-            return CallType.DIRECT_OR_TOKEN_REDIRECT;
+            return CallType.DIRECT_OR_PROXY_REDIRECT;
         }
         final var recipient = frame.getRecipientAddress();
         // Evaluate whether the recipient is either a token or on the permitted callers list.
@@ -270,12 +270,34 @@ public class FrameUtils {
         // We accept delegates if the token redirect contract calls us.
         final CallType viableType;
         if (isToken(frame, recipient)) {
-            viableType = CallType.DIRECT_OR_TOKEN_REDIRECT;
+            viableType = CallType.DIRECT_OR_PROXY_REDIRECT;
         } else if (isQualifiedDelegate(recipient, frame)) {
             viableType = CallType.QUALIFIED_DELEGATE;
         } else {
             return CallType.UNQUALIFIED_DELEGATE;
         }
+        // make sure we have a parent calling context
+        return parentIsNonDelegate(frame, viableType);
+    }
+
+    public static CallType callTypeForAccountOf(final MessageFrame frame) {
+        if (!isDelegateCall(frame)) {
+            return CallType.DIRECT_OR_PROXY_REDIRECT;
+        }
+        final var recipient = frame.getRecipientAddress();
+        // Evaluate whether the recipient is a regular account.
+        // This determines if we should treat this as a delegate call.
+        // We accept delegates if the account redirect contract calls us.
+        final CallType viableType;
+        if (isRegularAccount(frame, recipient)) {
+            viableType = CallType.DIRECT_OR_PROXY_REDIRECT;
+        } else {
+            return CallType.UNQUALIFIED_DELEGATE;
+        }
+        return parentIsNonDelegate(frame, viableType);
+    }
+
+    private static CallType parentIsNonDelegate(MessageFrame frame, CallType viableType) {
         // make sure we have a parent calling context
         final var stack = frame.getMessageFrameStack();
         final var frames = stack.iterator();
@@ -319,6 +341,15 @@ public class FrameUtils {
         final var account = frame.getWorldUpdater().get(address);
         if (account != null) {
             return account.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE;
+        }
+        return false;
+    }
+
+    private static boolean isRegularAccount(final MessageFrame frame, final Address address) {
+        final var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
+        final var recipient = updater.getHederaAccount(address);
+        if (recipient != null) {
+            return recipient.isRegularAccount();
         }
         return false;
     }

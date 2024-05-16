@@ -35,7 +35,7 @@ pcli diagram \
     -s 'toStateWrittenToDiskAction:PlatformStatusAction:💾' \
     -s 'StatusStateMachine:PlatformStatus:🚦' \
     -g 'Event Validation:InternalEventValidator,EventDeduplicator,EventSignatureValidator' \
-    -g 'Event Hashing:eventHasher,postHashCollector' \
+    -g 'Event Hashing:EventHasher,PostHashCollector' \
     -g 'Orphan Buffer:OrphanBuffer,OrphanBufferSplitter' \
     -g 'Consensus Engine:ConsensusEngine,ConsensusEngineSplitter,eventWindowManager,getKeystoneEventSequenceNumber,getConsensusEvents' \
     -g 'State File Manager:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction,toNotification' \
@@ -48,7 +48,7 @@ pcli diagram \
     -g 'Heartbeat:heartbeat,❤️' \
     -g 'PCES Replay:pcesReplayer,✅' \
     -g 'Consensus Round Handler:consensusRoundHandler,postHandler_stateAndRoundReserver,getState,savedStateController' \
-    -g 'State Hasher:stateHasher,postHasher_stateAndRoundReserver,postHasher_getConsensusRound,postHasher_stateReserver' \
+    -g 'State Hasher:StateHasher,postHasher_stateAndRoundReserver,postHasher_getConsensusRound,postHasher_stateReserver' \
     -g 'Consensus:Consensus Engine,🚽,🌀' \
     -g 'State Verification:stateSigner,hashLogger,ISS Detector,🖋️,💥,💀' \
     -g 'Transaction Handling:Consensus Round Handler,latestImmutableStateNexus' \

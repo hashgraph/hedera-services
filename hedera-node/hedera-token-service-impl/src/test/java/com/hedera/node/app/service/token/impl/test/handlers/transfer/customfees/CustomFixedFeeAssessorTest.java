@@ -77,7 +77,7 @@ public class CustomFixedFeeAssessorTest {
     @Test
     void delegatesToHbarWhenDenomIsNull() {
         result = new AssessmentResult(List.of(nftTransferList), List.of());
-        final var hbarFee = withFixedFee(hbarFixedFee, otherCollector);
+        final var hbarFee = withFixedFee(hbarFixedFee, otherCollector, false);
         final var feeMeta = withCustomFeeMeta(List.of(hbarFee), TokenType.FUNGIBLE_COMMON);
 
         subject.assessFixedFees(feeMeta, payer, result);
@@ -88,7 +88,7 @@ public class CustomFixedFeeAssessorTest {
     @Test
     void delegatesToHtsWhenDenomIsNonNull() {
         result = new AssessmentResult(List.of(nftTransferList), List.of());
-        final var hbarFee = withFixedFee(htsFixedFee, otherCollector);
+        final var hbarFee = withFixedFee(htsFixedFee, otherCollector, false);
         final var feeMeta = withCustomFeeMeta(List.of(hbarFee), TokenType.FUNGIBLE_COMMON);
 
         subject.assessFixedFees(feeMeta, payer, result);
@@ -99,7 +99,7 @@ public class CustomFixedFeeAssessorTest {
     @Test
     void fixedCustomFeeExemptIsOk() {
         result = new AssessmentResult(List.of(nftTransferList), List.of());
-        final var hbarFee = withFixedFee(htsFixedFee, payer);
+        final var hbarFee = withFixedFee(htsFixedFee, payer, false);
         final var feeMeta = withCustomFeeMeta(List.of(hbarFee), TokenType.FUNGIBLE_COMMON);
 
         subject.assessFixedFees(feeMeta, payer, result);
@@ -109,7 +109,7 @@ public class CustomFixedFeeAssessorTest {
     @Test
     void exemptsAssessmentWhenSenderSameAsCollector() {
         result = new AssessmentResult(List.of(nftTransferList), List.of());
-        final var hbarFee = withFixedFee(htsFixedFee, payer);
+        final var hbarFee = withFixedFee(htsFixedFee, payer, false);
         final var feeMeta = withCustomFeeMeta(List.of(hbarFee), TokenType.FUNGIBLE_COMMON);
 
         subject.assessFixedFees(feeMeta, payer, result);
@@ -119,7 +119,7 @@ public class CustomFixedFeeAssessorTest {
     @Test
     void ignoresIfPayerExempt() {
         result = new AssessmentResult(List.of(nftTransferList), List.of());
-        final var hbarFee = withFixedFee(htsFixedFee, payer);
+        final var hbarFee = withFixedFee(htsFixedFee, payer, false);
         final var feeMeta = withCustomFeeMeta(List.of(hbarFee), TokenType.FUNGIBLE_COMMON);
 
         subject.assessFixedFee(feeMeta, payer, hbarFee, result);

@@ -19,7 +19,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
@@ -45,14 +44,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
-import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -104,6 +100,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     public static final String CREATE_TOKEN_WITH_ALL_CUSTOM_FEES_AVAILABLE = "createTokenWithAllCustomFeesAvailable";
     private static final Logger log = LogManager.getLogger(CreatePrecompileSuite.class);
     private static final long GAS_TO_OFFER = 1_000_000L;
+    private static final long GAS_TO_OFFER_2 = 4_000_000L;
     public static final long AUTO_RENEW_PERIOD = 8_000_000L;
     public static final String TOKEN_SYMBOL = "tokenSymbol";
     public static final String TOKEN_NAME = "tokenName";
@@ -1063,42 +1060,30 @@ public class CreatePrecompileSuite extends HapiSuite {
     @HapiTest
     final HapiSpec createTokenWithFixedFeeThenTransferAndAssessFee() {
         final var createTokenNum = new AtomicLong();
-        final var CONTRACT_ADMIN_KEY = "contractAdminKey";
         final var FEE_COLLECTOR = "feeCollector";
         final var RECIPIENT = "recipient";
         final var SECOND_RECIPIENT = "secondRecipient";
-        final var FEE_COLLECTOR_KEY = "feeCollectorKey";
-        final var RECIPIENT_KEY = "recipientKey";
-        final var SECOND_RECIPIENT_KEY = "secondRecipientKey";
-        return propertyPreservingHapiSpec("createTokenWithFixedFeeThenTransferAndAssessFee")
-                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+        return defaultHapiSpec("createTokenWithFixedFeeThenTransferAndAssessFee")
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
-                        newKeyNamed(FEE_COLLECTOR_KEY),
-                        newKeyNamed(RECIPIENT_KEY),
-                        newKeyNamed(SECOND_RECIPIENT_KEY),
-                        newKeyNamed(CONTRACT_ADMIN_KEY),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(RECIPIENT).balance(ONE_HUNDRED_HBARS).key(RECIPIENT_KEY),
-                        cryptoCreate(SECOND_RECIPIENT).key(SECOND_RECIPIENT_KEY),
-                        cryptoCreate(FEE_COLLECTOR).balance(0L).key(FEE_COLLECTOR_KEY),
+                        cryptoCreate(RECIPIENT).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(SECOND_RECIPIENT),
+                        cryptoCreate(FEE_COLLECTOR).balance(0L),
                         uploadInitCode(TOKEN_MISC_OPERATIONS_CONTRACT),
                         contractCreate(TOKEN_MISC_OPERATIONS_CONTRACT)
-                                .gas(GAS_TO_OFFER)
-                                .adminKey(CONTRACT_ADMIN_KEY)
-                                .autoRenewAccountId(ACCOUNT)
-                                .signedBy(CONTRACT_ADMIN_KEY, DEFAULT_PAYER, ACCOUNT),
-                        cryptoTransfer(TokenMovement.movingHbar(ONE_HUNDRED_HBARS)
-                                .between(GENESIS, TOKEN_MISC_OPERATIONS_CONTRACT)),
-                        getContractInfo(TOKEN_MISC_OPERATIONS_CONTRACT)
-                                .has(ContractInfoAsserts.contractWith().autoRenewAccountId(ACCOUNT))
-                                .logged(),
+                                .gas(GAS_TO_OFFER_2)
+                                .autoRenewAccountId(ACCOUNT),
                         newKeyNamed(THRESHOLD_KEY)
                                 .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_MISC_OPERATIONS_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(THRESHOLD_KEY),
                         cryptoUpdate(FEE_COLLECTOR).key(THRESHOLD_KEY),
                         cryptoUpdate(RECIPIENT).key(THRESHOLD_KEY),
-                        cryptoUpdate(SECOND_RECIPIENT).key(THRESHOLD_KEY))
+                        cryptoUpdate(SECOND_RECIPIENT).key(THRESHOLD_KEY),
+                        cryptoTransfer(TokenMovement.movingHbar(ONE_HUNDRED_HBARS)
+                                .between(GENESIS, TOKEN_MISC_OPERATIONS_CONTRACT)),
+                        getContractInfo(TOKEN_MISC_OPERATIONS_CONTRACT)
+                                .has(ContractInfoAsserts.contractWith().autoRenewAccountId(ACCOUNT))
+                                .logged())
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
@@ -1114,7 +1099,7 @@ public class CreatePrecompileSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getAccountID(ACCOUNT))))
                                 .via(FIRST_CREATE_TXN)
-                                .gas(GAS_TO_OFFER)
+                                .gas(GAS_TO_OFFER_2)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
                                 .payingWith(ACCOUNT)
                                 .exposingResultTo(result -> {
