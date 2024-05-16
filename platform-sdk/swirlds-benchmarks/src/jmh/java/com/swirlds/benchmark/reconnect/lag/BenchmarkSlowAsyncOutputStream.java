@@ -83,6 +83,9 @@ public class BenchmarkSlowAsyncOutputStream extends AsyncOutputStream {
      * @param micros time to sleep, in microseconds
      */
     private static void sleepMicros(final long micros) {
+        if (micros == 0) {
+            return;
+        }
         try {
             Thread.sleep(Duration.ofNanos(micros * 1000L));
         } catch (InterruptedException e) {

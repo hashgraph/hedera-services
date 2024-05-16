@@ -87,6 +87,8 @@ public class AsyncInputStream implements AutoCloseable {
 
     private final StandardWorkGroup workGroup;
 
+    private final int sharedQueueSizeThreshold;
+
     /**
      * Create a new async input stream.
      *
@@ -110,6 +112,8 @@ public class AsyncInputStream implements AutoCloseable {
 
         this.sharedQueue = new ConcurrentLinkedQueue<>();
         this.viewQueues = new ConcurrentHashMap<>();
+
+        this.sharedQueueSizeThreshold = reconnectConfig.asyncStreamBufferSize() * reconnectConfig.maxParallelSubtrees();
     }
 
     /**
@@ -149,8 +153,11 @@ public class AsyncInputStream implements AutoCloseable {
                                 "Timed out waiting to add message to received messages queue");
                     }
                 } else {
-                    // TODO: throttling
                     sharedQueue.add(message);
+                    // Slow down reading from the stream, if handling threads can't keep up
+                    if (sharedQueue.size() > sharedQueueSizeThreshold) {
+                        Thread.sleep(0, 1);
+                    }
                 }
             }
         } catch (final IOException e) {

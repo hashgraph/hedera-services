@@ -121,7 +121,7 @@ public class LearnerPullVirtualTreeSendTask {
             out.sendAsync(viewId, new PullVirtualTreeRequest(Path.ROOT_PATH, new Hash()));
             responsesExpected.incrementAndGet();
             if (!rootResponseReceived.await(rootResponseTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
-                throw new MerkleSynchronizationException("Timed out waiting for root node response from the teacher");
+                throw new MerkleSynchronizationException("Timed out waiting for root node response from the teacher " + viewId);
             }
 
             while (true) {

@@ -43,7 +43,7 @@ public class LearnerPullVirtualTreeReceiveTask {
     private final StandardWorkGroup workGroup;
     private final int viewId;
     private final AsyncInputStream in;
-    private final LearnerPullVirtualTreeView view;
+    private final LearnerPullVirtualTreeView<?, ?> view;
 
     // Indicates if the learner sender task is done sending all requests to the teacher
     private final AtomicBoolean senderIsFinished;
@@ -73,7 +73,7 @@ public class LearnerPullVirtualTreeReceiveTask {
             final StandardWorkGroup workGroup,
             final int viewId,
             final AsyncInputStream in,
-            final LearnerPullVirtualTreeView view,
+            final LearnerPullVirtualTreeView<?, ?> view,
             final AtomicBoolean senderIsFinished,
             final AtomicLong expectedResponses,
             final CountDownLatch rootResponseReceived,
@@ -101,10 +101,10 @@ public class LearnerPullVirtualTreeReceiveTask {
             while (!finished || responseExpected) {
                 if (responseExpected) {
                     final PullVirtualTreeResponse response = in.readAnticipatedMessage(viewId);
+                    view.responseReceived(response);
                     if (response.getPath() == 0) {
                         rootResponseReceived.countDown();
                     }
-                    view.responseReceived(response);
                     expectedResponses.decrementAndGet();
                 } else {
                     Thread.onSpinWait();

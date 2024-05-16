@@ -249,6 +249,8 @@ public class LearningSynchronizer implements ReconnectNodeCount {
                     merkleRoot.release();
                 }
             }
+            // newRoot has been released above. To avoid releasing it again in abort(), set it to null
+            newRoot.set(null);
             if (interruptException != null) {
                 throw interruptException;
             }

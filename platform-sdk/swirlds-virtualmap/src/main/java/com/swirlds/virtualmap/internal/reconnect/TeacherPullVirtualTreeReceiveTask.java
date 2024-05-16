@@ -110,7 +110,7 @@ public class TeacherPullVirtualTreeReceiveTask {
                     if (!in.isAlive()) {
                         break;
                     }
-                    Thread.sleep(1);
+                    Thread.sleep(0, 1);
                     continue;
                 }
                 final int viewId = request.getViewId();
@@ -140,8 +140,6 @@ public class TeacherPullVirtualTreeReceiveTask {
                 final long lastLeafPath = view.getReconnectState().getLastLeafPath();
                 final PullVirtualTreeResponse response =
                         new PullVirtualTreeResponse(view, path, isClean, firstLeafPath, lastLeafPath, leafData);
-                // All real work is done in the async output thread. This call just registers a response
-                // and returns immediately
                 out.sendAsync(viewId, response);
             }
             if (tasksRunning.decrementAndGet() == 0) {
@@ -159,9 +157,6 @@ public class TeacherPullVirtualTreeReceiveTask {
                     end - start,
                     requestCounter,
                     requestRate);
-            //        } catch (final InterruptedException ex) {
-            //            logger.warn(RECONNECT.getMarker(), "Teacher's receiving task is interrupted");
-            //            Thread.currentThread().interrupt();
         } catch (final Exception ex) {
             exceptionListener.accept(ex);
         }
