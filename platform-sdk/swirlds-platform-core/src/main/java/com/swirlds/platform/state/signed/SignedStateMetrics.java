@@ -18,7 +18,6 @@ package com.swirlds.platform.state.signed;
 
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_2;
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_3;
-import static com.swirlds.metrics.api.FloatFormats.FORMAT_15_3;
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_16_2;
 
 import com.swirlds.common.metrics.RunningAverageMetric;
@@ -86,20 +85,6 @@ public class SignedStateMetrics {
             .withUnit("rounds");
     private final RunningAverageMetric stateSignatureAge;
 
-    private static final RunningAverageMetric.Config STATE_ARCHIVAL_TIME_AVG_CONFIG = new RunningAverageMetric.Config(
-                    CATEGORY, "stateArchivalTimeAvg")
-            .withDescription("avg time to archive a signed state (in milliseconds)")
-            .withUnit(MILLISECONDS)
-            .withFormat(FORMAT_15_3);
-    private final RunningAverageMetric stateArchivalTimeAvg;
-
-    private static final RunningAverageMetric.Config STATE_HASHING_TIME_CONFIG = new RunningAverageMetric.Config(
-                    CATEGORY, "sigStateHash")
-            .withDescription("average time it takes to hash a SignedState (in milliseconds)")
-            .withUnit(MILLISECONDS)
-            .withFormat(FORMAT_10_3);
-    private final RunningAverageMetric stateHashingTime;
-
     private static final RunningAverageMetric.Config WRITE_STATE_TO_DISK_TIME_CONFIG = new RunningAverageMetric.Config(
                     CATEGORY, "writeStateToDisk")
             .withDescription("average time it takes to write a SignedState to disk (in milliseconds)")
@@ -159,20 +144,6 @@ public class SignedStateMetrics {
     }
 
     /**
-     * Get a metric tracking the average time required to archive a state.
-     */
-    public RunningAverageMetric getStateArchivalTimeAvgMetric() {
-        return stateArchivalTimeAvg;
-    }
-
-    /**
-     * Get a metric tracking the average time required to hash a state.
-     */
-    public RunningAverageMetric getSignedStateHashingTimeMetric() {
-        return stateHashingTime;
-    }
-
-    /**
      * Get a metric tracking the average time required to write a state to disk.
      */
     public RunningAverageMetric getWriteStateToDiskTimeMetric() {
@@ -208,8 +179,7 @@ public class SignedStateMetrics {
         totalNeverSignedDiskStates = metrics.getOrCreate(TOTAL_NEVER_SIGNED_DISK_STATES_CONFIG);
         statesSignedPerSecond = metrics.getOrCreate(STATES_SIGNED_PER_SECOND_CONFIG);
         stateSignaturesGatheredPerSecond = metrics.getOrCreate(STATE_SIGNATURES_GATHERED_PER_SECOND_CONFIG);
-        stateArchivalTimeAvg = metrics.getOrCreate(STATE_ARCHIVAL_TIME_AVG_CONFIG);
-        stateHashingTime = metrics.getOrCreate(STATE_HASHING_TIME_CONFIG);
+
         stateToDiskTime = metrics.getOrCreate(STATE_TO_DISK_TIME_CONFIG);
         writeStateToDiskTime = metrics.getOrCreate(WRITE_STATE_TO_DISK_TIME_CONFIG);
         stateSignatureAge = metrics.getOrCreate(STATE_SIGNATURE_AGE_CONFIG);

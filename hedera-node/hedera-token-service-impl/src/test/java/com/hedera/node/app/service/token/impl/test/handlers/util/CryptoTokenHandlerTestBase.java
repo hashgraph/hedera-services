@@ -78,15 +78,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.state.ReadableSingletonState;
-import com.hedera.node.app.spi.state.ReadableSingletonStateBase;
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableSingletonState;
-import com.hedera.node.app.spi.state.WritableSingletonStateBase;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -94,6 +86,14 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.spi.ReadableSingletonStateBase;
+import com.swirlds.platform.state.spi.WritableSingletonStateBase;
+import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
+import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.state.spi.ReadableSingletonState;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -287,8 +287,9 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                     Fraction.newBuilder().numerator(1).denominator(2).build())
             .fallbackFee(hbarFixedFee)
             .build();
-    protected CustomFee customFractionalFee = withFractionalFee(fractionalFee);
-    protected List<CustomFee> customFees = List.of(withFixedFee(hbarFixedFee), customFractionalFee);
+    protected CustomFee customFractionalFee = withFractionalFee(fractionalFee, feeCollectorId, false);
+    protected List<CustomFee> customFees =
+            List.of(withFixedFee(hbarFixedFee, feeCollectorId, false), customFractionalFee);
 
     /* ---------- Misc ---------- */
     protected final Timestamp consensusTimestamp =
@@ -733,18 +734,24 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         fungibleTokenB = givenValidFungibleToken()
                 .copyBuilder()
                 .tokenId(fungibleTokenIDB)
-                .customFees(withFixedFee(FixedFee.newBuilder()
-                        .denominatingTokenId(fungibleTokenIDC)
-                        .amount(1000)
-                        .build()))
+                .customFees(withFixedFee(
+                        FixedFee.newBuilder()
+                                .denominatingTokenId(fungibleTokenIDC)
+                                .amount(1000)
+                                .build(),
+                        feeCollectorId,
+                        false))
                 .build();
         fungibleTokenC = givenValidFungibleToken()
                 .copyBuilder()
                 .tokenId(fungibleTokenIDC)
-                .customFees(withFixedFee(FixedFee.newBuilder()
-                        .denominatingTokenId(fungibleTokenId)
-                        .amount(40)
-                        .build()))
+                .customFees(withFixedFee(
+                        FixedFee.newBuilder()
+                                .denominatingTokenId(fungibleTokenId)
+                                .amount(40)
+                                .build(),
+                        feeCollectorId,
+                        false))
                 .build();
         nonFungibleToken = givenValidNonFungibleToken(true);
         nftSl1 = givenNft(nftIdSl1).copyBuilder().ownerNextNftId(nftIdSl2).build();
@@ -857,7 +864,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .copyBuilder()
                 .tokenId(nonFungibleTokenId)
                 .treasuryAccountId(treasuryId)
-                .customFees(List.of(withRoyaltyFee(royaltyFee)))
+                .customFees(List.of(withRoyaltyFee(royaltyFee, feeCollectorId)))
                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                 .kycKey(hasKyc ? kycKey : null)
                 .build();
@@ -932,6 +939,31 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .ownerId(ownerId)
                 .metadata(Bytes.wrap("test"))
                 .nftId(tokenID)
+                .build();
+    }
+
+    public static CustomFee withFixedFee(
+            final FixedFee fixedFee, final AccountID feeCollectorId, final boolean allCollectorsExempt) {
+        return CustomFee.newBuilder()
+                .feeCollectorAccountId(feeCollectorId)
+                .allCollectorsAreExempt(allCollectorsExempt)
+                .fixedFee(fixedFee)
+                .build();
+    }
+
+    public static CustomFee withFractionalFee(
+            final FractionalFee fractionalFee, final AccountID feeCollectorId, final boolean allCollectorsExempt) {
+        return CustomFee.newBuilder()
+                .fractionalFee(fractionalFee)
+                .feeCollectorAccountId(feeCollectorId)
+                .allCollectorsAreExempt(allCollectorsExempt)
+                .build();
+    }
+
+    public static CustomFee withRoyaltyFee(final RoyaltyFee royaltyFee, final AccountID feeCollectorId) {
+        return CustomFee.newBuilder()
+                .royaltyFee(royaltyFee)
+                .feeCollectorAccountId(feeCollectorId)
                 .build();
     }
 

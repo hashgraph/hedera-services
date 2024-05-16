@@ -590,7 +590,7 @@ public class SignedState implements SignedStateInfo {
         }
 
         return signatureVerifier.verifySignature(
-                state.getHash().getValue(), signature.getSignatureBytes(), address.getSigPublicKey());
+                state.getHash().getBytes(), signature.getBytes(), address.getSigPublicKey());
     }
 
     /**

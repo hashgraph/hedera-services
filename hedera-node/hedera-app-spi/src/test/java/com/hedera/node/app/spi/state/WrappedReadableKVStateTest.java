@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.spi.state;
 
+import com.swirlds.platform.state.spi.ReadableKVStateBase;
+import com.swirlds.platform.state.spi.ReadableKVStateBaseTest;
 import java.util.Map;
 
 /**
