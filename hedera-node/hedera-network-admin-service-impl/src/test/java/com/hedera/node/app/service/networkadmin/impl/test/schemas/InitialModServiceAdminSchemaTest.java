@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.FR
 import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.UPGRADE_FILE_HASH_KEY;
 import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
@@ -73,6 +74,7 @@ public class InitialModServiceAdminSchemaTest {
         given(migrationContext.newStates()).willReturn(writableStates);
         given(writableStates.getSingleton(UPGRADE_FILE_HASH_KEY)).willReturn(upgradeFileHashKeyState);
         given(writableStates.getSingleton(FREEZE_TIME_KEY)).willReturn(freezeTimeKeyState);
-        subject.migrate(migrationContext);
+
+        assertThatCode(() -> subject.migrate(migrationContext)).doesNotThrowAnyException();
     }
 }
