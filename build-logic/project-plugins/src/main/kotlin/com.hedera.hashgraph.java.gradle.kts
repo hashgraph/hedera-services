@@ -132,6 +132,9 @@ val writeGitProperties =
 
 tasks.processResources { from(writeGitProperties) }
 
+// ignore the content of 'git.properties' when using a classpath as task input
+normalization.runtimeClasspath { ignore("git.properties") }
+
 tasks.withType<AbstractArchiveTask>().configureEach {
     isPreserveFileTimestamps = false
     isReproducibleFileOrder = true
