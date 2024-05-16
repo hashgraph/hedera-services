@@ -328,7 +328,8 @@ public final class CryptoStatic {
     @Deprecated(since = "0.47.0", forRemoval = false)
     static Map<NodeId, KeysAndCerts> loadKeysAndCerts(
             @NonNull final AddressBook addressBook, @NonNull final Path keysDirPath, @NonNull final char[] password)
-            throws KeyStoreException, KeyLoadingException, UnrecoverableKeyException, NoSuchAlgorithmException {
+            throws KeyStoreException, KeyLoadingException, UnrecoverableKeyException, NoSuchAlgorithmException,
+                    KeyGeneratingException, NoSuchProviderException {
         Objects.requireNonNull(addressBook, ADDRESS_BOOK_MUST_NOT_BE_NULL);
         Objects.requireNonNull(keysDirPath, "keysDirPath must not be null");
         Objects.requireNonNull(password, "password must not be null");
@@ -359,7 +360,7 @@ public final class CryptoStatic {
             final String name = nameToAlias(addressBook.getAddress(nodeId).getSelfName());
             final KeyStore privateKS = loadKeys(keysDirPath.resolve(getPrivateKeysFileName(name)), password);
 
-            keysAndCerts.put(nodeId, KeysAndCerts.loadExisting(name, password, privateKS, publicStores));
+            keysAndCerts.put(nodeId, KeysAndCerts.loadOrCreateKeys(name, password, privateKS, publicStores));
         }
         copyPublicKeys(publicStores, addressBook);
 
@@ -455,9 +456,15 @@ public final class CryptoStatic {
             final Address add = addressBook.getAddress(nodeId);
             final String name = nameToAlias(add.getSelfName());
             final X509Certificate sigCert = publicStores.getCertificate(SIGNING, name);
-            final X509Certificate agrCert = publicStores.getCertificate(KeyCertPurpose.AGREEMENT, name);
-            addressBook.add(
-                    addressBook.getAddress(nodeId).copySetSigCert(sigCert).copySetAgreeCert(agrCert));
+            try {
+                final X509Certificate agrCert = publicStores.getCertificate(KeyCertPurpose.AGREEMENT, name);
+                addressBook.add(
+                        addressBook.getAddress(nodeId).copySetSigCert(sigCert).copySetAgreeCert(agrCert));
+            } catch (KeyLoadingException e) {
+                // the agreement key is allowed to be absent and is never used from the address book anymore.
+                addressBook.add(
+                        addressBook.getAddress(nodeId).copySetSigCert(sigCert).copySetAgreeCert(null));
+            }
         }
     }
 
@@ -532,6 +539,7 @@ public final class CryptoStatic {
                     logger.debug(STARTUP.getMarker(), "Reading keys using the enhanced key loader");
                     keysAndCerts = EnhancedKeyStoreLoader.using(addressBook, configuration)
                             .scan()
+                            .generateIfNecessary()
                             .verify()
                             .injectInAddressBook()
                             .keysAndCerts();
@@ -557,7 +565,9 @@ public final class CryptoStatic {
                 | KeyLoadingException
                 | UnrecoverableKeyException
                 | NoSuchAlgorithmException
-                | IOException e) {
+                | IOException
+                | KeyGeneratingException
+                | NoSuchProviderException e) {
             logger.error(EXCEPTION.getMarker(), "Exception while loading/generating keys", e);
             if (Utilities.isRootCauseSuppliedType(e, NoSuchAlgorithmException.class)
                     || Utilities.isRootCauseSuppliedType(e, NoSuchProviderException.class)) {

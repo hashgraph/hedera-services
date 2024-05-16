@@ -474,10 +474,9 @@ public class Address implements SelfSerializable {
      * @return The new Address.
      */
     @NonNull
-    public Address copySetAgreeCert(@NonNull final X509Certificate agreeCert) {
-        Objects.requireNonNull(agreeCert, "agreeCert must not be null");
+    public Address copySetAgreeCert(@Nullable final X509Certificate agreeCert) {
         Address a = copy();
-        a.agreeCert = checkCertificateEncoding(new SerializableX509Certificate(agreeCert));
+        a.agreeCert = agreeCert == null ? null : checkCertificateEncoding(new SerializableX509Certificate(agreeCert));
         return a;
     }
 
