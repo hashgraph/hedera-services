@@ -42,6 +42,7 @@ public record LedgerConfig(
                 int xferBalanceChangesMaxLen,
         @ConfigProperty(defaultValue = "98") @NetworkProperty long fundingAccount,
         @ConfigProperty(value = "transfers.maxLen", defaultValue = "10") @NetworkProperty int transfersMaxLen,
+        @ConfigProperty(value = "tokenRejects.maxLen", defaultValue = "10") @NetworkProperty int tokenRejectsMaxLen,
         @ConfigProperty(value = "tokenTransfers.maxLen", defaultValue = "10") @NetworkProperty int tokenTransfersMaxLen,
         @ConfigProperty(value = "nftTransfers.maxLen", defaultValue = "10") @NetworkProperty int nftTransfersMaxLen,
         @ConfigProperty(value = "records.maxQueryableByAccount", defaultValue = "180") @NetworkProperty

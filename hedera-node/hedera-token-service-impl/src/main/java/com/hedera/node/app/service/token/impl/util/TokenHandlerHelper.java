@@ -35,6 +35,7 @@ package com.hedera.node.app.service.token.impl.util;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
@@ -49,12 +50,15 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.validation.EntityType;
@@ -252,6 +256,21 @@ public class TokenHandlerHelper {
     }
 
     /**
+     * Enum to determine the type of validations to be performed on the token account relationship. If the token account
+     * relationship is allowed to be frozen or not
+     */
+    public enum TokenRelValidations {
+        /**
+         * Token account relationship should not be frozen
+         */
+        REQUIRE_NOT_FROZEN,
+        /**
+         * Token account relationship can be frozen
+         */
+        PERMIT_FROZEN
+    }
+
+    /**
      * Returns the token if it exists and is usable. A {@link HandleException} is thrown if the token is invalid
      * @param tokenId the ID of the token to get
      * @param tokenStore the {@link ReadableTokenStore} to use for token retrieval
@@ -302,6 +321,15 @@ public class TokenHandlerHelper {
             @NonNull final AccountID accountId,
             @NonNull final TokenID tokenId,
             @NonNull final ReadableTokenRelationStore tokenRelStore) {
+        return getIfUsable(accountId, tokenId, tokenRelStore, TokenRelValidations.REQUIRE_NOT_FROZEN);
+    }
+
+    @NonNull
+    public static TokenRelation getIfUsable(
+            @NonNull final AccountID accountId,
+            @NonNull final TokenID tokenId,
+            @NonNull final ReadableTokenRelationStore tokenRelStore,
+            @NonNull final TokenRelValidations tokenRelValidations) {
         requireNonNull(accountId);
         requireNonNull(tokenId);
         requireNonNull(tokenRelStore);
@@ -309,9 +337,26 @@ public class TokenHandlerHelper {
         final var tokenRel = tokenRelStore.get(accountId, tokenId);
 
         validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
-        validateTrue(!tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
-
+        if (tokenRelValidations == TokenRelValidations.REQUIRE_NOT_FROZEN) {
+            validateTrue(!tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
+        }
         return tokenRel;
+    }
+
+    /**
+     * Returns the NFT if it exists and is usable
+     * @param nftId the ID of the NFT
+     * @param nftStore the {@link ReadableNftStore} to use for NFT retrieval
+     * @throws HandleException if any of the NFT conditions are not met
+     * @return the NFT if it exists and is usable
+     */
+    public static Nft getIfUsable(@NonNull final NftID nftId, @NonNull final ReadableNftStore nftStore) {
+        requireNonNull(nftId);
+        requireNonNull(nftStore);
+
+        final var nft = nftStore.get(nftId);
+        validateTrue(nft != null && nft.nftId() != null && nft.nftId().tokenId() != null, INVALID_NFT_ID);
+        return nft;
     }
 
     /**

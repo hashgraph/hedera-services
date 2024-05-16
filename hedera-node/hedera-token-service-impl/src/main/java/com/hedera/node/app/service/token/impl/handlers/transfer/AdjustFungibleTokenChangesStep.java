@@ -38,6 +38,8 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenRelValidations;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -81,11 +83,19 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
         final Map<EntityIDPair, Long> aggregatedFungibleTokenChanges = new LinkedHashMap<>();
         final Map<EntityIDPair, Long> allowanceTransfers = new LinkedHashMap<>();
 
+        var tokenPausedValidation = transferContext.shouldOverrideTokenAndAccountStatusChecks()
+                ? TokenValidations.PERMIT_PAUSED
+                : TokenValidations.REQUIRE_NOT_PAUSED;
+
+        var tokenRelFrozenValidation = transferContext.shouldOverrideTokenAndAccountStatusChecks()
+                ? TokenRelValidations.PERMIT_FROZEN
+                : TokenRelValidations.REQUIRE_NOT_FROZEN;
+
         // Look at all fungible token transfers and put into aggregatedFungibleTokenChanges map.
         // Also, put any transfers happening with allowances in allowanceTransfers map.
         for (final var transfers : op.tokenTransfers()) {
             final var tokenId = transfers.tokenOrThrow();
-            final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
+            final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore, tokenPausedValidation);
 
             if (transfers.hasExpectedDecimals()) {
                 validateTrue(token.decimals() == transfers.expectedDecimalsOrThrow(), UNEXPECTED_TOKEN_DECIMALS);
@@ -102,7 +112,7 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
 
                 // Validate freeze status and kyc granted
                 final var accountID = aa.accountIDOrThrow();
-                final var tokenRel = getIfUsable(accountID, tokenId, tokenRelStore);
+                final var tokenRel = getIfUsable(accountID, tokenId, tokenRelStore, tokenRelFrozenValidation);
                 validateNotFrozenAndKycOnRelation(tokenRel);
 
                 // Add the amount to the aggregatedFungibleTokenChanges map.
@@ -122,7 +132,11 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
 
         modifyAggregatedAllowances(allowanceTransfers, accountStore, transferContext);
         modifyAggregatedTokenBalances(
-                aggregatedFungibleTokenChanges, tokenRelStore, accountStore, transferContext.getAssessedCustomFees());
+                aggregatedFungibleTokenChanges,
+                tokenRelStore,
+                accountStore,
+                transferContext.getAssessedCustomFees(),
+                tokenRelFrozenValidation);
     }
 
     /**
@@ -186,12 +200,14 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
             @NonNull final Map<EntityIDPair, Long> aggregatedFungibleTokenChanges,
             @NonNull final WritableTokenRelationStore tokenRelStore,
             @NonNull final WritableAccountStore accountStore,
-            @NonNull final List<AssessedCustomFee> assessedCustomFees) {
+            @NonNull final List<AssessedCustomFee> assessedCustomFees,
+            @NonNull final TokenRelValidations tokenRelFrozenValidation) {
         // Look at all the aggregatedFungibleTokenChanges and adjust the balances in the tokenRelStore.
         for (final var entry : aggregatedFungibleTokenChanges.entrySet()) {
             final var atPair = entry.getKey();
             final var amount = entry.getValue();
-            final var rel = getIfUsable(atPair.accountIdOrThrow(), atPair.tokenIdOrThrow(), tokenRelStore);
+            final var rel = getIfUsable(
+                    atPair.accountIdOrThrow(), atPair.tokenIdOrThrow(), tokenRelStore, tokenRelFrozenValidation);
             final var account = requireNonNull(accountStore.get(atPair.accountIdOrThrow()));
             try {
                 adjustBalance(rel, account, amount, tokenRelStore, accountStore);

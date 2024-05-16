@@ -25,17 +25,22 @@ import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,6 +52,10 @@ class TokenHandlerHelperTest {
     private static final AccountID ACCT_2300 =
             AccountID.newBuilder().accountNum(2300L).build();
     private static final TokenID TOKEN_ID_45 = TokenID.newBuilder().tokenNum(45).build();
+    private static final NftID NFT_ID =
+            NftID.newBuilder().tokenId(TOKEN_ID_45).serialNumber(123).build();
+    protected final Timestamp consensusTimestamp =
+            Timestamp.newBuilder().seconds(1_234_567L).build();
 
     @Mock
     private ReadableAccountStore accountStore;
@@ -56,6 +65,9 @@ class TokenHandlerHelperTest {
 
     @Mock
     private ReadableTokenRelationStore tokenRelStore;
+
+    @Mock
+    private ReadableNftStore nftStore;
 
     @Mock
     private ExpiryValidator expiryValidator;
@@ -286,5 +298,34 @@ class TokenHandlerHelperTest {
 
         final var result = getIfUsable(ACCT_2300, TOKEN_ID_45, tokenRelStore);
         Assertions.assertThat(result).isNotNull();
+    }
+
+    @Test
+    void nft_getIfUsable_usableNft() {
+        given(nftStore.get(notNull()))
+                .willReturn(Nft.newBuilder()
+                        .nftId(NFT_ID)
+                        .ownerId(ACCT_2300)
+                        .mintTime(consensusTimestamp)
+                        .metadata(Bytes.wrap(("apple")))
+                        .build());
+
+        final var result = getIfUsable(NFT_ID, nftStore);
+        Assertions.assertThat(result).isNotNull();
+    }
+
+    @Test
+    void nft_getIfUsable_nullTokenID() {
+        given(nftStore.get(notNull()))
+                .willReturn(Nft.newBuilder()
+                        .nftId(NftID.newBuilder().build())
+                        .ownerId(ACCT_2300)
+                        .mintTime(consensusTimestamp)
+                        .metadata(Bytes.wrap(("apple")))
+                        .build());
+
+        Assertions.assertThatThrownBy(() -> getIfUsable(NFT_ID, nftStore))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(ResponseCodeEnum.INVALID_NFT_ID));
     }
 }

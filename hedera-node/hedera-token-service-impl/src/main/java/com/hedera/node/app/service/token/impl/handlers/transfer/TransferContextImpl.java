@@ -59,6 +59,7 @@ public class TransferContextImpl implements TransferContext {
     private final List<TokenAssociation> automaticAssociations = new ArrayList<>();
     private final List<AssessedCustomFee> assessedCustomFees = new ArrayList<>();
     private final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
+    private boolean overridePausedTokenAndFrozenAccountChecks = false;
 
     /**
      * Create a new {@link TransferContextImpl} instance.
@@ -84,6 +85,21 @@ public class TransferContextImpl implements TransferContext {
         this.tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         this.enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments =
                 enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
+    }
+
+    /**
+     * Create a new {@link TransferContextImpl} instance.
+     * @param context The context to use.
+     * @param enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments Whether to enforce mono service restrictions
+     *                                                                      on auto creation custom fee payments.
+     * @param overridePausedTokenAndFrozenAccountChecks Whether to override paused token and frozen account checks.
+     */
+    public TransferContextImpl(
+            final HandleContext context,
+            final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments,
+            final boolean overridePausedTokenAndFrozenAccountChecks) {
+        this(context, enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments);
+        this.overridePausedTokenAndFrozenAccountChecks = overridePausedTokenAndFrozenAccountChecks;
     }
 
     @Override
@@ -178,6 +194,11 @@ public class TransferContextImpl implements TransferContext {
 
     public boolean isEnforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments() {
         return enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
+    }
+
+    @Override
+    public boolean shouldOverrideTokenAndAccountStatusChecks() {
+        return overridePausedTokenAndFrozenAccountChecks;
     }
 
     @Override

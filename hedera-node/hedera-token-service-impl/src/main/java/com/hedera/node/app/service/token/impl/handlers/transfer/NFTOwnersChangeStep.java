@@ -37,6 +37,8 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenRelValidations;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -66,9 +68,16 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
         final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
         final var expiryValidator = handleContext.expiryValidator();
 
+        var tokenPausedValidation = transferContext.shouldOverrideTokenAndAccountStatusChecks()
+                ? TokenValidations.PERMIT_PAUSED
+                : TokenValidations.REQUIRE_NOT_PAUSED;
+        var tokenRelFrozenValidation = transferContext.shouldOverrideTokenAndAccountStatusChecks()
+                ? TokenRelValidations.PERMIT_FROZEN
+                : TokenRelValidations.REQUIRE_NOT_FROZEN;
+
         for (var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.token();
-            final var token = getIfUsable(tokenId, tokenStore);
+            final var token = getIfUsable(tokenId, tokenStore, tokenPausedValidation);
             // Expected decimals are already validated in AdjustFungibleTokenChangesStep.
             // So not doing same check again here
 
@@ -79,8 +88,8 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
 
                 final var senderAccount = getIfUsable(senderId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
                 final var receiverAccount = getIfUsable(receiverId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
-                final var senderRel = getIfUsable(senderId, tokenId, tokenRelStore);
-                final var receiverRel = getIfUsable(receiverId, tokenId, tokenRelStore);
+                final var senderRel = getIfUsable(senderId, tokenId, tokenRelStore, tokenRelFrozenValidation);
+                final var receiverRel = getIfUsable(receiverId, tokenId, tokenRelStore, tokenRelFrozenValidation);
 
                 validateNotFrozenAndKycOnRelation(senderRel);
                 validateNotFrozenAndKycOnRelation(receiverRel);
