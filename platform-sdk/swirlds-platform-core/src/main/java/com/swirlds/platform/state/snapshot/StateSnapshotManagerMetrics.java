@@ -41,12 +41,6 @@ public class StateSnapshotManagerMetrics {
             .withUnit("ms");
     private final RunningAverageMetric stateToDiskTime;
 
-    private static final Counter.Config TOTAL_NEVER_SIGNED_STATES_CONFIG = new Counter.Config(
-                    "platform", "totalNeverSignedStates")
-            .withDescription("total number of states that did not receive enough signatures in the allowed time")
-            .withUnit("count");
-    private final Counter totalNeverSignedStates;
-
     private static final Counter.Config TOTAL_NEVER_SIGNED_DISK_STATES_CONFIG = new Counter.Config(
                     "platform", "totalNeverSignedDiskStates")
             .withDescription(
@@ -64,12 +58,13 @@ public class StateSnapshotManagerMetrics {
 
         stateToDiskTime = metrics.getOrCreate(STATE_TO_DISK_TIME_CONFIG);
         writeStateToDiskTime = metrics.getOrCreate(WRITE_STATE_TO_DISK_TIME_CONFIG);
-        totalNeverSignedStates = metrics.getOrCreate(TOTAL_NEVER_SIGNED_STATES_CONFIG);
         totalNeverSignedDiskStates = metrics.getOrCreate(TOTAL_NEVER_SIGNED_DISK_STATES_CONFIG);
     }
 
     /**
      * Get a metric tracking the average time required to write a state to disk.
+     *
+     * @return the metric tracking the average time required to write a state to disk
      */
     @NonNull
     public RunningAverageMetric getWriteStateToDiskTimeMetric() {
@@ -79,6 +74,8 @@ public class StateSnapshotManagerMetrics {
     /**
      * Get a metric tracking the average time required to perform all actions when saving a state to disk, i.e.
      * notifying listeners and cleaning up old states on disk.
+     *
+     * @return the metric tracking the average time required to perform all actions when saving a state to disk
      */
     @NonNull
     public RunningAverageMetric getStateToDiskTimeMetric() {
@@ -86,7 +83,9 @@ public class StateSnapshotManagerMetrics {
     }
 
     /**
-     * Get a metric tracking the total number of unsigned states written to disk that were skipped.
+     * Get a metric tracking the total number of unsigned states written to disk.
+     *
+     * @return the metric tracking the total number of unsigned states written to disk
      */
     @NonNull
     public Counter getTotalUnsignedDiskStatesMetric() {

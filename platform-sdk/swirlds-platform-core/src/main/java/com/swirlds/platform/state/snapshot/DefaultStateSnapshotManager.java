@@ -115,14 +115,7 @@ public class DefaultStateSnapshotManager implements StateSnapshotManager {
     }
 
     /**
-     * Method to be called when a state needs to be written to disk in-band. An "in-band" write is part of normal
-     * platform operations, whereas an out-of-band write is triggered due to a fault, or for debug purposes.
-     * <p>
-     * This method shouldn't be called if the state was written out-of-band.
-     *
-     * @param reservedSignedState the state to be written to disk. it is expected that the state is reserved prior to
-     *                            this method call and this method will release the reservation when it is done
-     * @return the result of the state saving operation, or null if the state was not saved
+     * {@inheritDoc}
      */
     @Override
     @Nullable
@@ -157,11 +150,7 @@ public class DefaultStateSnapshotManager implements StateSnapshotManager {
     }
 
     /**
-     * Method to be called when a state needs to be written to disk out-of-band. An "in-band" write is part of normal
-     * platform operations, whereas an out-of-band write is triggered due to a fault, or for debug purposes.
-     *
-     * @param request a request to dump a state to disk. it is expected that the state inside the request is reserved
-     *                prior to this method call and this method will release the reservation when it is done
+     * {@inheritDoc}
      */
     @Override
     public void dumpStateTask(@NonNull final StateDumpRequest request) {

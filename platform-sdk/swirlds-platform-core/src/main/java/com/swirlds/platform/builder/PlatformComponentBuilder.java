@@ -1038,14 +1038,14 @@ public class PlatformComponentBuilder {
     /**
      * Provide a state snapshot manager in place of the platform's default state snapshot manager.
      *
-     * @param stateSnapshotManager the state file manager to use
+     * @param stateSnapshotManager the state snapshot manager to use
      * @return this builder
      */
     @NonNull
-    public PlatformComponentBuilder withStateSnaphsotManager(@NonNull final StateSnapshotManager stateSnapshotManager) {
+    public PlatformComponentBuilder withStateSnapshotManager(@NonNull final StateSnapshotManager stateSnapshotManager) {
         throwIfAlreadyUsed();
         if (this.stateSnapshotManager != null) {
-            throw new IllegalStateException("State file manager has already been set");
+            throw new IllegalStateException("State snapshot manager has already been set");
         }
         this.stateSnapshotManager = Objects.requireNonNull(stateSnapshotManager);
         return this;
@@ -1053,7 +1053,7 @@ public class PlatformComponentBuilder {
 
     /**
      * Build the state snapshot manager if it has not yet been built. If one has been provided via
-     * {@link #withStateSnaphsotManager(StateSnapshotManager)}, that manager will be used. If this method is called more
+     * {@link #withStateSnapshotManager(StateSnapshotManager)}, that manager will be used. If this method is called more
      * than once, only the first call will build the state snapshot manager. Otherwise, the default manager will be
      * created and returned.
      *

@@ -105,7 +105,7 @@ class PlatformWiringTests {
                 .withStaleEventDetector(mock(DefaultStaleEventDetector.class))
                 .withTransactionResubmitter(mock(TransactionResubmitter.class))
                 .withTransactionPool(mock(TransactionPool.class))
-                .withStateSnaphsotManager(mock(StateSnapshotManager.class));
+                .withStateSnapshotManager(mock(StateSnapshotManager.class));
 
         // Gossip is a special case, it's not like other components.
         // Currently we just have a facade between gossip and the wiring framework.

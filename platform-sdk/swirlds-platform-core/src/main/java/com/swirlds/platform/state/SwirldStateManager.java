@@ -160,8 +160,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
     /**
      * Loads all necessary data from the {@code reservedSignedState}.
      *
-     * @param signedState
-     * 		the signed state to load
+     * @param signedState the signed state to load
      */
     public void loadFromSignedState(@NonNull final SignedState signedState) {
         final State state = signedState.getState();
