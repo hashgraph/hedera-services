@@ -234,7 +234,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         tokenTransferLists.add(createFungibleTransfer(
                 tokenId, rejectingAccountID, tokenRelation.balance(), token.treasuryAccountId()));
 
-        if (!allowancesEnabled) {
+        if (allowancesEnabled) {
             tokenAllowancesForRejectingAccount.removeIf(allowance -> tokenId.equals(allowance.tokenId()));
         }
     }
