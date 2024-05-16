@@ -28,7 +28,6 @@ import com.swirlds.platform.recovery.internal.EventStreamLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamMultiFileIterator;
 import com.swirlds.platform.recovery.internal.MultiFileRunningHashIterator;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -126,7 +125,7 @@ public class EventStreamScanner {
     private void collectEventData(final DetailedConsensusEvent mostRecentEvent) {
         eventCount++;
         granularEventCount++;
-        mostRecentEvent.getGossipEvent().transactionIterator().forEachRemaining(transaction-> {
+        mostRecentEvent.getGossipEvent().transactionIterator().forEachRemaining(transaction -> {
             transactionCount++;
             granularTransactionCount++;
             if (transaction.isSystem()) {

@@ -79,8 +79,7 @@ public class DetailedConsensusEventTest {
         ConsensusData consensusData = DetGenerateUtils.generateConsensusEventData(random);
         return new DetailedConsensusEvent(
                 new GossipEvent(
-                hashedData,
-                Bytes.wrap(generateRandomByteArray(random, SignatureType.RSA.signatureLength()))),
+                        hashedData, Bytes.wrap(generateRandomByteArray(random, SignatureType.RSA.signatureLength()))),
                 consensusData);
     }
 }

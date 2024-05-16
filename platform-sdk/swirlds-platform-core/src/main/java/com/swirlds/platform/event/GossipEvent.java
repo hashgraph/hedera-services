@@ -175,7 +175,7 @@ public class GossipEvent implements Event, SelfSerializable {
 
     @Override
     public Iterator<Transaction> transactionIterator() {
-        return Arrays.asList((Transaction[])hashedData.getTransactions()).iterator();
+        return Arrays.asList((Transaction[]) hashedData.getTransactions()).iterator();
     }
 
     @Override
@@ -207,7 +207,7 @@ public class GossipEvent implements Event, SelfSerializable {
     /**
      * @return the number of payloads this event contains
      */
-    public int getPayloadCount(){
+    public int getPayloadCount() {
         return hashedData.getTransactions().length;
     }
 

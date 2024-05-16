@@ -69,7 +69,8 @@ public class EventMigrationTest {
                         .toPath(),
                 false)) {
             while (iterator.hasNext()) {
-                final BaseEventHashedData hashedData = iterator.next().getGossipEvent().getHashedData();
+                final BaseEventHashedData hashedData =
+                        iterator.next().getGossipEvent().getHashedData();
                 numEvents++;
                 CryptographyHolder.get().digestSync(hashedData);
                 eventHashes.add(hashedData.getHash());

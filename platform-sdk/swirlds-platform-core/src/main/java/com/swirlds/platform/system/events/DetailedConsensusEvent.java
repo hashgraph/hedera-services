@@ -21,7 +21,6 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.crypto.RunningHashable;
-import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -56,16 +55,13 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
      * @param gossipEvent   the pre-consensus event
      * @param consensusData the consensus data for this event
      */
-    public DetailedConsensusEvent(
-            final GossipEvent gossipEvent, final ConsensusData consensusData) {
+    public DetailedConsensusEvent(final GossipEvent gossipEvent, final ConsensusData consensusData) {
         this.gossipEvent = gossipEvent;
         this.consensusData = consensusData;
     }
 
     public static void serialize(
-            final SerializableDataOutputStream out,
-            final GossipEvent gossipEvent,
-            final ConsensusData consensusData)
+            final SerializableDataOutputStream out, final GossipEvent gossipEvent, final ConsensusData consensusData)
             throws IOException {
         gossipEvent.serialize(out);
         out.writeSerializable(consensusData, false);
@@ -76,7 +72,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        serialize(out,gossipEvent, consensusData);
+        serialize(out, gossipEvent, consensusData);
     }
 
     /**
@@ -151,8 +147,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
             return false;
         }
         final DetailedConsensusEvent that = (DetailedConsensusEvent) other;
-        return Objects.equals(gossipEvent, that.gossipEvent)
-                && Objects.equals(consensusData, that.consensusData);
+        return Objects.equals(gossipEvent, that.gossipEvent) && Objects.equals(consensusData, that.consensusData);
     }
 
     /**
