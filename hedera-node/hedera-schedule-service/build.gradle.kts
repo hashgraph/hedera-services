@@ -20,3 +20,8 @@ plugins {
 }
 
 description = "Hedera Scheduled Service API"
+
+testModuleInfo {
+    requires("org.assertj.core")
+    requires("org.junit.jupiter.api")
+}

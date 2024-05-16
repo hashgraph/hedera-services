@@ -49,6 +49,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
+import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.state.DeduplicationCache;
@@ -182,6 +183,9 @@ public class NetworkAdminHandlerTestBase {
 
     @Mock
     private NetworkInfo networkInfo;
+
+    @Mock
+    FeeCalculator feeCalculator;
 
     @BeforeEach
     void commonSetUp() {
