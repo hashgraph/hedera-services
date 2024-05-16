@@ -287,8 +287,9 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                     Fraction.newBuilder().numerator(1).denominator(2).build())
             .fallbackFee(hbarFixedFee)
             .build();
-    protected CustomFee customFractionalFee = withFractionalFee(fractionalFee, feeCollectorId);
-    protected List<CustomFee> customFees = List.of(withFixedFee(hbarFixedFee, feeCollectorId), customFractionalFee);
+    protected CustomFee customFractionalFee = withFractionalFee(fractionalFee, feeCollectorId, false);
+    protected List<CustomFee> customFees =
+            List.of(withFixedFee(hbarFixedFee, feeCollectorId, false), customFractionalFee);
 
     /* ---------- Misc ---------- */
     protected final Timestamp consensusTimestamp =
@@ -738,7 +739,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                                 .denominatingTokenId(fungibleTokenIDC)
                                 .amount(1000)
                                 .build(),
-                        feeCollectorId))
+                        feeCollectorId,
+                        false))
                 .build();
         fungibleTokenC = givenValidFungibleToken()
                 .copyBuilder()
@@ -748,7 +750,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                                 .denominatingTokenId(fungibleTokenId)
                                 .amount(40)
                                 .build(),
-                        feeCollectorId))
+                        feeCollectorId,
+                        false))
                 .build();
         nonFungibleToken = givenValidNonFungibleToken(true);
         nftSl1 = givenNft(nftIdSl1).copyBuilder().ownerNextNftId(nftIdSl2).build();
@@ -939,17 +942,21 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .build();
     }
 
-    public static CustomFee withFixedFee(final FixedFee fixedFee, final AccountID feeCollectorId) {
+    public static CustomFee withFixedFee(
+            final FixedFee fixedFee, final AccountID feeCollectorId, final boolean allCollectorsExempt) {
         return CustomFee.newBuilder()
                 .feeCollectorAccountId(feeCollectorId)
+                .allCollectorsAreExempt(allCollectorsExempt)
                 .fixedFee(fixedFee)
                 .build();
     }
 
-    public static CustomFee withFractionalFee(final FractionalFee fractionalFee, final AccountID feeCollectorId) {
+    public static CustomFee withFractionalFee(
+            final FractionalFee fractionalFee, final AccountID feeCollectorId, final boolean allCollectorsExempt) {
         return CustomFee.newBuilder()
                 .fractionalFee(fractionalFee)
                 .feeCollectorAccountId(feeCollectorId)
+                .allCollectorsAreExempt(allCollectorsExempt)
                 .build();
     }
 
