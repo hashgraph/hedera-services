@@ -32,7 +32,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.EventWindow;
@@ -191,7 +190,7 @@ class ShadowgraphByBirthRoundTests {
     private void assertSetsContainSameHashes(final Set<Hash> expected, final Set<Hash> actual) {
         for (final Hash hash : expected) {
             if (!actual.contains(hash)) {
-                fail(String.format("Expected to find an ancestor with hash %s", CommonUtils.hex(hash.getValue(), 4)));
+                fail(String.format("Expected to find an ancestor with hash %s", hash.toHex(4)));
             }
         }
     }

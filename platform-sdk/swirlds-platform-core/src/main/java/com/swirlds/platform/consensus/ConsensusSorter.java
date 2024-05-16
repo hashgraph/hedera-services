@@ -71,6 +71,7 @@ public class ConsensusSorter implements Comparator<EventImpl> {
         }
 
         // subsort ties by whitened signature
-        return Utilities.arrayCompare(e1.getSignature(), e2.getSignature(), whitening);
+        return Utilities.arrayCompare(
+                e1.getBaseEvent().getSignature(), e2.getBaseEvent().getSignature(), whitening);
     }
 }

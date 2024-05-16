@@ -60,4 +60,12 @@ val timingSensitive =
         maxHeapSize = "4g"
     }
 
+configurations.coverageDataElementsForTest {
+    outgoing.artifact(
+        timingSensitive.map { it.extensions.getByType<JacocoTaskExtension>().destinationFile!! }
+    ) {
+        type = "binary"
+    }
+}
+
 tasks.check { dependsOn(timingSensitive) }
