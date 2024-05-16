@@ -83,11 +83,11 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
         final Map<EntityIDPair, Long> aggregatedFungibleTokenChanges = new LinkedHashMap<>();
         final Map<EntityIDPair, Long> allowanceTransfers = new LinkedHashMap<>();
 
-        var tokenPausedValidation = transferContext.shouldOverrideTokenAndAccountStatusChecks()
+        var tokenPausedValidation = transferContext.shouldOverrideFreezeAndPauseStatusChecks()
                 ? TokenValidations.PERMIT_PAUSED
                 : TokenValidations.REQUIRE_NOT_PAUSED;
 
-        var tokenRelFrozenValidation = transferContext.shouldOverrideTokenAndAccountStatusChecks()
+        var tokenRelFrozenValidation = transferContext.shouldOverrideFreezeAndPauseStatusChecks()
                 ? TokenRelValidations.PERMIT_FROZEN
                 : TokenRelValidations.REQUIRE_NOT_FROZEN;
 

@@ -68,10 +68,10 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
         final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
         final var expiryValidator = handleContext.expiryValidator();
 
-        var tokenPausedValidation = transferContext.shouldOverrideTokenAndAccountStatusChecks()
+        var tokenPausedValidation = transferContext.shouldOverrideFreezeAndPauseStatusChecks()
                 ? TokenValidations.PERMIT_PAUSED
                 : TokenValidations.REQUIRE_NOT_PAUSED;
-        var tokenRelFrozenValidation = transferContext.shouldOverrideTokenAndAccountStatusChecks()
+        var tokenRelFrozenValidation = transferContext.shouldOverrideFreezeAndPauseStatusChecks()
                 ? TokenRelValidations.PERMIT_FROZEN
                 : TokenRelValidations.REQUIRE_NOT_FROZEN;
 

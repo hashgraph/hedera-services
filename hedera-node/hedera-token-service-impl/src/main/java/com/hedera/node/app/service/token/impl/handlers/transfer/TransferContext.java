@@ -121,7 +121,7 @@ public interface TransferContext {
      * Indicates if this transfer should override the paused token and frozen account checks.
      * @return whether the transfer should override the checks
      */
-    boolean shouldOverrideTokenAndAccountStatusChecks();
+    boolean shouldOverrideFreezeAndPauseStatusChecks();
 
     /**
      * Validates hbar allowances for the top-level operation in this transfer context.

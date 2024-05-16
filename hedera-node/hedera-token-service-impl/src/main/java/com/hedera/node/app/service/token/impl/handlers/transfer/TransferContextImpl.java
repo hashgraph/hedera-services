@@ -197,7 +197,7 @@ public class TransferContextImpl implements TransferContext {
     }
 
     @Override
-    public boolean shouldOverrideTokenAndAccountStatusChecks() {
+    public boolean shouldOverrideFreezeAndPauseStatusChecks() {
         return overridePausedTokenAndFrozenAccountChecks;
     }
 
