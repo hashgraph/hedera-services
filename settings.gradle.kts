@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-pluginManagement { includeBuild("build-logic") }
+pluginManagement { includeBuild("gradle/plugins") }
 
-plugins { id("com.hedera.hashgraph.settings") }
+plugins { id("com.hedera.gradle.settings") }
 
 // "BOM" with versions of 3rd party dependencies
 include("hedera-dependency-versions")
