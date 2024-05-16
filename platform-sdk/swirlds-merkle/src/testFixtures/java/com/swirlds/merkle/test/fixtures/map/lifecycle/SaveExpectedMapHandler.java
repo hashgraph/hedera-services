@@ -18,6 +18,7 @@ package com.swirlds.merkle.test.fixtures.map.lifecycle;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -25,6 +26,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import com.swirlds.merkle.test.fixtures.map.serialization.MapKeyDeserializer;
 import java.io.BufferedOutputStream;
@@ -54,8 +57,16 @@ public class SaveExpectedMapHandler {
     private static final String JSON_FILE_NAME_TEMPLATE = "Node%04d_ExpectedMap_%d_%d.json";
 
     private static final ObjectMapper objectMapper =
-            new ObjectMapper().disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+            new ObjectMapper().disable(SerializationFeature.FAIL_ON_EMPTY_BEANS).addMixIn(Hash.class, MixIn.class);
     private static final ObjectWriter objectWriter = objectMapper.writer(new DefaultPrettyPrinter());
+
+    /**
+     * MixIn class to ignore Bytes field in Hash class without polluting the Hash class with Jackson annotations
+     */
+    abstract static class MixIn {
+        @JsonIgnore
+        abstract Bytes getBytes();
+    }
 
     /**
      * Serialize the expectedMap to JSON
@@ -117,20 +128,17 @@ public class SaveExpectedMapHandler {
      * 		the JSON file
      * @return ExpectedMap de-serialized from JSON file serialized to disk
      */
-    public static Map<MapKey, ExpectedValue> deserialize(final File sourceFile) {
+    public static Map<MapKey, ExpectedValue> deserialize(final File sourceFile) throws IOException {
         Map<MapKey, ExpectedValue> newMap = new ConcurrentHashMap<>();
         registerModule();
         final File jsonFile = unzipExpectedMap(sourceFile);
 
         if (jsonFile == null) {
-            logger.error(EXCEPTION.getMarker(), "No JSON file found in the zip file: {}", sourceFile);
-            return newMap;
+            throw new IllegalArgumentException("No JSON file found in the zip file: %s".formatted(sourceFile));
         }
 
         try (FileInputStream fileInputStream = new FileInputStream(jsonFile)) {
             newMap = objectMapper.readValue(fileInputStream, new TypeReference<Map<MapKey, ExpectedValue>>() {});
-        } catch (IOException e) {
-            logger.error(EXCEPTION.getMarker(), "Error occurred while reading: {}", sourceFile, e);
         }
 
         jsonFile.delete();

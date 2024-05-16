@@ -22,6 +22,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEED
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
+import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_ALLOWANCES_IS_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_NFT_TRANSFERS_MAX_LEN;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOKEN_TRANSFERS_MAX_LEN;
@@ -35,30 +37,54 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.AccountAmount;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNftStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.WarmupContext;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.handle.HandleContextImpl;
+import com.hedera.node.app.workflows.handle.WarmupContextImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import java.util.ArrayList;
 import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -77,6 +103,197 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         super.setUp();
         subject = new CryptoTransferHandler(validator);
         given(handleContext.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(transferRecordBuilder);
+    }
+
+    @Test
+    void warmTestNullContext() {
+        Assertions.assertThatThrownBy(() -> subject.warm(null)).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void warmTestAllAccountsTransferList() {
+        ReadableStoreFactory storeFactory = mock(ReadableStoreFactory.class);
+        ReadableAccountStore readableAccountStore = mock(ReadableAccountStore.class);
+
+        TransactionBody txn = newCryptoTransfer(ACCT_3333_MINUS_10, ACCT_4444_PLUS_10);
+
+        WarmupContext warmupContext = new WarmupContextImpl(txn, storeFactory);
+        when(storeFactory.getStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
+
+        subject.warm(warmupContext);
+
+        verify(readableAccountStore, times(1)).warm(ACCOUNT_3333);
+        verify(readableAccountStore, times(1)).warm(ACCOUNT_4444);
+    }
+
+    @Test
+    void warmTokenDataTransferList() {
+        ReadableStoreFactory storeFactory = mock(ReadableStoreFactory.class);
+        ReadableAccountStore readableAccountStore = mock(ReadableAccountStore.class);
+        ReadableTokenStore readableTokenStore = mock(ReadableTokenStore.class);
+        ReadableNftStore readableNftStore = mock(ReadableNftStore.class);
+        ReadableTokenRelationStore readableTokenRelationStore = mock(ReadableTokenRelationStore.class);
+        Account account = mock(Account.class);
+        Nft nft = nftSl1;
+
+        TransactionBody txn = newCryptoTransfer(TokenTransferList.newBuilder()
+                .token(TOKEN_2468)
+                .nftTransfers(SERIAL_1_FROM_3333_TO_4444
+                        .copyBuilder()
+                        .receiverAccountID((AccountID) null)
+                        .build())
+                .build());
+
+        WarmupContext warmupContext = new WarmupContextImpl(txn, storeFactory);
+        when(storeFactory.getStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
+        when(storeFactory.getStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
+        when(storeFactory.getStore(ReadableNftStore.class)).thenReturn(readableNftStore);
+        when(storeFactory.getStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelationStore);
+        when(readableNftStore.get(TOKEN_2468, 1L)).thenReturn(nft);
+        when(readableAccountStore.getAliasedAccountById(any(AccountID.class))).thenReturn(account);
+
+        subject.warm(warmupContext);
+
+        verify(readableTokenRelationStore, times(1)).warm(ACCOUNT_3333, TOKEN_2468);
+        verify(readableNftStore, times(1)).warm(any());
+    }
+
+    @Test
+    void calculateFeesHbarTransfer() {
+        config = defaultConfig()
+                .withValue(FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER, 1)
+                .getOrCreateConfig();
+        List<AccountAmount> acctAmounts = new ArrayList<>();
+        List<TokenTransferList> tokenTransferLists = new ArrayList<>();
+        acctAmounts.add(aaWith(ACCOUNT_3333, -5));
+        acctAmounts.add(aaWith(ACCOUNT_4444, 5));
+
+        CryptoTransferTransactionBody cryptoTransfer = CryptoTransferTransactionBody.newBuilder()
+                .transfers(TransferList.newBuilder().accountAmounts(acctAmounts))
+                .tokenTransfers(tokenTransferLists)
+                .build();
+
+        FeeContext feeContext = mock(HandleContextImpl.class);
+        FeeCalculator feeCalculator = mock(FeeCalculator.class);
+        Fees fees = mock(Fees.class);
+
+        when(feeContext.body())
+                .thenReturn(TransactionBody.newBuilder()
+                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
+                        .cryptoTransfer(cryptoTransfer)
+                        .build());
+        when(feeContext.configuration()).thenReturn(config);
+        when(feeContext.feeCalculator(any())).thenReturn(feeCalculator);
+        when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
+        when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
+        when(feeCalculator.calculate()).thenReturn(fees);
+
+        subject.calculateFees(feeContext);
+
+        // Not interested in return value from calculate, just that it was called and bpt and rbs were set approriately
+        InOrder inOrder = inOrder(feeContext, feeCalculator);
+        inOrder.verify(feeContext, times(1)).feeCalculator(SubType.DEFAULT);
+        inOrder.verify(feeCalculator, times(1)).addBytesPerTransaction(64L);
+        inOrder.verify(feeCalculator, times(1)).addRamByteSeconds(64L * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+        inOrder.verify(feeCalculator, times(1)).calculate();
+    }
+
+    @Test
+    void calculateFeesFtCustomFeesTransfer() {
+        config = defaultConfig()
+                .withValue(FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER, 2)
+                .getOrCreateConfig();
+        List<AccountAmount> acctAmounts = new ArrayList<>();
+        List<TokenTransferList> tokenTransferLists = new ArrayList<>();
+        tokenTransferLists.add(TokenTransferList.newBuilder()
+                .token(fungibleTokenId)
+                .transfers(
+                        AccountAmount.newBuilder()
+                                .accountID(ACCOUNT_3333)
+                                .amount(-5)
+                                .build(),
+                        AccountAmount.newBuilder()
+                                .accountID(ACCOUNT_4444)
+                                .amount(5)
+                                .build())
+                .build());
+
+        CryptoTransferTransactionBody cryptoTransfer = CryptoTransferTransactionBody.newBuilder()
+                .transfers(TransferList.newBuilder().accountAmounts(acctAmounts))
+                .tokenTransfers(tokenTransferLists)
+                .build();
+
+        FeeContext feeContext = mock(HandleContextImpl.class);
+        FeeCalculator feeCalculator = mock(FeeCalculator.class);
+        Fees fees = mock(Fees.class);
+
+        when(feeContext.body())
+                .thenReturn(TransactionBody.newBuilder()
+                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
+                        .cryptoTransfer(cryptoTransfer)
+                        .build());
+        when(feeContext.configuration()).thenReturn(config);
+        when(feeContext.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
+        when(feeContext.readableStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
+        when(feeContext.readableStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
+        when(feeContext.feeCalculator(any())).thenReturn(feeCalculator);
+        when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
+        when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
+        when(feeCalculator.calculate()).thenReturn(fees);
+
+        subject.calculateFees(feeContext);
+
+        // Not interested in return value from calculate, just that it was called and bpt and rbs were set approriately
+        InOrder inOrder = inOrder(feeContext, feeCalculator);
+        inOrder.verify(feeContext, times(1)).feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES);
+        inOrder.verify(feeCalculator, times(1)).addBytesPerTransaction(176L);
+        inOrder.verify(feeCalculator, times(1)).addRamByteSeconds(320L * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+        inOrder.verify(feeCalculator, times(1)).calculate();
+    }
+
+    @Test
+    void calculateFeesNftCustomFeesTransfer() {
+        config = defaultConfig()
+                .withValue(FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER, 2)
+                .getOrCreateConfig();
+        List<AccountAmount> acctAmounts = new ArrayList<>();
+        List<TokenTransferList> tokenTransferLists = new ArrayList<>();
+        tokenTransferLists.add(TokenTransferList.newBuilder()
+                .token(nonFungibleTokenId)
+                .nftTransfers(SERIAL_1_FROM_3333_TO_4444)
+                .build());
+
+        CryptoTransferTransactionBody cryptoTransfer = CryptoTransferTransactionBody.newBuilder()
+                .transfers(TransferList.newBuilder().accountAmounts(acctAmounts))
+                .tokenTransfers(tokenTransferLists)
+                .build();
+
+        FeeContext feeContext = mock(HandleContextImpl.class);
+        FeeCalculator feeCalculator = mock(FeeCalculator.class);
+        Fees fees = mock(Fees.class);
+
+        when(feeContext.body())
+                .thenReturn(TransactionBody.newBuilder()
+                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
+                        .cryptoTransfer(cryptoTransfer)
+                        .build());
+        when(feeContext.configuration()).thenReturn(config);
+        when(feeContext.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
+        when(feeContext.readableStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
+        when(feeContext.readableStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
+        when(feeContext.feeCalculator(any())).thenReturn(feeCalculator);
+        when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
+        when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
+        when(feeCalculator.calculate()).thenReturn(fees);
+
+        subject.calculateFees(feeContext);
+
+        // Not interested in return value from calculate, just that it was called and bpt and rbs were set approriately
+        InOrder inOrder = inOrder(feeContext, feeCalculator);
+        inOrder.verify(feeContext, times(1)).feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
+        inOrder.verify(feeCalculator, times(1)).addBytesPerTransaction(104L);
+        inOrder.verify(feeCalculator, times(1)).addRamByteSeconds(136L * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+        inOrder.verify(feeCalculator, times(1)).calculate();
     }
 
     @Test

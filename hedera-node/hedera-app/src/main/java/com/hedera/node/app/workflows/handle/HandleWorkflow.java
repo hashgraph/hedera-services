@@ -96,7 +96,6 @@ import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
 import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
@@ -125,6 +124,7 @@ import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -610,7 +610,7 @@ public class HandleWorkflow {
         } catch (final Exception e) {
             logger.error("Possibly CATASTROPHIC failure while handling a user transaction", e);
             if (transactionInfo == null) {
-                final var baseData = extractTransactionBaseData(platformTxn.getContents());
+                final var baseData = extractTransactionBaseData(platformTxn.getApplicationPayload());
                 if (baseData.transaction() == null) {
                     // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement
                     logger.error("Failed to parse transaction from creator: {}", creator);
@@ -1034,15 +1034,15 @@ public class HandleWorkflow {
             @Nullable TransactionBody txBody,
             @Nullable AccountID payer) {}
 
-    private TransactionBaseData extractTransactionBaseData(@Nullable final byte[] contents) {
+    private TransactionBaseData extractTransactionBaseData(@NonNull final Bytes content) {
         // This method is only called if something fatal happened. We do a best effort approach to extract the
         // type of the transaction, the TransactionBody and the payer if not known.
-        if (contents == null || contents.length == 0) {
+        if (content.length() == 0) {
             return new TransactionBaseData(NONE, Bytes.EMPTY, null, null, null);
         }
 
         HederaFunctionality function = NONE;
-        Bytes transactionBytes = Bytes.wrap(contents);
+        Bytes transactionBytes = content;
         Transaction transaction = null;
         TransactionBody txBody = null;
         AccountID payer = null;

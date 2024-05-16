@@ -22,6 +22,7 @@ module com.hedera.node.services.cli {
     requires com.swirlds.config.extensions;
     requires com.swirlds.fchashmap;
     requires com.swirlds.merkle;
+    requires com.swirlds.state.api;
     requires com.swirlds.virtualmap;
     requires io.github.classgraph;
     requires org.apache.commons.lang3;

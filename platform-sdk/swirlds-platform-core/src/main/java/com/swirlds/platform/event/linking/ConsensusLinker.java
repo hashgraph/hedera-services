@@ -23,7 +23,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.metrics.StaleMetrics;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -39,8 +38,6 @@ public class ConsensusLinker extends AbstractInOrderLinker {
     private final LongAccumulator generationMismatchAccumulator;
     private final LongAccumulator birthRoundMismatchAccumulator;
     private final LongAccumulator timeCreatedMismatchAccumulator;
-
-    private final StaleMetrics staleMetrics;
 
     /**
      * Constructor
@@ -73,8 +70,6 @@ public class ConsensusLinker extends AbstractInOrderLinker {
                         new LongAccumulator.Config(PLATFORM_CATEGORY, "timeCreatedMismatch")
                                 .withDescription(
                                         "Parent child relationships where child time created wasn't strictly after parent time created"));
-
-        staleMetrics = new StaleMetrics(platformContext, selfId);
     }
 
     /**
@@ -82,9 +77,6 @@ public class ConsensusLinker extends AbstractInOrderLinker {
      */
     @Override
     protected void eventHasBecomeAncient(@NonNull final EventImpl event) {
-        if (!event.isConsensus()) {
-            staleMetrics.staleEvent(event);
-        }
         event.clear();
     }
 
