@@ -74,9 +74,9 @@ final class SubProcessHapiTestNode implements HapiTestNode {
     /** The account ID of the node, such as 0.0.3 */
     private final AccountID accountId;
     /** The directory in which the config.txt, settings.txt, and other files live. */
-    final Path workingDir;
+    private final Path workingDir;
     /** The port on which the grpc server will be listening */
-    final int grpcPort;
+    private final int grpcPort;
     /** The HTTP Request to use for accessing prometheus to get the current node status (ACTIVE, CHECKING, etc) */
     private final HttpRequest prometheusRequest;
     /** The client used to make prometheus HTTP Requests */
