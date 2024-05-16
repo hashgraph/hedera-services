@@ -17,17 +17,13 @@
 package com.swirlds.platform.wiring;
 
 import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
-import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder.UNLIMITED_CAPACITY;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.RunningEventHashOverride;
-import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.StateSigner;
-import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.state.iss.IssHandler;
@@ -43,8 +39,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * <p>
  * This class is being phased out. Do not add additional schedulers to this class!
  *
- * @param eventHasherScheduler                      the scheduler for the event hasher
- * @param postHashCollectorScheduler                the scheduler for the post hash collector
  * @param signedStateFileManagerScheduler           the scheduler for the signed state file manager
  * @param stateSignerScheduler                      the scheduler for the state signer
  * @param pcesReplayerScheduler                     the scheduler for the pces replayer
@@ -55,8 +49,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param latestCompleteStateNotifierScheduler      the scheduler for the latest complete state notifier
  */
 public record PlatformSchedulers(
-        @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
-        @NonNull TaskScheduler<GossipEvent> postHashCollectorScheduler,
         @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
         @NonNull TaskScheduler<ConsensusTransactionImpl> stateSignerScheduler,
         @NonNull TaskScheduler<NoInput> pcesReplayerScheduler,
@@ -71,35 +63,13 @@ public record PlatformSchedulers(
      *
      * @param context              the platform context
      * @param model                the wiring model
-     * @param hashingObjectCounter the object counter for the event hasher and post hash collector
      * @return the instantiated platform schedulers
      */
-    public static PlatformSchedulers create(
-            @NonNull final PlatformContext context,
-            @NonNull final WiringModel model,
-            @NonNull final ObjectCounter hashingObjectCounter) {
+    public static PlatformSchedulers create(@NonNull final PlatformContext context, @NonNull final WiringModel model) {
         final PlatformSchedulersConfig config =
                 context.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
 
         return new PlatformSchedulers(
-                model.schedulerBuilder("eventHasher")
-                        .withType(TaskSchedulerType.CONCURRENT)
-                        .withOnRamp(hashingObjectCounter)
-                        .withExternalBackPressure(true)
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(EventHasher.class))
-                        .build()
-                        .cast(),
-                // don't define a capacity for the postHashCollector, so that the postHashCollector will not apply
-                // backpressure to the hasher
-                model.schedulerBuilder("postHashCollector")
-                        .withType(TaskSchedulerType.SEQUENTIAL)
-                        .withOffRamp(hashingObjectCounter)
-                        .withExternalBackPressure(true)
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
-                        .build()
-                        .cast(),
                 model.schedulerBuilder("signedStateFileManager")
                         .withType(config.signedStateFileManagerSchedulerType())
                         .withUnhandledTaskCapacity(config.signedStateFileManagerUnhandledCapacity())

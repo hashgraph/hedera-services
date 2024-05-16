@@ -75,6 +75,8 @@ import java.time.Duration;
  * @param transactionResubmitter                  configuration for the transaction resubmitter scheduler
  * @param transactionPool                         configuration for the transaction pool scheduler
  * @param gossip                                  configuration for the gossip scheduler
+ * @param eventHasher                             configuration for the event hasher scheduler
+ * @param postHashCollector                       configuration for the post hash collector scheduler
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -139,4 +141,8 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration transactionResubmitter,
         @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration transactionPool,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
-                TaskSchedulerConfiguration gossip) {}
+                TaskSchedulerConfiguration gossip,
+        @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(-1) UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration eventHasher,
+        @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(-1) UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration postHashCollector) {}
