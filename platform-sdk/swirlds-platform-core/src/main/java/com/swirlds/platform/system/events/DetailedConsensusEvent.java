@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.system.events;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
 import com.swirlds.common.crypto.RunningHash;
@@ -25,7 +26,6 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -40,7 +40,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
     /** The hashed part of a base event */
     private BaseEventHashedData baseEventHashedData;
     /** The signature of an event */
-    private byte[] signature;
+    private Bytes signature;
     /** Consensus data calculated for an event */
     private ConsensusData consensusData;
     /** the running hash of this event */
@@ -62,7 +62,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
      * 		the consensus data for this event
      */
     public DetailedConsensusEvent(
-            final BaseEventHashedData baseEventHashedData, final byte[] signature, final ConsensusData consensusData) {
+            final BaseEventHashedData baseEventHashedData, final Bytes signature, final ConsensusData consensusData) {
         this.baseEventHashedData = baseEventHashedData;
         this.signature = signature;
         this.consensusData = consensusData;
@@ -71,11 +71,12 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
     public static void serialize(
             final SerializableDataOutputStream out,
             final BaseEventHashedData baseEventHashedData,
-            final byte[] signature,
+            final Bytes signature,
             final ConsensusData consensusData)
             throws IOException {
         out.writeSerializable(baseEventHashedData, false);
-        out.writeByteArray(signature);
+        out.writeInt((int) signature.length());
+        signature.writeTo(out);
         out.writeSerializable(consensusData, false);
     }
 
@@ -93,7 +94,8 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         baseEventHashedData = in.readSerializable(false, BaseEventHashedData::new);
-        signature = in.readByteArray(SignatureType.RSA.signatureLength());
+        final byte[] signature = in.readByteArray(SignatureType.RSA.signatureLength());
+        this.signature = Bytes.wrap(signature);
         consensusData = in.readSerializable(false, ConsensusData::new);
     }
 
@@ -112,7 +114,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
     /**
      * @return the signature for the event
      */
-    public byte[] getSignature() {
+    public Bytes getSignature() {
         return signature;
     }
 
@@ -160,7 +162,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
         }
         final DetailedConsensusEvent that = (DetailedConsensusEvent) other;
         return Objects.equals(baseEventHashedData, that.baseEventHashedData)
-                && Arrays.equals(signature, that.signature)
+                && Objects.equals(signature, that.signature)
                 && Objects.equals(consensusData, that.consensusData);
     }
 

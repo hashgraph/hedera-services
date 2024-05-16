@@ -80,7 +80,7 @@ public class StateProofPayload extends AbstractStateProofNode implements SelfSer
         if (payload.getHash() == null) {
             cryptography.digestSync(payload);
         }
-        setHashableBytes(payload.getHash().getValue());
+        setHashableBytes(payload.getHash().copyToByteArray());
     }
 
     /**

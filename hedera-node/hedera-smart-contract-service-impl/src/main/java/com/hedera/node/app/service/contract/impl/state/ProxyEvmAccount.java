@@ -123,6 +123,14 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isRegularAccount() {
+        return !isContract();
+    }
+
     @Override
     public @NonNull AccountID hederaId() {
         return accountID;
