@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.blscrypto;
+package com.swirlds.platform.tss.bls;
 
 import java.math.BigInteger;
 

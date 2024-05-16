@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.bls;
+package com.swirlds.platform.tss.groth21;
 
 import com.swirlds.platform.tss.Tss;
 import com.swirlds.platform.tss.TssMessage;
@@ -29,27 +29,39 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
 /**
- * A BLS implementation of a Threshold Signature Scheme.
+ * A Groth21 implementation of a Threshold Signature Scheme.
  */
-public class BlsThresholdScheme implements Tss {
+public class Groth21Tss implements Tss {
+    /**
+     * {@inheritDoc}
+     */
     @Nullable
     @Override
     public TssSignature aggregateSignatures(@NonNull final List<TssSignature> partialSignatures) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Nullable
     @Override
-    public TssPublicKey aggregatePublicShares(@NonNull final List<TssPublicShare> partialShares) {
+    public TssPublicKey aggregatePublicShares(@NonNull final List<TssPublicShare> publicShares) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Nullable
     @Override
-    public TssPrivateKey aggregatePrivateKeys(@NonNull final List<TssPrivateKey> partialKeys) {
-        throw new UnsupportedOperationException("Not implemented");
+    public TssPrivateKey aggregatePrivateKeys(@NonNull final List<TssPrivateKey> privateKeys) {
+        return null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public TssMessage generateTssMessage(

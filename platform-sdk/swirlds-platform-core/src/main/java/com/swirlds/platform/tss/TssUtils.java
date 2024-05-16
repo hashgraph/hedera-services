@@ -16,9 +16,6 @@
 
 package com.swirlds.platform.tss;
 
-import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.roster.Roster;
-import com.swirlds.platform.tss.bls.BlsShareId;
 import com.swirlds.platform.tss.ecdh.EcdhPrivateKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -39,26 +36,31 @@ public final class TssUtils {
     /**
      * Compute the private shares that belong to this node.
      *
+     * @param tss            the TSS instance
+     * @param shareIds       the share IDs owned by this node, for which the private shares will be decrypted
+     * @param ecdhPrivateKey the ECDH private key of this node
+     * @param cipherTexts    the cipher texts to extract the private shares from
+     * @param threshold      the threshold number of cipher texts required to decrypt the private shares
      * @return the private shares, or null if there aren't enough shares to meet the threshold
      */
     @Nullable
     public static List<TssPrivateShare> decryptPrivateShares(
             @NonNull final Tss tss,
-            @NonNull final NodeId selfId,
-            @NonNull final Roster roster,
+            @NonNull final List<TssShareId> shareIds,
             @NonNull final EcdhPrivateKey ecdhPrivateKey,
-            @NonNull final List<TssCiphertext> cipherTexts) {
+            @NonNull final List<TssCiphertext> cipherTexts,
+            final int threshold) {
 
-        // final List<TssShareId> shareIds = roster.getShareIds(selfId); // TODO: Implement this roster method
-        final List<TssShareId> shareIds = List.of(); // TODO placeholder
-
-        // TODO: check if there are enough shares to meet the threshold, and return null if not
+        // check if there are enough cipher texts to meet the required threshold
+        if (cipherTexts.size() < threshold) {
+            return null;
+        }
 
         // decrypt the partial private shares from the cipher texts
-        final Map<TssShareId, List<TssPrivateKey>> partialPrivateShares = new HashMap<>();
+        final Map<TssShareId, List<TssPrivateKey>> partialPrivateKeys = new HashMap<>();
         for (final TssCiphertext cipherText : cipherTexts) {
             for (final TssShareId shareId : shareIds) {
-                partialPrivateShares
+                partialPrivateKeys
                         .computeIfAbsent(shareId, k -> new ArrayList<>())
                         .add(cipherText.decryptPrivateKey(ecdhPrivateKey, shareId));
             }
@@ -66,44 +68,53 @@ public final class TssUtils {
 
         // aggregate the decrypted partial private keys, creating the actual private shares
         final List<TssPrivateShare> privateShares = new ArrayList<>();
-        for (final Map.Entry<TssShareId, List<TssPrivateKey>> entry : partialPrivateShares.entrySet()) {
+        for (final Map.Entry<TssShareId, List<TssPrivateKey>> entry : partialPrivateKeys.entrySet()) {
             final TssShareId shareId = entry.getKey();
-            final List<TssPrivateKey> partialSharesForId = entry.getValue();
+            final List<TssPrivateKey> partialKeysForId = entry.getValue();
 
-            privateShares.add(new TssPrivateShare(shareId, tss.aggregatePrivateKeys(partialSharesForId)));
+            privateShares.add(new TssPrivateShare(shareId, tss.aggregatePrivateKeys(partialKeysForId)));
         }
 
         return privateShares;
     }
 
     /**
-     * Compute the public shares for the whole roster from a list of cipher texts.
+     * Compute public shares from a list of TSS messages.
      *
      * @param tss         the TSS instance
-     * @param roster      the roster
-     * @param cipherTexts the cipher texts
+     * @param shareIds    the share IDs to compute the public shares for
+     * @param tssMessages the TSS messages
+     * @param threshold   the threshold number of commitments required to compute the public shares
      * @return the public shares, or null if there aren't enough shares to meet the threshold
      */
     @Nullable
     public static Map<TssShareId, TssPublicKey> computePublicShares(
-            @NonNull final Tss tss, @NonNull final Roster roster, @NonNull final List<TssCiphertext> cipherTexts) {
+            @NonNull final Tss tss,
+            @NonNull final List<TssShareId> shareIds,
+            @NonNull final List<TssMessage> tssMessages,
+            final int threshold) {
 
-        // TODO: check if there are enough shares to meet the threshold, and return null if not
+        // check if there are enough TSS messages to meet the required threshold
+        if (tssMessages.size() < threshold) {
+            return null;
+        }
 
-        final Map<TssShareId, TssPublicKey> publicShares = new HashMap<>();
-        roster.getNodeIds().forEach(nodeId -> {
-            // final List<TssShareId> shareIds = roster.getShareIds(selfId); // TODO: Implement this roster method
-            final List<TssShareId> shareIds = List.of(); // TODO placeholder
+        final Map<TssShareId, TssPublicKey> outputShares = new HashMap<>();
 
-            for (final TssShareId shareId : shareIds) {
-                final List<TssPublicShare> partialSharesForId = new ArrayList<>();
-                for (final TssCiphertext cipherText : cipherTexts) {
-                    partialSharesForId.add(cipherText.extractPublicShare(shareId));
-                }
-                publicShares.put(shareId, tss.aggregatePublicShares(partialSharesForId));
+        // go through each specified share ID and compute the corresponding public key
+        for (final TssShareId shareId : shareIds) {
+            // each share in this partialShares list represents a public key obtained from a commitment
+            // the share ID in each of these partial shares corresponds to the share ID that *CREATED* the commitment,
+            // NOT to the share ID that the public key is for
+            final List<TssPublicShare> partialShares = new ArrayList<>();
+
+            for (final TssMessage tssMessage : tssMessages) {
+                partialShares.add(new TssPublicShare(
+                        tssMessage.shareId(), tssMessage.commitment().extractPublicKey(shareId)));
             }
-        });
+            outputShares.put(shareId, tss.aggregatePublicShares(partialShares));
+        }
 
-        return publicShares;
+        return outputShares;
     }
 }

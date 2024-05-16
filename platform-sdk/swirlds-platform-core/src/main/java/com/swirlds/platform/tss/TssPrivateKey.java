@@ -22,13 +22,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * A TSS private key.
  */
 public interface TssPrivateKey {
-
     /**
      * Sign a message using the TSS private key.
      *
+     * @param shareId the ID of the share this private key corresponds to
      * @param message the message to sign
      * @return the signature
      */
     @NonNull
-    TssSignature sign(@NonNull byte[] message);
+    TssSignature sign(@NonNull TssShareId shareId, @NonNull byte[] message);
 }

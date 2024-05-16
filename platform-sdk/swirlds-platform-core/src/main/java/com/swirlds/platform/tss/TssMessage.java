@@ -20,16 +20,35 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A message sent as part of either genesis keying, or rekeying.
- * <p>
- * // TODO: this will be sent over the wire, so it probably needs to be a protobuf
  *
- * @param shareId              the ID of the share used to generate this message
- * @param cipherText           contains secrets that are being distributed
- * @param polynomialCommitment a commitment to the polynomial that was used to generate the secrets
- * @param proof                a proof that the polynomial commitment is valid
+ * @param shareId    the ID of the share used to generate this message
+ * @param cipherText contains secrets that are being distributed
+ * @param commitment a commitment to the polynomial that was used to generate the secrets
+ * @param proof      a proof that the polynomial commitment is valid
  */
 public record TssMessage(
         @NonNull TssShareId shareId,
         @NonNull TssCiphertext cipherText,
-        @NonNull TssPolynomialCommitment polynomialCommitment,
-        @NonNull TssProof proof) {}
+        @NonNull TssCommitment commitment,
+        @NonNull TssProof proof) {
+
+    /**
+     * Verify that the message is valid.
+     *
+     * @param publicKey the public key which corresponds to the private key used to generate the message
+     * @return true if the message is valid, false otherwise
+     */
+    boolean verify(@NonNull final TssPublicKey publicKey) {
+        // TODO: figure out which operation is more expensive, and do the other check first
+        return proof.verify(cipherText, commitment) && publicKey.equals(commitment.getTerm(0));
+    }
+
+    /**
+     * Convert the message to a byte array.
+     *
+     * @return the byte array representation of the message
+     */
+    byte[] toBytes() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+}

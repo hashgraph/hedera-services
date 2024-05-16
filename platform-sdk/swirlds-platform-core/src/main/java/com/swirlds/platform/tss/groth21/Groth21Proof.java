@@ -14,33 +14,36 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.bls;
+package com.swirlds.platform.tss.groth21;
 
 import com.swirlds.platform.tss.TssCiphertext;
-import com.swirlds.platform.tss.TssPrivateKey;
-import com.swirlds.platform.tss.TssPublicShare;
-import com.swirlds.platform.tss.TssShareId;
-import com.swirlds.platform.tss.ecdh.EcdhPrivateKey;
+import com.swirlds.platform.tss.TssCommitment;
+import com.swirlds.platform.tss.TssProof;
+import com.swirlds.platform.tss.bls.FieldElement;
+import com.swirlds.platform.tss.bls.GroupElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A BLS implementation of a TSS ciphertext.
+ * A TSS proof, as utilized by the Groth21 scheme.
+ * @param f TODO
+ * @param a
+ * @param y
+ * @param z_r
+ * @param z_a
  */
-public class BlsCiphertext implements TssCiphertext {
-    @NonNull
-    @Override
-    public TssPrivateKey decryptPrivateKey(@NonNull EcdhPrivateKey ecdhPrivateKey, @NonNull TssShareId shareId) {
-        throw new UnsupportedOperationException("Not implemented");
-    }
+public record Groth21Proof(
+        @NonNull GroupElement f,
+        @NonNull GroupElement a,
+        @NonNull GroupElement y,
+        @NonNull FieldElement z_r,
+        @NonNull FieldElement z_a)
+        implements TssProof {
 
-    @NonNull
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public TssPublicShare extractPublicShare(@NonNull TssShareId shareId) {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    @Override
-    public byte[] toBytes() {
+    public boolean verify(@NonNull final TssCiphertext ciphertext, @NonNull final TssCommitment commitment) {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

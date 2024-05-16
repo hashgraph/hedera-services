@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.bls;
+package com.swirlds.platform.tss.groth21;
 
-import com.swirlds.platform.tss.TssShareId;
-import com.swirlds.platform.tss.blscrypto.FieldElement;
+import com.swirlds.platform.tss.TssPublicKey;
+import com.swirlds.platform.tss.bls.GroupElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A BLS implementation of a TSS share ID.
+ * A public key for the Groth21 TSS scheme.
  *
- * @param id the share ID
+ * @param keyMaterial the public key material
  */
-public record BlsShareId(@NonNull FieldElement id) implements TssShareId {}
+public record Groth21PublicKey(@NonNull GroupElement keyMaterial) implements TssPublicKey {}

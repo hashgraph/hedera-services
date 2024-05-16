@@ -14,31 +14,33 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss;
+package com.swirlds.platform.tss.groth21;
 
+import com.swirlds.platform.tss.TssCiphertext;
+import com.swirlds.platform.tss.TssPrivateKey;
+import com.swirlds.platform.tss.TssShareId;
 import com.swirlds.platform.tss.ecdh.EcdhPrivateKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A ciphertext produced by a single node.
+ * A TSS ciphertext, as utilized by the Groth21 scheme.
  */
-public interface TssCiphertext {
+public class Groth21Ciphertext implements TssCiphertext {
     /**
-     * Extract the private key data from this ciphertext.
-     * <p>
-     * The private key decrypted by this method is not the final private key. Rather, it is a partial private key.
-     *
-     * @param ecdhPrivateKey the private key of the node that is extracting the private shares
-     * @param shareId        the ID of the private key to decrypt
-     * @return the private key decrypted from this ciphertext
+     * {@inheritDoc}
      */
     @NonNull
-    TssPrivateKey decryptPrivateKey(@NonNull final EcdhPrivateKey ecdhPrivateKey, @NonNull TssShareId shareId);
+    @Override
+    public TssPrivateKey decryptPrivateKey(
+            @NonNull final EcdhPrivateKey ecdhPrivateKey, @NonNull final TssShareId shareId) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
 
     /**
-     * Serialize this ciphertext to bytes.
-     *
-     * @return the serialized ciphertext
+     * {@inheritDoc}
      */
-    byte[] toBytes();
+    @Override
+    public byte[] toBytes() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
 }

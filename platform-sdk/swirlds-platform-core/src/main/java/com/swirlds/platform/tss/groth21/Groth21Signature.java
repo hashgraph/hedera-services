@@ -14,22 +14,26 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.bls;
+package com.swirlds.platform.tss.groth21;
 
-import com.swirlds.platform.tss.TssPrivateKey;
+import com.swirlds.platform.tss.TssPublicKey;
+import com.swirlds.platform.tss.TssShareId;
 import com.swirlds.platform.tss.TssSignature;
-import com.swirlds.platform.tss.blscrypto.FieldElement;
+import com.swirlds.platform.tss.bls.GroupElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A BLS implementation of a TSS private key.
+ * A signature for the Groth21 TSS scheme.
  *
- * @param keyMaterial the private key material
+ * @param shareId   the ID of the share that produced the signature
+ * @param signature the signature
  */
-public record BlsPrivateKey(@NonNull FieldElement keyMaterial) implements TssPrivateKey {
-    @NonNull
+public record Groth21Signature(@NonNull TssShareId shareId, @NonNull GroupElement signature) implements TssSignature {
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public TssSignature sign(@NonNull final byte[] message) {
+    public boolean verifySignature(@NonNull final TssPublicKey publicKey, @NonNull final byte[] message) {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

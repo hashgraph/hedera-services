@@ -22,6 +22,12 @@ import java.util.List;
 
 /**
  * A Threshold Signature Scheme.
+ * <p>
+ * Contract of TSS:
+ * <ul>
+ *     <li>produce a public key for each share</li>
+ *     <li>give the corresponding secret to the shareholder</li>
+ * </ul>
  */
 public interface Tss {
     /**
@@ -35,21 +41,27 @@ public interface Tss {
 
     /**
      * Aggregate a threshold number of {@link TssPublicShare}s.
+     * <p>
+     * This method is used for two distinct purposes:
+     * <ul>
+     *     <li>Aggregating public shares to produce the Ledger ID</li>
+     *     <li>Aggregating public shares derived from all commitments, to produce the public key for a given share</li>
+     * </ul>
      *
-     * @param partialShares the public shares to aggregate
+     * @param publicShares the public shares to aggregate
      * @return the interpolated public key if the threshold is met, otherwise null.
      */
     @Nullable
-    TssPublicKey aggregatePublicShares(@NonNull final List<TssPublicShare> partialShares);
+    TssPublicKey aggregatePublicShares(@NonNull final List<TssPublicShare> publicShares);
 
     /**
      * Aggregate a threshold number of {@link TssPrivateKey}s.
      *
-     * @param partialKeys the private keys to aggregate
+     * @param privateKeys the private keys to aggregate
      * @return the aggregate private key, or null if the threshold is not met
      */
     @Nullable
-    TssPrivateKey aggregatePrivateKeys(@NonNull final List<TssPrivateKey> partialKeys);
+    TssPrivateKey aggregatePrivateKeys(@NonNull final List<TssPrivateKey> privateKeys);
 
     /**
      * Generate a TSS message for a set of share claims, from a private share.

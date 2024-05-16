@@ -14,17 +14,26 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.bls;
+package com.swirlds.platform.tss.groth21;
 
-import com.swirlds.platform.tss.TssPolynomialCommitment;
-import com.swirlds.platform.tss.blscrypto.GroupElement;
+import com.swirlds.platform.tss.TssPrivateKey;
+import com.swirlds.platform.tss.TssShareId;
+import com.swirlds.platform.tss.TssSignature;
+import com.swirlds.platform.tss.bls.FieldElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 
 /**
- * A BLS implementation of a TSS polynomial commitment.
+ * A private key for the Groth21 scheme.
  *
- * @param coefficientCommitments TODO
+ * @param keyMaterial the private key material
  */
-public record BlsPolynomialCommitment(@NonNull List<GroupElement> coefficientCommitments)
-        implements TssPolynomialCommitment {}
+public record Groth21PrivateKey(@NonNull FieldElement keyMaterial) implements TssPrivateKey {
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public TssSignature sign(@NonNull final TssShareId shareId, @NonNull final byte[] message) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+}

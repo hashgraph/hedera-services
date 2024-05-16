@@ -16,9 +16,18 @@
 
 package com.swirlds.platform.tss;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 /**
  * A TSS proof.
  */
 public interface TssProof {
-    // TODO: what methods belong here?
+    /**
+     * Verify this proof.
+     *
+     * @param ciphertext the ciphertext that this proof is for
+     * @param commitment the commitment that was made to the ciphertext // TODO: check correctness of this description
+     * @return true if the proof is valid, false otherwise
+     */
+    boolean verify(@NonNull final TssCiphertext ciphertext, @NonNull final TssCommitment commitment);
 }
