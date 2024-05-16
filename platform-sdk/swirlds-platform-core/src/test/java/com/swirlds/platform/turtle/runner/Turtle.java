@@ -19,26 +19,11 @@ package com.swirlds.platform.turtle.runner;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
-import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.common.wiring.model.DeterministicWiringModel;
-import com.swirlds.common.wiring.model.WiringModelBuilder;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.builder.PlatformBuilder;
-import com.swirlds.platform.builder.PlatformComponentBuilder;
-import com.swirlds.platform.config.BasicConfig_;
-import com.swirlds.platform.eventhandling.EventConfig_;
-import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
-import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedGossip;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
-import com.swirlds.platform.util.RandomBuilder;
-import com.swirlds.platform.wiring.PlatformSchedulersConfig_;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -53,24 +38,52 @@ import java.util.concurrent.Future;
  * Runs a TURTLE network. All nodes run in this JVM, and if configured properly the execution is expected to be
  * deterministic.
  * <pre>
- *    _________________
- *  /   Testing        \
- * |    Utility         |
- * |    Running         |    _ -
- * |    Totally in a    |=<( o 0 )
- * |    Local           |   \===/
- *  \   Environment    /
- *   ------------------
- *   / /       | | \ \
- *  """        """ """
+ *             _________________
+ *           /   Testing        \
+ *          |    Utility         |
+ *          |    Running         |    _ -
+ *          |    Totally in a    |=<( o 0 )
+ *          |    Local           |   \===/
+ *           \   Environment    /
+ *            ------------------
+ *             / /       | | \ \
+ *            """        """ """
+ *            _________________
+ *           /        gnitseT   \
+ *          |         ytilitU    |
+ *   - _    |         gninnuR    |
+ * ( o O )<=|    a ni yllatoT    |
+ *  \===/   |           lacoL    |
+ *           \    tnemnorivnE   /
+ *            ------------------
+ *             / / | |       \ \
+ *            """  """        """
+ *             _________________
+ *           /   Testing        \
+ *          |    Utility         |
+ *          |    Running         |    _ -
+ *          |    Totally in a    |=<( o 0 )
+ *          |    Local           |   \===/
+ *           \   Environment    /
+ *            ------------------
+ *             / /       | | \ \
+ *            """        """ """
  * </pre>
  */
 public class Turtle {
 
-    private final Randotron randotron;
     private final FakeTime time;
+    private final Duration simulationGranularity;
 
     private final ExecutorService threadPool;
+
+    private final SimulatedNetwork network;
+    private final ArrayList<TurtleNode> nodes = new ArrayList<>();
+
+    private final boolean timeReportingEnabled;
+    private long tickCount;
+    private Instant previousRealTime;
+    private Instant previousSimulatedTime;
 
     /**
      * Constructor.
@@ -78,8 +91,9 @@ public class Turtle {
      * @param builder the turtle builder
      */
     Turtle(@NonNull final TurtleBuilder builder) {
-
-        randotron = builder.getRandotron();
+        final Randotron randotron = builder.getRandotron();
+        simulationGranularity = builder.getSimulationGranularity();
+        timeReportingEnabled = builder.isTimeReportingEnabled();
 
         try {
             ConstructableRegistry.getInstance().registerConstructables("");
@@ -89,100 +103,105 @@ public class Turtle {
 
         threadPool = Executors.newFixedThreadPool(
                 Math.min(builder.getNodeCount(), Runtime.getRuntime().availableProcessors()));
-
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue(EventConfig_.USE_OLD_STYLE_INTAKE_QUEUE, false)
-                .withValue(PlatformSchedulersConfig_.CONSENSUS_EVENT_STREAM, "NO_OP")
-                .withValue(PlatformSchedulersConfig_.RUNNING_EVENT_HASHER, "NO_OP")
-                .withValue(BasicConfig_.JVM_PAUSE_DETECTOR_SLEEP_MS, "0")
-                .getOrCreateConfig();
-
         time = new FakeTime(randotron.nextInstant(), Duration.ZERO);
-        final PlatformContext platformContext = TestPlatformContextBuilder.create()
-                .withTime(time)
-                .withConfiguration(configuration)
-                .build();
 
         final RandomAddressBookBuilder addressBookBuilder = RandomAddressBookBuilder.create(randotron)
                 .withSize(builder.getNodeCount())
                 .withRealKeysEnabled(true);
         final AddressBook addressBook = addressBookBuilder.build();
 
-        final SimulatedNetwork network =
-                new SimulatedNetwork(randotron, addressBook, Duration.ofMillis(200), Duration.ofMillis(10));
-
-        final List<Platform> platforms = new ArrayList<>(builder.getNodeCount());
-        final List<DeterministicWiringModel> models = new ArrayList<>(builder.getNodeCount());
+        network = new SimulatedNetwork(randotron, addressBook, Duration.ofMillis(200), Duration.ofMillis(10));
 
         for (final NodeId nodeId : addressBook.getNodeIdSet()) {
-
-            final DeterministicWiringModel model = WiringModelBuilder.create(platformContext)
-                    .withDeterministicModeEnabled(true)
-                    .build();
-            models.add(model);
-
-            final PlatformBuilder platformBuilder = PlatformBuilder.create(
-                            "foo", "bar", new BasicSoftwareVersion(1), TurtleTestingToolState::new, nodeId)
-                    .withModel(model)
-                    .withRandomBuilder(new RandomBuilder(randotron.nextLong()))
-                    .withPlatformContext(platformContext)
-                    .withBootstrapAddressBook(addressBook)
-                    .withKeysAndCerts(addressBookBuilder.getPrivateKeys(nodeId));
-
-            final PlatformComponentBuilder platformComponentBuilder = platformBuilder.buildComponentBuilder();
-
-            final SimulatedGossip gossip = network.getGossipInstance(nodeId);
-            gossip.provideIntakeEventCounter(
-                    platformComponentBuilder.getBuildingBlocks().intakeEventCounter());
-
-            platformComponentBuilder.withGossip(network.getGossipInstance(nodeId));
-
-            platforms.add(platformComponentBuilder.build());
+            nodes.add(new TurtleNode(
+                    randotron, time, nodeId, addressBook, addressBookBuilder.getPrivateKeys(nodeId), network));
         }
+    }
 
-        for (final Platform platform : platforms) {
-            platform.start();
+    /**
+     * Start the network. Does not simulate any time after each node is started.
+     */
+    public void start() {
+        for (final TurtleNode node : nodes) {
+            node.start();
         }
+    }
 
-        long tickCount = 0;
-        Instant previousStatusUpdateRealTime = Instant.now();
-        Instant previousStatusUpdateSimulatedTime = time.now();
+    /**
+     * Simulate the network for a period of time.
+     *
+     * @param duration the duration to simulate
+     */
+    public void simulateTime(@NonNull final Duration duration) {
+        final Instant startingTime = time.now();
+        final Instant endingTime = startingTime.plus(duration);
 
-        while (true) {
-            if (tickCount % 1000 == 0) {
-                final Instant now = Instant.now();
-                final Duration realElapsedTime = Duration.between(previousStatusUpdateRealTime, now);
-                final Duration simulatedElapsedTime = Duration.between(previousStatusUpdateSimulatedTime, time.now());
-                final double temporalVelocity = simulatedElapsedTime.toNanos() / (double) realElapsedTime.toNanos();
+        while (time.now().isBefore(endingTime)) {
+            reportThePassageOfTime();
 
-                System.out.println("tick %d, temporal velocity = %.2f, simulated time = %s"
-                        .formatted(tickCount, temporalVelocity, time.now()));
-
-                previousStatusUpdateSimulatedTime = time.now();
-                previousStatusUpdateRealTime = now;
-            }
-            tickCount++;
-
-            time.tick(builder.getSimulationGranularity());
+            time.tick(simulationGranularity);
             network.tick(time.now());
+            tickAllNodes();
+        }
+    }
 
-            final List<Future<Void>> futures = new ArrayList<>(builder.getNodeCount());
-            for (final DeterministicWiringModel model : models) {
-                final Future<Void> future = threadPool.submit(() -> {
-                    model.tick();
-                    return null;
-                });
-                futures.add(future);
+    /**
+     * Generate a report of the passage of time.
+     */
+    private void reportThePassageOfTime() {
+        if (!timeReportingEnabled) {
+            return;
+        }
+        if (tickCount == 0) {
+            previousRealTime = Instant.now();
+            previousSimulatedTime = time.now();
+        }
+
+        if (tickCount > 0 && tickCount % 1000 == 0) {
+            final Instant now = Instant.now();
+
+            final Duration realElapsedTime = Duration.between(previousRealTime, now);
+            final Duration simulatedElapsedTime = Duration.between(previousSimulatedTime, time.now());
+
+            final double temporalVelocity;
+            if (realElapsedTime.isZero()) {
+                temporalVelocity = -1;
+            } else {
+                temporalVelocity = simulatedElapsedTime.toNanos() / (double) realElapsedTime.toNanos();
             }
 
-            for (final Future<Void> future : futures) {
-                try {
-                    future.get();
-                } catch (final InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                } catch (final ExecutionException e) {
-                    throw new RuntimeException(e);
-                }
+            previousSimulatedTime = time.now();
+            previousRealTime = now;
+
+            System.out.printf(
+                    "tick %d, temporal velocity = %.2f, simulated time = %s%n",
+                    tickCount, temporalVelocity, time.now());
+        }
+
+        tickCount++;
+    }
+
+    /**
+     * Call tick() on all nodes in the network. Nodes do not interact with each other during their tick() phase, so it
+     * is safe to run them in parallel.
+     */
+    private void tickAllNodes() {
+        final List<Future<Void>> futures = new ArrayList<>();
+        for (final TurtleNode node : nodes) {
+            final Future<Void> future = threadPool.submit(() -> {
+                node.tick();
+                return null;
+            });
+            futures.add(future);
+        }
+
+        for (final Future<Void> future : futures) {
+            try {
+                future.get();
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (final ExecutionException e) {
+                throw new RuntimeException(e);
             }
         }
     }

@@ -21,11 +21,27 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Objects;
 
+/**
+ * Configures and builds a Turtle.
+ * <pre>
+ *    _________________                        _________________
+ *  /   Testing        \                     /        gnitseT   \
+ * |    Utility         |                   |         ytilitU    |
+ * |    Running         |    _ -     - _    |         gninnuR    |
+ * |    Totally in a    |=<( o 0 ) ( o O )<=|    a ni yllatoT    |
+ * |    Local           |   \===/   \===/   |           lacoL    |
+ *  \   Environment    /                     \    tnemnorivnE    /
+ *   ------------------                        ------------------
+ *   / /       | | \ \                          / / | |       \ \
+ *  """        """ """                         """  """        """
+ * </pre>
+ */
 public class TurtleBuilder {
 
     private final Randotron randotron;
     private Duration simulationGranularity = Duration.ofMillis(10);
     private int nodeCount = 4;
+    private boolean timeReportingEnabled;
 
     /**
      * Create a new TurtleBuilder.
@@ -108,5 +124,26 @@ public class TurtleBuilder {
     @NonNull
     Randotron getRandotron() {
         return randotron;
+    }
+
+    /**
+     * Enable or disable time reporting to the console.
+     *
+     * @param timeReportingEnabled true to enable time reporting, false to disable
+     * @return this builder
+     */
+    @NonNull
+    public TurtleBuilder withTimeReportingEnabled(final boolean timeReportingEnabled) {
+        this.timeReportingEnabled = timeReportingEnabled;
+        return this;
+    }
+
+    /**
+     * Get whether time reporting is enabled.
+     *
+     * @return true if time reporting is enabled, false otherwise
+     */
+    boolean isTimeReportingEnabled() {
+        return timeReportingEnabled;
     }
 }
