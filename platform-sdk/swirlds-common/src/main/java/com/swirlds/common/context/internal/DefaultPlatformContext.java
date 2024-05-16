@@ -21,7 +21,6 @@ import com.swirlds.common.concurrent.ExecutorFactory;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.io.filesystem.FileSystemManager;
-import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -45,27 +44,13 @@ public final class DefaultPlatformContext implements PlatformContext {
     /**
      * Constructor.
      *
-     * @param configuration the configuration
-     * @param metrics       the metrics
-     * @param cryptography  the cryptography
-     * @param time          the time
-     * @param executorFactory the executor factory
+     * @param configuration     the configuration
+     * @param metrics           the metrics
+     * @param cryptography      the cryptography
+     * @param time              the time
+     * @param executorFactory   the executor factory
+     * @param fileSystemManager the fileSystemManager
      */
-    public DefaultPlatformContext(
-            @NonNull final Configuration configuration,
-            @NonNull final Metrics metrics,
-            @NonNull final Cryptography cryptography,
-            @NonNull final Time time,
-            @NonNull final ExecutorFactory executorFactory) {
-        this(
-                configuration,
-                metrics,
-                cryptography,
-                time,
-                executorFactory,
-                FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, metrics));
-    }
-
     public DefaultPlatformContext(
             @NonNull final Configuration configuration,
             @NonNull final Metrics metrics,
