@@ -16,18 +16,19 @@
 
 package com.hedera.services.bdd.junit.hedera;
 
+import static org.junit.jupiter.api.parallel.ResourceAccessMode.READ;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.api.parallel.ResourceLock;
 
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @TestFactory
 @ExtendWith(NetworkTargetingExtension.class)
-@Execution(ExecutionMode.CONCURRENT)
+@ResourceLock(value = "NETWORK", mode = READ)
 public @interface HederaTest {}

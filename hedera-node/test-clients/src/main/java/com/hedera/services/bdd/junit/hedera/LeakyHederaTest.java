@@ -16,15 +16,19 @@
 
 package com.hedera.services.bdd.junit.hedera;
 
-import com.hedera.hapi.node.base.AccountID;
-import java.nio.file.Path;
+import static org.junit.jupiter.api.parallel.ResourceAccessMode.READ_WRITE;
 
-public record NodeMetadata(
-        long nodeId,
-        String name,
-        AccountID accountId,
-        int grpcPort,
-        int gossipPort,
-        int tlsGossipPort,
-        int prometheusPort,
-        Path workingDir) {}
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+
+@Target({ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@TestFactory
+@ExtendWith(NetworkTargetingExtension.class)
+@ResourceLock(value = "NETWORK", mode = READ_WRITE)
+public @interface LeakyHederaTest {}

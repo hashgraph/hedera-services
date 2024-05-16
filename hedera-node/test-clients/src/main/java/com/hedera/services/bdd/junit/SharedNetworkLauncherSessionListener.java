@@ -37,14 +37,12 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
 
     private static class SharedNetworkExecutionListener implements TestExecutionListener {
         private static final int SHARED_NETWORK_SIZE = 2;
-        private static final String SHARED_NETWORK = "sharedNetwork";
         private static final Duration SHARED_NETWORK_STARTUP_TIMEOUT = Duration.ofSeconds(30);
 
         @Override
         public void testPlanExecutionStarted(@NonNull final TestPlan testPlan) {
-            final var sharedNetwork = HederaNetwork.newLiveNetwork(SHARED_NETWORK, SHARED_NETWORK_SIZE);
+            final var sharedNetwork = HederaNetwork.newSharedLiveNetwork(SHARED_NETWORK_SIZE);
             sharedNetwork.startWithin(SHARED_NETWORK_STARTUP_TIMEOUT);
-            HederaNetwork.SHARED_NETWORK.set(sharedNetwork);
         }
 
         @Override

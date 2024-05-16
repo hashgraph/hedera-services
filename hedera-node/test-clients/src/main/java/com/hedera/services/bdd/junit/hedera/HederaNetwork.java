@@ -49,39 +49,84 @@ public class HederaNetwork {
     private static final int FIRST_GOSSIP_TLS_PORT = 60001;
     private static final int FIRST_PROMETHEUS_PORT = 10000;
     private static final long FIRST_NODE_ACCOUNT_NUM = 3;
+    private static final String SHARED_NETWORK_NAME = "LAUNCHER_SESSION_SCOPE";
     private static final String[] NODE_NAMES = new String[] {"Alice", "Bob", "Carol", "Dave"};
+    private static final GrpcPinger GRPC_PINGER = new GrpcPinger();
+    private static final PrometheusClient PROMETHEUS_CLIENT = new PrometheusClient();
+
+    private static int nextGrpcPort = FIRST_GRPC_PORT;
+    private static int nextGossipPort = FIRST_GOSSIP_PORT;
+    private static int nextGossipTlsPort = FIRST_GOSSIP_TLS_PORT;
+    private static int nextPrometheusPort = FIRST_PROMETHEUS_PORT;
 
     public static final AtomicReference<HederaNetwork> SHARED_NETWORK = new AtomicReference<>();
 
     private final String configTxt;
+    /**
+     * If null, this is the shared network (only one is allowed per launcher session).
+     */
+    @Nullable
     private final String networkName;
+
     private final List<HederaNode> nodes;
 
     @Nullable
     private CompletableFuture<Void> ready;
 
-    public HederaNetwork(@NonNull final String networkName, @NonNull final List<HederaNode> nodes) {
+    private HederaNetwork(@Nullable final String networkName, @NonNull final List<HederaNode> nodes) {
         this.nodes = requireNonNull(nodes);
-        this.networkName = requireNonNull(networkName);
-        this.configTxt = configTxtFor(networkName, nodes);
+        this.networkName = networkName;
+        this.configTxt = configTxtFor(name(), nodes);
     }
 
     /**
-     * Creates a network of live (sub-process) nodes with the given name and size.
+     * Creates a shared network of live (sub-process) nodes with the given size.
+     *
+     * @param size the number of nodes in the network
+     * @return the shared network
+     */
+    public static synchronized HederaNetwork newSharedLiveNetwork(final int size) {
+        if (SHARED_NETWORK.get() != null) {
+            throw new UnsupportedOperationException("Only one shared network allowed per launcher session");
+        }
+        final var sharedNetwork = liveNetwork(null, size);
+        SHARED_NETWORK.set(sharedNetwork);
+        return sharedNetwork;
+    }
+
+    /**
+     * Creates a network of live (sub-process) nodes with the given name and size. Unlike the shared
+     * network, this network's nodes will have working directories scoped to the given name.
      *
      * @param name the name of the network
      * @param size the number of nodes in the network
      * @return the network
      */
     public static HederaNetwork newLiveNetwork(@NonNull final String name, final int size) {
-        final var grpcPinger = new GrpcPinger();
-        final var prometheusClient = new PrometheusClient();
-        return new HederaNetwork(
+        return liveNetwork(name, size);
+    }
+
+    /**
+     * Creates a network of live (sub-process) nodes with the given name and size. This method is
+     * synchronized because we don't want to re-use any ports across different networks.
+     *
+     * @param name the name of the network
+     * @param size the number of nodes in the network
+     * @return the network
+     */
+    private static synchronized HederaNetwork liveNetwork(@Nullable final String name, final int size) {
+        final var network = new HederaNetwork(
                 name,
                 IntStream.range(0, size)
                         .<HederaNode>mapToObj(
-                                nodeId -> new SubProcessNode(metadataFor(nodeId), grpcPinger, prometheusClient))
+                                nodeId -> new SubProcessNode(metadataFor(nodeId, name), GRPC_PINGER, PROMETHEUS_CLIENT))
                         .toList());
+        // Reserve ports for the next network
+        nextGrpcPort += size * 2;
+        nextGossipPort += size * 2;
+        nextGossipTlsPort += size * 2;
+        nextPrometheusPort += size;
+        return network;
     }
 
     /**
@@ -109,7 +154,7 @@ public class HederaNetwork {
      * @return the name of the network
      */
     public String name() {
-        return networkName;
+        return networkName == null ? SHARED_NETWORK_NAME : networkName;
     }
 
     /**
@@ -179,15 +224,17 @@ public class HederaNetwork {
         return sb.toString();
     }
 
-    private static NodeMetadata metadataFor(final int nodeId) {
+    private static NodeMetadata metadataFor(final int nodeId, @Nullable final String networkName) {
         return new NodeMetadata(
                 nodeId,
                 NODE_NAMES[nodeId],
                 AccountID.newBuilder()
                         .accountNum(FIRST_NODE_ACCOUNT_NUM + nodeId)
                         .build(),
-                FIRST_GRPC_PORT + nodeId * 2,
-                FIRST_PROMETHEUS_PORT + nodeId,
-                workingDirFor(nodeId));
+                nextGrpcPort + nodeId * 2,
+                nextGossipPort + nodeId * 2,
+                nextGossipTlsPort + nodeId * 2,
+                nextPrometheusPort + nodeId,
+                workingDirFor(nodeId, networkName));
     }
 }

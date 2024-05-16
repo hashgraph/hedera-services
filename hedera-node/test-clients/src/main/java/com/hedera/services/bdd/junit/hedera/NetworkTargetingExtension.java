@@ -16,12 +16,15 @@
 
 package com.hedera.services.bdd.junit.hedera;
 
+import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
+
 import com.hedera.services.bdd.spec.HapiSpec;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.lang.reflect.Method;
 import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.platform.commons.support.AnnotationSupport;
 
 /**
  * An extension that binds the target network to the thread before invoking
@@ -32,17 +35,24 @@ import org.junit.platform.commons.support.AnnotationSupport;
  * creating {@link @Isolated} networks for annotated test classes and targeting
  * them for the duration of the test class.
  */
-public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachCallback {
+public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback {
     @Override
     public void beforeEach(@NonNull final ExtensionContext extensionContext) {
         extensionContext
                 .getTestMethod()
-                .filter(method -> AnnotationSupport.isAnnotated(method, HederaTest.class))
+                .filter(NetworkTargetingExtension::isHederaTest)
                 .ifPresent(ignore -> HapiSpec.TARGET_NETWORK.set(HederaNetwork.SHARED_NETWORK.get()));
     }
 
     @Override
     public void afterEach(@NonNull final ExtensionContext extensionContext) {
         HapiSpec.TARGET_NETWORK.remove();
+    }
+
+    @Override
+    public void beforeAll(@NonNull final ExtensionContext extensionContext) throws Exception {}
+
+    private static boolean isHederaTest(@NonNull final Method method) {
+        return isAnnotated(method, HederaTest.class) || isAnnotated(method, LeakyHederaTest.class);
     }
 }

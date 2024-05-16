@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.junit.hedera.live;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -27,7 +28,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.parallel.Isolated;
 
 public class WorkingDirUtils {
     private static final String DATA_DIR = "data";
@@ -47,14 +47,13 @@ public class WorkingDirUtils {
     /**
      * Returns the path to the working directory for the given node ID.
      *
-     * <p><b>(FUTURE)</b> We will likely want to pass in the network name
-     * here as well once we support {@link Isolated} test execution.
-     *
      * @param nodeId the ID of the node
+     * @param scope if non-null, an additional scope to use for the working directory
      * @return the path to the working directory
      */
-    public static Path workingDirFor(final long nodeId) {
-        return Path.of(BASE_WORKING_DIR + nodeId).normalize();
+    public static Path workingDirFor(final long nodeId, @Nullable String scope) {
+        final var nodeWorkingDir = Path.of(BASE_WORKING_DIR + nodeId);
+        return (scope == null ? nodeWorkingDir : nodeWorkingDir.resolve(scope)).normalize();
     }
 
     /**
