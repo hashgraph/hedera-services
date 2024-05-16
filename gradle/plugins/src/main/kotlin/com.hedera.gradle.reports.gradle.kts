@@ -17,9 +17,9 @@
 plugins {
     id("jvm-ecosystem")
     id("jacoco-report-aggregation")
-    id("com.hedera.hashgraph.repositories")
-    id("com.hedera.hashgraph.jpms-modules")
-    id("com.hedera.hashgraph.jpms-module-dependencies")
+    id("com.hedera.gradle.repositories")
+    id("com.hedera.gradle.jpms-modules")
+    id("com.hedera.gradle.jpms-module-dependencies")
 }
 
 dependencies {
