@@ -56,11 +56,17 @@ class BasicSoftwareVersionTest {
 
     @Test
     @DisplayName("Verify the functionality of the PBJ record returned")
-    void testPbjVersion(){
+    void testPbjVersion() {
         assertNotNull(VERSION_ONE.getPbjSemanticVersion(), "PBJ record should not be null.");
         assertNotNull(VERSION_TWO.getPbjSemanticVersion(), "PBJ record should not be null.");
-        assertEquals(VERSION_ONE.getPbjSemanticVersion(), VERSION_ONE.getPbjSemanticVersion(), "PBJ record should be the same.");
-        assertNotEquals(VERSION_ONE.getPbjSemanticVersion(), VERSION_TWO.getPbjSemanticVersion(), "PBJ record should not be the same.");
+        assertEquals(
+                VERSION_ONE.getPbjSemanticVersion(),
+                VERSION_ONE.getPbjSemanticVersion(),
+                "PBJ record should be the same.");
+        assertNotEquals(
+                VERSION_ONE.getPbjSemanticVersion(),
+                VERSION_TWO.getPbjSemanticVersion(),
+                "PBJ record should not be the same.");
     }
 
     @Test

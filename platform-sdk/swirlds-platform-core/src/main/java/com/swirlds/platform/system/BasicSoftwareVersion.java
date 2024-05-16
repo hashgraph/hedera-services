@@ -49,8 +49,7 @@ public class BasicSoftwareVersion implements SoftwareVersion {
      */
     public BasicSoftwareVersion(final long softwareVersion) {
         this.softwareVersion = softwareVersion;
-        this.semanticVersion = SemanticVersion
-                .newBuilder()
+        this.semanticVersion = SemanticVersion.newBuilder()
                 .major(Math.toIntExact(softwareVersion))
                 .build();
     }
@@ -87,8 +86,7 @@ public class BasicSoftwareVersion implements SoftwareVersion {
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         softwareVersion = in.readLong();
-        this.semanticVersion = SemanticVersion
-                .newBuilder()
+        this.semanticVersion = SemanticVersion.newBuilder()
                 .major(Math.toIntExact(softwareVersion))
                 .build();
     }

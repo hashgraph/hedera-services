@@ -77,9 +77,12 @@ final class HederaSoftwareVersionTest {
         final SemanticVersion pbjA = versionA.getPbjSemanticVersion();
         final SemanticVersion pbjB = versionB.getPbjSemanticVersion();
         switch (expected) {
-            case "<" -> assertThat(HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(pbjA, pbjB)).isLessThan(0);
-            case "=" -> assertThat(HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(pbjA, pbjB)).isEqualTo(0);
-            case ">" -> assertThat(HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(pbjA, pbjB)).isGreaterThan(0);
+            case "<" -> assertThat(HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(pbjA, pbjB))
+                    .isLessThan(0);
+            case "=" -> assertThat(HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(pbjA, pbjB))
+                    .isEqualTo(0);
+            case ">" -> assertThat(HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(pbjA, pbjB))
+                    .isGreaterThan(0);
             default -> throw new IllegalArgumentException("Unknown expected value: " + expected);
         }
     }

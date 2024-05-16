@@ -72,5 +72,6 @@ public interface SoftwareVersion extends SelfSerializable, Comparable<SoftwareVe
      *
      * @return the semantic version of the software
      */
-    @NonNull SemanticVersion getPbjSemanticVersion();
+    @NonNull
+    SemanticVersion getPbjSemanticVersion();
 }
