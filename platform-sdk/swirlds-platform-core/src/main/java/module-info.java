@@ -155,6 +155,7 @@ module com.swirlds.platform.core {
     requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
+    requires java.compiler;
 
     provides ConfigurationExtension with
             PlatformConfigurationExtension;

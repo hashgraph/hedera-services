@@ -16,12 +16,13 @@
 
 package com.swirlds.platform.tss;
 
+import com.swirlds.platform.tss.signing.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A TSS proof.
  */
-public interface TssProof {
+public interface TssProof<P extends PublicKey> {
     /**
      * Verify this proof.
      *
@@ -29,5 +30,5 @@ public interface TssProof {
      * @param commitment the commitment that was made to the ciphertext // TODO: check correctness of this description
      * @return true if the proof is valid, false otherwise
      */
-    boolean verify(@NonNull final TssCiphertext ciphertext, @NonNull final TssCommitment commitment);
+    boolean verify(@NonNull final TssCiphertext<P> ciphertext, @NonNull final TssCommitment<P> commitment);
 }

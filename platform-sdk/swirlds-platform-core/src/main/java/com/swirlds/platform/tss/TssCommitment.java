@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.tss;
 
+import com.swirlds.platform.tss.signing.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -23,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * <p>
  * The commitments produced during a keying contain the data to reconstruct the public key for each share.
  */
-public interface TssCommitment {
+public interface TssCommitment<P extends PublicKey> {
     /**
      * Extract the public key from this commitment for a given share.
      * <p>
@@ -34,7 +35,7 @@ public interface TssCommitment {
      * @return the public key extracted from this commitment
      */
     @NonNull
-    TssPublicKey extractPublicKey(@NonNull final TssShareId shareId);
+    P extractPublicKey(@NonNull final TssShareId shareId);
 
     /**
      * Get the term at the given index. // TODO: does this method make sense, naming and content wise?
@@ -43,7 +44,7 @@ public interface TssCommitment {
      * @return the term at the given index
      */
     @NonNull
-    TssPublicKey getTerm(final int index);
+    P getTerm(final int index);
 
     /**
      * Get the byte array representation of this commitment.

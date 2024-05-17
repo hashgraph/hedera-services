@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.tss;
 
+import com.swirlds.platform.tss.signing.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -24,4 +25,4 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param shareId   the share ID
  * @param publicKey the public key
  */
-public record TssPublicShare(@NonNull TssShareId shareId, @NonNull TssPublicKey publicKey) {}
+public record TssPublicShare<P extends PublicKey>(@NonNull TssShareId shareId, @NonNull P publicKey) {}

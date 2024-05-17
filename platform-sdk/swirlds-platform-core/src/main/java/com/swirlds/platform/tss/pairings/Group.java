@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.bls;
+package com.swirlds.platform.tss.pairings;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 
 /**
@@ -23,18 +24,40 @@ import java.util.Collection;
  *
  * <p>This is a factory interface, responsible for creating {@link GroupElement group elements}
  *
- * TODO: this is a temporary placeholder, until we have the BLS library ready for use
+ * @param <GE> the group element type
+ * @param <FE> the field element type
+ * @param <G>  the group type
+ * @param <F>  the field type
  */
-public interface Group {
+public interface Group<
+        GE extends GroupElement<GE, FE, G, F>,
+        FE extends FieldElement<FE, F>,
+        G extends Group<GE, FE, G, F>,
+        F extends Field<FE, F>> {
+    /**
+     * Returns the group's generator
+     *
+     * @return the group's generator
+     */
+    @NonNull
+    GE getGenerator();
+
     /**
      * Creates a new group element with value 1
      *
      * @return the new group element
      */
-    GroupElement oneElement();
+    @NonNull
+    GE oneElement();
 
-    /** Creates a group element from a seed (32 bytes) */
-    GroupElement randomElement(byte[] seed);
+    /**
+     * Creates a group element from a seed (32 bytes)
+     *
+     * @param seed the seed to generate the element from
+     * @return the new group element
+     */
+    @NonNull
+    GE randomElement(byte[] seed);
 
     /**
      * Hashes an unbounded length input to a group element
@@ -42,7 +65,8 @@ public interface Group {
      * @param input the input to be hashes
      * @return the new group element
      */
-    GroupElement hashToGroup(byte[] input);
+    @NonNull
+    GE hashToGroup(byte[] input);
 
     /**
      * Multiplies a collection of group elements together
@@ -50,7 +74,8 @@ public interface Group {
      * @param elements the collection of elements to multiply together
      * @return a new group element which is the product the collection of elements
      */
-    GroupElement batchMultiply(Collection<GroupElement> elements);
+    @NonNull
+    GE batchMultiply(@NonNull Collection<GE> elements);
 
     /**
      * Creates a group element from its serialized encoding
@@ -58,7 +83,8 @@ public interface Group {
      * @param bytes serialized form
      * @return the new group element, or null if construction failed
      */
-    GroupElement deserializeElementFromBytes(byte[] bytes);
+    @NonNull
+    GE deserializeElementFromBytes(byte[] bytes);
 
     /**
      * Gets the size in bytes of a compressed group element

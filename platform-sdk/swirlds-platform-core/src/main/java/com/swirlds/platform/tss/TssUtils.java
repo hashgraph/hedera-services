@@ -17,6 +17,7 @@
 package com.swirlds.platform.tss;
 
 import com.swirlds.platform.tss.ecdh.EcdhPrivateKey;
+import com.swirlds.platform.tss.signing.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -44,11 +45,11 @@ public final class TssUtils {
      * @return the private shares, or null if there aren't enough shares to meet the threshold
      */
     @Nullable
-    public static List<TssPrivateShare> decryptPrivateShares(
-            @NonNull final Tss tss,
+    public static <P extends PublicKey> List<TssPrivateShare<P>> decryptPrivateShares(
+            @NonNull final Tss<P> tss,
             @NonNull final List<TssShareId> shareIds,
             @NonNull final EcdhPrivateKey ecdhPrivateKey,
-            @NonNull final List<TssCiphertext> cipherTexts,
+            @NonNull final List<TssCiphertext<P>> cipherTexts,
             final int threshold) {
 
         // check if there are enough cipher texts to meet the required threshold
@@ -57,8 +58,8 @@ public final class TssUtils {
         }
 
         // decrypt the partial private shares from the cipher texts
-        final Map<TssShareId, List<TssPrivateKey>> partialPrivateKeys = new HashMap<>();
-        for (final TssCiphertext cipherText : cipherTexts) {
+        final Map<TssShareId, List<TssPrivateKey<P>>> partialPrivateKeys = new HashMap<>();
+        for (final TssCiphertext<P> cipherText : cipherTexts) {
             for (final TssShareId shareId : shareIds) {
                 partialPrivateKeys
                         .computeIfAbsent(shareId, k -> new ArrayList<>())
@@ -67,12 +68,13 @@ public final class TssUtils {
         }
 
         // aggregate the decrypted partial private keys, creating the actual private shares
-        final List<TssPrivateShare> privateShares = new ArrayList<>();
-        for (final Map.Entry<TssShareId, List<TssPrivateKey>> entry : partialPrivateKeys.entrySet()) {
+        final List<TssPrivateShare<P>> privateShares = new ArrayList<>();
+        for (final Map.Entry<TssShareId, List<TssPrivateKey<P>>> entry : partialPrivateKeys.entrySet()) {
             final TssShareId shareId = entry.getKey();
-            final List<TssPrivateKey> partialKeysForId = entry.getValue();
+            final List<TssPrivateKey<P>> partialKeysForId = entry.getValue();
 
-            privateShares.add(new TssPrivateShare(shareId, tss.aggregatePrivateKeys(partialKeysForId)));
+            // TODO: make sure private key aggregate doesn't return null
+            privateShares.add(new TssPrivateShare<>(shareId, tss.aggregatePrivateKeys(partialKeysForId)));
         }
 
         return privateShares;
@@ -88,10 +90,10 @@ public final class TssUtils {
      * @return the public shares, or null if there aren't enough shares to meet the threshold
      */
     @Nullable
-    public static Map<TssShareId, TssPublicKey> computePublicShares(
-            @NonNull final Tss tss,
+    public static <P extends PublicKey> Map<TssShareId, PublicKey> computePublicShares(
+            @NonNull final Tss<P> tss,
             @NonNull final List<TssShareId> shareIds,
-            @NonNull final List<TssMessage> tssMessages,
+            @NonNull final List<TssMessage<P>> tssMessages,
             final int threshold) {
 
         // check if there are enough TSS messages to meet the required threshold
@@ -99,17 +101,17 @@ public final class TssUtils {
             return null;
         }
 
-        final Map<TssShareId, TssPublicKey> outputShares = new HashMap<>();
+        final Map<TssShareId, PublicKey> outputShares = new HashMap<>();
 
         // go through each specified share ID and compute the corresponding public key
         for (final TssShareId shareId : shareIds) {
             // each share in this partialShares list represents a public key obtained from a commitment
             // the share ID in each of these partial shares corresponds to the share ID that *CREATED* the commitment,
             // NOT to the share ID that the public key is for
-            final List<TssPublicShare> partialShares = new ArrayList<>();
+            final List<TssPublicShare<P>> partialShares = new ArrayList<>();
 
-            for (final TssMessage tssMessage : tssMessages) {
-                partialShares.add(new TssPublicShare(
+            for (final TssMessage<P> tssMessage : tssMessages) {
+                partialShares.add(new TssPublicShare<>(
                         tssMessage.shareId(), tssMessage.commitment().extractPublicKey(shareId)));
             }
             outputShares.put(shareId, tss.aggregatePublicShares(partialShares));

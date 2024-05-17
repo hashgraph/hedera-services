@@ -20,10 +20,10 @@ import com.swirlds.platform.tss.Tss;
 import com.swirlds.platform.tss.TssMessage;
 import com.swirlds.platform.tss.TssPrivateKey;
 import com.swirlds.platform.tss.TssPrivateShare;
-import com.swirlds.platform.tss.TssPublicKey;
 import com.swirlds.platform.tss.TssPublicShare;
 import com.swirlds.platform.tss.TssShareClaim;
-import com.swirlds.platform.tss.TssSignature;
+import com.swirlds.platform.tss.signing.PublicKey;
+import com.swirlds.platform.tss.signing.Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -31,13 +31,13 @@ import java.util.List;
 /**
  * A Groth21 implementation of a Threshold Signature Scheme.
  */
-public class Groth21Tss implements Tss {
+public class Groth21Tss<P extends PublicKey> implements Tss<P> {
     /**
      * {@inheritDoc}
      */
     @Nullable
     @Override
-    public TssSignature aggregateSignatures(@NonNull final List<TssSignature> partialSignatures) {
+    public Signature<P> aggregateSignatures(@NonNull final List<Signature<P>> partialSignatures) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -46,7 +46,7 @@ public class Groth21Tss implements Tss {
      */
     @Nullable
     @Override
-    public TssPublicKey aggregatePublicShares(@NonNull final List<TssPublicShare> publicShares) {
+    public P aggregatePublicShares(@NonNull final List<TssPublicShare<P>> publicShares) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -55,7 +55,7 @@ public class Groth21Tss implements Tss {
      */
     @Nullable
     @Override
-    public TssPrivateKey aggregatePrivateKeys(@NonNull final List<TssPrivateKey> privateKeys) {
+    public TssPrivateKey<P> aggregatePrivateKeys(@NonNull final List<TssPrivateKey<P>> privateKeys) {
         return null;
     }
 
@@ -64,9 +64,9 @@ public class Groth21Tss implements Tss {
      */
     @NonNull
     @Override
-    public TssMessage generateTssMessage(
+    public TssMessage<P> generateTssMessage(
             @NonNull final List<TssShareClaim> pendingShareClaims,
-            @NonNull final TssPrivateShare privateShare,
+            @NonNull final TssPrivateShare<P> privateShare,
             final int threshold) {
         throw new UnsupportedOperationException("Not implemented");
     }

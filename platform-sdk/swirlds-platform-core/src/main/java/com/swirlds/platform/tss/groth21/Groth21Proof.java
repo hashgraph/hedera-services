@@ -19,31 +19,33 @@ package com.swirlds.platform.tss.groth21;
 import com.swirlds.platform.tss.TssCiphertext;
 import com.swirlds.platform.tss.TssCommitment;
 import com.swirlds.platform.tss.TssProof;
-import com.swirlds.platform.tss.bls.FieldElement;
-import com.swirlds.platform.tss.bls.GroupElement;
+import com.swirlds.platform.tss.pairings.Field;
+import com.swirlds.platform.tss.pairings.FieldElement;
+import com.swirlds.platform.tss.pairings.GroupElement;
+import com.swirlds.platform.tss.signing.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A TSS proof, as utilized by the Groth21 scheme.
- * @param f TODO
+ * @param f TODO: which groups are these in?
  * @param a
  * @param y
  * @param z_r
  * @param z_a
  */
-public record Groth21Proof(
+public record Groth21Proof<FE extends FieldElement<FE, F>, F extends Field<FE, F>, P extends PublicKey>(
         @NonNull GroupElement f,
         @NonNull GroupElement a,
         @NonNull GroupElement y,
-        @NonNull FieldElement z_r,
-        @NonNull FieldElement z_a)
-        implements TssProof {
+        @NonNull FieldElement<FE, F> z_r,
+        @NonNull FieldElement<FE, F> z_a)
+        implements TssProof<P> {
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public boolean verify(@NonNull final TssCiphertext ciphertext, @NonNull final TssCommitment commitment) {
+    public boolean verify(@NonNull final TssCiphertext<P> ciphertext, @NonNull final TssCommitment<P> commitment) {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

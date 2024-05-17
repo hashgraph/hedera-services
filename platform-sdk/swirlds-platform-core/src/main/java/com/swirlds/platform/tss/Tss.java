@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.tss;
 
+import com.swirlds.platform.tss.signing.PublicKey;
+import com.swirlds.platform.tss.signing.Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -29,15 +31,15 @@ import java.util.List;
  *     <li>give the corresponding secret to the shareholder</li>
  * </ul>
  */
-public interface Tss {
+public interface Tss<P extends PublicKey> {
     /**
-     * Aggregate a threshold number of {@link TssSignature}s.
+     * Aggregate a threshold number of {@link Signature}s.
      *
      * @param partialSignatures the list of signatures to aggregate
      * @return the interpolated signature if the threshold is met, otherwise null.
      */
     @Nullable
-    TssSignature aggregateSignatures(@NonNull final List<TssSignature> partialSignatures);
+    Signature<P> aggregateSignatures(@NonNull final List<Signature<P>> partialSignatures);
 
     /**
      * Aggregate a threshold number of {@link TssPublicShare}s.
@@ -52,7 +54,7 @@ public interface Tss {
      * @return the interpolated public key if the threshold is met, otherwise null.
      */
     @Nullable
-    TssPublicKey aggregatePublicShares(@NonNull final List<TssPublicShare> publicShares);
+    P aggregatePublicShares(@NonNull final List<TssPublicShare<P>> publicShares);
 
     /**
      * Aggregate a threshold number of {@link TssPrivateKey}s.
@@ -61,7 +63,7 @@ public interface Tss {
      * @return the aggregate private key, or null if the threshold is not met
      */
     @Nullable
-    TssPrivateKey aggregatePrivateKeys(@NonNull final List<TssPrivateKey> privateKeys);
+    TssPrivateKey<P> aggregatePrivateKeys(@NonNull final List<TssPrivateKey<P>> privateKeys);
 
     /**
      * Generate a TSS message for a set of share claims, from a private share.
@@ -72,8 +74,8 @@ public interface Tss {
      * @return the TSS message produced for the input share claims
      */
     @NonNull
-    TssMessage generateTssMessage(
+    TssMessage<P> generateTssMessage(
             @NonNull final List<TssShareClaim> pendingShareClaims,
-            @NonNull final TssPrivateShare privateShare,
+            @NonNull final TssPrivateShare<P> privateShare,
             final int threshold);
 }

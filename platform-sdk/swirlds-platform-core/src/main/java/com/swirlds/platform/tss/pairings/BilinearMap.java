@@ -14,21 +14,35 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.bls;
+package com.swirlds.platform.tss.pairings;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * An object for computing bilinear pairings
  *
- * TODO: this is a temporary placeholder, until we have the BLS library ready for use
+ * @param <GES> the type of the signature group element
+ * @param <GEK> the type of the key group element
+ * @param <GS>  the signature group type
+ * @param <GK>  the key group type
+ * @param <F>   the field type
+ * @param <FE>  the field element type
  */
-public interface BilinearMap {
+public interface BilinearMap<
+        GES extends GroupElement<GES, FE, GS, F>,
+        GEK extends GroupElement<GEK, FE, GK, F>,
+        GS extends Group<GES, FE, GS, F>,
+        GK extends Group<GEK, FE, GK, F>,
+        F extends Field<FE, F>,
+        FE extends FieldElement<FE, F>> {
 
     /**
      * Returns the field of the bilinear map
      *
      * @return the field
      */
-    Field field();
+    @NonNull
+    FE field();
 
     /**
      * Returns the signature group of the map. BLS signatures will be represented as elements of
@@ -36,7 +50,8 @@ public interface BilinearMap {
      *
      * @return the signature group of the pairing
      */
-    Group signatureGroup();
+    @NonNull
+    GS signatureGroup();
 
     /**
      * Returns the key group of the map. BLS public keys will be represented as elements of this
@@ -44,29 +59,30 @@ public interface BilinearMap {
      *
      * @return the key group of the pairing
      */
-    Group keyGroup();
+    @NonNull
+    GK keyGroup();
 
     /**
      * Computes 2 pairings, and then checks the equality of the result
      *
      * @param signatureElement1 the signature group element of the first pairing
-     * @param keyElement1 the key group element of the first pairing
+     * @param keyElement1       the key group element of the first pairing
      * @param signatureElement2 the signature group element of the second pairing
-     * @param keyElement2 the key group element of the second pairing
+     * @param keyElement2       the key group element of the second pairing
      * @return true if the 2 pairings have the same result, otherwise false
      */
     boolean comparePairing(
-            GroupElement signatureElement1,
-            GroupElement keyElement1,
-            GroupElement signatureElement2,
-            GroupElement keyElement2);
+            @NonNull GES signatureElement1,
+            @NonNull GEK keyElement1,
+            @NonNull GES signatureElement2,
+            @NonNull GEK keyElement2);
 
     /**
      * Computes a pairing, and returns a byte array representing the result
      *
      * @param signatureElement the element in the signature group of the pairing
-     * @param keyElement the element in the key group of the pairing
+     * @param keyElement       the element in the key group of the pairing
      * @return a byte array representing the pairing
      */
-    byte[] displayPairing(final GroupElement signatureElement, final GroupElement keyElement);
+    byte[] displayPairing(@NonNull GES signatureElement, @NonNull GEK keyElement);
 }

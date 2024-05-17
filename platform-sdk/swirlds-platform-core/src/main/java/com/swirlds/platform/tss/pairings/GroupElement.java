@@ -14,20 +14,30 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.bls;
+package com.swirlds.platform.tss.pairings;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Interface representing a cryptographic group element
  *
- * TODO: this is a temporary placeholder, until we have the BLS library ready for use
+ * @param <GE> the group element type
+ * @param <FE> the field element type
+ * @param <G>  the group type
+ * @param <F>  the field type
  */
-public interface GroupElement {
+public interface GroupElement<
+        GE extends GroupElement<GE, FE, G, F>,
+        FE extends FieldElement<FE, F>,
+        G extends Group<GE, FE, G, F>,
+        F extends Field<FE, F>> {
     /**
      * Returns the group of the element
      *
      * @return the element's group
      */
-    Group group();
+    @NonNull
+    G group();
 
     /**
      * Serializes the group elements to a byte array
@@ -42,7 +52,8 @@ public interface GroupElement {
      * @param exponent the field element exponent
      * @return a new group element which is this group element to the power of a field element
      */
-    GroupElement power(FieldElement exponent);
+    @NonNull
+    GE power(@NonNull FE exponent);
 
     /**
      * Multiplies this group element with another
@@ -50,7 +61,8 @@ public interface GroupElement {
      * @param other the other group element
      * @return a new group element which is the product of this element and another
      */
-    GroupElement multiply(GroupElement other);
+    @NonNull
+    GE multiply(@NonNull GE other);
 
     /**
      * Divides this group element by another
@@ -58,14 +70,16 @@ public interface GroupElement {
      * @param other the other group element
      * @return a new group element which is the quotient of this element and another
      */
-    GroupElement divide(GroupElement other);
+    @NonNull
+    GE divide(@NonNull GE other);
 
     /**
      * Compresses the group element
      *
      * @return this object, compressed
      */
-    GroupElement compress();
+    @NonNull
+    GE compress();
 
     /**
      * Gets whether the group element is compressed
@@ -75,9 +89,12 @@ public interface GroupElement {
     boolean isCompressed();
 
     /**
-     * {@inheritDoc}
+     * Returns a copy of the group element
+     *
+     * @return a copy of the group element
      */
-    GroupElement copy();
+    @NonNull
+    GE copy();
 
     /**
      * Checks whether the element bytes are valid
@@ -85,7 +102,4 @@ public interface GroupElement {
      * @return true of the element bytes are valid, otherwise false
      */
     boolean isValid();
-
-    @Override
-    String toString();
 }

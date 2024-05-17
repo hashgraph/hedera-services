@@ -16,12 +16,15 @@
 
 package com.swirlds.platform.tss;
 
+import com.swirlds.platform.tss.signing.PrivateKey;
+import com.swirlds.platform.tss.signing.PublicKey;
+import com.swirlds.platform.tss.signing.Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A TSS private key.
  */
-public interface TssPrivateKey {
+public record  TssPrivateKey<P extends PublicKey>(@NonNull PrivateKey<P> privateKey) {
     /**
      * Sign a message using the TSS private key.
      *
@@ -30,5 +33,7 @@ public interface TssPrivateKey {
      * @return the signature
      */
     @NonNull
-    TssSignature sign(@NonNull TssShareId shareId, @NonNull byte[] message);
+    Signature<P> sign(@NonNull TssShareId shareId, @NonNull byte[] message) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
 }

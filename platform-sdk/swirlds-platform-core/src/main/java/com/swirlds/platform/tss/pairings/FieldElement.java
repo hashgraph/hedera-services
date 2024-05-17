@@ -14,22 +14,25 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.bls;
+package com.swirlds.platform.tss.pairings;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 
 /**
  * An interface representing a generic field element
  *
- * TODO: this is a temporary placeholder, until we have the BLS library ready for use
+ * @param <FE> the field element type
+ * @param <F> the field type
  */
-public interface FieldElement {
+public interface FieldElement<FE extends FieldElement<FE, F>, F extends Field<FE, F>> {
     /**
      * Returns the field the element is in
      *
      * @return the field
      */
-    Field field();
+    @NonNull
+    F field();
 
     /**
      * Serializes the field element to bytes
@@ -44,7 +47,8 @@ public interface FieldElement {
      * @param other the other field element
      * @return a new field element which is the sum of this element and another
      */
-    FieldElement add(FieldElement other);
+    @NonNull
+    FE add(@NonNull FE other);
 
     /**
      * Subtracts another field element from this one
@@ -52,7 +56,8 @@ public interface FieldElement {
      * @param other the other field element
      * @return a new field element which is the difference of this element and another
      */
-    FieldElement subtract(FieldElement other);
+    @NonNull
+    FE subtract(@NonNull FE other);
 
     /**
      * Multiplies another field element with this one
@@ -60,7 +65,8 @@ public interface FieldElement {
      * @param other the other field element
      * @return a new field element which is the product of this element and another
      */
-    FieldElement multiply(FieldElement other);
+    @NonNull
+    FE multiply(@NonNull FE other);
 
     /**
      * Divides the field element by another
@@ -68,7 +74,8 @@ public interface FieldElement {
      * @param other the other field element
      * @return a new field element which is the quotient of this element and another
      */
-    FieldElement divide(FieldElement other);
+    @NonNull
+    FE divide(@NonNull FE other);
 
     /**
      * Takes the field element to the power of an integer
@@ -76,7 +83,8 @@ public interface FieldElement {
      * @param exponent the exponent integer
      * @return a new field element which is the power
      */
-    FieldElement power(BigInteger exponent);
+    @NonNull
+    FE power(@NonNull BigInteger exponent);
 
     /**
      * Checks whether the element bytes are valid

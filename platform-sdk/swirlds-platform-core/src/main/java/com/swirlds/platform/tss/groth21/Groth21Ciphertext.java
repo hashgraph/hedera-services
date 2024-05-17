@@ -20,18 +20,22 @@ import com.swirlds.platform.tss.TssCiphertext;
 import com.swirlds.platform.tss.TssPrivateKey;
 import com.swirlds.platform.tss.TssShareId;
 import com.swirlds.platform.tss.ecdh.EcdhPrivateKey;
+import com.swirlds.platform.tss.signing.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A TSS ciphertext, as utilized by the Groth21 scheme.
  */
-public class Groth21Ciphertext implements TssCiphertext {
+public class Groth21Ciphertext<P extends PublicKey> implements TssCiphertext<P> {
+
+    // TODO: what members belong here?
+
     /**
      * {@inheritDoc}
      */
     @NonNull
     @Override
-    public TssPrivateKey decryptPrivateKey(
+    public TssPrivateKey<P> decryptPrivateKey(
             @NonNull final EcdhPrivateKey ecdhPrivateKey, @NonNull final TssShareId shareId) {
         throw new UnsupportedOperationException("Not implemented");
     }

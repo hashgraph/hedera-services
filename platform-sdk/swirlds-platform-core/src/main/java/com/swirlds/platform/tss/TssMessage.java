@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.tss;
 
+import com.swirlds.platform.tss.signing.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -26,11 +27,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param commitment a commitment to the polynomial that was used to generate the secrets
  * @param proof      a proof that the polynomial commitment is valid
  */
-public record TssMessage(
+public record TssMessage<P extends PublicKey>(
         @NonNull TssShareId shareId,
-        @NonNull TssCiphertext cipherText,
-        @NonNull TssCommitment commitment,
-        @NonNull TssProof proof) {
+        @NonNull TssCiphertext<P> cipherText,
+        @NonNull TssCommitment<P> commitment,
+        @NonNull TssProof<P> proof) {
 
     /**
      * Verify that the message is valid.
@@ -38,7 +39,7 @@ public record TssMessage(
      * @param publicKey the public key which corresponds to the private key used to generate the message
      * @return true if the message is valid, false otherwise
      */
-    boolean verify(@NonNull final TssPublicKey publicKey) {
+    boolean verify(@NonNull final P publicKey) {
         // TODO: figure out which operation is more expensive, and do the other check first
         return proof.verify(cipherText, commitment) && publicKey.equals(commitment.getTerm(0));
     }

@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.tss;
 
+import com.swirlds.platform.tss.signing.PublicKey;
+import com.swirlds.platform.tss.signing.Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -24,7 +26,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param shareId    the share ID
  * @param privateKey the private key
  */
-public record TssPrivateShare(@NonNull TssShareId shareId, @NonNull TssPrivateKey privateKey) {
+public record TssPrivateShare<P extends PublicKey>(@NonNull TssShareId shareId, @NonNull TssPrivateKey<P> privateKey) {
     /**
      * Sign a message using the private key.
      *
@@ -32,7 +34,7 @@ public record TssPrivateShare(@NonNull TssShareId shareId, @NonNull TssPrivateKe
      * @return the signature
      */
     @NonNull
-    TssSignature sign(@NonNull final byte[] message) {
+    Signature<P> sign(@NonNull final byte[] message) {
         return privateKey.sign(shareId, message);
     }
 }

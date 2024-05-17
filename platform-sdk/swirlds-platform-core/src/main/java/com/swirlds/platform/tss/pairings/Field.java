@@ -14,37 +14,43 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.bls;
+package com.swirlds.platform.tss.pairings;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Interface representing a generic field
  *
  * <p>This is a factory interface, responsible for creating {@link FieldElement field elements}
  *
- * TODO: this is a temporary placeholder, until we have the BLS library ready for use
+ * @param <FE> the field element type
+ * @param <F> the field type
  */
-public interface Field {
+public interface Field<FE extends FieldElement<FE, F>, F extends Field<FE, F>> {
     /**
      * Creates a new field element from a long
      *
      * @param inputLong the long to use to create the field element
      * @return the new field element
      */
-    FieldElement elementFromLong(long inputLong);
+    @NonNull
+    FE elementFromLong(long inputLong);
 
     /**
      * Creates a new field element with value 0
      *
      * @return the new field element
      */
-    FieldElement zeroElement();
+    @NonNull
+    FE zeroElement();
 
     /**
      * Creates a new field element with value 1
      *
      * @return the new field element
      */
-    FieldElement oneElement();
+    @NonNull
+    FE oneElement();
 
     /**
      * Creates a field element from a seed (32 bytes)
@@ -52,7 +58,8 @@ public interface Field {
      * @param seed a seed to use to generate randomness
      * @return the new field element
      */
-    FieldElement randomElement(byte[] seed);
+    @NonNull
+    FE randomElement(byte[] seed);
 
     /**
      * Creates a field element from its serialized encoding
@@ -60,7 +67,8 @@ public interface Field {
      * @param bytes serialized form
      * @return the new field element, or null if construction fails
      */
-    FieldElement deserializeElementFromBytes(byte[] bytes);
+    @NonNull
+    FE deserializeElementFromBytes(byte[] bytes);
 
     /**
      * Gets the size in bytes of an element

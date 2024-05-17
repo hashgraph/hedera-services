@@ -17,12 +17,13 @@
 package com.swirlds.platform.tss;
 
 import com.swirlds.platform.tss.ecdh.EcdhPrivateKey;
+import com.swirlds.platform.tss.signing.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A ciphertext produced by a single node.
  */
-public interface TssCiphertext {
+public interface TssCiphertext<P extends PublicKey> {
     /**
      * Extract the private key data from this ciphertext.
      * <p>
@@ -33,7 +34,7 @@ public interface TssCiphertext {
      * @return the private key decrypted from this ciphertext
      */
     @NonNull
-    TssPrivateKey decryptPrivateKey(@NonNull final EcdhPrivateKey ecdhPrivateKey, @NonNull TssShareId shareId);
+    TssPrivateKey<P> decryptPrivateKey(@NonNull final EcdhPrivateKey ecdhPrivateKey, @NonNull TssShareId shareId);
 
     /**
      * Serialize this ciphertext to bytes.

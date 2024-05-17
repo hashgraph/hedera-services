@@ -17,23 +17,24 @@
 package com.swirlds.platform.tss.groth21;
 
 import com.swirlds.platform.tss.TssCommitment;
-import com.swirlds.platform.tss.TssPublicKey;
 import com.swirlds.platform.tss.TssShareId;
-import com.swirlds.platform.tss.bls.GroupElement;
+import com.swirlds.platform.tss.signing.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.List;
 
 /**
  * A TSS commitment, as utilized by the Groth21 scheme.
  *
- * @param coefficientCommitments TODO
+ * @param coefficientCommitments TODO: is it correct to call these public keys?
  */
-public record Groth21Commitment(@NonNull List<GroupElement> coefficientCommitments) implements TssCommitment {
+public record Groth21Commitment<P extends PublicKey>(
+        @NonNull List<PublicKey> coefficientCommitments) implements TssCommitment<P> {
     /**
      * {@inheritDoc}
      */
     @NonNull
-    public TssPublicKey extractPublicKey(@NonNull final TssShareId shareId) {
+    public P extractPublicKey(@NonNull final TssShareId shareId) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -42,7 +43,7 @@ public record Groth21Commitment(@NonNull List<GroupElement> coefficientCommitmen
      */
     @NonNull
     @Override
-    public TssPublicKey getTerm(final int index) {
+    public P getTerm(final int index) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
