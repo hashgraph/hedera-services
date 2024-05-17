@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.log4j.appender;
+package com.swirlds.logging.log4j.factory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -33,7 +33,6 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.apache.logging.log4j.ThreadContext;
-import org.apache.logging.log4j.core.LoggerContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,6 +78,7 @@ class SwirldsLogAppenderTest {
         loggingSystem.stopAndFinalize();
 
         // then
+        assertThat(filePath).exists();
         final List<String> logLines = Files.lines(filePath).toList();
 
         assertThat(logLines).hasSize(expectedSize);
@@ -157,9 +157,6 @@ class SwirldsLogAppenderTest {
 
     @AfterEach
     void tearDown() throws Exception {
-        final LoggerContext loggerContext = (LoggerContext) LogManager.getContext(false);
-        loggerContext.reconfigure();
-
         ThreadContext.clearAll();
         ThreadContext.putAll(oldContext);
     }
