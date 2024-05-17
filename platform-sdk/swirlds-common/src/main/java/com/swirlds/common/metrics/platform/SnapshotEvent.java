@@ -17,7 +17,7 @@
 package com.swirlds.common.metrics.platform;
 
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.metrics.impl.Snapshot;
+import com.swirlds.metrics.api.snapshot.Snapshot;
 import java.util.Collection;
 import java.util.Objects;
 

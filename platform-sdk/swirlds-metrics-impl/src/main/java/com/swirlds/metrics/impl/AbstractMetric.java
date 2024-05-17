@@ -19,15 +19,14 @@ package com.swirlds.metrics.impl;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.MetricConfig;
-import com.swirlds.metrics.impl.Snapshot.SnapshotEntry;
+import com.swirlds.metrics.api.snapshot.SnapshotableMetric;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 import java.util.Objects;
 
 /**
  * Basic implementation of all platform-implementations of {@link Metric}
  */
-public abstract class AbstractMetric implements Metric {
+public abstract class AbstractMetric implements SnapshotableMetric {
 
     private final String category;
     private final String name;
@@ -85,15 +84,6 @@ public abstract class AbstractMetric implements Metric {
     public String getFormat() {
         return format;
     }
-
-    /**
-     * Take entries of the current values and return them. If the functionality of this {@code PlatformMetric} requires
-     * it to be reset in regular intervals, it is done automatically after the snapshot was generated. The list of
-     * {@code ValueTypes} will always be in the same order.
-     *
-     * @return the list of {@code ValueTypes} with their current values
-     */
-    public abstract @NonNull List<SnapshotEntry> takeSnapshot();
 
     /**
      * {@inheritDoc}

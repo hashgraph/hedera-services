@@ -38,7 +38,7 @@ import com.swirlds.common.utility.ThresholdLimitingHandler;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.metrics.impl.Snapshot;
+import com.swirlds.metrics.api.snapshot.Snapshot;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.HTTPServer;
 import java.io.IOException;
