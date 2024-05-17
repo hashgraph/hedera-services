@@ -195,6 +195,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         feeCalculator = new FakeFeeCalculator();
         given(feeContext.body()).willReturn(transactionBody);
         given(feeContext.feeCalculator(DEFAULT)).willReturn(feeCalculator);
+        given(feeContext.configuration()).willReturn(configuration);
         final var result = subject.calculateFees(feeContext);
         assertThat(result).isEqualTo(Fees.FREE);
     }
