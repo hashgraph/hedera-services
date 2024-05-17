@@ -123,10 +123,13 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         // If the function is not a crypto transfer, then we filter all zero amounts from token transfer list.
         // To be compatible with mono-service records, we _don't_ filter zero token transfers in the record
         final var isCryptoTransfer = functionality == HederaFunctionality.CRYPTO_TRANSFER;
+        // get all the token relation changes for fungible tokens
         final var tokenChanges = tokenRelChangesFrom(
                 writableTokenRelStore, readableTokenStore, TokenType.FUNGIBLE_COMMON, !isCryptoTransfer);
+        // get all the NFT changes
         final var nftChanges = nftChangesFrom(writableNftStore, writableTokenStore);
-
+        // If there are no NFT transfers, it is still possible that the Non-fungible token balance would have
+        // changed, because we set zero balance for the accounts that are dissociating with deleted tokens.
         if (nftChanges.isEmpty()) {
             final var nonFungibleTokenChanges = tokenRelChangesFrom(
                     writableTokenRelStore, readableTokenStore, TokenType.NON_FUNGIBLE_UNIQUE, !isCryptoTransfer);
