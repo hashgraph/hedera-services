@@ -42,7 +42,7 @@ public class DefaultIntegerPairAccumulator<T> extends AbstractMetric
     private final IntSupplier leftInitializer;
     private final IntSupplier rightInitializer;
 
-    public DefaultIntegerPairAccumulator(final Config<T> config) {
+    public DefaultIntegerPairAccumulator(@NonNull final Config<T> config) {
         super(config);
         this.dataType = MetricConfig.mapDataType(config.getType());
         this.container = new AtomicIntPair(config.getLeftAccumulator(), config.getRightAccumulator());

@@ -31,7 +31,7 @@ public class DefaultSpeedometerMetric extends AbstractDistributionMetric impleme
     @SuppressWarnings("removal")
     private final StatsSpeedometer speedometer;
 
-    public DefaultSpeedometerMetric(final SpeedometerMetric.Config config) {
+    public DefaultSpeedometerMetric(@NonNull final SpeedometerMetric.Config config) {
         this(config, Time.getCurrent());
     }
 

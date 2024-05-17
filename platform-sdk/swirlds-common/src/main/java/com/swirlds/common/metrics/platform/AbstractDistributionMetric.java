@@ -35,7 +35,7 @@ public abstract class AbstractDistributionMetric extends AbstractMetric implemen
      */
     protected final double halfLife;
 
-    AbstractDistributionMetric(final MetricConfig<?, ?> config, final double halfLife) {
+    AbstractDistributionMetric(@NonNull final MetricConfig<?, ?> config, final double halfLife) {
         super(config);
         this.halfLife = halfLife;
     }

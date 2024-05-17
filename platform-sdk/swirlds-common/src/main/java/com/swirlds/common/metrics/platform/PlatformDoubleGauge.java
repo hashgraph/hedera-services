@@ -18,10 +18,11 @@ package com.swirlds.common.metrics.platform;
 
 import com.swirlds.common.metrics.PlatformMetric;
 import com.swirlds.metrics.impl.DefaultDoubleGauge;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class PlatformDoubleGauge extends DefaultDoubleGauge implements PlatformMetric {
 
-    public PlatformDoubleGauge(Config config) {
+    public PlatformDoubleGauge(@NonNull Config config) {
         super(config);
     }
 }

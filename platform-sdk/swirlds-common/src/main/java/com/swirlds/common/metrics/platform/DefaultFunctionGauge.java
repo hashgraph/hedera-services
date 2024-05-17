@@ -36,7 +36,7 @@ public class DefaultFunctionGauge<T> extends AbstractMetric implements PlatformM
     private final DataType dataType;
     private final Supplier<T> supplier;
 
-    public DefaultFunctionGauge(final FunctionGauge.Config<T> config) {
+    public DefaultFunctionGauge(@NonNull final FunctionGauge.Config<T> config) {
         super(config);
         this.dataType = MetricConfig.mapDataType(config.getType());
         this.supplier = config.getSupplier();

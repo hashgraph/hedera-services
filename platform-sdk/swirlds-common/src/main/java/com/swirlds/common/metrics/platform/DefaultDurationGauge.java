@@ -35,7 +35,7 @@ public class DefaultDurationGauge extends AbstractMetric implements PlatformMetr
     private final AtomicLong nanos;
     private final ChronoUnit unit;
 
-    public DefaultDurationGauge(final DurationGauge.Config config) {
+    public DefaultDurationGauge(@NonNull final DurationGauge.Config config) {
         super(config);
         this.unit = config.getTimeUnit();
         this.nanos = new AtomicLong();

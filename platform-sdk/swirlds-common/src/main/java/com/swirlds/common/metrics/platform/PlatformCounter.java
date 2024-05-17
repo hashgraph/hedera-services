@@ -18,10 +18,11 @@ package com.swirlds.common.metrics.platform;
 
 import com.swirlds.common.metrics.PlatformMetric;
 import com.swirlds.metrics.impl.DefaultCounter;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class PlatformCounter extends DefaultCounter implements PlatformMetric {
 
-    public PlatformCounter(Config config) {
+    public PlatformCounter(@NonNull Config config) {
         super(config);
     }
 }

@@ -18,10 +18,11 @@ package com.swirlds.common.metrics.platform;
 
 import com.swirlds.common.metrics.PlatformMetric;
 import com.swirlds.metrics.impl.DefaultIntegerAccumulator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class PlatformIntegerAccumulator extends DefaultIntegerAccumulator implements PlatformMetric {
 
-    public PlatformIntegerAccumulator(Config config) {
+    public PlatformIntegerAccumulator(@NonNull Config config) {
         super(config);
     }
 }

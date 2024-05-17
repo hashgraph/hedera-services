@@ -32,7 +32,7 @@ public class DefaultRunningAverageMetric extends AbstractDistributionMetric impl
     @SuppressWarnings("removal")
     private final @NonNull StatsRunningAverage runningAverage;
 
-    public DefaultRunningAverageMetric(final RunningAverageMetric.Config config) {
+    public DefaultRunningAverageMetric(@NonNull final RunningAverageMetric.Config config) {
         this(config, Time.getCurrent());
     }
 

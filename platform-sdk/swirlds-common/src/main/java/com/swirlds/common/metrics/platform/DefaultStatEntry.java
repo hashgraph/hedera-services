@@ -64,7 +64,7 @@ public class DefaultStatEntry extends AbstractMetric implements PlatformMetric, 
     private final double halfLife;
 
     @SuppressWarnings("unchecked")
-    public DefaultStatEntry(final StatEntry.Config<?> config) {
+    public DefaultStatEntry(@NonNull final StatEntry.Config<?> config) {
         super(config);
         this.dataType = MetricConfig.mapDataType(config.getType());
         this.buffered = config.getBuffered();

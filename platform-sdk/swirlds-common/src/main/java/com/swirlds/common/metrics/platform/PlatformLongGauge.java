@@ -18,10 +18,11 @@ package com.swirlds.common.metrics.platform;
 
 import com.swirlds.common.metrics.PlatformMetric;
 import com.swirlds.metrics.impl.DefaultLongGauge;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class PlatformLongGauge extends DefaultLongGauge implements PlatformMetric {
 
-    public PlatformLongGauge(Config config) {
+    public PlatformLongGauge(@NonNull Config config) {
         super(config);
     }
 }
