@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRew
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenTransferList;
-import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.RecordFinalizerBase;
@@ -91,15 +90,13 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
         // If the function is not a crypto transfer, then we filter all zero amounts from token transfer list.
         // To be compatible with mono-service records, we _don't_ filter zero token transfers in the record
         final var isCryptoTransfer = function == HederaFunctionality.CRYPTO_TRANSFER;
-        final var fungibleChanges = tokenRelChangesFrom(
-                writableTokenRelStore, readableTokenStore, TokenType.FUNGIBLE_COMMON, !isCryptoTransfer);
-        final var nftChanges = nftChangesFrom(writableNftStore, writableTokenStore);
+        final var fungibleChanges = tokenRelChangesFrom(writableTokenRelStore, !isCryptoTransfer);
+        // get all the NFT changes. Go through the nft changes and see if there are any token relation changes
+        // for the sender and receiver of the NFTs. If there are, then reduce the balance change for that relation
+        // by 1 for receiver and increment the balance change for sender by 1. This is to ensure that the NFT
+        // transfer is not double counted in the token relation changes and the NFT changes
+        final var nftChanges = nftChangesFrom(writableNftStore, writableTokenStore, fungibleChanges);
 
-        if (nftChanges.isEmpty()) {
-            final var nonFungibleTokenChanges = tokenRelChangesFrom(
-                    writableTokenRelStore, readableTokenStore, TokenType.NON_FUNGIBLE_UNIQUE, !isCryptoTransfer);
-            nonFungibleTokenChanges.forEach(fungibleChanges::putIfAbsent);
-        }
         final var fungibleTokenTransferLists = asTokenTransferListFrom(fungibleChanges, !isCryptoTransfer);
         tokenTransferLists = new ArrayList<>(fungibleTokenTransferLists);
 
