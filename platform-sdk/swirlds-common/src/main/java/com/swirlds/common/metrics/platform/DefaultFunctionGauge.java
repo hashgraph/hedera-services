@@ -20,7 +20,9 @@ import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.FunctionGauge;
+import com.swirlds.common.metrics.PlatformMetric;
 import com.swirlds.metrics.api.MetricConfig;
+import com.swirlds.metrics.impl.AbstractMetric;
 import com.swirlds.metrics.impl.Snapshot.SnapshotEntry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -29,7 +31,7 @@ import java.util.function.Supplier;
 /**
  * Platform-implementation of {@link FunctionGauge}
  */
-public class DefaultFunctionGauge<T> extends AbstractPlatformMetric implements FunctionGauge<T> {
+public class DefaultFunctionGauge<T> extends AbstractMetric implements PlatformMetric, FunctionGauge<T> {
 
     private final DataType dataType;
     private final Supplier<T> supplier;

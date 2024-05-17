@@ -17,19 +17,11 @@
 package com.swirlds.common.metrics.platform;
 
 import com.swirlds.common.metrics.PlatformMetric;
-import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.metrics.impl.DefaultLongAccumulator;
-import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class PlatformLongAccumulator extends DefaultLongAccumulator implements PlatformMetric {
 
     public PlatformLongAccumulator(Config config) {
         super(config);
-    }
-
-    @Nullable
-    @Override
-    public StatsBuffered getStatsBuffered() {
-        return null;
     }
 }

@@ -20,8 +20,10 @@ import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
+import com.swirlds.common.metrics.PlatformMetric;
 import com.swirlds.common.threading.atomic.AtomicIntPair;
 import com.swirlds.metrics.api.MetricConfig;
+import com.swirlds.metrics.impl.AbstractMetric;
 import com.swirlds.metrics.impl.Snapshot.SnapshotEntry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -31,7 +33,8 @@ import java.util.function.IntSupplier;
 /**
  * Platform-implementation of {@link IntegerPairAccumulator}
  */
-public class DefaultIntegerPairAccumulator<T> extends AbstractPlatformMetric implements IntegerPairAccumulator<T> {
+public class DefaultIntegerPairAccumulator<T> extends AbstractMetric
+        implements PlatformMetric, IntegerPairAccumulator<T> {
 
     private final DataType dataType;
     private final AtomicIntPair container;

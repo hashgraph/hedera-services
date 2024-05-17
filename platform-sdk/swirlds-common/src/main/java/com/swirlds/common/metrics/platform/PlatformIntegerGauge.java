@@ -17,19 +17,11 @@
 package com.swirlds.common.metrics.platform;
 
 import com.swirlds.common.metrics.PlatformMetric;
-import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.metrics.impl.DefaultIntegerGauge;
-import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class PlatformIntegerGauge extends DefaultIntegerGauge implements PlatformMetric {
 
     public PlatformIntegerGauge(Config config) {
         super(config);
-    }
-
-    @Nullable
-    @Override
-    public StatsBuffered getStatsBuffered() {
-        return null;
     }
 }
