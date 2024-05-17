@@ -30,10 +30,8 @@ import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
-import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -95,26 +93,16 @@ public class RecordFinalizerBase {
      * Gets all token tokenRelation balances for all modified token relations from the given {@link WritableTokenRelationStore} depending on the given token type.
      *
      * @param writableTokenRelStore the {@link WritableTokenRelationStore} to get the token relation balances from
-     * @param tokenStore the {@link ReadableTokenStore} to get the token from
-     * @param tokenType the type of token to get token changes from
      * @return a {@link Map} of {@link EntityIDPair} to {@link Long} representing the token relation balances for all
      * modified token relations
      */
     @NonNull
     protected Map<EntityIDPair, Long> tokenRelChangesFrom(
-            @NonNull final WritableTokenRelationStore writableTokenRelStore,
-            @NonNull final ReadableTokenStore tokenStore,
-            @NonNull TokenType tokenType,
-            final boolean filterZeroAmounts) {
+            @NonNull final WritableTokenRelationStore writableTokenRelStore, final boolean filterZeroAmounts) {
         final var tokenRelChanges = new HashMap<EntityIDPair, Long>();
         for (final EntityIDPair modifiedRel : writableTokenRelStore.modifiedTokens()) {
             final var relAcctId = modifiedRel.accountIdOrThrow();
             final var relTokenId = modifiedRel.tokenIdOrThrow();
-            final var token = requireNonNull(tokenStore.get(relTokenId));
-            // Add this to fungible token transfer list only if this token is a fungible token
-            if (!token.tokenType().equals(tokenType)) {
-                continue;
-            }
             final var modifiedTokenRel = writableTokenRelStore.get(relAcctId, relTokenId);
             final var persistedTokenRel = writableTokenRelStore.getOriginalValue(relAcctId, relTokenId);
 
@@ -193,12 +181,16 @@ public class RecordFinalizerBase {
 
     /**
      * Gets all nft ownership changes for all modified nfts from the given {@link WritableNftStore}.
+     *
      * @param writableNftStore the {@link WritableNftStore} to get the nft ownership changes from
+     * @param tokenRelChanges
      * @return a {@link Map} of {@link TokenID} to {@link List} of {@link NftTransfer} representing the nft ownership
      */
     @NonNull
     protected Map<TokenID, List<NftTransfer>> nftChangesFrom(
-            @NonNull final WritableNftStore writableNftStore, @NonNull final WritableTokenStore writableTokenStore) {
+            @NonNull final WritableNftStore writableNftStore,
+            @NonNull final WritableTokenStore writableTokenStore,
+            final Map<EntityIDPair, Long> tokenRelChanges) {
         final var nftChanges = new HashMap<TokenID, List<NftTransfer>>();
         for (final NftID nftId : writableNftStore.modifiedNfts()) {
             final var modifiedNft = writableNftStore.get(nftId);
@@ -241,7 +233,7 @@ public class RecordFinalizerBase {
             if (receiverAccountId.equals(senderAccountId)) {
                 continue;
             }
-            updateNftChanges(nftId, senderAccountId, receiverAccountId, nftChanges);
+            updateNftChanges(nftId, senderAccountId, receiverAccountId, nftChanges, tokenRelChanges);
         }
 
         for (final var tokenId : writableTokenStore.modifiedTokens()) {
@@ -257,7 +249,8 @@ public class RecordFinalizerBase {
                         NftID.newBuilder().tokenId(tokenId).serialNumber(-1).build(),
                         originalToken.treasuryAccountId(),
                         modifiedToken.treasuryAccountId(),
-                        nftChanges);
+                        nftChanges,
+                        null);
             }
         }
         return nftChanges;
@@ -278,16 +271,19 @@ public class RecordFinalizerBase {
     /**
      * Updates the given {@link Map} of {@link TokenID} to {@link List} of {@link NftTransfer} representing the nft
      * ownership changes.
-     * @param nftId the {@link NftID} representing the nft
-     * @param senderAccountId the {@link AccountID} representing the sender account ID
+     *
+     * @param nftId             the {@link NftID} representing the nft
+     * @param senderAccountId   the {@link AccountID} representing the sender account ID
      * @param receiverAccountId the {@link AccountID} representing the receiver account ID
-     * @param nftChanges the {@link Map} of {@link TokenID} to {@link List} of {@link NftTransfer} representing the nft
+     * @param nftChanges        the {@link Map} of {@link TokenID} to {@link List} of {@link NftTransfer} representing the nft
+     * @param tokenRelChanges
      */
     private static void updateNftChanges(
             final NftID nftId,
             final AccountID senderAccountId,
             final AccountID receiverAccountId,
-            final HashMap<TokenID, List<NftTransfer>> nftChanges) {
+            final HashMap<TokenID, List<NftTransfer>> nftChanges,
+            @Nullable final Map<EntityIDPair, Long> tokenRelChanges) {
         final var nftTransfer = NftTransfer.newBuilder()
                 .serialNumber(nftId.serialNumber())
                 .senderAccountID(senderAccountId)
@@ -301,6 +297,20 @@ public class RecordFinalizerBase {
         final var currentNftChanges = nftChanges.get(nftId.tokenId());
         currentNftChanges.add(nftTransfer);
         nftChanges.put(nftId.tokenId(), currentNftChanges);
+
+        if (tokenRelChanges != null) {
+            final var receiverEntityIdPair = EntityIDPair.newBuilder()
+                    .accountId(receiverAccountId)
+                    .tokenId(nftId.tokenId())
+                    .build();
+            final var senderEntityIdPair = EntityIDPair.newBuilder()
+                    .accountId(senderAccountId)
+                    .tokenId(nftId.tokenId())
+                    .build();
+
+            tokenRelChanges.merge(receiverEntityIdPair, -1L, Long::sum);
+            tokenRelChanges.merge(senderEntityIdPair, 1L, Long::sum);
+        }
     }
 
     /**
