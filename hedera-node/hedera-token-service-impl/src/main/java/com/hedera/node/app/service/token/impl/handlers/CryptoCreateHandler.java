@@ -128,7 +128,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
             validateTruePreCheck(op.realmIDOrThrow().realmNum() == 0, INVALID_ACCOUNT_ID);
         }
         // HIP 904 now allows for unlimited auto-associations
-        validateTruePreCheck(op.maxAutomaticTokenAssociations() >= -1, INVALID_TRANSACTION_BODY);
+        validateTruePreCheck(op.maxAutomaticTokenAssociations() >= -1, INVALID_MAX_AUTO_ASSOCIATIONS);
         validateTruePreCheck(op.initialBalance() >= 0L, INVALID_INITIAL_BALANCE);
         // FUTURE: should this return SEND_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
         validateTruePreCheck(op.sendRecordThreshold() >= 0L, INVALID_SEND_RECORD_THRESHOLD);
