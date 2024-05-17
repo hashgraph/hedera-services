@@ -34,6 +34,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THROTTLE_DEFS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -43,14 +51,13 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import com.google.common.base.Stopwatch;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
+import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
 import com.hedera.services.bdd.suites.BddMethodIsNotATest;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -62,22 +69,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestMethodOrder;
 
-@HapiTestSuite
-@TestMethodOrder(OrderAnnotation.class)
 @Tag(TIME_CONSUMING)
-public class SteadyStateThrottlingCheck extends HapiSuite {
-
-    private static final Logger LOG = LogManager.getLogger(SteadyStateThrottlingCheck.class);
-
+@OrderedInIsolation
+public class SteadyStateThrottlingCheck {
     private static final String TOKENS_NFTS_MINT_THROTTLE_SCALE_FACTOR = "tokens.nfts.mintThrottleScaleFactor";
     private static final String DEFAULT_NFT_SCALING =
             HapiSpecSetup.getDefaultNodeProps().get(TOKENS_NFTS_MINT_THROTTLE_SCALE_FACTOR);
@@ -107,22 +106,6 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
     private final AtomicLong duration = new AtomicLong(180);
     private final AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
     private final AtomicInteger maxOpsPerSec = new AtomicInteger(500);
-
-    public static void main(String... args) {
-        new SteadyStateThrottlingCheck().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                setArtificialLimits(),
-                checkTps("Xfers", EXPECTED_XFER_TPS, xferOps()),
-                checkTps("FungibleMints", EXPECTED_FUNGIBLE_MINT_TPS, fungibleMintOps()),
-                checkTps("ContractCalls", EXPECTED_CONTRACT_CALL_TPS, scCallOps()),
-                checkTps("CryptoCreates", EXPECTED_CRYPTO_CREATE_TPS, cryptoCreateOps()),
-                checkBalanceQps(1000, EXPECTED_GET_BALANCE_QPS),
-                restoreDevLimits());
-    }
 
     @HapiTest
     @Order(1)
@@ -410,10 +393,5 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
                 return Optional.of(op);
             }
         };
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
     }
 }

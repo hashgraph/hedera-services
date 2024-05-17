@@ -26,56 +26,26 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_ADMIN;
+import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_DELETE_ADMIN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.BddMethodIsNotATest;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Arrays;
-import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class CannotDeleteSystemEntitiesSuite extends HapiSuite {
+public class CannotDeleteSystemEntitiesSuite {
     private static final Logger log = LogManager.getLogger(CannotDeleteSystemEntitiesSuite.class);
 
     final int[] sysFileIds = {101, 102, 111, 112, 121, 122, 150};
-
-    public static void main(String... args) {
-        CannotDeleteSystemEntitiesSuite suite = new CannotDeleteSystemEntitiesSuite();
-        suite.runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                genesisCannotDeleteSystemAccountsFrom1To100(),
-                genesisCannotDeleteSystemAccountsFrom700To750(),
-                systemAdminCannotDeleteSystemAccountsFrom1To100(),
-                systemAdminCannotDeleteSystemAccountsFrom700To750(),
-                systemDeleteAdminCannotDeleteSystemAccountsFrom1To100(),
-                systemDeleteAdminCannotDeleteSystemAccountsFrom700To750(),
-                normalUserCannotDeleteSystemAccountsFrom1To100(),
-                normalUserCannotDeleteSystemAccountsFrom700To750(),
-                genesisCannotDeleteSystemFileIds(),
-                systemAdminCannotDeleteSystemFileIds(),
-                systemDeleteAdminCannotDeleteSystemFileIds(),
-                normalUserCannotDeleteSystemFileIds(),
-                genesisCannotSystemFileDeleteFileIds(),
-                systemAdminCannotSystemFileDeleteFileIds(),
-                systemDeleteAdminCannotSystemFileDeleteFileIds());
-    }
 
     @HapiTest
     final Stream<DynamicTest> ensureSystemAccountsHaveSomeFunds() {
@@ -183,7 +153,6 @@ public class CannotDeleteSystemEntitiesSuite extends HapiSuite {
                         .toArray(HapiSpecOperation[]::new)));
     }
 
-    @BddMethodIsNotATest
     final Stream<DynamicTest> normalUserCannotDeleteSystemAccounts(int firstAccount, int lastAccount) {
         return defaultHapiSpec("normalUserCannotDeleteSystemAccounts")
                 .given(newKeyNamed("normalKey"), cryptoCreate("unluckyReceiver").balance(0L))
@@ -223,7 +192,6 @@ public class CannotDeleteSystemEntitiesSuite extends HapiSuite {
                         .toArray(HapiSpecOperation[]::new)));
     }
 
-    @BddMethodIsNotATest
     final Stream<DynamicTest> systemDeleteCannotDeleteSystemFiles(int[] fileIds, String sysUser) {
         return defaultHapiSpec("systemDeleteCannotDeleteSystemFiles")
                 .given()
@@ -234,10 +202,5 @@ public class CannotDeleteSystemEntitiesSuite extends HapiSuite {
                                 .signedBy(sysUser)
                                 .hasPrecheck(ENTITY_NOT_ALLOWED_TO_DELETE))
                         .toArray(HapiSpecOperation[]::new)));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

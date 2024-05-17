@@ -40,6 +40,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
+import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID_PROP;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -53,23 +61,19 @@ import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
-import java.util.List;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
 @SuppressWarnings("java:S5960")
-public class LeakyEthereumTestsSuite extends HapiSuite {
+public class LeakyEthereumTestsSuite {
 
     private static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
     private static final Logger log = LogManager.getLogger(LeakyEthereumTestsSuite.class);
@@ -79,27 +83,12 @@ public class LeakyEthereumTestsSuite extends HapiSuite {
     private static final String DYNAMIC_EVM_PROPERTY = "contracts.evm.version.dynamic";
     private static final String EVM_VERSION_050 = "v0.50";
 
-    public static void main(String... args) {
-        new LeakyEthereumTestsSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return Stream.of(legacyUnprotectedEtxBeforeEIP155(), legacyEtxAfterEIP155(), callHtsSystemContractTest())
-                .toList();
-    }
-
     // test unprotected legacy ethereum transactions before EIP155
     // this tests the behaviour when the `v` field is 27 or 28
     // in this case the passed chainId = 0 so ETX is before EIP155
     // and so `v` is calculated -> v = {0,1} + 27
     // source: https://eips.ethereum.org/EIPS/eip-155
-    @HapiTest
+    @LeakyHapiTest
     final Stream<DynamicTest> legacyUnprotectedEtxBeforeEIP155() {
         final String DEPOSIT = "deposit";
         final long depositAmount = 20_000L;
@@ -147,7 +136,7 @@ public class LeakyEthereumTestsSuite extends HapiSuite {
     // in this case the passed chainId = 1 so ETX is after EIP155
     // and so `v` is calculated -> v = {0,1} + CHAIN_ID * 2 + 35
     // source: https://eips.ethereum.org/EIPS/eip-155
-    @HapiTest
+    @LeakyHapiTest
     final Stream<DynamicTest> legacyEtxAfterEIP155() {
         final String DEPOSIT = "deposit";
         final long depositAmount = 20_000L;
@@ -188,7 +177,7 @@ public class LeakyEthereumTestsSuite extends HapiSuite {
                         resetToDefault(CHAIN_ID_PROP));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     final Stream<DynamicTest> callHtsSystemContractTest() {
         final var callHtsSystemContractTxn = "callHtsSystemContractTxn";
         final var function = getABIFor(FUNCTION, "transferToken", "IHederaTokenService");
@@ -244,10 +233,5 @@ public class LeakyEthereumTestsSuite extends HapiSuite {
                                     .hasKnownStatus(SUCCESS));
                 }))
                 .then();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

@@ -23,39 +23,23 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.API_PERMISSIONS;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class Issue2098Spec extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(Issue2098Spec.class);
+public class Issue2098Spec {
     private static final String CIVILIAN = "civilian";
     private static final String CRYPTO_TRANSFER = "cryptoTransfer";
     private static final String GET_TOPIC_INFO = "getTopicInfo";
-
-    public static void main(String... args) {
-        new Issue2098Spec().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                queryApiPermissionsChangeImmediately(),
-                txnApiPermissionsChangeImmediately(),
-                adminsCanQueryNoMatterPermissions(),
-                adminsCanTransactNoMatterPermissions());
-    }
 
     @HapiTest
     final Stream<DynamicTest> txnApiPermissionsChangeImmediately() {
@@ -121,10 +105,5 @@ public class Issue2098Spec extends HapiSuite {
                         fileUpdate(API_PERMISSIONS)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(Map.of(CRYPTO_TRANSFER, "0-*")));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

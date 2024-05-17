@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.regression;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -40,7 +39,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.expectedEntitiesExi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
-import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablement;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 
@@ -97,17 +95,7 @@ public class JrsRestartTestTemplate extends HapiSuite {
 
     @Override
     public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(enableHSS(), jrsRestartTemplate());
-    }
-
-    final Stream<DynamicTest> enableHSS() {
-        return defaultHapiSpec("enableHSS")
-                .given(
-                        // Directly puting this request in the customHapiSpec before
-                        // expectedEntitiesExist() doesn't work
-                        scheduleOpsEnablement())
-                .when()
-                .then();
+        return List.of(jrsRestartTemplate());
     }
 
     final Stream<DynamicTest> jrsRestartTemplate() {

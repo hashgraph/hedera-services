@@ -20,32 +20,18 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.API_PERMISSIONS;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class Issue2143Spec extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(Issue2143Spec.class);
-
-    public static void main(String... args) {
-        new Issue2143Spec().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                account55ControlCanUpdatePropertiesAndPermissions(),
-                account57ControlCanUpdatePropertiesAndPermissions());
-    }
-
+public class Issue2143Spec {
     @HapiTest
     final Stream<DynamicTest> account55ControlCanUpdatePropertiesAndPermissions() {
         return defaultHapiSpec("Account55ControlCanUpdatePropertiesAndPermissions")
@@ -84,10 +70,5 @@ public class Issue2143Spec extends HapiSuite {
                         fileUpdate(API_PERMISSIONS)
                                 .overridingProps(Map.of("createFile", "0-*"))
                                 .payingWith(EXCHANGE_RATE_CONTROL));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

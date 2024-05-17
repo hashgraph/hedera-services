@@ -348,6 +348,10 @@ public class HapiSpec implements Runnable, Executable {
         this.targetNetwork = requireNonNull(targetNetwork);
     }
 
+    public HederaNetwork targetNetworkOrThrow() {
+        return requireNonNull(targetNetwork);
+    }
+
     public List<HederaNode> getNetworkNodes() {
         return requireNonNull(targetNetwork).nodes();
     }

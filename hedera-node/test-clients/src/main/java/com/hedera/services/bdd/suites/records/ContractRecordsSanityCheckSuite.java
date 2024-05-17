@@ -30,45 +30,31 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshots;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateRecordTransactionFees;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferListForBalances;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.NODE;
+import static com.hedera.services.bdd.suites.HapiSuite.NODE_REWARD;
+import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static java.util.function.Function.identity;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Set;
 import java.util.function.ToLongFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class ContractRecordsSanityCheckSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(ContractRecordsSanityCheckSuite.class);
+public class ContractRecordsSanityCheckSuite {
     private static final String BALANCE_LOOKUP = "BalanceLookup";
     public static final String PAYABLE_CONTRACT = "PayReceivable";
     public static final String ALTRUISTIC_TXN = "altruisticTxn";
-
-    public static void main(String... args) {
-        new ContractRecordsSanityCheckSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                contractCallWithSendRecordSanityChecks(),
-                circularTransfersRecordSanityChecks(),
-                contractCreateRecordSanityChecks(),
-                contractUpdateRecordSanityChecks(),
-                contractDeleteRecordSanityChecks());
-    }
 
     @HapiTest
     final Stream<DynamicTest> contractDeleteRecordSanityChecks() {
@@ -207,11 +193,6 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
                         validateTransferListForBalances(
                                 "txn", List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER)),
                         validateRecordTransactionFees("txn"));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 
     private static final String SET_NODES_ABI =

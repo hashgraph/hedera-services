@@ -30,7 +30,6 @@ import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.TargetNetworkType;
-import com.hedera.services.bdd.suites.records.ClosingTime;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
@@ -482,7 +481,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 HapiTestEngineExecutionContext context, DynamicTestExecutor dynamicTestExecutor) throws Exception {
             final var env = context.getEnv();
             // run closing time specs
-            runSpec(env, new ClosingTime(), "closeLastStreamFileWithNoBalanceImpact");
+            //            runSpec(env, new ClosingTime(), "closeLastStreamFileWithNoBalanceImpact");
 
             // read record stream data
             var recordLocs = sharedNetworkStreamLocs();

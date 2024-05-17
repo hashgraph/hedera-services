@@ -30,6 +30,9 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
@@ -37,10 +40,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOU
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -51,30 +52,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class Issue305Spec extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(Issue305Spec.class);
+public class Issue305Spec {
     private static final String KEY = "tbdKey";
-
-    public static void main(String... args) {
-        new Issue305Spec().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        final var repeatedSpecs = new ArrayList<>(IntStream.range(0, 5)
-                .mapToObj(ignore -> createDeleteInSameRoundWorks())
-                .toList());
-        repeatedSpecs.add(congestionMultipliersRefreshOnPropertyUpdate());
-        return repeatedSpecs;
-    }
 
     @HapiTest
     final Stream<DynamicTest> createDeleteInSameRoundWorks() {
@@ -184,10 +167,5 @@ public class Issue305Spec extends HapiSuite {
         } catch (InvalidProtocolBufferException e) {
             throw new IllegalArgumentException(e);
         }
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

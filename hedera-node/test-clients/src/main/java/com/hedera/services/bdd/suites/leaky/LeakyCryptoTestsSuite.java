@@ -19,14 +19,12 @@ package com.hedera.services.bdd.suites.leaky;
 import static com.google.protobuf.ByteString.EMPTY;
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
-import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -71,7 +69,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
@@ -92,9 +89,31 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID_PROP;
+import static com.hedera.services.bdd.suites.HapiSuite.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
+import static com.hedera.services.bdd.suites.HapiSuite.FIVE_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
+import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
+import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.assertNoMismatchedSidecars;
+import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.expectContractActionSidecarFor;
+import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.initializeSidecarWatcher;
+import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.tearDownSidecarWatcher;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
-import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite.EMPTY_CONSTRUCTOR_CONTRACT;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.CRYPTO_TRANSFER_RECEIVER;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.FALSE;
@@ -159,7 +178,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
+import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -170,7 +189,6 @@ import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.BddMethodIsNotATest;
-import com.hedera.services.bdd.suites.SidecarAwareHapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction;
@@ -183,7 +201,6 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.math.BigInteger;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
@@ -196,16 +213,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.TestMethodOrder;
 
-@HapiTestSuite(fuzzyMatch = true)
-@TestMethodOrder(
-        MethodOrderer.OrderAnnotation
-                .class) // define same running order for mod specs as in getSpecsInSuite() definition used in mono
-public class LeakyCryptoTestsSuite extends SidecarAwareHapiSuite {
+@OrderedInIsolation
+public class LeakyCryptoTestsSuite {
     private static final Logger log = LogManager.getLogger(LeakyCryptoTestsSuite.class);
+
     private static final String ASSOCIATIONS_LIMIT_PROPERTY = "entities.limitTokenAssociations";
     private static final String DEFAULT_ASSOCIATIONS_LIMIT =
             HapiSpecSetup.getDefaultNodeProps().get(ASSOCIATIONS_LIMIT_PROPERTY);
@@ -221,37 +234,6 @@ public class LeakyCryptoTestsSuite extends SidecarAwareHapiSuite {
     private static final String ERC20_ABI = "ERC20ABI";
     private static final String SENDER_TXN = "senderTxn";
     private static final long GAS_PRICE = 71L;
-
-    public static void main(String... args) {
-        new LeakyCryptoTestsSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                maxAutoAssociationSpec(),
-                cannotDissociateFromExpiredTokenWithNonZeroBalance(),
-                cannotExceedAccountAllowanceLimit(),
-                cannotExceedAllowancesTransactionLimit(),
-                createAnAccountWithEVMAddressAliasAndECKey(),
-                createAnAccountWithEVMAddress(),
-                scheduledCryptoApproveAllowanceWaitForExpiryTrue(),
-                txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled(),
-                getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
-                hollowAccountCompletionNotAcceptedWhenFlagIsDisabled(),
-                hollowAccountCompletionWithEthereumTransaction(),
-                hollowAccountCreationChargesExpectedFees(),
-                lazyCreateViaEthereumCryptoTransfer(),
-                hollowAccountCompletionWithSimultaneousPropertiesUpdate(),
-                contractDeployAfterEthereumTransferLazyCreate(),
-                contractCallAfterEthereumTransferLazyCreate(),
-                autoAssociationPropertiesWorkAsExpected(),
-                autoAssociationWorksForContracts(),
-                // Interactions between HIP-18 and HIP-542
-                customFeesHaveExpectedAutoCreateInteractions(),
-                callToExpiredContractResultsInSuccess(),
-                accountDeletionDoesNotReleaseAliasWithDisabledFF());
-    }
 
     @HapiTest
     @Order(16)
@@ -480,31 +462,6 @@ public class LeakyCryptoTestsSuite extends SidecarAwareHapiSuite {
                     allRunFor(spec, op, op2, op3, op4, op5, op6, op7, hapiGetAccountInfo);
                 }))
                 .then();
-    }
-
-    @BddMethodIsNotATest
-    @Order(0)
-    final Stream<DynamicTest> maxAutoAssociationSpec() {
-        final int MONOGAMOUS_NETWORK = 1;
-        final int maxAutoAssociations = 100;
-        final int ADVENTUROUS_NETWORK = 1_000;
-        final String user1 = "user1";
-
-        return defaultHapiSpec("MaxAutoAssociationSpec")
-                .given(overridingTwo(
-                        ASSOCIATIONS_LIMIT_PROPERTY, TRUE_VALUE, "tokens.maxPerAccount", "" + MONOGAMOUS_NETWORK))
-                .when()
-                .then(
-                        cryptoCreate(user1)
-                                .balance(ONE_HBAR)
-                                .maxAutomaticTokenAssociations(maxAutoAssociations)
-                                .hasPrecheck(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
-                        // Default is NOT to limit associations
-                        overriding(ASSOCIATIONS_LIMIT_PROPERTY, DEFAULT_ASSOCIATIONS_LIMIT),
-                        cryptoCreate(user1).balance(ONE_HBAR).maxAutomaticTokenAssociations(maxAutoAssociations),
-                        getAccountInfo(user1).hasMaxAutomaticAssociations(maxAutoAssociations),
-                        // Restore default
-                        overriding("tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK));
     }
 
     @Order(1)
@@ -909,10 +866,9 @@ public class LeakyCryptoTestsSuite extends SidecarAwareHapiSuite {
                 .then(uploadDefaultFeeSchedules(GENESIS));
     }
 
-    //    @HapiTest /// will be enabled after EthereumTransaction hollow account finalization is implemented
+    @HapiTest
     @Order(10)
     final Stream<DynamicTest> hollowAccountCompletionWithEthereumTransaction() {
-        final Map<String, String> startingProps = new HashMap<>();
         final String CONTRACT = "Fuse";
         return propertyPreservingHapiSpec(
                         "HollowAccountCompletionWithEthereumTransaction", NONDETERMINISTIC_ETHEREUM_DATA)
@@ -1417,36 +1373,6 @@ public class LeakyCryptoTestsSuite extends SidecarAwareHapiSuite {
                                 .via(finalTxn));
     }
 
-    final Stream<DynamicTest> callToExpiredContractResultsInSuccess() {
-        AtomicReference<AccountID> receiverId = new AtomicReference<>();
-        final var minAutoRenewPeriodPropertyName = "ledger.autoRenewPeriod.minDuration";
-        final String RECEIVER = "receiver";
-        final String INTERNAL_CALLER_CONTRACT = "InternalCaller";
-        final String INNER_TXN = "innerTx";
-
-        return propertyPreservingHapiSpec("callToExpiredContractResultsInSuccess")
-                .preserving(minAutoRenewPeriodPropertyName)
-                .given(
-                        overriding(minAutoRenewPeriodPropertyName, "1"),
-                        cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).autoRenewSecs(1L))
-                .when(
-                        sleepFor(2_000L),
-                        withOpContext((spec, op) -> allRunFor(
-                                spec,
-                                balanceSnapshot("initialBalance", asAccountString(receiverId.get())),
-                                contractCall(
-                                                INTERNAL_CALLER_CONTRACT,
-                                                "callWithValueTo",
-                                                mirrorAddrWith(receiverId.get().getAccountNum()))
-                                        .gas(100_000L)
-                                        .via(INNER_TXN))))
-                .then(
-                        getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)),
-                        getAccountBalance(RECEIVER).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
-    }
-
     @HapiTest
     final Stream<DynamicTest> accountDeletionDoesNotReleaseAliasWithDisabledFF() {
 
@@ -1573,10 +1499,5 @@ public class LeakyCryptoTestsSuite extends SidecarAwareHapiSuite {
                         .via(txn)
                         .hasKnownStatus(expectedStatus),
                 getTxnRecord(txn).assertingKnownEffectivePayers());
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

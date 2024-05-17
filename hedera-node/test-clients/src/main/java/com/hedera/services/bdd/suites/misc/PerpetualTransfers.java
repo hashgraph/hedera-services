@@ -24,11 +24,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -38,26 +36,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class PerpetualTransfers extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(PerpetualTransfers.class);
-
+public class PerpetualTransfers {
     private AtomicLong duration = new AtomicLong(15);
     private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
     private AtomicInteger maxOpsPerSec = new AtomicInteger(10);
-
-    public static void main(String... args) {
-        new PerpetualTransfers().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(canTransferBackAndForthForever());
-    }
 
     @HapiTest
     final Stream<DynamicTest> canTransferBackAndForthForever() {
@@ -88,10 +72,5 @@ public class PerpetualTransfers extends HapiSuite {
                 return Optional.of(op);
             }
         };
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

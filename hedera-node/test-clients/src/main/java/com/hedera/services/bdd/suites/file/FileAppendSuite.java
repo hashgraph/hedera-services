@@ -29,35 +29,16 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class FileAppendSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(FileAppendSuite.class);
-
-    public static void main(String... args) {
-        new FileAppendSuite().runSuiteAsync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(vanillaAppendSucceeds(), baseOpsHaveExpectedPrices());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
+public class FileAppendSuite {
     @HapiTest
     final Stream<DynamicTest> appendIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
@@ -141,10 +122,5 @@ public class FileAppendSuite extends HapiSuite {
             i += rnd.length;
         }
         return data;
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

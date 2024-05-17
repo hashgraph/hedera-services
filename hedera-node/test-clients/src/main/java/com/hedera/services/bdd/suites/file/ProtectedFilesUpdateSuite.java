@@ -22,6 +22,17 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.API_PERMISSIONS;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATES;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
+import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.NODE_DETAILS;
+import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_ADMIN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -29,20 +40,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.BddMethodIsNotATest;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.swirlds.common.utility.CommonUtils;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.SplittableRandom;
 import java.util.function.UnaryOperator;
@@ -53,8 +59,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class ProtectedFilesUpdateSuite extends HapiSuite {
+public class ProtectedFilesUpdateSuite {
     private static final String IGNORE = "ignore";
     private static final String TARGET_MEMO = "0.0.5";
     private static final String REPLACE_MEMO = "0.0.6";
@@ -64,161 +69,6 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
 
     // The number of chars that separate a property and its value
     private static final int PROPERTY_VALUE_SPACE_LENGTH = 2;
-
-    public static void main(String... args) {
-        new ProtectedFilesUpdateSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return allOf(positiveTests(), negativeTests());
-    }
-
-    private List<Stream<DynamicTest>> positiveTests() {
-        return List.of(
-                account2CanUpdateApplicationProperties(),
-                account50CanUpdateApplicationProperties(),
-                account2CanUpdateApiPermissions(),
-                account50CanUpdateApiPermissions(),
-                account2CanUpdateAddressBook(),
-                account50CanUpdateAddressBook(),
-                account55CanUpdateAddressBook(),
-                account2CanUpdateNodeDetails(),
-                account50CanUpdateNodeDetails(),
-                account55CanUpdateNodeDetails(),
-                account2CanUpdateFeeSchedule(),
-                account50CanUpdateFeeSchedule(),
-                account56CanUpdateFeeSchedule(),
-                account2CanUpdateExchangeRates(),
-                account50CanUpdateExchangeRates(),
-                account57CanUpdateExchangeRates());
-    }
-
-    private List<Stream<DynamicTest>> negativeTests() {
-        return Arrays.asList(
-                unauthorizedAccountCannotUpdateApplicationProperties(),
-                unauthorizedAccountCannotUpdateApiPermissions(),
-                unauthorizedAccountCannotUpdateAddressBook(),
-                unauthorizedAccountCannotUpdateNodeDetails(),
-                unauthorizedAccountCannotUpdateFeeSchedule(),
-                unauthorizedAccountCannotUpdateExchangeRates());
-    }
-
-    @BddMethodIsNotATest
-    final Stream<DynamicTest> specialAccountCanUpdateSpecialPropertyFile(
-            final String specialAccount, final String specialFile, final String property, final String expected) {
-        return specialAccountCanUpdateSpecialPropertyFile(specialAccount, specialFile, property, expected, true);
-    }
-
-    @BddMethodIsNotATest
-    final Stream<DynamicTest> specialAccountCanUpdateSpecialPropertyFile(
-            final String specialAccount,
-            final String specialFile,
-            final String property,
-            final String expected,
-            final boolean isFree) {
-        return defaultHapiSpec(specialAccount + "CanUpdate" + specialFile)
-                .given(givenOps(specialAccount, specialFile))
-                .when(fileUpdate(specialFile)
-                        .overridingProps(Map.of(property, expected))
-                        .payingWith(specialAccount))
-                .then(validateAndCleanUpOps(
-                        propertyFileValidationOp(specialAccount, specialFile, property, expected),
-                        specialAccount,
-                        specialFile,
-                        isFree));
-    }
-
-    private HapiSpecOperation propertyFileValidationOp(
-            String account, String fileName, String property, String expected) {
-        return UtilVerbs.withOpContext((spec, ctxLog) -> {
-            String registryEntry = fileName + "_CHANGED_BY_" + account;
-            HapiGetFileContents subOp = getFileContents(fileName).saveToRegistry(registryEntry);
-            CustomSpecAssert.allRunFor(spec, subOp);
-            String newContents = new String(spec.registry().getBytes(registryEntry));
-            int propertyIndex = newContents.indexOf(property);
-            Assertions.assertTrue(propertyIndex >= 0);
-            int valueIndex = propertyIndex + property.length() + PROPERTY_VALUE_SPACE_LENGTH;
-            String actual = newContents.substring(valueIndex, valueIndex + expected.length());
-            Assertions.assertEquals(expected, actual);
-        });
-    }
-
-    @BddMethodIsNotATest
-    final Stream<DynamicTest> specialAccountCanUpdateSpecialFile(
-            final String specialAccount, final String specialFile, final String target, final String replacement) {
-        return specialAccountCanUpdateSpecialFile(specialAccount, specialFile, target, replacement, true);
-    }
-
-    @BddMethodIsNotATest
-    final Stream<DynamicTest> specialAccountCanUpdateSpecialFile(
-            final String specialAccount,
-            final String specialFile,
-            final String target,
-            final String replacement,
-            final boolean isFree) {
-        return specialAccountCanUpdateSpecialFile(
-                specialAccount,
-                specialFile,
-                isFree,
-                contents -> target.equals(IGNORE)
-                        ? contents
-                        : (new String(contents).replace(target, replacement)).getBytes());
-    }
-
-    @BddMethodIsNotATest
-    final Stream<DynamicTest> specialAccountCanUpdateSpecialFile(
-            final String specialAccount,
-            final String specialFile,
-            final boolean isFree,
-            final UnaryOperator<byte[]> contentsTransformer) {
-        final String newFileName = "NEW_" + specialFile;
-
-        return defaultHapiSpec(specialAccount + "CanUpdate" + specialFile)
-                .given(ArrayUtils.add(givenOps(specialAccount, specialFile), UtilVerbs.withOpContext((spec, ctxLog) -> {
-                    var origContents = spec.registry().getBytes(specialFile);
-                    var newContents = contentsTransformer.apply(origContents);
-                    spec.registry().saveBytes(newFileName, ByteString.copyFrom(newContents));
-                })))
-                .when(UtilVerbs.updateLargeFile(specialAccount, specialFile, newFileName))
-                .then(validateAndCleanUpOps(
-                        getFileContents(specialFile).hasContents(newFileName), specialAccount, specialFile, isFree));
-    }
-
-    private HapiSpecOperation[] givenOps(String account, String fileName) {
-        HapiSpecOperation[] opsArray = {
-            UtilVerbs.fundAnAccount(account),
-            getFileContents(fileName).saveToRegistry(fileName),
-            UtilVerbs.balanceSnapshot("preUpdate", account)
-        };
-        return opsArray;
-    }
-
-    private HapiSpecOperation[] validateAndCleanUpOps(
-            final HapiSpecOperation validateOp, final String account, final String fileName, final boolean isFree) {
-        HapiSpecOperation[] accountBalanceUnchanged = {
-            getAccountBalance(account).hasTinyBars(changeFromSnapshot("preUpdate", 0))
-        };
-        HapiSpecOperation[] opsArray = {
-            validateOp, UtilVerbs.updateLargeFile(account, fileName, fileName),
-        };
-        if (account.equals(GENESIS) || !isFree) {
-            return opsArray;
-        }
-        return ArrayUtils.addAll(accountBalanceUnchanged, opsArray);
-    }
-
-    @BddMethodIsNotATest
-    final Stream<DynamicTest> unauthorizedAccountCannotUpdateSpecialFile(
-            final String specialFile, final String newContents) {
-        return defaultHapiSpec("UnauthorizedAccountCannotUpdate" + specialFile)
-                .given(cryptoCreate("unauthorizedAccount"))
-                .when()
-                .then(fileUpdate(specialFile)
-                        .contents(newContents)
-                        .payingWith("unauthorizedAccount")
-                        .hasPrecheck(AUTHORIZATION_FAILED));
-    }
 
     @HapiTest
     final Stream<DynamicTest> account2CanUpdateApplicationProperties() {
@@ -332,9 +182,114 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
         return unauthorizedAccountCannotUpdateSpecialFile(EXCHANGE_RATES, NEW_CONTENTS);
     }
 
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
+    final Stream<DynamicTest> specialAccountCanUpdateSpecialPropertyFile(
+            final String specialAccount, final String specialFile, final String property, final String expected) {
+        return specialAccountCanUpdateSpecialPropertyFile(specialAccount, specialFile, property, expected, true);
+    }
+
+    final Stream<DynamicTest> specialAccountCanUpdateSpecialPropertyFile(
+            final String specialAccount,
+            final String specialFile,
+            final String property,
+            final String expected,
+            final boolean isFree) {
+        return defaultHapiSpec(specialAccount + "CanUpdate" + specialFile)
+                .given(givenOps(specialAccount, specialFile))
+                .when(fileUpdate(specialFile)
+                        .overridingProps(Map.of(property, expected))
+                        .payingWith(specialAccount))
+                .then(validateAndCleanUpOps(
+                        propertyFileValidationOp(specialAccount, specialFile, property, expected),
+                        specialAccount,
+                        specialFile,
+                        isFree));
+    }
+
+    private HapiSpecOperation propertyFileValidationOp(
+            String account, String fileName, String property, String expected) {
+        return UtilVerbs.withOpContext((spec, ctxLog) -> {
+            String registryEntry = fileName + "_CHANGED_BY_" + account;
+            HapiGetFileContents subOp = getFileContents(fileName).saveToRegistry(registryEntry);
+            CustomSpecAssert.allRunFor(spec, subOp);
+            String newContents = new String(spec.registry().getBytes(registryEntry));
+            int propertyIndex = newContents.indexOf(property);
+            Assertions.assertTrue(propertyIndex >= 0);
+            int valueIndex = propertyIndex + property.length() + PROPERTY_VALUE_SPACE_LENGTH;
+            String actual = newContents.substring(valueIndex, valueIndex + expected.length());
+            Assertions.assertEquals(expected, actual);
+        });
+    }
+
+    final Stream<DynamicTest> specialAccountCanUpdateSpecialFile(
+            final String specialAccount, final String specialFile, final String target, final String replacement) {
+        return specialAccountCanUpdateSpecialFile(specialAccount, specialFile, target, replacement, true);
+    }
+
+    final Stream<DynamicTest> specialAccountCanUpdateSpecialFile(
+            final String specialAccount,
+            final String specialFile,
+            final String target,
+            final String replacement,
+            final boolean isFree) {
+        return specialAccountCanUpdateSpecialFile(
+                specialAccount,
+                specialFile,
+                isFree,
+                contents -> target.equals(IGNORE)
+                        ? contents
+                        : (new String(contents).replace(target, replacement)).getBytes());
+    }
+
+    final Stream<DynamicTest> specialAccountCanUpdateSpecialFile(
+            final String specialAccount,
+            final String specialFile,
+            final boolean isFree,
+            final UnaryOperator<byte[]> contentsTransformer) {
+        final String newFileName = "NEW_" + specialFile;
+
+        return defaultHapiSpec(specialAccount + "CanUpdate" + specialFile)
+                .given(ArrayUtils.add(givenOps(specialAccount, specialFile), UtilVerbs.withOpContext((spec, ctxLog) -> {
+                    var origContents = spec.registry().getBytes(specialFile);
+                    var newContents = contentsTransformer.apply(origContents);
+                    spec.registry().saveBytes(newFileName, ByteString.copyFrom(newContents));
+                })))
+                .when(UtilVerbs.updateLargeFile(specialAccount, specialFile, newFileName))
+                .then(validateAndCleanUpOps(
+                        getFileContents(specialFile).hasContents(newFileName), specialAccount, specialFile, isFree));
+    }
+
+    private HapiSpecOperation[] givenOps(String account, String fileName) {
+        HapiSpecOperation[] opsArray = {
+            UtilVerbs.fundAnAccount(account),
+            getFileContents(fileName).saveToRegistry(fileName),
+            UtilVerbs.balanceSnapshot("preUpdate", account)
+        };
+        return opsArray;
+    }
+
+    private HapiSpecOperation[] validateAndCleanUpOps(
+            final HapiSpecOperation validateOp, final String account, final String fileName, final boolean isFree) {
+        HapiSpecOperation[] accountBalanceUnchanged = {
+            getAccountBalance(account).hasTinyBars(changeFromSnapshot("preUpdate", 0))
+        };
+        HapiSpecOperation[] opsArray = {
+            validateOp, UtilVerbs.updateLargeFile(account, fileName, fileName),
+        };
+        if (account.equals(GENESIS) || !isFree) {
+            return opsArray;
+        }
+        return ArrayUtils.addAll(accountBalanceUnchanged, opsArray);
+    }
+
+    final Stream<DynamicTest> unauthorizedAccountCannotUpdateSpecialFile(
+            final String specialFile, final String newContents) {
+        return defaultHapiSpec("UnauthorizedAccountCannotUpdate" + specialFile)
+                .given(cryptoCreate("unauthorizedAccount"))
+                .when()
+                .then(fileUpdate(specialFile)
+                        .contents(newContents)
+                        .payingWith("unauthorizedAccount")
+                        .hasPrecheck(AUTHORIZATION_FAILED));
     }
 
     private byte[] extendedBioAddressBook(byte[] contents, String targetMemo, String replaceMemo) {

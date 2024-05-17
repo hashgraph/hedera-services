@@ -38,29 +38,24 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class RecordCreationSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(RecordCreationSuite.class);
-
+public class RecordCreationSuite {
     private static final long SLEEP_MS = 1_000L;
     private static final String BEFORE = "before";
     private static final String FUNDING_BEFORE = "fundingBefore";
@@ -75,20 +70,6 @@ public class RecordCreationSuite extends HapiSuite {
     private static final String TXN_ID = "txnId";
     public static final String STAKING_FEES_NODE_REWARD_PERCENTAGE = "staking.fees.nodeRewardPercentage";
     public static final String STAKING_FEES_STAKING_REWARD_PERCENTAGE = "staking.fees.stakingRewardPercentage";
-
-    public static void main(String... args) {
-        new RecordCreationSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                payerRecordCreationSanityChecks(),
-                accountsGetPayerRecordsIfSoConfigured(),
-                submittingNodeChargedNetworkFeeForLackOfDueDiligence(),
-                submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness(),
-                submittingNodeStillPaidIfServiceFeesOmitted());
-    }
 
     @HapiTest
     final Stream<DynamicTest> submittingNodeStillPaidIfServiceFeesOmitted() {
@@ -299,10 +280,5 @@ public class RecordCreationSuite extends HapiSuite {
                         .payingWith(PAYER)
                         .via(txn))
                 .then(getAccountRecords(PAYER).has(inOrder(recordWith().txnId(txn))));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

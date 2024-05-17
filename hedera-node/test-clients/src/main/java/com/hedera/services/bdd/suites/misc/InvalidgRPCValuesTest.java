@@ -29,27 +29,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class InvalidgRPCValuesTest extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(InvalidgRPCValuesTest.class);
-
-    public static void main(String... args) throws Exception {
-        new InvalidgRPCValuesTest().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(invalidIdCheck());
-    }
-
+public class InvalidgRPCValuesTest {
     @HapiTest
     final Stream<DynamicTest> invalidIdCheck() {
         final long MAX_NUM_ALLOWED = 0xFFFFFFFFL;
@@ -67,10 +50,5 @@ public class InvalidgRPCValuesTest extends HapiSuite {
                         // sample transactions
                         scheduleSign(invalidMaxId).hasKnownStatus(INVALID_SCHEDULE_ID),
                         scheduleDelete(invalidMaxId).hasKnownStatus(INVALID_SCHEDULE_ID));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

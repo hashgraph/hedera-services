@@ -25,33 +25,20 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshots;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateRecordTransactionFees;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferListForBalances;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.NODE;
+import static com.hedera.services.bdd.suites.HapiSuite.NODE_REWARD;
+import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class FileRecordsSanityCheckSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(FileRecordsSanityCheckSuite.class);
-
-    public static void main(String... args) {
-        new FileRecordsSanityCheckSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                fileCreateRecordSanityChecks(),
-                fileDeleteRecordSanityChecks(),
-                fileAppendRecordSanityChecks(),
-                fileUpdateRecordSanityChecks());
-    }
-
+public class FileRecordsSanityCheckSuite {
     @HapiTest
     final Stream<DynamicTest> fileAppendRecordSanityChecks() {
         return defaultHapiSpec("FileAppendRecordSanityChecks")
@@ -104,10 +91,5 @@ public class FileRecordsSanityCheckSuite extends HapiSuite {
                         validateTransferListForBalances(
                                 "txn", List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER)),
                         validateRecordTransactionFees("txn"));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

@@ -25,33 +25,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class Issue310Suite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(CryptoCreateSuite.class);
-
-    public static void main(String... args) {
-        new Issue310Suite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                duplicatedTxnsSameTypeDetected(),
-                duplicatedTxnsDifferentTypesDetected(),
-                duplicatedTxnsSameTypeDifferentNodesDetected(),
-                duplicatedTxnsDifferentTypesDifferentNodesDetected());
-    }
-
+public class Issue310Suite {
     @HapiTest
     final Stream<DynamicTest> duplicatedTxnsSameTypeDetected() {
         long initialBalance = 10_000L;
@@ -114,10 +92,5 @@ public class Issue310Suite extends HapiSuite {
                         .txnId("txnId4")
                         .hasPrecheck(DUPLICATE_TRANSACTION))
                 .then(getTxnRecord("txnId4").logged());
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

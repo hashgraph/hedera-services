@@ -26,38 +26,20 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class Issue2051Spec extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(Issue2051Spec.class);
+public class Issue2051Spec {
     private static final String TRANSFER = "transfer";
     private static final String PAYER = "payer";
     private static final String SNAPSHOT = "snapshot";
     private static final String DELETE_TXN = "deleteTxn";
-
-    public static void main(String... args) {
-        new Issue2051Spec().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                transferAccountCannotBeDeletedForContractTarget(),
-                transferAccountCannotBeDeleted(),
-                tbdCanPayForItsOwnDeletion());
-    }
 
     @HapiTest
     final Stream<DynamicTest> tbdCanPayForItsOwnDeletion() {
@@ -108,10 +90,5 @@ public class Issue2051Spec extends HapiSuite {
                                 .via(DELETE_TXN)
                                 .transferContract("PayReceivable")
                                 .hasKnownStatus(INVALID_CONTRACT_ID));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

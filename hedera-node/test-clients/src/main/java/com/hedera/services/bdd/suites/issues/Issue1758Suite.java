@@ -22,32 +22,16 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class Issue1758Suite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(Issue1758Suite.class);
-
-    public static void main(String... args) {
-        new Issue1758Suite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(allowsCryptoCreatePayerToHaveLessThanTwiceFee());
-    }
-
+public class Issue1758Suite {
     @HapiTest
     final Stream<DynamicTest> allowsCryptoCreatePayerToHaveLessThanTwiceFee() {
         return defaultFailingHapiSpec("AllowsCryptoCreatePayerToHaveLessThanTwiceFee")
@@ -63,10 +47,5 @@ public class Issue1758Suite extends HapiSuite {
                 .when(cryptoTransfer(
                         tinyBarsFromTo(GENESIS, "payer", spec -> spec.registry().getAmount("balance"))))
                 .then(cryptoCreate("irrelevant").balance(0L).payingWith("payer"));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

@@ -23,7 +23,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.suites.BddTestNameDoesNotMatchMethodName;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -34,7 +33,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
 public class VersionInfoSpec extends HapiSuite {
     private static final Logger log = LogManager.getLogger(VersionInfoSpec.class);
     private final Map<String, String> specConfig;

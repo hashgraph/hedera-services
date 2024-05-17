@@ -25,12 +25,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -40,26 +38,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class FileQueriesStressTests extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(FileQueriesStressTests.class);
-
+public class FileQueriesStressTests {
     private AtomicLong duration = new AtomicLong(30);
     private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
     private AtomicInteger maxOpsPerSec = new AtomicInteger(100);
-
-    public static void main(String... args) {
-        new FileQueriesStressTests().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(getFileInfoStress(), getFileContentsStress());
-    }
 
     @HapiTest
     final Stream<DynamicTest> getFileContentsStress() {
@@ -129,10 +113,5 @@ public class FileQueriesStressTests extends HapiSuite {
         if (ciProps.has(name)) {
             configurer.accept(getter.apply(name));
         }
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

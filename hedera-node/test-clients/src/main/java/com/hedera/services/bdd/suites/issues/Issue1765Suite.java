@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asFile;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
@@ -29,43 +28,25 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshots;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferListForBalances;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.NODE;
+import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class Issue1765Suite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(Issue1765Suite.class);
+public class Issue1765Suite {
     private static final String ACCOUNT = "1.1.1";
     private static final String INVALID_UPDATE_TXN = "invalidUpdateTxn";
     private static final String INVALID_APPEND_TXN = "invalidAppendTxn";
     private static final String IMAGINARY = "imaginary";
     private static final String MEMO_IS = "Turning and turning in the widening gyre";
-
-    public static void main(String... args) {
-        new Issue1765Suite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(get950Balance());
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> get950Balance() {
-        return defaultHapiSpec("Get950Balance")
-                .given()
-                .when()
-                .then(getAccountBalance("0.0.950").logged());
-    }
 
     @HapiTest
     final Stream<DynamicTest> recordOfInvalidContractUpdateSanityChecks() {
@@ -135,10 +116,5 @@ public class Issue1765Suite extends HapiSuite {
                                 INVALID_APPEND_TXN, List.of(FUNDING, GENESIS, STAKING_REWARD, NODE)),
                         getTxnRecord(INVALID_APPEND_TXN)
                                 .hasPriority(recordWith().memo(THE_MEMO_IS)));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

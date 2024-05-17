@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.workingD
 import static com.hedera.services.bdd.suites.TargetNetworkType.SHARED_HAPI_TEST_NETWORK;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -149,6 +150,16 @@ public class HederaNetwork {
     }
 
     /**
+     * Returns the nodes of the network that match the given selector.
+     *
+     * @param selector the selector
+     * @return the nodes that match the selector
+     */
+    public List<HederaNode> nodesFor(@NonNull final NodeSelector selector) {
+        return nodes.stream().filter(selector).toList();
+    }
+
+    /**
      * Returns the name of the network.
      *
      * @return the name of the network
@@ -164,16 +175,17 @@ public class HederaNetwork {
      * @param timeout the maximum time to wait for all nodes to start
      */
     public void startWithin(@NonNull final Duration timeout) {
-        final var latch = new CountDownLatch(1);
+        final var latch = new CountDownLatch(nodes.size());
         CompletableFuture.allOf(nodes.stream()
-                        .map(node -> {
-                            node.start(configTxt);
-                            return node.waitForStatus(ACTIVE);
-                        })
+                        .map(node -> runAsync(() -> {
+                                    node.initWorkingDir(configTxt);
+                                    node.start();
+                                })
+                                .thenCompose(nothing ->
+                                        node.waitForStatus(ACTIVE, timeout).thenRun(latch::countDown)))
                         .toArray(CompletableFuture[]::new))
-                .orTimeout(timeout.toMillis(), MILLISECONDS)
-                .thenRun(latch::countDown);
-        ready = CompletableFuture.runAsync(() -> {
+                .orTimeout(timeout.toMillis(), MILLISECONDS);
+        ready = runAsync(() -> {
             try {
                 latch.await();
             } catch (InterruptedException e) {

@@ -24,6 +24,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileDelet
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileUndelete;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModifiedWithFixedPayer;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_DELETE_ADMIN;
+import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_UNDELETE_ADMIN;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
@@ -31,39 +36,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Instant;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class SysDelSysUndelSpec extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(SysDelSysUndelSpec.class);
-
+public class SysDelSysUndelSpec {
     byte[] ORIG_FILE = "SOMETHING".getBytes();
-
-    public static void main(String... args) {
-        new SysDelSysUndelSpec().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                systemDeleteThenUndeleteRestoresContentsAndExpiry(),
-                systemDeleteWithPastExpiryDestroysFile(),
-                distinguishesAdminPrivileges());
-    }
 
     @HapiTest
     final Stream<DynamicTest> sysDelIdVariantsTreatedAsExpected() {
@@ -140,10 +120,5 @@ public class SysDelSysUndelSpec extends HapiSuite {
                 .then(
                         getFileContents("misc").hasContents(ignore -> ORIG_FILE),
                         getFileInfo("misc").hasExpiry(initExpiry::get));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

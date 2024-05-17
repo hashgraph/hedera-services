@@ -21,31 +21,15 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class AppendFailuresSpec extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(AppendFailuresSpec.class);
-
-    public static void main(String... args) {
-        new AppendFailuresSpec().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(handleRejectsOversized());
-    }
-
+public class AppendFailuresSpec {
     @HapiTest
     final Stream<DynamicTest> handleRejectsOversized() {
         byte[] BYTES_3K_MINUS1 = new byte[3 * 1024 - 1];
@@ -61,10 +45,5 @@ public class AppendFailuresSpec extends HapiSuite {
                         fileAppend("file").content(BYTES_1),
                         fileAppend("file").content(BYTES_1).hasKnownStatus(MAX_FILE_SIZE_EXCEEDED))
                 .then(overriding("files.maxSizeKb", "1024"));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

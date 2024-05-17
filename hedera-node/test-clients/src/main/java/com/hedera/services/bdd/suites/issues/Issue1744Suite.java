@@ -22,32 +22,19 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.suites.HapiSuite.CIVILIAN_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class Issue1744Suite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(Issue1744Suite.class);
+public class Issue1744Suite {
     private static final String PAYER = "payer";
-
-    public static void main(String... args) {
-        new Issue1744Suite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(keepsRecordOfPayerIBE());
-    }
 
     @HapiTest
     final Stream<DynamicTest> keepsRecordOfPayerIBE() {
@@ -80,10 +67,5 @@ public class Issue1744Suite extends HapiSuite {
                                         .hasAnyKnownStatus()),
                         getTxnRecord("txnA").logged(),
                         getTxnRecord("txnB").logged());
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

@@ -41,6 +41,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.A_TOKEN;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_CREATE_SPONSOR;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.NFT_CREATE;
@@ -50,38 +56,21 @@ import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.VAL
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_TXN;
+import static com.hedera.services.bdd.suites.util.UtilPrngSuite.BOB;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.utilops.FeatureFlags;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class FeatureFlagSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(FeatureFlagSuite.class);
-
-    public static void main(String... args) {
-        new FeatureFlagSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                disableAllFeatureFlagsAndConfirmNotSupported(),
-                enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting());
-    }
-
+public class FeatureFlagSuite {
     @HapiTest
     final Stream<DynamicTest> disableAllFeatureFlagsAndConfirmNotSupported() {
         return defaultHapiSpec("disableAllFeatureFlagsAndConfirmNotSupported")
@@ -187,10 +176,5 @@ public class FeatureFlagSuite extends HapiSuite {
                         .via(TRANSFER_TXN)
                         .hasKnownStatus(NOT_SUPPORTED),
                 getTxnRecord(TRANSFER_TXN).andAllChildRecords().hasNonStakingChildRecordCount(0));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

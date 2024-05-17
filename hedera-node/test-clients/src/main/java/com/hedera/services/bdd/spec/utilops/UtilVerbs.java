@@ -71,6 +71,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
+import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
+import static com.swirlds.platform.system.status.PlatformStatus.BEHIND;
+import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
+import static com.swirlds.platform.system.status.PlatformStatus.RECONNECT_COMPLETE;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -79,6 +83,7 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.RecordStreamValidator;
+import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -120,12 +125,13 @@ import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMutation;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem;
 import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
+import com.hedera.services.bdd.spec.utilops.lifecycle.hedera.ops.ShutdownWithinOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.hedera.ops.TryToStartNodesOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.hedera.ops.WaitForStatusOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ShutDownNodesOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.StartNodesOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForActiveOp;
-import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForBehindOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForFreezeOp;
-import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForReconnectOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForShutdownOp;
 import com.hedera.services.bdd.spec.utilops.mod.QueryModification;
 import com.hedera.services.bdd.spec.utilops.mod.QueryModificationsOp;
@@ -336,24 +342,40 @@ public class UtilVerbs {
         return new ContextualActionOp(action);
     }
 
-    public static WaitForActiveOp waitForNodeToBecomeActive(String name, int waitSeconds) {
-        return new WaitForActiveOp(byName(name), waitSeconds);
+    public static WaitForStatusOp waitForActive(String name, Duration timeout) {
+        return new WaitForStatusOp(NodeSelector.byName(name), ACTIVE, timeout);
+    }
+
+    public static WaitForStatusOp waitForBehind(String name, Duration timeout) {
+        return new WaitForStatusOp(NodeSelector.byName(name), BEHIND, timeout);
+    }
+
+    public static WaitForStatusOp waitForReconnectComplete(String name, Duration timeout) {
+        return new WaitForStatusOp(NodeSelector.byName(name), RECONNECT_COMPLETE, timeout);
+    }
+
+    public static WaitForStatusOp waitForFreezeComplete(String name, Duration timeout) {
+        return new WaitForStatusOp(NodeSelector.byName(name), FREEZE_COMPLETE, timeout);
+    }
+
+    public static TryToStartNodesOp tryToStartNetwork() {
+        return new TryToStartNodesOp(NodeSelector.allNodes());
+    }
+
+    public static TryToStartNodesOp tryToStart(String name) {
+        return new TryToStartNodesOp(NodeSelector.byName(name));
     }
 
     public static WaitForActiveOp waitForNodesToBecomeActive(int waitSeconds) {
         return new WaitForActiveOp(allNodes(), waitSeconds);
     }
 
-    public static WaitForActiveOp waitForNodeToBecomeBehind(String name, int waitSeconds) {
-        return new WaitForActiveOp(byName(name), waitSeconds);
-    }
-
-    public static WaitForFreezeOp waitForNodeToFreeze(String name, int waitSeconds) {
-        return new WaitForFreezeOp(byName(name), waitSeconds);
-    }
-
     public static StartNodesOp startAllNodes() {
         return new StartNodesOp(allNodes());
+    }
+
+    public static ShutdownWithinOp shutdownWithin(String name, Duration timeout) {
+        return new ShutdownWithinOp(NodeSelector.byName(name), timeout);
     }
 
     public static StartNodesOp startNode(String name) {
@@ -364,24 +386,8 @@ public class UtilVerbs {
         return new ShutDownNodesOp(allNodes());
     }
 
-    public static ShutDownNodesOp shutDownNode(String name) {
-        return new ShutDownNodesOp(byName(name));
-    }
-
     public static WaitForFreezeOp waitForNodesToFreeze(int waitSeconds) {
         return new WaitForFreezeOp(allNodes(), waitSeconds);
-    }
-
-    public static WaitForBehindOp waitForNodeToBeBehind(String name, int waitSeconds) {
-        return new WaitForBehindOp(byName(name), waitSeconds);
-    }
-
-    public static WaitForReconnectOp waitForNodeToFinishReconnect(String name, int waitSeconds) {
-        return new WaitForReconnectOp(byName(name), waitSeconds);
-    }
-
-    public static WaitForShutdownOp waitForNodeToShutDown(String name, int waitSeconds) {
-        return new WaitForShutdownOp(byName(name), waitSeconds);
     }
 
     public static WaitForShutdownOp waitForNodesToShutDown(int waitSeconds) {

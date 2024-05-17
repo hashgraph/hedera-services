@@ -20,35 +20,14 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class Issue1742Suite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(Issue1742Suite.class);
-
-    public static void main(String... args) {
-        new Issue1742Suite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(cryptoTransferListShowsOnlyFeesAfterIAB());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return false;
-    }
-
+public class Issue1742Suite {
     @HapiTest
     final Stream<DynamicTest> cryptoTransferListShowsOnlyFeesAfterIAB() {
         final long PAYER_BALANCE = 1_000_000L;
@@ -60,10 +39,5 @@ public class Issue1742Suite extends HapiSuite {
                         .payingWith("payer")
                         .via("txn")
                         .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

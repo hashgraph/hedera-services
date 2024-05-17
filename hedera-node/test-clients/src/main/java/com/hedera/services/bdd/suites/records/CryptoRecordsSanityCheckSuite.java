@@ -34,45 +34,30 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshots;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateRecordTransactionFees;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferListForBalances;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.NODE;
+import static com.hedera.services.bdd.suites.HapiSuite.NODE_REWARD;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class CryptoRecordsSanityCheckSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(CryptoRecordsSanityCheckSuite.class);
+public class CryptoRecordsSanityCheckSuite {
     private static final String PAYER = "payer";
     private static final String RECEIVER = "receiver";
     private static final String NEW_KEY = "newKey";
     private static final String ORIG_KEY = "origKey";
-
-    public static void main(String... args) {
-        new CryptoRecordsSanityCheckSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                cryptoCreateRecordSanityChecks(),
-                cryptoDeleteRecordSanityChecks(),
-                cryptoTransferRecordSanityChecks(),
-                cryptoUpdateRecordSanityChecks(),
-                insufficientAccountBalanceRecordSanityChecks(),
-                invalidPayerSigCryptoTransferRecordSanityChecks(),
-                ownershipChangeShowsInRecord());
-    }
 
     @HapiTest
     final Stream<DynamicTest> ownershipChangeShowsInRecord() {
@@ -205,10 +190,5 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
                         .via("transferTxn")
                         .signedBy(ORIG_KEY, RECEIVER)
                         .hasKnownStatus(INVALID_PAYER_SIGNATURE));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

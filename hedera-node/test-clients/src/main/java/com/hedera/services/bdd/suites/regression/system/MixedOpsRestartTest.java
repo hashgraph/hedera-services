@@ -22,20 +22,14 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutDownAllNodes;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.startAllNodes;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToBecomeActive;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToFreeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToShutDown;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablement;
-import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
-import static com.hedera.services.bdd.suites.regression.system.MixedOperations.ADMIN_KEY;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.NFT;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.PAYER;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.RECEIVER;
@@ -44,7 +38,6 @@ import static com.hedera.services.bdd.suites.regression.system.MixedOperations.S
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.SUBMIT_KEY;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.TOPIC;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.TREASURY;
-import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
@@ -52,10 +45,9 @@ import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiSuite;
+import java.time.Duration;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
@@ -91,29 +83,10 @@ public class MixedOpsRestartTest extends HapiSuite {
 
     @HapiTest
     final Stream<DynamicTest> restartMixedOps() {
-        AtomicInteger tokenId = new AtomicInteger(0);
-        AtomicInteger scheduleId = new AtomicInteger(0);
-        AtomicInteger contractId = new AtomicInteger(0);
         AtomicInteger nftId = new AtomicInteger(0);
-        AtomicInteger topicId = new AtomicInteger(1);
-        Random r = new Random(38582L);
-        Supplier<HapiSpecOperation[]> mixedOpsBurst =
-                new MixedOperations(NUM_SUBMISSIONS).mixedOps(tokenId, nftId, scheduleId, contractId, topicId, r);
         return defaultHapiSpec("RestartMixedOps")
                 .given(
-                        newKeyNamed(SUBMIT_KEY),
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(ADMIN_KEY),
-                        tokenOpsEnablement(),
-                        scheduleOpsEnablement(),
-                        cryptoCreate(PAYER).balance(100 * ONE_MILLION_HBARS),
-                        cryptoCreate(TREASURY).payingWith(PAYER),
-                        cryptoCreate(SENDER).payingWith(PAYER),
-                        cryptoCreate(RECEIVER).payingWith(PAYER),
-                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY).payingWith(PAYER),
-                        fileCreate(SOME_BYTE_CODE)
-                                .path(HapiSpecSetup.getDefaultInstance().defaultContractPath()),
-                        withOpContext((spec, log) -> allRunFor(spec, mixedOpsBurst.get())),
+                        MixedOperations.burstOfTps(50, Duration.ofSeconds(10)),
                         sleepFor(10000),
                         inParallel(IntStream.range(0, NUM_SUBMISSIONS)
                                 .mapToObj(ignore -> mintToken(
@@ -148,6 +121,6 @@ public class MixedOpsRestartTest extends HapiSuite {
                         createTopic(TOPIC).submitKeyName(SUBMIT_KEY).payingWith(PAYER),
                         fileCreate(SOME_BYTE_CODE)
                                 .path(HapiSpecSetup.getDefaultInstance().defaultContractPath()),
-                        withOpContext((spec, log) -> allRunFor(spec, mixedOpsBurst.get())));
+                        MixedOperations.burstOfTps(50, Duration.ofSeconds(10)));
     }
 }

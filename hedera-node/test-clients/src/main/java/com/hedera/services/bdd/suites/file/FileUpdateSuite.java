@@ -63,6 +63,18 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.API_PERMISSIONS;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.TINY_PARTS_PER_WHOLE;
+import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -92,20 +104,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.BddMethodIsNotATest;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
@@ -127,8 +136,7 @@ import org.junit.jupiter.api.DynamicTest;
  * <p>We'll come back to add all missing test scenarios for this and other test suites once we are
  * done with cleaning up old test cases.
  */
-@HapiTestSuite
-public class FileUpdateSuite extends HapiSuite {
+public class FileUpdateSuite {
     private static final Logger log = LogManager.getLogger(FileUpdateSuite.class);
     private static final String CONTRACT = "CreateTrivial";
     private static final String CREATE_TXN = "create";
@@ -164,32 +172,6 @@ public class FileUpdateSuite extends HapiSuite {
     public static final String TEST_TOPIC = "testTopic";
     public static final String STAKING_FEES_NODE_REWARD_PERCENTAGE = "staking.fees.nodeRewardPercentage";
     public static final String STAKING_FEES_STAKING_REWARD_PERCENTAGE = "staking.fees.stakingRewardPercentage";
-
-    public static void main(String... args) {
-        new FileUpdateSuite().runSuiteSync();
-    }
-
-    @Override
-    @SuppressWarnings("java:S3878")
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                vanillaUpdateSucceeds(),
-                updateFeesCompatibleWithCreates(),
-                apiPermissionsChangeDynamically(),
-                cannotUpdateExpirationPastMaxLifetime(),
-                optimisticSpecialFileUpdate(),
-                associateHasExpectedSemantics(),
-                notTooManyFeeScheduleCanBeCreated(),
-                allUnusedGasIsRefundedIfSoConfigured(),
-                maxRefundIsEnforced(),
-                gasLimitOverMaxGasLimitFailsPrecheck(),
-                kvLimitsEnforced(),
-                serviceFeeRefundedIfConsGasExhausted(),
-                chainIdChangesDynamically(),
-                entitiesNotCreatableAfterUsageLimitsReached(),
-                rentItemizedAsExpectedWithOverridePriceTiers(),
-                messageSubmissionSizeChange());
-    }
 
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
@@ -733,10 +715,5 @@ public class FileUpdateSuite extends HapiSuite {
                                 .hasRetryPrecheckFrom(BUSY)
                                 .hasKnownStatus(MESSAGE_SIZE_TOO_LARGE),
                         overriding("consensus.message.maxBytesAllowed", String.valueOf(defaultMaxBytesAllowed)));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

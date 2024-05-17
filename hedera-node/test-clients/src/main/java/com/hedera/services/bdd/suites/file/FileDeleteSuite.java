@@ -32,29 +32,12 @@ import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuc
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class FileDeleteSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(FileDeleteSuite.class);
-
-    public static void main(String... args) {
-        new FileDeleteSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(getDeletedFileInfo(), canDeleteWithAnyOneOfTopLevelKeyList());
-    }
-
+public class FileDeleteSuite {
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
@@ -80,10 +63,5 @@ public class FileDeleteSuite extends HapiSuite {
                 .given(fileCreate("deletedFile").logged())
                 .when(fileDelete("deletedFile").logged())
                 .then(getFileInfo("deletedFile").hasAnswerOnlyPrecheck(OK).hasDeleted(true));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

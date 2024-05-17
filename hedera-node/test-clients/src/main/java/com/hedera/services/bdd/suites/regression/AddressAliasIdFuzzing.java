@@ -23,15 +23,14 @@ import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYE
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID_PROP;
 import static com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite.*;
 import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.*;
 import static java.util.stream.Collectors.joining;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,8 +45,7 @@ import org.junit.jupiter.api.DynamicTest;
  *
  * <p>See <a href="https://github.com/hashgraph/hedera-services/issues/4565">#4565</a> for details.
  */
-@HapiTestSuite
-public class AddressAliasIdFuzzing extends HapiSuite {
+public class AddressAliasIdFuzzing {
     private static final Logger log = LogManager.getLogger(AddressAliasIdFuzzing.class);
 
     private static final String PROPERTIES = "id-fuzzing.properties";
@@ -55,15 +53,6 @@ public class AddressAliasIdFuzzing extends HapiSuite {
     private final AtomicInteger maxOpsPerSec = new AtomicInteger(1);
     private final AtomicInteger maxPendingOps = new AtomicInteger(Integer.MAX_VALUE);
     private final AtomicInteger backoffSleepSecs = new AtomicInteger(Integer.MAX_VALUE);
-
-    public static void main(String... args) {
-        new AddressAliasIdFuzzing().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(addressAliasIdFuzzing(), transferToKeyFuzzing());
-    }
 
     @HapiTest
     final Stream<DynamicTest> addressAliasIdFuzzing() {
@@ -94,10 +83,5 @@ public class AddressAliasIdFuzzing extends HapiSuite {
                         .withRecharging())
                 .when()
                 .then(runWithProvider(idTransferToRandomKeyWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

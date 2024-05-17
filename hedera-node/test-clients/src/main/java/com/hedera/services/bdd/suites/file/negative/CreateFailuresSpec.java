@@ -20,29 +20,12 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.time.Instant;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class CreateFailuresSpec extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(CreateFailuresSpec.class);
-
-    public static void main(String... args) {
-        new CreateFailuresSpec().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(precheckRejectsBadEffectiveAutoRenewPeriod());
-    }
-
+public class CreateFailuresSpec {
     @HapiTest
     final Stream<DynamicTest> precheckRejectsBadEffectiveAutoRenewPeriod() {
         var now = Instant.now();
@@ -54,10 +37,5 @@ public class CreateFailuresSpec extends HapiSuite {
                 .then(fileCreate("notHere")
                         .lifetime(-60L)
                         .hasPrecheck(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

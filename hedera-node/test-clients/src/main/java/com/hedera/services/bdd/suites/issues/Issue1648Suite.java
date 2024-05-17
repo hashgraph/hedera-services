@@ -20,31 +20,15 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class Issue1648Suite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(Issue1648Suite.class);
-
-    public static void main(String... args) {
-        new Issue1648Suite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(recordStorageFeeIncreasesWithNumTransfers());
-    }
-
+public class Issue1648Suite {
     @HapiTest
     final Stream<DynamicTest> recordStorageFeeIncreasesWithNumTransfers() {
         return defaultHapiSpec("RecordStorageFeeIncreasesWithNumTransfers")
@@ -68,10 +52,5 @@ public class Issue1648Suite extends HapiSuite {
                     assertLog.info("[Record storage] fee for two transfers: {}", feeForTwo);
                     Assertions.assertEquals(-1, Long.compare(feeForOne, feeForTwo));
                 }));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

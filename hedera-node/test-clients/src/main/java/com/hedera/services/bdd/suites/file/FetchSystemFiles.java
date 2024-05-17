@@ -18,37 +18,24 @@ package com.hedera.services.bdd.suites.file;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK;
+import static com.hedera.services.bdd.suites.HapiSuite.API_PERMISSIONS;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATES;
+import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
+import static com.hedera.services.bdd.suites.HapiSuite.NODE_DETAILS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class FetchSystemFiles extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(FetchSystemFiles.class);
-
-    public static void main(String... args) {
-        new FetchSystemFiles().runSuiteSync();
-    }
-
-    private static final String TARGET_DIR = "./remote-system-files";
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(fetchFiles());
-    }
-
+public class FetchSystemFiles {
     /**
      * Fetches the system files from a running network and validates they can be
      * parsed as the expected protobuf messages. */
@@ -63,7 +50,6 @@ public class FetchSystemFiles extends HapiSuite {
                 .then(
                         getFileContents(NODE_DETAILS).andValidate(unchecked(NodeAddressBook::parseFrom)::apply),
                         getFileContents(ADDRESS_BOOK).andValidate(unchecked(NodeAddressBook::parseFrom)::apply),
-                        getFileContents(NODE_DETAILS).andValidate(unchecked(NodeAddressBook::parseFrom)::apply),
                         getFileContents(EXCHANGE_RATES).andValidate(unchecked(ExchangeRateSet::parseFrom)::apply),
                         getFileContents(APP_PROPERTIES)
                                 .andValidate(unchecked(ServicesConfigurationList::parseFrom)::apply),
@@ -89,10 +75,5 @@ public class FetchSystemFiles extends HapiSuite {
                 return "<N/A> due to " + e.getMessage() + "!";
             }
         };
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

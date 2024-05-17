@@ -91,13 +91,28 @@ public class ProviderRun extends UtilOp {
         return this;
     }
 
+    public ProviderRun maxOpsPerSec(final int maxOpsPerSec) {
+        this.maxOpsPerSecSupplier = () -> maxOpsPerSec;
+        return this;
+    }
+
     public ProviderRun maxOpsPerSec(IntSupplier maxOpsPerSecSupplier) {
         this.maxOpsPerSecSupplier = maxOpsPerSecSupplier;
         return this;
     }
 
+    public ProviderRun maxPendingOps(final int maxPendingOps) {
+        this.maxPendingOpsSupplier = () -> maxPendingOps;
+        return this;
+    }
+
     public ProviderRun maxPendingOps(IntSupplier maxPendingOpsSupplier) {
         this.maxPendingOpsSupplier = maxPendingOpsSupplier;
+        return this;
+    }
+
+    public ProviderRun backoffSleepSecs(final int backoffSleepSecs) {
+        this.backoffSleepSecsSupplier = () -> backoffSleepSecs;
         return this;
     }
 

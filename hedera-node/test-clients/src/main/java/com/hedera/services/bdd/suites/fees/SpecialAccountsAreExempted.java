@@ -25,40 +25,19 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
+import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.annotations.LeakyFeeSchedule;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class SpecialAccountsAreExempted extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(SpecialAccountsAreExempted.class);
-
-    public static void main(String... args) {
-        new SpecialAccountsAreExempted().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return false;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(feeScheduleControlAccountIsntCharged());
-    }
-
-    @LeakyFeeSchedule
+public class SpecialAccountsAreExempted {
     @HapiTest
     final Stream<DynamicTest> feeScheduleControlAccountIsntCharged() {
         ResponseCodeEnum[] acceptable = {SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED};
@@ -90,10 +69,5 @@ public class SpecialAccountsAreExempted extends HapiSuite {
                                 .payingWith(FEE_SCHEDULE_CONTROL)
                                 .path(Path.of("./", "part4-feeSchedule.bin").toString()))
                 .then(getAccountBalance(FEE_SCHEDULE_CONTROL).hasTinyBars(changeFromSnapshot("pre", 0)));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

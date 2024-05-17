@@ -22,43 +22,23 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.suites.HapiSuite.ADEQUATE_FUNDS;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATES;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_ADMIN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class ExchangeRateControlSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(ExchangeRateControlSuite.class);
-
-    public static void main(String... args) {
-        new ExchangeRateControlSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return allOf(positiveTests(), negativeTests());
-    }
-
-    private List<Stream<DynamicTest>> positiveTests() {
-        return Arrays.asList(midnightRateChangesWhenAcct50UpdatesFile112(), acct57CanMakeSmallChanges());
-    }
-
-    private List<Stream<DynamicTest>> negativeTests() {
-        return Arrays.asList(anonCantUpdateRates(), acct57CantMakeLargeChanges());
-    }
-
+public class ExchangeRateControlSuite {
     final HapiFileUpdate resetRatesOp = fileUpdate(EXCHANGE_RATES)
             .payingWith(EXCHANGE_RATE_CONTROL)
             .fee(ADEQUATE_FUNDS)
@@ -163,10 +143,5 @@ public class ExchangeRateControlSuite extends HapiSuite {
                                 spec -> spec.ratesProvider().rateSetWith(1, 25).toByteString())
                         .payingWith(EXCHANGE_RATE_CONTROL)
                         .hasKnownStatus(EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

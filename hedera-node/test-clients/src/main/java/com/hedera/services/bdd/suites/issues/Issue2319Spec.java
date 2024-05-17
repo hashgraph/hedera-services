@@ -26,40 +26,28 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.API_PERMISSIONS;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATES;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_ADMIN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class Issue2319Spec extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(Issue2319Spec.class);
+public class Issue2319Spec {
     private static final String NON_TREASURY_KEY = "nonTreasuryKey";
     private static final String NON_TREASURY_ADMIN_KEY = "nonTreasuryAdminKey";
     private static final String DEFAULT_ADMIN_KEY = "defaultAdminKey";
-
-    public static void main(String... args) {
-        new Issue2319Spec().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                sysFileImmutabilityWaivedForMasterAndTreasury(),
-                propsPermissionsSigReqsWaivedForAddressBookAdmin(),
-                sysAccountSigReqsWaivedForMasterAndTreasury(),
-                sysFileSigReqsWaivedForMasterAndTreasury());
-    }
 
     @HapiTest
     final Stream<DynamicTest> propsPermissionsSigReqsWaivedForAddressBookAdmin() {
@@ -182,10 +170,5 @@ public class Issue2319Spec extends HapiSuite {
                                 .contents(ignore -> validRates.get())
                                 .hasPrecheck(AUTHORIZATION_FAILED),
                         fileUpdate(EXCHANGE_RATES).payingWith(GENESIS).wacl(GENESIS));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

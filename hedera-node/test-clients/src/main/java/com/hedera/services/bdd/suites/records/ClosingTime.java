@@ -19,35 +19,14 @@ package com.hedera.services.bdd.suites.records;
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class ClosingTime extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(ClosingTime.class);
-
-    public static void main(String... args) {
-        new ClosingTime().runSuiteSync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(closeLastStreamFileWithNoBalanceImpact());
-    }
-
+public class ClosingTime {
     @HapiTest
     final Stream<DynamicTest> closeLastStreamFileWithNoBalanceImpact() {
         return customHapiSpec("CloseLastStreamFileWithNoBalanceImpact")
@@ -57,10 +36,5 @@ public class ClosingTime extends HapiSuite {
                 .given()
                 .when()
                 .then(sleepFor(2500), cryptoTransfer((spec, b) -> {}).payingWith(GENESIS), sleepFor(500));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

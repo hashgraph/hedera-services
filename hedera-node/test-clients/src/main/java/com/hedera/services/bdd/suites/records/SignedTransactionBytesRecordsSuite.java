@@ -25,41 +25,19 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_ADMIN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class SignedTransactionBytesRecordsSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(SignedTransactionBytesRecordsSuite.class);
+public class SignedTransactionBytesRecordsSuite {
     private static final String FAILED_CRYPTO_TRANSACTION = "failedCryptoTransaction";
-
-    public static void main(final String... args) {
-        new SignedTransactionBytesRecordsSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                transactionsWithOnlySigMap(),
-                transactionsWithSignedTxnBytesAndSigMap(),
-                transactionsWithSignedTxnBytesAndBodyBytes());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
 
     @HapiTest
     final Stream<DynamicTest> transactionsWithOnlySigMap() {
@@ -106,10 +84,5 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
                         .asTxnWithSignedTxnBytesAndBodyBytes()
                         .hasPrecheck(INVALID_TRANSACTION))
                 .then(getTxnRecord(FAILED_CRYPTO_TRANSACTION).hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

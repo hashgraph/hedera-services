@@ -27,30 +27,14 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class Issue2150Spec extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(Issue2150Spec.class);
+public class Issue2150Spec {
     private static final String PAYER = "payer";
     private static final String RECEIVER = "receiver";
-
-    public static void main(String... args) {
-        new Issue2150Spec().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(multiKeyNonPayerEntityVerifiedAsync());
-    }
 
     @HapiTest
     final Stream<DynamicTest> multiKeyNonPayerEntityVerifiedAsync() {
@@ -66,10 +50,5 @@ public class Issue2150Spec extends HapiSuite {
                 .when()
                 .then(cryptoTransfer(tinyBarsFromTo(PAYER, RECEIVER, 1L))
                         .sigControl(forKey(PAYER, firstOnly), forKey(RECEIVER, firstOnly)));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

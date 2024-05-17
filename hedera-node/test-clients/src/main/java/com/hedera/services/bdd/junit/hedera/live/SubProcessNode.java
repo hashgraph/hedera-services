@@ -18,7 +18,7 @@ package com.hedera.services.bdd.junit.hedera.live;
 
 import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.destroyAnySubProcessNodeWithId;
 import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.startSubProcessNodeFrom;
-import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.initWorkingDir;
+import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.recreateWorkingDir;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -29,6 +29,7 @@ import com.swirlds.base.function.BooleanFunction;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BooleanSupplier;
 
@@ -45,6 +46,10 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
      */
     @Nullable
     private ProcessHandle processHandle;
+    /**
+     * Whether the working directory has been initialized.
+     */
+    private boolean workingDirInitialized;
 
     public SubProcessNode(
             @NonNull final NodeMetadata metadata,
@@ -56,10 +61,16 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
     }
 
     @Override
-    public void start(@NonNull final String configTxt) {
+    public void initWorkingDir(@NonNull final String configTxt) {
+        recreateWorkingDir(metadata.workingDir(), configTxt);
+        workingDirInitialized = true;
+    }
+
+    @Override
+    public void start() {
         assertStopped();
+        assertWorkingDirInitialized();
         destroyAnySubProcessNodeWithId(metadata.nodeId());
-        initWorkingDir(metadata.workingDir(), configTxt);
         processHandle = startSubProcessNodeFrom(metadata);
     }
 
@@ -74,32 +85,41 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
     }
 
     @Override
-    public CompletableFuture<Void> waitForStatus(@NonNull final PlatformStatus status) {
-        return waitFor(() -> {
-            final var currentStatus = prometheusClient.statusFromLocalEndpoint(metadata.prometheusPort());
-            if (!status.equals(currentStatus)) {
-                return false;
-            }
-            return status != PlatformStatus.ACTIVE || grpcPinger.isLive(metadata.grpcPort());
-        });
+    public CompletableFuture<Void> waitForStatus(
+            @NonNull final PlatformStatus status, @NonNull final Duration timeout) {
+        return waitUntil(
+                () -> {
+                    final var currentStatus = prometheusClient.statusFromLocalEndpoint(metadata.prometheusPort());
+                    if (!status.equals(currentStatus)) {
+                        return false;
+                    }
+                    return status != PlatformStatus.ACTIVE || grpcPinger.isLive(metadata.grpcPort());
+                },
+                timeout);
     }
 
     @Override
-    public CompletableFuture<Void> waitForStopped() {
-        return waitFor(() -> processHandle == null);
+    public CompletableFuture<Void> waitForStopped(@NonNull final Duration timeout) {
+        return waitUntil(() -> processHandle == null, timeout);
     }
 
-    private CompletableFuture<Void> waitFor(@NonNull final BooleanSupplier condition) {
+    @Override
+    public String toString() {
+        return "SubProcessNode{" + "metadata=" + metadata + ", workingDirInitialized=" + workingDirInitialized + '}';
+    }
+
+    private CompletableFuture<Void> waitUntil(@NonNull final BooleanSupplier condition, @NonNull Duration timeout) {
         return CompletableFuture.runAsync(() -> {
-            while (!condition.getAsBoolean()) {
-                try {
-                    MILLISECONDS.sleep(WAIT_SLEEP_MILLIS);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new IllegalStateException("Interrupted while waiting for condition", e);
-                }
-            }
-        });
+                    while (!condition.getAsBoolean()) {
+                        try {
+                            MILLISECONDS.sleep(WAIT_SLEEP_MILLIS);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            throw new IllegalStateException("Interrupted while waiting for condition", e);
+                        }
+                    }
+                })
+                .orTimeout(timeout.toMillis(), MILLISECONDS);
     }
 
     private boolean stopWith(@NonNull final BooleanFunction<ProcessHandle> stop) {
@@ -114,6 +134,12 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
     private void assertStopped() {
         if (processHandle != null) {
             throw new IllegalStateException("Node is still running");
+        }
+    }
+
+    private void assertWorkingDirInitialized() {
+        if (!workingDirInitialized) {
+            throw new IllegalStateException("Working directory not initialized");
         }
     }
 }

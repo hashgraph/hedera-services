@@ -63,7 +63,7 @@ public class WorkingDirUtils {
      * @param workingDir the path to the working directory
      * @param configTxt the contents of the <i>config.txt</i> file
      */
-    public static void initWorkingDir(@NonNull final Path workingDir, @NonNull final String configTxt) {
+    public static void recreateWorkingDir(@NonNull final Path workingDir, @NonNull final String configTxt) {
         // Clean up any existing directory structure
         rm(workingDir);
         // Initialize the data folders
@@ -158,7 +158,7 @@ public class WorkingDirUtils {
     private static void copyBootstrapAssets(@NonNull final Path assetDir, @NonNull final Path workingDir) {
         try (final var files = Files.walk(assetDir)) {
             files.filter(file -> !file.equals(assetDir)).forEach(file -> {
-                if (file.getFileName().endsWith(".properties")) {
+                if (file.getFileName().toString().endsWith(".properties")) {
                     copyUnchecked(
                             file,
                             workingDir
