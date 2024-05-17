@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressF
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.PropertySource.asAccount;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -62,6 +63,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assumingNoStakingCh
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
@@ -497,7 +499,8 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final AtomicReference<Timestamp> parentConsTime = new AtomicReference<>();
         final AtomicBoolean hasNodeStakeUpdate = new AtomicBoolean(false);
 
-        return defaultHapiSpec("canAutoCreateWithNftTransferToEvmAddress")
+        return propertyPreservingHapiSpec("canAutoCreateWithNftTransferToEvmAddress")
+                .preserving("entities.unlimitedAutoAssociations", FALSE)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(VALID_ALIAS).shape(SECP_256K1_SHAPE),
@@ -546,7 +549,8 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final var initialTokenSupply = 1000;
         final var multiTokenXfer = "multiTokenXfer";
 
-        return defaultHapiSpec("multipleTokenTransfersSucceed")
+        return propertyPreservingHapiSpec("multipleTokenTransfersSucceed")
+                .preserving("entities.unlimitedAutoAssociations", FALSE)
                 .given(
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
@@ -688,8 +692,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
         // with the size of the sig map, depending on the lengths of the public key prefixes required
         final long approxTransferFee = 1163019L;
 
-        return defaultHapiSpec("canAutoCreateWithFungibleTokenTransfersToAlias", NONDETERMINISTIC_TRANSACTION_FEES)
+        return propertyPreservingHapiSpec("canAutoCreateWithFungibleTokenTransfersToAlias")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(A_TOKEN)
