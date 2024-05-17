@@ -90,13 +90,21 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
         final var isCryptoTransfer = function == HederaFunctionality.CRYPTO_TRANSFER;
         final var fungibleChanges = tokenRelChangesFrom(
                 writableTokenRelStore, readableTokenStore, TokenType.FUNGIBLE_COMMON, !isCryptoTransfer);
+        final var nftChanges = nftChangesFrom(writableNftStore, writableTokenStore);
+
+        if (nftChanges.isEmpty()) {
+            final var nonFungibleTokenChanges = tokenRelChangesFrom(
+                    writableTokenRelStore, readableTokenStore, TokenType.NON_FUNGIBLE_UNIQUE, !isCryptoTransfer);
+            nonFungibleTokenChanges.forEach(fungibleChanges::putIfAbsent);
+        }
         final var fungibleTokenTransferLists = asTokenTransferListFrom(fungibleChanges, !isCryptoTransfer);
         tokenTransferLists = new ArrayList<>(fungibleTokenTransferLists);
 
         // ---------- nft transfers -------------------------
-        final var nftChanges = nftChangesFrom(writableNftStore, writableTokenStore);
-        final var nftTokenTransferLists = asTokenTransferListFromNftChanges(nftChanges);
-        tokenTransferLists.addAll(nftTokenTransferLists);
+        if (!nftChanges.isEmpty()) {
+            final var nftTokenTransferLists = asTokenTransferListFromNftChanges(nftChanges);
+            tokenTransferLists.addAll(nftTokenTransferLists);
+        }
 
         // Record the modified fungible and non-fungible changes so records can be written
         if (!tokenTransferLists.isEmpty()) {

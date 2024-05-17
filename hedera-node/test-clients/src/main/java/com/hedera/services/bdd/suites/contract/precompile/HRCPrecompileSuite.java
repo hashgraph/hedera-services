@@ -140,25 +140,18 @@ public class HRCPrecompileSuite extends HapiSuite {
                             spec,
                             // Associate non-fungible token
                             contractCallWithFunctionAbi(
-                                    nonfungibleTokenAddress,
-                                    getABIFor(
-                                            Utils.FunctionType.FUNCTION,
-                                            ASSOCIATE,
-                                            HRC))
+                                            nonfungibleTokenAddress,
+                                            getABIFor(Utils.FunctionType.FUNCTION, ASSOCIATE, HRC))
                                     .payingWith(ACCOUNT)
                                     .gas(1_000_000)
                                     .via(ASSOCIATE_TXN_2),
                             cryptoTransfer(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1)
                                     .between(TOKEN_TREASURY, ACCOUNT)),
-                            tokenDelete(NON_FUNGIBLE_TOKEN)
-                                    .via("deleteTxn"),
+                            tokenDelete(NON_FUNGIBLE_TOKEN).via("deleteTxn"),
                             // Dissociate non-fungible token
                             contractCallWithFunctionAbi(
-                                    nonfungibleTokenAddress,
-                                    getABIFor(
-                                            Utils.FunctionType.FUNCTION,
-                                            DISSOCIATE,
-                                            HRC))
+                                            nonfungibleTokenAddress,
+                                            getABIFor(Utils.FunctionType.FUNCTION, DISSOCIATE, HRC))
                                     .payingWith(ACCOUNT)
                                     .gas(1_000_000)
                                     .via(DISSOCIATE_TXN_2));
