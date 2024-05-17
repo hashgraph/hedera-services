@@ -26,6 +26,8 @@ description = "Hedera Application - Implementation"
 mainModuleInfo {
     annotationProcessor("dagger.compiler")
     annotationProcessor("com.google.auto.service.processor")
+    runtimeOnly("com.swirlds.logging.log4j.appender")
+    runtimeOnly("com.swirlds.logging")
 
     // This is needed to pick up and include the native libraries for the netty epoll transport
     runtimeOnly("io.netty.transport.epoll.linux.x86_64")
