@@ -50,9 +50,11 @@ import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileInfo;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
@@ -80,6 +82,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
@@ -130,6 +133,14 @@ public class TxnUtils {
             final Optional<? extends SigControl> keyShape,
             final Optional<Supplier<KeyGenerator>> keyGenSupplier) {
         return netOf(spec, keyName, keyShape, Optional.empty(), keyGenSupplier);
+    }
+
+    public static void turnLoggingOff(@NonNull final HapiSpecOperation op) {
+        if (op instanceof HapiTxnOp<?> txnOp) {
+            txnOp.noLogging();
+        } else if (op instanceof HapiQueryOp<?> queryOp) {
+            queryOp.noLogging();
+        }
     }
 
     public static List<Function<HapiSpec, Key>> defaultUpdateSigners(

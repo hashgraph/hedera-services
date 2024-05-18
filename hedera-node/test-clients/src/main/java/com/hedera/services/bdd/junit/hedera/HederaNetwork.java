@@ -182,7 +182,7 @@ public class HederaNetwork {
                                     node.start();
                                 })
                                 .thenCompose(nothing ->
-                                        node.waitForStatus(ACTIVE, timeout).thenRun(latch::countDown)))
+                                        node.statusFuture(ACTIVE, timeout).thenRun(latch::countDown)))
                         .toArray(CompletableFuture[]::new))
                 .orTimeout(timeout.toMillis(), MILLISECONDS);
         ready = runAsync(() -> {

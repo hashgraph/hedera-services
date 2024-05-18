@@ -32,6 +32,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.infrastructure.HapiApiClients.clientsFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.turnLoggingOff;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
@@ -62,7 +63,6 @@ import com.google.common.base.MoreObjects;
 import com.google.common.io.ByteSource;
 import com.google.common.io.CharSink;
 import com.google.common.io.Files;
-import com.hedera.services.bdd.junit.HapiTestNode;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
@@ -128,6 +128,7 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.function.Executable;
 
 public class HapiSpec implements Runnable, Executable {
+    private static final String QUIET_MODE_SYSTEM_PROPERTY = "hapi.spec.quiet.mode";
     /**
      * The name of the DynamicTest that executes the HapiSpec as written,
      * without modifications such as replacing ContractCall and ContractCreate
@@ -232,11 +233,15 @@ public class HapiSpec implements Runnable, Executable {
     BlockingQueue<HapiSpecOpFinisher> pendingOps = new PriorityBlockingQueue<>();
     EnumMap<ResponseCodeEnum, AtomicInteger> precheckStatusCounts = new EnumMap<>(ResponseCodeEnum.class);
     EnumMap<ResponseCodeEnum, AtomicInteger> finalizedStatusCounts = new EnumMap<>(ResponseCodeEnum.class);
-    /** These nodes can be used by some ops for controlling the nodes, such as restart, reconnect, etc. */
-    List<HapiTestNode> nodes = emptyList();
 
+    /**
+     * If non-null, the network created for this JUnit5 LauncherSession; supports direct manipulation
+     * of the node lifecycle (stop, restart, wait for status, etc).
+     */
     @Nullable
     HederaNetwork targetNetwork;
+
+    boolean quietMode;
 
     List<SingleAccountBalances> accountBalances = new ArrayList<>();
     private final SnapshotMatchMode[] snapshotMatchModes;
@@ -569,6 +574,9 @@ public class HapiSpec implements Runnable, Executable {
                     log.warn("Repeated record snapshot op, all but last are no-ops");
                 }
                 snapshotOp = snapshotModeOp;
+            }
+            if (quietMode) {
+                turnLoggingOff(op);
             }
             Optional<Throwable> error = op.execFor(this);
             Failure asyncFailure = null;
@@ -1021,7 +1029,7 @@ public class HapiSpec implements Runnable, Executable {
     public static Def.Setup hapiSpec(
             String name, List<String> propertiesToPreserve, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
         return setup -> given -> when -> then -> Stream.of(DynamicTest.dynamicTest(
-                AS_WRITTEN_DISPLAY_NAME,
+                name + " " + AS_WRITTEN_DISPLAY_NAME,
                 targeted(new HapiSpec(
                         name, false, setup, given, when, then, propertiesToPreserve, snapshotMatchModes))));
     }
@@ -1064,7 +1072,9 @@ public class HapiSpec implements Runnable, Executable {
         return spec;
     }
 
-    public HapiSpec(
+    // too many parameters
+    @SuppressWarnings("java:S107")
+    private HapiSpec(
             String name,
             boolean onlySpecToRunInSuite,
             HapiSpecSetup hapiSetup,
@@ -1082,6 +1092,7 @@ public class HapiSpec implements Runnable, Executable {
         this.then = then;
         this.onlySpecToRunInSuite = onlySpecToRunInSuite;
         this.propertiesToPreserve = propertiesToPreserve;
+        this.quietMode = System.getProperty(QUIET_MODE_SYSTEM_PROPERTY) != null;
     }
 
     interface Def {

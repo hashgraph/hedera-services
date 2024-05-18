@@ -52,7 +52,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
 
+import com.hedera.services.bdd.junit.ContextRequirement;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
@@ -74,36 +76,29 @@ public class CryptoDeleteSuite {
                         .transfer(TRANSFER_ACCOUNT)));
     }
 
-    @HapiTest
-    // In this transactionFee is not set in mono-service record, because it fails in node due diligence.
-    // But it feels right to set it. So setting this HIGHLY_NONDETERMINISTIC_TRANSACTION_FEES
+    @LeakyHapiTest(ContextRequirement.SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> deletedAccountCannotBePayer() {
-        // Account Names
-        String SUBMITTING_NODE_ACCOUNT = "0.0.3";
-        String BENEFICIARY_ACCOUNT = "beneficiaryAccountForDeletedAccount";
-
-        // Snapshot Names
-        String SUBMITTING_NODE_PRE_TRANSFER = "submittingNodePreTransfer";
-        String SUBMITTING_NODE_AFTER_BALANCE_LOAD = "submittingNodeAfterBalanceLoad";
-
+        final var submittingNodeAccount = "0.0.3";
+        final var beneficiaryAccount = "beneficiaryAccountForDeletedAccount";
+        final var submittingNodePreTransfer = "submittingNodePreTransfer";
+        final var submittingNodeAfterBalanceLoad = "submittingNodeAfterBalanceLoad";
         return defaultHapiSpec("DeletedAccountCannotBePayer", FULLY_NONDETERMINISTIC)
                 .given(
                         cryptoCreate(ACCOUNT_TO_BE_DELETED),
-                        cryptoCreate(BENEFICIARY_ACCOUNT).balance(0L))
+                        cryptoCreate(beneficiaryAccount).balance(0L))
                 .when()
                 .then(
-                        balanceSnapshot(SUBMITTING_NODE_PRE_TRANSFER, SUBMITTING_NODE_ACCOUNT),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, SUBMITTING_NODE_ACCOUNT, 1000000000)),
-                        balanceSnapshot(SUBMITTING_NODE_AFTER_BALANCE_LOAD, SUBMITTING_NODE_ACCOUNT),
+                        balanceSnapshot(submittingNodePreTransfer, submittingNodeAccount),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, submittingNodeAccount, 1000000000)),
+                        balanceSnapshot(submittingNodeAfterBalanceLoad, submittingNodeAccount),
                         cryptoDelete(ACCOUNT_TO_BE_DELETED)
-                                .transfer(BENEFICIARY_ACCOUNT)
+                                .transfer(beneficiaryAccount)
                                 .deferStatusResolution(),
-                        cryptoTransfer(tinyBarsFromTo(BENEFICIARY_ACCOUNT, GENESIS, 1))
+                        cryptoTransfer(tinyBarsFromTo(beneficiaryAccount, GENESIS, 1))
                                 .payingWith(ACCOUNT_TO_BE_DELETED)
                                 .hasKnownStatus(PAYER_ACCOUNT_DELETED),
-                        getAccountBalance(SUBMITTING_NODE_ACCOUNT)
-                                .hasTinyBars(
-                                        approxChangeFromSnapshot(SUBMITTING_NODE_AFTER_BALANCE_LOAD, -100000, 50000))
+                        getAccountBalance(submittingNodeAccount)
+                                .hasTinyBars(approxChangeFromSnapshot(submittingNodeAfterBalanceLoad, -100000, 50000))
                                 .logged());
     }
 

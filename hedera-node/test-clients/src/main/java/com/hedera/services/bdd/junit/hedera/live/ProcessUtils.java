@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.junit.hedera.live;
 
+import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.DATA_DIR;
+
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -73,7 +75,7 @@ public class ProcessUtils {
                             // JVM system
                             "-Dfile.encoding=UTF-8",
                             "-Dprometheus.endpointPortNumber=" + metadata.prometheusPort(),
-                            "-Dhedera.recordStream.logDir=data/" + OVERRIDE_RECORD_STREAM_FOLDER,
+                            "-Dhedera.recordStream.logDir=" + DATA_DIR + "/" + OVERRIDE_RECORD_STREAM_FOLDER,
                             "-Dhedera.profiles.active=DEV",
                             "-Dhedera.workflows.enabled=true",
                             "com.hedera.node.app.ServicesMain",

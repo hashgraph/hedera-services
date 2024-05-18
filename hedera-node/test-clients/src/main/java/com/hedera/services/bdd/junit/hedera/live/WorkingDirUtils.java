@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class WorkingDirUtils {
-    private static final String DATA_DIR = "data";
     private static final String OUTPUT_DIR = "output";
     private static final String KEYS_FOLDER = "keys";
     private static final String CONFIG_FOLDER = "config";
@@ -39,6 +38,8 @@ public class WorkingDirUtils {
     private static final String LOG4J2_XML = "log4j2.xml";
     private static final String BASE_WORKING_DIR = "./build/hapi-test/node";
     private static final String BOOTSTRAP_ASSETS_LOC = "../configuration/dev";
+
+    public static final String DATA_DIR = "data";
 
     private WorkingDirUtils() {
         throw new UnsupportedOperationException("Utility Class");

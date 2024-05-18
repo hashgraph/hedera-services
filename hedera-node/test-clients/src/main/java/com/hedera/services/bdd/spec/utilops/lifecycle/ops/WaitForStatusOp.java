@@ -47,7 +47,7 @@ public class WaitForStatusOp extends AbstractLifecycleOp {
     @Override
     public void run(@NonNull final HederaNode node) {
         log.info("Waiting for node '{}' to be {} within {}", node.getName(), status, timeout);
-        node.waitForStatus(status, timeout).join();
+        node.statusFuture(status, timeout).join();
         log.info("Node '{}' is {}", node.getName(), status);
     }
 

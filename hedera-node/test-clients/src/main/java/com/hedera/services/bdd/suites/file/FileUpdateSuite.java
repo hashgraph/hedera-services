@@ -16,6 +16,9 @@
 
 package com.hedera.services.bdd.suites.file;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.PERMISSION_OVERRIDES;
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
+import static com.hedera.services.bdd.junit.ContextRequirement.UPGRADE_FILE_CONTENT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -104,6 +107,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -121,20 +125,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-/**
- * NOTE: 1. This test suite covers the test08UpdateFile() test scenarios from the legacy
- * FileServiceIT test class after the FileServiceIT class is removed since all other test scenarios
- * in this class are already covered by test suites under
- * com.hedera.services.legacy.regression.suites.file and
- * com.hedera.services.legacy.regression.suites.crpto.
- *
- * <p>2. While this class now provides minimal coverage for proto's FileUpdate transaction, we shall
- * add more positive and negative test scenarios to cover FileUpdate, such as missing (partial) keys
- * for update, for update of expirationTime, for modifying keys field, etc.
- *
- * <p>We'll come back to add all missing test scenarios for this and other test suites once we are
- * done with cleaning up old test cases.
- */
 public class FileUpdateSuite {
     private static final Logger log = LogManager.getLogger(FileUpdateSuite.class);
     private static final String CONTRACT = "CreateTrivial";
@@ -181,7 +171,7 @@ public class FileUpdateSuite {
                         .contents("DEF")));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> associateHasExpectedSemantics() {
         return propertyPreservingHapiSpec("AssociateHasExpectedSemantics")
                 .preserving("tokens.maxRelsPerInfoQuery")
@@ -221,7 +211,7 @@ public class FileUpdateSuite {
                         .logged());
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> notTooManyFeeScheduleCanBeCreated() {
         final var denom = "fungible";
         final var token = "token";
@@ -237,7 +227,7 @@ public class FileUpdateSuite {
                 .then(overriding(MAX_CUSTOM_FEES_PROP, DEFAULT_MAX_CUSTOM_FEES));
     }
 
-    @HapiTest
+    @LeakyHapiTest(UPGRADE_FILE_CONTENT)
     final Stream<DynamicTest> optimisticSpecialFileUpdate() {
         final var appendsPerBurst = 128;
         final var specialFile = "0.0.159";
@@ -255,7 +245,7 @@ public class FileUpdateSuite {
                 .then(getFileInfo(specialFile).hasMemo(CommonUtils.hex(expectedHash)));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PERMISSION_OVERRIDES)
     final Stream<DynamicTest> apiPermissionsChangeDynamically() {
         final var civilian = CIVILIAN;
         return defaultHapiSpec("ApiPermissionsChangeDynamically")
@@ -280,7 +270,7 @@ public class FileUpdateSuite {
                         tokenCreate("secondPoc").payingWith(civilian));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> updateFeesCompatibleWithCreates() {
         final long origLifetime = 7_200_000L;
         final long extension = 700_000L;
@@ -376,7 +366,7 @@ public class FileUpdateSuite {
                         .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> maxRefundIsEnforced() {
         return propertyPreservingHapiSpec("MaxRefundIsEnforced")
                 .preserving(MAX_REFUND_GAS_PROP)
@@ -388,7 +378,7 @@ public class FileUpdateSuite {
     }
 
     // C.f. https://github.com/hashgraph/hedera-services/pull/8908
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> allUnusedGasIsRefundedIfSoConfigured() {
         return propertyPreservingHapiSpec("AllUnusedGasIsRefundedIfSoConfigured")
                 .preserving(MAX_REFUND_GAS_PROP)
@@ -402,7 +392,7 @@ public class FileUpdateSuite {
                         .has(resultWith().gasUsed(26_515)));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> gasLimitOverMaxGasLimitFailsPrecheck() {
         return propertyPreservingHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
                 .preserving(CONS_MAX_GAS_PROP)
@@ -417,7 +407,7 @@ public class FileUpdateSuite {
                         .hasCostAnswerPrecheckFrom(MAX_GAS_LIMIT_EXCEEDED, BUSY));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> kvLimitsEnforced() {
         final var contract = "User";
         final var gasToOffer = 1_000_000;
@@ -480,7 +470,7 @@ public class FileUpdateSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> serviceFeeRefundedIfConsGasExhausted() {
         final var contract = "User";
         final var gasToOffer = Long.parseLong(DEFAULT_MAX_CONS_GAS);
@@ -533,7 +523,7 @@ public class FileUpdateSuite {
                 }));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> chainIdChangesDynamically() {
         final var chainIdUser = "ChainIdUser";
         final var otherChainId = 0xABCDL;
@@ -569,7 +559,7 @@ public class FileUpdateSuite {
                 .then();
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> entitiesNotCreatableAfterUsageLimitsReached() {
         final var notToBe = "ne'erToBe";
         return propertyPreservingHapiSpec("EntitiesNotCreatableAfterUsageLimitsReached")
@@ -692,12 +682,13 @@ public class FileUpdateSuite {
                 .then();
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> messageSubmissionSizeChange() {
         final var defaultMaxBytesAllowed = 1024;
         final var longMessage = TxnUtils.randomUtf8Bytes(defaultMaxBytesAllowed);
 
-        return defaultHapiSpec("messageSubmissionSizeChange")
+        return propertyPreservingHapiSpec("messageSubmissionSizeChange")
+                .preserving("consensus.message.maxBytesAllowed")
                 .given(newKeyNamed("submitKey"), createTopic(TEST_TOPIC).submitKeyName("submitKey"))
                 .when(
                         cryptoCreate(CIVILIAN),
@@ -707,12 +698,10 @@ public class FileUpdateSuite {
                                 .hasRetryPrecheckFrom(BUSY)
                                 .hasKnownStatus(SUCCESS),
                         overriding("consensus.message.maxBytesAllowed", String.valueOf(defaultMaxBytesAllowed - 1)))
-                .then(
-                        submitMessageTo(TEST_TOPIC)
-                                .message(longMessage)
-                                .payingWith(CIVILIAN)
-                                .hasRetryPrecheckFrom(BUSY)
-                                .hasKnownStatus(MESSAGE_SIZE_TOO_LARGE),
-                        overriding("consensus.message.maxBytesAllowed", String.valueOf(defaultMaxBytesAllowed)));
+                .then(submitMessageTo(TEST_TOPIC)
+                        .message(longMessage)
+                        .payingWith(CIVILIAN)
+                        .hasRetryPrecheckFrom(BUSY)
+                        .hasKnownStatus(MESSAGE_SIZE_TOO_LARGE));
     }
 }

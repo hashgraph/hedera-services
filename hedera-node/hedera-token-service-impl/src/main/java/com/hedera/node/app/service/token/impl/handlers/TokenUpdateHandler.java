@@ -339,7 +339,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         if (op.name() != null && op.name().length() > 0) {
             builder.name(op.name());
         }
-        if (op.hasMemo() && op.memo().length() > 0) {
+        if (op.hasMemo()) {
             builder.memo(op.memo());
         }
         if (op.hasMetadata()) {

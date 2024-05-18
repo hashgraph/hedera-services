@@ -88,14 +88,14 @@ public interface HederaNode {
      * @param timeout the maximum time to wait for the node to reach the status
      * @return a future that resolves when the node has the given status
      */
-    CompletableFuture<Void> waitForStatus(@NonNull PlatformStatus status, @NonNull Duration timeout);
+    CompletableFuture<Void> statusFuture(@NonNull PlatformStatus status, @NonNull Duration timeout);
 
     /**
      * Returns a future that resolves when the node has stopped.
      *
      * @return a future that resolves when the node has stopped
      */
-    CompletableFuture<Void> waitForStopped(@NonNull Duration timeout);
+    CompletableFuture<Void> stopFuture(@NonNull Duration timeout);
 
     /**
      * Returns the string that would identify this node as a target

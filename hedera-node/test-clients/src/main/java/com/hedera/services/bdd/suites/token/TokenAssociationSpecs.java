@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.token;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
@@ -75,6 +76,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
@@ -147,7 +149,7 @@ public class TokenAssociationSpecs {
                                 withSuccessivelyVariedBodyIds(), () -> tokenDissociate(DEFAULT_PAYER, "a", "b")));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> canLimitMaxTokensPerAccountTransactions() {
         final String alice = "ALICE";
         final String treasury2 = "TREASURY_2";

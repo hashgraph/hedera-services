@@ -16,8 +16,10 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
@@ -40,6 +42,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoApprove
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
@@ -63,6 +66,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
@@ -486,7 +490,7 @@ public class CryptoDeleteAllowanceSuite {
                                         "hedera.allowances.maxAccountLimit", "100")));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> exceedsTransactionLimit() {
         final String owner = "owner";
         final String spender = "spender";
@@ -494,13 +498,11 @@ public class CryptoDeleteAllowanceSuite {
         final String spender2 = "spender2";
         final String token = "token";
         final String nft = "nft";
-        return defaultHapiSpec("exceedsTransactionLimit")
+        return propertyPreservingHapiSpec("exceedsTransactionLimit")
+                .preserving("hedera.allowances.maxTransactionLimit")
                 .given(
+                        overriding("hedera.allowances.maxTransactionLimit", "4"),
                         newKeyNamed("supplyKey"),
-                        fileUpdate(APP_PROPERTIES)
-                                .fee(ONE_HUNDRED_HBARS)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .overridingProps(Map.of("hedera.allowances.maxTransactionLimit", "4")),
                         cryptoCreate(owner).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(spender1).balance(ONE_HUNDRED_HBARS),
@@ -553,12 +555,7 @@ public class CryptoDeleteAllowanceSuite {
                                 .addNftDeleteAllowance(owner, nft, List.of(1L))
                                 .addNftDeleteAllowance(owner, nft, List.of(1L))
                                 .hasPrecheck(MAX_ALLOWANCES_EXCEEDED))
-                .then(
-                        // reset
-                        fileUpdate(APP_PROPERTIES)
-                                .fee(ONE_HUNDRED_HBARS)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .overridingProps(Map.of("hedera.allowances.maxTransactionLimit", "20")));
+                .then();
     }
 
     @HapiTest

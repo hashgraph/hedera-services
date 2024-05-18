@@ -44,7 +44,7 @@ public class ShutdownWithinOp extends AbstractLifecycleOp {
         log.info("Asking node '{}' to stop", node.getName());
         node.stop();
         log.info("Waiting for '{}' to stop", node.getName());
-        node.waitForStopped(timeout).join();
+        node.stopFuture(timeout).join();
         log.info("Stopped node '{}'", node.getName());
     }
 }

@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingNonfungibleMovement;
@@ -83,6 +84,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithAllowance;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithDecimals;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -2216,6 +2218,22 @@ public class CryptoTransferSuite {
                 .then(sourcing(() -> cryptoTransfer(
                                 movingWithDecimals(1L, "nonexistent", 2).betweenWithDecimals(PAYER, TREASURY))
                         .hasKnownStatus(INVALID_TOKEN_ID)));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> balancesChangeOnTransfer() {
+        return defaultHapiSpec("BalancesChangeOnTransfer")
+                .given(
+                        cryptoCreate("sponsor"),
+                        cryptoCreate("beneficiary"),
+                        balanceSnapshot("sponsorBefore", "sponsor"),
+                        balanceSnapshot("beneficiaryBefore", "beneficiary"))
+                .when(cryptoTransfer(tinyBarsFromTo("sponsor", "beneficiary", 1L))
+                        .payingWith(GENESIS)
+                        .memo("Hello World!"))
+                .then(
+                        getAccountBalance("sponsor").hasTinyBars(changeFromSnapshot("sponsorBefore", -1L)),
+                        getAccountBalance("beneficiary").hasTinyBars(changeFromSnapshot("beneficiaryBefore", +1L)));
     }
 
     @HapiTest

@@ -85,8 +85,7 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
     }
 
     @Override
-    public CompletableFuture<Void> waitForStatus(
-            @NonNull final PlatformStatus status, @NonNull final Duration timeout) {
+    public CompletableFuture<Void> statusFuture(@NonNull final PlatformStatus status, @NonNull final Duration timeout) {
         return waitUntil(
                 () -> {
                     final var currentStatus = prometheusClient.statusFromLocalEndpoint(metadata.prometheusPort());
@@ -99,7 +98,7 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
     }
 
     @Override
-    public CompletableFuture<Void> waitForStopped(@NonNull final Duration timeout) {
+    public CompletableFuture<Void> stopFuture(@NonNull final Duration timeout) {
         return waitUntil(() -> processHandle == null, timeout);
     }
 

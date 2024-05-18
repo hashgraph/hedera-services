@@ -54,6 +54,11 @@ sourceSets {
     create("yahcli")
 }
 
+/**
+ * GitHub CI checks correspond to the following tag expressions:
+ *
+ * CRYPTO - ./gradlew :test-clients:test -DtagExpression='CRYPTO|STREAM_VALIDATION'
+ */
 tasks.test {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
@@ -65,14 +70,22 @@ tasks.test {
 
     systemProperty("junit.jupiter.execution.parallel.enabled", true)
     systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
+    // Surprisingly, the Gradle JUnitPlatformTestExecutionListener fails to gather result
+    // correctly if test classes run in parallel (concurrent execution WITHIN a test class
+    // is fine). So we need to force the test classes to run in the same thread. Luckily this
+    // is not a huge limitation, as our test classes generally have enough non-leaky tests to
+    // get a material speed up. See https://github.com/gradle/gradle/issues/6453.
+    systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "same_thread")
     systemProperty(
         "junit.jupiter.testclass.order.default",
         "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation"
     )
+    systemProperty("hapi.spec.quiet.mode", true)
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
     jvmArgs("-XX:ActiveProcessorCount=6")
+    maxParallelForks = 1
 
     // Do not yet run things on the '--module-path'
     modularity.inferModulePath.set(false)

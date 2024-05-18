@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.utilops;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.turnLoggingOff;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -24,8 +25,6 @@ import com.google.common.base.Stopwatch;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.spec.queries.HapiQueryOp;
-import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.HashMap;
 import java.util.Map;
@@ -182,11 +181,7 @@ public class ProviderRun extends UtilOp {
                         .peek(op -> {
                             counts.get(op.type()).getAndIncrement();
                             if (loggingOff) {
-                                if (op instanceof HapiTxnOp<?> txnOp) {
-                                    txnOp.noLogging();
-                                } else if (op instanceof HapiQueryOp<?> queryOp) {
-                                    queryOp.noLogging();
-                                }
+                                turnLoggingOff(op);
                             }
                         })
                         .toArray(HapiSpecOperation[]::new);
