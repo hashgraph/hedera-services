@@ -52,6 +52,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
@@ -73,26 +75,18 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(TOKEN)
-public class TokenAssociationSpecs extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(TokenAssociationSpecs.class);
-
+public class TokenAssociationSpecs {
     public static final String FREEZABLE_TOKEN_ON_BY_DEFAULT = "TokenA";
     public static final String FREEZABLE_TOKEN_OFF_BY_DEFAULT = "TokenB";
     public static final String KNOWABLE_TOKEN = "TokenC";
@@ -103,35 +97,6 @@ public class TokenAssociationSpecs extends HapiSuite {
     public static final String SIMPLE = "simple";
     public static final String FREEZE_KEY = "freezeKey";
     public static final String KYC_KEY = "kycKey";
-
-    public static void main(String... args) {
-        final var spec = new TokenAssociationSpecs();
-
-        spec.deferResultsSummary();
-        spec.runSuiteAsync();
-        spec.summarizeDeferredResults();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                treasuryAssociationIsAutomatic(),
-                dissociateHasExpectedSemantics(),
-                associatedContractsMustHaveAdminKeys(),
-                expiredAndDeletedTokensStillAppearInContractInfo(),
-                accountInfoQueriesAsExpected(),
-                handlesUseOfDefaultTokenId(),
-                contractInfoQueriesAsExpected(),
-                dissociateHasExpectedSemanticsForDeletedTokens(),
-                dissociateHasExpectedSemanticsForDissociatedContracts(),
-                canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury(),
-                associateAndDissociateNeedsValidAccountAndToken());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
 
     @HapiTest
     final Stream<DynamicTest> canHandleInvalidAssociateTransactions() {
@@ -619,10 +584,5 @@ public class TokenAssociationSpecs extends HapiSuite {
             tokenCreate(KNOWABLE_TOKEN).treasury(TOKEN_TREASURY).kycKey(KYC_KEY),
             tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY)
         };
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

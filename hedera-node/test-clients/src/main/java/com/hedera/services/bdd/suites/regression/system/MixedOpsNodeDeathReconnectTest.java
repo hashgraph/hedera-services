@@ -20,9 +20,9 @@ import static com.hedera.services.bdd.junit.TestTags.ND_RECONNECT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.restartNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutdownWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tryToStart;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForActive;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -63,7 +63,7 @@ public class MixedOpsNodeDeathReconnectTest {
                         // Submit operations when node 2 is down
                         MixedOperations.burstOfTps(MIXED_OPS_BURST_TPS, MIXED_OPS_BURST_DURATION),
                         // Restart node2
-                        tryToStart("Carol"),
+                        restartNode("Carol"),
                         logIt("Node 2 is supposedly restarted"),
                         // Wait for node2 ACTIVE (BUSY and RECONNECT_COMPLETE are too transient to reliably poll for)
                         waitForActive("Carol", RESTART_TO_ACTIVE_TIMEOUT))

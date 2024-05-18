@@ -43,8 +43,6 @@ import static com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate.getU
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.log;
-import static com.hedera.services.bdd.spec.utilops.lifecycle.selectors.NodeSelector.allNodes;
-import static com.hedera.services.bdd.spec.utilops.lifecycle.selectors.NodeSelector.byName;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilJustBeforeStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextAdhocPeriod;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextStakingPeriod;
@@ -125,14 +123,9 @@ import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMutation;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem;
 import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
-import com.hedera.services.bdd.spec.utilops.lifecycle.hedera.ops.ShutdownWithinOp;
-import com.hedera.services.bdd.spec.utilops.lifecycle.hedera.ops.TryToStartNodesOp;
-import com.hedera.services.bdd.spec.utilops.lifecycle.hedera.ops.WaitForStatusOp;
-import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ShutDownNodesOp;
-import com.hedera.services.bdd.spec.utilops.lifecycle.ops.StartNodesOp;
-import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForActiveOp;
-import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForFreezeOp;
-import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForShutdownOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ShutdownWithinOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.TryToStartNodesOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForStatusOp;
 import com.hedera.services.bdd.spec.utilops.mod.QueryModification;
 import com.hedera.services.bdd.spec.utilops.mod.QueryModificationsOp;
 import com.hedera.services.bdd.spec.utilops.mod.SubmitModificationsOp;
@@ -358,40 +351,28 @@ public class UtilVerbs {
         return new WaitForStatusOp(NodeSelector.byName(name), FREEZE_COMPLETE, timeout);
     }
 
-    public static TryToStartNodesOp tryToStartNetwork() {
-        return new TryToStartNodesOp(NodeSelector.allNodes());
-    }
-
-    public static TryToStartNodesOp tryToStart(String name) {
+    public static TryToStartNodesOp restartNode(String name) {
         return new TryToStartNodesOp(NodeSelector.byName(name));
     }
 
-    public static WaitForActiveOp waitForNodesToBecomeActive(int waitSeconds) {
-        return new WaitForActiveOp(allNodes(), waitSeconds);
+    public static WaitForStatusOp waitForActiveNetwork(@NonNull final Duration timeout) {
+        return new WaitForStatusOp(NodeSelector.allNodes(), ACTIVE, timeout);
     }
 
-    public static StartNodesOp startAllNodes() {
-        return new StartNodesOp(allNodes());
+    public static TryToStartNodesOp restartNetwork() {
+        return new TryToStartNodesOp(NodeSelector.allNodes());
     }
 
     public static ShutdownWithinOp shutdownWithin(String name, Duration timeout) {
         return new ShutdownWithinOp(NodeSelector.byName(name), timeout);
     }
 
-    public static StartNodesOp startNode(String name) {
-        return new StartNodesOp(byName(name));
+    public static ShutdownWithinOp shutdownNetworkWithin(@NonNull final Duration timeout) {
+        return new ShutdownWithinOp(NodeSelector.allNodes(), timeout);
     }
 
-    public static ShutDownNodesOp shutDownAllNodes() {
-        return new ShutDownNodesOp(allNodes());
-    }
-
-    public static WaitForFreezeOp waitForNodesToFreeze(int waitSeconds) {
-        return new WaitForFreezeOp(allNodes(), waitSeconds);
-    }
-
-    public static WaitForShutdownOp waitForNodesToShutDown(int waitSeconds) {
-        return new WaitForShutdownOp(allNodes(), waitSeconds);
+    public static WaitForStatusOp waitForFrozenNetwork(@NonNull final Duration timeout) {
+        return new WaitForStatusOp(NodeSelector.allNodes(), FREEZE_COMPLETE, timeout);
     }
 
     public static HapiSpecSleep sleepFor(long timeMs) {
@@ -1296,14 +1277,6 @@ public class UtilVerbs {
             ByteString bt = ByteString.copyFrom(spec.registry().getBytes(registryEntry));
             CustomSpecAssert.allRunFor(spec, updateLargeFile(payer, fileName, bt));
         });
-    }
-
-    public static HapiSpecOperation saveFileToRegistry(String fileName, String registryEntry) {
-        return getFileContents(fileName).payingWith(GENESIS).saveToRegistry(registryEntry);
-    }
-
-    public static HapiSpecOperation restoreFileFromRegistry(String fileName, String registryEntry) {
-        return updateLargeFile(GENESIS, fileName, registryEntry);
     }
 
     @SuppressWarnings("java:S5960")

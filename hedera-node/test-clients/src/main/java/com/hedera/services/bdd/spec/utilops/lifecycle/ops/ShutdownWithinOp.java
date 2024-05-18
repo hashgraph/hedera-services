@@ -14,35 +14,37 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.spec.utilops.lifecycle.hedera.ops;
+package com.hedera.services.bdd.spec.utilops.lifecycle.ops;
+
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
-import com.hedera.services.bdd.spec.utilops.lifecycle.hedera.AbstractLifecycleOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.AbstractLifecycleOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
 
 /**
  * Shuts down the selected node or nodes specified by the {@link NodeSelector}.
  */
-public class TryToStartNodesOp extends AbstractLifecycleOp {
-    private static final Logger log = LogManager.getLogger(TryToStartNodesOp.class);
+public class ShutdownWithinOp extends AbstractLifecycleOp {
+    private static final Logger log = LogManager.getLogger(ShutdownWithinOp.class);
 
-    public TryToStartNodesOp(@NonNull final NodeSelector selector) {
+    private final Duration timeout;
+
+    public ShutdownWithinOp(@NonNull final NodeSelector selector, @NonNull final Duration timeout) {
         super(selector);
+        this.timeout = requireNonNull(timeout);
     }
 
     @Override
     protected void run(@NonNull final HederaNode node) {
-        log.info("Starting node '{}'", node.getName());
-        try {
-            node.start();
-        } catch (Exception e) {
-            log.error("Node {} failed to start", node);
-            Assertions.fail("Node '" + node + "' failed to start");
-        }
-        log.info("Node '{}' has started", node.getName());
+        log.info("Asking node '{}' to stop", node.getName());
+        node.stop();
+        log.info("Waiting for '{}' to stop", node.getName());
+        node.waitForStopped(timeout).join();
+        log.info("Stopped node '{}'", node.getName());
     }
 }

@@ -110,7 +110,6 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -347,7 +346,6 @@ public class EthereumSuite {
         return feePaymentMatrix().get(11);
     }
 
-    @BddMethodIsNotATest
     final Stream<DynamicTest> matrixedPayerRelayerTest(
             final boolean success, final long senderGasPrice, final long relayerOffered, final long senderCharged) {
         return defaultHapiSpec(

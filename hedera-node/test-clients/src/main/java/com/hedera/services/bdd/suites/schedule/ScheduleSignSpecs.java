@@ -46,6 +46,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ADMIN;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.BASIC_XFER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.DEFAULT_TX_EXPIRY;
@@ -64,7 +70,6 @@ import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TWO_SIG_XFER
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.VALID_SCHEDULED_TXN;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WHITELIST_DEFAULT;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WHITELIST_MINIMUM;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.withAndWithoutLongTermEnabled;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -74,60 +79,21 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_PENDI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
 
-@HapiTestSuite
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class ScheduleSignSpecs extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(ScheduleSignSpecs.class);
+public class ScheduleSignSpecs {
     private static final int SCHEDULE_EXPIRY_TIME_SECS = 10;
     private static final int SCHEDULE_EXPIRY_TIME_MS = SCHEDULE_EXPIRY_TIME_SECS * 1000;
-
-    public static void main(String... args) {
-        new ScheduleSignSpecs().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return withAndWithoutLongTermEnabled(() -> List.of(
-                suiteSetup(),
-                addingSignaturesToExecutedTxFails(),
-                addingSignaturesToNonExistingTxFails(),
-                basicSignatureCollectionWorks(),
-                changeInNestedSigningReqsRespected(),
-                nestedSigningReqsWorkAsExpected(),
-                okIfAdminKeyOverlapsWithActiveScheduleKey(),
-                overlappingKeysTreatedAsExpected(),
-                receiverSigRequiredNotConfusedByMultiSigSender(),
-                receiverSigRequiredNotConfusedByOrder(),
-                receiverSigRequiredUpdateIsRecognized(),
-                reductionInSigningReqsAllowsTxnToGoThrough(),
-                reductionInSigningReqsAllowsTxnToGoThroughWithRandomKey(),
-                retestsActivationOnSignWithEmptySigMap(),
-                scheduleAlreadyExecutedDoesntRepeatTransaction(),
-                scheduleAlreadyExecutedOnCreateDoesntRepeatTransaction(),
-                sharedKeyWorksAsExpected(),
-                signFailsDueToDeletedExpiration(),
-                signalsIrrelevantSig(),
-                signalsIrrelevantSigEvenAfterLinkedEntityUpdate(),
-                signingDeletedSchedulesHasNoEffect(),
-                triggersUponAdditionalNeededSig(),
-                triggersUponFinishingPayerSig(),
-                suiteCleanup()));
-    }
 
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
@@ -823,10 +789,5 @@ public class ScheduleSignSpecs extends HapiSuite {
                                 .hasKnownStatusFrom(INVALID_SCHEDULE_ID),
                         getScheduleInfo(TWO_SIG_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         overriding(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, "" + DEFAULT_TX_EXPIRY));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

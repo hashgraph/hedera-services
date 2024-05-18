@@ -25,37 +25,18 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PRNG_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class UtilPrngSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(UtilPrngSuite.class);
+public class UtilPrngSuite {
     private static final String PRNG_IS_ENABLED = "utilPrng.isEnabled";
     public static final String BOB = "bob";
-
-    public static void main(String... args) {
-        new UtilPrngSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return allOf(positiveTests());
-    }
-
-    private List<Stream<DynamicTest>> positiveTests() {
-        return List.of(happyPathWorksForRangeAndBitString(), failsInPreCheckForNegativeRange(), usdFeeAsExpected());
-    }
 
     @HapiTest
     final Stream<DynamicTest> usdFeeAsExpected() {
@@ -166,10 +147,5 @@ public class UtilPrngSuite extends HapiSuite {
                                 .blankMemo()
                                 .payingWith(BOB)
                                 .hasPrecheck(INVALID_PRNG_RANGE));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

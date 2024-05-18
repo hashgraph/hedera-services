@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.spec.utilops.lifecycle.hedera;
+package com.hedera.services.bdd.spec.utilops.lifecycle;
 
 import static java.util.Objects.requireNonNull;
 
@@ -23,12 +23,15 @@ import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * A convenient base class for dealing with node lifecycle operations.
  */
 public abstract class AbstractLifecycleOp extends UtilOp {
-    /** The {@link com.hedera.services.bdd.junit.hedera.NodeSelector} to use to choose which node(s) to operate on */
+    /**
+     * The {@link com.hedera.services.bdd.junit.hedera.NodeSelector} to use to choose which node(s) to operate on
+     */
     private final NodeSelector selector;
 
     protected AbstractLifecycleOp(@NonNull final NodeSelector selector) {
@@ -37,8 +40,11 @@ public abstract class AbstractLifecycleOp extends UtilOp {
 
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
-        spec.targetNetworkOrThrow().nodesFor(selector).forEach(this::run);
-        // This HapiSpecOperation has nothing more to do
+        CompletableFuture.allOf(spec.targetNetworkOrThrow().nodesFor(selector).stream()
+                        .map(node -> CompletableFuture.runAsync(() -> run(node)))
+                        .toArray(CompletableFuture[]::new))
+                .join();
+        // This operation has nothing more to do after all nodes have finished their run() methods
         return false;
     }
 

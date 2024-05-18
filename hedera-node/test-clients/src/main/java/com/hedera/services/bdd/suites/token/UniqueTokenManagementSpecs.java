@@ -37,6 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccoun
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.batchOfSize;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadataOfLength;
@@ -58,11 +59,9 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -77,9 +76,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(TOKEN)
-public class UniqueTokenManagementSpecs extends HapiSuite {
+public class UniqueTokenManagementSpecs {
 
     private static final org.apache.logging.log4j.Logger log = LogManager.getLogger(UniqueTokenManagementSpecs.class);
     private static final String A_TOKEN = "TokenA";
@@ -99,44 +97,6 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     private static final String ACCOUNT = "account";
     private static final String CUSTOM_PAYER = "customPayer";
     private static final String WIPE_KEY = "wipeKey";
-
-    public static void main(String... args) {
-        new UniqueTokenManagementSpecs().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                mintFailsWithLargeBatchSize(),
-                mintFailsWithTooLongMetadata(),
-                mintFailsWithInvalidMetadataFromBatch(),
-                mintUniqueTokenHappyPath(),
-                mintTokenWorksWhenAccountsAreFrozenByDefault(),
-                mintFailsWithDeletedToken(),
-                mintUniqueTokenWorksWithRepeatedMetadata(),
-                mintDistinguishesFeeSubTypes(),
-                mintUniqueTokenReceiptCheck(),
-                populatingMetadataForFungibleDoesNotWork(),
-                populatingAmountForNonFungibleDoesNotWork(),
-                finiteNftReachesMaxSupplyProperly(),
-                burnHappyPath(),
-                canOnlyBurnFromTreasury(),
-                burnFailsOnInvalidSerialNumber(),
-                burnRespectsBurnBatchConstraints(),
-                treasuryBalanceCorrectAfterBurn(),
-                burnWorksWhenAccountsAreFrozenByDefault(),
-                serialNumbersOnlyOnFungibleBurnFails(),
-                amountOnlyOnNonFungibleBurnFails(),
-                wipeHappyPath(),
-                wipeRespectsConstraints(),
-                commonWipeFailsWhenInvokedOnUniqueToken(),
-                uniqueWipeFailsWhenInvokedOnFungibleToken(),
-                wipeFailsWithInvalidSerialNumber(),
-                getTokenNftInfoWorks(),
-                getTokenNftInfoFailsWithNoNft(),
-                tokenDissociateHappyPath(),
-                tokenDissociateFailsIfAccountOwnsUniqueTokens());
-    }
 
     @HapiTest // here
     final Stream<DynamicTest> populatingMetadataForFungibleDoesNotWork() {

@@ -61,6 +61,13 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.HBAR_TOKEN_SENTINEL;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -85,11 +92,9 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
@@ -97,16 +102,11 @@ import java.util.OptionalLong;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(TOKEN)
-public class TokenTransactSpecs extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(TokenTransactSpecs.class);
-
+public class TokenTransactSpecs {
     public static final String PAYER = "payer";
     private static final long TOTAL_SUPPLY = 1_000;
     private static final String A_TOKEN = "TokenA";
@@ -142,72 +142,6 @@ public class TokenTransactSpecs extends HapiSuite {
     public static final String UNIQUE = "unique";
     public static final String FUNGIBLE = "fungible";
     public static final String TRANSFER_TXN = "transferTxn";
-
-    public static void main(String... args) {
-        new TokenTransactSpecs().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    @SuppressWarnings("java:S3878")
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                balancesChangeOnTokenTransfer(),
-                accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
-                senderSigsAreValid(),
-                balancesAreChecked(),
-                duplicateAccountsInTokenTransferRejected(),
-                tokenOnlyTxnsAreAtomic(),
-                tokenPlusHbarTxnsAreAtomic(),
-                nonZeroTransfersRejected(),
-                missingEntitiesRejected(),
-                allRequiredSigsAreChecked(),
-                uniqueTokenTxnAccountBalance(),
-                uniqueTokenTxnAccountBalancesForTreasury(),
-                uniqueTokenTxnWithNoAssociation(),
-                uniqueTokenTxnWithFrozenAccount(),
-                uniqueTokenTxnWithSenderNotSigned(),
-                uniqueTokenTxnWithReceiverNotSigned(),
-                uniqueTokenTxnsAreAtomic(),
-                uniqueTokenDeletedTxn(),
-                cannotSendFungibleToDissociatedContractsOrAccounts(),
-                cannotGiveNftsToDissociatedContractsOrAccounts(),
-                recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
-                transferListsEnforceTokenTypeRestrictions(),
-                // HIP-18 charging case studies
-                fixedHbarCaseStudy(),
-                fractionalCaseStudy(),
-                simpleHtsFeeCaseStudy(),
-                nestedHbarCaseStudy(),
-                nestedFractionalCaseStudy(),
-                nestedHtsCaseStudy(),
-                treasuriesAreExemptFromAllCustomFees(),
-                collectorsAreExemptFromTheirOwnFeesButNotOthers(),
-                multipleRoyaltyFallbackCaseStudy(),
-                normalRoyaltyCaseStudy(),
-                canTransactInTokenWithSelfDenominatedFixedFee(),
-                nftOwnersChangeAtomically(),
-                fractionalNetOfTransfersCaseStudy(),
-                royaltyAndFractionalTogetherCaseStudy(),
-                respondsCorrectlyWhenNonFungibleTokenWithRoyaltyUsedInTransferList(),
-                // HIP-573 charging case studies
-                collectorIsChargedFixedFeeUnlessExempt(),
-                collectorIsChargedFractionalFeeUnlessExempt(),
-                collectorIsChargedNetOfTransferFractionalFeeUnlessExempt(),
-                collectorIsChargedRoyaltyFeeUnlessExempt(),
-                collectorIsChargedRoyaltyFallbackFeeUnlessExempt(),
-                // HIP-23
-                happyPathAutoAssociationsWorkForBothTokenTypes(),
-                failedAutoAssociationHasNoSideEffectsOrHistoryForUnrelatedProblem(),
-                newSlotsCanBeOpenedViaUpdate(),
-                newSlotsCanBeOpenedViaDissociate(),
-                autoAssociationWithKycTokenHasNoSideEffectsOrHistory(),
-                autoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory());
-    }
 
     @HapiTest
     final Stream<DynamicTest> autoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory() {
@@ -2184,10 +2118,5 @@ public class TokenTransactSpecs extends HapiSuite {
 
     private String nameForCollectorOfFeeWith(final boolean allCollectorsExempt) {
         return allCollectorsExempt ? COLLECTOR_OF_FEE_WITH_EXEMPTIONS : COLLECTOR_OF_FEE_WITHOUT_EXEMPTIONS;
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

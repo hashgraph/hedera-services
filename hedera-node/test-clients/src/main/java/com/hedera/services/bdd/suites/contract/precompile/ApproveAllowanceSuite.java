@@ -70,7 +70,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -718,7 +717,6 @@ public class ApproveAllowanceSuite {
         return testIndirectApprovalWith("DirectErc20Callee", DIRECT_ERC_CALLEE, true);
     }
 
-    @BddMethodIsNotATest
     final Stream<DynamicTest> testIndirectApprovalWith(
             @NonNull final String testName, @NonNull final String callee, final boolean expectGrantedApproval) {
 

@@ -63,6 +63,12 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FUL
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TOKEN_NAMES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.salted;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
@@ -97,10 +103,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenPauseStatus;
@@ -114,8 +118,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
@@ -126,10 +128,8 @@ import org.junit.jupiter.api.Tag;
  *     <li>Default values.</li>
  * </ul>
  */
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(TOKEN)
-public class TokenCreateSpecs extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(TokenCreateSpecs.class);
+public class TokenCreateSpecs {
     private static final String NON_FUNGIBLE_UNIQUE_FINITE = "non-fungible-unique-finite";
     private static final String PRIMARY = "primary";
     private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
@@ -149,49 +149,6 @@ public class TokenCreateSpecs extends HapiSuite {
 
     private static final long defaultMaxLifetime =
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
-
-    public static void main(String... args) {
-        new TokenCreateSpecs().runSuiteSync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                creationValidatesNonFungiblePrechecks(),
-                creationValidatesMaxSupply(),
-                creationValidatesMemo(),
-                creationValidatesName(),
-                creationValidatesSymbol(),
-                treasuryHasCorrectBalance(),
-                creationRequiresAppropriateSigs(),
-                creationRequiresAppropriateSigsHappyPath(),
-                initialSupplyMustBeSane(),
-                creationYieldsExpectedToken(),
-                creationSetsExpectedName(),
-                creationValidatesTreasuryAccount(),
-                autoRenewValidationWorks(),
-                creationWithoutKYCSetsCorrectStatus(),
-                creationValidatesExpiry(),
-                creationValidatesFreezeDefaultWithNoFreezeKey(),
-                creationSetsCorrectExpiry(),
-                creationHappyPath(),
-                worksAsExpectedWithDefaultTokenId(),
-                cannotCreateWithExcessiveLifetime(),
-                prechecksWork(),
-                /* HIP-18 */
-                onlyValidCustomFeeScheduleCanBeCreated(),
-                feeCollectorSigningReqsWorkForTokenCreate(),
-                createsFungibleInfiniteByDefault(),
-                baseCreationsHaveExpectedPrices(),
-                /* HIP-23 */
-                validateNewTokenAssociations(),
-                missingTreasurySignatureFails());
-    }
 
     @HapiTest
     final Stream<DynamicTest> getInfoIdVariantsTreatedAsExpected() {
@@ -1211,11 +1168,6 @@ public class TokenCreateSpecs extends HapiSuite {
                         cryptoTransfer(moving(10, A_TOKEN).from(TOKEN_TREASURY))
                                 .hasPrecheck(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN),
                         cryptoTransfer(moving(10, A_TOKEN).empty()).hasPrecheck(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 
     private final long hbarAmount = 1_234L;

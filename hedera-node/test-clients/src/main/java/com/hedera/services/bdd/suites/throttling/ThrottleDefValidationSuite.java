@@ -21,6 +21,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THROTTLE_DEFS;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
@@ -29,41 +35,18 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
 
-@HapiTestSuite
 @TestMethodOrder(OrderAnnotation.class)
-public class ThrottleDefValidationSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(ThrottleDefValidationSuite.class);
-
+public class ThrottleDefValidationSuite {
     private static final String DEFAULT_CONGESTION_MULTIPLIERS =
             HapiSpecSetup.getDefaultNodeProps().get("fees.percentCongestionMultipliers");
-
-    public static void main(String... args) {
-        new ThrottleDefValidationSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                throttleDefsRejectUnauthorizedPayers(),
-                throttleUpdateRejectsMultiGroupAssignment(),
-                throttleUpdateWithZeroGroupOpsPerSecFails(),
-                updateWithMissingTokenMintFails(),
-                ensureDefaultsRestored());
-    }
 
     @HapiTest
     final Stream<DynamicTest> updateWithMissingTokenMintFails() {
@@ -138,10 +121,5 @@ public class ThrottleDefValidationSuite extends HapiSuite {
                                 .contents("BOOM")
                                 .payingWith(FEE_SCHEDULE_CONTROL)
                                 .hasPrecheck(AUTHORIZATION_FAILED));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

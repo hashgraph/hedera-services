@@ -50,6 +50,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.ALIAS;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.INITIAL_BALANCE;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
@@ -75,7 +81,6 @@ import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SECOND_PAYER
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SENDER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.VALID_SCHEDULE;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WHITELIST_DEFAULT;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.withAndWithoutLongTermEnabled;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
@@ -90,61 +95,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.security.SecureRandom;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class ScheduleCreateSpecs extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(ScheduleCreateSpecs.class);
-
-    public static void main(String... args) {
-        new ScheduleCreateSpecs().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return withAndWithoutLongTermEnabled(() -> List.of(
-                notIdenticalScheduleIfScheduledTxnChanges(),
-                notIdenticalScheduleIfAdminKeyChanges(),
-                notIdenticalScheduleIfMemoChanges(),
-                recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer(),
-                rejectsSentinelKeyListAsAdminKey(),
-                rejectsMalformedScheduledTxnMemo(),
-                bodyOnlyCreation(),
-                onlyBodyAndAdminCreation(),
-                onlyBodyAndMemoCreation(),
-                bodyAndSignatoriesCreation(),
-                bodyAndPayerCreation(),
-                rejectsUnresolvableReqSigners(),
-                triggersImmediatelyWithBothReqSimpleSigs(),
-                onlySchedulesWithMissingReqSimpleSigs(),
-                failsWithNonExistingPayerAccountId(),
-                failsWithTooLongMemo(),
-                detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
-                doesntTriggerUntilPayerSigns(),
-                requiresExtantPayer(),
-                rejectsFunctionlessTxn(),
-                functionlessTxnBusyWithNonExemptPayer(),
-                whitelistWorks(),
-                preservesRevocationServiceSemanticsForFileDelete(),
-                worksAsExpectedWithDefaultScheduleId(),
-                infoIncludesTxnIdFromCreationReceipt(),
-                suiteCleanup(),
-                validateSignersInInfo(),
-                aliasNotAllowedAsPayer()));
-    }
-
+public class ScheduleCreateSpecs {
     @HapiTest
     final Stream<DynamicTest> aliasNotAllowedAsPayer() {
         return defaultHapiSpec("BodyAndPayerCreation")
@@ -642,10 +602,5 @@ public class ScheduleCreateSpecs extends HapiSuite {
                                 // prevent multiple runs of this test causing duplicates
                                 .withEntityMemo("" + new SecureRandom().nextLong()))
                 .then(overriding(SCHEDULING_WHITELIST, WHITELIST_DEFAULT));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

@@ -37,6 +37,8 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.A_TOKEN;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.DEFAULT_MAX_TOKEN_TRANSFER_LEN;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.DEFAULT_MAX_TRANSFER_LEN;
@@ -56,7 +58,6 @@ import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TREASURY;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.VALID_SCHEDULE;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WHITELIST_DEFAULT;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.addAllToWhitelist;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.withAndWithoutLongTermEnabled;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
@@ -65,44 +66,20 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_R
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
 
-@HapiTestSuite
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class ScheduleExecutionSpecStateful extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(ScheduleExecutionSpecStateful.class);
-
+public class ScheduleExecutionSpecStateful {
     private static final int TMP_MAX_TRANSFER_LENGTH = 2;
     private static final int TMP_MAX_TOKEN_TRANSFER_LENGTH = 2;
-
-    public static void main(String... args) {
-        new ScheduleExecutionSpecStateful().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return withAndWithoutLongTermEnabled(() -> List.of(
-                /* Stateful specs from ScheduleExecutionSpecs */
-                suiteSetup(),
-                scheduledUniqueMintFailsWithNftsDisabled(),
-                scheduledUniqueBurnFailsWithNftsDisabled(),
-                scheduledBurnWithInvalidTokenThrowsUnresolvableSigners(),
-                executionWithTransferListWrongSizedFails(),
-                executionWithTokenTransferListSizeExceedFails(),
-                suiteCleanup()));
-    }
 
     @HapiTest
     @Order(1)
@@ -283,10 +260,5 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(Map.of(TOKENS_NFTS_ARE_ENABLED, "true")));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

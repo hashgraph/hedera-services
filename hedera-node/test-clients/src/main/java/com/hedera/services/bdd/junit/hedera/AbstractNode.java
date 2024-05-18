@@ -51,6 +51,8 @@ public abstract class AbstractNode implements HederaNode {
 
     @Override
     public Path getRecordStreamPath() {
-        return metadata.workingDir().resolve(OVERRIDE_RECORD_STREAM_FOLDER);
+        return metadata.workingDir()
+                .resolve(OVERRIDE_RECORD_STREAM_FOLDER)
+                .resolve("record0.0." + getAccountId().accountNumOrThrow());
     }
 }

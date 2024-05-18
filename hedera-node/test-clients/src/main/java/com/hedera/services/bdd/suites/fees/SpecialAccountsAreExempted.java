@@ -31,14 +31,14 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 
 public class SpecialAccountsAreExempted {
-    @HapiTest
+    @LeakyHapiTest
     final Stream<DynamicTest> feeScheduleControlAccountIsntCharged() {
         ResponseCodeEnum[] acceptable = {SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED};
 

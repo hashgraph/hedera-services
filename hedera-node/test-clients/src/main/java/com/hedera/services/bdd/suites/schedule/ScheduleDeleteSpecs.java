@@ -31,12 +31,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ADMIN;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.RECEIVER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULING_WHITELIST;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SENDER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.VALID_SCHEDULED_TXN;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.withAndWithoutLongTermEnabled;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
@@ -44,37 +46,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class ScheduleDeleteSpecs extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(ScheduleDeleteSpecs.class);
-
-    public static void main(String... args) {
-        new ScheduleDeleteSpecs().runSuiteAsync();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return withAndWithoutLongTermEnabled(() -> List.of(
-                deleteWithNoAdminKeyFails(),
-                unauthorizedDeletionFails(),
-                deletingAlreadyDeletedIsObvious(),
-                deletingNonExistingFails(),
-                deletingExecutedIsPointless()));
-    }
-
+public class ScheduleDeleteSpecs {
     @HapiTest
     final Stream<DynamicTest> deleteWithNoAdminKeyFails() {
         return defaultHapiSpec("DeleteWithNoAdminKeyFails")

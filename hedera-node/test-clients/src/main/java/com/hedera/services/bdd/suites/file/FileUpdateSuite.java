@@ -109,7 +109,6 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
@@ -603,7 +602,7 @@ public class FileUpdateSuite {
                 .then();
     }
 
-    @BddMethodIsNotATest
+    // (FUTURE) Re-enable when contract rent is enabled
     final Stream<DynamicTest> rentItemizedAsExpectedWithOverridePriceTiers() {
         final var slotUser = "SlotUser";
         final var creation = "creation";

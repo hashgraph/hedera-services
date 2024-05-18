@@ -24,7 +24,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 
 public class SpecNamingExtension implements BeforeEachCallback {
     @Override
-    public void beforeEach(@NonNull final ExtensionContext extensionContext) throws Exception {
+    public void beforeEach(@NonNull final ExtensionContext extensionContext) {
         extensionContext
                 .getTestMethod()
                 .filter(NetworkTargetingExtension::isHapiTest)

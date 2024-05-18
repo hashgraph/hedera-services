@@ -35,6 +35,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
@@ -45,34 +49,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(TOKEN)
-public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(TokenFeeScheduleUpdateSpecs.class);
-
-    public static void main(String... args) {
-        new TokenFeeScheduleUpdateSpecs().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(onlyValidCustomFeeScheduleCanBeUpdated(), baseOperationIsChargedExpectedFee());
-    }
-
+public class TokenFeeScheduleUpdateSpecs {
     @HapiTest
     final Stream<DynamicTest> baseOperationIsChargedExpectedFee() {
         final var htsAmount = 2_345L;
@@ -290,10 +276,5 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
                                 OptionalLong.of(newMaximumToCollect),
                                 false,
                                 newTokenCollector)));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

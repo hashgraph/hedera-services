@@ -86,11 +86,6 @@ public class ProviderRun extends UtilOp {
         return this;
     }
 
-    public ProviderRun totalOpsToSubmit(IntSupplier totalOpsSupplier) {
-        this.totalOpsToSubmit = totalOpsSupplier;
-        return this;
-    }
-
     public ProviderRun maxOpsPerSec(final int maxOpsPerSec) {
         this.maxOpsPerSecSupplier = () -> maxOpsPerSec;
         return this;
@@ -101,18 +96,8 @@ public class ProviderRun extends UtilOp {
         return this;
     }
 
-    public ProviderRun maxPendingOps(final int maxPendingOps) {
-        this.maxPendingOpsSupplier = () -> maxPendingOps;
-        return this;
-    }
-
     public ProviderRun maxPendingOps(IntSupplier maxPendingOpsSupplier) {
         this.maxPendingOpsSupplier = maxPendingOpsSupplier;
-        return this;
-    }
-
-    public ProviderRun backoffSleepSecs(final int backoffSleepSecs) {
-        this.backoffSleepSecsSupplier = () -> backoffSleepSecs;
         return this;
     }
 
@@ -131,7 +116,9 @@ public class ProviderRun extends UtilOp {
         OpProvider provider = providerFn.apply(spec);
 
         allRunFor(spec, provider.suggestedInitializers().toArray(new HapiSpecOperation[0]));
-        log.info("Finished initialization for provider run...");
+        if (!loggingOff) {
+            log.info("Finished initialization for provider run...");
+        }
 
         TimeUnit unit = unitSupplier.get();
         Stopwatch stopwatch = Stopwatch.createStarted();
@@ -155,7 +142,7 @@ public class ProviderRun extends UtilOp {
             if (elapsedMs > nextLogTargetMs) {
                 nextLogTargetMs += logIncrementMs;
                 long delta = duration - stopwatch.elapsed(unit);
-                if (delta != lastDeltaLogged) {
+                if (delta != lastDeltaLogged && !loggingOff) {
                     String message = String.format(
                             "%d %s%s left in test - %d ops submitted so far (%d pending).",
                             delta,
@@ -175,7 +162,9 @@ public class ProviderRun extends UtilOp {
                 if (numPending > 0) {
                     continue;
                 }
-                log.info("Finished submission of total {} operations", totalOpsToSubmit.getAsInt());
+                if (!loggingOff) {
+                    log.info("Finished submission of total {} operations", totalOpsToSubmit.getAsInt());
+                }
                 break;
             }
             if (numPending < MAX_PENDING_OPS) {

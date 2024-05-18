@@ -32,6 +32,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TOKEN_NAMES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.salted;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.METADATA_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -39,9 +44,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUT
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -49,8 +52,6 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
@@ -60,10 +61,8 @@ import org.junit.jupiter.api.Tag;
  *     <li>Metadata and MetadataKey values and behaviours.</li>
  * </ul>
  */
-@HapiTestSuite
 @Tag(TOKEN)
-public class TokenMetadataSpecs extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(TokenMetadataSpecs.class);
+public class TokenMetadataSpecs {
     private static final String PRIMARY = "primary";
     private static final String NON_FUNGIBLE_UNIQUE_FINITE = "non-fungible-unique-finite";
     private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
@@ -75,33 +74,6 @@ public class TokenMetadataSpecs extends HapiSuite {
     private static final String FREEZE_KEY = "freezeKey";
     private static final String KYC_KEY = "kycKey";
     private static String TOKEN_TREASURY = "treasury";
-
-    public static void main(String... args) {
-        new TokenMetadataSpecs().runSuiteSync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                rejectsMetadataTooLong(),
-                creationRequiresAppropriateSigsHappyPath(),
-                creationDoesNotHaveRequiredSigs(),
-                fungibleCreationHappyPath(),
-                updatingMetadataWorksWithMetadataKey(),
-                updatingMetadataWorksWithAdminKey(),
-                cannotUpdateMetadataOnImmutableToken(),
-                cannotUpdateMetadataWithoutAdminOrMetadataKeySignature());
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
 
     @HapiTest
     final Stream<DynamicTest> rejectsMetadataTooLong() {

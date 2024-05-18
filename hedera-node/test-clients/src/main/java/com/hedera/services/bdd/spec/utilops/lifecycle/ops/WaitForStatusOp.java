@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.spec.utilops.lifecycle.hedera.ops;
+package com.hedera.services.bdd.spec.utilops.lifecycle.ops;
 
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
-import com.hedera.services.bdd.spec.utilops.lifecycle.hedera.AbstractLifecycleOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.AbstractLifecycleOp;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;

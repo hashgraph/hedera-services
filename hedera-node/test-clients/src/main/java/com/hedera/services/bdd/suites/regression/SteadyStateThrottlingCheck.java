@@ -57,7 +57,6 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
-import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -166,7 +165,6 @@ public class SteadyStateThrottlingCheck {
                                 .payingWith(ADDRESS_BOOK_CONTROL));
     }
 
-    @BddMethodIsNotATest
     final Stream<DynamicTest> checkTps(String txn, double expectedTps, Function<HapiSpec, OpProvider> provider) {
         return checkCustomNetworkTps(txn, expectedTps, provider, Collections.emptyMap());
     }
@@ -184,7 +182,6 @@ public class SteadyStateThrottlingCheck {
      *     "default.payer.pemKeyPassphrase", "[SUPERUSER_PEM_PASSPHRASE]")));
      * }</pre>
      */
-    @BddMethodIsNotATest
     @SuppressWarnings("java:S5960")
     final Stream<DynamicTest> checkCustomNetworkTps(
             String txn, double expectedTps, Function<HapiSpec, OpProvider> provider, Map<String, String> custom) {
@@ -210,7 +207,6 @@ public class SteadyStateThrottlingCheck {
                 }));
     }
 
-    @BddMethodIsNotATest
     final Stream<DynamicTest> checkBalanceQps(int burstSize, double expectedQps) {
         return defaultHapiSpec("CheckBalanceQps")
                 .given(cryptoCreate("curious").payingWith(GENESIS))

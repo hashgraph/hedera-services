@@ -45,6 +45,15 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
+import static com.hedera.services.bdd.suites.HapiSuite.salted;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
@@ -71,11 +80,9 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenPauseStatus;
@@ -83,16 +90,11 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(TOKEN)
-public class TokenUpdateSpecs extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(TokenUpdateSpecs.class);
+public class TokenUpdateSpecs {
     private static final int MAX_NAME_LENGTH = 100;
     private static final int MAX_SYMBOL_LENGTH = 100;
     private static final String PAYER = "payer";
@@ -102,61 +104,6 @@ public class TokenUpdateSpecs extends HapiSuite {
     private static String TOKEN_TREASURY = "treasury";
     private static final long defaultMaxLifetime =
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
-
-    public static void main(String... args) {
-        new TokenUpdateSpecs().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return allOf(positiveTests(), negativeTests());
-    }
-
-    private List<Stream<DynamicTest>> positiveTests() {
-        return List.of(
-                symbolChanges(),
-                standardImmutabilitySemanticsHold(),
-                validAutoRenewWorks(),
-                tooLongNameCheckHolds(),
-                tooLongSymbolCheckHolds(),
-                nameChanges(),
-                keysChange(),
-                treasuryEvolves(),
-                newTreasuryMustSign(),
-                newTreasuryAutoAssociationWorks(),
-                updateNftTreasuryHappyPath(),
-                validatesNewExpiry(),
-                /* HIP-18 */
-                customFeesOnlyUpdatableWithKey(),
-                updateUniqueTreasuryWithNfts(),
-                updateHappyPath(),
-                safeToUpdateCustomFeesWithNewFallbackWhileTransferring(),
-                tokenUpdateCanClearMemo(),
-                canUpdateExpiryOnlyOpWithoutAdminKey());
-    }
-
-    private List<Stream<DynamicTest>> negativeTests() {
-        return List.of(
-                updateTokenTreasuryRequiresZeroTokenBalance(),
-                validatesAlreadyDeletedToken(),
-                tokensCanBeMadeImmutableWithEmptyKeyList(),
-                deletedAutoRenewAccountCheckHolds(),
-                renewalPeriodCheckHolds(),
-                invalidTreasuryCheckHolds(),
-                validatesMissingRef(),
-                validatesMissingAdminKey(),
-                tokenUpdateTokenHasNoFreezeKey(),
-                tokenUpdateTokenHasNoSupplyKey(),
-                tokenUpdateTokenHasNoKycKey(),
-                tokenUpdateTokenHasNoWipeKey(),
-                tokenUpdateTokenHasNoPauseKey(),
-                tokenUpdateTokenHasNoMetadataKey());
-    }
 
     @HapiTest
     final Stream<DynamicTest> canUpdateExpiryOnlyOpWithoutAdminKey() {
@@ -744,7 +691,6 @@ public class TokenUpdateSpecs extends HapiSuite {
         final var beneficiary = "luckyOne";
         final var multiKey = "allSeasons";
         final var sender = "sender";
-        final var numRaces = 3;
 
         return defaultHapiSpec("SafeToUpdateCustomFeesWithNewFallbackWhileTransferring")
                 .given(
@@ -1069,10 +1015,5 @@ public class TokenUpdateSpecs extends HapiSuite {
                         getAccountInfo("oldTreasury").logged(),
                         getAccountInfo("newTreasury").logged(),
                         getTokenInfo("tbu").hasTreasury("newTreasury"));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

@@ -42,6 +42,12 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
+import static com.hedera.services.bdd.suites.HapiSuite.salted;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -51,9 +57,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -61,17 +65,11 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(TOKEN)
-public class Hip17UnhappyTokensSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(Hip17UnhappyTokensSuite.class);
-
+public class Hip17UnhappyTokensSuite {
     private static final String ANOTHER_USER = "AnotherUser";
     private static final String ANOTHER_KEY = "AnotherKey";
 
@@ -99,33 +97,6 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
     private static String SECOND_MEMO = "Nothing left to do";
     private static String SALTED_NAME = salted("primary");
     private static String NEW_SALTED_NAME = salted("primary");
-
-    public static void main(String... args) {
-        new Hip17UnhappyTokensSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                canStillGetNftInfoWhenDeleted(),
-                cannotWipeNftWhenDeleted(),
-                cannotBurnNftWhenDeleted(),
-                cannotMintNftWhenDeleted(),
-                cannotDissociateNftWhenDeleted(),
-                cannotAssociateNftWhenDeleted(),
-                cannotUpdateNftWhenDeleted(),
-                cannotUpdateNftFeeScheduleWhenDeleted(),
-                cannotTransferNftWhenDeleted(),
-                cannotFreezeNftWhenDeleted(),
-                cannotUnfreezeNftWhenDeleted()
-
-                // TODO: when auto removal and expiry implemented, enable the following and
-                // also add all those scenarios like above to complete the matrix.
-                // cannotGetNftInfoWhenExpired()
-                // cannotGetNftInfoWhenAutoRemoved(),
-                // autoRemovalCasesSuiteCleanup()
-                );
-    }
 
     @HapiTest
     final Stream<DynamicTest> canStillGetNftInfoWhenDeleted() {
@@ -507,10 +478,5 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
 
     private ByteString metadata(String contents) {
         return ByteString.copyFromUtf8(contents);
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

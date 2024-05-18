@@ -340,10 +340,6 @@ public class HapiSpec implements Runnable, Executable {
         return this;
     }
 
-    public void setNodes(List<HapiTestNode> nodes) {
-        if (nodes != null) this.nodes = nodes;
-    }
-
     public void setTargetNetwork(@NonNull final HederaNetwork targetNetwork) {
         this.targetNetwork = requireNonNull(targetNetwork);
     }
@@ -354,10 +350,6 @@ public class HapiSpec implements Runnable, Executable {
 
     public List<HederaNode> getNetworkNodes() {
         return requireNonNull(targetNetwork).nodes();
-    }
-
-    public List<HapiTestNode> getNodes() {
-        return nodes;
     }
 
     public static boolean ok(HapiSpec spec) {

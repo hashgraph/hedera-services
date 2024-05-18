@@ -71,6 +71,20 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.FREEZE_ADMIN;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SOFTWARE_UPDATE_ADMIN;
+import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_DELETE_ADMIN;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.THROTTLE_DEFS;
 import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.poeticUpgradeLoc;
 import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.standardUpdateFile;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ACCOUNT;
@@ -118,7 +132,6 @@ import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.addAllToWhit
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.getPoeticUpgradeHash;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.scheduledVersionOf;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.transferListCheck;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.withAndWithoutLongTermEnabled;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -156,12 +169,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_R
 import com.google.protobuf.ByteString;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hedera.services.bdd.suites.BddMethodIsNotATest;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -183,9 +193,8 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
 
-@HapiTestSuite
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class ScheduleExecutionSpecs extends HapiSuite {
+public class ScheduleExecutionSpecs {
     private static final Logger log = LogManager.getLogger(ScheduleExecutionSpecs.class);
 
     /**
@@ -199,73 +208,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine
     private final Random r = new Random(882654L);
-
-    public static void main(String... args) {
-        new ScheduleExecutionSpecs().runSuiteAsync();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return withAndWithoutLongTermEnabled(isLongTermEnabled -> List.of(
-                suiteSetup(),
-                // Note: Order matters here, e2e tests may fail if reordered.
-                //       There are stateful assumptions throughout these tests.
-                executionTriggersOnceTopicHasSatisfiedSubmitKey(),
-                executionTriggersWithWeirdlyRepeatedKey(),
-                executionWithCryptoInsufficientAccountBalanceFails(),
-                executionWithCryptoSenderDeletedFails(),
-                executionWithCustomPayerAndAdminKeyWorks(),
-                executionWithCustomPayerButAccountDeletedFails(),
-                executionWithCustomPayerButNoFundsFails(),
-                executionWithCustomPayerWhoSignsAtCreationAsPayerWorks(),
-                executionWithCustomPayerWorks(),
-                executionWithCustomPayerWorksWithLastSigBeingCustomPayer(),
-                executionWithDefaultPayerButAccountDeletedFails(),
-                executionWithDefaultPayerButNoFundsFails(),
-                executionWithDefaultPayerWorks(),
-                executionWithInvalidAccountAmountsFails(),
-                executionWithTokenInsufficientAccountBalanceFails(),
-                scheduledBurnExecutesProperly(),
-                scheduledBurnFailsWithInvalidTxBody(),
-                scheduledBurnForUniqueFailsWithInvalidAmount(),
-                scheduledBurnForUniqueSucceedsWithExistingAmount(),
-                scheduledFreezeWithUnauthorizedPayerFails(isLongTermEnabled),
-                scheduledFreezeWorksAsExpected(),
-                scheduledMintExecutesProperly(),
-                scheduledMintFailsWithInvalidAmount(),
-                scheduledMintFailsWithInvalidTxBody(),
-                scheduledMintWithInvalidTokenThrowsUnresolvableSigners(),
-                scheduledPermissionedFileUpdateUnauthorizedPayerFails(),
-                scheduledPermissionedFileUpdateWorksAsExpected(),
-                scheduledSubmitFailedWithInvalidChunkNumberStillPaysServiceFeeButHasNoImpact(),
-                scheduledSubmitFailedWithInvalidChunkTxnIdStillPaysServiceFeeButHasNoImpact(),
-                scheduledSubmitFailedWithMsgSizeTooLargeStillPaysServiceFeeButHasNoImpact(),
-                scheduledSubmitThatWouldFailWithInvalidTopicIdCannotBeScheduled(),
-                scheduledSubmitThatWouldFailWithTopicDeletedCannotBeSigned(),
-                scheduledSystemDeleteUnauthorizedPayerFails(isLongTermEnabled),
-                scheduledSystemDeleteWorksAsExpected(),
-                scheduledUniqueBurnExecutesProperly(),
-                scheduledUniqueBurnFailsWithInvalidBatchSize(),
-                scheduledUniqueBurnFailsWithInvalidNftId(),
-                scheduledUniqueMintExecutesProperly(),
-                scheduledUniqueMintFailsWithInvalidBatchSize(),
-                scheduledUniqueMintFailsWithInvalidMetadata(),
-                scheduledXferFailingWithDeletedAccountPaysServiceFeeButNoImpact(),
-                scheduledXferFailingWithDeletedTokenPaysServiceFeeButNoImpact(),
-                scheduledXferFailingWithEmptyTokenTransferAccountAmountsPaysServiceFeeButNoImpact(),
-                scheduledXferFailingWithFrozenAccountTransferPaysServiceFeeButNoImpact(),
-                scheduledXferFailingWithNonKycedAccountTransferPaysServiceFeeButNoImpact(),
-                scheduledXferFailingWithNonNetZeroTokenTransferPaysServiceFeeButNoImpact(),
-                scheduledXferFailingWithRepeatedTokenIdPaysServiceFeeButNoImpact(),
-                scheduledXferFailingWithUnassociatedAccountTransferPaysServiceFeeButNoImpact(),
-                // congestionPricingAffectsImmediateScheduleExecution(),
-                suiteCleanup()));
-    }
 
     @HapiTest
     @Order(1)
@@ -2233,8 +2175,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                 }));
     }
 
-    // Currently this cannot be run as HapiTest because it stops the captive nodes.
-    @BddMethodIsNotATest
+    // (FUTURE) Consider this as a test against a standalone network?
     final Stream<DynamicTest> scheduledFreezeWorksAsExpected() {
         final byte[] poeticUpgradeHash = getPoeticUpgradeHash();
 
@@ -2276,8 +2217,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    // Currently this cannot be run as HapiTest because it stops the captive nodes.
-    @BddMethodIsNotATest
+    // (FUTURE) Consider this as a test against a standalone network?
     final Stream<DynamicTest> scheduledFreezeWithUnauthorizedPayerFails(boolean isLongTermEnabled) {
         final byte[] poeticUpgradeHash = getPoeticUpgradeHash();
 
@@ -2485,7 +2425,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    @BddMethodIsNotATest
     final Stream<DynamicTest> scheduledSystemDeleteUnauthorizedPayerFails(boolean isLongTermEnabled) {
         if (isLongTermEnabled) {
 

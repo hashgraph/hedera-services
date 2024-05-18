@@ -65,6 +65,11 @@ import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuc
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.A_TOKEN;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.TOKEN_A_CREATE;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.VALID_ALIAS;
@@ -97,25 +102,18 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(TOKEN)
-public class TokenManagementSpecs extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(TokenManagementSpecs.class);
+public class TokenManagementSpecs {
     private static final String SUPPLE = "supple";
     private static final String SHOULD_NOT_APPEAR = "should-not-appear";
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
@@ -124,33 +122,6 @@ public class TokenManagementSpecs extends HapiSuite {
     private static final String WIPE_TXN = "wipeTxn";
     private static final String ONE_KYC = "oneKyc";
     private static final String RIGID = "rigid";
-
-    public static void main(String... args) {
-        new TokenManagementSpecs().runSuiteAsync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                freezeMgmtSuccessCasesWork(),
-                kycMgmtFailureCasesWork(),
-                kycMgmtSuccessCasesWork(),
-                supplyMgmtSuccessCasesWork(),
-                wipeAccountFailureCasesWork(),
-                wipeAccountSuccessCasesWork(),
-                wipeAccountWithAliasesWork(),
-                supplyMgmtFailureCasesWork(),
-                burnTokenFailsDueToInsufficientTreasuryBalance(),
-                frozenTreasuryCannotBeMintedOrBurned(),
-                revokedKYCTreasuryCannotBeMintedOrBurned(),
-                fungibleCommonMaxSupplyReachWork(),
-                mintingMaxLongValueWorks(),
-                nftMintProvidesMintedNftsAndNewTotalSupply(),
-                zeroUnitTokenOperationsWorkAsExpected(),
-                aliasFormFailsForAllTokenOps()
-                // aliasFormWorksForAllTokenOps(), // this will be enabled when alias forms are allowed in all token ops
-                );
-    }
 
     @HapiTest
     final Stream<DynamicTest> aliasFormFailsForAllTokenOps() {
@@ -216,11 +187,6 @@ public class TokenManagementSpecs extends HapiSuite {
                         // Only wipe works with alias apart from CryptoTransfer
                         wipeTokenAccountWithAlias(PRIMARY, partyAlias, 1))
                 .then();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
     }
 
     //    @HapiTest
@@ -866,10 +832,5 @@ public class TokenManagementSpecs extends HapiSuite {
                         burnToken(SUPPLE, 2).hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT),
                         burnToken(SUPPLE, 0).hasPrecheck(OK),
                         burnToken(SUPPLE, -1).hasPrecheck(INVALID_TOKEN_BURN_AMOUNT));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

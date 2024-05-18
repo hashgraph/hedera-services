@@ -17,20 +17,26 @@
 package com.hedera.services.bdd.junit;
 
 import com.hedera.services.stream.proto.RecordStreamFile;
-import java.lang.reflect.InvocationTargetException;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.stream.Stream;
 
 public interface RecordStreamValidator {
+    default Stream<Throwable> validationErrorsIn(@NonNull final RecordStreamAccess.Data data) {
+        try {
+            validateFiles(data.files());
+            validateRecordsAndSidecars(data.records());
+        } catch (final Throwable t) {
+            return Stream.of(t);
+        }
+        return Stream.empty();
+    }
+
     default void validateFiles(List<RecordStreamFile> files) {
         // No-op
     }
 
     default void validateRecordsAndSidecars(List<RecordWithSidecars> records) {
-        // No-op
-    }
-
-    default void validateRecordsAndSidecarsHapi(HapiTestEnv env, List<RecordWithSidecars> records)
-            throws InvocationTargetException, IllegalAccessException {
         // No-op
     }
 }

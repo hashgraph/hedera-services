@@ -181,14 +181,12 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction;
@@ -219,9 +217,6 @@ import org.junit.jupiter.api.Order;
 public class LeakyCryptoTestsSuite {
     private static final Logger log = LogManager.getLogger(LeakyCryptoTestsSuite.class);
 
-    private static final String ASSOCIATIONS_LIMIT_PROPERTY = "entities.limitTokenAssociations";
-    private static final String DEFAULT_ASSOCIATIONS_LIMIT =
-            HapiSpecSetup.getDefaultNodeProps().get(ASSOCIATIONS_LIMIT_PROPERTY);
     private static final String FACTORY_MIRROR_CONTRACT = "FactoryMirror";
     public static final String LAZY_CREATE_PROPERTY_NAME = "lazyCreation.enabled";
     public static final String CONTRACTS_EVM_VERSION_PROP = "contracts.evm.version";
@@ -334,8 +329,8 @@ public class LeakyCryptoTestsSuite {
                                 .hasKnownStatusFrom(INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_ACCOUNT_BALANCE)));
     }
 
-    @BddMethodIsNotATest
     @Order(6)
+    @HapiTest
     final Stream<DynamicTest> scheduledCryptoApproveAllowanceWaitForExpiryTrue() {
         return defaultHapiSpec("ScheduledCryptoApproveAllowanceWaitForExpiryTrue")
                 .given(

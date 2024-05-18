@@ -34,17 +34,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALL
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
 public class CannotDeleteSystemEntitiesSuite {
-    private static final Logger log = LogManager.getLogger(CannotDeleteSystemEntitiesSuite.class);
-
     final int[] sysFileIds = {101, 102, 111, 112, 121, 122, 150};
 
     @HapiTest
@@ -135,7 +130,6 @@ public class CannotDeleteSystemEntitiesSuite {
         return systemDeleteCannotDeleteSystemFiles(sysFileIds, SYSTEM_DELETE_ADMIN);
     }
 
-    @BddMethodIsNotATest
     final Stream<DynamicTest> systemUserCannotDeleteSystemAccounts(int firstAccount, int lastAccount, String sysUser) {
         return defaultHapiSpec("systemUserCannotDeleteSystemAccounts")
                 .given(
@@ -166,7 +160,6 @@ public class CannotDeleteSystemEntitiesSuite {
                         .toArray(HapiSpecOperation[]::new)));
     }
 
-    @BddMethodIsNotATest
     final Stream<DynamicTest> systemUserCannotDeleteSystemFiles(int[] fileIds, String sysUser) {
         return defaultHapiSpec("systemUserCannotDeleteSystemFiles")
                 .given()
@@ -179,7 +172,6 @@ public class CannotDeleteSystemEntitiesSuite {
                         .toArray(HapiSpecOperation[]::new)));
     }
 
-    @BddMethodIsNotATest
     final Stream<DynamicTest> normalUserCannotDeleteSystemFiles(int[] fileIds) {
         return defaultHapiSpec("normalUserCannotDeleteSystemFiles")
                 .given(newKeyNamed("normalKey"))

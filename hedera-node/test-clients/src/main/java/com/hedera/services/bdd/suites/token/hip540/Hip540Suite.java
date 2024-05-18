@@ -22,30 +22,13 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.suites.token.hip540.Hip540TestScenarios.ALL_HIP_540_SCENARIOS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(TOKEN)
-public class Hip540Suite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(Hip540Suite.class);
-
-    public static void main(String... args) {
-        new Hip540Suite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(allScenariosAsExpected());
-    }
-
+public class Hip540Suite {
     @HapiTest
     public final Stream<DynamicTest> allScenariosAsExpected() {
         return defaultHapiSpec("allScenariosAsExpected")
@@ -54,10 +37,5 @@ public class Hip540Suite extends HapiSuite {
                 .then(inParallel(ALL_HIP_540_SCENARIOS.stream()
                         .map(Hip540TestScenario::asOperation)
                         .toArray(HapiSpecOperation[]::new)));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

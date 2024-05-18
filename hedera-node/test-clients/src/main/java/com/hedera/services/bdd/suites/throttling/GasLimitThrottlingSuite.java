@@ -21,44 +21,30 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOfDeferred;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.asOpArray;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class GasLimitThrottlingSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(GasLimitThrottlingSuite.class);
+public class GasLimitThrottlingSuite {
     private static final String CONTRACT = "Benchmark";
     private static final String USE_GAS_THROTTLE_PROP = "contracts.throttle.throttleByGas";
     private static final String CONS_MAX_GAS_PROP = "contracts.maxGasPerSec";
     public static final String PAYER_ACCOUNT = "payerAccount";
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(txsUnderGasLimitAllowed(), txOverGasLimitThrottled());
-    }
-
-    public static void main(String... args) {
-        new GasLimitThrottlingSuite().runSuiteSync();
-    }
 
     @HapiTest
     final Stream<DynamicTest> txsUnderGasLimitAllowed() {
@@ -76,7 +62,7 @@ public class GasLimitThrottlingSuite extends HapiSuite {
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).payingWith(PAYER_ACCOUNT))
                 .then(
-                        UtilVerbs.inParallel(asOpArray(NUM_CALLS, i -> contractCall(
+                        inParallel(asOpArray(NUM_CALLS, i -> contractCall(
                                         CONTRACT,
                                         "twoSSTOREs",
                                         Bytes.fromHexString(
@@ -122,10 +108,5 @@ public class GasLimitThrottlingSuite extends HapiSuite {
                                 .payingWith(PAYER_ACCOUNT)
                                 .hasPrecheckFrom(MAX_GAS_LIMIT_EXCEEDED, BUSY),
                         overridingAllOfDeferred(() -> startingProps));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }
