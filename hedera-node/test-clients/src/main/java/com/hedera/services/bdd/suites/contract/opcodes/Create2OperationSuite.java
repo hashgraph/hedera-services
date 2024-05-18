@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.suites.contract.opcodes;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.NO_CONCURRENT_CREATIONS;
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.accountIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
@@ -25,6 +27,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexe
 import static com.hedera.services.bdd.spec.HapiPropertySource.explicitBytesOf;
 import static com.hedera.services.bdd.spec.HapiPropertySource.literalIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -66,6 +69,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
@@ -128,6 +132,7 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal;
@@ -177,7 +182,7 @@ public class Create2OperationSuite {
     private static final String DELETED_CREATE_2_LOG = "Deleted the deployed CREATE2 contract using HAPI";
 
     @SuppressWarnings("java:S5669")
-    @HapiTest
+    @LeakyHapiTest(NO_CONCURRENT_CREATIONS)
     final Stream<DynamicTest> allLogOpcodesResolveExpectedContractId() {
         final var contract = "OuterCreator";
 
@@ -211,7 +216,7 @@ public class Create2OperationSuite {
     }
 
     // https://github.com/hashgraph/hedera-services/issues/2868
-    @HapiTest
+    @LeakyHapiTest(NO_CONCURRENT_CREATIONS)
     final Stream<DynamicTest> inlineCreate2CanFailSafely() {
         final var tcValue = 1_234L;
         final var contract = "RevertingCreateFactory";
@@ -259,7 +264,7 @@ public class Create2OperationSuite {
     }
 
     @SuppressWarnings("java:S5669")
-    @HapiTest
+    @LeakyHapiTest(NO_CONCURRENT_CREATIONS)
     final Stream<DynamicTest> inlineCreateCanFailSafely() {
         final var tcValue = 1_234L;
         final var creation = CREATION;
@@ -355,7 +360,7 @@ public class Create2OperationSuite {
     // https://github.com/hashgraph/hedera-services/issues/2867
     // https://github.com/hashgraph/hedera-services/issues/2868
     @SuppressWarnings("java:S5960")
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> create2FactoryWorksAsExpected() {
         final var tcValue = 1_234L;
         final var contract = "Create2Factory";
@@ -373,13 +378,15 @@ public class Create2OperationSuite {
         final AtomicReference<byte[]> bytecodeFromAlias = new AtomicReference<>();
         final AtomicReference<String> mirrorLiteralId = new AtomicReference<>();
 
-        return defaultHapiSpec(
+        return propertyPreservingHapiSpec(
                         "Create2FactoryWorksAsExpected",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_LOG_DATA)
+                .preserving("contracts.evm.version")
                 .given(
+                        overriding("contracts.evm.version", "v0.46"),
                         newKeyNamed(adminKey),
                         newKeyNamed(replAdminKey),
                         uploadInitCode(contract),
@@ -733,7 +740,7 @@ public class Create2OperationSuite {
                         cryptoCreate("confirmingNoEntityIdCollision"));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> canCallFinalizedContractViaHapi() {
         final var contract = "FinalizedDestructible";
         final var salt = BigInteger.valueOf(1_234_567_890L);
@@ -742,11 +749,13 @@ public class Create2OperationSuite {
         final var vacateAddressAbi =
                 "{\"inputs\":[],\"name\":\"vacateAddress\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
-        return defaultHapiSpec(
+        return propertyPreservingHapiSpec(
                         "CanCallFinalizedContractViaHapi",
                         NONDETERMINISTIC_ETHEREUM_DATA,
                         NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("contracts.evm.version")
                 .given(
+                        overriding("contracts.evm.version", "v0.46"),
                         cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
@@ -1157,7 +1166,7 @@ public class Create2OperationSuite {
     }
 
     @SuppressWarnings("java:S5669")
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed() {
         final var creation2 = CREATE_2_TXN;
         final var innerCreation2 = "innerCreate2Txn";
@@ -1174,11 +1183,13 @@ public class Create2OperationSuite {
 
         final var salt = unhex(SALT);
 
-        return defaultHapiSpec(
+        return propertyPreservingHapiSpec(
                         "Create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed",
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                .preserving("contracts.evm.version")
                 .given(
+                        overriding("contracts.evm.version", "v0.46"),
                         uploadInitCode(contract),
                         contractCreate(contract).payingWith(GENESIS),
                         contractCall(contract, "buildCreator", salt)

@@ -32,4 +32,6 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 @TestFactory
 @ExtendWith({NetworkTargetingExtension.class, SpecNamingExtension.class})
 @ResourceLock(value = "NETWORK", mode = READ_WRITE)
-public @interface LeakyHapiTest {}
+public @interface LeakyHapiTest {
+    ContextRequirement[] value() default {};
+}

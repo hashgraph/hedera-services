@@ -66,17 +66,13 @@ import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
 @SuppressWarnings("java:S5960")
 public class LeakyEthereumTestsSuite {
-
     private static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
-    private static final Logger log = LogManager.getLogger(LeakyEthereumTestsSuite.class);
 
     private static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
     private static final String ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS = "contracts.evm.allowCallsToNonContractAccounts";

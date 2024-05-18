@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileDelete;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -41,19 +40,6 @@ import org.junit.jupiter.api.DynamicTest;
 
 public class CannotDeleteSystemEntitiesSuite {
     final int[] sysFileIds = {101, 102, 111, 112, 121, 122, 150};
-
-    @HapiTest
-    final Stream<DynamicTest> ensureSystemAccountsHaveSomeFunds() {
-        return defaultHapiSpec("EnsureSystemAccountsHaveSomeFunds")
-                .given()
-                .when()
-                .then(
-                        cryptoTransfer(movingHbar(100 * ONE_HUNDRED_HBARS)
-                                        .distributing(GENESIS, SYSTEM_ADMIN, SYSTEM_DELETE_ADMIN))
-                                .payingWith(GENESIS),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_DELETE_ADMIN, 10 * ONE_HUNDRED_HBARS))
-                                .payingWith(GENESIS));
-    }
 
     @HapiTest
     final Stream<DynamicTest> genesisCannotDeleteSystemAccountsFrom1To100() {
@@ -162,7 +148,9 @@ public class CannotDeleteSystemEntitiesSuite {
 
     final Stream<DynamicTest> systemUserCannotDeleteSystemFiles(int[] fileIds, String sysUser) {
         return defaultHapiSpec("systemUserCannotDeleteSystemFiles")
-                .given()
+                .given(cryptoTransfer(movingHbar(100 * ONE_HUNDRED_HBARS)
+                                .distributing(GENESIS, SYSTEM_ADMIN, SYSTEM_DELETE_ADMIN))
+                        .payingWith(GENESIS))
                 .when()
                 .then(inParallel(Arrays.stream(fileIds)
                         .mapToObj(id -> cryptoDelete("0.0." + id)
@@ -186,7 +174,9 @@ public class CannotDeleteSystemEntitiesSuite {
 
     final Stream<DynamicTest> systemDeleteCannotDeleteSystemFiles(int[] fileIds, String sysUser) {
         return defaultHapiSpec("systemDeleteCannotDeleteSystemFiles")
-                .given()
+                .given(cryptoTransfer(movingHbar(100 * ONE_HUNDRED_HBARS)
+                                .distributing(GENESIS, SYSTEM_ADMIN, SYSTEM_DELETE_ADMIN))
+                        .payingWith(GENESIS))
                 .when()
                 .then(inParallel(Arrays.stream(fileIds)
                         .mapToObj(id -> systemFileDelete("0.0." + id)
