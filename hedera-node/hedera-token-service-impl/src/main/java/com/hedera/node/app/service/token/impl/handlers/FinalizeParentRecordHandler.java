@@ -31,7 +31,6 @@ import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.common.EntityIDPair;
-import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.RecordFinalizerBase;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
@@ -93,7 +92,6 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         final var writableTokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var writableNftStore = context.writableStore(WritableNftStore.class);
         final var stakingConfig = context.configuration().getConfigData(StakingConfig.class);
-        final var readableTokenStore = context.readableStore(ReadableTokenStore.class);
         final var writableTokenStore = context.writableStore(WritableTokenStore.class);
 
         if (stakingConfig.isEnabled()) {
@@ -131,7 +129,8 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         // get all the NFT changes. Go through the nft changes and see if there are any token relation changes
         // for the sender and receiver of the NFTs. If there are, then reduce the balance change for that relation
         // by 1 for receiver and increment the balance change for sender by 1. This is to ensure that the NFT
-        // transfer is not double counted in the token relation changes and the NFT changes
+        // transfer is not double counted in the token relation changes and the NFT changes. Also we don't need to
+        // represent the changes for Mint or Wipe of NFTs in the token relation changes.
         final var nftChanges = nftChangesFrom(writableNftStore, writableTokenStore, tokenRelChanges);
 
         if (context.hasChildRecords()) {

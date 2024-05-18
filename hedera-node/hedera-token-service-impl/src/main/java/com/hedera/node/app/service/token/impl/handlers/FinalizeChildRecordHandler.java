@@ -23,7 +23,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
-import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.RecordFinalizerBase;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
@@ -61,7 +60,6 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
         final var writableAccountStore = context.writableStore(WritableAccountStore.class);
         final var writableTokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var writableNftStore = context.writableStore(WritableNftStore.class);
-        final var readableTokenStore = context.readableStore(ReadableTokenStore.class);
         final var writableTokenStore = context.writableStore(WritableTokenStore.class);
 
         /* ------------------------- Hbar changes from child transaction  ------------------------- */

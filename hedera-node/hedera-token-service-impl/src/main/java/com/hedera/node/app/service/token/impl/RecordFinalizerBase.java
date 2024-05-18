@@ -181,9 +181,14 @@ public class RecordFinalizerBase {
 
     /**
      * Gets all nft ownership changes for all modified nfts from the given {@link WritableNftStore}.
+     * While building the nft changes, we also update the token relation changes. If there are any token relation
+     * changes for the sender and receiver of the NFTs, we reduce the balance change for that relation by 1 for the
+     * receiver and increment the balance change for sender by 1. This is to ensure that the NFT transfer is not double
+     * counted in the token relation changes and the NFT changes.
+     * We also update the token relation changes for the treasury account when the treasury account changes.
      *
      * @param writableNftStore the {@link WritableNftStore} to get the nft ownership changes from
-     * @param tokenRelChanges
+     * @param tokenRelChanges the {@link Map} of {@link EntityIDPair} to {@link Long} representing the token relation
      * @return a {@link Map} of {@link TokenID} to {@link List} of {@link NftTransfer} representing the nft ownership
      */
     @NonNull
@@ -271,12 +276,17 @@ public class RecordFinalizerBase {
     /**
      * Updates the given {@link Map} of {@link TokenID} to {@link List} of {@link NftTransfer} representing the nft
      * ownership changes.
+     * While building the nft changes, we also update the token relation changes. If there are any token relation
+     * changes for the sender and receiver of the NFTs, we reduce the balance change for that relation by 1 for the
+     * receiver and increment the balance change for sender by 1. This is to ensure that the NFT transfer is not double
+     * counted in the token relation changes and the NFT changes.
+     * We also update the token relation changes for the treasury account when the treasury account changes.
      *
      * @param nftId             the {@link NftID} representing the nft
      * @param senderAccountId   the {@link AccountID} representing the sender account ID
      * @param receiverAccountId the {@link AccountID} representing the receiver account ID
      * @param nftChanges        the {@link Map} of {@link TokenID} to {@link List} of {@link NftTransfer} representing the nft
-     * @param tokenRelChanges
+     * @param tokenRelChanges  the {@link Map} of {@link EntityIDPair} to {@link Long} representing the token relation
      */
     private static void updateNftChanges(
             final NftID nftId,
@@ -284,6 +294,8 @@ public class RecordFinalizerBase {
             final AccountID receiverAccountId,
             final HashMap<TokenID, List<NftTransfer>> nftChanges,
             @Nullable final Map<EntityIDPair, Long> tokenRelChanges) {
+        final var isMint = senderAccountId.accountNum() == 0;
+        final var isWipe = receiverAccountId.accountNum() == 0;
         final var nftTransfer = NftTransfer.newBuilder()
                 .serialNumber(nftId.serialNumber())
                 .senderAccountID(senderAccountId)
@@ -307,9 +319,22 @@ public class RecordFinalizerBase {
                     .accountId(senderAccountId)
                     .tokenId(nftId.tokenId())
                     .build();
-
-            tokenRelChanges.merge(receiverEntityIdPair, -1L, Long::sum);
-            tokenRelChanges.merge(senderEntityIdPair, 1L, Long::sum);
+            if (isMint || isWipe) {
+                // The mint amount is not shown in the token transfer list. So for a mint transaction we need not show
+                // the token transfer changes to treasury
+                tokenRelChanges.remove(receiverEntityIdPair);
+                tokenRelChanges.remove(senderEntityIdPair);
+            } else {
+                // The mint amount is not shown in the token transfer list. So for a mint transaction we need not show
+                // the token transfer changes to treasury
+                if (tokenRelChanges.merge(receiverEntityIdPair, -1L, Long::sum) == 0) {
+                    tokenRelChanges.remove(receiverEntityIdPair);
+                }
+                // We don't need to show the mint amounts in token transfer List
+                if (tokenRelChanges.merge(senderEntityIdPair, 1L, Long::sum) == 0) {
+                    tokenRelChanges.remove(senderEntityIdPair);
+                }
+            }
         }
     }
 
