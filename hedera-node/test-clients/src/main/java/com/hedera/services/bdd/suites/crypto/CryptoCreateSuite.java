@@ -48,6 +48,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
@@ -228,13 +229,15 @@ public class CryptoCreateSuite extends HapiSuite {
         final var noAutoAssocSlots = "noAutoAssocSlots";
         final var oneAutoAssocSlot = "oneAutoAssocSlot";
         final var tenAutoAssocSlots = "tenAutoAssocSlots";
+        final var negativeAutoAssocSlots = "negativeAutoAssocSlots";
+        final var positiveOverflowAutoAssocSlots = "positiveOverflowAutoAssocSlots";
         final var unlimitedAutoAssocSlots = "unlimitedAutoAssocSlots";
         final var token = "token";
 
         return defaultHapiSpec("usdFeeAsExpected")
                 .given(
-                        cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
-                        getAccountBalance(CIVILIAN).hasTinyBars(ONE_HUNDRED_HBARS))
+                        cryptoCreate(CIVILIAN).balance(5 * ONE_HUNDRED_HBARS),
+                        getAccountBalance(CIVILIAN).hasTinyBars(5 * ONE_HUNDRED_HBARS))
                 .when(
                         tokenCreate(token).autoRenewPeriod(THREE_MONTHS_IN_SECONDS),
                         cryptoCreate("neverToBe")
@@ -245,8 +248,8 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .payingWith(CIVILIAN)
                                 .feeUsd(preV13PriceUsd)
                                 .hasPrecheck(INSUFFICIENT_TX_FEE),
-                        getAccountBalance(CIVILIAN).hasTinyBars(ONE_HUNDRED_HBARS),
-                        cryptoCreate("noAutoAssoc")
+                        getAccountBalance(CIVILIAN).hasTinyBars(5 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(noAutoAssocSlots)
                                 .key(CIVILIAN)
                                 .balance(0L)
                                 .via(noAutoAssocSlots)
@@ -271,17 +274,39 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .blankMemo()
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
                                 .signedBy(CIVILIAN)
-                                .payingWith(CIVILIAN) /*,
-                        cryptoCreate(unlimitedAutoAssocSlots)
+                                .payingWith(CIVILIAN),
+                        cryptoCreate(negativeAutoAssocSlots)
                                 .key(CIVILIAN)
                                 .balance(0L)
-                                .maxAutomaticTokenAssociations(-1)
-                                .via(unlimitedAutoAssocSlots)
+                                .maxAutomaticTokenAssociations(-2)
+                                .via(negativeAutoAssocSlots)
                                 .blankMemo()
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
                                 .signedBy(CIVILIAN)
-                                .payingWith(CIVILIAN),
-                        getTxnRecord(tenAutoAssocSlots).logged()*/)
+                                .payingWith(CIVILIAN)
+                                .logged()
+                                .hasPrecheck(INVALID_MAX_AUTO_ASSOCIATIONS),
+                        cryptoCreate(positiveOverflowAutoAssocSlots)
+                                .key(CIVILIAN)
+                                .balance(0L)
+                                .maxAutomaticTokenAssociations(5001)
+                                .via(positiveOverflowAutoAssocSlots)
+                                .blankMemo()
+                                .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+                                .signedBy(CIVILIAN)
+                                .payingWith(CIVILIAN)
+                                .logged()
+                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                        /*cryptoCreate(unlimitedAutoAssocSlots)
+                        .key(CIVILIAN)
+                        .balance(0L)
+                        .maxAutomaticTokenAssociations(-1)
+                        .via(unlimitedAutoAssocSlots)
+                        .blankMemo()
+                        .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+                        .signedBy(CIVILIAN)
+                        .payingWith(CIVILIAN),*/
+                        getTxnRecord(tenAutoAssocSlots).logged())
                 .then(
                         validateChargedUsd(noAutoAssocSlots, v13PriceUsd),
                         validateChargedUsd(oneAutoAssocSlot, v13PriceUsd),
