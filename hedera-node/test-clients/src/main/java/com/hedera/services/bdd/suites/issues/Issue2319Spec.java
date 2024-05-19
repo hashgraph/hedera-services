@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.issues;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.SYSTEM_ACCOUNT_KEYS;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -36,7 +37,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_ADMIN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +50,7 @@ public class Issue2319Spec {
     private static final String NON_TREASURY_ADMIN_KEY = "nonTreasuryAdminKey";
     private static final String DEFAULT_ADMIN_KEY = "defaultAdminKey";
 
-    @HapiTest
+    @LeakyHapiTest(SYSTEM_ACCOUNT_KEYS)
     final Stream<DynamicTest> propsPermissionsSigReqsWaivedForAddressBookAdmin() {
         return defaultHapiSpec("PropsPermissionsSigReqsWaivedForAddressBookAdmin")
                 .given(
@@ -76,7 +77,7 @@ public class Issue2319Spec {
                         fileUpdate(API_PERMISSIONS).wacl(GENESIS));
     }
 
-    @HapiTest
+    @LeakyHapiTest(SYSTEM_ACCOUNT_KEYS)
     final Stream<DynamicTest> sysFileImmutabilityWaivedForMasterAndTreasury() {
         return defaultHapiSpec("sysFileImmutabilityWaivedForMasterAndTreasury")
                 .given(
@@ -100,7 +101,7 @@ public class Issue2319Spec {
                                 .signedBy(GENESIS));
     }
 
-    @HapiTest
+    @LeakyHapiTest(SYSTEM_ACCOUNT_KEYS)
     final Stream<DynamicTest> sysAccountSigReqsWaivedForMasterAndTreasury() {
         return defaultHapiSpec("SysAccountSigReqsWaivedForMasterAndTreasury")
                 .given(
@@ -134,7 +135,7 @@ public class Issue2319Spec {
                                 .signedBy(GENESIS));
     }
 
-    @HapiTest
+    @LeakyHapiTest(SYSTEM_ACCOUNT_KEYS)
     final Stream<DynamicTest> sysFileSigReqsWaivedForMasterAndTreasury() {
         var validRates = new AtomicReference<ByteString>();
 

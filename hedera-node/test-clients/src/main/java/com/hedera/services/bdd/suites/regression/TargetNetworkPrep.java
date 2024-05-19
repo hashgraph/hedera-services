@@ -17,7 +17,8 @@
 package com.hedera.services.bdd.suites.regression;
 
 import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.relocatedIfNotPresentInWorkingDir;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -30,12 +31,11 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.API_PERMISSIONS;
-import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID_PROP;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.NODE_REWARD;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -44,7 +44,7 @@ import static com.hedera.services.bdd.suites.records.RecordCreationSuite.STAKING
 import static com.hedera.services.bdd.suites.records.RecordCreationSuite.STAKING_FEES_STAKING_REWARD_PERCENTAGE;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
-import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes;
@@ -54,14 +54,13 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 
 public class TargetNetworkPrep {
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> ensureSystemStateAsExpectedWithSystemDefaultFiles() {
         final var emptyKey =
                 Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
@@ -75,27 +74,18 @@ public class TargetNetworkPrep {
                     Files.readString(relocatedIfNotPresentInWorkingDir(Paths.get(defaultPermissionsLoc)));
             final var serde = StandardSerdes.SYS_FILE_SERDES.get(122L);
 
-            return defaultHapiSpec("ensureSystemStateAsExpectedWithSystemDefaultFiles")
+            return propertyPreservingHapiSpec("ensureSystemStateAsExpectedWithSystemDefaultFiles")
+                    .preserving(STAKING_FEES_NODE_REWARD_PERCENTAGE, STAKING_FEES_STAKING_REWARD_PERCENTAGE)
                     .given(
                             uploadDefaultFeeSchedules(GENESIS),
                             fileUpdate(API_PERMISSIONS)
                                     .payingWith(GENESIS)
                                     .contents(serde.toValidatedRawFile(stylized121, null)),
-                            overridingAllOf(Map.of(
-                                    "scheduling.whitelist",
-                                    "ConsensusSubmitMessage,CryptoTransfer,TokenMint,TokenBurn,CryptoApproveAllowance,CryptoUpdate",
-                                    CHAIN_ID_PROP,
-                                    "298",
+                            overridingTwo(
                                     STAKING_FEES_NODE_REWARD_PERCENTAGE,
                                     "10",
                                     STAKING_FEES_STAKING_REWARD_PERCENTAGE,
-                                    "10",
-                                    "staking.isEnabled",
-                                    "true",
-                                    "staking.perHbarRewardRate",
-                                    "100_000_000_000",
-                                    "staking.startThreshold",
-                                    "100_000_000")))
+                                    "10"))
                     .when(
                             cryptoCreate(civilian),
                             balanceSnapshot(snapshot800, STAKING_REWARD),

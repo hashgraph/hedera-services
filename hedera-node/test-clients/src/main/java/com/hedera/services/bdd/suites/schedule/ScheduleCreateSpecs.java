@@ -16,8 +16,10 @@
 
 package com.hedera.services.bdd.suites.schedule;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -64,7 +66,6 @@ import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.BASIC_XFER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.CONTINUE;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.COPYCAT;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.CREATION;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.DEFAULT_TX_EXPIRY;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.DESIGNATING_PAYER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ENTITY_MEMO;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.FIRST_PAYER;
@@ -80,7 +81,6 @@ import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULING_W
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SECOND_PAYER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SENDER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.VALID_SCHEDULE;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WHITELIST_DEFAULT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
@@ -95,6 +95,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
@@ -139,14 +140,6 @@ public class ScheduleCreateSpecs {
                         .hasScheduleId(ONLY_BODY_AND_PAYER)
                         .hasPayerAccountID(PAYER)
                         .hasRecordedScheduledTxn());
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> suiteCleanup() {
-        return defaultHapiSpec("suiteCleanup")
-                .given()
-                .when()
-                .then(overriding("ledger.schedule.txExpiryTimeSecs", DEFAULT_TX_EXPIRY));
     }
 
     @HapiTest
@@ -203,7 +196,7 @@ public class ScheduleCreateSpecs {
     @HapiTest
     final Stream<DynamicTest> onlyBodyAndMemoCreation() {
         return defaultHapiSpec("OnlyBodyAndMemoCreation")
-                .given(overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"), cryptoCreate(SENDER))
+                .given(cryptoCreate(SENDER))
                 .when(scheduleCreate(ONLY_BODY_AND_MEMO, cryptoTransfer(tinyBarsFromTo(SENDER, GENESIS, 1)))
                         .recordingScheduledTxn()
                         .withEntityMemo("sample memo"))
@@ -249,7 +242,6 @@ public class ScheduleCreateSpecs {
 
         return defaultHapiSpec("BodyAndSignatoriesCreation")
                 .given(
-                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
                         cryptoCreate("payingAccount"),
                         newKeyNamed("adminKey"),
                         cryptoCreate(SENDER),
@@ -268,7 +260,7 @@ public class ScheduleCreateSpecs {
     @HapiTest
     final Stream<DynamicTest> failsWithNonExistingPayerAccountId() {
         return defaultHapiSpec("FailsWithNonExistingPayerAccountId")
-                .given(overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"))
+                .given()
                 .when(scheduleCreate("invalidPayer", cryptoCreate("secondary"))
                         .designatingPayer(DESIGNATING_PAYER)
                         .hasKnownStatus(ACCOUNT_ID_DOES_NOT_EXIST))
@@ -289,7 +281,6 @@ public class ScheduleCreateSpecs {
     final Stream<DynamicTest> notIdenticalScheduleIfScheduledTxnChanges() {
         return defaultHapiSpec("NotIdenticalScheduleIfScheduledTxnChanges")
                 .given(
-                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
                         cryptoCreate(SENDER).balance(1L),
                         cryptoCreate(FIRST_PAYER),
                         scheduleCreate(
@@ -311,7 +302,6 @@ public class ScheduleCreateSpecs {
     final Stream<DynamicTest> notIdenticalScheduleIfMemoChanges() {
         return defaultHapiSpec("NotIdenticalScheduleIfMemoChanges")
                 .given(
-                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
                         cryptoCreate(SENDER).balance(1L),
                         scheduleCreate(
                                         ORIGINAL,
@@ -357,7 +347,6 @@ public class ScheduleCreateSpecs {
     final Stream<DynamicTest> recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer() {
         return defaultHapiSpec("recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer")
                 .given(
-                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
                         cryptoCreate(SENDER).balance(1L),
                         cryptoCreate(FIRST_PAYER),
                         scheduleCreate(
@@ -415,7 +404,6 @@ public class ScheduleCreateSpecs {
     final Stream<DynamicTest> infoIncludesTxnIdFromCreationReceipt() {
         return defaultHapiSpec("InfoIncludesTxnIdFromCreationReceipt")
                 .given(
-                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
                         cryptoCreate(SENDER),
                         scheduleCreate(CREATION, cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1)))
                                 .savingExpectedScheduledTxnId())
@@ -426,7 +414,7 @@ public class ScheduleCreateSpecs {
                         .logged());
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> preservesRevocationServiceSemanticsForFileDelete() {
         KeyShape waclShape = listOf(SIMPLE, threshOf(2, 3));
         SigControl adequateSigs = waclShape.signedWith(sigs(OFF, sigs(ON, ON, OFF)));
@@ -436,7 +424,8 @@ public class ScheduleCreateSpecs {
         String shouldBeInstaDeleted = "tbd";
         String shouldBeDeletedEventually = "tbdl";
 
-        return defaultHapiSpec("PreservesRevocationServiceSemanticsForFileDelete")
+        return propertyPreservingHapiSpec("PreservesRevocationServiceSemanticsForFileDelete")
+                .preserving(SCHEDULING_WHITELIST)
                 .given(
                         overriding(SCHEDULING_WHITELIST, "FileDelete"),
                         fileCreate(shouldBeInstaDeleted).waclShape(waclShape),
@@ -456,8 +445,7 @@ public class ScheduleCreateSpecs {
                                 .alsoSigningWith(shouldBeDeletedEventually)
                                 .sigControl(forKey(shouldBeDeletedEventually, compensatorySigs)),
                         sleepFor(1_000L),
-                        getFileInfo(shouldBeDeletedEventually).hasDeleted(true),
-                        overriding(SCHEDULING_WHITELIST, WHITELIST_DEFAULT));
+                        getFileInfo(shouldBeDeletedEventually).hasDeleted(true));
     }
 
     @HapiTest
@@ -490,7 +478,6 @@ public class ScheduleCreateSpecs {
     final Stream<DynamicTest> onlySchedulesWithMissingReqSimpleSigs() {
         return defaultHapiSpec("OnlySchedulesWithMissingReqSimpleSigs")
                 .given(
-                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
                         cryptoCreate(SENDER).balance(1L),
                         cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
                 .when(scheduleCreate(BASIC_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
@@ -591,16 +578,15 @@ public class ScheduleCreateSpecs {
                         scheduleCreateFunctionless("unknown").hasPrecheck(BUSY).payingWith(SENDER));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> whitelistWorks() {
-        return defaultHapiSpec("whitelistWorks")
+        return propertyPreservingHapiSpec("whitelistWorks")
+                .preserving(SCHEDULING_WHITELIST)
                 .given(scheduleCreate("nope", createTopic(NEVER_TO_BE))
                         .hasKnownStatus(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST))
-                .when(
-                        overriding(SCHEDULING_WHITELIST, "ConsensusCreateTopic"),
-                        scheduleCreate("ok", createTopic(NEVER_TO_BE))
-                                // prevent multiple runs of this test causing duplicates
-                                .withEntityMemo("" + new SecureRandom().nextLong()))
-                .then(overriding(SCHEDULING_WHITELIST, WHITELIST_DEFAULT));
+                .when(overriding(SCHEDULING_WHITELIST, "ConsensusCreateTopic"))
+                .then(scheduleCreate("ok", createTopic(NEVER_TO_BE))
+                        // prevent multiple runs of this test causing duplicates
+                        .withEntityMemo("" + new SecureRandom().nextLong()));
     }
 }

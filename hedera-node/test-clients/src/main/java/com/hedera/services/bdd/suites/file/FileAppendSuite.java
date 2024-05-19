@@ -16,7 +16,9 @@
 
 package com.hedera.services.bdd.suites.file;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -24,6 +26,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
@@ -31,8 +34,11 @@ import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuc
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
 
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -109,6 +115,21 @@ public class FileAppendSuite {
                 .given(fileCreate("test").contents(first4K))
                 .when(fileAppend("test").content(next4k))
                 .then(getFileContents("test").hasContents(ignore -> all8k));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> handleRejectsOversized() {
+        byte[] BYTES_3K_MINUS1 = new byte[3 * 1024 - 1];
+        Arrays.fill(BYTES_3K_MINUS1, (byte) 0xAB);
+        byte[] BYTES_1 = new byte[] {(byte) 0xAB};
+
+        return propertyPreservingHapiSpec("handleRejectsMissingWacl")
+                .preserving("files.maxSizeKb")
+                .given(overriding("files.maxSizeKb", "3"))
+                .when(
+                        fileCreate("file").contents(BYTES_3K_MINUS1),
+                        fileAppend("file").content(BYTES_1))
+                .then(fileAppend("file").content(BYTES_1).hasKnownStatus(MAX_FILE_SIZE_EXCEEDED));
     }
 
     private final int BYTES_4K = 4 * (1 << 10);

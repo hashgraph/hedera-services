@@ -24,7 +24,6 @@ import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgra
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFilePath;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -37,7 +36,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
-public final class UpdateFileForUpgrade extends HapiSuite {
+public class UpdateFileForUpgrade extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UpdateFileForUpgrade.class);
 
     public static void main(String... args) {
@@ -54,7 +53,6 @@ public final class UpdateFileForUpgrade extends HapiSuite {
         return List.of(updateFileForUpgrade());
     }
 
-    @HapiTest
     final Stream<DynamicTest> updateFileForUpgrade() {
         return defaultHapiSpec("UpdateFileForUpgrade")
                 .given(initializeSettings())

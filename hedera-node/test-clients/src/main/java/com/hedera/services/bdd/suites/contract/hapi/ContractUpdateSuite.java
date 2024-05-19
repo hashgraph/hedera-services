@@ -23,6 +23,8 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -43,6 +45,7 @@ import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuc
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PROPS;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
@@ -50,6 +53,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
@@ -62,22 +66,24 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
 public class ContractUpdateSuite {
-
-    private static final Logger log = LogManager.getLogger(ContractUpdateSuite.class);
-
     private static final long DEFAULT_MAX_LIFETIME =
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
     private static final long ONE_DAY = 60L * 60L * 24L;
@@ -497,5 +503,65 @@ public class ContractUpdateSuite {
                         contractCreate(CONTRACT).adminKey(ADMIN_KEY))
                 .when()
                 .then(contractUpdate(CONTRACT).newMaxAutomaticAssociations(20).hasKnownStatus(NOT_SUPPORTED));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> playGame() {
+        final var dj = "dj";
+        final var players = IntStream.range(1, 30).mapToObj(i -> "Player" + i).toList();
+        final var contract = "MusicalChairs";
+
+        List<HapiSpecOperation> given = new ArrayList<>();
+        List<HapiSpecOperation> when = new ArrayList<>();
+        List<HapiSpecOperation> then = new ArrayList<>();
+
+        ////// Create contract //////
+        given.add(cryptoCreate(dj).balance(10 * ONE_HUNDRED_HBARS));
+        given.add(getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER));
+        given.add(uploadInitCode(contract));
+        given.add(withOpContext((spec, opLog) -> allRunFor(
+                spec,
+                contractCreate(
+                                contract,
+                                asHeadlongAddress(spec.registry()
+                                        .getAccountInfo(DEFAULT_CONTRACT_SENDER)
+                                        .getContractAccountID()))
+                        .payingWith(dj))));
+
+        ////// Add the players //////
+        players.stream().map(TxnVerbs::cryptoCreate).forEach(given::add);
+
+        ////// Start the music! //////
+        when.add(contractCall(contract, "startMusic").payingWith(DEFAULT_CONTRACT_SENDER));
+
+        ////// 100 "random" seats taken //////
+        new Random(0x1337)
+                .ints(100, 0, 29)
+                .forEach(i -> when.add(contractCall(contract, "sitDown")
+                        .payingWith(players.get(i))
+                        .refusingEthConversion()
+                        .hasAnyStatusAtAll())); // sometimes a player sits
+        // too soon, so don't fail
+        // on reverts
+
+        ////// Stop the music! //////
+        then.add(contractCall(contract, "stopMusic").payingWith(DEFAULT_CONTRACT_SENDER));
+
+        ////// And the winner is..... //////
+        then.add(withOpContext((spec, opLog) -> allRunFor(
+                spec,
+                contractCallLocal(contract, "whoIsOnTheBubble")
+                        .has(resultWith()
+                                .resultThruAbi(
+                                        getABIFor(FUNCTION, "whoIsOnTheBubble", contract),
+                                        isLiteralResult(new Object[] {
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getAccountID("Player13")))
+                                        }))))));
+
+        return defaultHapiSpec("playGame")
+                .given(given.toArray(HapiSpecOperation[]::new))
+                .when(when.toArray(HapiSpecOperation[]::new))
+                .then(then.toArray(HapiSpecOperation[]::new));
     }
 }

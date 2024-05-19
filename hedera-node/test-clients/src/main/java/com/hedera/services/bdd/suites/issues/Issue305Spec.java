@@ -16,18 +16,14 @@
 
 package com.hedera.services.bdd.suites.issues;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
@@ -39,9 +35,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOU
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.CommonUtils;
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.keys.KeyFactory;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -51,38 +45,12 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 
 public class Issue305Spec {
-    private static final String KEY = "tbdKey";
-
-    @HapiTest
-    final Stream<DynamicTest> createDeleteInSameRoundWorks() {
-        AtomicReference<String> nextFileId = new AtomicReference<>();
-        return defaultHapiSpec("CreateDeleteInSameRoundWorks")
-                .given(
-                        newKeyNamed(KEY).type(KeyFactory.KeyType.LIST),
-                        fileCreate("marker").via("markerTxn"))
-                .when(withOpContext((spec, opLog) -> {
-                    var lookup = getTxnRecord("markerTxn");
-                    allRunFor(spec, lookup);
-                    var markerFid = lookup.getResponseRecord().getReceipt().getFileID();
-                    var nextFid = markerFid.toBuilder()
-                            .setFileNum(markerFid.getFileNum() + 1)
-                            .build();
-                    nextFileId.set(HapiPropertySource.asFileString(nextFid));
-                    opLog.info("Next file will be {}", nextFileId.get());
-                }))
-                .then(
-                        fileCreate("tbd").key(KEY).deferStatusResolution(),
-                        fileDelete(nextFileId::get).signedBy(GENESIS, KEY),
-                        getFileInfo(nextFileId::get).hasDeleted(true));
-    }
-
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> congestionMultipliersRefreshOnPropertyUpdate() {
         final var civilian = "civilian";
         final var preCongestionTxn = "preCongestionTxn";

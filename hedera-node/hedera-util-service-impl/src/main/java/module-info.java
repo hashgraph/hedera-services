@@ -3,6 +3,7 @@ import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 module com.hedera.node.app.service.util.impl {
     requires transitive com.hedera.node.app.service.util;
     requires transitive com.hedera.node.app.spi;
+    requires transitive com.hedera.node.config;
     requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;

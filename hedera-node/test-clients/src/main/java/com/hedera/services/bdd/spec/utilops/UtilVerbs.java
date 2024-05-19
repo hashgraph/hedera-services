@@ -48,14 +48,12 @@ import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.unti
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextStakingPeriod;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
-import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.TargetNetworkType.SHARED_HAPI_TEST_NETWORK;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-import static com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite.SIDECARS_PROP;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_UPGRADE;
@@ -610,19 +608,6 @@ public class UtilVerbs {
             defaultValues.put(prop, defaultValue);
         }
         return overridingAllOf(defaultValues);
-    }
-
-    public static HapiSpecOperation enableAllFeatureFlagsAndDisableContractThrottles(
-            @NonNull final String... exceptFeatures) {
-        final Map<String, String> allOverrides = new HashMap<>(FeatureFlags.FEATURE_FLAGS.allEnabled(exceptFeatures));
-        allOverrides.putAll(Map.of(
-                "contracts.throttle.throttleByGas",
-                FALSE_VALUE,
-                "contracts.enforceCreationThrottle",
-                FALSE_VALUE,
-                SIDECARS_PROP,
-                "CONTRACT_STATE_CHANGE,CONTRACT_ACTION,CONTRACT_BYTECODE"));
-        return overridingAllOf(allOverrides);
     }
 
     /**
@@ -1276,6 +1261,14 @@ public class UtilVerbs {
         return withOpContext((spec, ctxLog) -> {
             ByteString bt = ByteString.copyFrom(spec.registry().getBytes(registryEntry));
             CustomSpecAssert.allRunFor(spec, updateLargeFile(payer, fileName, bt));
+        });
+    }
+
+    public static HapiSpecOperation updateLargeFileWithZeroOfferedFee(
+            String payer, String fileName, String registryEntry) {
+        return withOpContext((spec, ctxLog) -> {
+            ByteString bt = ByteString.copyFrom(spec.registry().getBytes(registryEntry));
+            CustomSpecAssert.allRunFor(spec, updateLargeFile(payer, fileName, bt, false, OptionalLong.of(0L)));
         });
     }
 

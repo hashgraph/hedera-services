@@ -33,7 +33,6 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.spec.assertions;
     exports com.hedera.services.bdd.spec.assertions.matchers;
     exports com.hedera.services.bdd.junit;
-    exports com.hedera.services.bdd.tmp;
 
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;

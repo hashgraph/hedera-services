@@ -37,7 +37,6 @@ import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.INTE
 import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.LOCKING;
 import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.PARTITIONING;
 
-import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.stream.Stream;
@@ -48,7 +47,6 @@ import org.junit.jupiter.api.DynamicTest;
 /**
  * A suite for user stories Keys-1 through Keys-4 from HIP-796.
  */
-// @HapiTestSuite
 public class TokenKeysDefinitionSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenKeysDefinitionSuite.class);
 
@@ -68,7 +66,6 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
     final Stream<DynamicTest> manageLockKeyCapabilities() {
         return defaultHapiSpec("ManageLockKeyCapabilities")
                 .given(fungibleTokenWithFeatures(ADMIN_CONTROL, LOCKING), newKeyNamed("newLockKey"))
@@ -90,7 +87,6 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
     final Stream<DynamicTest> managePartitionKeyCapabilities() {
         return defaultHapiSpec("ManagePartitionKeyCapabilities")
                 .given(fungibleTokenWithFeatures(ADMIN_CONTROL, PARTITIONING), newKeyNamed("newPartitionKey"))
@@ -112,7 +108,6 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
     final Stream<DynamicTest> managePartitionMoveKeyCapabilities() {
         return defaultHapiSpec("ManagePartitionMoveKeyCapabilities")
                 .given(
@@ -136,7 +131,6 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
     final Stream<DynamicTest> manageKeysViaSmartContract() {
         return defaultHapiSpec("ManageKeysViaSmartContract")
                 .given(

@@ -38,6 +38,11 @@ public enum ContextRequirement {
      */
     THROTTLE_OVERRIDES,
     /**
+     * The test requires changes to the network fee schedules, which might break
+     * other concurrent tests if they expect the default fees.
+     */
+    FEE_SCHEDULE_OVERRIDES,
+    /**
      * The test requires the upgrade files to be in a specific state, which could
      * be violated by other concurrent tests.
      */
@@ -46,5 +51,10 @@ public enum ContextRequirement {
      * The test depends on system account balances being affected exclusively by its
      * own operations, and not by those of other concurrent tests.
      */
-    SYSTEM_ACCOUNT_BALANCES
+    SYSTEM_ACCOUNT_BALANCES,
+    /**
+     * The test depends on system account keys being affected exclusively by its
+     * own operations, and not by those of other concurrent tests.
+     */
+    SYSTEM_ACCOUNT_KEYS
 }

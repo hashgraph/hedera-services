@@ -56,7 +56,6 @@ import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
@@ -86,7 +85,7 @@ public class TokenUnhappyAccountsSuite {
     public static final String TOKENS = " tokens";
     public static final String CREATION = "creation";
 
-    @LeakyHapiTest
+    // (FUTURE) Enable when token expiration is implemented
     final Stream<DynamicTest> uniqueTokenOperationsFailForAutoRemovedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForAutoRemovedAccount")
                 .given(

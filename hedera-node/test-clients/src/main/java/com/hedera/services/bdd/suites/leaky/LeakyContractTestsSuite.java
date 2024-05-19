@@ -174,7 +174,6 @@ import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSu
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.formattedAssertionValue;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
-import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.TRUE;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ADMIN_KEY;
 import static com.hedera.services.bdd.suites.ethereum.EthereumSuite.GAS_LIMIT;
@@ -408,9 +407,9 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE)
-                .preserving(LAZY_CREATION_ENABLED)
+                .preserving(EVM_VERSION_PROPERTY)
                 .given(
-                        overriding(LAZY_CREATION_ENABLED, TRUE),
+                        overriding(EVM_VERSION_PROPERTY, "v0.46"),
                         newKeyNamed(adminKey),
                         newKeyNamed(MULTI_KEY),
                         uploadInitCode(contract),

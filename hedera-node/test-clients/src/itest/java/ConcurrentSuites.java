@@ -15,11 +15,9 @@
  */
 
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.consensus.ChunkingSuite;
 import com.hedera.services.bdd.suites.consensus.SubmitMessageSuite;
 import com.hedera.services.bdd.suites.consensus.TopicCreateSuite;
 import com.hedera.services.bdd.suites.consensus.TopicDeleteSuite;
-import com.hedera.services.bdd.suites.consensus.TopicGetInfoSuite;
 import com.hedera.services.bdd.suites.consensus.TopicUpdateSuite;
 import com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCallLocalSuite;
@@ -28,7 +26,6 @@ import com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractDeleteSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractGetBytecodeSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractGetInfoSuite;
-import com.hedera.services.bdd.suites.contract.hapi.ContractMusicalChairsSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.CreateOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.GlobalPropertiesSuite;
@@ -79,11 +76,9 @@ import com.hedera.services.bdd.suites.ethereum.NonceSuite;
 import com.hedera.services.bdd.suites.file.FileAppendSuite;
 import com.hedera.services.bdd.suites.file.FileCreateSuite;
 import com.hedera.services.bdd.suites.file.PermissionSemanticsSpec;
-import com.hedera.services.bdd.suites.file.negative.QueryFailuresSpec;
 import com.hedera.services.bdd.suites.file.negative.UpdateFailuresSpec;
 import com.hedera.services.bdd.suites.file.positive.SysDelSysUndelSpec;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
-import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import com.hedera.services.bdd.suites.token.TokenCreateSpecs;
 import com.hedera.services.bdd.suites.token.TokenDeleteSpecs;
@@ -103,7 +98,6 @@ public class ConcurrentSuites {
             CryptoApproveAllowanceSuite::new,
             TokenPauseSpecs::new,
             FileAppendSuite::new,
-            TopicGetInfoSuite::new,
             AutoAccountCreationSuite::new,
             HollowAccountFinalizationSuite::new,
             TokenAssociationSpecs::new,
@@ -113,16 +107,13 @@ public class ConcurrentSuites {
             TokenManagementSpecs::new,
             TokenTransactSpecs::new,
             FileCreateSuite::new,
-            QueryFailuresSpec::new,
             PermissionSemanticsSpec::new,
             SysDelSysUndelSpec::new,
             UpdateFailuresSpec::new,
-            SignedTransactionBytesRecordsSuite::new,
             TopicCreateSuite::new,
             TopicDeleteSuite::new,
             TopicUpdateSuite::new,
             SubmitMessageSuite::new,
-            ChunkingSuite::new,
             CryptoTransferSuite::new,
             CryptoUpdateSuite::new,
             SelfDestructSuite::new,
@@ -133,7 +124,6 @@ public class ConcurrentSuites {
             ContractDeleteSuite::new,
             ContractGetBytecodeSuite::new,
             ContractGetInfoSuite::new,
-            ContractMusicalChairsSuite::new,
             ContractUpdateSuite::new,
             // contract.opcode
             CreateOperationSuite::new,
@@ -228,7 +218,6 @@ public class ConcurrentSuites {
             ContractDeleteSuite::new,
             ContractGetBytecodeSuite::new,
             ContractGetInfoSuite::new,
-            ContractMusicalChairsSuite::new,
             ContractUpdateSuite::new,
             // contracts.openZeppelin
             ERC20ContractInteractions::new,

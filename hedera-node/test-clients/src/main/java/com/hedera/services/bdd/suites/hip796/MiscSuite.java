@@ -54,7 +54,6 @@ import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.WIPI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
-import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.hip796.operations.DesiredAccountTokenRelation;
 import com.hedera.services.bdd.suites.hip796.operations.TokenFeature;
@@ -70,7 +69,6 @@ import org.junit.jupiter.api.DynamicTest;
 
 // too may parameters
 @SuppressWarnings("java:S1192")
-// @HapiTestSuite
 public class MiscSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MiscSuite.class);
 
@@ -94,7 +92,6 @@ public class MiscSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
     final Stream<DynamicTest> tokenOpsUnchangedWithPartitionDefinitions() {
         return defaultHapiSpec("TokenOpsUnchangedWithPartitionDefinitions")
                 .given(
@@ -142,7 +139,6 @@ public class MiscSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
     final Stream<DynamicTest> rentNotYetChargedForPartitionAndDefinitions() {
         return propertyPreservingHapiSpec("RentNotYetChargedForPartitionAndDefinitions")
                 .preserving("ledger.autoRenewPeriod.minDuration")
@@ -183,7 +179,6 @@ public class MiscSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
     final Stream<DynamicTest> approvalAllowanceSpecificPartition() {
         return defaultHapiSpec("ApprovalAllowanceSpecificPartition")
                 .given(
@@ -243,7 +238,6 @@ public class MiscSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
     final Stream<DynamicTest> accountExpiryAndReclamationIsNotEnabled() {
         return propertyPreservingHapiSpec("AccountExpiryAndReclamationIsNotEnabled")
                 .preserving("ledger.autoRenewPeriod.minDuration")
@@ -280,7 +274,6 @@ public class MiscSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
     final Stream<DynamicTest> accountDeletionWithTokenHoldings() {
         return defaultHapiSpec("AccountDeletionWithTokenHoldings")
                 .given(fungibleTokenWithFeatures(PARTITIONING, WIPING)
@@ -305,7 +298,6 @@ public class MiscSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
     final Stream<DynamicTest> customFeesAtTokenDefinitionLevel() {
         return defaultHapiSpec("CustomFeesAtTokenDefinitionLevel")
                 .given(fungibleTokenWithFeatures(PARTITIONING, CUSTOM_FEE_SCHEDULE_MANAGEMENT)

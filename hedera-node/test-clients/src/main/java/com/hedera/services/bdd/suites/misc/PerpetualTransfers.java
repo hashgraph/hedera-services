@@ -39,7 +39,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 
 public class PerpetualTransfers {
-    private AtomicLong duration = new AtomicLong(15);
+    private AtomicLong duration = new AtomicLong(1);
     private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
     private AtomicInteger maxOpsPerSec = new AtomicInteger(10);
 

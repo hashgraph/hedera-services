@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.suites.records;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.SYSTEM_ACCOUNT_BALANCES;
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
@@ -39,7 +41,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static java.util.function.Function.identity;
 
 import com.esaulpaugh.headlong.abi.Tuple;
-import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -50,13 +52,15 @@ import java.util.function.ToLongFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 
+@Tag(SMART_CONTRACT)
 public class ContractRecordsSanityCheckSuite {
     private static final String BALANCE_LOOKUP = "BalanceLookup";
     public static final String PAYABLE_CONTRACT = "PayReceivable";
     public static final String ALTRUISTIC_TXN = "altruisticTxn";
 
-    @HapiTest
+    @LeakyHapiTest(SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> contractDeleteRecordSanityChecks() {
         return defaultHapiSpec("ContractDeleteRecordSanityChecks")
                 .given(flattened(
@@ -73,7 +77,7 @@ public class ContractRecordsSanityCheckSuite {
                         validateRecordTransactionFees("txn"));
     }
 
-    @HapiTest
+    @LeakyHapiTest(SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> contractCreateRecordSanityChecks() {
         return defaultHapiSpec("ContractCreateRecordSanityChecks")
                 .given(flattened(
@@ -87,7 +91,7 @@ public class ContractRecordsSanityCheckSuite {
                         validateRecordTransactionFees("txn"));
     }
 
-    @HapiTest
+    @LeakyHapiTest(SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> contractCallWithSendRecordSanityChecks() {
         return defaultHapiSpec("ContractCallWithSendRecordSanityChecks")
                 .given(flattened(
@@ -105,7 +109,7 @@ public class ContractRecordsSanityCheckSuite {
                         validateRecordTransactionFees("txn"));
     }
 
-    @HapiTest
+    @LeakyHapiTest(SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> circularTransfersRecordSanityChecks() {
         final var contractName = "CircularTransfers";
         int numAltruists = 3;
@@ -180,7 +184,7 @@ public class ContractRecordsSanityCheckSuite {
                         }));
     }
 
-    @HapiTest
+    @LeakyHapiTest(SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> contractUpdateRecordSanityChecks() {
         return defaultHapiSpec("ContractUpdateRecordSanityChecks")
                 .given(flattened(

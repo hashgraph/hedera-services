@@ -63,10 +63,13 @@ sourceSets {
  *
  * <p>(Restart) - ./gradlew :test-clients:test -DtagExpression='RESTART|STREAM_VALIDATION'
  *
- * <p>(Smart Contract) - ./gradlew :test-clients:test
+ * <p>(Smart contract) - ./gradlew :test-clients:test
  * -DtagExpression='SMART_CONTRACT|STREAM_VALIDATION'
  *
- * <p>(ND Reconnect) - ./gradlew :test-clients:test -DtagExpression='ND_RECONNECT|STREAM_VALIDATION'
+ * <p>(ND reconnect) - ./gradlew :test-clients:test -DtagExpression='ND_RECONNECT|STREAM_VALIDATION'
+ *
+ * <p>(Time consuming) - ./gradlew :test-clients:test
+ * -DtagExpression='TIME_CONSUMING|STREAM_VALIDATION'
  */
 tasks.test {
     testClassesDirs = sourceSets.main.get().output.classesDirs

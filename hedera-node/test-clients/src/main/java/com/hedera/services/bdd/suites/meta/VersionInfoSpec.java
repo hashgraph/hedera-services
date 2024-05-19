@@ -19,12 +19,7 @@ package com.hedera.services.bdd.suites.meta;
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
-import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
 
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
-import com.hedera.services.bdd.suites.BddTestNameDoesNotMatchMethodName;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
@@ -59,8 +54,6 @@ public class VersionInfoSpec extends HapiSuite {
         return List.of(discoversExpectedVersions());
     }
 
-    @BddTestNameDoesNotMatchMethodName
-    @HapiTest
     final Stream<DynamicTest> discoversExpectedVersions() {
         if (specConfig != null) {
             return customHapiSpec("getVersionInfo")
@@ -74,14 +67,6 @@ public class VersionInfoSpec extends HapiSuite {
                     .when()
                     .then(getVersionInfo().logged().hasNoDegenerateSemvers());
         }
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
-        return defaultHapiSpec("idVariantsTreatedAsExpected")
-                .given()
-                .when()
-                .then(sendModified(withSuccessivelyVariedQueryIds(), QueryVerbs::getVersionInfo));
     }
 
     @Override

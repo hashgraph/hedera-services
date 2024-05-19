@@ -74,8 +74,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.DynamicTest;
@@ -84,7 +82,6 @@ import org.junit.jupiter.api.Tag;
 @Tag(SMART_CONTRACT)
 public class ContractCallLocalSuite {
 
-    private static final Logger log = LogManager.getLogger(ContractCallLocalSuite.class);
     private static final String CONTRACT = "CreateTrivial";
     private static final String OWNERSHIP_CHECK_CONTRACT = "OwnershipCheck";
     private static final String OWNERSHIP_CHECK_CONTRACT_IS_OWNER_FUNCTION = "isOwner";

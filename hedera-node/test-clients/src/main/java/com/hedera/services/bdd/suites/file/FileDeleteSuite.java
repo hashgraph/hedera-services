@@ -29,11 +29,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 
@@ -63,5 +65,21 @@ public class FileDeleteSuite {
                 .given(fileCreate("deletedFile").logged())
                 .when(fileDelete("deletedFile").logged())
                 .then(getFileInfo("deletedFile").hasAnswerOnlyPrecheck(OK).hasDeleted(true));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> handleRejectsMissingFile() {
+        return defaultHapiSpec("handleRejectsMissingFile")
+                .given()
+                .when()
+                .then(fileDelete("1.2.3").signedBy(GENESIS).hasKnownStatus(ResponseCodeEnum.INVALID_FILE_ID));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> handleRejectsDeletedFile() {
+        return defaultHapiSpec("handleRejectsDeletedFile")
+                .given(fileCreate("tbd"))
+                .when(fileDelete("tbd"))
+                .then(fileDelete("tbd").hasKnownStatus(ResponseCodeEnum.FILE_DELETED));
     }
 }

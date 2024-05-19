@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.issues;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.SYSTEM_ACCOUNT_BALANCES;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asFile;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -34,7 +35,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.NODE;
 import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 
-import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
@@ -48,7 +49,7 @@ public class Issue1765Suite {
     private static final String IMAGINARY = "imaginary";
     private static final String MEMO_IS = "Turning and turning in the widening gyre";
 
-    @HapiTest
+    @LeakyHapiTest(SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> recordOfInvalidContractUpdateSanityChecks() {
         final long ADEQUATE_FEE = 100_000_000L;
         final String INVALID_CONTRACT = IMAGINARY;
@@ -71,7 +72,7 @@ public class Issue1765Suite {
                                 .hasPriority(recordWith().memo(THE_MEMO_IS)));
     }
 
-    @HapiTest
+    @LeakyHapiTest(SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> recordOfInvalidFileUpdateSanityChecks() {
         final long ADEQUATE_FEE = 100_000_000L;
         final String INVALID_FILE = IMAGINARY;
@@ -94,7 +95,7 @@ public class Issue1765Suite {
                                 .hasPriority(recordWith().memo(THE_MEMO_IS)));
     }
 
-    @HapiTest
+    @LeakyHapiTest(SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> recordOfInvalidFileAppendSanityChecks() {
         final long ADEQUATE_FEE = 100_000_000L;
         final String INVALID_FILE = IMAGINARY;

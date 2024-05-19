@@ -17,7 +17,8 @@
 package com.hedera.services.bdd.suites.leaky;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount.INITIAL_BALANCE;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -34,9 +35,6 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.enableAllFeatureFlagsAndDisableContractThrottles;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
@@ -60,37 +58,37 @@ import static com.hedera.services.bdd.suites.util.UtilPrngSuite.BOB;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.utilops.FeatureFlags;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 
 public class FeatureFlagSuite {
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> disableAllFeatureFlagsAndConfirmNotSupported() {
-        return defaultHapiSpec("disableAllFeatureFlagsAndConfirmNotSupported")
-                .given(overridingAllOf(FeatureFlags.FEATURE_FLAGS.allDisabled()))
+        return propertyPreservingHapiSpec("disableAllFeatureFlagsAndConfirmNotSupported")
+                .preserving(
+                        "autoCreation.enabled",
+                        "utilPrng.isEnabled",
+                        "tokens.autoCreations.isEnabled",
+                        "lazyCreation.enabled")
+                .given(overridingAllOf(Map.of(
+                        "autoCreation.enabled", "false",
+                        "utilPrng.isEnabled", "false",
+                        "tokens.autoCreations.isEnabled", "false",
+                        "lazyCreation.enabled", "false")))
                 .when()
                 .then(inParallel(
-                        confirmAutoCreationNotSupported(),
-                        confirmUtilPrngNotSupported(),
-                        confirmKeyAliasAutoCreationNotSupported(),
-                        confirmHollowAccountCreationNotSupported()));
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting() {
-        return defaultHapiSpec("enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting")
-                .given()
-                .when()
-                .then(
-                        ifNotHapiTest(enableAllFeatureFlagsAndDisableContractThrottles()),
-                        ifHapiTest(enableAllFeatureFlagsAndDisableContractThrottles("scheduling.longTermEnabled")));
+                                confirmAutoCreationNotSupported(),
+                                confirmUtilPrngNotSupported(),
+                                confirmKeyAliasAutoCreationNotSupported(),
+                                confirmHollowAccountCreationNotSupported())
+                        .failOnErrors());
     }
 
     private HapiSpecOperation confirmAutoCreationNotSupported() {
