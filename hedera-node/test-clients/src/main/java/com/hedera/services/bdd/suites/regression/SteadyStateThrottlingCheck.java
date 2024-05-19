@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.regression;
 
-import static com.hedera.services.bdd.junit.TestTags.TIME_CONSUMING;
+import static com.hedera.services.bdd.junit.TestTags.LONG_RUNNING;
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -73,7 +73,7 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 
-@Tag(TIME_CONSUMING)
+@Tag(LONG_RUNNING)
 @OrderedInIsolation
 public class SteadyStateThrottlingCheck {
     private static final String TOKENS_NFTS_MINT_THROTTLE_SCALE_FACTOR = "tokens.nfts.mintThrottleScaleFactor";

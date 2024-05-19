@@ -24,14 +24,13 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.SpecStateObserver;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SpecManager {
     private static final String SPEC_NAME = "<MANAGED>";
 
-    @Nullable
-    private SpecStateObserver.SpecState sharedState = null;
+    private final List<SpecStateObserver.SpecState> sharedStates = new ArrayList<>();
 
     private final HederaNetwork targetNetwork;
 
@@ -39,14 +38,20 @@ public class SpecManager {
         this.targetNetwork = requireNonNull(targetNetwork);
     }
 
-    public void executeSetup(@NonNull final HapiSpecOperation... ops) throws Throwable {
+    public void setup(@NonNull final HapiSpecOperation... ops) throws Throwable {
         final var spec = new HapiSpec(SPEC_NAME, ops);
         doTargetSpec(spec, targetNetwork);
-        spec.setSpecStateObserver(sharedState -> this.sharedState = sharedState);
+        spec.setSpecStateObserver(sharedStates::add);
         spec.execute();
     }
 
-    public Optional<SpecStateObserver.SpecState> maybeSpecState() {
-        return Optional.ofNullable(sharedState);
+    public void teardown(@NonNull final HapiSpecOperation... ops) throws Throwable {
+        final var spec = new HapiSpec(SPEC_NAME, ops);
+        doTargetSpec(spec, targetNetwork);
+        spec.execute();
+    }
+
+    public List<SpecStateObserver.SpecState> getSharedStates() {
+        return sharedStates;
     }
 }

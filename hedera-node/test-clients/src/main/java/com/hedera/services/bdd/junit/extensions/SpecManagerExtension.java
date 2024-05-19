@@ -38,12 +38,16 @@ public class SpecManagerExtension
 
     @Override
     public void beforeAll(@NonNull final ExtensionContext extensionContext) {
-        getStore(extensionContext).put(SPEC_MANAGER, new SpecManager(HederaNetwork.SHARED_NETWORK.get()));
+        if (isRootTestClass(extensionContext)) {
+            getStore(extensionContext).put(SPEC_MANAGER, new SpecManager(HederaNetwork.SHARED_NETWORK.get()));
+        }
     }
 
     @Override
     public void afterAll(@NonNull final ExtensionContext extensionContext) {
-        getStore(extensionContext).remove(SPEC_MANAGER);
+        if (isRootTestClass(extensionContext)) {
+            getStore(extensionContext).remove(SPEC_MANAGER);
+        }
     }
 
     @Override
@@ -74,6 +78,22 @@ public class SpecManagerExtension
 
     private ExtensionContext.Store getStore(@NonNull final ExtensionContext extensionContext) {
         return extensionContext.getStore(
-                ExtensionContext.Namespace.create(getClass(), extensionContext.getRequiredTestClass()));
+                ExtensionContext.Namespace.create(getClass(), rootTestClassOf(extensionContext)));
+    }
+
+    private static boolean isRootTestClass(@NonNull final ExtensionContext extensionContext) {
+        return extensionContext.getRequiredTestClass().equals(rootTestClassOf(extensionContext));
+    }
+
+    private static Class<?> rootTestClassOf(@NonNull final ExtensionContext extensionContext) {
+        final var maybeParentTestClass = extensionContext
+                .getParent()
+                .flatMap(ExtensionContext::getTestClass)
+                .orElse(null);
+        if (maybeParentTestClass != null) {
+            return rootTestClassOf(extensionContext.getParent().get());
+        } else {
+            return extensionContext.getRequiredTestClass();
+        }
     }
 }

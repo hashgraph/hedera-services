@@ -104,6 +104,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.SplittableRandom;
@@ -246,7 +247,7 @@ public class HapiSpec implements Runnable, Executable {
     private SpecStateObserver specStateObserver;
 
     @Nullable
-    private SpecStateObserver.SpecState sharedState;
+    private List<SpecStateObserver.SpecState> sharedStates;
 
     boolean quietMode;
 
@@ -342,8 +343,8 @@ public class HapiSpec implements Runnable, Executable {
         this.targetNetwork = requireNonNull(targetNetwork);
     }
 
-    public void setSharedState(@NonNull final SpecStateObserver.SpecState sharedState) {
-        this.sharedState = sharedState;
+    public void setSharedStates(@NonNull final List<SpecStateObserver.SpecState> sharedStates) {
+        this.sharedStates = sharedStates;
     }
 
     public HederaNetwork targetNetworkOrThrow() {
@@ -477,11 +478,10 @@ public class HapiSpec implements Runnable, Executable {
         hapiClients = clientsFor(hapiSetup);
         try {
             hapiRegistry = new HapiSpecRegistry(hapiSetup);
-            if (sharedState != null) {
-                if (!quietMode) {
-                    log.info("Including shared state registry and keys");
-                }
-                hapiRegistry.include(sharedState.registry());
+            if (sharedStates != null) {
+                sharedStates.forEach(sharedState -> {
+                    hapiRegistry.include(sharedState.registry());
+                });
             }
             keyFactory = new KeyFactory(hapiSetup, hapiRegistry);
             txnFactory = new TxnFactory(hapiSetup, keyFactory);
@@ -1080,8 +1080,8 @@ public class HapiSpec implements Runnable, Executable {
             doTargetSpec(spec, targetNetwork);
         }
         Optional.ofNullable(SPEC_MANAGER.get())
-                .flatMap(SpecManager::maybeSpecState)
-                .ifPresent(spec::setSharedState);
+                .map(SpecManager::getSharedStates)
+                .ifPresent(spec::setSharedStates);
         return spec;
     }
 
@@ -1126,7 +1126,7 @@ public class HapiSpec implements Runnable, Executable {
         this.then = then;
         this.onlySpecToRunInSuite = onlySpecToRunInSuite;
         this.propertiesToPreserve = propertiesToPreserve;
-        this.quietMode = System.getProperty(QUIET_MODE_SYSTEM_PROPERTY) != null;
+        this.quietMode = Objects.equals("true", System.getProperty(QUIET_MODE_SYSTEM_PROPERTY));
     }
 
     interface Def {

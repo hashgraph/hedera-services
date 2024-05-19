@@ -128,8 +128,6 @@ public class Evm46ValidationSuite {
     private static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
     private static final String EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS =
             "contracts.evm.allowCallsToNonContractAccounts";
-    private static final String DYNAMIC_EVM_PROPERTY = "contracts.evm.version.dynamic";
-    private static final String EVM_VERSION_046 = "v0.46";
     private static final String BALANCE_OF = "balanceOf";
     public static final List<Long> nonExistingSystemAccounts =
             List.of(0L, 1L, 9L, 10L, 358L, 359L, 360L, 361L, 750L, 751L);

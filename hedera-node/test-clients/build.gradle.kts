@@ -55,31 +55,24 @@ sourceSets {
 }
 
 /**
- * GitHub HAPI CI checks correspond to the following tag expressions,
- *
- * <p>(Crypto) - ./gradlew :test-clients:test -DtagExpression='CRYPTO|STREAM_VALIDATION'
- *
- * <p>(Token) - ./gradlew :test-clients:test -DtagExpression='TOKEN|STREAM_VALIDATION'
- *
- * <p>(Restart) - ./gradlew :test-clients:test -DtagExpression='RESTART|STREAM_VALIDATION'
- *
- * <p>(Smart contract) - ./gradlew :test-clients:test
+ * -DtagExpression='CRYPTO|STREAM_VALIDATION'
+ * -DtagExpression='TOKEN|STREAM_VALIDATION'
+ * -DtagExpression='RESTART|STREAM_VALIDATION'
  * -DtagExpression='SMART_CONTRACT|STREAM_VALIDATION'
- *
- * <p>(ND reconnect) - ./gradlew :test-clients:test -DtagExpression='ND_RECONNECT|STREAM_VALIDATION'
- *
- * <p>(Time consuming) - ./gradlew :test-clients:test
- * -DtagExpression='TIME_CONSUMING|STREAM_VALIDATION'
+ * -DtagExpression='ND_RECONNECT|STREAM_VALIDATION'
+ * -DtagExpression='LONG_RUNNING|STREAM_VALIDATION'
+ * -DtagExpression='!(CRYPTO|TOKEN|SMART_CONTRACT|LONG_RUNNING|RESTART|ND_RECONNECT)|STREAM_VALIDATION'
  */
 tasks.test {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
     useJUnitPlatform {
-        val expression = System.getProperty("tagExpression") ?: "any() | none()"
+        val expression = System.getProperty("tagExpression") ?: "any()|none()"
         includeTags(expression)
     }
 
+    systemProperty("hapi.spec.quiet.mode", System.getProperty("hapi.spec.quiet.mode") ?: "false")
     systemProperty("junit.jupiter.execution.parallel.enabled", true)
     systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
     // Surprisingly, the Gradle JUnitPlatformTestExecutionListener fails to gather result

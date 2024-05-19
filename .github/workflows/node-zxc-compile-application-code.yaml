@@ -292,7 +292,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} :test-clients:test -Dfile.encoding=UTF-8 -DtagExpression='!(CRYPTO|TOKEN|SMART_CONTRACT|TIME_CONSUMING|RESTART|ND_RECONNECT)|STREAM_VALIDATION' --scan --no-daemon
+        run: ${GRADLE_EXEC} :test-clients:test -Dfile.encoding=UTF-8 -DtagExpression='!(CRYPTO|TOKEN|SMART_CONTRACT|LONG_RUNNING|RESTART|ND_RECONNECT)|STREAM_VALIDATION' -Dhapi.spec.quiet.mode=true --scan --no-daemon
 
       - name: Publish HAPI Test (Misc) Report
         uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
@@ -326,7 +326,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} :test-clients:test -Dfile.encoding=UTF-8 -DtagExpression='CRYPTO|STREAM_VALIDATION' --scan --no-daemon
+        run: ${GRADLE_EXEC} :test-clients:test -Dfile.encoding=UTF-8 -DtagExpression='CRYPTO|STREAM_VALIDATION' -Dhapi.spec.quiet.mode=true --scan --no-daemon
 
       - name: Publish HAPI Test (Crypto) Report
         uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
@@ -360,7 +360,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} :test-clients:test -Dfile.encoding=UTF-8 -DtagExpression='TOKEN|STREAM_VALIDATION' --scan --no-daemon
+        run: ${GRADLE_EXEC} :test-clients:test -Dfile.encoding=UTF-8 -DtagExpression='TOKEN|STREAM_VALIDATION' -Dhapi.spec.quiet.mode=true --scan --no-daemon
 
       - name: Publish HAPI Test (Token) Report
         uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
@@ -394,7 +394,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} :test-clients:test -Dfile.encoding=UTF-8 -DtagExpression='SMART_CONTRACT|STREAM_VALIDATION' --scan --no-daemon
+        run: ${GRADLE_EXEC} :test-clients:test -Dfile.encoding=UTF-8 -DtagExpression='SMART_CONTRACT|STREAM_VALIDATION' -Dhapi.spec.quiet.mode=true --scan --no-daemon
 
       - name: Publish HAPI Test (Smart Contract) Report
         uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
@@ -428,7 +428,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} :test-clients:test -Dfile.encoding=UTF-8 -DtagExpression='TIME_CONSUMING|STREAM_VALIDATION' --scan --no-daemon
+        run: ${GRADLE_EXEC} :test-clients:test -Dfile.encoding=UTF-8 -DtagExpression='LONG_RUNNING|STREAM_VALIDATION' -Dhapi.spec.quiet.mode=true --scan --no-daemon
 
       - name: Publish HAPI Test (Time Consuming) Report
         uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
@@ -462,7 +462,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} :test-clients:test -Dfile.encoding=UTF-8 -DtagExpression='RESTART|STREAM_VALIDATION' --scan --no-daemon
+        run: ${GRADLE_EXEC} :test-clients:test -Dfile.encoding=UTF-8 -DtagExpression='RESTART|STREAM_VALIDATION' -Dhapi.spec.quiet.mode=true --scan --no-daemon
 
       - name: Publish HAPI Test (Restart) Report
         uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
@@ -497,7 +497,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} :test-clients:test -Dfile.encoding=UTF-8 -DtagExpression='ND_RECONNECT|STREAM_VALIDATION' --scan --no-daemon
+        run: ${GRADLE_EXEC} :test-clients:test -Dfile.encoding=UTF-8 -DtagExpression='ND_RECONNECT|STREAM_VALIDATION' -Dhapi.spec.quiet.mode=true --scan --no-daemon
 
       - name: Publish HAPI Test (Node Death Reconnect) Report
         uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1

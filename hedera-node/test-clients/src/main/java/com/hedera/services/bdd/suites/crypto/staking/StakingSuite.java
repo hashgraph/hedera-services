@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.crypto.staking;
 
-import static com.hedera.services.bdd.junit.TestTags.TIME_CONSUMING;
+import static com.hedera.services.bdd.junit.TestTags.LONG_RUNNING;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -75,7 +75,7 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 
-@Tag(TIME_CONSUMING)
+@Tag(LONG_RUNNING)
 @OrderedInIsolation
 public class StakingSuite {
     public static final String END_OF_STAKING_PERIOD_CALCULATIONS_MEMO = "End of staking period calculation record";
@@ -95,6 +95,7 @@ public class StakingSuite {
     private static final long STAKING_PERIOD_MINS = 1L;
 
     @HapiTest
+    @Order(0)
     final Stream<DynamicTest> setUp() {
         return defaultHapiSpec("setUp")
                 .given(
