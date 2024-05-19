@@ -526,11 +526,15 @@ public class HapiSpec implements Runnable, Executable {
         if (hapiSetup.requiresPersistentEntities()) {
             List<HapiSpecOperation> creationOps = entities.requiredCreations();
             if (!creationOps.isEmpty()) {
-                log.info("Inserting {} required creations to establish persistent entities.", creationOps.size());
+                if (!quietMode) {
+                    log.info("Inserting {} required creations to establish persistent entities.", creationOps.size());
+                }
                 ops = Stream.concat(creationOps.stream(), ops.stream()).toList();
             }
         }
-        log.info("{} test suite started !", logPrefix());
+        if (!quietMode) {
+            log.info("{} test suite started !", logPrefix());
+        }
 
         status = RUNNING;
         if (hapiSetup.statusDeferredResolvesDoAsync()) {
@@ -586,7 +590,9 @@ public class HapiSpec implements Runnable, Executable {
                 failure = error.map(t -> new Failure(t, failedOp.toString())).orElse(asyncFailure);
                 break;
             } else {
-                log.info("'{}' finished initial execution of {}", name, op);
+                if (!quietMode) {
+                    log.info("'{}' finished initial execution of {}", name, op);
+                }
             }
         }
         allOpsSubmitted.set(true);
@@ -629,7 +635,9 @@ public class HapiSpec implements Runnable, Executable {
         }
 
         tearDown();
-        log.info("{}final status: {}!", logPrefix(), status);
+        if (!quietMode) {
+            log.info("{}final status: {}!", logPrefix(), status);
+        }
 
         if (hapiSetup.requiresPersistentEntities() && hapiSetup.updateManifestsForCreatedPersistentEntities()) {
             entities.updateCreatedEntityManifests();
@@ -766,7 +774,9 @@ public class HapiSpec implements Runnable, Executable {
         if (assertions == null) {
             return Optional.empty();
         }
-        log.info("Checking record stream for {} assertions", assertions.size());
+        if (!quietMode) {
+            log.info("Checking record stream for {} assertions", assertions.size());
+        }
         Optional<Failure> answer = Optional.empty();
         // Keep submitting transactions to close record files (in almost every case, just
         // one file will need to be closed, since it's very rare to have a long-running spec)
@@ -781,7 +791,9 @@ public class HapiSpec implements Runnable, Executable {
             }
         });
         for (final var assertion : assertions) {
-            log.info("Checking record stream for {}", assertion);
+            if (!quietMode) {
+                log.info("Checking record stream for {}", assertion);
+            }
             try {
                 // Each blocks until the assertion passes or times out
                 assertion.assertHasPassed();
@@ -840,8 +852,10 @@ public class HapiSpec implements Runnable, Executable {
         if (pendingOps.isEmpty()) {
             return;
         }
-        log.info("{}executed {} ledger ops.", logPrefix(), numLedgerOpsExecuted.get());
-        log.info("{}now finalizing {} more pending ops...", logPrefix(), pendingOps.size());
+        if (!quietMode) {
+            log.info("{}executed {} ledger ops.", logPrefix(), numLedgerOpsExecuted.get());
+            log.info("{}now finalizing {} more pending ops...", logPrefix(), pendingOps.size());
+        }
         if (!hapiSetup.statusDeferredResolvesDoAsync()) {
             startFinalizingOps();
         }

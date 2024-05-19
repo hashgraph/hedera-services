@@ -57,9 +57,14 @@ sourceSets {
 /**
  * GitHub HAPI CI checks correspond to the following tag expressions,
  *
- * (Crypto) - ./gradlew :test-clients:test -DtagExpression='CRYPTO|STREAM_VALIDATION' (Token) -
- * ./gradlew :test-clients:test -DtagExpression='TOKEN|STREAM_VALIDATION' (Restart) - ./gradlew
- * :test-clients:test -DtagExpression='RESTART|STREAM_VALIDATION'
+ * <p>(Crypto) - ./gradlew :test-clients:test -DtagExpression='CRYPTO|STREAM_VALIDATION'
+ *
+ * <p>(Token) - ./gradlew :test-clients:test -DtagExpression='TOKEN|STREAM_VALIDATION'
+ *
+ * <p>(Restart) - ./gradlew :test-clients:test -DtagExpression='RESTART|STREAM_VALIDATION'
+ *
+ * <p>(Smart Contract) - ./gradlew :test-clients:test
+ * -DtagExpression='SMART_CONTRACT|STREAM_VALIDATION'
  */
 tasks.test {
     testClassesDirs = sourceSets.main.get().output.classesDirs
