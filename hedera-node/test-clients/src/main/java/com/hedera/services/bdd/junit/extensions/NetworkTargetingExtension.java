@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.hedera;
+package com.hedera.services.bdd.junit.extensions;
 
-import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
+import static com.hedera.services.bdd.junit.extensions.ExtensionUtils.hapiTestMethodOf;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.LeakyHapiTest;
+import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.lang.reflect.Method;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -38,18 +37,12 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachCallback {
     @Override
     public void beforeEach(@NonNull final ExtensionContext extensionContext) {
-        extensionContext
-                .getTestMethod()
-                .filter(NetworkTargetingExtension::isHapiTest)
+        hapiTestMethodOf(extensionContext)
                 .ifPresent(ignore -> HapiSpec.TARGET_NETWORK.set(HederaNetwork.SHARED_NETWORK.get()));
     }
 
     @Override
     public void afterEach(@NonNull final ExtensionContext extensionContext) {
         HapiSpec.TARGET_NETWORK.remove();
-    }
-
-    public static boolean isHapiTest(@NonNull final Method method) {
-        return isAnnotated(method, HapiTest.class) || isAnnotated(method, LeakyHapiTest.class);
     }
 }

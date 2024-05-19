@@ -28,7 +28,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustInclude;
 import static com.hedera.services.bdd.suites.contract.Utils.asInstant;
 
-import com.hedera.services.bdd.junit.validators.AccountExistenceValidator;
+import com.hedera.services.bdd.junit.support.validators.AccountExistenceValidator;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Duration;
 import java.time.Instant;

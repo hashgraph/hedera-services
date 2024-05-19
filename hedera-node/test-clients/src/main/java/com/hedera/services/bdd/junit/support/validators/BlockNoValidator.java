@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.validators;
+package com.hedera.services.bdd.junit.support.validators;
 
-import com.hedera.services.bdd.junit.RecordStreamValidator;
+import com.hedera.services.bdd.junit.support.RecordStreamValidator;
 import com.hedera.services.stream.proto.RecordStreamFile;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;

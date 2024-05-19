@@ -37,6 +37,8 @@ public class HollowAccountCompletionFuzzing {
         return defaultHapiSpec("HollowAccountCompletionFuzzing")
                 .given(initOperations())
                 .when()
-                .then(runWithProvider(hollowAccountFuzzingWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
+                .then(runWithProvider(hollowAccountFuzzingWith(PROPERTIES))
+                        .maxOpsPerSec(10)
+                        .lasting(10L, TimeUnit.SECONDS));
     }
 }

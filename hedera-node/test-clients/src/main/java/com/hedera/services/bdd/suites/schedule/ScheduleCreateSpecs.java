@@ -154,7 +154,7 @@ public class ScheduleCreateSpecs {
     final Stream<DynamicTest> bodyOnlyCreation() {
         return customHapiSpec("bodyOnlyCreation")
                 .withProperties(Map.of("default.keyAlgorithm", "SECP256K1"))
-                .given(overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"), cryptoCreate(SENDER))
+                .given(cryptoCreate(SENDER))
                 .when(
                         scheduleCreate(ONLY_BODY, cryptoTransfer(tinyBarsFromTo(SENDER, GENESIS, 1)))
                                 .recordingScheduledTxn(),

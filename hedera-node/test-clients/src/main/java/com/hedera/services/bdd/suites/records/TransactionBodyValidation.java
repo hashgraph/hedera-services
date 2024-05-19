@@ -20,7 +20,7 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertEventuallyPasses;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 
-import com.hedera.services.bdd.junit.TransactionBodyValidator;
+import com.hedera.services.bdd.junit.support.validators.TransactionBodyValidator;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Duration;
 import java.util.List;

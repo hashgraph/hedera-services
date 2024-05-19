@@ -218,10 +218,6 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
         return fee;
     }
 
-    public Optional<Long> getSubmitDelay() {
-        return submitDelay;
-    }
-
     public Optional<Long> getValidDurationSeconds() {
         return validDurationSecs;
     }

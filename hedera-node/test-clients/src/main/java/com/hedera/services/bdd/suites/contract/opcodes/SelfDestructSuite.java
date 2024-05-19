@@ -51,17 +51,24 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MOD
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
+import com.hedera.services.bdd.junit.support.SpecManager;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
+@HapiTestLifecycle
+@DisplayName("Self Destruct")
 public class SelfDestructSuite {
     private static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
     private static final String EVM_VERSION_046 = "v0.46";
@@ -70,6 +77,14 @@ public class SelfDestructSuite {
     private static final String SELF_DESTRUCT_CALLABLE_CONTRACT = "SelfDestructCallable";
     private static final String DESTROY_EXPLICIT_BENEFICIARY = "destroyExplicitBeneficiary";
     private static final String BENEFICIARY = "beneficiary";
+
+    @BeforeAll
+    static void beforeAll(@NonNull final SpecManager specManager) throws Throwable {
+        specManager.executeSetup(uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT));
+    }
+
+    @AfterAll
+    static void afterAll() {}
 
     @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> hscsEvm008SelfDestructInConstructorWorks() {
@@ -106,8 +121,7 @@ public class SelfDestructSuite {
                 .preserving(EVM_VERSION_PROPERTY)
                 .given(
                         overriding(EVM_VERSION_PROPERTY, EVM_VERSION_046),
-                        cryptoCreate("acc").balance(5 * ONE_HUNDRED_HBARS),
-                        uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT))
+                        cryptoCreate("acc").balance(5 * ONE_HUNDRED_HBARS))
                 .when(contractCreate(SELF_DESTRUCT_CALLABLE_CONTRACT)
                         .via("cc")
                         .payingWith("acc")
@@ -143,7 +157,6 @@ public class SelfDestructSuite {
                                 .balance(ONE_HUNDRED_HBARS)
                                 .receiverSigRequired(true)
                                 .exposingCreatedIdTo(id -> beneficiaryId.set(id.getAccountNum())),
-                        uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT),
                         contractCreate(SELF_DESTRUCT_CALLABLE_CONTRACT).balance(ONE_HBAR))
                 .when(sourcing(() -> contractCall(
                                 SELF_DESTRUCT_CALLABLE_CONTRACT,
@@ -176,7 +189,6 @@ public class SelfDestructSuite {
                         sourcing(() -> EVM_VERSION_046.equals(evmVersion)
                                 ? overriding(EVM_VERSION_PROPERTY, evmVersion)
                                 : noOp()),
-                        uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT),
                         contractCreate(SELF_DESTRUCT_CALLABLE_CONTRACT).balance(ONE_HBAR))
                 .when(contractCallLocal(
                                 SELF_DESTRUCT_CALLABLE_CONTRACT, "destroyExplicitBeneficiary", mirrorAddrWith(999L))
@@ -217,7 +229,6 @@ public class SelfDestructSuite {
                                 .balance(ONE_HUNDRED_HBARS)
                                 .receiverSigRequired(false)
                                 .exposingCreatedIdTo(id -> deployer.set(id.getAccountNum())),
-                        uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT),
                         contractCreate(SELF_DESTRUCT_CALLABLE_CONTRACT).balance(ONE_HBAR))
                 .when()
                 .then(nonExistingAccountsOps);

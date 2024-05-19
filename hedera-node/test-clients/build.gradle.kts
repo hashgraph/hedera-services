@@ -92,7 +92,6 @@ tasks.test {
         "junit.jupiter.testclass.order.default",
         "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation"
     )
-    systemProperty("hapi.spec.quiet.mode", true)
 
     // Limit heap and number of processors
     maxHeapSize = "8g"

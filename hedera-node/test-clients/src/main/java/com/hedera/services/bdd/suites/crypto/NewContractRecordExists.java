@@ -25,7 +25,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.suites.contract.Utils.asInstant;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.hedera.services.bdd.junit.validators.ContractExistenceValidator;
+import com.hedera.services.bdd.junit.support.validators.ContractExistenceValidator;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Duration;
 import java.time.Instant;

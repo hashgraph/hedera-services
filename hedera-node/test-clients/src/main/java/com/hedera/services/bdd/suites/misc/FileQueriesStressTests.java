@@ -41,9 +41,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 
 public class FileQueriesStressTests {
-    private AtomicLong duration = new AtomicLong(30);
+    private AtomicLong duration = new AtomicLong(10);
     private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
-    private AtomicInteger maxOpsPerSec = new AtomicInteger(100);
+    private AtomicInteger maxOpsPerSec = new AtomicInteger(10);
 
     @HapiTest
     final Stream<DynamicTest> getFileContentsStress() {

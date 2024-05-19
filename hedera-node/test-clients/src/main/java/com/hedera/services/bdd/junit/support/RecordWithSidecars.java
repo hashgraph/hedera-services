@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.validators;
+package com.hedera.services.bdd.junit.support;
+
+import com.hedera.services.stream.proto.RecordStreamFile;
+import com.hedera.services.stream.proto.SidecarFile;
+import java.util.List;
 
 /**
- * Contains a single account number and a single associated token number.
+ * Contains a single record stream file and a list of the sidecar files that include sidecars for
+ * ANY record in the record stream file.
  */
-public record AccountNumTokenNum(Long accountNum, Long tokenNum) {}
+public record RecordWithSidecars(RecordStreamFile recordFile, List<SidecarFile> sidecarFiles) {}

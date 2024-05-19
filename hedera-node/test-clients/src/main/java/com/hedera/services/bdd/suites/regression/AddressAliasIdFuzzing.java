@@ -50,7 +50,7 @@ public class AddressAliasIdFuzzing {
 
     private static final String PROPERTIES = "id-fuzzing.properties";
     public static final String ATOMIC_CRYPTO_TRANSFER = "contracts.precompile.atomicCryptoTransfer.enabled";
-    private final AtomicInteger maxOpsPerSec = new AtomicInteger(1);
+    private final AtomicInteger maxOpsPerSec = new AtomicInteger(10);
     private final AtomicInteger maxPendingOps = new AtomicInteger(Integer.MAX_VALUE);
     private final AtomicInteger backoffSleepSecs = new AtomicInteger(Integer.MAX_VALUE);
 

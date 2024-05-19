@@ -14,21 +14,23 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit;
+package com.hedera.services.bdd.junit.extensions;
 
-import com.hedera.services.bdd.junit.hedera.NetworkTargetingExtension;
-import com.hedera.services.bdd.spec.HapiSpec;
+import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
+
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.junit.jupiter.api.extension.BeforeEachCallback;
+import java.lang.reflect.Method;
+import java.util.Optional;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-public class SpecNamingExtension implements BeforeEachCallback {
-    @Override
-    public void beforeEach(@NonNull final ExtensionContext extensionContext) {
-        extensionContext
-                .getTestMethod()
-                .filter(NetworkTargetingExtension::isHapiTest)
-                .ifPresent(method -> HapiSpec.SPEC_NAME.set(
-                        extensionContext.getRequiredTestClass().getSimpleName() + "." + method.getName()));
+public class ExtensionUtils {
+    public static Optional<Method> hapiTestMethodOf(@NonNull final ExtensionContext extensionContext) {
+        return extensionContext.getTestMethod().filter(ExtensionUtils::isHapiTest);
+    }
+
+    private static boolean isHapiTest(@NonNull final Method method) {
+        return isAnnotated(method, HapiTest.class) || isAnnotated(method, LeakyHapiTest.class);
     }
 }

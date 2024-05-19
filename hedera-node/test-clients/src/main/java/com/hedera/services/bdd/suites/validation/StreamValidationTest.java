@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.validation;
 
-import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACCESS;
+import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
@@ -24,15 +24,15 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static java.util.stream.Collectors.joining;
 
-import com.hedera.services.bdd.junit.BalanceReconciliationValidator;
-import com.hedera.services.bdd.junit.ExpiryRecordsValidator;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
-import com.hedera.services.bdd.junit.RecordStreamAccess;
-import com.hedera.services.bdd.junit.RecordStreamValidator;
-import com.hedera.services.bdd.junit.TokenReconciliationValidator;
-import com.hedera.services.bdd.junit.TransactionBodyValidator;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
-import com.hedera.services.bdd.junit.validators.BlockNoValidator;
+import com.hedera.services.bdd.junit.support.RecordStreamAccess;
+import com.hedera.services.bdd.junit.support.RecordStreamValidator;
+import com.hedera.services.bdd.junit.support.validators.BalanceReconciliationValidator;
+import com.hedera.services.bdd.junit.support.validators.BlockNoValidator;
+import com.hedera.services.bdd.junit.support.validators.ExpiryRecordsValidator;
+import com.hedera.services.bdd.junit.support.validators.TokenReconciliationValidator;
+import com.hedera.services.bdd.junit.support.validators.TransactionBodyValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;

@@ -281,23 +281,23 @@ public class SubmitMessageSuite {
                                 .chunkInfo(3, 2, "initialTransactionPayer")
                                 .hasRetryPrecheckFrom(BUSY)
                                 .hasKnownStatus(INVALID_CHUNK_TRANSACTION_ID),
+                        // Add delay to make sure the valid start of the transaction will
+                        // not match
+                        // that of the initialTransactionID
+                        sleepFor(1000),
                         /* AcceptsChunkNumberDifferentThan1HavingTheSamePayerEvenWhenNotMatchingValidStart */
                         submitMessageTo("testTopic")
                                 .message("A")
                                 .chunkInfo(3, 3, "initialTransactionPayer")
                                 .payingWith("initialTransactionPayer")
-                                // Add delay to make sure the valid start of the transaction will
-                                // not match
-                                // that of the initialTransactionID
-                                .delayBy(1000)
                                 .hasRetryPrecheckFrom(BUSY)
                                 .hasKnownStatus(SUCCESS),
                         /* FailsForTransactionIDOfChunkNumber1NotMatchingTheEntireInitialTransactionID */
+                        sleepFor(1000),
                         submitMessageTo("testTopic")
                                 .message("B")
                                 .chunkInfo(2, 1)
                                 // Also add delay here
-                                .delayBy(1000)
                                 .hasRetryPrecheckFrom(BUSY)
                                 .hasKnownStatus(INVALID_CHUNK_TRANSACTION_ID),
                         /* AcceptsChunkNumber1WhenItsTransactionIDMatchesTheEntireInitialTransactionID */

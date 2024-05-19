@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.stateChangesToGrpc;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion.recordStreamLocFor;
 import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.getInitcode;
@@ -84,7 +85,7 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
     public static CustomSpecAssert tearDownSidecarWatcher() {
         return withOpContext((spec, opLog) -> {
             // send a dummy transaction to trigger externalization of last sidecars
-            allRunFor(spec, cryptoCreate("externalizeFinalSidecars").delayBy(3000));
+            allRunFor(spec, sleepFor(3000), cryptoCreate("externalizeFinalSidecars"));
             sidecarWatcher.waitUntilFinished();
             sidecarWatcher.tearDown();
         });

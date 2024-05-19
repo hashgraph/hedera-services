@@ -16,10 +16,10 @@
 
 package com.hedera.services.bdd.spec.utilops.streams.assertions;
 
-import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACCESS;
+import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
 
-import com.hedera.services.bdd.junit.RecordStreamAccess;
-import com.hedera.services.bdd.junit.StreamDataListener;
+import com.hedera.services.bdd.junit.support.RecordStreamAccess;
+import com.hedera.services.bdd.junit.support.StreamDataListener;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.stream.proto.RecordStreamItem;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;

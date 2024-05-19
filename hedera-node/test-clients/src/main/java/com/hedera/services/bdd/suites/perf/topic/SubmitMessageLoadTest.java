@@ -192,7 +192,6 @@ public class SubmitMessageLoadTest extends LoadTest {
                 .payingWith(senderId)
                 .signedBy(senderKey, submitKey)
                 .fee(100_000_000)
-                .suppressStats(true)
                 .hasRetryPrecheckFrom(
                         BUSY,
                         DUPLICATE_TRANSACTION,

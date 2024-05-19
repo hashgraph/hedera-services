@@ -55,15 +55,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
 @SuppressWarnings("java:S1192")
 public class ContractBurnHTSV2SecurityModelSuite {
-
-    private static final Logger LOG = LogManager.getLogger(ContractMintHTSV1SecurityModelSuite.class);
-
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final String TOKEN_TREASURY = "treasury";
     private static final KeyShape THRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);

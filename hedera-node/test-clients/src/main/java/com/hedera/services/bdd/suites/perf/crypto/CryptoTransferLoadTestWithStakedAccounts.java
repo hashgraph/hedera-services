@@ -80,7 +80,6 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
                         .noLogging()
                         .payingWith(sender)
                         .signedBy(GENESIS)
-                        .suppressStats(true)
                         .fee(100_000_000L)
                         .hasKnownStatusFrom(
                                 SUCCESS,

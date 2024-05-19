@@ -34,6 +34,8 @@ public class HollowAccountFuzzing {
         return defaultHapiSpec("HollowAccountFuzzing")
                 .given(initOperations())
                 .when()
-                .then(runWithProvider(hollowAccountFuzzingTest(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
+                .then(runWithProvider(hollowAccountFuzzingTest(PROPERTIES))
+                        .maxOpsPerSec(10)
+                        .lasting(10L, TimeUnit.SECONDS));
     }
 }

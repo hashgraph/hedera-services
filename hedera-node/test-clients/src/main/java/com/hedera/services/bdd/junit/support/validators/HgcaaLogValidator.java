@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.validators;
+package com.hedera.services.bdd.junit.support.validators;
 
 import java.io.IOException;
 import java.nio.file.Files;

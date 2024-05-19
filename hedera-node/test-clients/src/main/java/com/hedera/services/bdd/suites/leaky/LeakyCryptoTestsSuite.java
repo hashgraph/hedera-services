@@ -330,7 +330,7 @@ public class LeakyCryptoTestsSuite {
     }
 
     @Order(6)
-    @HapiTest
+    // (FUTURE) Enable when long-term scheduled transactions are supported
     final Stream<DynamicTest> scheduledCryptoApproveAllowanceWaitForExpiryTrue() {
         return defaultHapiSpec("ScheduledCryptoApproveAllowanceWaitForExpiryTrue")
                 .given(

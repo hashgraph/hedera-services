@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit;
+package com.hedera.services.bdd.junit.support;
 
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.orderedRecordFilesFrom;
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.orderedSidecarFilesFrom;
@@ -164,7 +164,7 @@ public enum RecordStreamAccess {
         return new Data(recordsWithSideCars, fullRecordFiles);
     }
 
-    static RecordStreamFile ensurePresentRecordFile(final String f) {
+    public static RecordStreamFile ensurePresentRecordFile(final String f) {
         try {
             final var contents = readMaybeCompressedRecordStreamFile(f);
             if (contents.getRight().isEmpty()) {
@@ -176,7 +176,7 @@ public enum RecordStreamAccess {
         }
     }
 
-    static SidecarFile ensurePresentSidecarFile(final String f) {
+    public static SidecarFile ensurePresentSidecarFile(final String f) {
         try {
             return RecordStreamingUtils.readMaybeCompressedSidecarFile(f);
         } catch (IOException e) {

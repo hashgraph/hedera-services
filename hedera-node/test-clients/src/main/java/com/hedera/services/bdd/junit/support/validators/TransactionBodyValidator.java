@@ -14,15 +14,27 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit;
+package com.hedera.services.bdd.junit.support.validators;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.functionOf;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NodeStakeUpdate;
+import static com.hederahashgraph.api.proto.java.TransactionBody.DataCase.NODE_STAKE_UPDATE;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.bdd.junit.utils.TransactionBodyClassifier;
+import com.hedera.node.app.hapi.utils.CommonUtils;
+import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
+import com.hedera.services.bdd.junit.support.RecordStreamValidator;
+import com.hedera.services.bdd.junit.support.RecordWithSidecars;
 import com.hedera.services.bdd.suites.records.TransactionBodyValidation;
+import com.hedera.services.stream.proto.RecordStreamItem;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -60,6 +72,32 @@ public class TransactionBodyValidator implements RecordStreamValidator {
                     throw new IllegalStateException(errorMsg + item, e);
                 }
             }
+        }
+    }
+
+    public static class TransactionBodyClassifier {
+        private final Set<HederaFunctionality> transactionType = new HashSet<>();
+
+        public void incorporate(@NonNull final RecordStreamItem item) throws InvalidProtocolBufferException {
+            requireNonNull(item);
+            var txnType = NONE;
+            TransactionBody txnBody = CommonUtils.extractTransactionBody(item.getTransaction());
+
+            try {
+                txnType = functionOf(txnBody);
+            } catch (UnknownHederaFunctionality ex) {
+                txnType = checkNodeStakeUpdate(txnBody);
+            }
+            transactionType.add(txnType);
+        }
+
+        private HederaFunctionality checkNodeStakeUpdate(final TransactionBody txn) {
+            TransactionBody.DataCase dataCase = txn.getDataCase();
+            return dataCase.equals(NODE_STAKE_UPDATE) ? NodeStakeUpdate : NONE;
+        }
+
+        public boolean isInvalid() {
+            return transactionType.contains(NONE);
         }
     }
 }

@@ -82,6 +82,10 @@ public class HapiSpecSetup {
 
     private HapiPropertySource props;
 
+    public static HapiSpecSetup setupFrom(Object... objs) {
+        return new HapiSpecSetup(inPriorityOrder(asSources(objs)));
+    }
+
     public enum NodeSelection {
         FIXED,
         RANDOM

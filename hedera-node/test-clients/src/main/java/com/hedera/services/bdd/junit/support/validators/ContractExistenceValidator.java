@@ -14,38 +14,39 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.validators;
+package com.hedera.services.bdd.junit.support.validators;
 
-import static com.hedera.services.bdd.junit.BalanceReconciliationValidator.streamOfItemsFrom;
-
-import com.hedera.services.bdd.junit.RecordStreamValidator;
-import com.hedera.services.bdd.junit.RecordWithSidecars;
+import com.hedera.services.bdd.junit.support.RecordStreamValidator;
+import com.hedera.services.bdd.junit.support.RecordWithSidecars;
 import com.hedera.services.stream.proto.RecordStreamItem;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Assertions;
 
-/** A simple validator that asserts an account was created at a given consensus timestamp. */
-public class AccountExistenceValidator implements RecordStreamValidator {
+/** A simple validator that asserts a contract that was created appears in the record stream */
+public class ContractExistenceValidator implements RecordStreamValidator {
     private final String name;
     private final Instant consensusTimestamp;
 
-    public AccountExistenceValidator(final String name, final Instant consensusTimestamp) {
+    public ContractExistenceValidator(final String name, final Instant consensusTimestamp) {
         this.name = name;
         this.consensusTimestamp = consensusTimestamp;
     }
 
     @Override
     public void validateRecordsAndSidecars(final List<RecordWithSidecars> recordFiles) {
-        final var accountExists = new AtomicBoolean();
-        streamOfItemsFrom(recordFiles).filter(this::isAtConsensusTime).forEach(item -> {
-            final var receipt = item.getRecord().getReceipt();
-            if (receipt.hasAccountID()) {
-                accountExists.set(true);
-            }
-        });
-        if (!accountExists.get()) {
+        final var contractExists = new AtomicBoolean();
+
+        BalanceReconciliationValidator.streamOfItemsFrom(recordFiles)
+                .filter(this::isAtConsensusTime)
+                .forEach(item -> {
+                    final var receipt = item.getRecord().getReceipt();
+                    if (receipt.hasContractID()) {
+                        contractExists.set(true);
+                    }
+                });
+        if (!contractExists.get()) {
             Assertions.fail("Expected '" + name + "' to be created at " + consensusTimestamp + ", but it was not");
         }
     }

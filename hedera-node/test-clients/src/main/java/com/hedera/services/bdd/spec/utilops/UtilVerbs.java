@@ -78,8 +78,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.RecordStreamValidator;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.junit.support.RecordStreamValidator;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -143,8 +143,6 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStr
 import com.hedera.services.bdd.spec.utilops.streams.assertions.RecordStreamAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.TransactionBodyAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.ValidContractIdsAssertion;
-import com.hedera.services.bdd.spec.utilops.throughput.FinishThroughputObs;
-import com.hedera.services.bdd.spec.utilops.throughput.StartThroughputObs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
@@ -521,14 +519,6 @@ public class UtilVerbs {
         return new BalanceSnapshot(forAccount, nameFn);
     }
 
-    public static StartThroughputObs startThroughputObs(String name) {
-        return new StartThroughputObs(name);
-    }
-
-    public static FinishThroughputObs finishThroughputObs(String name) {
-        return new FinishThroughputObs(name);
-    }
-
     public static VerifyGetLiveHashNotSupported getClaimNotSupported() {
         return new VerifyGetLiveHashNotSupported();
     }
@@ -851,8 +841,7 @@ public class UtilVerbs {
                                 DUPLICATE_TRANSACTION,
                                 PLATFORM_TRANSACTION_NOT_CREATED,
                                 INSUFFICIENT_PAYER_BALANCE)
-                        .noLogging()
-                        .suppressStats(true);
+                        .noLogging();
                 if (1 == currentChunk) {
                     subOp = subOp.usePresetTimestamp();
                 }

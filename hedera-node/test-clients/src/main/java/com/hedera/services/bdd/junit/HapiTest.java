@@ -18,7 +18,8 @@ package com.hedera.services.bdd.junit;
 
 import static org.junit.jupiter.api.parallel.ResourceAccessMode.READ;
 
-import com.hedera.services.bdd.junit.hedera.NetworkTargetingExtension;
+import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
+import com.hedera.services.bdd.junit.extensions.SpecNamingExtension;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

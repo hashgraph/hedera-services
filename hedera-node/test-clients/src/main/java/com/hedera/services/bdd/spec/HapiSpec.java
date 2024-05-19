@@ -16,9 +16,7 @@
 
 package com.hedera.services.bdd.spec;
 
-import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACCESS;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asSources;
-import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
+import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.COMPARE;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.TAKE;
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.ERROR;
@@ -28,6 +26,7 @@ import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED;
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED_UNEXPECTEDLY;
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PENDING;
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.RUNNING;
+import static com.hedera.services.bdd.spec.HapiSpecSetup.setupFrom;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.HapiApiClients.clientsFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
@@ -65,11 +64,13 @@ import com.google.common.io.CharSink;
 import com.google.common.io.Files;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
+import com.hedera.services.bdd.junit.support.SpecManager;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
 import com.hedera.services.bdd.spec.fees.Payment;
 import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
+import com.hedera.services.bdd.spec.infrastructure.SpecStateObserver;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.persistence.EntityManager;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
@@ -83,7 +84,6 @@ import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
 import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion;
 import com.hedera.services.bdd.suites.TargetNetworkType;
-import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -117,7 +117,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
@@ -137,6 +136,7 @@ public class HapiSpec implements Runnable, Executable {
     private static final String AS_WRITTEN_DISPLAY_NAME = "as written";
 
     public static final ThreadLocal<HederaNetwork> TARGET_NETWORK = new ThreadLocal<>();
+    public static final ThreadLocal<SpecManager> SPEC_MANAGER = new ThreadLocal<>();
     public static final ThreadLocal<String> SPEC_NAME = new ThreadLocal<>();
 
     private static final long FIRST_NODE_ACCOUNT_NUM = 3L;
@@ -224,10 +224,8 @@ public class HapiSpec implements Runnable, Executable {
     HapiSpecOperation[] when;
     HapiSpecOperation[] then;
     AtomicInteger adhoc = new AtomicInteger(0);
-    AtomicInteger numLedgerOpsExecuted = new AtomicInteger(0);
     AtomicBoolean allOpsSubmitted = new AtomicBoolean(false);
     ThreadPoolExecutor finalizingExecutor;
-    List<Consumer<Integer>> ledgerOpCountCallbacks = new ArrayList<>();
     CompletableFuture<Void> finalizingFuture;
     AtomicReference<Optional<Failure>> finishingError = new AtomicReference<>(Optional.empty());
     BlockingQueue<HapiSpecOpFinisher> pendingOps = new PriorityBlockingQueue<>();
@@ -239,11 +237,19 @@ public class HapiSpec implements Runnable, Executable {
      * of the node lifecycle (stop, restart, wait for status, etc).
      */
     @Nullable
-    HederaNetwork targetNetwork;
+    private HederaNetwork targetNetwork;
+    /**
+     * If non-null, an observer to receive the final state of this spec's register and key factory
+     * after it has executed.
+     */
+    @Nullable
+    private SpecStateObserver specStateObserver;
+
+    @Nullable
+    private SpecStateObserver.SpecState sharedState;
 
     boolean quietMode;
 
-    List<SingleAccountBalances> accountBalances = new ArrayList<>();
     private final SnapshotMatchMode[] snapshotMatchModes;
 
     /**
@@ -269,19 +275,6 @@ public class HapiSpec implements Runnable, Executable {
         return pendingOps.size();
     }
 
-    public int numLedgerOps() {
-        return numLedgerOpsExecuted.get();
-    }
-
-    public synchronized void addLedgerOpCountCallback(Consumer<Integer> callback) {
-        ledgerOpCountCallbacks.add(callback);
-    }
-
-    public void incrementNumLedgerOps() {
-        int newNumLedgerOps = numLedgerOpsExecuted.incrementAndGet();
-        ledgerOpCountCallbacks.forEach(c -> c.accept(newNumLedgerOps));
-    }
-
     public TargetNetworkType targetNetworkType() {
         return targetNetworkType;
     }
@@ -291,8 +284,8 @@ public class HapiSpec implements Runnable, Executable {
         return this;
     }
 
-    public synchronized void saveSingleAccountBalances(SingleAccountBalances sab) {
-        accountBalances.add(sab);
+    public void setSpecStateObserver(@NonNull final SpecStateObserver specStateObserver) {
+        this.specStateObserver = specStateObserver;
     }
 
     public void updatePrecheckCounts(ResponseCodeEnum finalStatus) {
@@ -347,6 +340,10 @@ public class HapiSpec implements Runnable, Executable {
 
     public void setTargetNetwork(@NonNull final HederaNetwork targetNetwork) {
         this.targetNetwork = requireNonNull(targetNetwork);
+    }
+
+    public void setSharedState(@NonNull final SpecStateObserver.SpecState sharedState) {
+        this.sharedState = sharedState;
     }
 
     public HederaNetwork targetNetworkOrThrow() {
@@ -413,6 +410,9 @@ public class HapiSpec implements Runnable, Executable {
             compareWithSnapshot();
         }
 
+        if (specStateObserver != null) {
+            specStateObserver.observe(new SpecStateObserver.SpecState(hapiRegistry, keyFactory));
+        }
         nullOutInfrastructure();
     }
 
@@ -477,6 +477,12 @@ public class HapiSpec implements Runnable, Executable {
         hapiClients = clientsFor(hapiSetup);
         try {
             hapiRegistry = new HapiSpecRegistry(hapiSetup);
+            if (sharedState != null) {
+                if (!quietMode) {
+                    log.info("Including shared state registry and keys");
+                }
+                hapiRegistry.include(sharedState.registry());
+            }
             keyFactory = new KeyFactory(hapiSetup, hapiRegistry);
             txnFactory = new TxnFactory(hapiSetup, keyFactory);
             FeesAndRatesProvider scheduleProvider =
@@ -853,7 +859,6 @@ public class HapiSpec implements Runnable, Executable {
             return;
         }
         if (!quietMode) {
-            log.info("{}executed {} ledger ops.", logPrefix(), numLedgerOpsExecuted.get());
             log.info("{}now finalizing {} more pending ops...", logPrefix(), pendingOps.size());
         }
         if (!hapiSetup.statusDeferredResolvesDoAsync()) {
@@ -1032,12 +1037,8 @@ public class HapiSpec implements Runnable, Executable {
             return (isOnly
                             ? onlyHapiSpec(name, propertiesToPreserve, snapshotMatchModes)
                             : hapiSpec(name, propertiesToPreserve, snapshotMatchModes))
-                    .withSetup(setupFrom(allSources));
+                    .withSetup(HapiSpecSetup.setupFrom(allSources));
         };
-    }
-
-    private static HapiSpecSetup setupFrom(Object... objs) {
-        return new HapiSpecSetup(inPriorityOrder(asSources(objs)));
     }
 
     public static Def.Setup hapiSpec(
@@ -1064,7 +1065,7 @@ public class HapiSpec implements Runnable, Executable {
                 targeted(new HapiSpec(
                         SPEC_NAME.get(),
                         false,
-                        setupFrom(HapiSpecSetup.getDefaultPropertySource()),
+                        HapiSpecSetup.setupFrom(HapiSpecSetup.getDefaultPropertySource()),
                         new HapiSpecOperation[0],
                         new HapiSpecOperation[0],
                         ops,
@@ -1076,19 +1077,38 @@ public class HapiSpec implements Runnable, Executable {
         final var targetNetwork = TARGET_NETWORK.get();
         if (targetNetwork != null) {
             log.info("Targeting network '{}' for spec '{}'", targetNetwork.name(), spec.name);
-            spec.setTargetNetworkType(targetNetwork.type());
-            final var specNodes = targetNetwork.nodes().stream()
-                    .map(HederaNode::hapiSpecIdentifier)
-                    .collect(joining(","));
-            spec.addOverrideProperties(Map.of("nodes", specNodes));
-            spec.setTargetNetwork(targetNetwork);
+            doTargetSpec(spec, targetNetwork);
         }
+        Optional.ofNullable(SPEC_MANAGER.get())
+                .flatMap(SpecManager::maybeSpecState)
+                .ifPresent(spec::setSharedState);
         return spec;
+    }
+
+    public static void doTargetSpec(@NonNull final HapiSpec spec, @NonNull final HederaNetwork targetNetwork) {
+        spec.setTargetNetwork(targetNetwork);
+        spec.setTargetNetworkType(targetNetwork.type());
+        final var specNodes = targetNetwork.nodes().stream()
+                .map(HederaNode::hapiSpecIdentifier)
+                .collect(joining(","));
+        spec.addOverrideProperties(Map.of("nodes", specNodes));
+    }
+
+    public HapiSpec(String name, HapiSpecOperation[] ops) {
+        this(
+                name,
+                false,
+                setupFrom(HapiSpecSetup.getDefaultPropertySource()),
+                new HapiSpecOperation[0],
+                new HapiSpecOperation[0],
+                ops,
+                List.of(),
+                new SnapshotMatchMode[0]);
     }
 
     // too many parameters
     @SuppressWarnings("java:S107")
-    private HapiSpec(
+    public HapiSpec(
             String name,
             boolean onlySpecToRunInSuite,
             HapiSpecSetup hapiSetup,

@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit;
+package com.hedera.services.bdd.junit.support.validators;
 
 import static com.hedera.services.bdd.junit.TestBase.concurrentExecutionOf;
 
-import com.hedera.services.bdd.junit.utils.AccountClassifier;
-import com.hedera.services.bdd.junit.validators.AccountNumTokenNum;
+import com.hedera.services.bdd.junit.TestBase;
+import com.hedera.services.bdd.junit.support.RecordStreamValidator;
+import com.hedera.services.bdd.junit.support.RecordWithSidecars;
+import com.hedera.services.bdd.junit.support.validators.utils.AccountClassifier;
 import com.hedera.services.bdd.suites.records.TokenBalanceValidation;
 import java.util.HashMap;
 import java.util.List;
