@@ -55,9 +55,11 @@ sourceSets {
 }
 
 /**
- * GitHub CI checks correspond to the following tag expressions:
+ * GitHub HAPI CI checks correspond to the following tag expressions,
  *
- * CRYPTO - ./gradlew :test-clients:test -DtagExpression='CRYPTO|STREAM_VALIDATION'
+ * (Crypto) - ./gradlew :test-clients:test -DtagExpression='CRYPTO|STREAM_VALIDATION' (Token) -
+ * ./gradlew :test-clients:test -DtagExpression='TOKEN|STREAM_VALIDATION' (Restart) - ./gradlew
+ * :test-clients:test -DtagExpression='RESTART|STREAM_VALIDATION'
  */
 tasks.test {
     testClassesDirs = sourceSets.main.get().output.classesDirs

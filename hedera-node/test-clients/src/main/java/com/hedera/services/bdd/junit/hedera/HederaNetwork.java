@@ -181,18 +181,23 @@ public class HederaNetwork {
                                     node.initWorkingDir(configTxt);
                                     node.start();
                                 })
-                                .thenCompose(nothing ->
-                                        node.statusFuture(ACTIVE, timeout).thenRun(latch::countDown)))
+                                .thenCompose(nothing -> node.statusFuture(ACTIVE, timeout)
+                                        .thenRun(() -> {
+                                            System.out.println("Node " + node.getNodeId() + " is ready");
+                                            latch.countDown();
+                                        })))
                         .toArray(CompletableFuture[]::new))
                 .orTimeout(timeout.toMillis(), MILLISECONDS);
         ready = runAsync(() -> {
-            try {
-                latch.await();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new IllegalStateException(e);
-            }
-        });
+                    try {
+                        latch.await();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new IllegalStateException(e);
+                    }
+                    System.out.println("All nodes are ready");
+                })
+                .thenRun(() -> System.out.println("Got here"));
     }
 
     /**
