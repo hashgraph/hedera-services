@@ -65,6 +65,8 @@ sourceSets {
  *
  * <p>(Smart Contract) - ./gradlew :test-clients:test
  * -DtagExpression='SMART_CONTRACT|STREAM_VALIDATION'
+ *
+ * <p>(ND Reconnect) - ./gradlew :test-clients:test -DtagExpression='ND_RECONNECT|STREAM_VALIDATION'
  */
 tasks.test {
     testClassesDirs = sourceSets.main.get().output.classesDirs
