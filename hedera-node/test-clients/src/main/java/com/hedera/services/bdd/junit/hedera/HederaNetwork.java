@@ -37,8 +37,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A network of Hedera nodes. For now, assumed to be accessed via
@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
  * "network".
  */
 public class HederaNetwork {
-    private static final Logger log = LoggerFactory.getLogger(HederaNetwork.class);
+    private static final Logger log = LogManager.getLogger(HederaNetwork.class);
 
     private static final int FIRST_GRPC_PORT = 50211;
     private static final int FIRST_GOSSIP_PORT = 60000;
