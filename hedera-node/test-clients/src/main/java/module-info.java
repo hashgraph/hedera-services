@@ -52,9 +52,6 @@ module com.hedera.node.test.clients {
     requires transitive org.apache.commons.io;
     requires transitive org.apache.logging.log4j;
     requires transitive org.junit.jupiter.api;
-    requires transitive org.junit.platform.commons;
-    requires transitive org.junit.platform.engine;
-    requires transitive org.junit.platform.launcher;
     requires transitive org.testcontainers;
     requires transitive org.yaml.snakeyaml;
     requires transitive tuweni.bytes;
@@ -65,7 +62,6 @@ module com.hedera.node.test.clients {
     requires com.fasterxml.jackson.databind;
     requires com.github.docker.java.api;
     requires com.hedera.evm;
-    requires com.hedera.pbj.runtime;
     requires com.swirlds.base;
     requires com.swirlds.config.api;
     requires com.swirlds.config.extensions.test.fixtures;
@@ -81,7 +77,11 @@ module com.hedera.node.test.clients {
     requires org.hyperledger.besu.datatypes;
     requires org.hyperledger.besu.internal.crypto;
     requires org.json;
+    requires org.junit.platform.commons;
     requires org.opentest4j;
     requires tuweni.units;
     requires static com.github.spotbugs.annotations;
+    requires static com.hedera.pbj.runtime;
+    requires static org.junit.platform.engine;
+    requires static org.junit.platform.launcher;
 }

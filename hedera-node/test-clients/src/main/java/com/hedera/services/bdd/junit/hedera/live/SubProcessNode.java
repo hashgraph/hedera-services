@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.recreate
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import com.hedera.node.app.Hedera;
 import com.hedera.services.bdd.junit.hedera.AbstractNode;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
@@ -58,6 +59,8 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
         super(metadata);
         this.grpcPinger = requireNonNull(grpcPinger);
         this.prometheusClient = requireNonNull(prometheusClient);
+        // Just something to keep checkModuleInfo from claiming we don't require com.hedera.node.app
+        requireNonNull(Hedera.class);
     }
 
     @Override

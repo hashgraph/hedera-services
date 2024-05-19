@@ -30,7 +30,6 @@ mainModuleInfo {
 
 itestModuleInfo {
     requires("com.hedera.node.test.clients")
-    requires("com.hedera.node.hapi")
     requires("org.apache.commons.lang3")
     requires("org.junit.jupiter.api")
     requires("org.testcontainers")
