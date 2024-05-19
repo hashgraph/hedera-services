@@ -84,8 +84,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
@@ -93,7 +91,6 @@ import org.junit.jupiter.api.Tag;
 @Tag(SMART_CONTRACT)
 public class Evm46ValidationSuite {
 
-    private static final Logger LOG = LogManager.getLogger(Evm46ValidationSuite.class);
     private static final long FIRST_NONEXISTENT_CONTRACT_NUM = 4303224382569680425L;
     private static final String NAME = "name";
     private static final String ERC_721_ABI = "ERC721ABI";
@@ -103,13 +100,11 @@ public class Evm46ValidationSuite {
     private static final String INTERNAL_CALLER_CONTRACT = "InternalCaller";
     private static final String INTERNAL_CALLEE_CONTRACT = "InternalCallee";
     private static final String REVERT_WITH_REVERT_REASON_FUNCTION = "revertWithRevertReason";
-    private static final String REVERT_WITHOUT_REVERT_REASON_FUNCTION = "revertWithoutRevertReason";
     private static final String CALL_NON_EXISTING_FUNCTION = "callNonExisting";
     private static final String CALL_EXTERNAL_FUNCTION = "callExternalFunction";
     private static final String DELEGATE_CALL_EXTERNAL_FUNCTION = "delegateCallExternalFunction";
     private static final String STATIC_CALL_EXTERNAL_FUNCTION = "staticCallExternalFunction";
     private static final String CALL_REVERT_WITH_REVERT_REASON_FUNCTION = "callRevertWithRevertReason";
-    private static final String CALL_REVERT_WITHOUT_REVERT_REASON_FUNCTION = "callRevertWithoutRevertReason";
     private static final String TRANSFER_TO_FUNCTION = "transferTo";
     private static final String SEND_TO_FUNCTION = "sendTo";
     private static final String CALL_WITH_VALUE_TO_FUNCTION = "callWithValueTo";
@@ -125,9 +120,6 @@ public class Evm46ValidationSuite {
     private static final String CUSTOM_PAYER = "customPayer";
     private static final String BENEFICIARY = "beneficiary";
     private static final String SIMPLE_UPDATE_CONTRACT = "SimpleUpdate";
-    private static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
-    private static final String EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS =
-            "contracts.evm.allowCallsToNonContractAccounts";
     private static final String BALANCE_OF = "balanceOf";
     public static final List<Long> nonExistingSystemAccounts =
             List.of(0L, 1L, 9L, 10L, 358L, 359L, 360L, 361L, 750L, 751L);

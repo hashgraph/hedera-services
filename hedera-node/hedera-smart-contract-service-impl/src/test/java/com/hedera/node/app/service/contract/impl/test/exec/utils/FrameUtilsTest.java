@@ -27,6 +27,7 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.co
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.selfDestructBeneficiariesFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.stackIncludesActiveAddress;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONTRACTS_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_BUT_IS_LONG_ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
@@ -319,7 +320,7 @@ class FrameUtilsTest {
         given(frame.getMessageFrameStack()).willReturn(stack);
         given(initialFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
         assertTrue(FrameUtils.contractRequired(frame, EIP_1014_ADDRESS, featureFlags));
-        verify(featureFlags).isAllowCallsToNonContractAccountsEnabled(DEFAULT_CONFIG, null);
+        verify(featureFlags).isAllowCallsToNonContractAccountsEnabled(DEFAULT_CONTRACTS_CONFIG, null);
     }
 
     @Test
@@ -330,7 +331,7 @@ class FrameUtilsTest {
         assertTrue(FrameUtils.contractRequired(frame, NON_SYSTEM_BUT_IS_LONG_ZERO_ADDRESS, featureFlags));
         verify(featureFlags)
                 .isAllowCallsToNonContractAccountsEnabled(
-                        DEFAULT_CONFIG,
+                        DEFAULT_CONTRACTS_CONFIG,
                         NON_SYSTEM_BUT_IS_LONG_ZERO_ADDRESS
                                 .toUnsignedBigInteger()
                                 .longValueExact());
@@ -342,7 +343,7 @@ class FrameUtilsTest {
         given(frame.getMessageFrameStack()).willReturn(stack);
         given(initialFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
         assertTrue(FrameUtils.contractRequired(frame, Address.fromHexString("0xFFFFFFFFFFFFFFFF"), featureFlags));
-        verify(featureFlags).isAllowCallsToNonContractAccountsEnabled(DEFAULT_CONFIG, null);
+        verify(featureFlags).isAllowCallsToNonContractAccountsEnabled(DEFAULT_CONTRACTS_CONFIG, null);
     }
 
     void givenNonInitialFrame() {

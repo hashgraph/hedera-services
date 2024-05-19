@@ -51,6 +51,7 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.SpecManager;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -68,10 +69,6 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 @HapiTestLifecycle
 @DisplayName("SELFDESTRUCT")
 public class SelfDestructSuite {
-    private static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
-    private static final String EVM_VERSION_046 = "v0.46";
-    private static final String EVM_VERSION_050 = "v0.50";
-
     private static final String SELF_DESTRUCT_CALLABLE_CONTRACT = "SelfDestructCallable";
     private static final String DESTROY_EXPLICIT_BENEFICIARY = "destroyExplicitBeneficiary";
     private static final String BENEFICIARY = "beneficiary";
@@ -88,12 +85,12 @@ public class SelfDestructSuite {
     class WithV046EVM {
         @BeforeAll
         static void beforeAll(@NonNull final SpecManager specManager) throws Throwable {
-            specManager.setup(overriding(EVM_VERSION_PROPERTY, EVM_VERSION_046));
+            specManager.setup(overriding(HapiSuite.EVM_VERSION_PROPERTY, HapiSuite.EVM_VERSION_046));
         }
 
         @AfterAll
         static void afterAll(@NonNull final SpecManager specManager) throws Throwable {
-            specManager.teardown(overriding(EVM_VERSION_PROPERTY, EVM_VERSION_050));
+            specManager.teardown(overriding(HapiSuite.EVM_VERSION_PROPERTY, HapiSuite.EVM_VERSION_050));
         }
 
         @HapiTest
@@ -155,7 +152,7 @@ public class SelfDestructSuite {
         @HapiTest
         @DisplayName("cannot update a contract after SELFDESTRUCT")
         final Stream<DynamicTest> deletedContractsCannotBeUpdated46() {
-            return deletedContractsCannotBeUpdated(EVM_VERSION_046);
+            return deletedContractsCannotBeUpdated(HapiSuite.EVM_VERSION_046);
         }
     }
 
@@ -185,7 +182,7 @@ public class SelfDestructSuite {
         @HapiTest
         @DisplayName("can update a contract after SELFDESTRUCT")
         final Stream<DynamicTest> deletedContractsCannotBeUpdated50() {
-            return deletedContractsCannotBeUpdated(EVM_VERSION_050);
+            return deletedContractsCannotBeUpdated(HapiSuite.EVM_VERSION_050);
         }
     }
 
@@ -242,8 +239,8 @@ public class SelfDestructSuite {
 
         final var expectedStatus =
                 switch (evmVersion) {
-                    case EVM_VERSION_046 -> INVALID_CONTRACT_ID;
-                    case EVM_VERSION_050 -> SUCCESS;
+                    case HapiSuite.EVM_VERSION_046 -> INVALID_CONTRACT_ID;
+                    case HapiSuite.EVM_VERSION_050 -> SUCCESS;
                     default -> throw new IllegalArgumentException("unexpected evm version: " + evmVersion);
                 };
 

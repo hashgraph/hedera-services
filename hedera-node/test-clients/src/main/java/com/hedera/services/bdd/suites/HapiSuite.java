@@ -50,6 +50,9 @@ public abstract class HapiSuite {
     public static final String TRUE_VALUE = "true";
     public static final String FALSE_VALUE = "false";
     public static final String TOKEN_UNDER_TEST = "TokenUnderTest";
+    public static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
+    public static final String EVM_VERSION_046 = "v0.46";
+    public static final String EVM_VERSION_050 = "v0.50";
     protected static String ALICE = "ALICE";
     protected static String BOB = "BOB";
     protected static String CAROL = "CAROL";
