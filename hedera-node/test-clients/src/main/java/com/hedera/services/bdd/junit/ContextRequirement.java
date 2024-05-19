@@ -23,6 +23,11 @@ public enum ContextRequirement {
      */
     NO_CONCURRENT_CREATIONS,
     /**
+     * The test requires that its transactions are guaranteed to be the first in a
+     * staking period.
+     */
+    NO_CONCURRENT_STAKE_PERIOD_BOUNDARY_CROSSINGS,
+    /**
      * The test requires changes to the network properties, which might break other
      * concurrent tests if they expect the default properties.
      */
