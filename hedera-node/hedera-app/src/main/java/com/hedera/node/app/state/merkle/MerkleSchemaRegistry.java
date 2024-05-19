@@ -245,10 +245,12 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                                 (short) 1,
                                                 new OnDiskKeySerializer<>(
                                                         md.onDiskKeySerializerClassId(),
+                                                        md.onDiskKeyClassId(),
                                                         md.stateDefinition().keyCodec()),
                                                 (short) 1,
                                                 new OnDiskValueSerializer<>(
                                                         md.onDiskValueSerializerClassId(),
+                                                        md.onDiskValueClassId(),
                                                         md.stateDefinition().valueCodec()))
                                         .maxNumberOfKeys(def.maxKeysHint());
                                 final var label = StateUtils.computeLabel(serviceName, stateKey);
@@ -464,6 +466,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     OnDiskKeySerializer.class,
                     () -> new OnDiskKeySerializer<>(
                             md.onDiskKeySerializerClassId(),
+                            md.onDiskKeyClassId(),
                             md.stateDefinition().keyCodec())));
             constructableRegistry.registerConstructable(new ClassConstructorPair(
                     OnDiskValue.class,
@@ -473,6 +476,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     OnDiskValueSerializer.class,
                     () -> new OnDiskValueSerializer<>(
                             md.onDiskValueSerializerClassId(),
+                            md.onDiskValueClassId(),
                             md.stateDefinition().valueCodec())));
             constructableRegistry.registerConstructable(new ClassConstructorPair(
                     SingletonNode.class,
