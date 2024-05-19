@@ -37,6 +37,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A network of Hedera nodes. For now, assumed to be accessed via
@@ -45,6 +47,8 @@ import java.util.stream.IntStream;
  * "network".
  */
 public class HederaNetwork {
+    private static final Logger log = LoggerFactory.getLogger(HederaNetwork.class);
+
     private static final int FIRST_GRPC_PORT = 50211;
     private static final int FIRST_GOSSIP_PORT = 60000;
     private static final int FIRST_GOSSIP_TLS_PORT = 60001;
@@ -183,7 +187,7 @@ public class HederaNetwork {
                                 })
                                 .thenCompose(nothing -> node.statusFuture(ACTIVE, timeout)
                                         .thenRun(() -> {
-                                            System.out.println("Node " + node.getNodeId() + " is ready");
+                                            log.info("Node '{}' is ready", node.getName());
                                             latch.countDown();
                                         })))
                         .toArray(CompletableFuture[]::new))
@@ -195,9 +199,8 @@ public class HederaNetwork {
                         Thread.currentThread().interrupt();
                         throw new IllegalStateException(e);
                     }
-                    System.out.println("All nodes are ready");
                 })
-                .thenRun(() -> System.out.println("Got here"));
+                .thenRun(() -> log.info("All nodes in network '{}' are ready", name()));
     }
 
     /**

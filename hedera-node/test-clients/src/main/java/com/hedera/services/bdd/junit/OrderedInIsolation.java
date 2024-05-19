@@ -25,8 +25,8 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.parallel.Isolated;
 
 /**
- * Annotates a test class that may as well run against the shared network, but in
- * isolation and with a defined order.
+ * Convenience annotation to mark a test class that requires strictly sequential execution,
+ * both with respect to other test classes and within its own methods.
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)

@@ -28,6 +28,11 @@ import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
+/**
+ * Annotation for a {@link HapiTest} that "leaks" side effects into the test context (or
+ * is permeable to such side effects itself). The {@link ContextRequirement} annotation
+ * enumerates common types of leakage and permeability.
+ */
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @TestFactory

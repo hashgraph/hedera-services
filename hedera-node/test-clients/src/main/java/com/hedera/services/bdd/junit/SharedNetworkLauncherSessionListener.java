@@ -27,6 +27,11 @@ import org.junit.platform.launcher.LauncherSessionListener;
 import org.junit.platform.launcher.TestExecutionListener;
 import org.junit.platform.launcher.TestPlan;
 
+/**
+ * Registers a {@link TestExecutionListener} when the {@link LauncherSession} is opened to
+ * start the shared test network before the test plan is executed; and stop it after test
+ * plan execution finishes.
+ */
 public class SharedNetworkLauncherSessionListener implements LauncherSessionListener {
     private static final Logger log = LogManager.getLogger(SharedNetworkLauncherSessionListener.class);
 
@@ -38,11 +43,12 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
     }
 
     private static class SharedNetworkExecutionListener implements TestExecutionListener {
-        private static final Duration SHARED_NETWORK_STARTUP_TIMEOUT = Duration.ofSeconds(30);
+        private static final Duration SHARED_NETWORK_STARTUP_TIMEOUT = Duration.ofSeconds(300);
 
         @Override
         public void testPlanExecutionStarted(@NonNull final TestPlan testPlan) {
             final var sharedNetwork = HederaNetwork.newSharedSubProcessNetwork(DEFAULT_SHARED_NETWORK_SIZE);
+            log.info("Waiting for shared network to start within {}", SHARED_NETWORK_STARTUP_TIMEOUT);
             sharedNetwork.startWithin(SHARED_NETWORK_STARTUP_TIMEOUT);
         }
 

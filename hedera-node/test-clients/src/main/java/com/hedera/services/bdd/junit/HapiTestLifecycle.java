@@ -23,6 +23,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+/**
+ * Marks a test class whose {@link org.junit.jupiter.api.BeforeAll} and {@link org.junit.jupiter.api.AfterAll}
+ * lifecycle methods want to have an injected {@link com.hedera.services.bdd.junit.support.SpecManager}.
+ */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @ExtendWith(SpecManagerExtension.class)

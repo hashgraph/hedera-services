@@ -28,6 +28,11 @@ import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
+/**
+ * The main annotation in this package; marks a method as a factory for dynamic tests
+ * that will target the shared test network and use the {@link SpecNamingExtension} to
+ * name the tests.
+ */
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @TestFactory
