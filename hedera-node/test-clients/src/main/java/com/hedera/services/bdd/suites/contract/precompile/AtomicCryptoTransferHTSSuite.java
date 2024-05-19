@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
@@ -83,6 +84,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers;
@@ -95,16 +97,11 @@ import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
 public class AtomicCryptoTransferHTSSuite {
-
-    private static final Logger log = LogManager.getLogger(AtomicCryptoTransferHTSSuite.class);
-
     private static final Tuple[] EMPTY_TUPLE_ARRAY = new Tuple[] {};
     private static final long GAS_TO_OFFER = 5_000_000L;
     private static final long TOTAL_SUPPLY = 1_000;
@@ -1410,7 +1407,7 @@ public class AtomicCryptoTransferHTSSuite {
                                                 .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> cryptoTransferSpecialAccounts() {
         final var cryptoTransferTxn = "cryptoTransferTxn";
 

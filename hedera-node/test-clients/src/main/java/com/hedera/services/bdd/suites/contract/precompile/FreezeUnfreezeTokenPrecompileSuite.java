@@ -66,8 +66,11 @@ public class FreezeUnfreezeTokenPrecompileSuite {
     private static final String ACCOUNT = "anybody";
     private static final String FREEZE_KEY = "freezeKey";
     private static final String MULTI_KEY = "purpose";
+    private static final String TREASURY = "treasury";
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final String INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
+    public static final String PARTY = "party";
+    public static final String TOKEN = "token";
 
     @HapiTest
     final Stream<DynamicTest> noTokenIdReverts() {

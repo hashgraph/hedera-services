@@ -17,8 +17,7 @@
 package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isRandomResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -29,12 +28,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -55,29 +49,16 @@ public class PrngSeedOperationSuite {
 
     private static final String GET_SEED = "getPseudorandomSeed";
 
-    public static final String CONTRACTS_DYNAMIC_EVM_VERSION = "contracts.evm.version.dynamic";
-    public static final String CONTRACTS_EVM_VERSION = "contracts.evm.version";
-
-    public static final String EVM_VERSION_0_34 = "v0.34";
-    public static final String EVM_VERSION_0_30 = "v0.30";
-
     @HapiTest
     final Stream<DynamicTest> multipleCallsHaveIndependentResults() {
         final var prng = THE_PRNG_CONTRACT;
         final var gasToOffer = 400_000;
         final var numCalls = 5;
         final List<String> prngSeeds = new ArrayList<>();
-        return propertyPreservingHapiSpec(
-                        "MultipleCallsHaveIndependentResults",
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving(CONTRACTS_DYNAMIC_EVM_VERSION, CONTRACTS_EVM_VERSION)
-                .given(
-                        uploadInitCode(prng),
-                        contractCreate(prng),
-                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
-                        overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_34))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                uploadInitCode(prng),
+                contractCreate(prng),
+                withOpContext((spec, opLog) -> {
                     for (int i = 0; i < numCalls; i++) {
                         final var txn = "call" + i;
                         final var call =
@@ -108,62 +89,28 @@ public class PrngSeedOperationSuite {
                             prngSeeds.size(),
                             new HashSet<>(prngSeeds).size(),
                             "An N-3 running hash was repeated, which is" + " inconceivable");
-                }))
-                .then(
-                        // It's possible to call these contracts in a static context with no issues
-                        contractCallLocal(prng, GET_SEED).gas(gasToOffer));
+                }),
+                // It's possible to call these contracts in a static context with no issues
+                contractCallLocal(prng, GET_SEED).gas(gasToOffer));
     }
 
     @HapiTest
     final Stream<DynamicTest> prngPrecompileHappyPathWorks() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
-        return propertyPreservingHapiSpec(
-                        "prngPrecompileHappyPathWorks",
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving(CONTRACTS_DYNAMIC_EVM_VERSION, CONTRACTS_EVM_VERSION)
-                .given(
-                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
-                        overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_34),
-                        cryptoCreate(BOB),
-                        uploadInitCode(prng),
-                        contractCreate(prng))
-                .when(sourcing(() -> contractCall(prng, GET_SEED)
+        return hapiTest(
+                cryptoCreate(BOB),
+                uploadInitCode(prng),
+                contractCreate(prng),
+                contractCall(prng, GET_SEED)
                         .gas(GAS_TO_OFFER)
                         .payingWith(BOB)
                         .via(randomBits)
-                        .logged()))
-                .then(getTxnRecord(randomBits)
+                        .logged(),
+                getTxnRecord(randomBits)
                         .hasPriority(recordWith()
                                 .contractCallResult(resultWith()
                                         .resultViaFunctionName(
-                                                GET_SEED, prng, isRandomResult((new Object[] {new byte[32]})))))
-                        .logged());
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> prngPrecompileDisabledInV030() {
-        final var prng = THE_PRNG_CONTRACT;
-        final var randomBits = "randomBits";
-        return propertyPreservingHapiSpec("prngPrecompileDisabledInV_0_30")
-                .preserving(CONTRACTS_DYNAMIC_EVM_VERSION, CONTRACTS_EVM_VERSION)
-                .given(
-                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
-                        overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_30),
-                        cryptoCreate(BOB),
-                        uploadInitCode(prng),
-                        contractCreate(prng))
-                .when(sourcing(() -> contractCall(prng, GET_SEED)
-                        .gas(GAS_TO_OFFER)
-                        .payingWith(BOB)
-                        .via(randomBits)
-                        .logged()))
-                .then(getTxnRecord(randomBits)
-                        .hasPriority(recordWith()
-                                .contractCallResult(resultWith()
-                                        .resultViaFunctionName(
-                                                GET_SEED, prng, isLiteralResult((new Object[] {new byte[32]})))))
-                        .logged());
+                                                GET_SEED, prng, isRandomResult((new Object[] {new byte[32]}))))));
     }
 }

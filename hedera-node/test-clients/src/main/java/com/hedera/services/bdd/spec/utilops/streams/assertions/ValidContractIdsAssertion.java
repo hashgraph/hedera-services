@@ -56,6 +56,7 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
 
     private void validateActionIds(@NonNull final TransactionSidecarRecord sidecar) {
         final var actions = sidecar.getActions().getContractActionsList();
+        System.out.println(actions);
         for (final var action : actions) {
             if (action.hasCallingAccount()) {
                 assertValid(action.getCallingAccount(), "action#callingAccount", sidecar);
@@ -66,7 +67,7 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
             if (action.hasRecipientAccount()) {
                 assertValid(action.getRecipientAccount(), "action#recipientAccount", sidecar);
             } else if (action.hasRecipientContract()) {
-                assertValid(action.getRecipientContract(), "action#recipientContract", sidecar, this::isValidId);
+                assertValid(action.getRecipientContract(), "action#recipientContract", sidecar, this::isValidRecipient);
             }
 
             if (action.getCallType() != ContractActionType.CREATE || action.hasOutput()) {
@@ -76,7 +77,7 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
             }
 
             final var resultIsSet = (action.hasOutput() || action.hasError() || action.hasRevertReason());
-            assertTrue(resultIsSet, "action is missing result (output, error, or revertReason)");
+            assertTrue(resultIsSet, "action is missing result (output, error, or revertReason) - " + action);
         }
     }
 
@@ -125,6 +126,10 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
 
     private boolean isValidId(long shard, long realm, long num) {
         return shard == 0L && realm == 0L && num >= 1 && num < Integer.MAX_VALUE;
+    }
+
+    private boolean isValidRecipient(long shard, long realm, long num) {
+        return shard == 0L && realm == 0L && num >= 0 && num < Integer.MAX_VALUE;
     }
 
     private boolean isValidOrFailedBytecodeCreationId(long shard, long realm, long num) {

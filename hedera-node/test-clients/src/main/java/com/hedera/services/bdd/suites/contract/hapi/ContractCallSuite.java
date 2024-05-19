@@ -877,7 +877,7 @@ public class ContractCallSuite {
                                         "callWithValue",
                                         BigInteger.valueOf(minValueToAccessGatedMethodAtCurrentRate.get()))
                                 .sending(minValueToAccessGatedMethodAtCurrentRate.get())
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+                                .hasKnownStatus(INVALID_FEE_SUBMITTED)));
     }
 
     /**
@@ -1999,6 +1999,7 @@ public class ContractCallSuite {
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
+                        streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
                         newKeyNamed(RECEIVER_KEY),
                         cryptoCreate(ACC)
                                 .balance(5 * ONE_HUNDRED_HBARS)

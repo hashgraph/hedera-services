@@ -84,6 +84,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite {
     private static final KeyShape THRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
 
     private static final String ACCOUNT = "account";
+    private static final String TREASURY = "treasury";
 
     public static final long INITIAL_BALANCE = 1_000_000_000L;
     private static final long GAS_TO_OFFER = 4_000_000L;

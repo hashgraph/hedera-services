@@ -17,8 +17,10 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxSigs.signMessage;
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isContractWith;
@@ -57,6 +59,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPro
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
@@ -103,6 +106,7 @@ import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -306,7 +310,7 @@ public class ContractCreateSuite {
                                 .logged());
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> childCreationsHaveExpectedKeysWithOmittedAdminKey() {
         final AtomicLong firstStickId = new AtomicLong();
         final AtomicLong secondStickId = new AtomicLong();
@@ -314,8 +318,11 @@ public class ContractCreateSuite {
         final var txn = "creation";
         final var contract = "Fuse";
 
-        return defaultHapiSpec("ChildCreationsHaveExpectedKeysWithOmittedAdminKey", NONDETERMINISTIC_TRANSACTION_FEES)
+        return propertyPreservingHapiSpec(
+                        "ChildCreationsHaveExpectedKeysWithOmittedAdminKey", NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("contracts.evm.version")
                 .given(
+                        overriding("contracts.evm.version", "v0.46"),
                         uploadInitCode(contract),
                         contractCreate(contract).omitAdminKey().gas(600_000).via(txn),
                         withOpContext((spec, opLog) -> {

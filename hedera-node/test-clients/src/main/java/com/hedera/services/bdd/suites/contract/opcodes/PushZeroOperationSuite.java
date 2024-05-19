@@ -16,8 +16,9 @@
 
 package com.hedera.services.bdd.suites.contract.opcodes;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -30,10 +31,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import java.math.BigInteger;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
@@ -47,46 +48,38 @@ public class PushZeroOperationSuite {
 
     private static final String OP_PUSH_ZERO = "opPush0";
 
-    public static final String CONTRACTS_DYNAMIC_EVM_VERSION = "contracts.evm.version.dynamic";
     public static final String CONTRACTS_EVM_VERSION = "contracts.evm.version";
 
     public static final String EVM_VERSION_0_34 = "v0.34";
-    public static final String EVM_VERSION_0_38 = "v0.38";
 
     @HapiTest
     final Stream<DynamicTest> pushZeroHappyPathWorks() {
         final var pushZeroContract = CONTRACT;
         final var pushResult = "pushResult";
-        return defaultHapiSpec("pushZeroHappyPathWorks", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
-                        overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_38),
-                        cryptoCreate(BOB),
-                        uploadInitCode(pushZeroContract),
-                        contractCreate(pushZeroContract))
-                .when(sourcing(() -> contractCall(pushZeroContract, OP_PUSH_ZERO)
+        return hapiTest(
+                cryptoCreate(BOB),
+                uploadInitCode(pushZeroContract),
+                contractCreate(pushZeroContract),
+                contractCall(pushZeroContract, OP_PUSH_ZERO)
                         .gas(GAS_TO_OFFER)
                         .payingWith(BOB)
-                        .via(pushResult)
-                        .logged()))
-                .then(getTxnRecord(pushResult)
+                        .via(pushResult),
+                getTxnRecord(pushResult)
                         .hasPriority(recordWith()
                                 .contractCallResult(resultWith()
                                         .resultViaFunctionName(
                                                 OP_PUSH_ZERO,
                                                 pushZeroContract,
-                                                isLiteralResult((new Object[] {BigInteger.valueOf(0x5f)})))))
-                        .logged());
+                                                isLiteralResult((new Object[] {BigInteger.valueOf(0x5f)}))))));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> pushZeroDisabledInV034() {
         final var pushZeroContract = CONTRACT;
         final var pushResult = "pushResult";
         return propertyPreservingHapiSpec("pushZeroDisabledInV034", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving(CONTRACTS_DYNAMIC_EVM_VERSION, CONTRACTS_EVM_VERSION)
+                .preserving(CONTRACTS_EVM_VERSION)
                 .given(
-                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
                         overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_34),
                         cryptoCreate(BOB),
                         uploadInitCode(pushZeroContract),
@@ -96,7 +89,7 @@ public class PushZeroOperationSuite {
                         .gas(GAS_TO_OFFER)
                         .payingWith(BOB)
                         .via(pushResult)
-                        .hasKnownStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION)
+                        .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)
                         .logged()));
     }
 }

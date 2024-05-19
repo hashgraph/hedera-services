@@ -22,11 +22,14 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.io.config.FileSystemManagerConfig;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.io.utility.RecycleBinImpl;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 
 public class FileSystemManagerFactoryImpl implements FileSystemManagerFactory {
 
@@ -40,22 +43,40 @@ public class FileSystemManagerFactoryImpl implements FileSystemManagerFactory {
      * {@code FileSystemManagerConfig} record
      *
      * @param configuration the configuration instance to retrieve properties from
-     * @param metrics metrics instance
+     * @param recycleBin    the recycle-bin instance to use in the fileSystemManager
      * @return a new instance of {@link FileSystemManager}
      * @throws UncheckedIOException if the dir structure to rootLocation cannot be created
      */
     @NonNull
     @Override
     public FileSystemManager createFileSystemManager(
-            @NonNull final Configuration configuration, @NonNull final Metrics metrics) {
-
+            @NonNull final Configuration configuration, @NonNull final RecycleBin recycleBin) {
         final FileSystemManagerConfig fsmConfig = configuration.getConfigData(FileSystemManagerConfig.class);
+        return new FileSystemManagerImpl(fsmConfig.rootPath(), fsmConfig.userDataDir(), fsmConfig.tmpDir(), recycleBin);
+    }
 
+    /**
+     * Creates a {@link FileSystemManager} and a {@link com.swirlds.common.io.utility.RecycleBin} by searching {@code root}
+     * path in the {@link Configuration} class using
+     * {@code FileSystemManagerConfig} record
+     *
+     * @param configuration the configuration instance to retrieve properties from
+     * @param metrics       metrics instance
+     * @param selfId the node id for the recycle bin path
+     * @return a new instance of {@link FileSystemManager}
+     * @throws UncheckedIOException if the dir structure to rootLocation cannot be created
+     */
+    @NonNull
+    @Override
+    public FileSystemManager createFileSystemManager(
+            @NonNull final Configuration configuration, @NonNull final Metrics metrics, @NonNull final NodeId selfId) {
+        final FileSystemManagerConfig fsmConfig = configuration.getConfigData(FileSystemManagerConfig.class);
+        final Path recycleBinDir = Path.of(fsmConfig.recycleBinDir()).resolve(selfId.toString());
         return new FileSystemManagerImpl(
                 fsmConfig.rootPath(),
                 fsmConfig.userDataDir(),
                 fsmConfig.tmpDir(),
-                fsmConfig.recycleBinDir(),
+                recycleBinDir.toString(),
                 path -> new RecycleBinImpl(
                         metrics,
                         getStaticThreadManager(),

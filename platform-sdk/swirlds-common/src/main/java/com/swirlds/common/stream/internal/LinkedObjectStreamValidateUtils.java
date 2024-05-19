@@ -132,7 +132,7 @@ public final class LinkedObjectStreamValidateUtils {
             Hash metaHashInSig = parsedPairs.right().left();
             Signature metaSignature = parsedPairs.right().right();
 
-            if (!verifySignature(entireHash.getValue(), entireSignature, publicKey)) {
+            if (!verifySignature(entireHash.copyToByteArray(), entireSignature, publicKey)) {
                 result = StreamValidationResult.INVALID_ENTIRE_SIGNATURE;
             } else if (!verifySignature(metaHashInSig.getValue(), metaSignature, publicKey)) {
                 result = StreamValidationResult.INVALID_META_SIGNATURE;

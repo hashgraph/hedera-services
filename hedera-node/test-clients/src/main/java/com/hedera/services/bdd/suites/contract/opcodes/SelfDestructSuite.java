@@ -16,8 +16,8 @@
 
 package com.hedera.services.bdd.suites.contract.opcodes;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -30,6 +30,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -50,6 +51,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MOD
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -62,7 +64,6 @@ import org.junit.jupiter.api.Tag;
 @Tag(SMART_CONTRACT)
 public class SelfDestructSuite {
     private static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
-    private static final String DYNAMIC_EVM_PROPERTY = "contracts.evm.version.dynamic";
     private static final String EVM_VERSION_046 = "v0.46";
     private static final String EVM_VERSION_050 = "v0.50";
 
@@ -70,12 +71,16 @@ public class SelfDestructSuite {
     private static final String DESTROY_EXPLICIT_BENEFICIARY = "destroyExplicitBeneficiary";
     private static final String BENEFICIARY = "beneficiary";
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> hscsEvm008SelfDestructInConstructorWorks() {
         final var contract = "FactorySelfDestructConstructor";
         final var nextAccount = "civilian";
-        return defaultHapiSpec("hscsEvm008SelfDestructInConstructorWorks", NONDETERMINISTIC_LOG_DATA)
-                .given(cryptoCreate(BENEFICIARY).balance(ONE_HUNDRED_HBARS), uploadInitCode(contract))
+        return propertyPreservingHapiSpec("hscsEvm008SelfDestructInConstructorWorks", NONDETERMINISTIC_LOG_DATA)
+                .preserving(EVM_VERSION_PROPERTY)
+                .given(
+                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_046),
+                        cryptoCreate(BENEFICIARY).balance(ONE_HUNDRED_HBARS),
+                        uploadInitCode(contract))
                 .when(
                         contractCreate(contract)
                                 .balance(3 * ONE_HBAR)
@@ -95,10 +100,12 @@ public class SelfDestructSuite {
                         }));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> hscsEvm008SelfDestructWhenCalling() {
-        return defaultHapiSpec("hscsEvm008SelfDestructWhenCalling", NONDETERMINISTIC_TRANSACTION_FEES)
+        return propertyPreservingHapiSpec("hscsEvm008SelfDestructWhenCalling", NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving(EVM_VERSION_PROPERTY)
                 .given(
+                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_046),
                         cryptoCreate("acc").balance(5 * ONE_HUNDRED_HBARS),
                         uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT))
                 .when(contractCreate(SELF_DESTRUCT_CALLABLE_CONTRACT)
@@ -112,7 +119,7 @@ public class SelfDestructSuite {
                                 .has(contractWith().isDeleted()));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn46() {
         return selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn(EVM_VERSION_046);
     }
@@ -127,10 +134,11 @@ public class SelfDestructSuite {
         final AtomicLong beneficiaryId = new AtomicLong();
         return propertyPreservingHapiSpec(
                         "selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn" + evmVersion)
-                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
+                .preserving(EVM_VERSION_PROPERTY)
                 .given(
-                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
-                        overriding(EVM_VERSION_PROPERTY, evmVersion),
+                        sourcing(() -> EVM_VERSION_046.equals(evmVersion)
+                                ? overriding(EVM_VERSION_PROPERTY, evmVersion)
+                                : noOp()),
                         cryptoCreate(BENEFICIARY)
                                 .balance(ONE_HUNDRED_HBARS)
                                 .receiverSigRequired(true)
@@ -148,7 +156,7 @@ public class SelfDestructSuite {
                                 .has(contractWith().balance(ONE_HBAR)));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed46() {
         return selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed(EVM_VERSION_046);
     }
@@ -163,10 +171,11 @@ public class SelfDestructSuite {
         return propertyPreservingHapiSpec(
                         "selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed"
                                 + evmVersion)
-                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
+                .preserving(EVM_VERSION_PROPERTY)
                 .given(
-                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
-                        overriding(EVM_VERSION_PROPERTY, evmVersion),
+                        sourcing(() -> EVM_VERSION_046.equals(evmVersion)
+                                ? overriding(EVM_VERSION_PROPERTY, evmVersion)
+                                : noOp()),
                         uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT),
                         contractCreate(SELF_DESTRUCT_CALLABLE_CONTRACT).balance(ONE_HBAR))
                 .when(contractCallLocal(
@@ -175,7 +184,7 @@ public class SelfDestructSuite {
                 .then();
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> testSelfDestructForSystemAccounts46() {
         return testSelfDestructForSystemAccounts(EVM_VERSION_046);
     }
@@ -199,10 +208,11 @@ public class SelfDestructSuite {
         System.arraycopy(nonExistingAccountsOps, 0, opsArray, 0, nonExistingAccountsOps.length);
         System.arraycopy(existingAccountsOps, 0, opsArray, nonExistingAccountsOps.length, existingAccountsOps.length);
         return propertyPreservingHapiSpec("testSelfDestructForSystemAccounts" + evmVersion)
-                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
+                .preserving(EVM_VERSION_PROPERTY)
                 .given(
-                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
-                        overriding(EVM_VERSION_PROPERTY, evmVersion),
+                        sourcing(() -> EVM_VERSION_046.equals(evmVersion)
+                                ? overriding(EVM_VERSION_PROPERTY, evmVersion)
+                                : noOp()),
                         cryptoCreate(BENEFICIARY)
                                 .balance(ONE_HUNDRED_HBARS)
                                 .receiverSigRequired(false)
@@ -213,7 +223,7 @@ public class SelfDestructSuite {
                 .then(nonExistingAccountsOps);
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> deletedContractsCannotBeUpdated46() {
         return deletedContractsCannotBeUpdated(EVM_VERSION_046);
     }
@@ -239,10 +249,11 @@ public class SelfDestructSuite {
                         EXPECT_STREAMLINED_INGEST_RECORDS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE)
-                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
+                .preserving(EVM_VERSION_PROPERTY)
                 .given(
-                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
-                        overriding(EVM_VERSION_PROPERTY, evmVersion),
+                        sourcing(() -> EVM_VERSION_046.equals(evmVersion)
+                                ? overriding(EVM_VERSION_PROPERTY, evmVersion)
+                                : noOp()),
                         uploadInitCode(contract),
                         contractCreate(contract).gas(300_000),
                         cryptoCreate(beneficiary).balance(ONE_HUNDRED_HBARS))
