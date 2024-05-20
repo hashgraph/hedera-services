@@ -295,7 +295,7 @@ public class RecordFinalizerBase {
             final HashMap<TokenID, List<NftTransfer>> nftChanges,
             @Nullable final Map<EntityIDPair, Long> tokenRelChanges) {
         final var isMint = senderAccountId.accountNum() == 0;
-        final var isWipe = receiverAccountId.accountNum() == 0;
+        final var isWipeOrBurn = receiverAccountId.accountNum() == 0;
         final var nftTransfer = NftTransfer.newBuilder()
                 .serialNumber(nftId.serialNumber())
                 .senderAccountID(senderAccountId)
@@ -310,7 +310,7 @@ public class RecordFinalizerBase {
         currentNftChanges.add(nftTransfer);
         nftChanges.put(nftId.tokenId(), currentNftChanges);
 
-        if (tokenRelChanges != null) {
+        if (tokenRelChanges != null && !tokenRelChanges.isEmpty()) {
             final var receiverEntityIdPair = EntityIDPair.newBuilder()
                     .accountId(receiverAccountId)
                     .tokenId(nftId.tokenId())
@@ -319,14 +319,15 @@ public class RecordFinalizerBase {
                     .accountId(senderAccountId)
                     .tokenId(nftId.tokenId())
                     .build();
-            if (isMint || isWipe) {
+            if (isMint || isWipeOrBurn) {
                 // The mint amount is not shown in the token transfer list. So for a mint transaction we need not show
                 // the token transfer changes to treasury
                 tokenRelChanges.remove(receiverEntityIdPair);
                 tokenRelChanges.remove(senderEntityIdPair);
             } else {
-                // The mint amount is not shown in the token transfer list. So for a mint transaction we need not show
-                // the token transfer changes to treasury
+                // Because the NFT transfer list already contains all information about how the
+                // sender/receiver # of owned NFT counts are changing, we don't repeat this in
+                // the tokenTransferLists; these merge() calls remove the duplicate information
                 if (tokenRelChanges.merge(receiverEntityIdPair, -1L, Long::sum) == 0) {
                     tokenRelChanges.remove(receiverEntityIdPair);
                 }
