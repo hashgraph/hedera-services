@@ -30,7 +30,7 @@ import java.io.IOException;
 /**
  * A simple testing application intended for use with TURTLE.
  * <pre>
- *   _______    ֥  ֖        ֥  ֖   _______
+ *   _______    ֥  ֖       ֥  ֖    _______
  * 〈 Tᴜʀᴛʟᴇ ᐳ﹙⚬◡°﹚   ﹙°◡⚬﹚ᐸ ᴇʟᴛʀᴜT 〉
  *   ﹉∏﹉∏﹉                   ﹉∏﹉∏﹉
  * </pre>
