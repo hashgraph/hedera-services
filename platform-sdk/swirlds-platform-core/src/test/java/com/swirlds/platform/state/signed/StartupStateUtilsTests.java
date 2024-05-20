@@ -118,7 +118,7 @@ class StartupStateUtilsTests {
 
         return TestPlatformContextBuilder.create()
                 .withConfiguration(configuration)
-                .withTestFileSystemManager(testDirectory, recycleBin)
+                .withTestFileSystemManager(testDirectory, (m, n) -> recycleBin)
                 .build();
     }
 
