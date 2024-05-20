@@ -25,7 +25,7 @@ import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.event.preconsensus.PcesBirthRoundMigration.migratePcesToBirthRoundMode;
 import static com.swirlds.platform.state.BirthRoundStateMigration.modifyStateForBirthRoundMigration;
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
-import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
+import static com.swirlds.platform.state.snapshot.SignedStateFileReader.getSavedStateFiles;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RESTART;
 import static com.swirlds.platform.system.SoftwareVersion.NO_VERSION;
@@ -83,13 +83,12 @@ import com.swirlds.platform.state.nexus.LockFreeStateNexus;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.DefaultStateSignatureCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
-import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
-import com.swirlds.platform.state.signed.StateToDiskReason;
+import com.swirlds.platform.state.snapshot.SavedStateInfo;
+import com.swirlds.platform.state.snapshot.StateDumpRequest;
+import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -252,14 +251,6 @@ public class SwirldsPlatform implements Platform {
 
         final String swirldName = blocks.swirldName();
 
-        final SignedStateFileManager signedStateFileManager = new SignedStateFileManager(
-                platformContext,
-                new SignedStateMetrics(platformContext.getMetrics()),
-                Time.getCurrent(),
-                actualMainClassName,
-                selfId,
-                swirldName);
-
         final LatestCompleteStateNexus latestCompleteStateNexus =
                 new DefaultLatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
 
@@ -330,7 +321,6 @@ public class SwirldsPlatform implements Platform {
 
         platformWiring.bind(
                 builder,
-                signedStateFileManager,
                 stateSigner,
                 pcesReplayer,
                 stateSignatureCollector,

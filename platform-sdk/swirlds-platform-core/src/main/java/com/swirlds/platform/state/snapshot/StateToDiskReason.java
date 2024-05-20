@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.signed;
+package com.swirlds.platform.state.snapshot;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;

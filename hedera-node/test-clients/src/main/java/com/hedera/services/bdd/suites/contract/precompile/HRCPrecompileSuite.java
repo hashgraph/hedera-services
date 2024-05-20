@@ -26,7 +26,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWit
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -51,9 +53,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
@@ -79,6 +85,71 @@ public class HRCPrecompileSuite {
     private static final String RANDOM_KEY = "randomKey";
     private static final String ASSOCIATE = "associate";
     private static final String DISSOCIATE = "dissociate";
+
+    @HapiTest
+    final Stream<DynamicTest> hrcCanDissociateFromDeletedToken() {
+        final AtomicReference<String> nonfungibleTokenNum = new AtomicReference<>();
+
+        return defaultHapiSpec("hrcCanDissociateFromDeletedToken", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .name(TOKEN_NAME)
+                                .symbol(TOKEN_SYMBOL)
+                                .initialSupply(0)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .exposingCreatedIdTo(nonfungibleTokenNum::set),
+                        mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("PRICELESS")))
+                                .payingWith(ACCOUNT)
+                                .via("mintTxn"),
+                        uploadInitCode(HRC),
+                        contractCreate(HRC))
+                .when(withOpContext((spec, opLog) -> {
+                    var nonfungibleTokenAddress = asHexedSolidityAddress(asToken(nonfungibleTokenNum.get()));
+                    allRunFor(
+                            spec,
+                            // Associate non-fungible token
+                            contractCallWithFunctionAbi(
+                                            nonfungibleTokenAddress,
+                                            getABIFor(Utils.FunctionType.FUNCTION, ASSOCIATE, HRC))
+                                    .payingWith(ACCOUNT)
+                                    .gas(1_000_000)
+                                    .via(ASSOCIATE_TXN_2),
+                            cryptoTransfer(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1)
+                                    .between(TOKEN_TREASURY, ACCOUNT)),
+                            tokenDelete(NON_FUNGIBLE_TOKEN).via("deleteTxn"),
+                            // Dissociate non-fungible token
+                            contractCallWithFunctionAbi(
+                                            nonfungibleTokenAddress,
+                                            getABIFor(Utils.FunctionType.FUNCTION, DISSOCIATE, HRC))
+                                    .payingWith(ACCOUNT)
+                                    .gas(1_000_000)
+                                    .via(DISSOCIATE_TXN_2));
+                }))
+                .then(withOpContext((spec, ignore) -> allRunFor(
+                        spec,
+                        childRecordsCheck(
+                                ASSOCIATE_TXN_2,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
+                        childRecordsCheck(
+                                DISSOCIATE_TXN_2,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))))));
+    }
 
     @HapiTest
     final Stream<DynamicTest> hrcNftAndFungibleTokenAssociateFromEOA() {

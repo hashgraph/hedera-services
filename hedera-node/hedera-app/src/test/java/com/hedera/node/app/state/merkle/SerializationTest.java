@@ -184,7 +184,7 @@ class SerializationTest extends MerkleTestBase {
     }
 
     /**
-     * This test scenario is trickier, and it's designed to reproduce <a href="https://github.com/hashgraph/hedera-services/issues/13335">this issue</a>
+     * This test scenario is trickier, and it's designed to reproduce <a href="https://github.com/hashgraph/hedera-services/issues/13335">#13335: OnDiskKeySerializer uses wrong classId for OnDiskKey.</a>
      * This issue can be reproduced only if at first it gets flushed to disk, then it gets loaded back in, and this time it remains in cache.
      * After it gets saved to disk again, and then loaded back in, it results in ClassCastException due to incorrect classId.
      */
@@ -247,7 +247,6 @@ class SerializationTest extends MerkleTestBase {
     }
 
     private MerkleHederaState createMerkleHederaState(Schema schemaV1) {
-        // Given a merkle tree with some fruit and animals and country
         final var v1 = version(1, 0, 0);
         final var originalTree = new MerkleHederaState(lifecycles);
         final var originalRegistry =
@@ -271,7 +270,6 @@ class SerializationTest extends MerkleTestBase {
     }
 
     private static void assertTree(MerkleHederaState loadedTree) {
-        // Then, we should be able to see all our original states again
         final var states = loadedTree.getReadableStates(FIRST_SERVICE);
         final ReadableKVState<String, String> fruitState = states.get(FRUIT_STATE_KEY);
         assertThat(fruitState.get(A_KEY)).isEqualTo(APPLE);
