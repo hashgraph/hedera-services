@@ -112,7 +112,7 @@ public class Turtle {
 
         network = new SimulatedNetwork(randotron, addressBook, Duration.ofMillis(200), Duration.ofMillis(10));
 
-        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
+        for (final NodeId nodeId : addressBook.getNodeIdSet().stream().sorted().toList()) {
             nodes.add(new TurtleNode(
                     randotron, time, nodeId, addressBook, addressBookBuilder.getPrivateKeys(nodeId), network));
         }
@@ -187,6 +187,9 @@ public class Turtle {
      */
     private void tickAllNodes() {
         final List<Future<Void>> futures = new ArrayList<>();
+
+        // Iteration order over nodes does not need to be deterministic -- nodes are not permitted to communicate with
+        // each other during the tick phase, and they run on separate threads to boot.
         for (final TurtleNode node : nodes) {
             final Future<Void> future = threadPool.submit(() -> {
                 node.tick();

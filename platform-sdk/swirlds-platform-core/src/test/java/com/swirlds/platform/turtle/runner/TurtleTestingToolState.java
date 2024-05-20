@@ -27,6 +27,14 @@ import com.swirlds.platform.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
+/**
+ * A simple testing application intended for use with TURTLE.
+ * <pre>
+ *   _______    ֥  ֖        ֥  ֖   _______
+ * 〈 Tᴜʀᴛʟᴇ ᐳ﹙⚬◡°﹚   ﹙°◡⚬﹚ᐸ ᴇʟᴛʀᴜT 〉
+ *   ﹉∏﹉∏﹉                   ﹉∏﹉∏﹉
+ * </pre>
+ */
 public class TurtleTestingToolState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
 
     private static final long CLASS_ID = 0xa49b3822a4136ac6L;
@@ -45,6 +53,7 @@ public class TurtleTestingToolState extends PartialMerkleLeaf implements SwirldS
 
     /**
      * Copy constructor.
+     *
      * @param that the object to copy
      */
     private TurtleTestingToolState(@NonNull final TurtleTestingToolState that) {
