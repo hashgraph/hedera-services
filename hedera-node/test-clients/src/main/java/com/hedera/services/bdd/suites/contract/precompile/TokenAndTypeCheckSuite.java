@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.is
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -37,15 +38,20 @@ import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
+import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.math.BigInteger;
 import java.util.List;
@@ -64,6 +70,7 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
     private static final int GAS_TO_OFFER = 1_000_000;
     private static final String GET_TOKEN_TYPE = "getType";
     private static final String IS_TOKEN = "isAToken";
+    private static final String IS_TOKEN_WITH_CALL = "isATokenWithCall";
 
     public static void main(String... args) {
         new TokenAndTypeCheckSuite().runSuiteAsync();
@@ -81,7 +88,7 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(checkTokenAndTypeStandardCases(), checkTokenAndTypeNegativeCases());
+        return List.of(checkTokenAndTypeStandardCases(), checkTokenAndTypeNegativeCases(), isTokenViaCall());
     }
 
     @HapiTest
@@ -184,4 +191,37 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
                                 //                                                        .withIsToken(false)))
                                 ));
     }
+
+    @HapiTest
+    final HapiSpec isTokenViaCall() {
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+
+        return defaultHapiSpec("isTokenViaCall")
+                .given(
+                        cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(VANILLA_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(1_000)
+                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                        tokenAssociate(ACCOUNT, VANILLA_TOKEN),
+                        uploadInitCode(TOKEN_AND_TYPE_CHECK_CONTRACT),
+                        contractCreate(TOKEN_AND_TYPE_CHECK_CONTRACT))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                TOKEN_AND_TYPE_CHECK_CONTRACT,
+                                IS_TOKEN_WITH_CALL,
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .sending(100)
+                                .via("isTokenWithValue"))))
+                .then(
+                        childRecordsCheck(
+                                "isTokenWithValue",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_FEE_SUBMITTED)));
+    }
+
 }

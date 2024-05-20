@@ -5,7 +5,9 @@ import "./HederaResponseCodes.sol";
 
 contract TokenAndTypeCheck is HederaTokenService {
 
-    function isAToken(address token) external returns(bool) {
+    address constant HTS_PRECOMPILE_ADDRESS = address(0x167);
+
+    function isAToken(address token) external payable returns(bool) {
         (int statusCode, bool isToken) = HederaTokenService.isToken(token);
 
         if (statusCode != HederaResponseCodes.SUCCESS) {
@@ -21,5 +23,16 @@ contract TokenAndTypeCheck is HederaTokenService {
             revert ("Token type appraisal failed!");
         }
         return tokenType;
+    }
+
+    function isATokenWithCall(address token) external payable returns (bool success, bool isToken) {
+        (bool callSuccess, bytes memory result) = HTS_PRECOMPILE_ADDRESS.call{value: msg.value}(
+            abi.encodeWithSignature("isToken(address)", token));
+        require(callSuccess);
+
+        (int64 responseCode, bool isTokenFlag) = abi.decode(result, (int32, bool));
+        success = responseCode == 22; // success
+        isToken = success && isTokenFlag;
+
     }
 }
