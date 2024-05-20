@@ -54,9 +54,12 @@ sourceSets {
 }
 
 /**
- * -DtagExpression='CRYPTO|STREAM_VALIDATION' -DtagExpression='TOKEN|STREAM_VALIDATION'
- * -DtagExpression='RESTART|STREAM_VALIDATION' -DtagExpression='SMART_CONTRACT|STREAM_VALIDATION'
- * -DtagExpression='ND_RECONNECT|STREAM_VALIDATION' -DtagExpression='LONG_RUNNING|STREAM_VALIDATION'
+ * For "crypto" CI check: -DtagExpression='CRYPTO|STREAM_VALIDATION' For "token" CI check:
+ * -DtagExpression='TOKEN|STREAM_VALIDATION' For "restart" CI check:
+ * -DtagExpression='RESTART|STREAM_VALIDATION' For "smart-contract" CI check:
+ * -DtagExpression='SMART_CONTRACT|STREAM_VALIDATION' For "nd-reconnect" CI check:
+ * -DtagExpression='ND_RECONNECT|STREAM_VALIDATION' For "time-consuming" CI check:
+ * -DtagExpression='LONG_RUNNING|STREAM_VALIDATION' For "misc" CI check:
  * -DtagExpression='!(CRYPTO|TOKEN|SMART_CONTRACT|LONG_RUNNING|RESTART|ND_RECONNECT)|STREAM_VALIDATION'
  */
 tasks.test {

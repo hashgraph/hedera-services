@@ -131,6 +131,7 @@ public class HederaNetwork {
         nextGossipPort += size * 2;
         nextGossipTlsPort += size * 2;
         nextPrometheusPort += size;
+        Runtime.getRuntime().addShutdownHook(new Thread(network::terminate));
         return network;
     }
 
