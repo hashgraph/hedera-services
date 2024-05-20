@@ -49,9 +49,8 @@ public class BasicSoftwareVersion implements SoftwareVersion {
      */
     public BasicSoftwareVersion(final int softwareVersion) {
         this.softwareVersion = softwareVersion;
-        this.semanticVersion = SemanticVersion.newBuilder()
-                .major(softwareVersion)
-                .build();
+        this.semanticVersion =
+                SemanticVersion.newBuilder().major(softwareVersion).build();
     }
 
     /**
