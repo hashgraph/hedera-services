@@ -1038,13 +1038,12 @@ public class PlatformComponentBuilder {
         return stateHasher;
     }
 
-    /*
+    /**
      * Provide a state snapshot manager in place of the platform's default state snapshot manager.
      *
      * @param stateSnapshotManager the state snapshot manager to use
      * @return this builder
      */
-
     @NonNull
     public PlatformComponentBuilder withStateSnapshotManager(@NonNull final StateSnapshotManager stateSnapshotManager) {
         throwIfAlreadyUsed();
@@ -1054,6 +1053,7 @@ public class PlatformComponentBuilder {
         this.stateSnapshotManager = Objects.requireNonNull(stateSnapshotManager);
         return this;
     }
+
     /**
      * Build the state snapshot manager if it has not yet been built. If one has been provided via
      * {@link #withStateSnapshotManager(StateSnapshotManager)}, that manager will be used. If this method is called more
