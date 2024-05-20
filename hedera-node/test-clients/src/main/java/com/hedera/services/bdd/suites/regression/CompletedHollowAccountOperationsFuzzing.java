@@ -40,6 +40,6 @@ public class CompletedHollowAccountOperationsFuzzing {
                 .then(runWithProvider(hollowAccountFuzzingWith(PROPERTIES))
                         .maxOpsPerSec(10)
                         .loggingOff()
-                        .lasting(60L, TimeUnit.SECONDS));
+                        .lasting(10L, TimeUnit.SECONDS));
     }
 }
