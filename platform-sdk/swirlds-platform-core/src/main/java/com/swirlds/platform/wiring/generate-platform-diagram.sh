@@ -11,7 +11,6 @@ SCRIPT_PATH="$(dirname "$(readlink -f "$0")")"
 pcli diagram \
     -l 'TransactionPrehandler:futures:consensusRoundHandler' \
     -l 'EventCreationManager:get transactions:TransactionPool' \
-    -l 'RunningEventHasher:future hash:consensusRoundHandler' \
     -l 'ConsensusEventStream:future hash:consensusRoundHandler' \
     -s 'eventWindowManager:event window:🌀' \
     -s 'heartbeat:heartbeat:❤️' \
