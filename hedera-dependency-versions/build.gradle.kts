@@ -110,7 +110,7 @@ dependencies.constraints {
     api("io.netty:netty-transport-classes-epoll:4.1.87.Final") {
         because("io.netty.transport.classes.epoll")
     }
-    api("io.perfmark:perfmark-api:0.25.0") {
+    api("io.perfmark:perfmark-api:0.27.0") {
         because("io.perfmark")
     }
     api("io.prometheus:simpleclient:0.16.0") {
