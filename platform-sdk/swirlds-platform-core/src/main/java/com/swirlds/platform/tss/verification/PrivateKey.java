@@ -36,10 +36,18 @@ public interface PrivateKey<P extends PublicKey> {
     static PrivateKey<?> deserialize(final byte[] bytes) {
         // the first byte is id of the curve
         final byte curve = bytes[0];
+        // the second byte is the group that signatures produced by this private key are in
+        final byte signatureGroup = bytes[1];
 
         switch (curve) {
             case Bls12381Curve.ID_BYTE:
-                return new Bls12381G2SigPrivateKey(Bls12381Field.getInstance().deserializeElementFromBytes(bytes));
+                if (signatureGroup == 2) {
+                    return new Bls12381G2SigPrivateKey(
+                            Bls12381Field.getInstance().deserializeElementFromBytes(bytes));
+                } else {
+                    throw new UnsupportedOperationException(
+                            "Only private keys that produce signatures in group 2 are currently supported");
+                }
             default:
                 throw new UnsupportedOperationException("Unknown curve");
         }
