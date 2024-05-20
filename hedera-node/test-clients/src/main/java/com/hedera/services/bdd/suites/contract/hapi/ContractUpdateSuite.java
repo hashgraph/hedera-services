@@ -49,6 +49,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
@@ -109,7 +110,8 @@ public class ContractUpdateSuite extends HapiSuite {
                 immutableContractKeyFormIsStandard(),
                 updateAutoRenewAccountWorks(),
                 updateStakingFieldsWorks(),
-                cannotUpdateMaxAutomaticAssociations());
+                cannotUpdateMaxAutomaticAssociations(),
+                tryContractUpdateWithMaxAutoAssociations());
     }
 
     @HapiTest
@@ -522,6 +524,21 @@ public class ContractUpdateSuite extends HapiSuite {
                         contractCreate(CONTRACT).adminKey(ADMIN_KEY))
                 .when()
                 .then(contractUpdate(CONTRACT).newMaxAutomaticAssociations(20).hasKnownStatus(NOT_SUPPORTED));
+    }
+
+    @HapiTest
+    HapiSpec tryContractUpdateWithMaxAutoAssociations() {
+        return defaultHapiSpec("tryContractUpdateWithMaxAutoAssociations")
+                .given(
+                        newKeyNamed(ADMIN_KEY),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT).adminKey(ADMIN_KEY))
+                .when()
+                .then(
+                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(-2).hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(-200).hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(-1).hasKnownStatus(SUCCESS)
+                );
     }
 
     @Override
