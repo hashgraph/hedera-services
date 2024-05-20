@@ -133,10 +133,10 @@ public class Turtle {
      * @param duration the duration to simulate
      */
     public void simulateTime(@NonNull final Duration duration) {
-        final Instant startingTime = time.now();
-        final Instant endingTime = startingTime.plus(duration);
+        final Instant simulatedStart = time.now();
+        final Instant simulatedEnd = simulatedStart.plus(duration);
 
-        while (time.now().isBefore(endingTime)) {
+        while (time.now().isBefore(simulatedEnd)) {
             reportThePassageOfTime();
 
             time.tick(simulationGranularity);
