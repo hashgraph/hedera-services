@@ -58,8 +58,7 @@ public class FileSystemManagerImplTest {
                 getTestRootPath(),
                 FileSystemManagerConfig.DEFAULT_DATA_DIR_NAME,
                 FileSystemManagerConfig.DEFAULT_TMP_DIR_NAME,
-                FileSystemManagerConfig.DEFAULT_RECYCLE_BIN_DIR_NAME,
-                p -> mockRecycleBin);
+                mockRecycleBin);
     }
 
     private String getTestRootPath() {
@@ -86,8 +85,7 @@ public class FileSystemManagerImplTest {
                 largeRootLocation,
                 FileSystemManagerConfig.DEFAULT_DATA_DIR_NAME,
                 FileSystemManagerConfig.DEFAULT_TMP_DIR_NAME,
-                FileSystemManagerConfig.DEFAULT_RECYCLE_BIN_DIR_NAME,
-                p -> mockRecycleBin);
+                mockRecycleBin);
         // then
         assertThat(Path.of(largeRootLocation)).isDirectory().isNotEmptyDirectory();
     }
@@ -110,8 +108,7 @@ public class FileSystemManagerImplTest {
         assertThat(dir)
                 .isNotEmptyDirectory()
                 .isDirectoryContaining("glob:**" + FileSystemManagerConfig.DEFAULT_TMP_DIR_NAME)
-                .isDirectoryContaining("glob:**" + FileSystemManagerConfig.DEFAULT_DATA_DIR_NAME)
-                .isDirectoryContaining("glob:**" + FileSystemManagerConfig.DEFAULT_RECYCLE_BIN_DIR_NAME);
+                .isDirectoryContaining("glob:**" + FileSystemManagerConfig.DEFAULT_DATA_DIR_NAME);
         assertThat(tmpDir).isDirectoryNotContaining("glob:{" + String.join(",", tmpFileNames) + "}");
     }
 
