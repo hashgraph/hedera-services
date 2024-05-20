@@ -37,7 +37,8 @@ import java.util.Objects;
  */
 public class SwirldTransaction extends ConsensusTransactionImpl implements Comparable<SwirldTransaction> {
     /** ensures that payload is never null even when constructed with the no-args constructor */
-    private static final OneOf<PayloadOneOfType> DEFAULT_PAYLOAD = new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.EMPTY);
+    private static final OneOf<PayloadOneOfType> DEFAULT_PAYLOAD =
+            new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.EMPTY);
     /** class identifier for the purposes of serialization */
     public static final long CLASS_ID = 0x9ff79186f4c4db97L;
     /** current class version */
@@ -255,7 +256,7 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
         return (int) getBytes().length();
     }
 
-    private Bytes getBytes(){
+    private Bytes getBytes() {
         return payload.as();
     }
 
