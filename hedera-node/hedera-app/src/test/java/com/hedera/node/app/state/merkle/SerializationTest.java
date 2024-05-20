@@ -184,7 +184,7 @@ class SerializationTest extends MerkleTestBase {
     }
 
     /**
-     * This test scenario is trickier, and it's designed to reproduce <a href="https://github.com/hashgraph/hedera-services/issues/13335">this issue</a>
+     * This test scenario is trickier, and it's designed to reproduce <a href="https://github.com/hashgraph/hedera-services/issues/13335">#13335: OnDiskKeySerializer uses wrong classId for OnDiskKey.</a>
      * This issue can be reproduced only if at first it gets flushed to disk, then it gets loaded back in, and this time it remains in cache.
      * After it gets saved to disk again, and then loaded back in, it results in ClassCastException due to incorrect classId.
      */
