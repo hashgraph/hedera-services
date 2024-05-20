@@ -40,12 +40,13 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-public interface HapiPropertySource {
+public interface HapiPropertySource extends Serializable {
 
     String ENTITY_STRING = "%d.%d.%d";
 

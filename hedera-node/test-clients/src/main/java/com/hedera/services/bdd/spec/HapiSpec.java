@@ -41,6 +41,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.MIGRATION_TEST;
 import static com.hedera.services.bdd.spec.utilops.streams.RecordAssertions.triggerAndCloseAtLeastOneFileIfNotInterrupted;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SUFFIX;
@@ -70,6 +71,9 @@ import com.hedera.services.bdd.spec.persistence.EntityManager;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
+import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
+import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.spec.utilops.records.AutoSnapshotModeOp;
@@ -88,9 +92,12 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -172,6 +179,9 @@ public class HapiSpec implements Runnable {
         FALSE,
         TRUE
     }
+
+    List<Class<? extends HapiTxnOp>> OP_TO_SKIP_AFTER_MIGRATION =
+            List.of(HapiFileCreate.class, HapiContractCreate.class, HapiCryptoCreate.class);
 
     private record Failure(Throwable cause, String opDescription) {
         private static String LOG_TPL = "%s when executing %s";
@@ -352,10 +362,40 @@ public class HapiSpec implements Runnable {
         return !ok(spec);
     }
 
+    public boolean isMigrationTest() {
+        return Arrays.asList(snapshotMatchModes).contains(MIGRATION_TEST);
+    }
+
+    private boolean isRegistryLoaded = false;
+
     @Override
     public void run() {
         if (!init()) {
             return;
+        }
+
+        // if migration test mode is enabled, try to load registry from tmp file
+        var registryFileName = "tmp/".concat(name);
+        if (isMigrationTest()) {
+            HapiSpecRegistry loadedRegistry;
+            FileInputStream fileIn = null;
+            try {
+                fileIn = new FileInputStream(registryFileName);
+                var regIn = new ObjectInputStream(fileIn);
+                loadedRegistry = (HapiSpecRegistry) regIn.readObject();
+
+                if (loadedRegistry != null) {
+                    hapiRegistry = loadedRegistry;
+                    isRegistryLoaded = true;
+                    log.info("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+                    log.info("Registry file was loaded. Some operations will be skipped!");
+                    log.info("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+                }
+            } catch (IOException | ClassNotFoundException e) {
+                log.info("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+                log.warn("No registry file to load! Executing all operations...");
+                log.info("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+            }
         }
 
         List<HapiSpecOperation> ops;
@@ -385,6 +425,24 @@ public class HapiSpec implements Runnable {
             compareWithSnapshot();
         }
 
+        if (isMigrationTest() && !status.equals(FAILED)) {
+            // save registry
+            try {
+                if (!name.equals("CloseLastStreamFileWithNoBalanceImpact")
+                        && !name.equals("ValidateTokenBalances")
+                        && !name.equals("ValidateBalances")) {
+                    var fileOutputStream = new FileOutputStream(registryFileName);
+                    var regOut = new ObjectOutputStream(fileOutputStream);
+                    regOut.writeObject(hapiRegistry);
+                    log.info("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+                    log.info("Registry file was saved");
+                    log.info("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+                }
+
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
         nullOutInfrastructure();
     }
 
@@ -482,6 +540,17 @@ public class HapiSpec implements Runnable {
             return;
         }
 
+        // Filter operations if we are running in migration test mode
+        // and if registry is already loaded
+        List<HapiSpecOperation> operationsToSkipAfterMigration = new ArrayList<>();
+        if (isMigrationTest() && isRegistryLoaded) {
+            ops.forEach(op -> {
+                if (OP_TO_SKIP_AFTER_MIGRATION.contains(op.getClass())) {
+                    operationsToSkipAfterMigration.add(op);
+                }
+            });
+        }
+
         if (hapiSetup.requiresPersistentEntities()) {
             List<HapiSpecOperation> creationOps = entities.requiredCreations();
             if (!creationOps.isEmpty()) {
@@ -518,6 +587,14 @@ public class HapiSpec implements Runnable {
             ops.add(0, (UtilOp) snapshotOp);
         }
         for (HapiSpecOperation op : ops) {
+
+            if (operationsToSkipAfterMigration.contains(op)) {
+                log.warn("++++++++++++++++++++++++++++++++++++++++++++++++++++");
+                log.warn("SKIP  {}", op.getClass().getName());
+                log.warn("++++++++++++++++++++++++++++++++++++++++++++++++++++");
+                continue;
+            }
+
             if (!autoScheduled.isEmpty() && op.shouldSkipWhenAutoScheduling(autoScheduled)) {
                 continue;
             }

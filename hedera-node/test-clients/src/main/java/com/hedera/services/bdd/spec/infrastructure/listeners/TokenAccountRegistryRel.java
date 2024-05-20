@@ -16,7 +16,9 @@
 
 package com.hedera.services.bdd.spec.infrastructure.listeners;
 
-public class TokenAccountRegistryRel {
+import java.io.Serializable;
+
+public class TokenAccountRegistryRel implements Serializable {
     /* Names of a token and account in a spec registry */
     private final String token, account;
 

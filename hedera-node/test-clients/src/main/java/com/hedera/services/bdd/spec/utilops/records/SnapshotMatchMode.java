@@ -86,5 +86,6 @@ public enum SnapshotMatchMode {
     /**
      * Allows for fully deterministic matching.
      */
-    FULLY_DETERMINISTIC
+    FULLY_DETERMINISTIC,
+    MIGRATION_TEST
 }

@@ -32,6 +32,7 @@ import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.utilops.records.AutoSnapshotRecordSource;
 import com.hederahashgraph.api.proto.java.*;
+import java.io.Serializable;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.function.Function;
@@ -39,7 +40,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 
-public class HapiSpecSetup {
+public class HapiSpecSetup implements Serializable {
     private final SecureRandom r = new SecureRandom();
 
     private static final HapiPropertySource defaultNodeProps;

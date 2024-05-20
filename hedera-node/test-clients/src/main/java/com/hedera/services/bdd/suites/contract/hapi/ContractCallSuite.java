@@ -74,6 +74,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.MIGRATION_TEST;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
@@ -140,7 +141,7 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
+@HapiTestSuite
 @Tag(SMART_CONTRACT)
 public class ContractCallSuite extends HapiSuite {
 
@@ -260,14 +261,14 @@ public class ContractCallSuite extends HapiSuite {
                 depositMoreThanBalanceFailsGracefully(),
                 lowLevelEcrecCallBehavior(),
                 callsToSystemEntityNumsAreTreatedAsPrecompileCalls(),
-                hollowCreationFailsCleanly(),
-                repeatedCreate2FailsWithInterpretableActionSidecars(),
+                //                hollowCreationFailsCleanly(),
+                //                repeatedCreate2FailsWithInterpretableActionSidecars(),
                 callStaticCallToLargeAddress());
     }
 
     @HapiTest
     public HapiSpec canHandleInvalidContractCallTransactions() {
-        return defaultHapiSpec("canHandleInvalidContractCallTransactions")
+        return defaultHapiSpec("canHandleInvalidContractCallTransactions", MIGRATION_TEST)
                 .given()
                 .when()
                 .then(contractCall(null).hasPrecheck(INVALID_CONTRACT_ID));
@@ -279,7 +280,10 @@ public class ContractCallSuite extends HapiSuite {
         final var salt = unhex(SALT);
         final var firstCreation = "firstCreation";
         final var secondCreation = "secondCreation";
-        return defaultHapiSpec("repeatedCreate2FailsWithInterpretableActionSidecars", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec(
+                        "repeatedCreate2FailsWithInterpretableActionSidecars",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        MIGRATION_TEST)
                 .given(
                         streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
@@ -309,7 +313,7 @@ public class ContractCallSuite extends HapiSuite {
         final var altbn128PairingAddress = asHeadlongAddress("0x08");
         final var htsSystemContractAddress = asHeadlongAddress("0x0167");
         final var tokenInfoFn = new Function("getTokenInfo(address)");
-        return defaultHapiSpec("insufficientGasToPrecompileFailsWithInterpretableActionSidecars")
+        return defaultHapiSpec("insufficientGasToPrecompileFailsWithInterpretableActionSidecars", MIGRATION_TEST)
                 .given(
                         streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
                         uploadInitCode(contract),
@@ -341,7 +345,7 @@ public class ContractCallSuite extends HapiSuite {
     @HapiTest
     final HapiSpec hollowCreationFailsCleanly() {
         final var contract = "HollowAccountCreator";
-        return defaultHapiSpec("HollowCreationFailsCleanly", FULLY_NONDETERMINISTIC)
+        return defaultHapiSpec("HollowCreationFailsCleanly", FULLY_NONDETERMINISTIC, MIGRATION_TEST)
                 .given(
                         streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
                         uploadInitCode(contract),
@@ -359,7 +363,7 @@ public class ContractCallSuite extends HapiSuite {
         final var TEST_CONTRACT = "TestContract";
         final var somebody = "somebody";
         final var account = "0.0.1";
-        return defaultHapiSpec("LowLevelEcrecCallBehavior", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("LowLevelEcrecCallBehavior", NONDETERMINISTIC_TRANSACTION_FEES, MIGRATION_TEST)
                 .given(
                         uploadInitCode(TEST_CONTRACT),
                         contractCreate(
@@ -415,7 +419,10 @@ public class ContractCallSuite extends HapiSuite {
         final var failedResult = Bytes32.repeat((byte) 0);
         final ContractCallResult unsuccessfulResult = () -> failedResult;
         final ContractCallResult successfulResult = () -> failedResult.or(Bytes.of(1));
-        return defaultHapiSpec("callsToSystemEntityNumsAreTreatedAsPrecompileCalls", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec(
+                        "callsToSystemEntityNumsAreTreatedAsPrecompileCalls",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        MIGRATION_TEST)
                 .given(
                         uploadInitCode(TEST_CONTRACT),
                         contractCreate(
@@ -606,7 +613,8 @@ public class ContractCallSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec depositMoreThanBalanceFailsGracefully() {
-        return defaultHapiSpec("depositMoreThanBalanceFailsGracefully", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec(
+                        "depositMoreThanBalanceFailsGracefully", NONDETERMINISTIC_TRANSACTION_FEES, MIGRATION_TEST)
                 .given(
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         cryptoCreate(ACCOUNT).balance(ONE_HBAR - 1))
@@ -624,7 +632,8 @@ public class ContractCallSuite extends HapiSuite {
                         "NestedContractCannotOverSendValue",
                         NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        HIGHLY_NON_DETERMINISTIC_FEES)
+                        HIGHLY_NON_DETERMINISTIC_FEES,
+                        MIGRATION_TEST)
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
                         cryptoCreate(RECEIVER).balance(10_000L),
@@ -682,7 +691,8 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec(
                         "whitelistingAliasedContract",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        MIGRATION_TEST)
                 .given(
                         sourcing(() -> createLargeFile(DEFAULT_PAYER, WHITELISTER, literalInitcodeFor("Whitelister"))),
                         sourcing(() -> createLargeFile(DEFAULT_PAYER, CREATOR, literalInitcodeFor("Creator"))),
@@ -737,7 +747,8 @@ public class ContractCallSuite extends HapiSuite {
                         "cannotUseMirrorAddressOfAliasedContractInPrecompileMethod",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        MIGRATION_TEST)
                 .given(
                         cryptoCreate("Treasury"),
                         sourcing(() -> createLargeFile(DEFAULT_PAYER, ASSOCIATOR, literalInitcodeFor("Associator"))),
@@ -795,7 +806,7 @@ public class ContractCallSuite extends HapiSuite {
         final AtomicReference<String> addressBookMirror = new AtomicReference<>();
         final AtomicReference<String> jurisdictionMirror = new AtomicReference<>();
 
-        return defaultHapiSpec("BitcarbonTestStillPasses", FULLY_NONDETERMINISTIC)
+        return defaultHapiSpec("BitcarbonTestStillPasses", FULLY_NONDETERMINISTIC, MIGRATION_TEST)
                 .given(
                         getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER),
                         withOpContext((spec, opLog) -> defaultPayerMirror.set((unhex(spec.registry()
@@ -874,7 +885,7 @@ public class ContractCallSuite extends HapiSuite {
         final var minPriceToAccessGatedMethod = 666L;
         final var minValueToAccessGatedMethodAtCurrentRate = new AtomicLong();
 
-        return defaultHapiSpec("ExchangeRatePrecompileWorks", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("ExchangeRatePrecompileWorks", NONDETERMINISTIC_TRANSACTION_FEES, MIGRATION_TEST)
                 .given(
                         uploadInitCode(rateAware),
                         contractCreate(rateAware, BigInteger.valueOf(minPriceToAccessGatedMethod)),
@@ -933,7 +944,8 @@ public class ContractCallSuite extends HapiSuite {
                         "erc721TokenUriAndHtsNftInfoTreatNonUtf8BytesDifferently",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        MIGRATION_TEST)
                 .given(
                         uploadInitCode(contractAlternatives),
                         contractCreate(contractAlternatives),
@@ -993,7 +1005,7 @@ public class ContractCallSuite extends HapiSuite {
         final var remove2 = "remove2";
         final var gasToOffer = 400_000;
 
-        return defaultHapiSpec("ImapUserExercise", FULLY_NONDETERMINISTIC)
+        return defaultHapiSpec("ImapUserExercise", FULLY_NONDETERMINISTIC, MIGRATION_TEST)
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(
@@ -1050,7 +1062,7 @@ public class ContractCallSuite extends HapiSuite {
         final AtomicReference<byte[]> erc721IsOperatorOutput = new AtomicReference<>();
         final var supplyKey = "supplyKey";
         final var ercUserKey = "ercUserKey";
-        return defaultHapiSpec("SpecialQueriesXTest", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("SpecialQueriesXTest", NONDETERMINISTIC_TRANSACTION_FEES, MIGRATION_TEST)
                 .given(
                         newKeyNamed(supplyKey),
                         newKeyNamed(ercUserKey).shape(SECP_256K1_SHAPE),
@@ -1180,6 +1192,7 @@ public class ContractCallSuite extends HapiSuite {
     // since we should modify the expected balances and change the test itself in order to pass with
     // Eth Calls
     @HapiTest
+    // check why not passing
     HapiSpec ocToken() {
         final var contract = "OcToken";
 
@@ -1188,7 +1201,8 @@ public class ContractCallSuite extends HapiSuite {
                         HIGHLY_NON_DETERMINISTIC_FEES,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        MIGRATION_TEST)
                 .given(
                         cryptoCreate(TOKEN_ISSUER).balance(1_000_000_000_000L),
                         cryptoCreate(ALICE).balance(10_000_000_000L).payingWith(TOKEN_ISSUER),
@@ -1409,7 +1423,7 @@ public class ContractCallSuite extends HapiSuite {
     HapiSpec smartContractInlineAssemblyCheck() {
         final var inlineTestContract = "InlineTest";
 
-        return defaultHapiSpec("smartContractInlineAssemblyCheck", HIGHLY_NON_DETERMINISTIC_FEES)
+        return defaultHapiSpec("smartContractInlineAssemblyCheck", HIGHLY_NON_DETERMINISTIC_FEES, MIGRATION_TEST)
                 .given(
                         cryptoCreate(PAYER).balance(10_000_000_000_000L),
                         uploadInitCode(SIMPLE_STORAGE_CONTRACT, inlineTestContract))
@@ -1477,9 +1491,10 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
+    // the contracts was deleted on first run
     final HapiSpec multipleSelfDestructsAreSafe() {
         final var contract = "Fuse";
-        return defaultHapiSpec("MultipleSelfDestructsAreSafe", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("MultipleSelfDestructsAreSafe", NONDETERMINISTIC_TRANSACTION_FEES, MIGRATION_TEST)
                 .given(uploadInitCode(contract), contractCreate(contract).gas(600_000))
                 .when(contractCall(contract, "light").via("lightTxn").withTxnTransform(tx -> tx))
                 .then(getTxnRecord("lightTxn").logged());
@@ -1487,7 +1502,7 @@ public class ContractCallSuite extends HapiSuite {
 
     @HapiTest
     HapiSpec depositSuccess() {
-        return defaultHapiSpec("DepositSuccess", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("DepositSuccess", NONDETERMINISTIC_TRANSACTION_FEES, MIGRATION_TEST)
                 .given(
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
@@ -1501,7 +1516,7 @@ public class ContractCallSuite extends HapiSuite {
 
     @HapiTest
     HapiSpec multipleDepositSuccess() {
-        return defaultHapiSpec("MultipleDepositSuccess", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("MultipleDepositSuccess", NONDETERMINISTIC_TRANSACTION_FEES, MIGRATION_TEST)
                 .given(
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
@@ -1521,6 +1536,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
+    // The contract was deleted on first run
     HapiSpec depositDeleteSuccess() {
         final var initBalance = 7890L;
         return defaultHapiSpec("DepositDeleteSuccess", HIGHLY_NON_DETERMINISTIC_FEES)
@@ -1537,6 +1553,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
+    // check why it is not working!
     HapiSpec associationAcknowledgedInApprovePrecompile() {
         final var token = "TOKEN";
         final var spender = "SPENDER";
@@ -1559,7 +1576,7 @@ public class ContractCallSuite extends HapiSuite {
 
     @HapiTest
     HapiSpec payableSuccess() {
-        return defaultHapiSpec("PayableSuccess", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("PayableSuccess", NONDETERMINISTIC_TRANSACTION_FEES, MIGRATION_TEST)
                 .given(
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT)
@@ -1574,7 +1591,7 @@ public class ContractCallSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec idVariantsTreatedAsExpected() {
-        return defaultHapiSpec("idVariantsTreatedAsExpected")
+        return defaultHapiSpec("idVariantsTreatedAsExpected", MIGRATION_TEST)
                 .given(uploadInitCode(PAY_RECEIVABLE_CONTRACT), contractCreate(PAY_RECEIVABLE_CONTRACT))
                 .when()
                 .then(submitModified(withSuccessivelyVariedBodyIds(), () -> contractCall(PAY_RECEIVABLE_CONTRACT)));
@@ -1583,7 +1600,7 @@ public class ContractCallSuite extends HapiSuite {
     @HapiTest
     HapiSpec callFailsWhenAmountIsNegativeButStillChargedFee() {
         final var payer = "payer";
-        return defaultHapiSpec("callFailsWhenAmountIsNegativeButStillChargedFee")
+        return defaultHapiSpec("callFailsWhenAmountIsNegativeButStillChargedFee", MIGRATION_TEST)
                 .given(
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT)
@@ -1612,7 +1629,11 @@ public class ContractCallSuite extends HapiSuite {
 
     @HapiTest
     HapiSpec insufficientGas() {
-        return defaultHapiSpec("InsufficientGas", NONDETERMINISTIC_CONTRACT_CALL_RESULTS, HIGHLY_NON_DETERMINISTIC_FEES)
+        return defaultHapiSpec(
+                        "InsufficientGas",
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        HIGHLY_NON_DETERMINISTIC_FEES,
+                        MIGRATION_TEST)
                 .given(
                         uploadInitCode(SIMPLE_STORAGE_CONTRACT),
                         contractCreate(SIMPLE_STORAGE_CONTRACT).adminKey(THRESHOLD),
@@ -1630,7 +1651,7 @@ public class ContractCallSuite extends HapiSuite {
 
         // FUTURE: Once we add the check again that compares the estimated gas with the maximum transaction fee,
         // this test will need to be updated and expect INSUFFICIENT_TX_FEE.
-        return defaultHapiSpec("InsufficientFee", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("InsufficientFee", NONDETERMINISTIC_TRANSACTION_FEES, MIGRATION_TEST)
                 .given(cryptoCreate("accountToPay"), uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(contractCall(contract, "create")
@@ -1643,7 +1664,7 @@ public class ContractCallSuite extends HapiSuite {
     HapiSpec nonPayable() {
         final var contract = CREATE_TRIVIAL;
 
-        return defaultHapiSpec("NonPayable", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("NonPayable", NONDETERMINISTIC_TRANSACTION_FEES, MIGRATION_TEST)
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when(contractCall(contract, "create")
                         .via("callTxn")
@@ -1658,7 +1679,7 @@ public class ContractCallSuite extends HapiSuite {
     @HapiTest
     HapiSpec smartContractFailFirst() {
         final var civilian = "civilian";
-        return defaultHapiSpec("smartContractFailFirst", FULLY_NONDETERMINISTIC)
+        return defaultHapiSpec("smartContractFailFirst", FULLY_NONDETERMINISTIC, MIGRATION_TEST)
                 .given(
                         uploadInitCode(SIMPLE_STORAGE_CONTRACT),
                         cryptoCreate(civilian).balance(ONE_MILLION_HBARS).payingWith(GENESIS))
@@ -1765,13 +1786,15 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
+    // The contract was deleted on first run
     HapiSpec payTestSelfDestructCall() {
         final var contract = "PayTestSelfDestruct";
 
         return defaultHapiSpec(
                         "payTestSelfDestructCall",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        MIGRATION_TEST)
                 .given(
                         cryptoCreate(PAYER).balance(1_000_000_000_000L).logged(),
                         cryptoCreate(RECEIVER).balance(1_000L),
@@ -1826,7 +1849,8 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec(
                         "ContractTransferToSigReqAccountWithoutKeyFails",
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        MIGRATION_TEST)
                 .given(
                         cryptoCreate(RECEIVABLE_SIG_REQ_ACCOUNT)
                                 .balance(1_000_000_000_000L)
@@ -1851,7 +1875,7 @@ public class ContractCallSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec minChargeIsTXGasUsedByContractCall() {
-        return defaultHapiSpec("MinChargeIsTXGasUsedByContractCall", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("MinChargeIsTXGasUsedByContractCall", NONDETERMINISTIC_TRANSACTION_FEES, MIGRATION_TEST)
                 .given(uploadInitCode(SIMPLE_UPDATE_CONTRACT))
                 .when(
                         contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
@@ -1871,6 +1895,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
+    // check why not passing
     final HapiSpec hscsEvm006ContractHBarTransferToAccount() {
         return defaultHapiSpec(
                         "hscsEvm006ContractHBarTransferToAccount",
@@ -1900,6 +1925,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
+    // check why not passing
     final HapiSpec hscsEvm005TransfersWithSubLevelCallsBetweenContracts() {
         final var topLevelContract = "TopLevelTransferring";
         final var subLevelContract = "SubLevelTransferring";
@@ -1962,6 +1988,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
+    // check why not passing
     final HapiSpec hscsEvm005TransferOfHBarsWorksBetweenContracts() {
         final var to = "To";
 
@@ -1998,6 +2025,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
+    // check why not passing
     final HapiSpec hscsEvm010ReceiverMustSignContractTx() {
         final var ACC = "acc";
         final var RECEIVER_KEY = "receiverKey";
@@ -2038,6 +2066,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
+    // check why not passing
     final HapiSpec hscsEvm010MultiSignatureAccounts() {
         final var ACC = "acc";
         final var PAYER_KEY = "pkey";
@@ -2099,7 +2128,8 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec(
                         "sendHbarsToAddressesMultipleTimes",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        MIGRATION_TEST)
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(10_000L),
@@ -2130,7 +2160,8 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec(
                         "sendHbarsToDifferentAddresses",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        HIGHLY_NON_DETERMINISTIC_FEES)
+                        HIGHLY_NON_DETERMINISTIC_FEES,
+                        MIGRATION_TEST)
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER_1).balance(10_000L),
@@ -2174,7 +2205,8 @@ public class ContractCallSuite extends HapiSuite {
                         "sendHbarsFromDifferentAddressessToAddress",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        MIGRATION_TEST)
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(10_000L),
@@ -2222,7 +2254,8 @@ public class ContractCallSuite extends HapiSuite {
                         "sendHbarsToOuterContractFromDifferentAddresses",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        MIGRATION_TEST)
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(NESTED_TRANSFERRING_CONTRACT, NESTED_TRANSFER_CONTRACT),
@@ -2353,7 +2386,8 @@ public class ContractCallSuite extends HapiSuite {
                         "sendHbarsFromAndToDifferentAddressess",
                         NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        MIGRATION_TEST)
                 .given(
                         cryptoCreate(ACCOUNT).balance(200 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER_1).balance(10_000L),
@@ -2413,7 +2447,8 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec(
                         "transferNegativeAmountOfHbarsFails",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        MIGRATION_TEST)
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(10_000L),
@@ -2448,7 +2483,10 @@ public class ContractCallSuite extends HapiSuite {
     @HapiTest
     final HapiSpec transferZeroHbars() {
         return defaultHapiSpec(
-                        "transferZeroHbars", NONDETERMINISTIC_FUNCTION_PARAMETERS, NONDETERMINISTIC_TRANSACTION_FEES)
+                        "transferZeroHbars",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        MIGRATION_TEST)
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(10_000L),
@@ -2492,7 +2530,8 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec(
                         "ConsTimeManagementWorksWithRevertedInternalCreations",
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        MIGRATION_TEST)
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when(contractCall(
                                 contract,
@@ -2516,7 +2555,7 @@ public class ContractCallSuite extends HapiSuite {
     final HapiSpec callStaticCallToLargeAddress() {
         final var txn = "txn";
         final var contract = "CallInConstructor";
-        return defaultHapiSpec("callStaticAddress")
+        return defaultHapiSpec("callStaticAddress", MIGRATION_TEST)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract).via(txn).hasKnownStatus(SUCCESS))

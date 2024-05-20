@@ -57,6 +57,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -67,7 +68,7 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class HapiSpecRegistry {
+public class HapiSpecRegistry implements Serializable {
     static final Logger log = LogManager.getLogger(HapiSpecRegistry.class);
 
     private final Map<String, Object> registry = new HashMap<>();

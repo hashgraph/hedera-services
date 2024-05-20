@@ -17,10 +17,11 @@
 package com.hedera.services.bdd.spec.stats;
 
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
-public abstract class OpObs {
+public abstract class OpObs implements Serializable {
     private long responseLatency;
     private boolean accepted;
     private Set<String> tags = new HashSet<>();
