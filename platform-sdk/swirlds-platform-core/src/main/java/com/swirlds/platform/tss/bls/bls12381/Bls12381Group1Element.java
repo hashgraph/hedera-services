@@ -16,23 +16,14 @@
 
 package com.swirlds.platform.tss.bls.bls12381;
 
-import com.swirlds.platform.tss.pairings.GroupElement;
+import com.swirlds.platform.tss.pairings.Group1Element;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * An element in G1 group used in BLS12-381
  */
 public class Bls12381Group1Element
-        implements GroupElement<Bls12381Group1Element, Bls12381FieldElement, Bls12381Group1, Bls12381Field> {
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public Bls12381Group1 group() {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
+        implements Group1Element<Bls12381Curve, Bls12381FieldElement, Bls12381Group1Element, Bls12381Group2Element> {
     /**
      * {@inheritDoc}
      */

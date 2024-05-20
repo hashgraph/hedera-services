@@ -20,7 +20,7 @@ import com.swirlds.platform.tss.TssCiphertext;
 import com.swirlds.platform.tss.TssPrivateKey;
 import com.swirlds.platform.tss.TssShareId;
 import com.swirlds.platform.tss.ecdh.EcdhPrivateKey;
-import com.swirlds.platform.tss.signing.PublicKey;
+import com.swirlds.platform.tss.verification.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

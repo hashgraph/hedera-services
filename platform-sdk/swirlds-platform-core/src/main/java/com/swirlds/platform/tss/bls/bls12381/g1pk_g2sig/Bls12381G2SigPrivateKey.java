@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.bls.bls12381.g2signatures;
+package com.swirlds.platform.tss.bls.bls12381.g1pk_g2sig;
 
-import com.swirlds.platform.tss.signing.Curve;
-import com.swirlds.platform.tss.signing.PrivateKey;
+import com.swirlds.platform.tss.bls.bls12381.Bls12381Curve;
 import com.swirlds.platform.tss.bls.bls12381.Bls12381FieldElement;
 import com.swirlds.platform.tss.bls.bls12381.Bls12381Group2;
+import com.swirlds.platform.tss.verification.PrivateKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -27,7 +27,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * @param keyMaterial
  */
-public record Bls12381G2SigPrivateKey(@NonNull Bls12381FieldElement keyMaterial) implements PrivateKey {
+public record Bls12381G2SigPrivateKey(@NonNull Bls12381FieldElement keyMaterial)
+        implements PrivateKey<Bls12381G1PublicKey> {
     /**
      * {@inheritDoc}
      */
@@ -36,7 +37,7 @@ public record Bls12381G2SigPrivateKey(@NonNull Bls12381FieldElement keyMaterial)
         final byte[] serializedKey = keyMaterial.toBytes();
 
         final byte[] output = new byte[serializedKey.length + 1];
-        output[0] = (byte) Curve.BLS12_381_G2SIG.ordinal();
+        output[0] = Bls12381Curve.ID_BYTE;
 
         // TODO: is there a smarter way to do this?
         System.arraycopy(serializedKey, 0, output, 1, serializedKey.length);

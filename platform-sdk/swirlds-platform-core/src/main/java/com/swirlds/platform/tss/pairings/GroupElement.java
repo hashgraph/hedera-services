@@ -20,24 +20,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Interface representing a cryptographic group element
- *
- * @param <GE> the group element type
- * @param <FE> the field element type
- * @param <G>  the group type
- * @param <F>  the field type
  */
 public interface GroupElement<
-        GE extends GroupElement<GE, FE, G, F>,
-        FE extends FieldElement<FE, F>,
-        G extends Group<GE, FE, G, F>,
-        F extends Field<FE, F>> {
-    /**
-     * Returns the group of the element
-     *
-     * @return the element's group
-     */
-    @NonNull
-    G group();
+        C extends Curve<C, FE, GE1, GE2>,
+        FE extends FieldElement<C, FE, GE1, GE2>,
+        GE extends GroupElement<C, FE, GE, GE1, GE2>,
+        GE1 extends Group1Element<C, FE, GE1, GE2>,
+        GE2 extends Group2Element<C, FE, GE1, GE2>> {
 
     /**
      * Serializes the group elements to a byte array
@@ -94,7 +83,7 @@ public interface GroupElement<
      * @return a copy of the group element
      */
     @NonNull
-    GE copy();
+    GroupElement<C, FE, GE, GE1, GE2> copy();
 
     /**
      * Checks whether the element bytes are valid

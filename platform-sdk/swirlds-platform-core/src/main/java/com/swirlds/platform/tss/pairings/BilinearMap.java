@@ -20,21 +20,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * An object for computing bilinear pairings
- *
- * @param <GES> the type of the signature group element
- * @param <GEK> the type of the key group element
- * @param <GS>  the signature group type
- * @param <GK>  the key group type
- * @param <F>   the field type
- * @param <FE>  the field element type
  */
 public interface BilinearMap<
-        GES extends GroupElement<GES, FE, GS, F>,
-        GEK extends GroupElement<GEK, FE, GK, F>,
-        GS extends Group<GES, FE, GS, F>,
-        GK extends Group<GEK, FE, GK, F>,
-        F extends Field<FE, F>,
-        FE extends FieldElement<FE, F>> {
+        C extends Curve<C, FE, GE1, GE2>,
+        FE extends FieldElement<C, FE, GE1, GE2>,
+        GE1 extends Group1Element<C, FE, GE1, GE2>,
+        GE2 extends Group2Element<C, FE, GE1, GE2>> {
 
     /**
      * Returns the field of the bilinear map
@@ -45,44 +36,26 @@ public interface BilinearMap<
     FE field();
 
     /**
-     * Returns the signature group of the map. BLS signatures will be represented as elements of
-     * this group
-     *
-     * @return the signature group of the pairing
-     */
-    @NonNull
-    GS signatureGroup();
-
-    /**
-     * Returns the key group of the map. BLS public keys will be represented as elements of this
-     * group
-     *
-     * @return the key group of the pairing
-     */
-    @NonNull
-    GK keyGroup();
-
-    /**
      * Computes 2 pairings, and then checks the equality of the result
      *
-     * @param signatureElement1 the signature group element of the first pairing
-     * @param keyElement1       the key group element of the first pairing
-     * @param signatureElement2 the signature group element of the second pairing
-     * @param keyElement2       the key group element of the second pairing
+     * @param group1Element1 TODO
+     * @param group2Element1
+     * @param group1Element2
+     * @param group2Element2
      * @return true if the 2 pairings have the same result, otherwise false
      */
     boolean comparePairing(
-            @NonNull GES signatureElement1,
-            @NonNull GEK keyElement1,
-            @NonNull GES signatureElement2,
-            @NonNull GEK keyElement2);
+            @NonNull GE1 group1Element1,
+            @NonNull GE2 group2Element1,
+            @NonNull GE1 group1Element2,
+            @NonNull GE2 group2Element2);
 
     /**
      * Computes a pairing, and returns a byte array representing the result
      *
-     * @param signatureElement the element in the signature group of the pairing
-     * @param keyElement       the element in the key group of the pairing
+     * @param group1Element TODO
+     * @param group2Element
      * @return a byte array representing the pairing
      */
-    byte[] displayPairing(@NonNull GES signatureElement, @NonNull GEK keyElement);
+    byte[] displayPairing(@NonNull GE1 group1Element, @NonNull GE2 group2Element);
 }

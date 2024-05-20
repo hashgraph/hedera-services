@@ -16,15 +16,15 @@
 
 package com.swirlds.platform.tss;
 
-import com.swirlds.platform.tss.signing.PrivateKey;
-import com.swirlds.platform.tss.signing.PublicKey;
-import com.swirlds.platform.tss.signing.Signature;
+import com.swirlds.platform.tss.verification.PrivateKey;
+import com.swirlds.platform.tss.verification.PublicKey;
+import com.swirlds.platform.tss.verification.Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A TSS private key.
  */
-public record  TssPrivateKey<P extends PublicKey>(@NonNull PrivateKey<P> privateKey) {
+public record TssPrivateKey<P extends PublicKey>(@NonNull PrivateKey<P> privateKey) {
     /**
      * Sign a message using the TSS private key.
      *

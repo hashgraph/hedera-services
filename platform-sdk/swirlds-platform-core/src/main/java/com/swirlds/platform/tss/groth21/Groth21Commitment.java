@@ -18,18 +18,18 @@ package com.swirlds.platform.tss.groth21;
 
 import com.swirlds.platform.tss.TssCommitment;
 import com.swirlds.platform.tss.TssShareId;
-import com.swirlds.platform.tss.signing.PublicKey;
+import com.swirlds.platform.tss.pairings.GroupElement;
+import com.swirlds.platform.tss.verification.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.List;
 
 /**
  * A TSS commitment, as utilized by the Groth21 scheme.
  *
- * @param coefficientCommitments TODO: is it correct to call these public keys?
+ * @param coefficientCommitments TODO: what group are these elements in?
  */
-public record Groth21Commitment<P extends PublicKey>(
-        @NonNull List<PublicKey> coefficientCommitments) implements TssCommitment<P> {
+public record Groth21Commitment<P extends PublicKey>(@NonNull List<GroupElement> coefficientCommitments)
+        implements TssCommitment<P> {
     /**
      * {@inheritDoc}
      */

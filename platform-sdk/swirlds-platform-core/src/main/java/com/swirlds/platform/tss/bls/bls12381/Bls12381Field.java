@@ -22,7 +22,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Represents the finite field used in BLS12-381
  */
-public class Bls12381Field implements Field<Bls12381FieldElement, Bls12381Field> {
+public class Bls12381Field
+        implements Field<Bls12381Curve, Bls12381FieldElement, Bls12381Group1Element, Bls12381Group2Element> {
     private static final Bls12381Field INSTANCE = new Bls12381Field();
 
     /**

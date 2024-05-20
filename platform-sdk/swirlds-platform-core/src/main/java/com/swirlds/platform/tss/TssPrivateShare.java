@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.tss;
 
-import com.swirlds.platform.tss.signing.PublicKey;
-import com.swirlds.platform.tss.signing.Signature;
+import com.swirlds.platform.tss.verification.PublicKey;
+import com.swirlds.platform.tss.verification.Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

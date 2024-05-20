@@ -14,21 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss;
+package com.swirlds.platform.tss.pairings;
 
-import com.swirlds.platform.tss.verification.PublicKey;
-import edu.umd.cs.findbugs.annotations.NonNull;
-
-/**
- * A TSS proof.
- */
-public interface TssProof<P extends PublicKey> {
-    /**
-     * Verify this proof.
-     *
-     * @param ciphertext the ciphertext that this proof is for
-     * @param commitment the commitment that was made to the ciphertext // TODO: check correctness of this description
-     * @return true if the proof is valid, false otherwise
-     */
-    boolean verify(@NonNull final TssCiphertext<P> ciphertext, @NonNull final TssCommitment<P> commitment);
-}
+public interface Group2<
+                C extends Curve<C, FE, GE1, GE2>,
+                FE extends FieldElement<C, FE, GE1, GE2>,
+                GE1 extends Group1Element<C, FE, GE1, GE2>,
+                GE2 extends Group2Element<C, FE, GE1, GE2>>
+        extends Group<C, FE, GE2, GE1, GE2> {}

@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.signing;
+package com.swirlds.platform.tss.verification;
 
+import com.swirlds.platform.tss.bls.bls12381.Bls12381Curve;
 import com.swirlds.platform.tss.bls.bls12381.Bls12381Group2;
-import com.swirlds.platform.tss.bls.bls12381.g2signatures.Bls12381G2Signature;
+import com.swirlds.platform.tss.bls.bls12381.g1pk_g2sig.Bls12381G2Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -33,12 +34,18 @@ public interface Signature<P extends PublicKey> {
      * @return the deserialized signature
      */
     static Signature<?> deserialize(final byte[] bytes) {
-        // the first byte is the curve enum
-        final Curve curve = Curve.values()[bytes[0]];
+        // the first byte is id of the curve
+        final byte curve = bytes[0];
+        // the second byte is the group the element is in
+        final byte group = bytes[1];
 
         switch (curve) {
-            case BLS12_381_G2SIG:
-                return new Bls12381G2Signature(Bls12381Group2.getInstance().deserializeElementFromBytes(bytes));
+            case Bls12381Curve.ID_BYTE:
+                if (group == 2) {
+                    return new Bls12381G2Signature(Bls12381Group2.getInstance().deserializeElementFromBytes(bytes));
+                } else {
+                    throw new UnsupportedOperationException("Only group 2 signatures are currently supported");
+                }
             default:
                 throw new UnsupportedOperationException("Unknown curve");
         }

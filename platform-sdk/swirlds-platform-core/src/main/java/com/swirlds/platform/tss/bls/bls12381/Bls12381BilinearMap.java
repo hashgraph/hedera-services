@@ -23,13 +23,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * A BLS12-381 implementation of a bilinear map.
  */
 public class Bls12381BilinearMap
-        implements BilinearMap<
-                Bls12381Group2Element,
-                Bls12381Group1Element,
-                Bls12381Group2,
-                Bls12381Group1,
-                Bls12381Field,
-                Bls12381FieldElement> {
+        implements BilinearMap<Bls12381Curve, Bls12381FieldElement, Bls12381Group1Element, Bls12381Group2Element> {
 
     private static final Bls12381BilinearMap INSTANCE = new Bls12381BilinearMap();
 
@@ -59,29 +53,11 @@ public class Bls12381BilinearMap
      * {@inheritDoc}
      */
     @Override
-    @NonNull
-    public Bls12381Group2 signatureGroup() {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public Bls12381Group1 keyGroup() {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public boolean comparePairing(
-            @NonNull final Bls12381Group2Element signatureElement1,
-            @NonNull final Bls12381Group1Element keyElement1,
-            @NonNull final Bls12381Group2Element signatureElement2,
-            @NonNull final Bls12381Group1Element keyElement2) {
+            @NonNull final Bls12381Group1Element group1Element1,
+            @NonNull final Bls12381Group2Element group2Element1,
+            @NonNull final Bls12381Group1Element group1Element2,
+            @NonNull final Bls12381Group2Element group2Element2) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -90,7 +66,7 @@ public class Bls12381BilinearMap
      */
     @Override
     public byte[] displayPairing(
-            @NonNull final Bls12381Group2Element signatureElement, @NonNull final Bls12381Group1Element keyElement) {
+            @NonNull final Bls12381Group1Element group1Element, @NonNull final Bls12381Group2Element group2Element) {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

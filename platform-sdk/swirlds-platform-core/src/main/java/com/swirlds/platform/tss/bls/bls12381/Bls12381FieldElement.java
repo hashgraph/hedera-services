@@ -23,16 +23,8 @@ import java.math.BigInteger;
 /**
  * Represents a field element in BLS12-381
  */
-public class Bls12381FieldElement implements FieldElement<Bls12381FieldElement, Bls12381Field> {
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public Bls12381Field field() {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
+public class Bls12381FieldElement
+        implements FieldElement<Bls12381Curve, Bls12381FieldElement, Bls12381Group1Element, Bls12381Group2Element> {
     /**
      * {@inheritDoc}
      */
@@ -42,12 +34,9 @@ public class Bls12381FieldElement implements FieldElement<Bls12381FieldElement, 
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     @NonNull
-    public Bls12381FieldElement add(@NonNull final Bls12381FieldElement other) {
+    @Override
+    public Bls12381FieldElement add(@NonNull Bls12381FieldElement other) {
         throw new UnsupportedOperationException("Not implemented");
     }
 

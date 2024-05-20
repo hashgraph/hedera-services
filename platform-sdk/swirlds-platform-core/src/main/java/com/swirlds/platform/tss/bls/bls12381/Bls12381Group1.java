@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.tss.bls.bls12381;
 
-import com.swirlds.platform.tss.pairings.Group;
+import com.swirlds.platform.tss.pairings.Group1;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 
@@ -24,7 +24,7 @@ import java.util.Collection;
  * G1 group used in BLS12-381
  */
 public class Bls12381Group1
-        implements Group<Bls12381Group1Element, Bls12381FieldElement, Bls12381Group1, Bls12381Field> {
+        implements Group1<Bls12381Curve, Bls12381FieldElement, Bls12381Group1Element, Bls12381Group2Element> {
     private static final Bls12381Group1 INSTANCE = new Bls12381Group1();
 
     /**
@@ -76,12 +76,9 @@ public class Bls12381Group1
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     @NonNull
-    public Bls12381Group1Element batchMultiply(@NonNull final Collection<Bls12381Group1Element> elements) {
+    @Override
+    public Bls12381Group1Element batchMultiply(@NonNull final Collection<Bls12381Group1Element> groupElements) {
         throw new UnsupportedOperationException("Not implemented");
     }
 

@@ -21,19 +21,12 @@ import java.math.BigInteger;
 
 /**
  * An interface representing a generic field element
- *
- * @param <FE> the field element type
- * @param <F> the field type
  */
-public interface FieldElement<FE extends FieldElement<FE, F>, F extends Field<FE, F>> {
-    /**
-     * Returns the field the element is in
-     *
-     * @return the field
-     */
-    @NonNull
-    F field();
-
+public interface FieldElement<
+        C extends Curve<C, FE, GE1, GE2>,
+        FE extends FieldElement<C, FE, GE1, GE2>,
+        GE1 extends Group1Element<C, FE, GE1, GE2>,
+        GE2 extends Group2Element<C, FE, GE1, GE2>> {
     /**
      * Serializes the field element to bytes
      *

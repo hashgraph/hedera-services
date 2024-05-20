@@ -23,17 +23,13 @@ import java.util.Collection;
  * Interface representing a generic group
  *
  * <p>This is a factory interface, responsible for creating {@link GroupElement group elements}
- *
- * @param <GE> the group element type
- * @param <FE> the field element type
- * @param <G>  the group type
- * @param <F>  the field type
  */
 public interface Group<
-        GE extends GroupElement<GE, FE, G, F>,
-        FE extends FieldElement<FE, F>,
-        G extends Group<GE, FE, G, F>,
-        F extends Field<FE, F>> {
+        C extends Curve<C, FE, GE1, GE2>,
+        FE extends FieldElement<C, FE, GE1, GE2>,
+        GE extends GroupElement<C, FE, GE, GE1, GE2>,
+        GE1 extends Group1Element<C, FE, GE1, GE2>,
+        GE2 extends Group2Element<C, FE, GE1, GE2>> {
     /**
      * Returns the group's generator
      *

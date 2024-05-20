@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.signing;
+package com.swirlds.platform.tss.verification;
 
+import com.swirlds.platform.tss.bls.bls12381.Bls12381Curve;
 import com.swirlds.platform.tss.bls.bls12381.Bls12381Field;
-import com.swirlds.platform.tss.bls.bls12381.g2signatures.Bls12381G2SigPrivateKey;
+import com.swirlds.platform.tss.bls.bls12381.g1pk_g2sig.Bls12381G2SigPrivateKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -33,11 +34,11 @@ public interface PrivateKey<P extends PublicKey> {
      * @return the deserialized private key
      */
     static PrivateKey<?> deserialize(final byte[] bytes) {
-        // the first byte is the curve enum
-        final Curve curve = Curve.values()[bytes[0]];
+        // the first byte is id of the curve
+        final byte curve = bytes[0];
 
         switch (curve) {
-            case BLS12_381_G2SIG:
+            case Bls12381Curve.ID_BYTE:
                 return new Bls12381G2SigPrivateKey(Bls12381Field.getInstance().deserializeElementFromBytes(bytes));
             default:
                 throw new UnsupportedOperationException("Unknown curve");
