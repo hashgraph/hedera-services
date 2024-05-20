@@ -14,34 +14,35 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.signed;
+package com.swirlds.platform.state.snapshot;
 
 import static com.swirlds.common.formatting.StringFormattingUtils.formattedList;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.CONSENSUS_TIMESTAMP;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.EPOCH_HASH;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.EPOCH_HASH_MNEMONIC;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.HASH;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.HASH_MNEMONIC;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.LEGACY_RUNNING_EVENT_HASH;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.LEGACY_RUNNING_EVENT_HASH_MNEMONIC;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.MINIMUM_GENERATION_NON_ANCIENT;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.NODE_ID;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.NUMBER_OF_CONSENSUS_EVENTS;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.ROUND;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.RUNNING_EVENT_HASH;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.RUNNING_EVENT_HASH_MNEMONIC;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.SIGNING_NODES;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.SIGNING_WEIGHT_SUM;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.SOFTWARE_VERSION;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.TOTAL_WEIGHT;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.WALL_CLOCK_TIME;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.CONSENSUS_TIMESTAMP;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.EPOCH_HASH;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.EPOCH_HASH_MNEMONIC;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.HASH;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.HASH_MNEMONIC;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.LEGACY_RUNNING_EVENT_HASH;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.LEGACY_RUNNING_EVENT_HASH_MNEMONIC;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.MINIMUM_GENERATION_NON_ANCIENT;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.NODE_ID;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.NUMBER_OF_CONSENSUS_EVENTS;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.ROUND;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.RUNNING_EVENT_HASH;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.RUNNING_EVENT_HASH_MNEMONIC;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.SIGNING_NODES;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.SIGNING_WEIGHT_SUM;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.SOFTWARE_VERSION;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.TOTAL_WEIGHT;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.WALL_CLOCK_TIME;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedReader;

@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.signed;
+package com.swirlds.platform.state.snapshot;
 
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.interrupt.Uninterruptable;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.CountDownLatch;
 
