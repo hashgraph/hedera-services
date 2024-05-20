@@ -281,8 +281,7 @@ public class DataFileCompactor<D> {
                 currentCompactionStartTime.set(null);
                 if (allDataItemsProcessed) {
                     // Close the readers and delete compacted files
-                    // TODO: 12311 - uncomment
-                    // dataFileCollection.deleteFiles(filesToCompact);
+                    dataFileCollection.deleteFiles(filesToCompact);
                 }
             } finally {
                 snapshotCompactionLock.release();
