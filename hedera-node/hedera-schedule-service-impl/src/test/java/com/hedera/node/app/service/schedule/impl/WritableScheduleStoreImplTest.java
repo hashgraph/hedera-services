@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.schedule.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ScheduleID;
@@ -41,6 +42,12 @@ class WritableScheduleStoreImplTest extends ScheduleTestBase {
     }
 
     @Test
+    void verifyGetForModifyNullIsNull() {
+        final var actual = writableSchedules.getForModify(null);
+        assertThat(actual).isNull();
+    }
+
+    @Test
     void verifyDeleteMarksDeletedInState() {
         final ScheduleID idToDelete = scheduleInState.scheduleId();
         Schedule actual = writableById.get(idToDelete);
@@ -53,6 +60,21 @@ class WritableScheduleStoreImplTest extends ScheduleTestBase {
 
     private Timestamp asTimestamp(final Instant testConsensusTime) {
         return new Timestamp(testConsensusTime.getEpochSecond(), testConsensusTime.getNano());
+    }
+
+    @Test
+    void verifyDeleteNonExistentScheduleThrows() {
+        assertThatThrownBy(() -> writableSchedules.delete(ScheduleID.DEFAULT, testConsensusTime))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage(
+                        "Schedule to be deleted, ScheduleID[shardNum=0, realmNum=0, scheduleNum=0], not found in state.");
+    }
+
+    @Test
+    void verifyDeleteNullScheduleThrows() {
+        assertThatThrownBy(() -> writableSchedules.delete(null, testConsensusTime))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Request to delete null schedule ID cannot be fulfilled.");
     }
 
     @Test
@@ -72,7 +94,7 @@ class WritableScheduleStoreImplTest extends ScheduleTestBase {
     }
 
     @Test
-    void verifyPutDoesDedupliction() {
+    void verifyPutDoesDeduplication() {
         final ScheduleID idToDelete = scheduleInState.scheduleId();
         Schedule actual = writableById.getForModify(idToDelete);
         assertThat(actual).isNotNull();

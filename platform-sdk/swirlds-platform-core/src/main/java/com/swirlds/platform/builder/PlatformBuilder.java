@@ -34,6 +34,8 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
@@ -55,11 +57,11 @@ import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.eventhandling.EventConfig;
-import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.DefaultIntakeEventCounter;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
+import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.address.AddressBookInitializer;
@@ -113,6 +115,7 @@ public final class PlatformBuilder {
 
     private Consumer<GossipEvent> preconsensusEventConsumer;
     private Consumer<ConsensusSnapshot> snapshotOverrideConsumer;
+    private Consumer<GossipEvent> staleEventConsumer;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -310,6 +313,23 @@ public final class PlatformBuilder {
     }
 
     /**
+     * Register a callback that is called when a stale self event is detected (i.e. an event that will never reach
+     * consensus). Depending on the use case, it may be a good idea to resubmit the transactions in the stale event.
+     * <p>
+     * Stale event detection is guaranteed to catch all stale self events as long as the node remains online. However,
+     * if the node restarts or reconnects, any event that went stale "in the gap" may not be detected.
+     *
+     * @param staleEventConsumer the callback to register
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withStaleEventCallback(@NonNull final Consumer<GossipEvent> staleEventConsumer) {
+        throwIfAlreadyUsed();
+        this.staleEventConsumer = Objects.requireNonNull(staleEventConsumer);
+        return this;
+    }
+
+    /**
      * Build the configuration for the node.
      *
      * @param configurationBuilder used to build configuration
@@ -370,7 +390,9 @@ public final class PlatformBuilder {
         setupGlobalMetrics(configuration);
         final Metrics metrics = getMetricsProvider().createPlatformMetrics(selfId);
 
-        return PlatformContext.create(configuration, metrics, cryptography);
+        final FileSystemManager fileSystemManager =
+                FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, metrics, selfId);
+        return PlatformContext.create(configuration, metrics, cryptography, fileSystemManager);
     }
 
     /**
@@ -491,6 +513,9 @@ public final class PlatformBuilder {
                 Scratchpad.create(platformContext, selfId, IssScratchpad.class, "platform.iss");
         issScratchpad.logContents();
 
+        final ApplicationCallbacks callbacks =
+                new ApplicationCallbacks(preconsensusEventConsumer, snapshotOverrideConsumer, staleEventConsumer);
+
         final AtomicReference<StatusActionSubmitter> statusActionSubmitterAtomicReference = new AtomicReference<>();
         final SwirldStateManager swirldStateManager = new SwirldStateManager(
                 platformContext,
@@ -507,11 +532,12 @@ public final class PlatformBuilder {
                 swirldName,
                 softwareVersion,
                 initialState,
+                callbacks,
                 preconsensusEventConsumer,
                 snapshotOverrideConsumer,
                 intakeEventCounter,
                 new RandomBuilder(),
-                new TransactionPool(platformContext),
+                new TransactionPoolNexus(platformContext),
                 new AtomicReference<>(),
                 new AtomicReference<>(),
                 new AtomicReference<>(),

@@ -33,7 +33,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
@@ -48,7 +48,7 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractStateSignatureColle
     // DO NOT ADD ADDITIONAL UNIT TESTS TO THIS CLASS!
 
     private final AddressBook addressBook =
-            new RandomAddressBookGenerator(random).setSize(4).build();
+            RandomAddressBookBuilder.create(random).withSize(4).build();
 
     /**
      * Called on each state as it gets too old without collecting enough signatures.

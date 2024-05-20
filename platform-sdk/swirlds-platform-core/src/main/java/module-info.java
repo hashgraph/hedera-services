@@ -53,7 +53,6 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.system.state.notifications;
     exports com.swirlds.platform.system.status;
     exports com.swirlds.platform.system.status.actions;
-    exports com.swirlds.platform.threading;
     exports com.swirlds.platform.util;
 
     /* Targeted Exports to External Libraries */
@@ -115,14 +114,28 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.wiring.components;
     exports com.swirlds.platform.event.hashing;
     exports com.swirlds.platform.event.orphan;
+    exports com.swirlds.platform.state.merkle;
+    exports com.swirlds.platform.state.merkle.logging;
+    exports com.swirlds.platform.state.merkle.disk;
+    exports com.swirlds.platform.state.merkle.singleton;
+    exports com.swirlds.platform.state.merkle.memory;
+    exports com.swirlds.platform.state.merkle.queue;
+    exports com.swirlds.platform.state.spi;
     exports com.swirlds.platform.publisher;
     exports com.swirlds.platform.components.consensus;
+    exports com.swirlds.platform.pool;
+    exports com.swirlds.platform.state.snapshot;
 
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.cli;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
+    requires transitive com.swirlds.fcqueue;
+    requires transitive com.swirlds.merkle;
+    requires transitive com.swirlds.merkledb;
     requires transitive com.swirlds.metrics.api;
+    requires transitive com.swirlds.state.api;
+    requires transitive com.swirlds.virtualmap;
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;
     requires transitive com.hedera.node.hapi;
@@ -131,8 +144,6 @@ module com.swirlds.platform.core {
     requires transitive org.apache.logging.log4j;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
-    requires com.swirlds.merkledb;
-    requires com.swirlds.virtualmap;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.dataformat.yaml;
     requires java.desktop;
