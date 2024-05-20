@@ -34,10 +34,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 
+@OrderedInIsolation
 public class ExchangeRateControlSuite {
     final HapiFileUpdate resetRatesOp = fileUpdate(EXCHANGE_RATES)
             .payingWith(EXCHANGE_RATE_CONTROL)

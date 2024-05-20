@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.leaky;
 import static com.google.protobuf.ByteString.EMPTY;
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -212,7 +213,9 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
 
+@Tag(CRYPTO)
 @OrderedInIsolation
 public class LeakyCryptoTestsSuite {
     private static final Logger log = LogManager.getLogger(LeakyCryptoTestsSuite.class);
