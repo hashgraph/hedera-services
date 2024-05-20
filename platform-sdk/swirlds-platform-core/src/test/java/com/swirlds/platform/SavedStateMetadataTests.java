@@ -108,7 +108,7 @@ class SavedStateMetadataTests {
         final Hash runningEventHash = randomHash(random);
         final Hash legacyRunningEventHash = randomHash(random);
         final long minimumGenerationNonAncient = random.nextLong();
-        final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
+        final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextInt());
         final Instant wallClockTime = RandomUtils.randomInstant(random);
         final NodeId nodeId = generateRandomNodeId(random);
         final List<NodeId> signingNodes = new ArrayList<>();
@@ -174,7 +174,7 @@ class SavedStateMetadataTests {
         final Hash runningEventHash = randomHash(random);
         final Hash legacyRunningEventHash = randomHash(random);
         final long minimumGenerationNonAncient = random.nextLong();
-        final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
+        final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextInt());
         final Instant wallClockTime = RandomUtils.randomInstant(random);
         final NodeId nodeId = generateRandomNodeId(random);
         final List<NodeId> signingNodes = new ArrayList<>();
@@ -351,7 +351,7 @@ class SavedStateMetadataTests {
         final Hash runningEventHash = randomHash(random);
         final Hash legacyRunningEventHash = randomHash(random);
         final long minimumGenerationNonAncient = random.nextLong();
-        final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
+        final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextInt());
         final Instant wallClockTime = RandomUtils.randomInstant(random);
         final NodeId nodeId = generateRandomNodeId(random);
         final List<NodeId> signingNodes = new ArrayList<>();
