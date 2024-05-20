@@ -70,7 +70,7 @@ public interface RecycleBin extends Startable, Stoppable {
             @NonNull final FileSystemManager fileSystemManager,
             @NonNull final NodeId nodeId) {
         final FileSystemManagerConfig fsmConfig = configuration.getConfigData(FileSystemManagerConfig.class);
-        Path recycleBinPath =
+        final Path recycleBinPath =
                 fileSystemManager.resolve(Path.of(fsmConfig.recycleBinDir())).resolve(nodeId.toString());
 
         return new RecycleBinImpl(
