@@ -85,6 +85,9 @@ public class BasicSoftwareVersion implements SoftwareVersion {
      */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+        // previously, softwareVersion was a long
+        // since the introduction of SemanticVersion, softwareVersion was changed to an int
+        // in order to avoid migration, it is still serialized as a long, but this is purely internal
         softwareVersion = Math.toIntExact(in.readLong());
         this.semanticVersion = SemanticVersion.newBuilder()
                 .major(Math.toIntExact(softwareVersion))
