@@ -88,6 +88,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     static final Logger log = LogManager.getLogger(HapiCryptoTransfer.class);
 
     private String token;
+    private String fromAccount;
 
     private String PARTITION_TOKEN_OPERATION_MODE;
 
@@ -129,6 +130,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     private static boolean transferToKey = false;
 
     private Optional<Pair<String[], Long>> appendedPartitionFromTo = Optional.empty();
+
+    private Optional<Pair<String[], Long>> appendedPartitionFromTowithSign = Optional.empty();
 
     @Override
     public HederaFunctionality type() {
@@ -227,9 +230,22 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     public HapiCryptoTransfer(
             final String account, final String fromPartitionToken, final String toPartitionToken, final long amount) {
         this.token = fromPartitionToken;
-        this.PARTITION_TOKEN_OPERATION_MODE = "PartitionMove";
+        this.PARTITION_TOKEN_OPERATION_MODE = "PartitionMoveWithoutUserSignature";
         this.appendedPartitionFromTo =
                 Optional.of(Pair.of(new String[] {account, fromPartitionToken, toPartitionToken}, amount));
+    }
+
+    public HapiCryptoTransfer(
+            final String fromAccount,
+            final String fromPartitionToken,
+            final String toAccount,
+            final String toPartitionToken,
+            final long amount) {
+        this.token = fromPartitionToken;
+        this.fromAccount = fromAccount;
+        this.PARTITION_TOKEN_OPERATION_MODE = "PartitionMoveWithUserSignature";
+        this.appendedPartitionFromTowithSign = Optional.of(
+                Pair.of(new String[] {fromAccount, fromPartitionToken, toAccount, toPartitionToken}, amount));
     }
 
     public HapiCryptoTransfer dontFullyAggregateTokenTransfers() {
@@ -252,7 +268,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     protected Function<HapiSpec, List<Key>> variableDefaultSigners() {
         if (hbarOnlyProvider != MISSING_HBAR_ONLY_PROVIDER) {
             return hbarOnlyVariableDefaultSigners();
-        } else if (this.PARTITION_TOKEN_OPERATION_MODE == "PartitionMove") {
+        } else if (this.PARTITION_TOKEN_OPERATION_MODE == "PartitionMoveWithoutUserSignature"
+                || this.PARTITION_TOKEN_OPERATION_MODE == "PartitionMoveWithUserSignature") {
             return partitionMoveSignatures();
         } else {
             return tokenAwareVariableDefaultSigners();
@@ -483,6 +500,31 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
         return builder -> builder.setCryptoTransfer(opBody);
     }
 
+    private void FungibleTokenPartitionMove(final CryptoTransferTransactionBody.Builder b, final HapiSpec spec) {
+        final var extra = (this.PARTITION_TOKEN_OPERATION_MODE == "PartitionMoveWithoutUserSignature")
+                ? appendedPartitionFromTo.get()
+                : appendedPartitionFromTowithSign.get();
+        final var involved = extra.getLeft();
+        final var fromAccount = TxnUtils.asId(involved[0], spec);
+        final var fromPartitionToken = TxnUtils.asTokenId(involved[1], spec);
+        final var toAccount = (this.PARTITION_TOKEN_OPERATION_MODE == "PartitionMoveWithoutUserSignature")
+                ? fromAccount
+                : TxnUtils.asId(involved[2], spec);
+        final var toPartitionToken = (this.PARTITION_TOKEN_OPERATION_MODE == "PartitionMoveWithoutUserSignature")
+                ? TxnUtils.asTokenId(involved[2], spec)
+                : TxnUtils.asTokenId(involved[3], spec);
+        final var amount = extra.getRight();
+        final var reduceUnits = TokenTransferList.newBuilder()
+                .setToken(fromPartitionToken)
+                .addTransfers(
+                        AccountAmount.newBuilder().setAccountID(fromAccount).setAmount(-amount));
+        b.addTokenTransfers(reduceUnits);
+        final var appendUnits = TokenTransferList.newBuilder()
+                .setToken(toPartitionToken)
+                .addTransfers(AccountAmount.newBuilder().setAccountID(toAccount).setAmount(+amount));
+        b.addTokenTransfers(appendUnits);
+    }
+
     private void misconfigureIfRequested(final CryptoTransferTransactionBody.Builder b, final HapiSpec spec) {
         if (tokenWithEmptyTransferAmounts.isPresent()) {
             final var empty = tokenWithEmptyTransferAmounts.get();
@@ -505,24 +547,11 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
                             AccountAmount.newBuilder().setAccountID(receiver).setAmount(+amount));
             b.addTokenTransfers(appendList);
         }
-        if (appendedPartitionFromTo.isPresent()) {
-            final var extra = appendedPartitionFromTo.get();
-            final var involved = extra.getLeft();
-            final var account = TxnUtils.asId(involved[0], spec);
-            final var fromPartitionToken = TxnUtils.asTokenId(involved[1], spec);
-            final var toPartitionToken = TxnUtils.asTokenId(involved[2], spec);
-            final var amount = extra.getRight();
-            final var reduceUnits = TokenTransferList.newBuilder()
-                    .setToken(fromPartitionToken)
-                    .addTransfers(
-                            AccountAmount.newBuilder().setAccountID(account).setAmount(-amount));
-            b.addTokenTransfers(reduceUnits);
-            final var appendUnits = TokenTransferList.newBuilder()
-                    .setToken(toPartitionToken)
-                    .addTransfers(
-                            AccountAmount.newBuilder().setAccountID(account).setAmount(+amount));
-            b.addTokenTransfers(appendUnits);
+
+        if (appendedPartitionFromTo.isPresent() || appendedPartitionFromTowithSign.isPresent()) {
+            FungibleTokenPartitionMove(b, spec);
         }
+
         if (breakNetZeroTokenChangeInvariant && b.getTokenTransfersCount() > 0) {
             for (int i = 0, n = b.getTokenTransfersCount(); i < n; i++) {
                 final var changesHere = b.getTokenTransfersBuilder(i);
@@ -629,6 +658,14 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
         return spec -> {
             final List<Key> partyKeys = new ArrayList<>();
             partyKeys.add(spec.registry().getPartitionMoveKey(this.token));
+            if (this.PARTITION_TOKEN_OPERATION_MODE == "PartitionMoveWithUserSignature") {
+                final int divider = this.fromAccount.indexOf("|");
+                final var key = this.fromAccount.substring(divider + 1);
+                if (spec.registry().isSigRequired(key)) {
+                    partyKeys.add(spec.registry().getKey(key));
+                }
+                partyKeys.add(spec.registry().getKey(this.token));
+            }
             return partyKeys;
         };
     }
