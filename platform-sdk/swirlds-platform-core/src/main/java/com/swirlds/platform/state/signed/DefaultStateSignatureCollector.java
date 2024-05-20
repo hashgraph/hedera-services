@@ -71,7 +71,7 @@ public class DefaultStateSignatureCollector implements StateSignatureCollector {
      * Start empty, with no known signed states. A signed state is considered completed when it has signatures from a
      * sufficient threshold of nodes.
      *
-     * @param platformContext   the platform context
+     * @param platformContext    the platform context
      * @param signedStateMetrics a collection of signed state metrics
      */
     public DefaultStateSignatureCollector(

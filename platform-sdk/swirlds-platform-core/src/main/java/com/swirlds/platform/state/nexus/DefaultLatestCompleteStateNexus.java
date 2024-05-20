@@ -47,7 +47,6 @@ public class DefaultLatestCompleteStateNexus implements LatestCompleteStateNexus
      */
     public DefaultLatestCompleteStateNexus(@NonNull final PlatformContext platformContext) {
         this.stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
-        ;
 
         final Metrics metrics = platformContext.getMetrics();
         final RunningAverageMetric avgRoundSupermajority = metrics.getOrCreate(AVG_ROUND_SUPERMAJORITY_CONFIG);
