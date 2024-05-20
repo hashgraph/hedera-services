@@ -44,11 +44,11 @@ import com.hedera.hapi.streams.ContractActions;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
+import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
@@ -96,8 +96,8 @@ public class EthereumTransactionsXTest extends AbstractContractXTest {
         handleAndCommitEthereumTransaction(ethereumTxnHandler, synthDeployTxn(PAY_RESEIVABLE_ID), OK);
 
         // get contract alias
-        var accounts = component.hederaState().getReadableStates("TokenService").get("ACCOUNTS");
-        ((MapReadableKVState) accounts).reset();
+        var accounts =
+                component.hederaState().getWritableStates(TokenServiceImpl.NAME).get(TokenServiceImpl.ACCOUNTS_KEY);
         var account =
                 (Account) accounts.get(AccountID.newBuilder().accountNum(1234).build());
 
