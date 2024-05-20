@@ -26,6 +26,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param cipherText contains secrets that are being distributed
  * @param commitment a commitment to the polynomial that was used to generate the secrets
  * @param proof      a proof that the polynomial commitment is valid
+ * @param <P>        the type of public key that is used to verify the message
  */
 public record TssMessage<P extends PublicKey>(
         @NonNull TssShareId shareId,

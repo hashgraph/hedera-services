@@ -24,5 +24,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * @param shareId   the share ID
  * @param publicKey the public key
+ * @param <P>       the type of public key in this share
  */
 public record TssPublicShare<P extends PublicKey>(@NonNull TssShareId shareId, @NonNull P publicKey) {}

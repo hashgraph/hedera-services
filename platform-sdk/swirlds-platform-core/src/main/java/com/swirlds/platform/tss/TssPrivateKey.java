@@ -23,6 +23,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A TSS private key.
+ *
+ * @param <P> the type of public key that can verify signatures produced by this private key
  */
 public record TssPrivateKey<P extends PublicKey>(@NonNull PrivateKey<P> privateKey) {
     /**

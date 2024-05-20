@@ -30,6 +30,8 @@ import java.util.List;
  *     <li>produce a public key for each share</li>
  *     <li>give the corresponding secret to the shareholder</li>
  * </ul>
+ *
+ * @param <P> the type of public key that verifies signatures in this threshold scheme
  */
 public interface Tss<P extends PublicKey> {
     /**

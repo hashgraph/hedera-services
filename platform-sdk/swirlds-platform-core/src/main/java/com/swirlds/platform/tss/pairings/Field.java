@@ -22,6 +22,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Interface representing a generic field
  *
  * <p>This is a factory interface, responsible for creating {@link FieldElement field elements}
+ *
+ * @param <C>   the curve type
+ * @param <FE>  the field element type
+ * @param <GE1> the group 1 element type
+ * @param <GE2> the group 2 element type
  */
 public interface Field<
         C extends Curve<C, FE, GE1, GE2>,

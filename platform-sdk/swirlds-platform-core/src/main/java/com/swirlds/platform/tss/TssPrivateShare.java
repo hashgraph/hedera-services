@@ -25,6 +25,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * @param shareId    the share ID
  * @param privateKey the private key
+ * @param <P>        the type of public key that can verify signatures produced by this private share
  */
 public record TssPrivateShare<P extends PublicKey>(@NonNull TssShareId shareId, @NonNull TssPrivateKey<P> privateKey) {
     /**

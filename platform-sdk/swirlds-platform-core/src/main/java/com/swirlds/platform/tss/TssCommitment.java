@@ -23,6 +23,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * A commitment to a polynomial.
  * <p>
  * The commitments produced during a keying contain the data to reconstruct the public key for each share.
+ *
+ * @param <P> the type of public key that can be derived from this commitment
  */
 public interface TssCommitment<P extends PublicKey> {
     /**

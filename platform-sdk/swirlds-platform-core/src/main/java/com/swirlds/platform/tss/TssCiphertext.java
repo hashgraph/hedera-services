@@ -22,6 +22,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A ciphertext produced by a single node.
+ *
+ * @param <P> the type of public key that can be used to verify signatures produced by the secret keys encrypted in this
+ *            ciphertext
  */
 public interface TssCiphertext<P extends PublicKey> {
     /**

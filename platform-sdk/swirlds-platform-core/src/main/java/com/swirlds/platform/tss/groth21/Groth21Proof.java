@@ -29,11 +29,16 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A TSS proof, as utilized by the Groth21 scheme.
- * @param f TODO: which groups are these in?
+ *
+ * @param f     TODO: which groups are these in?
  * @param a
  * @param y
  * @param z_r
  * @param z_a
+ * @param <C>   the curve type
+ * @param <FE>  the field element type
+ * @param <GE1> the group 1 element type
+ * @param <GE2> the group 2 element type
  */
 public record Groth21Proof<
                 C extends Curve<C, FE, GE1, GE2>,

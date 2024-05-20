@@ -16,6 +16,14 @@
 
 package com.swirlds.platform.tss.pairings;
 
+/**
+ * An interface for an element in group 1 of a curve.
+ *
+ * @param <C>   the curve type
+ * @param <FE>  the field element type
+ * @param <GE1> the group 1 element type
+ * @param <GE2> the group 2 element type
+ */
 public interface Group1Element<
                 C extends Curve<C, FE, GE1, GE2>,
                 FE extends FieldElement<C, FE, GE1, GE2>,

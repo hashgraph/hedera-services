@@ -21,6 +21,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A TSS proof.
+ *
+ * @param <P> the type of public key to be used during verification of this proof
  */
 public interface TssProof<P extends PublicKey> {
     /**

@@ -26,7 +26,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * A share ID for the Groth21 TSS scheme.
  *
- * @param id the share ID
+ * @param id    the share ID
+ * @param <C>   the curve type
+ * @param <FE>  the field element type
+ * @param <GE1> the group 1 element type
+ * @param <GE2> the group 2 element type
  */
 public record Groth21ShareId<
                 C extends Curve<C, FE, GE1, GE2>,

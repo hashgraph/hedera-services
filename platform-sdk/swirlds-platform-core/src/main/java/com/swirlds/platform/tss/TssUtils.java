@@ -42,6 +42,8 @@ public final class TssUtils {
      * @param ecdhPrivateKey the ECDH private key of this node
      * @param cipherTexts    the cipher texts to extract the private shares from
      * @param threshold      the threshold number of cipher texts required to decrypt the private shares
+     * @param <P>            the type of public key that can be used to verify signatures produced by the secret keys
+     *                       encrypted in the cipher texts
      * @return the private shares, or null if there aren't enough shares to meet the threshold
      */
     @Nullable
@@ -87,10 +89,11 @@ public final class TssUtils {
      * @param shareIds    the share IDs to compute the public shares for
      * @param tssMessages the TSS messages
      * @param threshold   the threshold number of commitments required to compute the public shares
+     * @param <P>         the type of public that will be computed
      * @return the public shares, or null if there aren't enough shares to meet the threshold
      */
     @Nullable
-    public static <P extends PublicKey> Map<TssShareId, PublicKey> computePublicShares(
+    public static <P extends PublicKey> Map<TssShareId, P> computePublicShares(
             @NonNull final Tss<P> tss,
             @NonNull final List<TssShareId> shareIds,
             @NonNull final List<TssMessage<P>> tssMessages,
@@ -101,7 +104,7 @@ public final class TssUtils {
             return null;
         }
 
-        final Map<TssShareId, PublicKey> outputShares = new HashMap<>();
+        final Map<TssShareId, P> outputShares = new HashMap<>();
 
         // go through each specified share ID and compute the corresponding public key
         for (final TssShareId shareId : shareIds) {

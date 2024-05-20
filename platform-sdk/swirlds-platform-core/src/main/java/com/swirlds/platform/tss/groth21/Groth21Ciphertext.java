@@ -25,6 +25,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A TSS ciphertext, as utilized by the Groth21 scheme.
+ *
+ * @param <P> the type of public key that verifies signatures produced by the secret key encrypted by this ciphertext
  */
 public class Groth21Ciphertext<P extends PublicKey> implements TssCiphertext<P> {
 

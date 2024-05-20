@@ -16,6 +16,14 @@
 
 package com.swirlds.platform.tss.pairings;
 
+/**
+ * Represents a curve.
+ *
+ * @param <C>   the curve type
+ * @param <FE>  the field element type
+ * @param <GE1> the group 1 element type
+ * @param <GE2> the group 2 element type
+ */
 public interface Curve<
         C extends Curve<C, FE, GE1, GE2>,
         FE extends FieldElement<C, FE, GE1, GE2>,
