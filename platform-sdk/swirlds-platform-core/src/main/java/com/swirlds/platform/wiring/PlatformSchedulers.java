@@ -30,7 +30,6 @@ import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -45,7 +44,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param consensusRoundHandlerScheduler            the scheduler for the consensus round handler
  * @param runningHashUpdateScheduler                the scheduler for the running hash updater
  * @param issHandlerScheduler                       the scheduler for the iss handler
- * @param hashLoggerScheduler                       the scheduler for the hash logger
  * @param latestCompleteStateNotifierScheduler      the scheduler for the latest complete state notifier
  */
 public record PlatformSchedulers(
@@ -55,7 +53,6 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<StateAndRound> consensusRoundHandlerScheduler,
         @NonNull TaskScheduler<RunningEventHashOverride> runningHashUpdateScheduler,
         @NonNull TaskScheduler<Void> issHandlerScheduler,
-        @NonNull TaskScheduler<Void> hashLoggerScheduler,
         @NonNull TaskScheduler<Void> latestCompleteStateNotifierScheduler) {
 
     /**
@@ -108,13 +105,6 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("issHandler")
                         .withType(TaskSchedulerType.DIRECT)
                         .withHyperlink(platformCoreHyperlink(IssHandler.class))
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("hashLogger")
-                        .withType(config.hashLoggerSchedulerType())
-                        .withUnhandledTaskCapacity(config.hashLoggerUnhandledTaskCapacity())
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(HashLogger.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("latestCompleteStateNotifier")

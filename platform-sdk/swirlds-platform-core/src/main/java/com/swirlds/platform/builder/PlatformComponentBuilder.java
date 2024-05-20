@@ -69,6 +69,8 @@ import com.swirlds.platform.pool.DefaultTransactionPool;
 import com.swirlds.platform.pool.TransactionPool;
 import com.swirlds.platform.state.hasher.DefaultStateHasher;
 import com.swirlds.platform.state.hasher.StateHasher;
+import com.swirlds.platform.state.hashlogger.DefaultHashLogger;
+import com.swirlds.platform.state.hashlogger.HashLogger;
 import com.swirlds.platform.state.iss.DefaultIssDetector;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssScratchpad;
@@ -133,6 +135,7 @@ public class PlatformComponentBuilder {
     private TransactionResubmitter transactionResubmitter;
     private TransactionPool transactionPool;
     private StateHasher stateHasher;
+    private HashLogger hashLogger;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -1030,5 +1033,36 @@ public class PlatformComponentBuilder {
             stateHasher = new DefaultStateHasher(blocks.platformContext());
         }
         return stateHasher;
+    }
+
+    /**
+     * Provide a hash logger in place of the platform's default hash logger.
+     *
+     * @param hashLogger the hash logger to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withHashLogger(@NonNull final HashLogger hashLogger) {
+        throwIfAlreadyUsed();
+        if (this.hashLogger != null) {
+            throw new IllegalStateException("Hash logger has already been set");
+        }
+        this.hashLogger = Objects.requireNonNull(hashLogger);
+        return this;
+    }
+
+    /**
+     * Build the hash logger if it has not yet been built. If one has been provided via
+     * {@link #withHashLogger(HashLogger)}, that logger will be used. If this method is called more than once, only
+     * the first call will build the hash logger. Otherwise, the default logger will be created and returned.
+     *
+     * @return the hash logger
+     */
+    @NonNull
+    public HashLogger buildHashLogger() {
+        if (hashLogger == null) {
+            hashLogger = new DefaultHashLogger(blocks.platformContext());
+        }
+        return hashLogger;
     }
 }

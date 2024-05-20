@@ -85,6 +85,7 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.pool.TransactionPool;
 import com.swirlds.platform.publisher.PlatformPublisher;
 import com.swirlds.platform.state.hasher.StateHasher;
+import com.swirlds.platform.state.hashlogger.HashLogger;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
@@ -104,10 +105,8 @@ import com.swirlds.platform.system.status.PlatformStatusNexus;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
-import com.swirlds.platform.wiring.components.HashLoggerWiring;
 import com.swirlds.platform.wiring.components.IssHandlerWiring;
 import com.swirlds.platform.wiring.components.PassThroughWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
@@ -159,7 +158,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final RunningEventHashOverrideWiring runningEventHashOverrideWiring;
     private final ComponentWiring<IssDetector, List<IssNotification>> issDetectorWiring;
     private final IssHandlerWiring issHandlerWiring;
-    private final HashLoggerWiring hashLoggerWiring;
+    private final ComponentWiring<HashLogger, Void> hashLoggerWiring;
     private final ComponentWiring<LatestCompleteStateNotifier, CompleteStateNotificationWithCleanup>
             latestCompleteStateNotifierWiring;
     private final ComponentWiring<SignedStateNexus, Void> latestImmutableStateNexusWiring;
@@ -285,7 +284,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         issDetectorWiring = new ComponentWiring<>(model, IssDetector.class, config.issDetector());
         issHandlerWiring = IssHandlerWiring.create(schedulers.issHandlerScheduler());
-        hashLoggerWiring = HashLoggerWiring.create(schedulers.hashLoggerScheduler());
+        hashLoggerWiring = new ComponentWiring<>(model, HashLogger.class, config.hashLogger());
 
         latestCompleteStateNotifierWiring = new ComponentWiring<>(
                 model,
@@ -643,7 +642,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .getOutputWire()
                 .buildTransformer("postHasher_getConsensusRound", "stateAndRound", StateAndRound::round);
 
-        hashedStateOutputWire.solderTo(hashLoggerWiring.hashLoggerInputWire());
+        hashedStateOutputWire.solderTo(hashLoggerWiring.getInputWire(HashLogger::logHashes));
         hashedStateOutputWire.solderTo(stateSignerWiring.signState());
         hashedStateAndRoundOutputWire.solderTo(issDetectorWiring.getInputWire(IssDetector::handleStateAndRound));
 
@@ -762,7 +761,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param eventWindowManager        the event window manager to bind
      * @param consensusRoundHandler     the consensus round handler to bind
      * @param issHandler                the ISS handler to bind
-     * @param hashLogger                the hash logger to bind
      * @param birthRoundMigrationShim   the birth round migration shim to bind, ignored if birth round migration has not
      *                                  yet happened, must not be null if birth round migration has happened
      * @param completeStateNotifier     the latest complete state notifier to bind
@@ -782,7 +780,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final EventWindowManager eventWindowManager,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final IssHandler issHandler,
-            @NonNull final HashLogger hashLogger,
             @Nullable final BirthRoundMigrationShim birthRoundMigrationShim,
             @NonNull final LatestCompleteStateNotifier completeStateNotifier,
             @NonNull final SignedStateNexus latestImmutableStateNexus,
@@ -814,7 +811,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         consensusEventStreamWiring.bind(builder::buildConsensusEventStream);
         issDetectorWiring.bind(builder::buildIssDetector);
         issHandlerWiring.bind(issHandler);
-        hashLoggerWiring.bind(hashLogger);
+        hashLoggerWiring.bind(builder.buildHashLogger()); // TODO
         if (birthRoundMigrationShimWiring != null) {
             birthRoundMigrationShimWiring.bind(Objects.requireNonNull(birthRoundMigrationShim));
         }
@@ -909,7 +906,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     @NonNull
     public InputWire<ReservedSignedState> getHashLoggerInput() {
-        return hashLoggerWiring.hashLoggerInputWire();
+        return hashLoggerWiring.getInputWire(HashLogger::logHashes);
     }
 
     /**
