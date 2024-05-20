@@ -735,7 +735,6 @@ public class ConversionUtils {
         } else {
             // OrElse(0) is needed, as an UNSET contract OneOf has null number
             return asLongZeroAddress(contractId.contractNumOrElse(0L));
-            //            return asLongZeroAddress(contractId.contractNumOrThrow());
         }
     }
 
