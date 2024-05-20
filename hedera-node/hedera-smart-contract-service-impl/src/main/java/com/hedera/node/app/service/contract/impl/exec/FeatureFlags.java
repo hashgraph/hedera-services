@@ -78,7 +78,6 @@ public interface FeatureFlags {
             @NonNull Configuration config, @Nullable Long possiblyGrandFatheredEntityNum) {
         return false;
     }
-    ;
 
     /**
      *  If true, charge intrinsic gas for calls that fail with a pre-EVM exception.

@@ -19,10 +19,10 @@ package com.swirlds.platform;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
-import static com.swirlds.platform.state.signed.StateToDiskReason.FATAL_ERROR;
-import static com.swirlds.platform.state.signed.StateToDiskReason.ISS;
-import static com.swirlds.platform.state.signed.StateToDiskReason.PERIODIC_SNAPSHOT;
+import static com.swirlds.platform.state.snapshot.SignedStateFileReader.readStateFile;
+import static com.swirlds.platform.state.snapshot.StateToDiskReason.FATAL_ERROR;
+import static com.swirlds.platform.state.snapshot.StateToDiskReason.ISS;
+import static com.swirlds.platform.state.snapshot.StateToDiskReason.PERIODIC_SNAPSHOT;
 import static java.nio.file.Files.exists;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -32,9 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.config.StateCommonConfig_;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -42,31 +40,29 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.metrics.api.Counter;
 import com.swirlds.platform.components.DefaultSavedStateController;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
-import com.swirlds.platform.state.signed.DeserializedSignedState;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SavedStateInfo;
-import com.swirlds.platform.state.signed.SavedStateMetadata;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateFileManager;
-import com.swirlds.platform.state.signed.SignedStateFilePath;
-import com.swirlds.platform.state.signed.SignedStateFileReader;
-import com.swirlds.platform.state.signed.SignedStateFileUtils;
-import com.swirlds.platform.state.signed.SignedStateMetrics;
-import com.swirlds.platform.state.signed.StateDumpRequest;
-import com.swirlds.platform.state.signed.StateSavingResult;
+import com.swirlds.platform.state.snapshot.DefaultStateSnapshotManager;
+import com.swirlds.platform.state.snapshot.DeserializedSignedState;
+import com.swirlds.platform.state.snapshot.SavedStateInfo;
+import com.swirlds.platform.state.snapshot.SavedStateMetadata;
+import com.swirlds.platform.state.snapshot.SignedStateFilePath;
+import com.swirlds.platform.state.snapshot.SignedStateFileReader;
+import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
+import com.swirlds.platform.state.snapshot.StateDumpRequest;
+import com.swirlds.platform.state.snapshot.StateSavingResult;
+import com.swirlds.platform.state.snapshot.StateSnapshotManager;
 import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import java.io.IOException;
@@ -86,8 +82,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-@DisplayName("SignedStateFileManager Tests")
-class SignedStateFileManagerTests {
+class StateFileManagerTests {
 
     private static final NodeId SELF_ID = new NodeId(1234);
     private static final String MAIN_CLASS_NAME = "com.swirlds.foobar";
@@ -119,14 +114,6 @@ class SignedStateFileManagerTests {
                 .build();
         signedStateFilePath =
                 new SignedStateFilePath(context.getConfiguration().getConfigData(StateCommonConfig.class));
-    }
-
-    private SignedStateMetrics buildMockMetrics() {
-        final SignedStateMetrics metrics = mock(SignedStateMetrics.class);
-        when(metrics.getWriteStateToDiskTimeMetric()).thenReturn(mock(RunningAverageMetric.class));
-        when(metrics.getStateToDiskTimeMetric()).thenReturn(mock(RunningAverageMetric.class));
-        when(metrics.getTotalUnsignedDiskStatesMetric()).thenReturn(mock(Counter.class));
-        return metrics;
     }
 
     /**
@@ -191,8 +178,8 @@ class SignedStateFileManagerTests {
             Files.createFile(savedDir);
         }
 
-        final SignedStateFileManager manager = new SignedStateFileManager(
-                context, buildMockMetrics(), new FakeTime(), MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
+        final StateSnapshotManager manager =
+                new DefaultStateSnapshotManager(context, MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
 
         final StateSavingResult stateSavingResult = manager.saveStateTask(signedState.reserve("test"));
 
@@ -210,8 +197,8 @@ class SignedStateFileManagerTests {
         final SignedState signedState = new RandomSignedStateGenerator().build();
         ((DummySwirldState) signedState.getSwirldState()).enableBlockingSerialization();
 
-        final SignedStateFileManager manager = new SignedStateFileManager(
-                context, buildMockMetrics(), new FakeTime(), MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
+        final StateSnapshotManager manager =
+                new DefaultStateSnapshotManager(context, MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
         signedState.markAsStateToSave(FATAL_ERROR);
 
         final Thread thread = new ThreadConfiguration(getStaticThreadManager())
@@ -236,8 +223,8 @@ class SignedStateFileManagerTests {
     void saveISSignedState() throws IOException {
         final SignedState signedState = new RandomSignedStateGenerator().build();
 
-        final SignedStateFileManager manager = new SignedStateFileManager(
-                context, buildMockMetrics(), new FakeTime(), MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
+        final StateSnapshotManager manager =
+                new DefaultStateSnapshotManager(context, MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
         signedState.markAsStateToSave(ISS);
         manager.dumpStateTask(StateDumpRequest.create(signedState.reserve("test")));
 
@@ -273,8 +260,8 @@ class SignedStateFileManagerTests {
         final int averageTimeBetweenStates = 10;
         final double standardDeviationTimeBetweenStates = 0.5;
 
-        final SignedStateFileManager manager = new SignedStateFileManager(
-                context, buildMockMetrics(), new FakeTime(), MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
+        final StateSnapshotManager manager =
+                new DefaultStateSnapshotManager(context, MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
         final SavedStateController controller =
                 new DefaultSavedStateController(context.getConfiguration().getConfigData(StateConfig.class));
 
@@ -392,8 +379,8 @@ class SignedStateFileManagerTests {
 
         final int count = 10;
 
-        final SignedStateFileManager manager = new SignedStateFileManager(
-                context, buildMockMetrics(), new FakeTime(), MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
+        final StateSnapshotManager manager =
+                new DefaultStateSnapshotManager(context, MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
 
         final Path statesDirectory =
                 signedStateFilePath.getSignedStatesDirectoryForSwirld(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
