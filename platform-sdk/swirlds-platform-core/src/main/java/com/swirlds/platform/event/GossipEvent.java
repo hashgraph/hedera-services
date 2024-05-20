@@ -24,19 +24,24 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 
 /**
  * A class used to hold information about an event transferred through gossip
  */
-public class GossipEvent implements SelfSerializable {
+public class GossipEvent implements Event, SelfSerializable {
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
 
     private static final class ClassVersion {
@@ -168,6 +173,28 @@ public class GossipEvent implements SelfSerializable {
         return hashedData.getDescriptor();
     }
 
+    @Override
+    public Iterator<Transaction> transactionIterator() {
+        return Arrays.asList((Transaction[]) hashedData.getTransactions()).iterator();
+    }
+
+    @Override
+    public Instant getTimeCreated() {
+        return hashedData.getTimeCreated();
+    }
+
+    @Nullable
+    @Override
+    public SoftwareVersion getSoftwareVersion() {
+        return hashedData.getSoftwareVersion();
+    }
+
+    @NonNull
+    @Override
+    public NodeId getCreatorId() {
+        return hashedData.getCreatorId();
+    }
+
     /**
      * Get the generation of the event.
      *
@@ -175,6 +202,13 @@ public class GossipEvent implements SelfSerializable {
      */
     public long getGeneration() {
         return hashedData.getGeneration();
+    }
+
+    /**
+     * @return the number of payloads this event contains
+     */
+    public int getPayloadCount() {
+        return hashedData.getTransactions().length;
     }
 
     /**

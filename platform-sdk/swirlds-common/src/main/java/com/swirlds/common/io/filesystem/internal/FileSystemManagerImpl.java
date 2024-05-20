@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
@@ -62,9 +61,42 @@ public class FileSystemManagerImpl implements FileSystemManager {
     private final Path rootPath;
     private final Path tempPath;
     private final Path savedPath;
-    private final Path recycleBinPath;
     private final RecycleBin bin;
     private final AtomicLong tmpFileNameIndex = new AtomicLong(0);
+    /**
+     * Creates a {@link FileSystemManager} and a {@link com.swirlds.common.io.utility.RecycleBin} by searching {@code root}
+     * path in the {@link Configuration} class using
+     * {@code FileSystemManagerConfig} record
+     *
+     * @param rootLocation      the location to be used as root path. It should not exist.
+     * @param dataDirName       the name of the user data file directory
+     * @param tmpDirName        the name of the tmp file directory
+     * @param recycleBin       for building the recycle bin.
+     * @throws UncheckedIOException if the dir structure to rootLocation cannot be created
+     */
+    FileSystemManagerImpl(
+            @NonNull final String rootLocation,
+            final String dataDirName,
+            final String tmpDirName,
+            @NonNull final RecycleBin recycleBin) {
+        this.rootPath = Path.of(rootLocation).normalize();
+        if (!exists(rootPath)) {
+            rethrowIO(() -> Files.createDirectories(rootPath));
+        }
+
+        this.tempPath = rootPath.resolve(tmpDirName);
+        this.savedPath = rootPath.resolve(dataDirName);
+
+        if (!exists(savedPath)) {
+            rethrowIO(() -> Files.createDirectory(savedPath));
+        }
+        if (exists(tempPath)) {
+            rethrowIO(() -> FileUtils.deleteDirectory(tempPath));
+        }
+        rethrowIO(() -> Files.createDirectory(tempPath));
+
+        this.bin = recycleBin;
+    }
 
     /**
      * Creates a {@link FileSystemManager} and a {@link com.swirlds.common.io.utility.RecycleBin} by searching {@code root}
@@ -80,9 +112,9 @@ public class FileSystemManagerImpl implements FileSystemManager {
      */
     FileSystemManagerImpl(
             @NonNull final String rootLocation,
-            final String dataDirName,
-            final String tmpDirName,
-            final String recycleBinDirName,
+            @NonNull final String dataDirName,
+            @NonNull final String tmpDirName,
+            @NonNull final String recycleBinDirName,
             @NonNull final Function<Path, RecycleBin> binSupplier) {
         this.rootPath = Path.of(rootLocation).normalize();
         if (!exists(rootPath)) {
@@ -91,7 +123,7 @@ public class FileSystemManagerImpl implements FileSystemManager {
 
         this.tempPath = rootPath.resolve(tmpDirName);
         this.savedPath = rootPath.resolve(dataDirName);
-        this.recycleBinPath = rootPath.resolve(recycleBinDirName);
+        final Path recycleBinPath = rootPath.resolve(recycleBinDirName);
 
         if (!exists(savedPath)) {
             rethrowIO(() -> Files.createDirectory(savedPath));
@@ -101,15 +133,8 @@ public class FileSystemManagerImpl implements FileSystemManager {
         }
         rethrowIO(() -> Files.createDirectory(tempPath));
 
-        // FUTURE-WORK: --MIGRATION-- Remove this logic after the fs manager was deployed.
-        // Moves files in the old location of the recycle bin to the new one
-        final Path oldRecyclePath = savedPath.resolve("swirlds-recycle-bin");
-        if (!exists(recycleBinPath) && exists(oldRecyclePath)) {
-            rethrowIO(() -> Files.move(oldRecyclePath, recycleBinPath, StandardCopyOption.ATOMIC_MOVE));
-        }
-
         if (!exists(recycleBinPath)) {
-            rethrowIO(() -> Files.createDirectory(recycleBinPath));
+            rethrowIO(() -> Files.createDirectories(recycleBinPath));
         }
         this.bin = binSupplier.apply(recycleBinPath);
     }

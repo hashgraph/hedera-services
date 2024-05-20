@@ -48,9 +48,7 @@ public final class UnzipUtility {
     // max allowed ratio between uncompressed and compressed file size
     private static final double THRESHOLD_RATIO = 10;
 
-    private UnzipUtility() {
-        throw new UnsupportedOperationException("Utility Class");
-    }
+    private UnzipUtility() {}
 
     /**
      * Extracts (unzips) a zipped file from a byte array

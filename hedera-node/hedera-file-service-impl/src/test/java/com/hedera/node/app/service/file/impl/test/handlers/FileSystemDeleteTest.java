@@ -21,19 +21,22 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.SystemDeleteTransactionBody;
 import com.hedera.hapi.node.state.file.File;
@@ -46,6 +49,8 @@ import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -63,6 +68,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -120,6 +126,41 @@ class FileSystemDeleteTest extends FileTestBase {
     }
 
     @Test
+    @DisplayName("pureChecks throws exception when file id is null")
+    public void testPureChecksThrowsExceptionWhenFileIdIsNull() {
+        SystemDeleteTransactionBody transactionBody = mock(SystemDeleteTransactionBody.class);
+        TransactionBody transaction = mock(TransactionBody.class);
+        given(handleContext.body()).willReturn(transaction);
+        given(transaction.systemDeleteOrThrow()).willReturn(transactionBody);
+        given(transactionBody.fileID()).willReturn(null);
+
+        assertThatThrownBy(() -> subject.pureChecks(handleContext.body())).isInstanceOf(PreCheckException.class);
+    }
+
+    @Test
+    @DisplayName("pureChecks does not throw exception when file id is not null")
+    public void testPureChecksDoesNotThrowExceptionWhenFileIdIsNotNull() {
+        given(handleContext.body()).willReturn(newFileDeleteTxn());
+
+        assertThatCode(() -> subject.pureChecks(handleContext.body())).doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("calculateFees method invocations")
+    public void testCalculateFeesInvocations() {
+        FeeContext feeContext = mock(FeeContext.class);
+        FeeCalculator feeCalculator = mock(FeeCalculator.class);
+        when(feeContext.feeCalculator(SubType.DEFAULT)).thenReturn(feeCalculator);
+
+        subject.calculateFees(feeContext);
+
+        InOrder inOrder = inOrder(feeContext, feeCalculator);
+        inOrder.verify(feeContext).body();
+        inOrder.verify(feeContext).feeCalculator(SubType.DEFAULT);
+        inOrder.verify(feeCalculator).legacyCalculate(any());
+    }
+
+    @Test
     @DisplayName("File not found returns error")
     void fileIdNotFound() throws PreCheckException {
         // given:
@@ -141,8 +182,8 @@ class FileSystemDeleteTest extends FileTestBase {
         writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(INVALID_FILE_ID, msg.getStatus());
+        HandleException thrown = (HandleException) catchThrowable(() -> subject.handle(handleContext));
+        assertThat(thrown.getStatus()).isEqualTo(INVALID_FILE_ID);
     }
 
     @Test
@@ -151,13 +192,13 @@ class FileSystemDeleteTest extends FileTestBase {
         given(handleContext.body()).willReturn(newSystemDeleteTxn());
 
         final var existingFile = writableStore.get(fileSystemFileId);
-        assertTrue(existingFile.isPresent());
-        assertFalse(existingFile.get().deleted());
+        assertThat(existingFile.isPresent()).isTrue();
+        assertThat(existingFile.get().deleted()).isFalse();
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(ENTITY_NOT_ALLOWED_TO_DELETE, msg.getStatus());
-        assertFalse(existingFile.get().deleted());
+        HandleException thrown = (HandleException) catchThrowable(() -> subject.handle(handleContext));
+        assertThat(ENTITY_NOT_ALLOWED_TO_DELETE).isEqualTo(thrown.getStatus());
+        assertThat(existingFile.get().deleted()).isFalse();
     }
 
     @Test
@@ -171,9 +212,8 @@ class FileSystemDeleteTest extends FileTestBase {
         writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-
-        assertEquals(UNAUTHORIZED, msg.getStatus());
+        HandleException thrown = (HandleException) catchThrowable(() -> subject.handle(handleContext));
+        assertThat(thrown.getStatus()).isEqualTo(UNAUTHORIZED);
     }
 
     @Test
@@ -182,8 +222,8 @@ class FileSystemDeleteTest extends FileTestBase {
         given(handleContext.body()).willReturn(newFileDeleteTxn());
 
         final var existingFile = writableStore.get(fileId);
-        assertTrue(existingFile.isPresent());
-        assertFalse(existingFile.get().deleted());
+        assertThat(existingFile.isPresent()).isTrue();
+        assertThat(existingFile.get().deleted()).isFalse();
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         lenient().when(handleContext.consensusNow()).thenReturn(instant);
@@ -192,7 +232,7 @@ class FileSystemDeleteTest extends FileTestBase {
 
         final var changedFile = writableStore.get(fileId);
 
-        assertEquals(changedFile, Optional.empty());
+        assertThat(changedFile).isEqualTo(Optional.empty());
     }
 
     @Test
@@ -201,8 +241,8 @@ class FileSystemDeleteTest extends FileTestBase {
         given(handleContext.body()).willReturn(newFileDeleteTxn());
 
         final var existingFile = writableStore.get(fileId);
-        assertTrue(existingFile.isPresent());
-        assertFalse(existingFile.get().deleted());
+        assertThat(existingFile.isPresent()).isTrue();
+        assertThat(existingFile.get().deleted()).isFalse();
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         lenient().when(handleContext.consensusNow()).thenReturn(instant);
@@ -211,8 +251,8 @@ class FileSystemDeleteTest extends FileTestBase {
 
         final var changedFile = writableStore.get(fileId);
 
-        assertTrue(changedFile.isPresent());
-        assertTrue(changedFile.get().deleted());
+        assertThat(changedFile.isPresent()).isTrue();
+        assertThat(changedFile.get().deleted()).isTrue();
     }
 
     private Key mockPayerLookup() throws PreCheckException {
