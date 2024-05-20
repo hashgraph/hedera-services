@@ -827,7 +827,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         consensusEventStreamWiring.bind(builder::buildConsensusEventStream);
         issDetectorWiring.bind(builder::buildIssDetector);
         issHandlerWiring.bind(issHandler);
-        hashLoggerWiring.bind(builder.buildHashLogger()); // TODO
+        hashLoggerWiring.bind(builder::buildHashLogger);
         if (birthRoundMigrationShimWiring != null) {
             birthRoundMigrationShimWiring.bind(Objects.requireNonNull(birthRoundMigrationShim));
         }
