@@ -42,9 +42,6 @@ import java.time.Duration;
  * @param consensusEngine                         configuration for the consensus engine scheduler
  * @param eventCreationManager                    configuration for the event creation manager scheduler
  * @param selfEventSigner                         configuration for the self event signer scheduler
- * @param signedStateFileManagerSchedulerType     the signed state file manager scheduler type
- * @param signedStateFileManagerUnhandledCapacity number of unhandled tasks allowed in the signed state file manager
- *                                                scheduler
  * @param stateSignerSchedulerType                the state signer scheduler type
  * @param stateSignerUnhandledCapacity            number of unhandled tasks allowed in the state signer scheduler,
  *                                                default is -1 (unlimited)
@@ -97,8 +94,8 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventCreationManager,
         @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration selfEventSigner,
-        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType signedStateFileManagerSchedulerType,
-        @ConfigProperty(defaultValue = "20") int signedStateFileManagerUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD CAPACITY(20) UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration stateSnapshotManager,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateSignerSchedulerType,
         @ConfigProperty(defaultValue = "-1") int stateSignerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD CAPACITY(500) UNHANDLED_TASK_METRIC")
