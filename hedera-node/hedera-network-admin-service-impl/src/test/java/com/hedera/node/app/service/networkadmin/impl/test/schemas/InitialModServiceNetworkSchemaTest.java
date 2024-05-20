@@ -59,7 +59,6 @@ public class InitialModServiceNetworkSchemaTest {
     void HappyPathMigration() {
         assertThatCode(() -> subject.migrate(migrationContext)).doesNotThrowAnyException();
         subject.migrate(migrationContext);
-        assertThat(logCaptor.infoLogs())
-                .contains("BBM: no actions required for network service");
+        assertThat(logCaptor.infoLogs()).contains("BBM: no actions required for network service");
     }
 }
