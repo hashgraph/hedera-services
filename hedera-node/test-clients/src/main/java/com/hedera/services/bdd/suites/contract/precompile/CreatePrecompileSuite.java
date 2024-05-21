@@ -120,6 +120,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     private static final String THRESHOLD_KEY = "ThreshKey";
     private static final String ADMIN_KEY = "adminKey";
     private static final String TOKEN_MISC_OPERATIONS_CONTRACT = "TokenMiscOperations";
+    private static final String CREATE_FUNGIBLE_TOKEN_WITH_KEYS_AND_EXPIRY_FUNCTION = "createTokenWithKeysAndExpiry";
 
     public static void main(String... args) {
         new CreatePrecompileSuite().runSuiteAsync();
@@ -197,14 +198,11 @@ public class CreatePrecompileSuite extends HapiSuite {
                                             .getThresholdKey()
                                             .getKeys()
                                             .getKeys(0));
-                    spec.registry()
-                            .saveContractId(
-                                    "tokenCreateContracId", spec.registry().getContractId(TOKEN_CREATE_CONTRACT));
                     allRunFor(
                             spec,
                             contractCall(
                                             TOKEN_CREATE_CONTRACT,
-                                            "createTokenWithKeysAndExpiry",
+                                            CREATE_FUNGIBLE_TOKEN_WITH_KEYS_AND_EXPIRY_FUNCTION,
                                             HapiParserUtil.asHeadlongAddress(
                                                     asAddress(spec.registry().getAccountID(ACCOUNT))),
                                             ed2551Key.get(),
@@ -383,7 +381,7 @@ public class CreatePrecompileSuite extends HapiSuite {
                         spec,
                         contractCall(
                                         TOKEN_CREATE_CONTRACT,
-                                        "createTokenWithKeysAndExpiry",
+                                        CREATE_FUNGIBLE_TOKEN_WITH_KEYS_AND_EXPIRY_FUNCTION,
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getAccountID(ACCOUNT))),
                                         ed2551Key.get(),
@@ -684,7 +682,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     @HapiTest
     final HapiSpec createTokenWithDefaultExpiryAndEmptyKeys() {
         final var tokenCreateContractAsKeyDelegate = "createTokenWithDefaultExpiryAndEmptyKeys";
-        final var createTokenNum = new AtomicLong();
+        final var createdTokenNum = new AtomicLong();
         return defaultHapiSpec("createTokenWithDefaultExpiryAndEmptyKeys")
                 .given(
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
@@ -702,10 +700,35 @@ public class CreatePrecompileSuite extends HapiSuite {
                                 .exposingResultTo(result -> {
                                     log.info(EXPLICIT_CREATE_RESULT, result[0]);
                                     final var res = (Address) result[0];
-                                    createTokenNum.set(res.value().longValueExact());
+                                    createdTokenNum.set(res.value().longValueExact());
                                 })
                                 .hasKnownStatus(SUCCESS))))
-                .then(getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged());
+                .then(
+                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(ACCOUNT).logged(),
+                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
+                        getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
+                        childRecordsCheck(
+                                FIRST_CREATE_TXN,
+                                ResponseCodeEnum.SUCCESS,
+                                TransactionRecordAsserts.recordWith().status(SUCCESS)),
+                        sourcing(() -> getAccountBalance(TOKEN_CREATE_CONTRACT)
+                                .hasTokenBalance(
+                                        asTokenString(TokenID.newBuilder()
+                                                .setTokenNum(createdTokenNum.get())
+                                                .build()),
+                                        200)),
+                        sourcing(() -> getTokenInfo(asTokenString(TokenID.newBuilder()
+                                        .setTokenNum(createdTokenNum.get())
+                                        .build()))
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasDecimals(8)
+                                .hasTotalSupply(200)
+                                .hasTreasury(TOKEN_CREATE_CONTRACT)
+                                .hasAutoRenewPeriod(0L)
+                                .searchKeysGlobally()
+                                .hasPauseStatus(TokenPauseStatus.PauseNotApplicable)
+                                .logged()));
     }
 
     // TEST-007 & TEST-016

@@ -78,13 +78,20 @@ public interface FeatureFlags {
             @NonNull Configuration config, @Nullable Long possiblyGrandFatheredEntityNum) {
         return false;
     }
-    ;
 
     /**
      *  If true, charge intrinsic gas for calls that fail with a pre-EVM exception.
      * @return true whether to  charge intrinsic gas for calls that fail with a pre-EVM exception.
      */
     default boolean isChargeGasOnPreEvmException(@NonNull Configuration config) {
+        return false;
+    }
+
+    /**
+     *  If true, enable calls to the Hedera Account Service system contract
+     * @return true whether calls to Hedera Account Service system contract are enabled.
+     */
+    default boolean isHederaAccountServiceEnabled(@NonNull Configuration config) {
         return false;
     }
 }

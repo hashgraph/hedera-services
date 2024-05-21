@@ -135,34 +135,32 @@ public final class Utilities {
      * XORed with whitening before the comparison. The XOR doesn't actually happen, and the arrays are left
      * unchanged.
      *
-     * @param sig1
+     * @param a1
      * 		first array
-     * @param sig2
+     * @param a2
      * 		second array
      * @param whitening
      * 		the array virtually XORed with the other two
      * @return 1 if first is bigger, -1 if second, 0 otherwise
      */
-    public static int arrayCompare(byte[] sig1, byte[] sig2, byte[] whitening) {
-        int maxLen;
-        int minLen;
-        if (sig1 == null && sig2 == null) {
+    public static int arrayCompare(@Nullable final Bytes a1, @Nullable final Bytes a2, byte[] whitening) {
+        if (a1 == null && a2 == null) {
             return 0;
         }
-        if (sig1 != null && sig2 == null) {
+        if (a1 != null && a2 == null) {
             return 1;
         }
-        if (sig1 == null && sig2 != null) {
+        if (a1 == null && a2 != null) {
             return -1;
         }
-        maxLen = Math.max(sig1.length, sig2.length);
-        minLen = Math.min(sig1.length, sig2.length);
+        final int maxLen = (int) Math.max(a1.length(), a2.length());
+        final int minLen = (int) Math.min(a1.length(), a2.length());
         if (whitening.length < maxLen) {
             whitening = Arrays.copyOf(whitening, maxLen);
         }
         for (int i = 0; i < minLen; i++) {
-            int b1 = sig1[i] ^ whitening[i];
-            int b2 = sig2[i] ^ whitening[i];
+            final int b1 = a1.getByte(i) ^ whitening[i];
+            final int b2 = a2.getByte(i) ^ whitening[i];
             if (b1 > b2) {
                 return 1;
             }
@@ -170,10 +168,10 @@ public final class Utilities {
                 return -1;
             }
         }
-        if (sig1.length > sig2.length) {
+        if (a1.length() > a2.length()) {
             return 1;
         }
-        if (sig1.length < sig2.length) {
+        if (a1.length() < a2.length()) {
             return -1;
         }
         return 0;

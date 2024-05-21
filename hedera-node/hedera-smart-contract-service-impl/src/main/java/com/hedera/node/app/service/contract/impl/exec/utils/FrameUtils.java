@@ -21,7 +21,6 @@ import static com.hedera.hapi.streams.SidecarType.CONTRACT_BYTECODE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
-import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
@@ -50,6 +49,7 @@ public class FrameUtils {
     public static final String PROPAGATED_CALL_FAILURE_CONTEXT_VARIABLE = "propagatedCallFailure";
     public static final String SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE = "systemContractGasCalculator";
     public static final String PENDING_CREATION_BUILDER_CONTEXT_VARIABLE = "pendingCreationBuilder";
+    private static final long TOKEN_PROXY_ACCOUNT_NONCE = -1;
 
     private FrameUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -277,7 +277,7 @@ public class FrameUtils {
             return CallType.UNQUALIFIED_DELEGATE;
         }
         // make sure we have a parent calling context
-        return parentIsNonDelegate(frame, viableType);
+        return validateParentCallType(frame, viableType);
     }
 
     public static CallType callTypeForAccountOf(final MessageFrame frame) {
@@ -291,13 +291,16 @@ public class FrameUtils {
         final CallType viableType;
         if (isRegularAccount(frame, recipient)) {
             viableType = CallType.DIRECT_OR_PROXY_REDIRECT;
+            return validateParentCallType(frame, viableType);
         } else {
             return CallType.UNQUALIFIED_DELEGATE;
         }
-        return parentIsNonDelegate(frame, viableType);
     }
 
-    private static CallType parentIsNonDelegate(MessageFrame frame, CallType viableType) {
+    private static CallType validateParentCallType(@NonNull MessageFrame frame, @NonNull CallType viableType) {
+        requireNonNull(frame);
+        requireNonNull(viableType);
+
         // make sure we have a parent calling context
         final var stack = frame.getMessageFrameStack();
         final var frames = stack.iterator();
@@ -313,10 +316,10 @@ public class FrameUtils {
     /**
      * Returns true if the given frame is a call to a contract that must be present based on feature flag settings.
      *
-     * @param frame
+     * @param frame the current message frame
      * @param address to check for possible grandfathering
-     * @param featureFlags
-     * @return
+     * @param featureFlags current evm module feature flags
+     * @return true if the contract address must be present in the ledger
      */
     public static boolean contractRequired(
             @NonNull final MessageFrame frame,
@@ -345,7 +348,10 @@ public class FrameUtils {
         return false;
     }
 
-    private static boolean isRegularAccount(final MessageFrame frame, final Address address) {
+    private static boolean isRegularAccount(@NonNull final MessageFrame frame, @NonNull final Address address) {
+        requireNonNull(frame);
+        requireNonNull(address);
+
         final var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
         final var recipient = updater.getHederaAccount(address);
         if (recipient != null) {

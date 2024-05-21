@@ -62,6 +62,16 @@
       <DefaultRolloverStrategy max="10"/>
     </RollingFile>
 
+    <!-- State logs -->
+    <RollingFile name="StateLogs" fileName="output/state/state-changes.log"
+                 filePattern="output/state/state-changes-%i.log">
+      <PatternLayout>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} - %m{nolookups}%n</pattern>
+      </PatternLayout>
+      <SizeBasedTriggeringPolicy size="50 MB" />
+      <DefaultRolloverStrategy max="10"/>
+    </RollingFile>
+
   </Appenders>
   <Loggers>
     <Root level="FATAL">

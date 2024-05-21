@@ -18,16 +18,23 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
@@ -41,6 +48,8 @@ import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenPauseHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTestBase;
 import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -49,6 +58,7 @@ import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -82,6 +92,43 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
         preHandleContext = new FakePreHandleContext(accountStore, tokenPauseTxn);
         given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
         given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
+    }
+
+    @Test
+    public void testPureChecksThrowsExceptionWhenDoesNotHaveToken() {
+        TokenPauseTransactionBody transactionBody = mock(TokenPauseTransactionBody.class);
+        TransactionBody transaction = mock(TransactionBody.class);
+        given(handleContext.body()).willReturn(transaction);
+        given(transaction.tokenPauseOrThrow()).willReturn(transactionBody);
+        given(transactionBody.hasToken()).willReturn(false);
+
+        assertThatThrownBy(() -> subject.pureChecks(handleContext.body())).isInstanceOf(PreCheckException.class);
+    }
+
+    @Test
+    public void testPureChecksDoesNotThrowExceptionWhenHasToken() {
+        TokenPauseTransactionBody transactionBody = mock(TokenPauseTransactionBody.class);
+        TransactionBody transaction = mock(TransactionBody.class);
+        given(handleContext.body()).willReturn(transaction);
+        given(transaction.tokenPauseOrThrow()).willReturn(transactionBody);
+        given(transactionBody.hasToken()).willReturn(true);
+
+        assertThatCode(() -> subject.pureChecks(handleContext.body())).doesNotThrowAnyException();
+    }
+
+    @Test
+    public void testCalculateFeesInvocations() {
+        FeeContext feeContext = mock(FeeContext.class);
+        FeeCalculator feeCalculator = mock(FeeCalculator.class);
+        when(feeContext.feeCalculator(SubType.DEFAULT)).thenReturn(feeCalculator);
+        when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
+
+        subject.calculateFees(feeContext);
+
+        InOrder inOrder = inOrder(feeContext, feeCalculator);
+        inOrder.verify(feeContext).feeCalculator(SubType.DEFAULT);
+        inOrder.verify(feeCalculator).addBytesPerTransaction(anyLong());
+        inOrder.verify(feeCalculator).calculate();
     }
 
     @Test
