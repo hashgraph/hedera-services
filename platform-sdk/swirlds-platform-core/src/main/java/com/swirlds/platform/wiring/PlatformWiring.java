@@ -24,12 +24,9 @@ import static com.swirlds.platform.event.stale.StaleEventDetectorOutput.SELF_EVE
 import static com.swirlds.platform.event.stale.StaleEventDetectorOutput.STALE_SELF_EVENT;
 
 import com.hedera.hapi.platform.event.StateSignaturePayload;
-import com.swirlds.base.state.Startable;
-import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.stream.RunningEventHashOverride;
-import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
@@ -124,7 +121,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Encapsulates wiring for {@link com.swirlds.platform.SwirldsPlatform}.
  */
-public class PlatformWiring implements Startable, Stoppable, Clearable {
+public class PlatformWiring {
 
     private static final Logger logger = LogManager.getLogger(PlatformWiring.class);
 
@@ -354,7 +351,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 roundDurabilityBufferWiring,
                 stateHasherWiring,
                 staleEventDetectorWiring,
-                transactionPoolWiring);
+                transactionPoolWiring,
+                statusStateMachineWiring);
 
         wire();
     }
@@ -1060,17 +1058,15 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
-     * {@inheritDoc}
+     * Start the wiring framework.
      */
-    @Override
     public void start() {
         model.start();
     }
 
     /**
-     * {@inheritDoc}
+     * Stop the wiring framework.
      */
-    @Override
     public void stop() {
         model.stop();
     }
@@ -1078,7 +1074,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     /**
      * Clear all the wiring objects.
      */
-    @Override
     public void clear() {
         platformCoordinator.clear();
     }
