@@ -56,7 +56,7 @@ import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
-import com.hedera.node.app.spi.HapiUtils;
+import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.ParseException;

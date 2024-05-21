@@ -29,7 +29,7 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddres
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.AliasUtils.isSerializedProtoKey;
-import static com.hedera.node.app.spi.HapiUtils.functionOf;
+import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
@@ -57,7 +57,7 @@ import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.service.mono.throttling.ThrottleReqsManager;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.UnknownHederaFunctionality;
+import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;

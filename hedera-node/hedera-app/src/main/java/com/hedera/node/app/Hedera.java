@@ -91,7 +91,7 @@ import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.ServicesRegistryImpl;
-import com.hedera.node.app.spi.HapiUtils;
+import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.HederaLifecyclesImpl;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
