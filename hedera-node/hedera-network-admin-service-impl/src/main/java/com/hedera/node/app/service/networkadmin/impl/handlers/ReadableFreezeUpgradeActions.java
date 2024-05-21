@@ -123,8 +123,6 @@ public class ReadableFreezeUpgradeActions {
         catchUpOnMissedUpgradePrep();
     }
 
-
-
     public boolean isPreparedFileHashValidGiven(final byte[] curSpecialFilesHash, final byte[] hashFromTxnBody) {
         return Arrays.equals(curSpecialFilesHash, hashFromTxnBody);
     }

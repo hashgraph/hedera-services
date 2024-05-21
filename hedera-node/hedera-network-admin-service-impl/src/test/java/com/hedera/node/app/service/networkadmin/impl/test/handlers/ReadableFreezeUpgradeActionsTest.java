@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgra
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -171,40 +172,52 @@ class ReadableFreezeUpgradeActionsTest {
     @Test
     void testCatchUpOnMissedSideEffects() throws IOException {
         PlatformState platformState = createMockPlatformState();
-        LocalDateTime localDateTime = LocalDateTime.of(2024,1,1, 0,0);
+        LocalDateTime localDateTime = LocalDateTime.of(2024, 1, 1, 0, 0);
         Instant checkpoint = localDateTime.atZone(ZoneId.of("UTC")).toInstant();
         platformState.setFreezeTime(checkpoint);
         platformState.setLastFrozenTime(checkpoint.minusMillis(10000));
         given(writableFreezeStore.updateFileHash()).willReturn(Bytes.wrap("fake hash"));
 
-        assertThatNoException().isThrownBy( () -> subject.isFreezeScheduled(platformState));
+        assertThatNoException().isThrownBy(() -> subject.isFreezeScheduled(platformState));
         assertThat(subject.isFreezeScheduled(platformState)).isTrue();
 
         rmIfPresent(NOW_FROZEN_MARKER);
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
 
-        Bytes expectedContent = Bytes.wrap("blahblah");
+        Bytes expectedContent = Bytes.wrap("expected");
         given(upgradeFileStore.getFull(any())).willReturn(expectedContent);
-        assertThatNoException().isThrownBy( () -> subject.catchUpOnMissedSideEffects(platformState));
+        assertThatNoException().isThrownBy(() -> subject.catchUpOnMissedSideEffects(platformState));
+    }
+
+    @Test
+    void invokeMissedUpgradePrepException() {
+        PlatformState platformState = createMockPlatformState();
+        given(writableFreezeStore.updateFileHash()).willReturn(Bytes.wrap("fake hash"));
+        subject.isPreparedFileHashValidGiven(null, null);
+        assertThatNullPointerException().isThrownBy(() -> subject.catchUpOnMissedSideEffects(platformState));
+        given(writableFreezeStore.updateFileHash()).willReturn(null);
+        assertThatNoException().isThrownBy(() -> subject.catchUpOnMissedSideEffects(platformState));
     }
 
     @Test
     void validatePreparedFileHashGiven() {
         given(writableFreezeStore.updateFileHash()).willReturn(Bytes.wrap("fake hash"));
         byte[] curSpecialFileHash = new BigInteger("e04fd020ea3a6910a2d808002b30309d", 16).toByteArray();
-        byte[] hashFromTxnBody = requireNonNull(writableFreezeStore.updateFileHash()).toByteArray();
-        assertThat(subject.isPreparedFileHashValidGiven(curSpecialFileHash, hashFromTxnBody)).isFalse();
+        byte[] hashFromTxnBody =
+                requireNonNull(writableFreezeStore.updateFileHash()).toByteArray();
+        assertThat(subject.isPreparedFileHashValidGiven(curSpecialFileHash, hashFromTxnBody))
+                .isFalse();
     }
 
     @Test
     void testIfFreezeIsScheduled() {
         PlatformState platformState = createMockPlatformState();
-        LocalDateTime localDateTime = LocalDateTime.of(2024,1,1, 0,0);
+        LocalDateTime localDateTime = LocalDateTime.of(2024, 1, 1, 0, 0);
         Instant checkpoint = localDateTime.atZone(ZoneId.of("UTC")).toInstant();
 
         platformState.setFreezeTime(checkpoint);
         platformState.setLastFrozenTime(checkpoint.minusMillis(10000));
-        assertThatNoException().isThrownBy( () -> subject.isFreezeScheduled(platformState));
+        assertThatNoException().isThrownBy(() -> subject.isFreezeScheduled(platformState));
         assertThat(subject.isFreezeScheduled(platformState)).isTrue();
 
         platformState.setFreezeTime(null);
