@@ -118,10 +118,11 @@ public interface TransferContext {
     boolean isEnforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments();
 
     /**
-     * Indicates if this transfer should override the paused token and frozen account checks.
-     * @return whether the transfer should override the checks
+     * Determines if this transfer can bypass checks for a paused token or frozen account.
+     * Valid only for TokenReject transfers.
+     * @return true if the transfer can override the checks; otherwise, false
      */
-    boolean shouldOverrideFreezeAndPauseStatusChecks();
+    boolean allowFreezeAndPausedTokenTransfer();
 
     /**
      * Validates hbar allowances for the top-level operation in this transfer context.

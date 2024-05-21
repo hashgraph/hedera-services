@@ -73,6 +73,7 @@ import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#TOKEN_REJECT}.
+ * This transaction type is used to reject tokens from an account and send them back to the treasury.
  */
 @Singleton
 public class TokenRejectHandler extends BaseTokenHandler implements TransactionHandler {
@@ -149,7 +150,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
 
         final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
-        validateTrue(rejections.size() < ledgerConfig.tokenRejectsMaxLen(), INVALID_TRANSACTION_BODY);
+        validateTrue(rejections.size() <= ledgerConfig.tokenRejectsMaxLen(), INVALID_TRANSACTION_BODY);
 
         final var processedRejectionTransfers =
                 processRejectionsForTransferAndRemoveAllowances(rejections, context, rejectingAccountID, hederaConfig);

@@ -59,7 +59,7 @@ public class TransferContextImpl implements TransferContext {
     private final List<TokenAssociation> automaticAssociations = new ArrayList<>();
     private final List<AssessedCustomFee> assessedCustomFees = new ArrayList<>();
     private final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
-    private boolean overridePausedTokenAndFrozenAccountChecks = false;
+    private boolean allowFreezeAndPausedTokenTransfer = false;
 
     /**
      * Create a new {@link TransferContextImpl} instance.
@@ -92,14 +92,14 @@ public class TransferContextImpl implements TransferContext {
      * @param context The context to use.
      * @param enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments Whether to enforce mono service restrictions
      *                                                                      on auto creation custom fee payments.
-     * @param overridePausedTokenAndFrozenAccountChecks Whether to override paused token and frozen account checks.
+     * @param allowFreezeAndPausedTokenTransfer Whether to override paused token and frozen account checks.
      */
     public TransferContextImpl(
             final HandleContext context,
             final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments,
-            final boolean overridePausedTokenAndFrozenAccountChecks) {
+            final boolean allowFreezeAndPausedTokenTransfer) {
         this(context, enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments);
-        this.overridePausedTokenAndFrozenAccountChecks = overridePausedTokenAndFrozenAccountChecks;
+        this.allowFreezeAndPausedTokenTransfer = allowFreezeAndPausedTokenTransfer;
     }
 
     @Override
@@ -197,8 +197,8 @@ public class TransferContextImpl implements TransferContext {
     }
 
     @Override
-    public boolean shouldOverrideFreezeAndPauseStatusChecks() {
-        return overridePausedTokenAndFrozenAccountChecks;
+    public boolean allowFreezeAndPausedTokenTransfer() {
+        return allowFreezeAndPausedTokenTransfer;
     }
 
     @Override
