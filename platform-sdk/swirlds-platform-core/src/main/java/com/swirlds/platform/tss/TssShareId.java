@@ -22,12 +22,4 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * The ID of a TSS share.
  */
-public interface TssShareId {
-    /**
-     * Get the underlying field element of the share ID.
-     *
-     * @return the field element
-     */
-    @NonNull
-    FieldElement getId();
-}
+public record TssShareId(@NonNull FieldElement id) {}

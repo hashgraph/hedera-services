@@ -27,7 +27,7 @@ import java.util.List;
 /**
  * A TSS commitment, as utilized by the Groth21 scheme.
  *
- * @param coefficientCommitments TODO: what group are these elements in? Is it correct for getTerm to return a public key?
+ * @param coefficientCommitments TODO
  */
 public record Groth21Commitment(@NonNull List<GroupElement> coefficientCommitments) implements TssCommitment {
     /**
@@ -38,12 +38,11 @@ public record Groth21Commitment(@NonNull List<GroupElement> coefficientCommitmen
         if (coefficientCommitments.size() < 2) {
             throw new IllegalArgumentException("Coefficient commitments must have at least 2 elements");
         }
-        ;
 
         GroupElement product = null;
         for (int i = 0; i < coefficientCommitments.size(); i++) {
             final GroupElement term = coefficientCommitments.get(i);
-            final FieldElement exponentiatedShareId = shareId.getId().power(BigInteger.valueOf(i));
+            final FieldElement exponentiatedShareId = shareId.id().power(BigInteger.valueOf(i));
 
             final GroupElement power = term.power(exponentiatedShareId);
 

@@ -21,7 +21,6 @@ import com.swirlds.platform.tss.bls.bls12381.Bls12381FieldElement;
 import com.swirlds.platform.tss.bls.bls12381.Bls12381Group1Element;
 import com.swirlds.platform.tss.bls.bls12381.Bls12381Group2Element;
 import com.swirlds.platform.tss.bls.bls12381.g1pk_g2sig.Bls12381G2SigPrivateKey;
-import com.swirlds.platform.tss.groth21.Groth21ShareId;
 import com.swirlds.platform.tss.pairings.Curve;
 import com.swirlds.platform.tss.pairings.GroupElement;
 import com.swirlds.platform.tss.verification.PrivateKey;
@@ -39,7 +38,7 @@ class TssExamples {
         // generate the cryptographic elements
         final PrivateKey privateKey =
                 new Bls12381G2SigPrivateKey(curve.getField().randomElement(new byte[32]));
-        final TssShareId shareId = new Groth21ShareId(curve.getField().randomElement(new byte[32]));
+        final TssShareId shareId = new TssShareId(curve.getField().randomElement(new byte[32]));
 
         // bundle the cryptographic elements into a TSS object
         final TssPrivateKey tssPrivateKey = new TssPrivateKey(privateKey);
@@ -54,7 +53,7 @@ class TssExamples {
 
         // generate the cryptographic elements
         final GroupElement publicKey = curve.getGroup1().randomElement(new byte[32]);
-        final TssShareId shareId = new Groth21ShareId(curve.getField().randomElement(new byte[32]));
+        final TssShareId shareId = new TssShareId(curve.getField().randomElement(new byte[32]));
 
         // bundle the cryptographic elements into a TSS object
         final TssPublicShare tssPublicShare = new TssPublicShare(shareId, publicKey);
