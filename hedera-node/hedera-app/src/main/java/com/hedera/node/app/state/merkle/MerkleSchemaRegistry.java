@@ -17,6 +17,7 @@
 package com.hedera.node.app.state.merkle;
 
 import static com.hedera.node.app.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -124,6 +125,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     public SchemaRegistry register(@NonNull Schema schema) {
         schemas.remove(schema);
         schemas.add(requireNonNull(schema));
+        logger.info(STARTUP.getMarker(), "Registering schema {} for service {} ", schema.getVersion(), serviceName);
         logger.debug(
                 "Registering schema {} for service {} ",
                 () -> HapiUtils.toString(schema.getVersion()),

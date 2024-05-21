@@ -25,6 +25,9 @@ import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.constructable.URLClassLoaderWithLookup;
 import com.swirlds.common.exceptions.NotImplementedException;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.lang.invoke.CallSite;
 import java.lang.invoke.LambdaMetafactory;
 import java.lang.invoke.MethodHandle;
@@ -39,6 +42,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+
 /**
  * A {@link ConstructorRegistry} which has the constructor type as a generic
  *
@@ -46,6 +51,8 @@ import java.util.stream.Stream;
  * 		the type of constructor used by this registry
  */
 public class GenericConstructorRegistry<T> implements ConstructorRegistry<T> {
+    private static final Logger logger = LogManager.getLogger(GenericConstructorRegistry.class);
+
     private static final Set<String> IGNORE_METHOD_NAMES = Set.of("$jacocoInit");
 
     private final Class<T> constructorType;
@@ -117,6 +124,7 @@ public class GenericConstructorRegistry<T> implements ConstructorRegistry<T> {
             throws ConstructableRegistryException {
         final GenericClassConstructorPair<T> pair = new GenericClassConstructorPair<>(aClass, constructor);
         final long classId = getClassId(pair);
+        logger.info(STARTUP.getMarker(), "Registering classId={} for {} ", classId, pair.constructable().getName());
         final GenericClassConstructorPair<T> old = constructors.putIfAbsent(classId, pair);
         if (old != null && !old.classEquals(pair)) {
             throw new ConstructableRegistryException(String.format(
