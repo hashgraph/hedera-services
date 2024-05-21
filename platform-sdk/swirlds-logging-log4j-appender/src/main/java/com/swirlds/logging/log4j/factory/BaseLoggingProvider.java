@@ -17,8 +17,10 @@
 package com.swirlds.logging.log4j.factory;
 
 import com.google.auto.service.AutoService;
-import com.swirlds.logging.api.Logger;
+import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Loggers;
+import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
+import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import org.apache.logging.log4j.spi.Provider;
 
 /**
@@ -37,15 +39,16 @@ public class BaseLoggingProvider extends Provider {
      */
     private static final String SUPPORTED_VERSION = "2.6.0";
     /**
-     * This is a base logger to force the initialisation of the logging system.
+     * The swirlds emergency logger.
      */
-    private static final Logger logger = Loggers.getLogger(BaseLoggingProvider.class);
-
+    private static final EmergencyLogger EMERGENCY_LOGGER = EmergencyLoggerProvider.getEmergencyLogger();
     /**
      * Creates a new logging provider and logs to force the initialisation of the base logging system
      */
     public BaseLoggingProvider() {
         super(PRIORITY, SUPPORTED_VERSION, BaseLoggerContextFactory.class);
-        logger.trace("Initialised the BaseLoggingProvider");
+        if(!Loggers.init()) {
+            EMERGENCY_LOGGER.log(Level.ERROR, "Failed to initialise the base logging system");
+        }
     }
 }
