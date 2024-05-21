@@ -19,10 +19,12 @@ package com.swirlds.common.crypto;
 import static com.swirlds.common.crypto.SignatureType.RSA;
 import static com.swirlds.common.utility.CommonUtils.hex;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
@@ -76,6 +78,21 @@ public class Signature implements SelfSerializable {
      */
     public byte[] getSignatureBytes() {
         return signatureBytes;
+    }
+
+    /**
+     * @return the bytes of this signature in an immutable instance
+     */
+    public @NonNull Bytes getBytes() {
+        return Bytes.wrap(signatureBytes);
+    }
+
+    /**
+     * Get the type of this signature.
+     */
+    @NonNull
+    public SignatureType getType() {
+        return signatureType;
     }
 
     /**

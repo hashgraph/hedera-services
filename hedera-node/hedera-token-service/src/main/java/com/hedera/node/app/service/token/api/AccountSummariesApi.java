@@ -56,8 +56,18 @@ import java.util.function.UnaryOperator;
  * Methods for summarizing an account's relationships and attributes to HAPI clients.
  */
 public interface AccountSummariesApi {
+    /**
+     * The size of an EVM address.
+     */
     int EVM_ADDRESS_SIZE = 20;
+    /**
+     * The sentinel node id to represent stakingNodeId is absent on account.
+     * It is -1 because nodeId 0 is allowed for network.
+     */
     long SENTINEL_NODE_ID = -1L;
+    /**
+     * The sentinel account id to represent stakedAccountId is absent on account.
+     */
     AccountID SENTINEL_ACCOUNT_ID = AccountID.newBuilder().accountNum(0).build();
 
     /**
@@ -205,6 +215,16 @@ public interface AccountSummariesApi {
         return stakingInfo.build();
     }
 
+    /**
+     * Adds the node stake meta to the given staking info builder, given the account and some information about the
+     * network.
+     * @param numStoredPeriods the number of periods for which the rewards are stored
+     * @param stakePeriodMins the duration of a stake period
+     * @param areRewardsActive whether the rewards are active
+     * @param account the account
+     * @param readableStakingInfoStore the readable staking info store
+     * @param stakingInfo the staking info builder
+     */
     static void addNodeStakeMeta(
             final int numStoredPeriods,
             final long stakePeriodMins,

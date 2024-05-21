@@ -17,6 +17,8 @@
 package com.swirlds.common.io.filesystem;
 
 import com.swirlds.common.io.filesystem.internal.FileSystemManagerFactoryImpl;
+import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -30,12 +32,25 @@ public interface FileSystemManagerFactory {
      * Creates a {@link FileSystemManager} by searching {@code root} path in the {@link Configuration} class under a
      * property name indicated in {@code rootLocationPropertyName}
      *
-     * @param configuration            the configuration instance to retrieve properties from
+     * @param configuration the configuration instance to retrieve properties from
+     * @param recycleBin    the recycleBin instance to use
+     * @return a new instance of {@link FileSystemManager}
+     */
+    @NonNull
+    FileSystemManager createFileSystemManager(@NonNull Configuration configuration, @NonNull RecycleBin recycleBin);
+
+    /**
+     * Creates a {@link FileSystemManager} by searching {@code root} path in the {@link Configuration} class under a
+     * property name indicated in {@code rootLocationPropertyName}
+     *
+     * @param configuration the configuration instance to retrieve properties from
+     * @param metrics       metrics instance of the platform
+     * @param nodeId        id of the ode configuring this instance
      * @return a new instance of {@link FileSystemManager}
      */
     @NonNull
     FileSystemManager createFileSystemManager(
-            @NonNull final Configuration configuration, @NonNull final Metrics metrics);
+            @NonNull Configuration configuration, @NonNull Metrics metrics, @NonNull NodeId nodeId);
 
     /**
      * Retrieves the default FileSystemManagerFactory instance

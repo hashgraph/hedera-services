@@ -23,6 +23,8 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.*;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -32,10 +34,10 @@ import javax.inject.Singleton;
 
 /**
  * Translates grantKyc and revokeKyc calls to the HTS system contract. There are no special cases for
- * these calls, so the returned {@link HtsCall} is simply an instance of {@link DispatchForResponseCodeHtsCall}.
+ * these calls, so the returned {@link Call} is simply an instance of {@link DispatchForResponseCodeHtsCall}.
  */
 @Singleton
-public class GrantRevokeKycTranslator extends AbstractHtsCallTranslator {
+public class GrantRevokeKycTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     public static final Function GRANT_KYC = new Function("grantTokenKyc(address,address)", ReturnTypes.INT_64);
     public static final Function REVOKE_KYC = new Function("revokeTokenKyc(address,address)", ReturnTypes.INT_64);
 
@@ -58,7 +60,7 @@ public class GrantRevokeKycTranslator extends AbstractHtsCallTranslator {
      * {@inheritDoc}
      */
     @Override
-    public HtsCall callFrom(@NonNull HtsCallAttempt attempt) {
+    public Call callFrom(@NonNull HtsCallAttempt attempt) {
         return new DispatchForResponseCodeHtsCall(
                 attempt,
                 bodyForClassic(attempt),

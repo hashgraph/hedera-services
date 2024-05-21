@@ -37,6 +37,10 @@ import javax.inject.Singleton;
 public class CryptoSignatureWaiversImpl implements CryptoSignatureWaivers {
     private final Authorizer authorizer;
 
+    /**
+     * Default constructor for injection.
+     * @param authorizer the {@link Authorizer} to use for checking authorization
+     */
     @Inject
     public CryptoSignatureWaiversImpl(@NonNull final Authorizer authorizer) {
         this.authorizer = requireNonNull(authorizer);

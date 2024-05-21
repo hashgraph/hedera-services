@@ -34,6 +34,7 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Transaction;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -60,6 +61,10 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 
     private boolean saveIn4kChunks = false;
     private int sizeLookup = -1;
+
+    @Nullable
+    private Consumer<byte[]> validator = null;
+
     private Function<byte[], String> parser = bytes -> "<N/A>";
     private final String fileName;
     Optional<String> readablePath = Optional.empty();
@@ -123,6 +128,11 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
     public HapiGetFileContents saveReadableTo(Function<byte[], String> parser, String path) {
         this.parser = parser;
         readablePath = Optional.of(path);
+        return this;
+    }
+
+    public HapiGetFileContents andValidate(Consumer<byte[]> validator) {
+        this.validator = validator;
         return this;
     }
 
@@ -235,6 +245,9 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
                             "Saved parsed contents of '%s' to %s", fileName, readableFile.getAbsolutePath());
                     log.info(message);
                 }
+                if (validator != null) {
+                    validator.accept(bytes);
+                }
             } catch (Exception e) {
                 String message = String.format("Couldn't save '%s' snapshot!", fileName);
                 log.error(message, e);
@@ -252,7 +265,7 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 
     @Override
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getFileContentQuery(spec, payment, true);
+        Query query = maybeModified(getFileContentQuery(spec, payment, true), spec);
         Response response =
                 spec.clients().getFileSvcStub(targetNodeFor(spec), useTls).getFileContent(query);
         return costFrom(response);

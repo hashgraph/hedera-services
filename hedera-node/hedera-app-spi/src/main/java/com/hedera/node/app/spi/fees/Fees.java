@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.spi.fees;
 
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
+
 /**
  * Represents the combination of node, network, and service fees.
  *
@@ -36,6 +39,15 @@ package com.hedera.node.app.spi.fees;
 public record Fees(long nodeFee, long networkFee, long serviceFee) {
     /** A constant representing zero fees. */
     public static final Fees FREE = new Fees(0, 0, 0);
+    /**
+     * A constant representing fees of 1 constant resource usage for each of the node, network, and service components.
+     * This is useful when a fee is required, but the entity is not present in state to determine the actual fee.
+     */
+    public static final FeeData CONSTANT_FEE_DATA = FeeData.newBuilder()
+            .setNodedata(FeeComponents.newBuilder().setConstant(1).build())
+            .setNetworkdata(FeeComponents.newBuilder().setConstant(1).build())
+            .setServicedata(FeeComponents.newBuilder().setConstant(1).build())
+            .build();
 
     public Fees {
         // Validate the fee components are never negative.

@@ -31,10 +31,19 @@ import java.util.Arrays;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Fake Crypto Transfer Record Builder
+ */
 public class FakeCryptoTransferRecordBuilder {
-
+    /**
+     * Constructs a {@link FakeCryptoTransferRecordBuilder} instance.
+     */
     public FakeCryptoTransferRecordBuilder() {}
 
+    /**
+     * Creates a {@link CryptoTransferRecordBuilder} instance.
+     * @return a {@link CryptoTransferRecordBuilder} instance
+     */
     public CryptoTransferRecordBuilder create() {
         return new CryptoTransferRecordBuilder() {
             @NotNull

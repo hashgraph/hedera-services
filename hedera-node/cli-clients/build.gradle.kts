@@ -15,8 +15,8 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.conventions")
-    id("com.hedera.hashgraph.shadow-jar")
+    id("com.hedera.gradle.services")
+    id("com.hedera.gradle.shadow-jar")
 }
 
 description = "Hedera Services Command-Line Clients"

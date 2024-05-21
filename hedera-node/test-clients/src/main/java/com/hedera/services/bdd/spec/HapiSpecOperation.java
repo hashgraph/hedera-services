@@ -39,9 +39,7 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
-import com.hedera.services.bdd.spec.stats.OpObs;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.spec.utilops.mod.BodyMutation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -98,7 +96,6 @@ public abstract class HapiSpecOperation {
     protected boolean omitTxnId = false;
     protected boolean loggingOff = false;
     protected boolean yahcliLogger = false;
-    protected boolean suppressStats = false;
     protected boolean omitNodeAccount = false;
     protected boolean verboseLoggingOn = false;
     protected boolean shouldRegisterTxn = false;
@@ -129,7 +126,6 @@ public abstract class HapiSpecOperation {
     protected Map<Key, SigControl> overrides = Collections.EMPTY_MAP;
 
     protected Optional<Long> fee = Optional.empty();
-    protected Optional<Long> submitDelay = Optional.empty();
     protected Optional<Long> validDurationSecs = Optional.empty();
     protected Optional<String> customTxnId = Optional.empty();
     protected Optional<String> memo = Optional.empty();
@@ -239,14 +235,9 @@ public abstract class HapiSpecOperation {
     }
 
     public Optional<Throwable> execFor(final HapiSpec spec) {
-        pauseIfRequested();
         configureProtoStructureFor(spec);
         try {
             final boolean hasCompleteLifecycle = submitOp(spec);
-
-            if (!(this instanceof UtilOp)) {
-                spec.incrementNumLedgerOps();
-            }
 
             if (shouldRegisterTxn) {
                 registerTxnSubmitted(spec);
@@ -278,15 +269,6 @@ public abstract class HapiSpecOperation {
             return Optional.of(new RuntimeException(message));
         }
         return Optional.empty();
-    }
-
-    private void pauseIfRequested() {
-        submitDelay.ifPresent(l -> {
-            try {
-                Thread.sleep(l);
-            } catch (final InterruptedException ignore) {
-            }
-        });
     }
 
     private void registerTxnSubmitted(final HapiSpec spec) throws Throwable {
@@ -368,7 +350,8 @@ public abstract class HapiSpecOperation {
                 .andThen(opDef);
 
         setKeyControlOverrides(spec);
-        final List<Key> keys = signersToUseFor(spec);
+        List<Key> keys = signersToUseFor(spec);
+
         final Transaction.Builder builder = spec.txns().getReadyToSign(netDef, spec, bodyMutation);
         final Transaction provisional = getSigned(spec, builder, keys);
         if (fee.isPresent()) {
@@ -456,7 +439,7 @@ public abstract class HapiSpecOperation {
     public List<Key> signersToUseFor(final HapiSpec spec) {
         final List<Key> active = signers.orElse(defaultSigners()).stream()
                 .map(f -> f.apply(spec))
-                .filter(k -> k != Key.getDefaultInstance())
+                .filter(k -> k != null && k != Key.getDefaultInstance())
                 .collect(toList());
         if (!signers.isPresent()) {
             active.addAll(variableDefaultSigners().apply(spec));
@@ -484,7 +467,6 @@ public abstract class HapiSpecOperation {
         final HapiGetTxnRecord subOp = getTxnRecord(extractTxnId(txnSubmitted))
                 .noLogging()
                 .assertingNothing()
-                .suppressStats(true)
                 .nodePayment(spec.setup().defaultNodePaymentTinyBars());
         final Optional<Throwable> error = subOp.execFor(spec);
         if (error.isPresent()) {
@@ -510,12 +492,6 @@ public abstract class HapiSpecOperation {
 
     public Optional<String> getPayer() {
         return payer;
-    }
-
-    protected void considerRecording(final HapiSpec spec, final OpObs obs) {
-        if (!suppressStats) {
-            spec.registry().record(obs);
-        }
     }
 
     protected ByteString rationalize(final String expectedLedgerId) {

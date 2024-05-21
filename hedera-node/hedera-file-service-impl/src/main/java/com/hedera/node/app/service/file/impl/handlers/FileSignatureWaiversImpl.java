@@ -35,6 +35,10 @@ import javax.inject.Singleton;
 public class FileSignatureWaiversImpl implements FileSignatureWaivers {
     private final Authorizer authorizer;
 
+    /**
+     * Constructs a {@link FileSignatureWaiversImpl} with the given {@link Authorizer}.
+     * @param authorizer account is authorized to perform a specific function
+     */
     @Inject
     public FileSignatureWaiversImpl(@NonNull final Authorizer authorizer) {
         this.authorizer = requireNonNull(authorizer);

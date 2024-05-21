@@ -24,10 +24,10 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.sigs.order.SigReqsManager;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.Transaction;
+import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,7 +63,8 @@ public class AdaptedMonoEventExpansion {
         final List<Transaction> forWorkflows = new ArrayList<>();
         event.forEachTransaction(txn -> {
             try {
-                final var accessor = SignedTxnAccessor.from(txn.getContents());
+                final var accessor =
+                        SignedTxnAccessor.from(txn.getApplicationPayload().toByteArray());
                 if (typesForWorkflows.contains(accessor.getFunction())) {
                     forWorkflows.add(txn);
                 } else {
