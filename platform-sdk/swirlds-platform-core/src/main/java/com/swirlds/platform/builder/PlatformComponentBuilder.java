@@ -140,6 +140,8 @@ public class PlatformComponentBuilder {
     private StateSnapshotManager stateSnapshotManager;
     private HashLogger hashLogger;
 
+    private boolean metricsDocumentationEnabled = true;
+
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
      */
@@ -187,16 +189,30 @@ public class PlatformComponentBuilder {
         try (final ReservedSignedState initialState = blocks.initialState()) {
             return new SwirldsPlatform(this);
         } finally {
-
-            // Future work: eliminate the static variables that require this code to exist
-            if (blocks.firstPlatform()) {
-                MetricsDocUtils.writeMetricsDocumentToFile(
-                        getGlobalMetrics(),
-                        getPlatforms(),
-                        blocks.platformContext().getConfiguration());
-                getMetricsProvider().start();
+            if (metricsDocumentationEnabled) {
+                // Future work: eliminate the static variables that require this code to exist
+                if (blocks.firstPlatform()) {
+                    MetricsDocUtils.writeMetricsDocumentToFile(
+                            getGlobalMetrics(),
+                            getPlatforms(),
+                            blocks.platformContext().getConfiguration());
+                    getMetricsProvider().start();
+                }
             }
         }
+    }
+
+    /**
+     * If enabled, building this object will cause a metrics document to be generated. Default is true.
+     *
+     * @param metricsDocumentationEnabled whether to generate a metrics document
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withMetricsDocumentationEnabled(final boolean metricsDocumentationEnabled) {
+        throwIfAlreadyUsed();
+        this.metricsDocumentationEnabled = metricsDocumentationEnabled;
+        return this;
     }
 
     /**

@@ -29,7 +29,6 @@ import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RESTART;
 import static com.swirlds.platform.system.SoftwareVersion.NO_VERSION;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -232,7 +231,7 @@ public class SwirldsPlatform implements Platform {
 
         currentAddressBook = initialState.getAddressBook();
 
-        platformWiring = new PlatformWiring(platformContext, blocks.applicationCallbacks());
+        platformWiring = new PlatformWiring(platformContext, blocks.model(), blocks.applicationCallbacks());
 
         registerAddressBookMetrics(platformContext.getMetrics(), currentAddressBook, selfId);
 
@@ -681,7 +680,7 @@ public class SwirldsPlatform implements Platform {
         platformWiring
                 .getStatusActionSubmitter()
                 .submitStatusAction(
-                        new DoneReplayingEventsAction(Time.getCurrent().now()));
+                        new DoneReplayingEventsAction(platformContext.getTime().now()));
     }
 
     /**
