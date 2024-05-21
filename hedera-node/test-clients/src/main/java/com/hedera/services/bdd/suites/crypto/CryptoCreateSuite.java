@@ -297,21 +297,21 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .payingWith(CIVILIAN)
                                 .logged()
                                 .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
-                        /*cryptoCreate(unlimitedAutoAssocSlots)
-                        .key(CIVILIAN)
-                        .balance(0L)
-                        .maxAutomaticTokenAssociations(-1)
-                        .via(unlimitedAutoAssocSlots)
-                        .blankMemo()
-                        .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
-                        .signedBy(CIVILIAN)
-                        .payingWith(CIVILIAN),*/
+                        cryptoCreate(unlimitedAutoAssocSlots)
+                                .key(CIVILIAN)
+                                .balance(0L)
+                                .maxAutomaticTokenAssociations(-1)
+                                .via(unlimitedAutoAssocSlots)
+                                .blankMemo()
+                                .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+                                .signedBy(CIVILIAN)
+                                .payingWith(CIVILIAN),
                         getTxnRecord(tenAutoAssocSlots).logged())
                 .then(
                         validateChargedUsd(noAutoAssocSlots, v13PriceUsd),
                         validateChargedUsd(oneAutoAssocSlot, v13PriceUsd),
-                        validateChargedUsd(tenAutoAssocSlots, v13PriceUsd) /*,
-                        validateChargedUsd(unlimitedAutoAssocSlots, v13PriceUsd)*/);
+                        validateChargedUsd(tenAutoAssocSlots, v13PriceUsd),
+                        validateChargedUsd(unlimitedAutoAssocSlots, v13PriceUsd));
     }
 
     @HapiTest

@@ -192,13 +192,13 @@ public class CryptoOpsUsage {
 
         if (maxAutomaticTokenAssociations > 0) {
             baseSize += INT_SIZE;
+            accumulator.addRbs(maxAutomaticTokenAssociations * lifeTime * CREATE_SLOT_MULTIPLIER);
         }
 
         /* Variable bytes plus two additional longs for balance and auto-renew period;
         plus a boolean for receiver sig required. */
         accumulator.addBpt(baseSize + 2 * LONG_SIZE + BOOL_SIZE);
         accumulator.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * lifeTime);
-        accumulator.addRbs(maxAutomaticTokenAssociations * lifeTime * CREATE_SLOT_MULTIPLIER);
         accumulator.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
     }
 
