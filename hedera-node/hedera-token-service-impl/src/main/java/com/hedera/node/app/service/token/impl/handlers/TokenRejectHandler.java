@@ -113,7 +113,9 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
      * @throws PreCheckException If the sender's account is immutable or the sender's account ID is invalid.
      */
     private void verifyOwnerAndRequireKey(
-            final AccountID ownerId, final PreHandleContext context, final ReadableAccountStore accountStore)
+            @NonNull final AccountID ownerId,
+            @NonNull final PreHandleContext context,
+            @NonNull final ReadableAccountStore accountStore)
             throws PreCheckException {
 
         final var ownerAccount = accountStore.getAliasedAccountById(ownerId);
