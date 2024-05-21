@@ -37,6 +37,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -45,22 +46,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class DissociatePrecompileSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(DissociatePrecompileSuite.class);
+public class DissociatePrecompileSuite {
     private static final String NEGATIVE_DISSOCIATIONS_CONTRACT = "NegativeDissociationsContract";
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final String ACCOUNT = "anybody";
@@ -69,26 +64,8 @@ public class DissociatePrecompileSuite extends HapiSuite {
     private static final String CONTRACT_KEY = "ContractKey";
     private static final KeyShape KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
 
-    public static void main(String... args) {
-        new DissociatePrecompileSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return allOf(negativeSpecs());
-    }
-
-    List<HapiSpec> negativeSpecs() {
-        return List.of(dissociateTokensNegativeScenarios(), dissociateTokenNegativeScenarios());
-    }
-
     @HapiTest
-    final HapiSpec dissociateTokensNegativeScenarios() {
+    final Stream<DynamicTest> dissociateTokensNegativeScenarios() {
         final AtomicReference<Address> tokenAddress1 = new AtomicReference<>();
         final AtomicReference<Address> tokenAddress2 = new AtomicReference<>();
         final AtomicReference<Address> accountAddress = new AtomicReference<>();
@@ -207,7 +184,7 @@ public class DissociatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec dissociateTokenNegativeScenarios() {
+    final Stream<DynamicTest> dissociateTokenNegativeScenarios() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         final AtomicReference<Address> accountAddress = new AtomicReference<>();
         final var nonExistingAccount = "nonExistingAccount";
@@ -285,10 +262,5 @@ public class DissociatePrecompileSuite extends HapiSuite {
                                 nullToken,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(INVALID_TOKEN_ID)));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

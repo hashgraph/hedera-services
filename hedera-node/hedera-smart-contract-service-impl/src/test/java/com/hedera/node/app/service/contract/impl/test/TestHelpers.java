@@ -229,6 +229,14 @@ public class TestHelpers {
     public static final com.esaulpaugh.headlong.abi.Address NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS =
             asHeadlongAddress(asEvmAddress(NON_FUNGIBLE_TOKEN_ID.tokenNum()));
 
+    public static final Account A_DELETED_CONTRACT = Account.newBuilder()
+            .deleted(true)
+            .smartContract(true)
+            .accountId(AccountID.newBuilder()
+                    .accountNum(CALLED_CONTRACT_ID.contractNumOrThrow())
+                    .build())
+            .build();
+
     public static final Token FUNGIBLE_TOKEN = Token.newBuilder()
             .tokenId(FUNGIBLE_TOKEN_ID)
             .name("Fungible Token")

@@ -423,10 +423,6 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
         return fiddler;
     }
 
-    public Optional<Long> getSubmitDelay() {
-        return submitDelay;
-    }
-
     public Optional<Long> getValidDurationSecs() {
         return validDurationSecs;
     }

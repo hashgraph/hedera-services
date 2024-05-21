@@ -39,8 +39,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class SysFileUploadSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SysFileUploadSuite.class);
@@ -85,12 +87,12 @@ public class SysFileUploadSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         uploadData = appropriateContents(sysFileId);
         return isDryRun ? Collections.emptyList() : List.of(uploadSysFiles());
     }
 
-    private HapiSpec uploadSysFiles() {
+    final Stream<DynamicTest> uploadSysFiles() {
         final var name = String.format("UploadSystemFile-%s", sysFileId);
         final var fileId = String.format("0.0.%d", sysFileId);
         final var isSpecial = isSpecialFile(sysFileId);

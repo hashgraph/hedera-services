@@ -19,6 +19,7 @@ package com.swirlds.platform.builder;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.doStaticSetup;
@@ -34,12 +35,16 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
+import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.metrics.api.Metrics;
@@ -73,6 +78,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.util.RandomBuilder;
+import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -80,17 +86,21 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Builds a {@link SwirldsPlatform} instance.
  */
 public final class PlatformBuilder {
+
+    private static final Logger logger = LogManager.getLogger(PlatformBuilder.class);
 
     private final String appName;
     private final SoftwareVersion softwareVersion;
@@ -102,6 +112,16 @@ public final class PlatformBuilder {
     private ConfigurationBuilder configurationBuilder;
 
     /**
+     * An address book that is used to bootstrap the system. Traditionally read from config.txt.
+     */
+    private AddressBook bootstrapAddressBook;
+
+    /**
+     * This node's cryptographic keys.
+     */
+    private KeysAndCerts keysAndCerts;
+
+    /**
      * The path to the configuration file (i.e. the file with the address book).
      */
     private Path configPath = getAbsolutePath(DEFAULT_CONFIG_FILE_NAME);
@@ -110,6 +130,16 @@ public final class PlatformBuilder {
      * The path to the settings file (i.e. the path used to instantiate {@link Configuration}).
      */
     private Path settingsPath;
+
+    /**
+     * The wiring model to use for this platform.
+     */
+    private WiringModel model;
+
+    /**
+     * The source of non-cryptographic randomness for this platform.
+     */
+    private RandomBuilder randomBuilder;
 
     private Consumer<GossipEvent> preconsensusEventConsumer;
     private Consumer<ConsensusSnapshot> snapshotOverrideConsumer;
@@ -328,6 +358,58 @@ public final class PlatformBuilder {
     }
 
     /**
+     * Provide the address book to use for bootstrapping the system. If not provided then the address book is read from
+     * the config.txt file.
+     *
+     * @param bootstrapAddressBook the address book to use for bootstrapping
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withBootstrapAddressBook(@NonNull final AddressBook bootstrapAddressBook) {
+        throwIfAlreadyUsed();
+        this.bootstrapAddressBook = Objects.requireNonNull(bootstrapAddressBook);
+        return this;
+    }
+
+    /**
+     * Provide the cryptographic keys to use for this node.
+     *
+     * @param keysAndCerts the cryptographic keys to use
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withKeysAndCerts(@NonNull final KeysAndCerts keysAndCerts) {
+        throwIfAlreadyUsed();
+        this.keysAndCerts = Objects.requireNonNull(keysAndCerts);
+        return this;
+    }
+
+    /**
+     * Provide the wiring model to use for this platform.
+     *
+     * @param model the wiring model to use
+     * @return this
+     */
+    public PlatformBuilder withModel(@NonNull final WiringModel model) {
+        throwIfAlreadyUsed();
+        this.model = Objects.requireNonNull(model);
+        return this;
+    }
+
+    /**
+     * Provide the source of non-cryptographic randomness for this platform.
+     *
+     * @param randomBuilder the source of non-cryptographic randomness
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withRandomBuilder(@NonNull final RandomBuilder randomBuilder) {
+        throwIfAlreadyUsed();
+        this.randomBuilder = Objects.requireNonNull(randomBuilder);
+        return this;
+    }
+
+    /**
      * Build the configuration for the node.
      *
      * @param configurationBuilder used to build configuration
@@ -388,7 +470,9 @@ public final class PlatformBuilder {
         setupGlobalMetrics(configuration);
         final Metrics metrics = getMetricsProvider().createPlatformMetrics(selfId);
 
-        return PlatformContext.create(configuration, metrics, cryptography);
+        final FileSystemManager fileSystemManager =
+                FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, metrics, selfId);
+        return PlatformContext.create(configuration, metrics, cryptography, fileSystemManager);
     }
 
     /**
@@ -409,7 +493,6 @@ public final class PlatformBuilder {
      */
     @NonNull
     public PlatformComponentBuilder buildComponentBuilder() {
-
         throwIfAlreadyUsed();
         used = true;
 
@@ -427,17 +510,26 @@ public final class PlatformBuilder {
 
         final boolean firstPlatform = doStaticSetup(configuration, configPath);
 
-        final AddressBook configAddressBook = loadConfigAddressBook();
+        final AddressBook boostrapAddressBook =
+                this.bootstrapAddressBook == null ? loadConfigAddressBook() : this.bootstrapAddressBook;
 
         checkNodesToRun(List.of(selfId));
 
-        final Map<NodeId, KeysAndCerts> keysAndCerts = initNodeSecurity(configAddressBook, configuration);
+        final KeysAndCerts keysAndCerts = this.keysAndCerts == null
+                ? initNodeSecurity(boostrapAddressBook, configuration).get(selfId)
+                : this.keysAndCerts;
 
         // the AddressBook is not changed after this point, so we calculate the hash now
-        platformContext.getCryptography().digestSync(configAddressBook);
+        platformContext.getCryptography().digestSync(boostrapAddressBook);
 
         final ReservedSignedState initialState = getInitialState(
-                platformContext, softwareVersion, genesisStateBuilder, appName, swirldName, selfId, configAddressBook);
+                platformContext,
+                softwareVersion,
+                genesisStateBuilder,
+                appName,
+                swirldName,
+                selfId,
+                boostrapAddressBook);
 
         final boolean softwareUpgrade = detectSoftwareUpgrade(softwareVersion, initialState.get());
 
@@ -447,7 +539,7 @@ public final class PlatformBuilder {
                 softwareVersion,
                 softwareUpgrade,
                 initialState.get(),
-                configAddressBook.copy(),
+                boostrapAddressBook.copy(),
                 platformContext);
 
         if (addressBookInitializer.hasAddressBookChanged()) {
@@ -520,9 +612,30 @@ public final class PlatformBuilder {
                 x -> statusActionSubmitterAtomicReference.get().submitStatusAction(x),
                 softwareVersion);
 
+        if (model == null) {
+            final PlatformSchedulersConfig schedulersConfig =
+                    platformContext.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
+
+            final int coreCount = Runtime.getRuntime().availableProcessors();
+            final int parallelism = (int) Math.max(
+                    1, schedulersConfig.defaultPoolMultiplier() * coreCount + schedulersConfig.defaultPoolConstant());
+            final ForkJoinPool defaultPool =
+                    platformContext.getExecutorFactory().createForkJoinPool(parallelism);
+            logger.info(STARTUP.getMarker(), "Default platform pool parallelism: {}", parallelism);
+
+            model = WiringModelBuilder.create(platformContext)
+                    .withDefaultPool(defaultPool)
+                    .build();
+        }
+
+        if (randomBuilder == null) {
+            randomBuilder = new RandomBuilder();
+        }
+
         final PlatformBuildingBlocks buildingBlocks = new PlatformBuildingBlocks(
                 platformContext,
-                keysAndCerts.get(selfId),
+                model,
+                keysAndCerts,
                 selfId,
                 appName,
                 swirldName,
@@ -532,7 +645,7 @@ public final class PlatformBuilder {
                 preconsensusEventConsumer,
                 snapshotOverrideConsumer,
                 intakeEventCounter,
-                new RandomBuilder(),
+                randomBuilder,
                 new TransactionPoolNexus(platformContext),
                 new AtomicReference<>(),
                 new AtomicReference<>(),

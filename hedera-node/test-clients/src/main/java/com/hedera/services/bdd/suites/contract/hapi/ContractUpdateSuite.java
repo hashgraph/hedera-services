@@ -23,6 +23,8 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -43,7 +45,15 @@ import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuc
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PROPS;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
@@ -56,25 +66,24 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class ContractUpdateSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(ContractUpdateSuite.class);
-
+public class ContractUpdateSuite {
     private static final long DEFAULT_MAX_LIFETIME =
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
     private static final long ONE_DAY = 60L * 60L * 24L;
@@ -84,36 +93,8 @@ public class ContractUpdateSuite extends HapiSuite {
     private static final String CONTRACT = "Multipurpose";
     public static final String INITIAL_ADMIN_KEY = "initialAdminKey";
 
-    public static void main(String... args) {
-        new ContractUpdateSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                updateWithBothMemoSettersWorks(),
-                updatingExpiryWorks(),
-                rejectsExpiryTooFarInTheFuture(),
-                updateAutoRenewWorks(),
-                updateAdminKeyWorks(),
-                canMakeContractImmutableWithEmptyKeyList(),
-                givenAdminKeyMustBeValid(),
-                fridayThe13thSpec(),
-                updateDoesNotChangeBytecode(),
-                eip1014AddressAlwaysHasPriority(),
-                immutableContractKeyFormIsStandard(),
-                updateAutoRenewAccountWorks(),
-                updateStakingFieldsWorks(),
-                cannotUpdateMaxAutomaticAssociations());
-    }
-
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(
                         newKeyNamed("adminKey"),
@@ -128,7 +109,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateStakingFieldsWorks() {
+    final Stream<DynamicTest> updateStakingFieldsWorks() {
         return defaultHapiSpec("updateStakingFieldsWorks", FULLY_NONDETERMINISTIC)
                 .given(
                         uploadInitCode(CONTRACT),
@@ -187,7 +168,7 @@ public class ContractUpdateSuite extends HapiSuite {
 
     // https://github.com/hashgraph/hedera-services/issues/2877
     @HapiTest
-    final HapiSpec eip1014AddressAlwaysHasPriority() {
+    final Stream<DynamicTest> eip1014AddressAlwaysHasPriority() {
         final var contract = "VariousCreate2Calls";
         final var creationTxn = "creationTxn";
         final var callTxn = "callTxn";
@@ -248,7 +229,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateWithBothMemoSettersWorks() {
+    final Stream<DynamicTest> updateWithBothMemoSettersWorks() {
         final var firstMemo = "First";
         final var secondMemo = "Second";
         final var thirdMemo = "Third";
@@ -274,7 +255,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updatingExpiryWorks() {
+    final Stream<DynamicTest> updatingExpiryWorks() {
         final var newExpiry = Instant.now().getEpochSecond() + 5 * ONE_MONTH;
         return defaultHapiSpec("UpdatingExpiryWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
@@ -283,7 +264,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec rejectsExpiryTooFarInTheFuture() {
+    final Stream<DynamicTest> rejectsExpiryTooFarInTheFuture() {
         final var smallBuffer = 12_345L;
         final var excessiveExpiry = DEFAULT_MAX_LIFETIME + Instant.now().getEpochSecond() + smallBuffer;
 
@@ -294,7 +275,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateAutoRenewWorks() {
+    final Stream<DynamicTest> updateAutoRenewWorks() {
         return defaultHapiSpec("UpdateAutoRenewWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
@@ -311,7 +292,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateAutoRenewAccountWorks() {
+    final Stream<DynamicTest> updateAutoRenewAccountWorks() {
         final var autoRenewAccount = "autoRenewAccount";
         final var newAutoRenewAccount = "newAutoRenewAccount";
         return defaultHapiSpec("UpdateAutoRenewAccountWorks", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -342,7 +323,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateAdminKeyWorks() {
+    final Stream<DynamicTest> updateAdminKeyWorks() {
         return defaultHapiSpec("UpdateAdminKeyWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
@@ -360,7 +341,7 @@ public class ContractUpdateSuite extends HapiSuite {
 
     // https://github.com/hashgraph/hedera-services/issues/3037
     @HapiTest
-    final HapiSpec immutableContractKeyFormIsStandard() {
+    final Stream<DynamicTest> immutableContractKeyFormIsStandard() {
         return defaultHapiSpec("ImmutableContractKeyFormIsStandard", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).immutable())
                 .when()
@@ -368,7 +349,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec canMakeContractImmutableWithEmptyKeyList() {
+    final Stream<DynamicTest> canMakeContractImmutableWithEmptyKeyList() {
         return defaultHapiSpec("CanMakeContractImmutableWithEmptyKeyList", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
@@ -384,7 +365,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec givenAdminKeyMustBeValid() {
+    final Stream<DynamicTest> givenAdminKeyMustBeValid() {
         final var contract = "BalanceLookup";
         return defaultHapiSpec("GivenAdminKeyMustBeValid", NONDETERMINISTIC_TRANSACTION_FEES)
                 // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
@@ -398,7 +379,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec fridayThe13thSpec() {
+    final Stream<DynamicTest> fridayThe13thSpec() {
         final var contract = "SimpleStorage";
         final var suffix = "Clone";
         final var newExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 2;
@@ -494,7 +475,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateDoesNotChangeBytecode() {
+    final Stream<DynamicTest> updateDoesNotChangeBytecode() {
         // HSCS-DCPR-001
         final var simpleStorageContract = "SimpleStorage";
         final var emptyConstructorContract = "EmptyConstructor";
@@ -514,7 +495,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cannotUpdateMaxAutomaticAssociations() {
+    final Stream<DynamicTest> cannotUpdateMaxAutomaticAssociations() {
         return defaultHapiSpec("cannotUpdateMaxAutomaticAssociations")
                 .given(
                         newKeyNamed(ADMIN_KEY),
@@ -524,8 +505,63 @@ public class ContractUpdateSuite extends HapiSuite {
                 .then(contractUpdate(CONTRACT).newMaxAutomaticAssociations(20).hasKnownStatus(NOT_SUPPORTED));
     }
 
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
+    @HapiTest
+    final Stream<DynamicTest> playGame() {
+        final var dj = "dj";
+        final var players = IntStream.range(1, 30).mapToObj(i -> "Player" + i).toList();
+        final var contract = "MusicalChairs";
+
+        List<HapiSpecOperation> given = new ArrayList<>();
+        List<HapiSpecOperation> when = new ArrayList<>();
+        List<HapiSpecOperation> then = new ArrayList<>();
+
+        ////// Create contract //////
+        given.add(cryptoCreate(dj).balance(10 * ONE_HUNDRED_HBARS));
+        given.add(getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER));
+        given.add(uploadInitCode(contract));
+        given.add(withOpContext((spec, opLog) -> allRunFor(
+                spec,
+                contractCreate(
+                                contract,
+                                asHeadlongAddress(spec.registry()
+                                        .getAccountInfo(DEFAULT_CONTRACT_SENDER)
+                                        .getContractAccountID()))
+                        .payingWith(dj))));
+
+        ////// Add the players //////
+        players.stream().map(TxnVerbs::cryptoCreate).forEach(given::add);
+
+        ////// Start the music! //////
+        when.add(contractCall(contract, "startMusic").payingWith(DEFAULT_CONTRACT_SENDER));
+
+        ////// 100 "random" seats taken //////
+        new Random(0x1337)
+                .ints(100, 0, 29)
+                .forEach(i -> when.add(contractCall(contract, "sitDown")
+                        .payingWith(players.get(i))
+                        .refusingEthConversion()
+                        .hasAnyStatusAtAll())); // sometimes a player sits
+        // too soon, so don't fail
+        // on reverts
+
+        ////// Stop the music! //////
+        then.add(contractCall(contract, "stopMusic").payingWith(DEFAULT_CONTRACT_SENDER));
+
+        ////// And the winner is..... //////
+        then.add(withOpContext((spec, opLog) -> allRunFor(
+                spec,
+                contractCallLocal(contract, "whoIsOnTheBubble")
+                        .has(resultWith()
+                                .resultThruAbi(
+                                        getABIFor(FUNCTION, "whoIsOnTheBubble", contract),
+                                        isLiteralResult(new Object[] {
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getAccountID("Player13")))
+                                        }))))));
+
+        return defaultHapiSpec("playGame")
+                .given(given.toArray(HapiSpecOperation[]::new))
+                .when(when.toArray(HapiSpecOperation[]::new))
+                .then(then.toArray(HapiSpecOperation[]::new));
     }
 }

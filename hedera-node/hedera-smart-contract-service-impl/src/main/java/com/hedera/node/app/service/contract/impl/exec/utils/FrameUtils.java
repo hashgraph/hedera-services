@@ -337,7 +337,8 @@ public class FrameUtils {
                 // Not a valid numbered contract id
             }
         }
-        return !featureFlags.isAllowCallsToNonContractAccountsEnabled(configOf(frame), maybeGrandfatheredNumber);
+        return !featureFlags.isAllowCallsToNonContractAccountsEnabled(
+                contractsConfigOf(frame), maybeGrandfatheredNumber);
     }
 
     private static boolean isToken(final MessageFrame frame, final Address address) {

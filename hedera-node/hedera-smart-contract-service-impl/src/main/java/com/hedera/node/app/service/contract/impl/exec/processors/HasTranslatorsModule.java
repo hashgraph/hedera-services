@@ -43,6 +43,7 @@ public interface HasTranslatorsModule {
     @Provides
     @Singleton
     @IntoSet
+    @Named("HasTranslators")
     static CallTranslator provideHbarAllowanceTranslator(@NonNull final HbarAllowanceTranslator translator) {
         return translator;
     }
@@ -50,6 +51,7 @@ public interface HasTranslatorsModule {
     @Provides
     @Singleton
     @IntoSet
+    @Named("HasTranslators")
     static CallTranslator provideHbarApproveTranslator(@NonNull final HbarApproveTranslator translator) {
         return translator;
     }

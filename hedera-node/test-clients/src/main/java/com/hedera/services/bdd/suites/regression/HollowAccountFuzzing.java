@@ -22,40 +22,20 @@ import static com.hedera.services.bdd.suites.regression.factories.HollowAccountF
 import static com.hedera.services.bdd.suites.regression.factories.HollowAccountFuzzingFactory.initOperations;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class HollowAccountFuzzing extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(HollowAccountFuzzing.class);
-
+public class HollowAccountFuzzing {
     private static final String PROPERTIES = "hollow-account-fuzzing.properties";
 
-    public static void main(String... args) {
-        new HollowAccountFuzzing().runSuiteSync();
-    }
-
     @HapiTest
-    final HapiSpec hollowAccountFuzzing() {
+    final Stream<DynamicTest> hollowAccountFuzzing() {
         return defaultHapiSpec("HollowAccountFuzzing")
                 .given(initOperations())
                 .when()
-                .then(runWithProvider(hollowAccountFuzzingTest(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(hollowAccountFuzzing());
+                .then(runWithProvider(hollowAccountFuzzingTest(PROPERTIES))
+                        .maxOpsPerSec(10)
+                        .lasting(10L, TimeUnit.SECONDS));
     }
 }

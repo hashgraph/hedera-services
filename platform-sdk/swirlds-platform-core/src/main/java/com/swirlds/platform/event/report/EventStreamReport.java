@@ -127,20 +127,20 @@ public record EventStreamReport(List<EventStreamInfo> granularInfo, EventStreamI
                         commaSeparatedNumber(lastEvent.getConsensusData().getConsensusOrder()))
                 .addRow(
                         "generation",
-                        commaSeparatedNumber(firstEvent.getBaseEventHashedData().getGeneration()),
-                        commaSeparatedNumber(lastEvent.getBaseEventHashedData().getGeneration()))
+                        commaSeparatedNumber(firstEvent.getGossipEvent().getGeneration()),
+                        commaSeparatedNumber(lastEvent.getGossipEvent().getGeneration()))
                 .addRow(
                         "creator ID",
-                        firstEvent.getBaseEventHashedData().getCreatorId(),
-                        lastEvent.getBaseEventHashedData().getCreatorId())
+                        firstEvent.getGossipEvent().getCreatorId(),
+                        lastEvent.getGossipEvent().getCreatorId())
                 .addRow(
                         "last in round",
                         firstEvent.getConsensusData().isLastInRoundReceived() ? "yes" : "no",
                         lastEvent.getConsensusData().isLastInRoundReceived() ? "yes" : "no")
                 .addRow(
                         "transaction count",
-                        commaSeparatedNumber(firstEvent.getBaseEventHashedData().getTransactions().length),
-                        commaSeparatedNumber(lastEvent.getBaseEventHashedData().getTransactions().length))
+                        commaSeparatedNumber(firstEvent.getGossipEvent().getPayloadCount()),
+                        commaSeparatedNumber(lastEvent.getGossipEvent().getPayloadCount()))
                 .render(sb);
 
         sb.append("\n\n");

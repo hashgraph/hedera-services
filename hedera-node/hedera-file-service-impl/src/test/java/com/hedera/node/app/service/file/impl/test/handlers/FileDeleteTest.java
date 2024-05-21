@@ -20,13 +20,14 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -34,6 +35,7 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileDeleteTransactionBody;
 import com.hedera.hapi.node.state.file.File;
@@ -46,6 +48,8 @@ import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -62,6 +66,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -117,6 +122,41 @@ class FileDeleteTest extends FileTestBase {
     }
 
     @Test
+    @DisplayName("pureChecks throws exception when file id is null")
+    public void testPureChecksThrowsExceptionWhenFileIdIsNull() {
+        FileDeleteTransactionBody transactionBody = mock(FileDeleteTransactionBody.class);
+        TransactionBody transaction = mock(TransactionBody.class);
+        given(handleContext.body()).willReturn(transaction);
+        given(transaction.fileDeleteOrThrow()).willReturn(transactionBody);
+        given(transactionBody.fileID()).willReturn(null);
+
+        assertThatThrownBy(() -> subject.pureChecks(handleContext.body())).isInstanceOf(PreCheckException.class);
+    }
+
+    @Test
+    @DisplayName("pureChecks does not throw exception when file id is not null")
+    public void testPureChecksDoesNotThrowExceptionWhenFileIdIsNotNull() {
+        given(handleContext.body()).willReturn(newDeleteTxn());
+
+        assertThatCode(() -> subject.pureChecks(handleContext.body())).doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("calculateFees method invocations")
+    public void testCalculateFeesInvocations() {
+        FeeContext feeContext = mock(FeeContext.class);
+        FeeCalculator feeCalculator = mock(FeeCalculator.class);
+        when(feeContext.feeCalculator(SubType.DEFAULT)).thenReturn(feeCalculator);
+
+        subject.calculateFees(feeContext);
+
+        InOrder inOrder = inOrder(feeContext, feeCalculator);
+        inOrder.verify(feeContext).body();
+        inOrder.verify(feeContext).feeCalculator(SubType.DEFAULT);
+        inOrder.verify(feeCalculator).legacyCalculate(any());
+    }
+
+    @Test
     @DisplayName("File not found returns error")
     void fileIdNotFound() throws PreCheckException {
         // given:
@@ -149,7 +189,7 @@ class FileDeleteTest extends FileTestBase {
 
         subject.preHandle(realPreContext);
 
-        assertEquals(0, realPreContext.requiredNonPayerKeys().size());
+        assertThat(realPreContext.requiredNonPayerKeys().size()).isEqualTo(0);
     }
 
     @Test
@@ -188,8 +228,9 @@ class FileDeleteTest extends FileTestBase {
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(INVALID_FILE_ID, msg.getStatus());
+
+        HandleException thrown = (HandleException) catchThrowable(() -> subject.handle(handleContext));
+        assertThat(thrown.getStatus()).isEqualTo(INVALID_FILE_ID);
     }
 
     @Test
@@ -207,9 +248,8 @@ class FileDeleteTest extends FileTestBase {
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-
-        assertEquals(ResponseCodeEnum.UNAUTHORIZED, msg.getStatus());
+        HandleException thrown = (HandleException) catchThrowable(() -> subject.handle(handleContext));
+        assertThat(thrown.getStatus()).isEqualTo(ResponseCodeEnum.UNAUTHORIZED);
     }
 
     @Test
@@ -218,8 +258,8 @@ class FileDeleteTest extends FileTestBase {
         final var txn = newDeleteTxn().fileDeleteOrThrow();
 
         final var existingFile = writableStore.get(fileId);
-        assertTrue(existingFile.isPresent());
-        assertFalse(existingFile.get().deleted());
+        assertThat(existingFile.isPresent()).isTrue();
+        assertThat(existingFile.get().deleted()).isFalse();
 
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
@@ -229,9 +269,9 @@ class FileDeleteTest extends FileTestBase {
 
         final var changedFile = writableStore.get(fileId);
 
-        assertTrue(changedFile.isPresent());
-        assertTrue(changedFile.get().deleted());
-        assertEquals(Bytes.EMPTY, changedFile.get().contents());
+        assertThat(changedFile.isPresent()).isTrue();
+        assertThat(changedFile.get().deleted()).isTrue();
+        assertThat(Bytes.EMPTY).isEqualTo(changedFile.get().contents());
     }
 
     @Test
@@ -243,8 +283,8 @@ class FileDeleteTest extends FileTestBase {
         final var txn = newDeleteTxn().fileDeleteOrThrow();
 
         final var existingFile = writableStore.get(fileId);
-        assertTrue(existingFile.isPresent());
-        assertFalse(existingFile.get().deleted());
+        assertThat(existingFile.isPresent()).isTrue();
+        assertThat(existingFile.get().deleted()).isFalse();
 
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
@@ -267,7 +307,9 @@ class FileDeleteTest extends FileTestBase {
     }
 
     private static void assertFailsWith(final ResponseCodeEnum status, final Runnable something) {
-        final var ex = assertThrows(HandleException.class, something::run);
-        assertEquals(status, ex.getStatus());
+        assertThatThrownBy(something::run)
+                .isInstanceOf(HandleException.class)
+                .extracting(ex -> ((HandleException) ex).getStatus())
+                .isEqualTo(status);
     }
 }
