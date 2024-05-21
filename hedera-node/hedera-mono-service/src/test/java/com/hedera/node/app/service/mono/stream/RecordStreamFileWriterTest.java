@@ -537,7 +537,8 @@ class RecordStreamFileWriterTest {
         // assert metadata hash
         assertEquals(HashAlgorithm.SHA_384, actualMetaHash.getAlgorithm());
         assertEquals(expectedMetaHash.getDigestType().digestLength(), actualMetaHash.getLength());
-        assertArrayEquals(expectedMetaHash.copyToByteArray(), actualMetaHash.getHash().toByteArray());
+        assertArrayEquals(
+                expectedMetaHash.copyToByteArray(), actualMetaHash.getHash().toByteArray());
         // assert metadata signature
         assertEquals(SignatureType.SHA_384_WITH_RSA, metadataSignatureObject.getType());
         assertEquals(expectedMetadataSignature.length, metadataSignatureObject.getLength());

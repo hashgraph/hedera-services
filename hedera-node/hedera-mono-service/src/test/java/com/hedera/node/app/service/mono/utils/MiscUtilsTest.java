@@ -207,7 +207,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.utility.KeyedMerkleLong;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.fcqueue.FCQueue;

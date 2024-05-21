@@ -1039,7 +1039,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
 
     /* --- Utility methods --- */
     public static org.hyperledger.besu.datatypes.Hash ethHashFrom(final Hash hash) {
-        return org.hyperledger.besu.datatypes.Hash.wrap(Bytes32.wrap(hash.getBytes().toByteArray(0, 32)));
+        return org.hyperledger.besu.datatypes.Hash.wrap(
+                Bytes32.wrap(hash.getBytes().toByteArray(0, 32)));
     }
 
     /* --- Used for tests --- */

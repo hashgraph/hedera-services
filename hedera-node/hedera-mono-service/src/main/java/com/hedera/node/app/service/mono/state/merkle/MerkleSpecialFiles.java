@@ -249,8 +249,8 @@ public class MerkleSpecialFiles extends PartialMerkleLeaf implements MerkleLeaf 
     }
 
     private byte[] hashOfKnown(final FileID fid) {
-        return hashCache.computeIfAbsent(fid, missingFid -> CryptographyHolder.get()
-                .digestBytesSync(get(missingFid)));
+        return hashCache.computeIfAbsent(
+                fid, missingFid -> CryptographyHolder.get().digestBytesSync(get(missingFid)));
     }
 
     private FCQueue<BytesElement> newFcqWith(final byte[] initialContents) {
