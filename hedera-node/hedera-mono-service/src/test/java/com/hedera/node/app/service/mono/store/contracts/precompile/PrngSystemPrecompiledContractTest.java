@@ -190,7 +190,7 @@ class PrngSystemPrecompiledContractTest {
 
         // and:
         final var effectsTracker = captor.getValue();
-        assertArrayEquals(Arrays.copyOfRange(WELL_KNOWN_HASH.getValue(), 0, 32), effectsTracker.getPseudorandomBytes());
+        assertArrayEquals(WELL_KNOWN_HASH.getBytes().toByteArray(0, 32), effectsTracker.getPseudorandomBytes());
     }
 
     @Test

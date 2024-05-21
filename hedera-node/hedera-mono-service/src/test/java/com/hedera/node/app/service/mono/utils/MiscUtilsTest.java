@@ -920,7 +920,7 @@ class MiscUtilsTest {
 
     @Test
     void convertsByteArrayToBinary() {
-        final var hashBytes = new Hash(TxnUtils.randomUtf8Bytes(48)).getValue();
+        final var hashBytes = TxnUtils.randomUtf8Bytes(48);
         assertEquals(
                 Integer.parseUnsignedInt(byteArrayToBinaryString(hashBytes).substring(0, 32), 2),
                 ByteBuffer.wrap(hashBytes, 0, 32).getInt());

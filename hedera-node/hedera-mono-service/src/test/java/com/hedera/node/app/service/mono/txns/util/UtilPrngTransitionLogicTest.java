@@ -124,7 +124,7 @@ class UtilPrngTransitionLogicTest {
 
         subject.doStateTransition();
 
-        assertEquals(aFullHash.getValue(), tracker.getPseudorandomBytes());
+        assertEquals(aFullHash.copyToByteArray(), tracker.getPseudorandomBytes());
         assertEquals(48, tracker.getPseudorandomBytes().length);
         assertEquals(-1, tracker.getPseudorandomNumber());
     }
@@ -179,7 +179,7 @@ class UtilPrngTransitionLogicTest {
 
         subject.doStateTransition();
 
-        assertEquals(aFullHash.getValue(), tracker.getPseudorandomBytes());
+        assertEquals(aFullHash.copyToByteArray(), tracker.getPseudorandomBytes());
         assertEquals(48, tracker.getPseudorandomBytes().length);
         assertEquals(-1, tracker.getPseudorandomNumber());
     }
