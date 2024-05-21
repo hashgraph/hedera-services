@@ -17,12 +17,11 @@
 package com.swirlds.platform.state;
 
 import com.hedera.hapi.platform.event.StateSignaturePayload;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
-import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.state.nexus.DefaultLatestCompleteStateNexus;
@@ -45,26 +44,25 @@ public class StateSignatureCollectorTester extends DefaultStateSignatureCollecto
     private final StateLacksSignaturesConsumer stateLacksSignaturesConsumer;
 
     private StateSignatureCollectorTester(
-            @NonNull final StateConfig stateConfig,
+            @NonNull final PlatformContext platformContext,
             @NonNull final SignedStateMetrics signedStateMetrics,
             @NonNull final LatestCompleteStateNexus latestSignedState,
             @NonNull final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer,
             @NonNull final StateLacksSignaturesConsumer stateLacksSignaturesConsumer) {
-        super(stateConfig, signedStateMetrics);
+        super(platformContext, signedStateMetrics);
         this.latestSignedState = latestSignedState;
         this.stateHasEnoughSignaturesConsumer = stateHasEnoughSignaturesConsumer;
         this.stateLacksSignaturesConsumer = stateLacksSignaturesConsumer;
     }
 
     public static StateSignatureCollectorTester create(
-            @NonNull final StateConfig stateConfig,
+            @NonNull final PlatformContext platformContext,
             @NonNull final SignedStateMetrics signedStateMetrics,
             @NonNull final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer,
             @NonNull final StateLacksSignaturesConsumer stateLacksSignaturesConsumer) {
-        final LatestCompleteStateNexus latestSignedState =
-                new DefaultLatestCompleteStateNexus(stateConfig, new NoOpMetrics());
+        final LatestCompleteStateNexus latestSignedState = new DefaultLatestCompleteStateNexus(platformContext);
         return new StateSignatureCollectorTester(
-                stateConfig,
+                platformContext,
                 signedStateMetrics,
                 latestSignedState,
                 stateHasEnoughSignaturesConsumer,
