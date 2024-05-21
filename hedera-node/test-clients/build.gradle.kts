@@ -76,6 +76,7 @@ tasks.test {
         gradle.startParameter.taskNames
             .stream()
             .map { ciCheckTagExpressions[it] ?: "" }
+            .filter { it.isNotBlank() }
             .toList()
             .joinToString("|")
     useJUnitPlatform {
