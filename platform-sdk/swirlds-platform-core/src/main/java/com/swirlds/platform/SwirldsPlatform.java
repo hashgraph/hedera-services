@@ -17,7 +17,6 @@
 package com.swirlds.platform;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
@@ -39,10 +38,8 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.RunningEventHashOverride;
-import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.logging.legacy.LogMarker;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.builder.PlatformBuildingBlocks;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.components.AppNotifier;
@@ -116,6 +113,10 @@ import java.util.function.LongSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * The swirlds consensus node platform. Responsible for the creation, gossip, and consensus of events. Also manages the
+ * transaction handling and state management.
+ */
 public class SwirldsPlatform implements Platform {
 
     private static final Logger logger = LogManager.getLogger(SwirldsPlatform.class);
@@ -227,37 +228,27 @@ public class SwirldsPlatform implements Platform {
 
         selfId = blocks.selfId();
         initialPcesFiles = blocks.initialPcesFiles();
-
-        final ThreadManager threadManager = getStaticThreadManager();
         notificationEngine = blocks.notificationEngine();
-
-        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
-        final String actualMainClassName = stateConfig.getMainClassName(blocks.mainClassName());
 
         currentAddressBook = initialState.getAddressBook();
 
         platformWiring = new PlatformWiring(platformContext, blocks.applicationCallbacks());
 
-        final Metrics metrics = platformContext.getMetrics();
+        registerAddressBookMetrics(platformContext.getMetrics(), currentAddressBook, selfId);
 
-        registerAddressBookMetrics(metrics, currentAddressBook, selfId);
-
-        RuntimeMetrics.setup(metrics);
+        RuntimeMetrics.setup(platformContext.getMetrics());
 
         keysAndCerts = blocks.keysAndCerts();
 
-        EventCounter.registerEventCounterMetrics(metrics);
+        EventCounter.registerEventCounterMetrics(platformContext.getMetrics());
 
-        final String swirldName = blocks.swirldName();
+        final LatestCompleteStateNexus latestCompleteStateNexus = new DefaultLatestCompleteStateNexus(platformContext);
 
-        final LatestCompleteStateNexus latestCompleteStateNexus =
-                new DefaultLatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
-
-        savedStateController = new DefaultSavedStateController(stateConfig);
+        savedStateController = new DefaultSavedStateController(platformContext);
 
         final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
-        final StateSignatureCollector stateSignatureCollector = new DefaultStateSignatureCollector(
-                platformContext.getConfiguration().getConfigData(StateConfig.class), signedStateMetrics);
+        final StateSignatureCollector stateSignatureCollector =
+                new DefaultStateSignatureCollector(platformContext, signedStateMetrics);
 
         final LatestCompleteStateNotifier latestCompleteStateNotifier = new DefaultLatestCompleteStateNotifier();
 
@@ -307,7 +298,7 @@ public class SwirldsPlatform implements Platform {
         blocks.isInFreezePeriodReference().set(swirldStateManager::isInFreezePeriod);
 
         final IssHandler issHandler = new IssHandler(
-                stateConfig, this::haltRequested, SystemExitUtils::handleFatalError, blocks.issScratchpad());
+                platformContext, this::haltRequested, SystemExitUtils::handleFatalError, blocks.issScratchpad());
 
         final BirthRoundMigrationShim birthRoundMigrationShim = buildBirthRoundMigrationShim(initialState, ancientMode);
 
@@ -344,8 +335,12 @@ public class SwirldsPlatform implements Platform {
         platformWiring.updateRunningHash(runningEventHashOverride);
 
         // Load the minimum generation into the pre-consensus event writer
+        final String actualMainClassName = platformContext
+                .getConfiguration()
+                .getConfigData(StateConfig.class)
+                .getMainClassName(blocks.mainClassName());
         final List<SavedStateInfo> savedStates =
-                getSavedStateFiles(platformContext, actualMainClassName, selfId, swirldName);
+                getSavedStateFiles(platformContext, actualMainClassName, selfId, blocks.swirldName());
         if (!savedStates.isEmpty()) {
             // The minimum generation of non-ancient events for the oldest state snapshot on disk.
             final long minimumGenerationNonAncientForOldestState =
@@ -358,7 +353,7 @@ public class SwirldsPlatform implements Platform {
                 statusNexus,
                 transactionConfig,
                 transaction -> transactionPoolNexus.submitTransaction(transaction, false),
-                new TransactionMetrics(metrics));
+                new TransactionMetrics(platformContext.getMetrics()));
 
         final boolean startedFromGenesis = initialState.isGenesisState();
 

@@ -16,27 +16,27 @@
 
 package com.swirlds.platform.state.manager;
 
-import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
-import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Utility class for building instances of {@link StateSignatureCollectorTester}.
  */
 public class StateSignatureCollectorBuilder {
 
-    private final StateConfig stateConfig;
+    private final PlatformContext platformContext;
     private final SignedStateMetrics metrics;
     private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer = x -> {};
     private StateLacksSignaturesConsumer stateLacksSignaturesConsumer = x -> {};
 
-    public StateSignatureCollectorBuilder(final StateConfig stateConfig) {
-        this.stateConfig = stateConfig;
+    public StateSignatureCollectorBuilder(@NonNull final PlatformContext platformContext) {
+        this.platformContext = platformContext;
 
-        this.metrics = new SignedStateMetrics(new NoOpMetrics());
+        this.metrics = new SignedStateMetrics(platformContext.getMetrics());
     }
 
     public StateSignatureCollectorBuilder stateHasEnoughSignaturesConsumer(
@@ -52,6 +52,6 @@ public class StateSignatureCollectorBuilder {
 
     public StateSignatureCollectorTester build() {
         return StateSignatureCollectorTester.create(
-                stateConfig, metrics, stateHasEnoughSignaturesConsumer, stateLacksSignaturesConsumer);
+                platformContext, metrics, stateHasEnoughSignaturesConsumer, stateLacksSignaturesConsumer);
     }
 }

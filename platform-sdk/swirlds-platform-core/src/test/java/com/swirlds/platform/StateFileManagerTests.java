@@ -47,7 +47,6 @@ import com.swirlds.common.utility.CompareTo;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.components.DefaultSavedStateController;
 import com.swirlds.platform.components.SavedStateController;
-import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
@@ -262,8 +261,7 @@ class StateFileManagerTests {
 
         final StateSnapshotManager manager =
                 new DefaultStateSnapshotManager(context, MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
-        final SavedStateController controller =
-                new DefaultSavedStateController(context.getConfiguration().getConfigData(StateConfig.class));
+        final SavedStateController controller = new DefaultSavedStateController(context);
 
         Instant timestamp;
         final long firstRound;
