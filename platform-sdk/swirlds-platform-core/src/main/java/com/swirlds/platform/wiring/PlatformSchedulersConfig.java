@@ -51,7 +51,6 @@ import java.time.Duration;
  * @param stateSignatureCollector                 configuration for the state signature collector scheduler
  * @param consensusRoundHandlerSchedulerType      the consensus round handler scheduler type
  * @param consensusRoundHandlerUnhandledCapacity  number of unhandled tasks allowed for the consensus round handler
- * @param runningEventHasher                      configuration for the running event hasher scheduler
  * @param issDetector                             configuration for the ISS detector scheduler
  * @param hashLogger                              configuration for the hash logger scheduler
  * @param completeStateNotifierUnhandledCapacity  number of unhandled tasks allowed for the state completion notifier
@@ -107,8 +106,6 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration stateSignatureCollector,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType consensusRoundHandlerSchedulerType,
         @ConfigProperty(defaultValue = "5") int consensusRoundHandlerUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(5) UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
-                TaskSchedulerConfiguration runningEventHasher,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration issDetector,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(100) UNHANDLED_TASK_METRIC")

@@ -322,15 +322,12 @@ public class SwirldsPlatform implements Platform {
                 publisher,
                 statusNexus);
 
-        final Hash runningEventHash = initialState.getState().getPlatformState().getRunningEventHash() == null
-                ? platformContext.getCryptography().getNullHash()
-                : initialState.getState().getPlatformState().getRunningEventHash();
         final Hash legacyRunningEventHash =
                 initialState.getState().getPlatformState().getLegacyRunningEventHash() == null
                         ? platformContext.getCryptography().getNullHash()
                         : initialState.getState().getPlatformState().getLegacyRunningEventHash();
         final RunningEventHashOverride runningEventHashOverride =
-                new RunningEventHashOverride(legacyRunningEventHash, runningEventHash, false);
+                new RunningEventHashOverride(legacyRunningEventHash, false);
         platformWiring.updateRunningHash(runningEventHashOverride);
 
         // Load the minimum generation into the pre-consensus event writer
@@ -554,9 +551,7 @@ public class SwirldsPlatform implements Platform {
                     ancientMode));
 
             final RunningEventHashOverride runningEventHashOverride = new RunningEventHashOverride(
-                    signedState.getState().getPlatformState().getLegacyRunningEventHash(),
-                    signedState.getState().getPlatformState().getRunningEventHash(),
-                    true);
+                    signedState.getState().getPlatformState().getLegacyRunningEventHash(), true);
             platformWiring.updateRunningHash(runningEventHashOverride);
             platformWiring.getPcesWriterRegisterDiscontinuityInput().inject(signedState.getRound());
 

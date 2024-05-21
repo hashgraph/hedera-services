@@ -30,8 +30,6 @@ import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.MINIMU
 import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.NODE_ID;
 import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.NUMBER_OF_CONSENSUS_EVENTS;
 import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.ROUND;
-import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.RUNNING_EVENT_HASH;
-import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.RUNNING_EVENT_HASH_MNEMONIC;
 import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.SIGNING_NODES;
 import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.SIGNING_WEIGHT_SUM;
 import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.SOFTWARE_VERSION;
@@ -76,13 +74,6 @@ import org.apache.logging.log4j.Logger;
  *                                       {@link SavedStateMetadataField#NUMBER_OF_CONSENSUS_EVENTS}
  * @param consensusTimestamp             the consensus timestamp of this state, corresponds to
  *                                       {@link SavedStateMetadataField#CONSENSUS_TIMESTAMP}
- * @param runningEventHash               the running hash of all events, starting from genesis, that have been handled
- *                                       to create this state, corresponds to
- *                                       {@link SavedStateMetadataField#RUNNING_EVENT_HASH}. (For networks that were
- *                                       running prior to the running hash being introduced, this will be the running
- *                                       hash of events since the introduction of the running hash.)
- * @param runningEventHashMnemonic       the mnemonic for the {@link #runningEventHash}. Corresponds to
- *                                       {@link SavedStateMetadataField#RUNNING_EVENT_HASH_MNEMONIC}.
  * @param legacyRunningEventHash         the legacy running event hash used by the consensus event stream, corresponds
  *                                       to {@link SavedStateMetadataField#LEGACY_RUNNING_EVENT_HASH}.
  * @param legacyRunningEventHashMnemonic the mnemonic for the {@link #legacyRunningEventHash}, corresponds to
@@ -111,8 +102,6 @@ public record SavedStateMetadata(
         @NonNull String hashMnemonic,
         long numberOfConsensusEvents,
         @NonNull Instant consensusTimestamp,
-        @Nullable Hash runningEventHash,
-        @Nullable String runningEventHashMnemonic,
         @Nullable Hash legacyRunningEventHash,
         @Nullable String legacyRunningEventHashMnemonic,
         long minimumGenerationNonAncient,
@@ -159,8 +148,6 @@ public record SavedStateMetadata(
                 parseNonNullString(data, HASH_MNEMONIC),
                 parsePrimitiveLong(data, NUMBER_OF_CONSENSUS_EVENTS),
                 parseNonNullInstant(data, CONSENSUS_TIMESTAMP),
-                parseHash(data, RUNNING_EVENT_HASH),
-                parseString(data, RUNNING_EVENT_HASH_MNEMONIC),
                 parseHash(data, LEGACY_RUNNING_EVENT_HASH),
                 parseString(data, LEGACY_RUNNING_EVENT_HASH_MNEMONIC),
                 parsePrimitiveLong(data, MINIMUM_GENERATION_NON_ANCIENT),
@@ -201,10 +188,6 @@ public record SavedStateMetadata(
                 signedState.getState().getHash().toMnemonic(),
                 platformState.getSnapshot().nextConsensusNumber(),
                 signedState.getConsensusTimestamp(),
-                platformState.getRunningEventHash(),
-                platformState.getRunningEventHash() == null
-                        ? null
-                        : platformState.getRunningEventHash().toMnemonic(),
                 platformState.getLegacyRunningEventHash(),
                 platformState.getLegacyRunningEventHash().toMnemonic(),
                 platformState.getAncientThreshold(),
@@ -269,7 +252,7 @@ public record SavedStateMetadata(
                         final SavedStateMetadataField key = SavedStateMetadataField.valueOf(keyString);
                         map.put(key, valueString);
                     } catch (final IllegalArgumentException e) {
-                        logger.warn(STARTUP.getMarker(), "Invalid key in metadata file: {}", keyString, e);
+                        logger.warn(STARTUP.getMarker(), "Unrecognized key in metadata file: {}", keyString);
                     }
                 }
             }
@@ -634,8 +617,6 @@ public record SavedStateMetadata(
         putRequireNonNull(map, HASH_MNEMONIC, hashMnemonic);
         putRequireNonNull(map, NUMBER_OF_CONSENSUS_EVENTS, numberOfConsensusEvents);
         putRequireNonNull(map, CONSENSUS_TIMESTAMP, consensusTimestamp);
-        putRequireNonNull(map, RUNNING_EVENT_HASH, runningEventHash);
-        putRequireNonNull(map, RUNNING_EVENT_HASH_MNEMONIC, runningEventHashMnemonic);
         putRequireNonNull(map, LEGACY_RUNNING_EVENT_HASH, legacyRunningEventHash);
         putRequireNonNull(map, LEGACY_RUNNING_EVENT_HASH_MNEMONIC, legacyRunningEventHashMnemonic);
         putRequireNonNull(map, MINIMUM_GENERATION_NON_ANCIENT, minimumGenerationNonAncient);
