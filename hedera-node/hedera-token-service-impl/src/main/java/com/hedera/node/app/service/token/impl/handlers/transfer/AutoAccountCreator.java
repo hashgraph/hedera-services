@@ -39,6 +39,7 @@ import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AccountsConfig;
+import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -82,12 +83,14 @@ public class AutoAccountCreator {
         String memo;
 
         final var isAliasEVMAddress = EntityIdUtils.isOfEvmAddressSize(alias);
+        final var entitiesConfig = handleContext.configuration().getConfigData(EntitiesConfig.class);
+        final int autoAssociations = entitiesConfig.unlimitedAutoAssociationsEnabled() ? -1 : maxAutoAssociations;
         if (isAliasEVMAddress) {
-            syntheticCreation = createHollowAccount(alias, 0L, maxAutoAssociations);
+            syntheticCreation = createHollowAccount(alias, 0L, autoAssociations);
             memo = LAZY_MEMO;
         } else {
             final var key = asKeyFromAlias(alias);
-            syntheticCreation = createAccount(alias, key, 0L, maxAutoAssociations);
+            syntheticCreation = createAccount(alias, key, 0L, autoAssociations);
             memo = AUTO_MEMO;
         }
 

@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressF
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.PropertySource.asAccount;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -62,6 +63,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assumingNoStakingCh
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
@@ -159,8 +161,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
     public static final String LAZY_CREATE_SPONSOR = "lazyCreateSponsor";
 
     private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE = 39418863L;
+    private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE_UNLIMITED_ASSOCIATIONS = 39291826L;
     private static final long EXPECTED_MULTI_TOKEN_TRANSFER_AUTO_CREATION_FEE = 42427268L;
     private static final long EXPECTED_SINGLE_TOKEN_TRANSFER_AUTO_CREATE_FEE = 40927290L;
+
     public static final String CRYPTO_TRANSFER_RECEIVER = "cryptoTransferReceiver";
     public static final String TRUE = "true";
     public static final String FALSE = "false";
@@ -188,6 +192,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
         return List.of(
                 /* --- Hbar auto creates */
                 autoAccountCreationsHappyPath(),
+                autoAccountCreationsUnlimitedAssociationHappyPath(),
                 autoAccountCreationBadAlias(),
                 autoAccountCreationUnsupportedAlias(),
                 transferToAccountAutoCreatedUsingAlias(),
@@ -213,6 +218,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 hollowAccountCreationWithCryptoTransfer(),
                 failureAfterHollowAccountCreationReclaimsAlias(),
                 transferHbarsToEVMAddressAlias(),
+                transferHbarsToEVMAddressAliasUnlimitedAssociations(),
                 transferFungibleToEVMAddressAlias(),
                 transferNonFungibleToEVMAddressAlias(),
                 transferHbarsToECDSAKey(),
@@ -223,8 +229,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
     @HapiTest
     private HapiSpec aliasedPayerDoesntWork() {
         final AtomicReference<AccountID> aliasId = new AtomicReference<>();
-        return defaultHapiSpec("aliasedPayerDoesntWork")
+        return propertyPreservingHapiSpec("aliasedPayerDoesntWork")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(ALIAS),
                         newKeyNamed(ALIAS_2),
                         cryptoCreate(PAYER_4).balance(INITIAL_BALANCE * ONE_HBAR))
@@ -247,8 +255,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
     @HapiTest
     final HapiSpec canAutoCreateWithHbarAndTokenTransfers() {
         final var initialTokenSupply = 1000;
-        return defaultHapiSpec("canAutoCreateWithHbarAndTokenTransfers", EXPECT_STREAMLINED_INGEST_RECORDS)
+        return propertyPreservingHapiSpec("canAutoCreateWithHbarAndTokenTransfers", EXPECT_STREAMLINED_INGEST_RECORDS)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(2),
@@ -286,8 +296,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
 
-        return defaultHapiSpec("repeatedAliasInSameTransferListFails", NONDETERMINISTIC_TRANSACTION_FEES)
+        return propertyPreservingHapiSpec("repeatedAliasInSameTransferListFails", NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(VALID_ALIAS),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(VALID_ALIAS),
@@ -343,8 +355,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
     @HapiTest
     final HapiSpec autoCreateWithNftFallBackFeeFails() {
         final var firstRoyaltyCollector = "firstRoyaltyCollector";
-        return defaultHapiSpec("autoCreateWithNftFallBackFeeFails", HIGHLY_NON_DETERMINISTIC_FEES)
+        return propertyPreservingHapiSpec("autoCreateWithNftFallBackFeeFails", HIGHLY_NON_DETERMINISTIC_FEES)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(VALID_ALIAS),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(VALID_ALIAS),
@@ -412,8 +426,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final var approxTransferFee = 0.44012644 * ONE_HBAR;
         final var multiNftTransfer = "multiNftTransfer";
 
-        return defaultHapiSpec("canAutoCreateWithNftTransfersToAlias", NONDETERMINISTIC_TRANSACTION_FEES)
+        return propertyPreservingHapiSpec("canAutoCreateWithNftTransfersToAlias", NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(VALID_ALIAS),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(VALID_ALIAS),
@@ -497,8 +513,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final AtomicReference<Timestamp> parentConsTime = new AtomicReference<>();
         final AtomicBoolean hasNodeStakeUpdate = new AtomicBoolean(false);
 
-        return defaultHapiSpec("canAutoCreateWithNftTransferToEvmAddress")
+        return propertyPreservingHapiSpec("canAutoCreateWithNftTransferToEvmAddress")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(VALID_ALIAS).shape(SECP_256K1_SHAPE),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(2),
@@ -546,8 +564,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final var initialTokenSupply = 1000;
         final var multiTokenXfer = "multiTokenXfer";
 
-        return defaultHapiSpec("multipleTokenTransfersSucceed")
+        return propertyPreservingHapiSpec("multipleTokenTransfersSucceed")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(A_TOKEN)
@@ -636,8 +656,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final var secondPayer = "secondPayer";
         final AtomicLong totalAutoCreationFees = new AtomicLong();
 
-        return defaultHapiSpec("payerBalanceIsReflectsAllChangesBeforeFeeCharging")
+        return propertyPreservingHapiSpec("payerBalanceIsReflectsAllChangesBeforeFeeCharging")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(A_TOKEN)
@@ -688,8 +710,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
         // with the size of the sig map, depending on the lengths of the public key prefixes required
         final long approxTransferFee = 1163019L;
 
-        return defaultHapiSpec("canAutoCreateWithFungibleTokenTransfersToAlias", NONDETERMINISTIC_TRANSACTION_FEES)
+        return propertyPreservingHapiSpec("canAutoCreateWithFungibleTokenTransfersToAlias", NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(A_TOKEN)
@@ -766,8 +790,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
     final HapiSpec noStakePeriodStartIfNotStakingToNode() {
         final var user = "user";
         final var contract = "contract";
-        return defaultHapiSpec("noStakePeriodStartIfNotStakingToNode", NONDETERMINISTIC_TRANSACTION_FEES)
+        return propertyPreservingHapiSpec("noStakePeriodStartIfNotStakingToNode", NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(ADMIN_KEY),
                         cryptoCreate(user).key(ADMIN_KEY).stakedNodeId(0L),
                         createDefaultContract(contract).adminKey(ADMIN_KEY).stakedNodeId(0L),
@@ -789,8 +815,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final AtomicReference<AccountID> civilianId = new AtomicReference<>();
         final AtomicReference<ByteString> civilianAlias = new AtomicReference<>();
         final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
-        return defaultHapiSpec("hollowAccountCreationWithCryptoTransfer", NONDETERMINISTIC_TRANSACTION_FEES)
+        return propertyPreservingHapiSpec("hollowAccountCreationWithCryptoTransfer", NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
@@ -891,8 +919,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final var underfunded = "underfunded";
         final var secondTransferTxn = "SecondTransferTxn";
         final AtomicReference<ByteString> targetAddress = new AtomicReference<>();
-        return defaultHapiSpec("failureAfterHollowAccountCreationReclaimsAlias", ALLOW_SKIPPED_ENTITY_IDS)
+        return propertyPreservingHapiSpec("failureAfterHollowAccountCreationReclaimsAlias", ALLOW_SKIPPED_ENTITY_IDS)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(cryptoCreate(underfunded).balance(10 * ONE_HBAR))
@@ -942,8 +972,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final var ed25519Shape = KeyShape.ED25519;
         final var autoCreation = "autoCreation";
 
-        return defaultHapiSpec("canGetBalanceAndInfoViaAlias")
+        return propertyPreservingHapiSpec("canGetBalanceAndInfoViaAlias")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed(ed25519SourceKey).shape(ed25519Shape),
                         newKeyNamed(secp256k1SourceKey).shape(secp256k1Shape))
@@ -985,8 +1017,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec aliasCanBeUsedOnManyAccountsNotAsAlias() {
-        return defaultHapiSpec("aliasCanBeUsedOnManyAccountsNotAsAlias")
+        return propertyPreservingHapiSpec("aliasCanBeUsedOnManyAccountsNotAsAlias")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         /* have alias key on other accounts and tokens not as alias */
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(PAYER).key(VALID_ALIAS).balance(INITIAL_BALANCE * ONE_HBAR),
@@ -1019,8 +1053,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec accountCreatedIfAliasUsedAsPubKey() {
-        return defaultHapiSpec("accountCreatedIfAliasUsedAsPubKey")
+        return propertyPreservingHapiSpec("accountCreatedIfAliasUsedAsPubKey")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(ALIAS),
                         cryptoCreate(PAYER_1)
                                 .balance(INITIAL_BALANCE * ONE_HBAR)
@@ -1046,8 +1082,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec autoAccountCreationWorksWhenUsingAliasOfDeletedAccount() {
-        return defaultHapiSpec("autoAccountCreationWorksWhenUsingAliasOfDeletedAccount")
+        return propertyPreservingHapiSpec("autoAccountCreationWorksWhenUsingAliasOfDeletedAccount")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(ALIAS),
                         newKeyNamed(ALIAS_2),
                         cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
@@ -1078,8 +1116,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec transferFromAliasToAlias() {
-        return defaultHapiSpec("transferFromAliasToAlias")
+        return propertyPreservingHapiSpec("transferFromAliasToAlias")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(ALIAS),
                         newKeyNamed(ALIAS_2),
                         cryptoCreate(PAYER_4).balance(INITIAL_BALANCE * ONE_HBAR))
@@ -1105,8 +1145,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
     final HapiSpec transferFromAliasToAccount() {
         final var payer = PAYER_4;
         final var alias = ALIAS;
-        return defaultHapiSpec("transferFromAliasToAccount")
+        return propertyPreservingHapiSpec("transferFromAliasToAccount")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(alias),
                         cryptoCreate(payer).balance(INITIAL_BALANCE * ONE_HBAR),
                         cryptoCreate("randomAccount").balance(0L).payingWith(payer))
@@ -1128,8 +1170,11 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec transferToAccountAutoCreatedUsingAccount() {
-        return defaultHapiSpec("transferToAccountAutoCreatedUsingAccount")
-                .given(newKeyNamed(TRANSFER_ALIAS), cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
+        return propertyPreservingHapiSpec("transferToAccountAutoCreatedUsingAccount")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        newKeyNamed(TRANSFER_ALIAS), cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, TRANSFER_ALIAS, ONE_HUNDRED_HBARS))
                                 .via("txn"),
@@ -1160,8 +1205,12 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec transferToAccountAutoCreatedUsingAlias() {
-        return defaultHapiSpec("transferToAccountAutoCreatedUsingAlias")
-                .given(newKeyNamed(ALIAS), cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
+        return propertyPreservingHapiSpec("transferToAccountAutoCreatedUsingAlias")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        newKeyNamed(ALIAS),
+                        cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
                                 .via(TRANSFER_TXN),
@@ -1210,8 +1259,11 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 .build()
                 .toByteString();
 
-        return defaultHapiSpec("autoAccountCreationUnsupportedAlias")
-                .given(cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
+        return propertyPreservingHapiSpec("autoAccountCreationUnsupportedAlias")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
                         cryptoTransfer(tinyBarsFromTo(PAYER, threshKeyAlias, ONE_HUNDRED_HBARS))
                                 .hasKnownStatus(INVALID_ALIAS_KEY)
@@ -1244,8 +1296,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
     final HapiSpec autoAccountCreationsHappyPath() {
         final var creationTime = new AtomicLong();
         final long transferFee = 185030L;
-        return defaultHapiSpec("autoAccountCreationsHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
+        return propertyPreservingHapiSpec("autoAccountCreationsHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR),
                         cryptoCreate(PAYER).balance(10 * ONE_HBAR),
@@ -1350,9 +1404,11 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec multipleAutoAccountCreations() {
-        return defaultHapiSpec("multipleAutoAccountCreations")
+        return propertyPreservingHapiSpec("multipleAutoAccountCreations")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed("alias1"),
                         newKeyNamed(ALIAS_2),
                         newKeyNamed("alias3"),
@@ -1388,8 +1444,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
 
-        return defaultHapiSpec("transferHbarsToEVMAddressAlias")
+        return propertyPreservingHapiSpec("transferHbarsToEVMAddressAlias")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         withOpContext((spec, opLog) -> {
@@ -1444,8 +1502,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
         final var transferToECDSA = "transferToЕCDSA";
 
-        return defaultHapiSpec("transferHbarsToECDSAKey", NONDETERMINISTIC_TRANSACTION_FEES)
+        return propertyPreservingHapiSpec("transferHbarsToECDSAKey", NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(PAYER).balance(10 * ONE_HBAR),
                         withOpContext((spec, opLog) -> {
@@ -1494,8 +1554,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
 
-        return defaultHapiSpec("transferFungibleToEVMAddressAlias", NONDETERMINISTIC_TRANSACTION_FEES)
+        return propertyPreservingHapiSpec("transferFungibleToEVMAddressAlias", NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(PARTY).balance(INITIAL_BALANCE * ONE_HBAR).maxAutomaticTokenAssociations(2),
                         tokenCreate(fungibleToken).treasury(PARTY).initialSupply(1_000_000),
@@ -1589,8 +1651,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
 
-        return defaultHapiSpec("transferNonFungibleToEVMAddressAlias")
+        return propertyPreservingHapiSpec("transferNonFungibleToEVMAddressAlias")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(PARTY).balance(INITIAL_BALANCE * ONE_HBAR).maxAutomaticTokenAssociations(2),
@@ -1685,8 +1749,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
         final var longZeroAddress = ByteString.copyFrom(CommonUtils.unhex("0000000000000000000000000000000fffffffff"));
 
-        return defaultHapiSpec("cannotAutoCreateWithTxnToLongZero")
+        return propertyPreservingHapiSpec("cannotAutoCreateWithTxnToLongZero")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(PAYER).balance(10 * ONE_HBAR),
                         withOpContext((spec, opLog) -> {
@@ -1716,5 +1782,125 @@ public class AutoAccountCreationSuite extends HapiSuite {
                             .hasChildRecords(
                                     recordWith().status(SUCCESS).memo(LAZY_MEMO).alias(evmAddress.get()));
                 }));
+    }
+
+
+    @HapiTest
+    final HapiSpec autoAccountCreationsUnlimitedAssociationHappyPath() {
+        final var creationTime = new AtomicLong();
+        final long transferFee = 185030L;
+        return propertyPreservingHapiSpec("autoAccountCreationsUnlimitedAssociationHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE),
+                        newKeyNamed(VALID_ALIAS),
+                        cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR),
+                        cryptoCreate(PAYER).balance(10 * ONE_HBAR),
+                        cryptoCreate(SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
+                .when(cryptoTransfer(
+                        tinyBarsFromToWithAlias(SPONSOR, VALID_ALIAS, ONE_HUNDRED_HBARS),
+                        tinyBarsFromToWithAlias(CIVILIAN, VALID_ALIAS, ONE_HBAR))
+                        .via(TRANSFER_TXN)
+                        .payingWith(PAYER))
+                .then(
+                        getReceipt(TRANSFER_TXN).andAnyChildReceipts().hasChildAutoAccountCreations(1),
+                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
+                        getAccountInfo(SPONSOR)
+                                .has(accountWith()
+                                        .balance((INITIAL_BALANCE * ONE_HBAR) - ONE_HUNDRED_HBARS)
+                                        .noAlias()),
+                        childRecordsCheck(
+                                TRANSFER_TXN,
+                                SUCCESS,
+                                recordWith().status(SUCCESS).fee(EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE_UNLIMITED_ASSOCIATIONS)),
+                        assertionsHold((spec, opLog) -> {
+                            final var lookup = getTxnRecord(TRANSFER_TXN)
+                                    .andAllChildRecords()
+                                    .hasNonStakingChildRecordCount(1)
+                                    .hasNoAliasInChildRecord(0)
+                                    .logged();
+                            allRunFor(spec, lookup);
+                            final var sponsor = spec.registry().getAccountID(SPONSOR);
+                            final var payer = spec.registry().getAccountID(PAYER);
+                            final var parent = lookup.getResponseRecord();
+                            var child = lookup.getChildRecord(0);
+                            if (isEndOfStakingPeriodRecord(child)) {
+                                child = lookup.getChildRecord(1);
+                            }
+                            assertAliasBalanceAndFeeInChildRecord(
+                                    parent, child, sponsor, payer, ONE_HUNDRED_HBARS + ONE_HBAR, transferFee);
+                            creationTime.set(child.getConsensusTimestamp().getSeconds());
+                        }),
+                        sourcing(() -> getAliasedAccountInfo(VALID_ALIAS)
+                                .has(accountWith()
+                                        .key(VALID_ALIAS)
+                                        .expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS + ONE_HBAR, 0, 0)
+                                        .alias(VALID_ALIAS)
+                                        .autoRenew(THREE_MONTHS_IN_SECONDS)
+                                        .receiverSigReq(false)
+                                        .expiry(creationTime.get() + THREE_MONTHS_IN_SECONDS, 0)
+                                        .memo(AUTO_MEMO)
+                                        .maxAutoAssociations(-1))
+                                .logged()));
+    }
+
+
+    @HapiTest
+    final HapiSpec transferHbarsToEVMAddressAliasUnlimitedAssociations() {
+
+        final AtomicReference<AccountID> partyId = new AtomicReference<>();
+        final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
+        final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec("transferHbarsToEVMAddressAliasUnlimitedAssociations")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE),
+                        cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        withOpContext((spec, opLog) -> {
+                            final var registry = spec.registry();
+                            final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
+                            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                            final var addressBytes = recoverAddressFromPubKey(tmp);
+                            assert addressBytes != null;
+                            final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                            partyId.set(registry.getAccountID(PARTY));
+                            partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
+                            counterAlias.set(evmAddressBytes);
+                        }))
+                .when(withOpContext((spec, opLog) -> {
+                    var op1 = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
+                            .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
+                            .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
+                            .signedBy(DEFAULT_PAYER, PARTY)
+                            .via(HBAR_XFER);
+
+                    var op2 = getAliasedAccountInfo(counterAlias.get())
+                            .has(accountWith()
+                                    .expectedBalanceWithChargedUsd(2 * ONE_HBAR, 0, 0)
+                                    .hasEmptyKey()
+                                    .noAlias()
+                                    .autoRenew(THREE_MONTHS_IN_SECONDS)
+                                    .receiverSigReq(false)
+                                    .memo(LAZY_MEMO));
+
+                    final var txnRequiringHollowAccountSignature = tokenCreate(A_TOKEN)
+                            .adminKey(SECP_256K1_SOURCE_KEY)
+                            .signedBy(SECP_256K1_SOURCE_KEY)
+                            .hasPrecheck(INVALID_SIGNATURE);
+
+                    allRunFor(spec, op1, op2, txnRequiringHollowAccountSignature);
+                }))
+                .then(
+                        getTxnRecord(HBAR_XFER)
+                                .hasChildRecordCount(1)
+                                .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)),
+                        // and transfers to the 0.0.ECDSA_BYTES alias should succeed.
+                        cryptoTransfer(tinyBarsFromToWithAlias(PARTY, SECP_256K1_SOURCE_KEY, ONE_HBAR))
+                                .hasKnownStatus(SUCCESS)
+                                .via(TRANSFER_TXN),
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().expectedBalanceWithChargedUsd(3 * ONE_HBAR, 0, 0)));
     }
 }
