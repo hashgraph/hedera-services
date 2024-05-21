@@ -392,7 +392,7 @@ public final class PlatformBuilder {
         final Metrics metrics = getMetricsProvider().createPlatformMetrics(selfId);
         final FileSystemManager fileSystemManager = FileSystemManager.create(configuration);
 
-        Time time = Time.getCurrent();
+        final Time time = Time.getCurrent();
         final RecycleBin recycleBin =
                 RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
 
