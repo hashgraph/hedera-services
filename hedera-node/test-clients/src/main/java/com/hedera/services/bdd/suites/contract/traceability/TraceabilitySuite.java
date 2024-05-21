@@ -4587,7 +4587,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
                                                 .setCallOperationType(CallOperationType.OP_CALL)
                                                 .setGas(978936)
-                                                .setGasUsed(18360)
+                                                .setGasUsed(963748)
                                                 .setOutput(EMPTY)
                                                 /*
                                                    For EVM v0.34 use this code block instead:
@@ -4609,6 +4609,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                                 .encodeCallWithArgs(BigInteger.valueOf(234))
                                                                 .array()))
                                                 .setGas(960576)
+                                                .setGasUsed(960576)
                                                 .setRecipientContract(ContractID.newBuilder()
                                                         .setContractNum(0)
                                                         .build())
@@ -5108,7 +5109,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                             .setRecipientContract(
                                                                     spec.registry()
                                                                             .getContractId(create2Factory))
-                                                            .setGasUsed(80135)
+                                                            .setGasUsed(80193)
                                                             .setOutput(EMPTY)
                                                             .setInput(
                                                                     encodeFunctionCall(
@@ -5123,7 +5124,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                             .setCallingContract(
                                                                     spec.registry()
                                                                             .getContractId(create2Factory))
-                                                            .setGas(3870609)
+                                                            .setGas(3870552)
                                                             // recipient should be the
                                                             // original hollow account id as
                                                             // a contract
