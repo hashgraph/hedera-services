@@ -20,7 +20,6 @@ import com.swirlds.platform.tss.TssCommitment;
 import com.swirlds.platform.tss.TssShareId;
 import com.swirlds.platform.tss.pairings.FieldElement;
 import com.swirlds.platform.tss.pairings.GroupElement;
-import com.swirlds.platform.tss.verification.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.List;
@@ -30,19 +29,21 @@ import java.util.List;
  *
  * @param coefficientCommitments TODO: what group are these elements in? Is it correct for getTerm to return a public key?
  */
-public record Groth21Commitment<P extends PublicKey>(@NonNull List<GroupElement> coefficientCommitments)
-        implements TssCommitment {
+public record Groth21Commitment(@NonNull List<GroupElement> coefficientCommitments) implements TssCommitment {
     /**
      * {@inheritDoc}
      */
     @NonNull
     public GroupElement extractPublicKey(@NonNull final TssShareId shareId) {
-        final FieldElement shareIdValue = shareId.getId();
+        if (coefficientCommitments.size() < 2) {
+            throw new IllegalArgumentException("Coefficient commitments must have at least 2 elements");
+        }
+        ;
 
         GroupElement product = null;
         for (int i = 0; i < coefficientCommitments.size(); i++) {
             final GroupElement term = coefficientCommitments.get(i);
-            final FieldElement exponentiatedShareId = shareIdValue.power(BigInteger.valueOf(i));
+            final FieldElement exponentiatedShareId = shareId.getId().power(BigInteger.valueOf(i));
 
             final GroupElement power = term.power(exponentiatedShareId);
 
