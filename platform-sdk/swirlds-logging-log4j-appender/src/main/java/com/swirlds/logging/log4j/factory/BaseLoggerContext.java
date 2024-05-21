@@ -22,6 +22,7 @@ import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import com.swirlds.logging.api.extensions.event.LogEventConsumer;
 import com.swirlds.logging.api.extensions.event.LogEventFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.message.MessageFactory;
 import org.apache.logging.log4j.spi.ExtendedLogger;
@@ -67,6 +68,7 @@ public class BaseLoggerContext implements LoggerContext {
      * @return {@code null}
      */
     @Override
+    @Nullable
     public Object getExternalContext() {
         return null;
     }
@@ -78,7 +80,8 @@ public class BaseLoggerContext implements LoggerContext {
      * @return the logger
      */
     @Override
-    public ExtendedLogger getLogger(final String name) {
+    @NonNull
+    public ExtendedLogger getLogger(@NonNull final String name) {
         if (!loggerRegistry.hasLogger(name)) {
             if (logEventFactory == null || logEventConsumer == null) {
                 if (initialisationErrorPrinted.compareAndSet(false, true)) {
@@ -102,7 +105,8 @@ public class BaseLoggerContext implements LoggerContext {
      * @return the logger
      */
     @Override
-    public ExtendedLogger getLogger(final String name, final MessageFactory messageFactory) {
+    @NonNull
+    public ExtendedLogger getLogger(@NonNull final String name, @Nullable final MessageFactory messageFactory) {
         return getLogger(name);
     }
 
@@ -114,7 +118,7 @@ public class BaseLoggerContext implements LoggerContext {
      * @return if the logger exists
      */
     @Override
-    public boolean hasLogger(final String name) {
+    public boolean hasLogger(@NonNull final String name) {
         return loggerRegistry.hasLogger(name);
     }
 
@@ -127,7 +131,7 @@ public class BaseLoggerContext implements LoggerContext {
      * @return if the logger exists
      */
     @Override
-    public boolean hasLogger(final String name, final MessageFactory messageFactory) {
+    public boolean hasLogger(@NonNull final String name, final MessageFactory messageFactory) {
         return loggerRegistry.hasLogger(name);
     }
 
@@ -140,7 +144,7 @@ public class BaseLoggerContext implements LoggerContext {
      * @return if the logger exists
      */
     @Override
-    public boolean hasLogger(final String name, final Class<? extends MessageFactory> messageFactoryClass) {
+    public boolean hasLogger(@NonNull final String name, @Nullable final Class<? extends MessageFactory> messageFactoryClass) {
         return loggerRegistry.hasLogger(name);
     }
 

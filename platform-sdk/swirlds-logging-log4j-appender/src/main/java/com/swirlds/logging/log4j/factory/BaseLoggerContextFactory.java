@@ -16,6 +16,7 @@
 
 package com.swirlds.logging.log4j.factory;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.URI;
 import org.apache.logging.log4j.spi.LoggerContext;
@@ -41,6 +42,7 @@ public class BaseLoggerContextFactory implements LoggerContextFactory {
      * @return the (one and only) {@link BaseLoggerContext} instance
      */
     @Override
+    @NonNull
     public LoggerContext getContext(
             @Nullable final String fqcn,
             @Nullable final ClassLoader loader,
@@ -62,6 +64,7 @@ public class BaseLoggerContextFactory implements LoggerContextFactory {
      * @return the (one and only) {@link BaseLoggerContext} instance
      */
     @Override
+    @NonNull
     public LoggerContext getContext(
             @Nullable final String fqcn,
             @Nullable final ClassLoader loader,
