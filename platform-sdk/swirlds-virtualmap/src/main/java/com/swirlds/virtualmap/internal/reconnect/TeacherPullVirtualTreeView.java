@@ -129,8 +129,7 @@ public class TeacherPullVirtualTreeView<K extends VirtualKey, V extends VirtualV
             final AsyncOutputStream out,
             final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
             final Map<Integer, TeacherTreeView<?>> views,
-            final Consumer<Integer> completeListener,
-            final Consumer<Exception> exceptionListener) {
+            final Consumer<Integer> completeListener) {
         final AtomicInteger teacherTasksRunning =
                 teachingSynchronizer.computeViewMetadata("TasksRunning", new AtomicInteger(0));
         final Set<Integer> viewsInProgress =
@@ -149,7 +148,6 @@ public class TeacherPullVirtualTreeView<K extends VirtualKey, V extends VirtualV
                         out,
                         views,
                         completeListener,
-                        exceptionListener,
                         teacherTasksRunning,
                         viewsInProgress);
                 teacherReceiveTask.exec();

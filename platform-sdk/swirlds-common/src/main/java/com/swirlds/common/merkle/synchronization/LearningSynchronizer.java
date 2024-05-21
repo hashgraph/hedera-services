@@ -68,10 +68,14 @@ public class LearningSynchronizer implements ReconnectNodeCount {
      */
     private final MerkleDataInputStream inputStream;
 
+    private volatile AsyncInputStream in;
+
     /**
      * Used to transmit data to the teacher.
      */
     private final MerkleDataOutputStream outputStream;
+
+    private volatile AsyncOutputStream out;
 
     private final Queue<MerkleNode> rootsToReceive;
     // All root/custom tree views, by view ID
@@ -215,12 +219,12 @@ public class LearningSynchronizer implements ReconnectNodeCount {
         final StandardWorkGroup workGroup =
                 createStandardWorkGroup(threadManager, breakConnection, reconnectExceptionListener);
 
-        final AsyncInputStream in = new AsyncInputStream(inputStream, workGroup, this::createMessage, reconnectConfig);
-        final AsyncOutputStream out = buildOutputStream(workGroup, outputStream);
+        in = new AsyncInputStream(inputStream, workGroup, this::createMessage, reconnectConfig);
+        out = buildOutputStream(workGroup, outputStream);
 
         final List<AtomicReference<MerkleNode>> reconstructedRoots = new ArrayList<>();
 
-        final boolean rootScheduled = receiveNextSubtree(workGroup, in, out, reconstructedRoots);
+        final boolean rootScheduled = receiveNextSubtree(workGroup, reconstructedRoots);
         assert rootScheduled;
 
         in.start();
@@ -263,7 +267,25 @@ public class LearningSynchronizer implements ReconnectNodeCount {
     }
 
     private SelfSerializable createMessage(final int viewId) {
-        final LearnerTreeView<?> view = views.get(viewId);
+        LearnerTreeView<?> view = views.get(viewId);
+        if (view == null) {
+            // In rare cases, teacher starts sending messages for a custom view, but learner doesn't
+            // know about this view yet. It may happen, because messages are received in one thread
+            // (async input stream), but processed asynchronously on another thread (learner push
+            // task). In this case, just wait a little bit
+            final long start = System.currentTimeMillis();
+            do {
+                view = views.get(viewId);
+                if (view != null) {
+                    break;
+                }
+                try {
+                    Thread.sleep(1);
+                } catch (final InterruptedException e) {
+                    break;
+                }
+            } while (System.currentTimeMillis() - start < 60 * 1000);
+        }
         if (view == null) {
             throw new MerkleSynchronizationException("Cannot create message, unknown view: " + viewId);
         }
@@ -284,13 +306,13 @@ public class LearningSynchronizer implements ReconnectNodeCount {
         final LearnerTreeView<?> view = nodeTreeView(root);
         views.put(viewId, view);
         rootsToReceive.add(root);
+        if (view.needsDedicatedQueue()) {
+            in.setNeedsDedicatedQueue(viewId);
+        }
     }
 
     private synchronized boolean receiveNextSubtree(
-            final StandardWorkGroup workGroup,
-            final AsyncInputStream in,
-            final AsyncOutputStream out,
-            List<AtomicReference<MerkleNode>> reconstructedRoots) {
+            final StandardWorkGroup workGroup, List<AtomicReference<MerkleNode>> reconstructedRoots) {
         if (viewsInProgress.incrementAndGet() > reconnectConfig.maxParallelSubtrees()) {
             // Max number of views is already being synchronized
             viewsInProgress.decrementAndGet();
@@ -310,6 +332,11 @@ public class LearningSynchronizer implements ReconnectNodeCount {
             throw new MerkleSynchronizationException("Cannot schedule next subtree, unknown view: " + viewId);
         }
 
+        if (viewId == 0) {
+            // Root view
+            in.setNeedsDedicatedQueue(viewId);
+        }
+
         logger.info(RECONNECT.getMarker(), "Receiving tree rooted with route {}", route);
 
         final AtomicReference<MerkleNode> reconstructedRoot = new AtomicReference<>();
@@ -326,16 +353,18 @@ public class LearningSynchronizer implements ReconnectNodeCount {
                     // If this is the first received root, set it as the root for this learning synchronizer
                     newRoot.compareAndSet(null, reconstructedRoot.get());
 
-                    viewsInProgress.decrementAndGet();
+                    final int wasInProgress = viewsInProgress.decrementAndGet();
+                    boolean newScheduled = false;
                     if (success) {
-                        boolean nextViewScheduled = receiveNextSubtree(workGroup, in, out, reconstructedRoots);
+                        boolean nextViewScheduled = receiveNextSubtree(workGroup, reconstructedRoots);
                         while (nextViewScheduled) {
-                            nextViewScheduled = receiveNextSubtree(workGroup, in, out, reconstructedRoots);
+                            newScheduled = true;
+                            nextViewScheduled = receiveNextSubtree(workGroup, reconstructedRoots);
                         }
                     }
 
                     // Check if it was the last subtree to sync
-                    if (viewsInProgress.get() == 0) {
+                    if ((wasInProgress == 0) && !newScheduled) {
                         in.close();
                         out.close();
                     }

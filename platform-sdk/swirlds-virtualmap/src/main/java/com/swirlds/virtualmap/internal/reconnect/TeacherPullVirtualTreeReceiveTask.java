@@ -55,7 +55,6 @@ public class TeacherPullVirtualTreeReceiveTask {
     private final Map<Integer, TeacherTreeView<?>> views;
 
     private final Consumer<Integer> completeListener;
-    private final Consumer<Exception> exceptionListener;
 
     private final AtomicInteger tasksRunning;
     private final Set<Integer> viewsInProgress;
@@ -75,7 +74,6 @@ public class TeacherPullVirtualTreeReceiveTask {
             final AsyncOutputStream out,
             final Map<Integer, TeacherTreeView<?>> views,
             final Consumer<Integer> completeListener,
-            final Consumer<Exception> exceptionListener,
             final AtomicInteger tasksRunning,
             final Set<Integer> viewsInProgress) {
         this.workGroup = workGroup;
@@ -83,7 +81,6 @@ public class TeacherPullVirtualTreeReceiveTask {
         this.out = out;
         this.views = views;
         this.completeListener = completeListener;
-        this.exceptionListener = exceptionListener;
         this.tasksRunning = tasksRunning;
         this.viewsInProgress = viewsInProgress;
 
@@ -104,7 +101,7 @@ public class TeacherPullVirtualTreeReceiveTask {
         long requestCounter = 0;
         final long start = System.currentTimeMillis();
         try {
-            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
                 final PullVirtualTreeRequest request = in.readAnticipatedMessage();
                 if (request == null) {
                     if (!in.isAlive()) {
@@ -145,20 +142,23 @@ public class TeacherPullVirtualTreeReceiveTask {
             if (tasksRunning.decrementAndGet() == 0) {
                 // Check if all views have been fully synchronized
                 if (!viewsInProgress.isEmpty()) {
-                    exceptionListener.accept(new MerkleSynchronizationException(
-                            "Teacher receiving tasks are complete, but some views aren't synchronized still"));
+                    throw new MerkleSynchronizationException(
+                            "Teacher receiving tasks are complete, but some views aren't synchronized still");
                 }
             }
             final long end = System.currentTimeMillis();
             final double requestRate = (end == start) ? 0.0 : (double) requestCounter / (end - start);
             logger.info(
                     RECONNECT.getMarker(),
-                    "Teacher's receiving task: duration={}ms, requests={}, rate={}",
+                    "Teacher task: duration={}ms, requests={}, rate={}",
                     end - start,
                     requestCounter,
                     requestRate);
+        } catch (final InterruptedException ex) {
+            logger.warn(RECONNECT.getMarker(), "Teacher task is interrupted");
+            Thread.currentThread().interrupt();
         } catch (final Exception ex) {
-            exceptionListener.accept(ex);
+            workGroup.handleError(ex);
         }
     }
 }

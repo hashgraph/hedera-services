@@ -267,7 +267,7 @@ public class TeachingSynchronizer {
             final String rte = rt == null ? "[]" : rt.getRoute().toString();
             logger.info(RECONNECT.getMarker(), "Finished sending tree with route {}", rte);
 
-            final int wasProgress = viewsInProgress.decrementAndGet();
+            final int wasInProgress = viewsInProgress.decrementAndGet();
 
             boolean newScheduled = false;
             boolean nextViewScheduled = synchronizeNextSubtree(workGroup, in, out);
@@ -277,7 +277,7 @@ public class TeachingSynchronizer {
             }
 
             // Check if this was the last subtree to sync
-            if ((wasProgress == 0) && !newScheduled) {
+            if ((wasInProgress == 0) && !newScheduled) {
                 try {
                     in.close();
                     in.waitForCompletion();
@@ -289,21 +289,8 @@ public class TeachingSynchronizer {
                 }
             }
         };
-        final Consumer<Exception> exceptionListener = ex -> {
-            logger.error(RECONNECT.getMarker(), "Exception while sending a tree");
-            workGroup.handleError(ex);
-        };
         view.startTeacherTasks(
-                this,
-                viewId,
-                time,
-                workGroup,
-                in,
-                out,
-                this::reconnectRootEncountered,
-                views,
-                completeListener,
-                exceptionListener);
+                this, viewId, time, workGroup, in, out, this::reconnectRootEncountered, views, completeListener);
         return true;
     }
 

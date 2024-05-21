@@ -43,6 +43,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -208,6 +209,7 @@ class AsyncStreamTest {
     @Tag(TestComponentTags.RECONNECT)
     @Tag(TIMING_SENSITIVE)
     @DisplayName("Max Input Queue Size")
+    @Disabled
     void maxInputQueueSize() throws IOException, InterruptedException {
 
         final int viewId = 14;

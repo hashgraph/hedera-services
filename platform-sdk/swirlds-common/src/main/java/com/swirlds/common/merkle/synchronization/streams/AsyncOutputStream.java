@@ -155,6 +155,11 @@ public class AsyncOutputStream implements AutoCloseable {
                     }
                 }
             }
+            // Handle remaining queued messages
+            boolean wasNotEmpty = handleQueuedMessages();
+            while (wasNotEmpty) {
+                wasNotEmpty = handleQueuedMessages();
+            }
             flush();
             try {
                 // Send reconnect termination marker

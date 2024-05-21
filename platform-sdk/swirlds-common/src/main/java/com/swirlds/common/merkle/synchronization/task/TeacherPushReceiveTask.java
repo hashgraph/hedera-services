@@ -16,6 +16,7 @@
 
 package com.swirlds.common.merkle.synchronization.task;
 
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
@@ -45,7 +46,6 @@ public class TeacherPushReceiveTask<T> {
     private final AtomicBoolean senderIsFinished;
 
     private final Consumer<Integer> completeListener;
-    private final Consumer<Exception> exceptionListener;
 
     /**
      * Create a thread for receiving responses to queries from the learner.
@@ -65,15 +65,13 @@ public class TeacherPushReceiveTask<T> {
             final AsyncInputStream in,
             final TeacherTreeView<T> view,
             final AtomicBoolean senderIsFinished,
-            final Consumer<Integer> completeListener,
-            final Consumer<Exception> exceptionListener) {
+            final Consumer<Integer> completeListener) {
         this.workGroup = workGroup;
         this.viewId = viewId;
         this.in = in;
         this.view = view;
         this.senderIsFinished = senderIsFinished;
         this.completeListener = completeListener;
-        this.exceptionListener = exceptionListener;
     }
 
     public void start() {
@@ -85,7 +83,7 @@ public class TeacherPushReceiveTask<T> {
             boolean finished = senderIsFinished.get();
             boolean responseExpected = view.isResponseExpected();
 
-            while ((in.isAlive()) && (!finished || responseExpected)) {
+            while ((!finished || responseExpected) && !Thread.currentThread().isInterrupted()) {
                 if (responseExpected) {
                     final QueryResponse response = in.readAnticipatedMessage(viewId);
                     final T node = view.getNodeForNextResponse();
@@ -98,11 +96,11 @@ public class TeacherPushReceiveTask<T> {
                 responseExpected = view.isResponseExpected();
             }
             completeListener.accept(viewId);
-            //        } catch (final InterruptedException ex) {
-            //            logger.warn(RECONNECT.getMarker(), "teacher's receiving thread interrupted");
-            //            Thread.currentThread().interrupt();
+        } catch (final InterruptedException ex) {
+            logger.warn(RECONNECT.getMarker(), "teacher's receiving thread interrupted");
+            Thread.currentThread().interrupt();
         } catch (final Exception ex) {
-            exceptionListener.accept(ex);
+            workGroup.handleError(ex);
         }
     }
 }

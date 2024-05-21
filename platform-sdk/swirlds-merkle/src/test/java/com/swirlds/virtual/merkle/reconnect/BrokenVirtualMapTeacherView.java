@@ -88,19 +88,9 @@ public class BrokenVirtualMapTeacherView<K extends VirtualKey, V extends Virtual
             final AsyncOutputStream out,
             final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
             final Map<Integer, TeacherTreeView<?>> views,
-            final Consumer<Integer> completeListener,
-            final Consumer<Exception> exceptionListener) {
+            final Consumer<Integer> completeListener) {
         baseView.startTeacherTasks(
-                teachingSynchronizer,
-                viewId,
-                time,
-                workGroup,
-                in,
-                out,
-                subtreeListener,
-                views,
-                completeListener,
-                exceptionListener);
+                teachingSynchronizer, viewId, time, workGroup, in, out, subtreeListener, views, completeListener);
     }
 
     @Override

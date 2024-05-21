@@ -59,8 +59,7 @@ public interface TeacherTreeView<T>
             final AsyncOutputStream out,
             final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
             final Map<Integer, TeacherTreeView<?>> views,
-            final Consumer<Integer> completeListener,
-            final Consumer<Exception> exceptionListener);
+            final Consumer<Integer> completeListener);
 
     /**
      * Aborts the reconnect process on the teacher side. It may be used to release resources, when

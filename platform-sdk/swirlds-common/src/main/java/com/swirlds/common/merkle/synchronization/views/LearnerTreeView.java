@@ -165,4 +165,14 @@ public interface LearnerTreeView<T> extends LearnerExpectedLessonQueue<T>, Learn
      * @return a new message object used by this learner view to receive data from the teacher
      */
     SelfSerializable createMessage();
+
+    /**
+     * Indicates whether this learner view uses a shared or a dedicated message queue when
+     * reading messages from an async input stream.
+     *
+     * @return true if this view uses a dedicated async input stream queue; false otherwise
+     */
+    default boolean needsDedicatedQueue() {
+        return true;
+    }
 }

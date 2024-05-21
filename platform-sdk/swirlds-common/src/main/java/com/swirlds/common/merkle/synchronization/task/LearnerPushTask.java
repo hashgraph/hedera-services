@@ -17,7 +17,6 @@
 package com.swirlds.common.merkle.synchronization.task;
 
 import static com.swirlds.common.constructable.ClassIdFormatter.classIdString;
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -206,7 +205,6 @@ public class LearnerPushTask<T> {
             out.sendAsync(viewId, new QueryResponse(nodeAlreadyPresent));
 
             view.expectLessonFor(newParent, childIndex, originalChild, nodeAlreadyPresent);
-            //            in.anticipateMessage();
         }
     }
 
@@ -240,9 +238,8 @@ public class LearnerPushTask<T> {
 
         try (view) {
             view.expectLessonFor(null, 0, view.getOriginalRoot(), false);
-            //            in.anticipateMessage();
 
-            while (view.hasNextExpectedLesson()) {
+            while (view.hasNextExpectedLesson() && !Thread.currentThread().isInterrupted()) {
 
                 final ExpectedLesson<T> expectedLesson = view.getNextExpectedLesson();
                 final Lesson<T> lesson = in.readAnticipatedMessage(viewId);
@@ -270,11 +267,10 @@ public class LearnerPushTask<T> {
             logger.info(RECONNECT.getMarker(), "learner thread finished the learning loop for the current subtree");
             success = true;
         } catch (final InterruptedException ex) {
-            logger.warn(RECONNECT.getMarker(), "learner thread interrupted");
+            logger.warn(RECONNECT.getMarker(), "Learner thread interrupted");
             Thread.currentThread().interrupt();
         } catch (final Exception ex) {
-            logger.error(EXCEPTION.getMarker(), "exception in the learner's receiving thread", ex);
-            throw new MerkleSynchronizationException("exception in the learner's receiving thread", ex);
+            workGroup.handleError(ex);
         } finally {
             completeListener.accept(success);
         }

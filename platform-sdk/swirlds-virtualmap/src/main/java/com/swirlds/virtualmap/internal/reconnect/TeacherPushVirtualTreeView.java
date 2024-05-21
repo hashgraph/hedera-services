@@ -139,8 +139,7 @@ public final class TeacherPushVirtualTreeView<K extends VirtualKey, V extends Vi
             final AsyncOutputStream out,
             final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
             final Map<Integer, TeacherTreeView<?>> views,
-            final Consumer<Integer> completeListener,
-            final Consumer<Exception> exceptionListener) {
+            final Consumer<Integer> completeListener) {
         final AtomicBoolean senderIsFinished = new AtomicBoolean(false);
 
         in.setNeedsDedicatedQueue(viewId);
@@ -151,8 +150,8 @@ public final class TeacherPushVirtualTreeView<K extends VirtualKey, V extends Vi
         final TeacherPushSendTask<Long> teacherSendTask = new TeacherPushSendTask<>(
                 viewId, time, reconnectConfig, workGroup, in, out, subtreeListener, thisView, senderIsFinished);
         teacherSendTask.start();
-        final TeacherPushReceiveTask<Long> teacherReceiveTask = new TeacherPushReceiveTask<>(
-                workGroup, viewId, in, thisView, senderIsFinished, completeListener, exceptionListener);
+        final TeacherPushReceiveTask<Long> teacherReceiveTask =
+                new TeacherPushReceiveTask<>(workGroup, viewId, in, thisView, senderIsFinished, completeListener);
         teacherReceiveTask.start();
     }
 

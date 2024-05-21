@@ -27,7 +27,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
-import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
@@ -201,7 +200,7 @@ public class TeacherPushSendTask<T> {
     private void run() {
         try {
             out.sendAsync(viewId, buildDataLesson(view.getRoot()));
-            while (view.areThereNodesToHandle()) {
+            while (view.areThereNodesToHandle() && !Thread.currentThread().isInterrupted()) {
                 rateLimit();
                 final T node = view.getNextNodeToHandle();
                 sendLesson(node);
@@ -213,10 +212,10 @@ public class TeacherPushSendTask<T> {
             out.whenCurrentMessagesProcessed(allMessagesSerialized::countDown);
             allMessagesSerialized.await();
         } catch (final InterruptedException ex) {
-            logger.warn(RECONNECT.getMarker(), "teacher's sending thread interrupted");
+            logger.warn(RECONNECT.getMarker(), "Teacher sending task is interrupted");
             Thread.currentThread().interrupt();
         } catch (final Exception ex) {
-            throw new MerkleSynchronizationException("exception in the teacher's sending thread", ex);
+            workGroup.handleError(ex);
         } finally {
             senderIsFinished.set(true);
         }

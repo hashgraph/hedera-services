@@ -16,6 +16,8 @@
 
 package com.swirlds.virtualmap.internal.reconnect;
 
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
+
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.util.concurrent.CountDownLatch;
@@ -98,7 +100,7 @@ public class LearnerPullVirtualTreeReceiveTask {
             boolean finished = senderIsFinished.get();
             boolean responseExpected = expectedResponses.get() > 0;
 
-            while (!finished || responseExpected) {
+            while ((!finished || responseExpected) && !Thread.currentThread().isInterrupted()) {
                 if (responseExpected) {
                     final PullVirtualTreeResponse response = in.readAnticipatedMessage(viewId);
                     view.responseReceived(response);
@@ -114,6 +116,9 @@ public class LearnerPullVirtualTreeReceiveTask {
                 responseExpected = expectedResponses.get() > 0;
             }
             success = true;
+        } catch (final InterruptedException ex) {
+            logger.warn(RECONNECT.getMarker(), "Learner receiving task is interrupted");
+            Thread.currentThread().interrupt();
         } catch (final Exception ex) {
             workGroup.handleError(ex);
         } finally {

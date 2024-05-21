@@ -166,8 +166,6 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
             final Consumer<Boolean> completeListener) {
         this.nodeCount = learningSynchronizer;
 
-        in.setNeedsDedicatedQueue(viewId);
-
         final AtomicBoolean senderIsFinished = new AtomicBoolean();
         final CountDownLatch rootResponseReceived = new CountDownLatch(1);
         final AtomicLong expectedResponses = new AtomicLong(0);

@@ -16,6 +16,8 @@
 
 package com.swirlds.virtualmap.internal.reconnect;
 
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
+
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
@@ -121,10 +123,11 @@ public class LearnerPullVirtualTreeSendTask {
             out.sendAsync(viewId, new PullVirtualTreeRequest(Path.ROOT_PATH, new Hash()));
             responsesExpected.incrementAndGet();
             if (!rootResponseReceived.await(rootResponseTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
-                throw new MerkleSynchronizationException("Timed out waiting for root node response from the teacher " + viewId);
+                throw new MerkleSynchronizationException(
+                        "Timed out waiting for root node response from the teacher " + viewId);
             }
 
-            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
                 final long path = traversalOrder.getNextPathToSend();
                 if (path < Path.INVALID_PATH) {
                     Thread.onSpinWait();
@@ -138,6 +141,9 @@ public class LearnerPullVirtualTreeSendTask {
                 }
                 responsesExpected.incrementAndGet();
             }
+        } catch (final InterruptedException ex) {
+            logger.warn(RECONNECT.getMarker(), "Learner sending task is interrupted");
+            Thread.currentThread().interrupt();
         } catch (final Exception ex) {
             workGroup.handleError(ex);
         } finally {

@@ -86,8 +86,7 @@ public class TeacherPushMerkleTreeView implements TeacherTreeView<NodeToSend> {
             final AsyncOutputStream out,
             final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
             final Map<Integer, TeacherTreeView<?>> views,
-            final Consumer<Integer> completeListener,
-            final Consumer<Exception> exceptionListener) {
+            final Consumer<Integer> completeListener) {
         final AtomicBoolean senderIsFinished = new AtomicBoolean(false);
 
         in.setNeedsDedicatedQueue(viewId);
@@ -95,8 +94,8 @@ public class TeacherPushMerkleTreeView implements TeacherTreeView<NodeToSend> {
         final TeacherPushSendTask<NodeToSend> teacherPushSendTask = new TeacherPushSendTask<>(
                 viewId, time, reconnectConfig, workGroup, in, out, subtreeListener, this, senderIsFinished);
         teacherPushSendTask.start();
-        final TeacherPushReceiveTask<NodeToSend> teacherPushReceiveTask = new TeacherPushReceiveTask<>(
-                workGroup, viewId, in, this, senderIsFinished, completeListener, exceptionListener);
+        final TeacherPushReceiveTask<NodeToSend> teacherPushReceiveTask =
+                new TeacherPushReceiveTask<>(workGroup, viewId, in, this, senderIsFinished, completeListener);
         teacherPushReceiveTask.start();
     }
 
