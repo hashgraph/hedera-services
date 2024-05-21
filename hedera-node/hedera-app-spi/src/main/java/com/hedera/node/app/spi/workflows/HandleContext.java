@@ -281,7 +281,9 @@ public interface HandleContext {
      */
     SystemPrivilege hasPrivilegedAuthorization();
 
-    /** Gets the {@link RecordCache}. */
+    /** Gets the {@link RecordCache}.
+     * @return the {@link RecordCache}
+     */
     @NonNull
     RecordCache recordCache();
 
@@ -477,28 +479,6 @@ public interface HandleContext {
             AccountID syntheticPayer);
 
     /**
-     * Dispatches a reversible preceding transaction that already has an ID.
-     *
-     * @param txBody            the {@link TransactionBody} of the transaction to dispatch
-     * @param recordBuilderClass the record builder class of the transaction
-     * @param verifier         a {@link Predicate} that will be used to validate primitive keys
-     * @return the record builder of the transaction
-     * @param <T> the record type
-     * @throws IllegalArgumentException if the transaction body did not have an id
-     */
-    default <T> T dispatchReversiblePrecedingTransaction(
-            @NonNull final TransactionBody txBody,
-            @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> verifier) {
-        throwIfMissingPayerId(txBody);
-        return dispatchReversiblePrecedingTransaction(
-                txBody,
-                recordBuilderClass,
-                verifier,
-                txBody.transactionIDOrThrow().accountIDOrThrow());
-    }
-
-    /**
      * Dispatches a child transaction.
      *
      * <p>A child transaction depends on the current transaction. That means if the current transaction fails,
@@ -525,6 +505,7 @@ public interface HandleContext {
      * @throws NullPointerException if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
      * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
+     * @param <T> the record type
      */
     @NonNull
     <T> T dispatchChildTransaction(
@@ -627,19 +608,6 @@ public interface HandleContext {
     <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
 
     /**
-     * Adds a preceding child record builder to the list of record builders. If the current {@link HandleContext} (or any parent
-     * context) is rolled back, all child record builders will be reverted.
-     *
-     * @param recordBuilderClass the record type
-     * @return the new child record builder
-     * @param <T> the record type
-     * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
-     * @throws IllegalArgumentException if the record builder type is unknown to the app
-     */
-    @NonNull
-    <T> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
-
-    /**
      * Adds a removable child record builder to the list of record builders. Unlike a regular child record builder,
      * a removable child record builder is removed, if the current {@link HandleContext} (or any parent context) is
      * rolled back.
@@ -663,6 +631,7 @@ public interface HandleContext {
 
     /**
      * Revert the childRecords from the checkpoint.
+     * @param recordListCheckPoint the checkpoint to revert from
      */
     void revertRecordsFrom(@NonNull RecordListCheckPoint recordListCheckPoint);
 

@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle.stack;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.streams.v7.TransactionOutput;
 import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
 import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.WrappedHederaState;
@@ -26,8 +27,10 @@ import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -38,6 +41,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     private final HederaState root;
     private final Deque<WrappedHederaState> stack = new ArrayDeque<>();
     private final Map<String, WritableStatesStack> writableStatesMap = new HashMap<>();
+    List<TransactionOutput> pendingRecords = new ArrayList<>();
 
     /**
      * Constructs a new {@link SavepointStackImpl} with the given root state.

@@ -932,13 +932,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     @Override
     @NonNull
-    public <T> T addPrecedingChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
-        final var result = recordListBuilder.addPreceding(configuration(), LIMITED_CHILD_RECORDS);
-        return castRecordBuilder(result, recordBuilderClass);
-    }
-
-    @Override
-    @NonNull
     public <T> T addRemovableChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
         final var result = recordListBuilder.addRemovableChild(configuration());
         return castRecordBuilder(result, recordBuilderClass);
