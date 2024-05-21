@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressF
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
@@ -45,6 +46,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
@@ -5127,9 +5129,16 @@ public class TraceabilitySuite {
     @HapiTest
     @Order(Integer.MAX_VALUE)
     public final Stream<DynamicTest> assertSidecars() {
-        return defaultHapiSpec("assertSidecars")
-                .given()
-                .when(tearDownSidecarWatcher())
-                .then(assertNoMismatchedSidecars());
+        return hapiTest(
+                // Ensure the final record file and sidecars will be
+                // externalized before tearing down the sidecar watcher
+                // (1) Ensure we are in a new block period
+                sleepFor(2500),
+                // (2) Submit a transaction
+                cryptoTransfer((spec, b) -> {}).payingWith(GENESIS),
+                // (3) Wait long enough for the files to be written
+                sleepFor(500),
+                tearDownSidecarWatcher(),
+                assertNoMismatchedSidecars());
     }
 }
