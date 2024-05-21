@@ -31,10 +31,8 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
@@ -61,7 +59,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -115,20 +112,16 @@ class PcesFileReaderTests {
                 .getOrCreateConfig();
 
         final Metrics metrics = new NoOpMetrics();
-
-        final TestFileSystemManager fileSystemManager = new TestFileSystemManager(testDirectory);
-        fileSystemManager.setBin(TestRecycleBin.getInstance());
         return TestPlatformContextBuilder.create()
                 .withConfiguration(configuration)
                 .withMetrics(metrics)
-                .withFileSystemManager((m, t) -> fileSystemManager)
+                .withRecycleBin(TestRecycleBin.getInstance())
+                .withTestFileSystemManagerUnder(testDirectory)
                 .build();
     }
 
     private PlatformContext buildContext(
-            final boolean permitGaps,
-            @NonNull final AncientMode ancientMode,
-            BiFunction<Metrics, Time, RecycleBin> recycleBinProvider) {
+            final boolean permitGaps, @NonNull final AncientMode ancientMode, @NonNull final Path recycleBinPath) {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(PcesConfig_.DATABASE_DIRECTORY, testDirectory.resolve("data"))
                 .withValue(PcesConfig_.PREFERRED_FILE_SIZE_MEGABYTES, 5)
@@ -139,13 +132,18 @@ class PcesFileReaderTests {
 
         final Metrics metrics = new NoOpMetrics();
 
-        final TestFileSystemManager fileSystemManager = new TestFileSystemManager(testDirectory);
-        fileSystemManager.setBin(recycleBinProvider.apply(metrics, Time.getCurrent()));
-
         return TestPlatformContextBuilder.create()
                 .withConfiguration(configuration)
                 .withMetrics(metrics)
-                .withFileSystemManager((m, t) -> fileSystemManager)
+                .withTime(Time.getCurrent())
+                .withRecycleBin(new RecycleBinImpl(
+                        metrics,
+                        getStaticThreadManager(),
+                        Time.getCurrent(),
+                        recycleBinPath,
+                        TestRecycleBin.MAXIMUM_FILE_AGE,
+                        TestRecycleBin.MINIMUM_PERIOD))
+                .withTestFileSystemManagerUnder(testDirectory)
                 .build();
     }
 
@@ -539,16 +537,7 @@ class PcesFileReaderTests {
             createDummyFile(file);
         }
 
-        final PlatformContext platformContext = buildContext(
-                false,
-                ancientMode,
-                (m, t) -> new RecycleBinImpl(
-                        m,
-                        getStaticThreadManager(),
-                        t,
-                        recycleBinPath,
-                        TestRecycleBin.MAXIMUM_FILE_AGE,
-                        TestRecycleBin.MINIMUM_PERIOD));
+        final PlatformContext platformContext = buildContext(false, ancientMode, recycleBinPath);
         // Scenario 1: choose an origin that lands on the discontinuity exactly.
         final long startingRound1 = origin;
         final PcesFileTracker fileTracker1 =
@@ -647,16 +636,7 @@ class PcesFileReaderTests {
         // but it is the first file we want to iterate
         final long startAncientIdentifier = files.getFirst().getUpperBound();
 
-        final PlatformContext platformContext = buildContext(
-                false,
-                ancientMode,
-                (m, t) -> new RecycleBinImpl(
-                        m,
-                        getStaticThreadManager(),
-                        t,
-                        testDirectory.resolve("recycle-bin"),
-                        TestRecycleBin.MAXIMUM_FILE_AGE,
-                        TestRecycleBin.MINIMUM_PERIOD));
+        final PlatformContext platformContext = buildContext(false, ancientMode, testDirectory.resolve("recycle-bin"));
 
         // Scenario 1: choose an origin that lands on the discontinuity exactly.
         final long startingRound1 = origin;
@@ -755,16 +735,7 @@ class PcesFileReaderTests {
         // but it is the first file we want to iterate
         final long startAncientIdentifier = filesAfterDiscontinuity.getFirst().getUpperBound();
 
-        final PlatformContext platformContext = buildContext(
-                false,
-                ancientMode,
-                (m, t) -> new RecycleBinImpl(
-                        m,
-                        getStaticThreadManager(),
-                        t,
-                        testDirectory.resolve("recycle-bin"),
-                        TestRecycleBin.MAXIMUM_FILE_AGE,
-                        TestRecycleBin.MINIMUM_PERIOD));
+        final PlatformContext platformContext = buildContext(false, ancientMode, testDirectory.resolve("recycle-bin"));
         // Scenario 1: choose an origin that lands on the discontinuity exactly.
         final long startingRound1 = origin;
         final PcesFileTracker fileTracker1 =
@@ -862,16 +833,7 @@ class PcesFileReaderTests {
         // but it is the first file we want to iterate
         final long startAncientBoundary = filesAfterDiscontinuity.getFirst().getUpperBound();
 
-        final PlatformContext platformContext = buildContext(
-                false,
-                ancientMode,
-                (m, t) -> new RecycleBinImpl(
-                        m,
-                        getStaticThreadManager(),
-                        t,
-                        testDirectory.resolve("recycle-bin"),
-                        TestRecycleBin.MAXIMUM_FILE_AGE,
-                        TestRecycleBin.MINIMUM_PERIOD));
+        final PlatformContext platformContext = buildContext(false, ancientMode, testDirectory.resolve("recycle-bin"));
 
         // Scenario 1: choose an origin that lands on the discontinuity exactly.
         final long startingRound1 = origin;
