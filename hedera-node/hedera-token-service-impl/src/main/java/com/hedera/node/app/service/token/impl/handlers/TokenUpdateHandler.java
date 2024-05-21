@@ -335,8 +335,14 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         if (op.name() != null && op.name().length() > 0) {
             builder.name(op.name());
         }
-        if (op.hasMemo() && op.memo().length() > 0) {
-            builder.memo(op.memo());
+        if (op.hasMemo()) {
+            final var memo = op.memoOrThrow();
+            // Since an tokenUpdate() system call cannot encode a difference between
+            // (1) choosing not to update the memo and (2) setting it to a blank string,
+            // we only set a blank memo if the update came from HAPI
+            if (!memo.isBlank() || isHapiCall) {
+                builder.memo(memo);
+            }
         }
         if (op.hasMetadata()) {
             builder.metadata(op.metadata());
