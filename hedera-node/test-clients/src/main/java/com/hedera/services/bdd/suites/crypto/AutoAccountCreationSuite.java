@@ -710,7 +710,8 @@ public class AutoAccountCreationSuite extends HapiSuite {
         // with the size of the sig map, depending on the lengths of the public key prefixes required
         final long approxTransferFee = 1163019L;
 
-        return propertyPreservingHapiSpec("canAutoCreateWithFungibleTokenTransfersToAlias", NONDETERMINISTIC_TRANSACTION_FEES)
+        return propertyPreservingHapiSpec(
+                        "canAutoCreateWithFungibleTokenTransfersToAlias", NONDETERMINISTIC_TRANSACTION_FEES)
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
                         overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
@@ -1174,7 +1175,8 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
                         overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
-                        newKeyNamed(TRANSFER_ALIAS), cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
+                        newKeyNamed(TRANSFER_ALIAS),
+                        cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, TRANSFER_ALIAS, ONE_HUNDRED_HBARS))
                                 .via("txn"),
@@ -1784,12 +1786,12 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 }));
     }
 
-
     @HapiTest
     final HapiSpec autoAccountCreationsUnlimitedAssociationHappyPath() {
         final var creationTime = new AtomicLong();
         final long transferFee = 185030L;
-        return propertyPreservingHapiSpec("autoAccountCreationsUnlimitedAssociationHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
+        return propertyPreservingHapiSpec(
+                        "autoAccountCreationsUnlimitedAssociationHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
                         overriding("entities.unlimitedAutoAssociationsEnabled", TRUE),
@@ -1798,8 +1800,8 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         cryptoCreate(PAYER).balance(10 * ONE_HBAR),
                         cryptoCreate(SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(cryptoTransfer(
-                        tinyBarsFromToWithAlias(SPONSOR, VALID_ALIAS, ONE_HUNDRED_HBARS),
-                        tinyBarsFromToWithAlias(CIVILIAN, VALID_ALIAS, ONE_HBAR))
+                                tinyBarsFromToWithAlias(SPONSOR, VALID_ALIAS, ONE_HUNDRED_HBARS),
+                                tinyBarsFromToWithAlias(CIVILIAN, VALID_ALIAS, ONE_HBAR))
                         .via(TRANSFER_TXN)
                         .payingWith(PAYER))
                 .then(
@@ -1812,7 +1814,9 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         childRecordsCheck(
                                 TRANSFER_TXN,
                                 SUCCESS,
-                                recordWith().status(SUCCESS).fee(EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE_UNLIMITED_ASSOCIATIONS)),
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .fee(EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE_UNLIMITED_ASSOCIATIONS)),
                         assertionsHold((spec, opLog) -> {
                             final var lookup = getTxnRecord(TRANSFER_TXN)
                                     .andAllChildRecords()
@@ -1844,7 +1848,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .logged()));
     }
 
-
     @HapiTest
     final HapiSpec transferHbarsToEVMAddressAliasUnlimitedAssociations() {
 
@@ -1871,8 +1874,8 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         }))
                 .when(withOpContext((spec, opLog) -> {
                     var op1 = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
-                            .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
-                            .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
+                                    .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
+                                    .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
                             .signedBy(DEFAULT_PAYER, PARTY)
                             .via(HBAR_XFER);
 
