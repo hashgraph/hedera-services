@@ -29,6 +29,7 @@ import static com.hedera.node.app.service.token.impl.util.CryptoTransferHelper.c
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferHelper.createNftTransfer;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.PERMIT_PAUSED;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsableForAliasedId;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -178,7 +179,8 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         final var relStore = context.writableStore(WritableTokenRelationStore.class);
 
         final var rejectingAccount =
-                getIfUsable(rejectingAccountID, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
+                getIfUsableForAliasedId(rejectingAccountID, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
+        final var accountID = rejectingAccount.accountIdOrThrow();
 
         // Prepare collections for processing
         final var tokenTransferLists = new ArrayList<TokenTransferList>();
@@ -189,7 +191,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
             if (rejection.hasFungibleToken()) {
                 processFungibleTokenRejection(
                         rejection,
-                        rejectingAccountID,
+                        accountID,
                         tokenTransferLists,
                         tokenStore,
                         relStore,
@@ -198,7 +200,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
             } else if (rejection.hasNft()) {
                 processNftRejectionAndRemoveSpenderAllowance(
                         requireNonNull(rejection.nft()),
-                        rejectingAccountID,
+                        accountID,
                         tokenTransferLists,
                         nftStore,
                         tokenStore,
