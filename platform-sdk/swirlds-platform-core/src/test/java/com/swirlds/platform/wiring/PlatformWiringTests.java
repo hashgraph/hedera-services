@@ -49,6 +49,7 @@ import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.pool.TransactionPool;
 import com.swirlds.platform.publisher.PlatformPublisher;
 import com.swirlds.platform.state.hasher.StateHasher;
+import com.swirlds.platform.state.hashlogger.HashLogger;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
@@ -60,7 +61,6 @@ import com.swirlds.platform.state.snapshot.StateSnapshotManager;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.status.PlatformStatusNexus;
 import com.swirlds.platform.system.status.StatusStateMachine;
-import com.swirlds.platform.util.HashLogger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -103,7 +103,8 @@ class PlatformWiringTests {
                 .withStaleEventDetector(mock(DefaultStaleEventDetector.class))
                 .withTransactionResubmitter(mock(TransactionResubmitter.class))
                 .withTransactionPool(mock(TransactionPool.class))
-                .withStateSnapshotManager(mock(StateSnapshotManager.class));
+                .withStateSnapshotManager(mock(StateSnapshotManager.class))
+                .withHashLogger(mock(HashLogger.class));
 
         // Gossip is a special case, it's not like other components.
         // Currently we just have a facade between gossip and the wiring framework.
@@ -126,7 +127,6 @@ class PlatformWiringTests {
                 mock(EventWindowManager.class),
                 mock(ConsensusRoundHandler.class),
                 mock(IssHandler.class),
-                mock(HashLogger.class),
                 mock(BirthRoundMigrationShim.class),
                 mock(LatestCompleteStateNotifier.class),
                 mock(SignedStateNexus.class),
