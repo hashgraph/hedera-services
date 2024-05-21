@@ -203,6 +203,7 @@ public class Turtle {
                 future.get();
             } catch (final InterruptedException e) {
                 Thread.currentThread().interrupt();
+                throw new RuntimeException("Interrupted while ticking nodes", e);
             } catch (final ExecutionException e) {
                 throw new RuntimeException(e);
             }
