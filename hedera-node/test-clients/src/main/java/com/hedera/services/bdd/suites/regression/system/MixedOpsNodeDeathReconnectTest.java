@@ -58,7 +58,7 @@ public class MixedOpsNodeDeathReconnectTest {
                         // which will cause an error that address is already in use when restarting nodes.
                         // Sleep long enough (120s or 180 secs for TIME_WAIT status to be finished based on
                         // kernel settings), so restarting node succeeds.
-                        sleepFor(30_000))
+                        sleepFor(180_000))
                 .when(
                         // Submit operations when node 2 is down
                         MixedOperations.burstOfTps(MIXED_OPS_BURST_TPS, MIXED_OPS_BURST_DURATION),
