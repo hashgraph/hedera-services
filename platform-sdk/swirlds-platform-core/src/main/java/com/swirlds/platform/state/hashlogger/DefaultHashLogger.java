@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.util;
+package com.swirlds.platform.state.hashlogger;
 
 import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -32,72 +33,82 @@ import org.apache.logging.log4j.message.MessageFactory;
 import org.apache.logging.log4j.message.ParameterizedMessageFactory;
 
 /**
- * Logger responsible for logging node hashes to the swirlds-hashstream file.
- *
- * <p>HashLogger will offer tasks to generate and log hashes from the provided signed states ... to a task scheduler.
- * The implementation makes use of log4j and will make use of log4j configuration to configure how the log entries are
- * outputted.</p>
+ * A default implementation of a {@link HashLogger}.
  */
-public class HashLogger {
-    private static final Logger logger = LogManager.getLogger(HashLogger.class);
+public class DefaultHashLogger implements HashLogger {
+
+    private static final Logger logger = LogManager.getLogger(DefaultHashLogger.class);
+
     private static final MessageFactory MESSAGE_FACTORY = ParameterizedMessageFactory.INSTANCE;
     private final AtomicLong lastRoundLogged = new AtomicLong(-1);
-    private final StateConfig stateConfig;
+    private final int depth;
     private final Logger logOutput; // NOSONAR: selected logger to output to.
     private final boolean isEnabled;
 
     /**
      * Construct a HashLogger.
      *
-     * @param stateConfig   configuration for the current state.
+     * @param platformContext the platform context
      */
-    public HashLogger(@NonNull final StateConfig stateConfig) {
-        this(stateConfig, logger);
+    public DefaultHashLogger(@NonNull final PlatformContext platformContext) {
+        this(platformContext, logger);
     }
 
-    // Visible for testing
-    HashLogger(@NonNull final StateConfig stateConfig, @NonNull final Logger logOutput) {
-        this.stateConfig = Objects.requireNonNull(stateConfig);
+    /**
+     * Internal constructor visible for testing.
+     *
+     * @param platformContext the platform context
+     * @param logOutput       the logger to write to
+     */
+    DefaultHashLogger(@NonNull final PlatformContext platformContext, @NonNull final Logger logOutput) {
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        depth = stateConfig.debugHashDepth();
         isEnabled = stateConfig.enableHashStreamLogging();
         this.logOutput = Objects.requireNonNull(logOutput);
-    }
-
-    private void log(final SignedState signedState) {
-        final long currentRound = signedState.getRound();
-        final long prevRound = lastRoundLogged.getAndUpdate(value -> Math.max(value, currentRound));
-
-        if (prevRound >= 0 && currentRound - prevRound > 1) {
-            // One or more rounds skipped.
-            logOutput.info(
-                    STATE_HASH.getMarker(),
-                    () -> MESSAGE_FACTORY.newMessage(
-                            "*** Several rounds skipped. Round received {}. Previously received {}.",
-                            currentRound,
-                            prevRound));
-        }
-
-        if (currentRound > prevRound) {
-            logOutput.info(STATE_HASH.getMarker(), () -> generateLogMessage(signedState));
-        }
     }
 
     /**
      * Delegates extraction and logging of the signed state's hashes
      *
-     * @param signedState the signed state to retrieve hash information from and log.
+     * @param reservedState the signed state to retrieve hash information from and log.
      */
-    public void logHashes(@NonNull final ReservedSignedState signedState) {
-        try (signedState) {
+    public void logHashes(@NonNull final ReservedSignedState reservedState) {
+        try (reservedState) {
             if (!isEnabled) {
                 return;
             }
-            log(signedState.get());
+
+            final SignedState signedState = reservedState.get();
+
+            final long currentRound = signedState.getRound();
+            final long prevRound = lastRoundLogged.getAndUpdate(value -> Math.max(value, currentRound));
+
+            if (prevRound >= 0 && currentRound - prevRound > 1) {
+                // One or more rounds skipped.
+                logOutput.info(
+                        STATE_HASH.getMarker(),
+                        () -> MESSAGE_FACTORY.newMessage(
+                                "*** Several rounds skipped. Round received {}. Previously received {}.",
+                                currentRound,
+                                prevRound));
+            }
+
+            if (currentRound > prevRound) {
+                logOutput.info(STATE_HASH.getMarker(), () -> generateLogMessage(signedState));
+            }
         }
     }
 
+    /**
+     * Generate the actual log message. Packaged in a lambda in case the logging framework decides not to log it.
+     *
+     * @param signedState the signed state to log
+     * @return the log message
+     */
+    @NonNull
     private Message generateLogMessage(@NonNull final SignedState signedState) {
         final State state = signedState.getState();
-        final String platformInfo = state.getInfoString(stateConfig.debugHashDepth());
+        final String platformInfo = state.getInfoString(depth);
 
         return MESSAGE_FACTORY.newMessage(
                 """

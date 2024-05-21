@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state.iss;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
@@ -40,20 +41,19 @@ public class IssHandler {
     /**
      * Create an object responsible for handling ISS events.
      *
-     * @param stateConfig           settings for the state
+     * @param platformContext       the platform context
      * @param haltRequestedConsumer consumer to invoke when a system halt is desired
      * @param fatalErrorConsumer    consumer to invoke if a fatal error occurs
      * @param issScratchpad         scratchpad for ISS data, is persistent across restarts
      */
     public IssHandler(
-            @NonNull final StateConfig stateConfig,
+            @NonNull final PlatformContext platformContext,
             @NonNull final Consumer<String> haltRequestedConsumer,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
             @NonNull final Scratchpad<IssScratchpad> issScratchpad) {
-        this.haltRequestedConsumer =
-                Objects.requireNonNull(haltRequestedConsumer, "haltRequestedConsumer must not be null");
-        this.fatalErrorConsumer = Objects.requireNonNull(fatalErrorConsumer, "fatalErrorConsumer must not be null");
-        this.stateConfig = Objects.requireNonNull(stateConfig, "stateConfig must not be null");
+        this.haltRequestedConsumer = Objects.requireNonNull(haltRequestedConsumer);
+        this.fatalErrorConsumer = Objects.requireNonNull(fatalErrorConsumer);
+        this.stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         this.issScratchpad = Objects.requireNonNull(issScratchpad);
     }
 
@@ -108,7 +108,7 @@ public class IssHandler {
     /**
      * This method is called when there is a self ISS.
      *
-     * @param round    the round of the ISS
+     * @param round the round of the ISS
      */
     private void selfIssObserver(@NonNull final Long round) {
 
