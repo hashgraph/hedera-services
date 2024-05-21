@@ -114,8 +114,7 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "500") int shadowgraphUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType consensusRoundHandlerSchedulerType,
         @ConfigProperty(defaultValue = "5") int consensusRoundHandlerUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(5) UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
-                TaskSchedulerConfiguration runningEventHasher,
+        @ConfigProperty(defaultValue = "NO_OP") TaskSchedulerConfiguration runningEventHasher,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration issDetector,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType hashLoggerSchedulerType,

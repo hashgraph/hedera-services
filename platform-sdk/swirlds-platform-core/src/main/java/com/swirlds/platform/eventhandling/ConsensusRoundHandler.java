@@ -251,7 +251,7 @@ public class ConsensusRoundHandler {
         final PlatformState platformState =
                 swirldStateManager.getConsensusState().getPlatformState();
 
-        platformState.setRunningEventHash(round.getRunningEventHash());
+        platformState.setRunningEventHash(platformContext.getCryptography().getNullHash());
 
         if (writeLegacyRunningEventHash) {
             // Update the running hash object. If there are no events, the running hash does not change.
