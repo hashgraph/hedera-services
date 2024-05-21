@@ -1452,4 +1452,26 @@ public class Evm46ValidationSuite {
                 .when()
                 .then(opsArray);
     }
+
+    @HapiTest
+    final Stream<DynamicTest> directCallToSystemAccountResultsInSuccessfulNoOp() {
+        return defaultHapiSpec("directCallToSystemAccountResultsInSuccessfulNoOp")
+                .given(
+                        cryptoCreate("account").balance(ONE_HUNDRED_HBARS),
+                        withOpContext((spec, opLog) -> spec.registry()
+                                .saveContractId(
+                                        "contract",
+                                        asContractIdWithEvmAddress(ByteString.copyFrom(
+                                                unhex("0000000000000000000000000000000000000275"))))))
+                .when(withOpContext((spec, ctxLog) -> allRunFor(
+                        spec,
+                        contractCallWithFunctionAbi("contract", getABIFor(FUNCTION, NAME, ERC_721_ABI))
+                                .gas(GAS_LIMIT_FOR_CALL)
+                                .via("callToSystemAddress")
+                                .signingWith("account"))))
+                .then(getTxnRecord("callToSystemAddress")
+                        .hasPriority(recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(resultWith().gasUsed(GAS_LIMIT_FOR_CALL))));
+    }
 }
