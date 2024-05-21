@@ -17,6 +17,7 @@
 package com.swirlds.platform.state.merkle;
 
 import static com.swirlds.common.utility.CommonUtils.getNormalisedStringBytes;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.pbj.runtime.Codec;
@@ -25,6 +26,9 @@ import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,6 +37,9 @@ import java.util.Objects;
 
 /** Utility class for working with states. */
 public final class StateUtils {
+
+    private static final Logger logger = LogManager.getLogger(StateUtils.class);
+
     /** Prevent instantiation */
     private StateUtils() {}
 
@@ -166,7 +173,10 @@ public final class StateUtils {
         // BE CHANGED or you won't ever be able to deserialize an exising state! If we get away from
         // this formula, we will need to hardcode known classId that had been previously generated.
         final var ver = "v" + version.major() + "." + version.minor() + "." + version.patch();
-        return hashString(serviceName + ":" + stateKey + ":" + ver + ":" + extra);
+        final var resultingString = serviceName + ":" + stateKey + ":" + ver + ":" + extra;
+        final long resultingHash = hashString(resultingString);
+        logger.info(STARTUP.getMarker(), "ClassId mapping: {} -> {}", resultingString, resultingHash);
+        return resultingHash;
     }
 
     // Will be moved to `NonCryptographicHashing` with
