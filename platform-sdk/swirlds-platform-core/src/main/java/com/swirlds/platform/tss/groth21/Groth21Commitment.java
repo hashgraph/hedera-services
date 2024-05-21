@@ -18,9 +18,11 @@ package com.swirlds.platform.tss.groth21;
 
 import com.swirlds.platform.tss.TssCommitment;
 import com.swirlds.platform.tss.TssShareId;
+import com.swirlds.platform.tss.pairings.FieldElement;
 import com.swirlds.platform.tss.pairings.GroupElement;
 import com.swirlds.platform.tss.verification.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
 import java.util.List;
 
 /**
@@ -29,13 +31,29 @@ import java.util.List;
  * @param coefficientCommitments TODO: what group are these elements in? Is it correct for getTerm to return a public key?
  */
 public record Groth21Commitment<P extends PublicKey>(@NonNull List<GroupElement> coefficientCommitments)
-        implements TssCommitment<P> {
+        implements TssCommitment {
     /**
      * {@inheritDoc}
      */
     @NonNull
-    public P extractPublicKey(@NonNull final TssShareId shareId) {
-        throw new UnsupportedOperationException("Not implemented");
+    public GroupElement extractPublicKey(@NonNull final TssShareId shareId) {
+        final FieldElement shareIdValue = shareId.getId();
+
+        GroupElement product = null;
+        for (int i = 0; i < coefficientCommitments.size(); i++) {
+            final GroupElement term = coefficientCommitments.get(i);
+            final FieldElement exponentiatedShareId = shareIdValue.power(BigInteger.valueOf(i));
+
+            final GroupElement power = term.power(exponentiatedShareId);
+
+            if (product == null) {
+                product = power;
+            } else {
+                product = product.multiply(power);
+            }
+        }
+
+        return product;
     }
 
     /**
@@ -43,8 +61,8 @@ public record Groth21Commitment<P extends PublicKey>(@NonNull List<GroupElement>
      */
     @NonNull
     @Override
-    public P getTerm(final int index) {
-        throw new UnsupportedOperationException("Not implemented");
+    public GroupElement getTerm(final int index) {
+        return coefficientCommitments.get(index);
     }
 
     /**

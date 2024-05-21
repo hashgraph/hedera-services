@@ -46,7 +46,7 @@ public class Groth21Tss<P extends PublicKey> implements Tss<P> {
      */
     @Nullable
     @Override
-    public P aggregatePublicShares(@NonNull final List<TssPublicShare<P>> publicShares) {
+    public P aggregatePublicShares(@NonNull final List<TssPublicShare> publicShares) {
         throw new UnsupportedOperationException("Not implemented");
     }
 

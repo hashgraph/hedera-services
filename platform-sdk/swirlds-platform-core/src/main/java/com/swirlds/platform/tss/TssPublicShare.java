@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.tss;
 
-import com.swirlds.platform.tss.verification.PublicKey;
+import com.swirlds.platform.tss.pairings.GroupElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -24,6 +24,5 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * @param shareId   the share ID
  * @param publicKey the public key
- * @param <P>       the type of public key in this share
  */
-public record TssPublicShare<P extends PublicKey>(@NonNull TssShareId shareId, @NonNull P publicKey) {}
+public record TssPublicShare(@NonNull TssShareId shareId, @NonNull GroupElement publicKey) {}

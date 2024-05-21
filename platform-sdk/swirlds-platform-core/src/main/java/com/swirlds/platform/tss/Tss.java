@@ -56,7 +56,7 @@ public interface Tss<P extends PublicKey> {
      * @return the interpolated public key if the threshold is met, otherwise null.
      */
     @Nullable
-    P aggregatePublicShares(@NonNull final List<TssPublicShare<P>> publicShares);
+    P aggregatePublicShares(@NonNull final List<TssPublicShare> publicShares);
 
     /**
      * Aggregate a threshold number of {@link TssPrivateKey}s.

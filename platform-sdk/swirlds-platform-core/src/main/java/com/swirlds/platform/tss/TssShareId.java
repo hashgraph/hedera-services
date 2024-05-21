@@ -16,7 +16,18 @@
 
 package com.swirlds.platform.tss;
 
+import com.swirlds.platform.tss.pairings.FieldElement;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 /**
  * The ID of a TSS share.
  */
-public interface TssShareId {}
+public interface TssShareId {
+    /**
+     * Get the underlying field element of the share ID.
+     *
+     * @return the field element
+     */
+    @NonNull
+    FieldElement getId();
+}

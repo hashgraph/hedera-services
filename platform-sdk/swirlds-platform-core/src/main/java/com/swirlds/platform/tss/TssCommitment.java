@@ -16,17 +16,15 @@
 
 package com.swirlds.platform.tss;
 
-import com.swirlds.platform.tss.verification.PublicKey;
+import com.swirlds.platform.tss.pairings.GroupElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A commitment to a polynomial.
  * <p>
  * The commitments produced during a keying contain the data to reconstruct the public key for each share.
- *
- * @param <P> the type of public key that can be derived from this commitment
  */
-public interface TssCommitment<P extends PublicKey> {
+public interface TssCommitment {
     /**
      * Extract the public key from this commitment for a given share.
      * <p>
@@ -37,7 +35,7 @@ public interface TssCommitment<P extends PublicKey> {
      * @return the public key extracted from this commitment
      */
     @NonNull
-    P extractPublicKey(@NonNull final TssShareId shareId);
+    GroupElement extractPublicKey(@NonNull final TssShareId shareId);
 
     /**
      * Get the term at the given index. // TODO: does this method make sense, naming and content wise?
@@ -46,7 +44,7 @@ public interface TssCommitment<P extends PublicKey> {
      * @return the term at the given index
      */
     @NonNull
-    P getTerm(final int index);
+    GroupElement getTerm(final int index);
 
     /**
      * Get the byte array representation of this commitment.

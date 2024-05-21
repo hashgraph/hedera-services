@@ -53,7 +53,7 @@ public record Groth21Proof<
      * {@inheritDoc}
      */
     @Override
-    public boolean verify(@NonNull final TssCiphertext<P> ciphertext, @NonNull final TssCommitment<P> commitment) {
+    public boolean verify(@NonNull final TssCiphertext<P> ciphertext, @NonNull final TssCommitment commitment) {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

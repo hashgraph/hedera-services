@@ -111,10 +111,10 @@ public final class TssUtils {
             // each share in this partialShares list represents a public key obtained from a commitment
             // the share ID in each of these partial shares corresponds to the share ID that *CREATED* the commitment,
             // NOT to the share ID that the public key is for
-            final List<TssPublicShare<P>> partialShares = new ArrayList<>();
+            final List<TssPublicShare> partialShares = new ArrayList<>();
 
             for (final TssMessage<P> tssMessage : tssMessages) {
-                partialShares.add(new TssPublicShare<>(
+                partialShares.add(new TssPublicShare(
                         tssMessage.shareId(), tssMessage.commitment().extractPublicKey(shareId)));
             }
             outputShares.put(shareId, tss.aggregatePublicShares(partialShares));

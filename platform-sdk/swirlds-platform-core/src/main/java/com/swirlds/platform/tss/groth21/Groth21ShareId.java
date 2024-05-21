@@ -37,4 +37,14 @@ public record Groth21ShareId<
                 FE extends FieldElement<C, FE, GE1, GE2>,
                 GE1 extends Group1Element<C, FE, GE1, GE2>,
                 GE2 extends Group2Element<C, FE, GE1, GE2>>(
-        @NonNull FieldElement<C, FE, GE1, GE2> id) implements TssShareId {}
+        @NonNull FieldElement<C, FE, GE1, GE2> id) implements TssShareId {
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public FieldElement getId() {
+        return id;
+    }
+}

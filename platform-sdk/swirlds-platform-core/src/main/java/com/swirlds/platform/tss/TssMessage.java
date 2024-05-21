@@ -31,7 +31,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public record TssMessage<P extends PublicKey>(
         @NonNull TssShareId shareId,
         @NonNull TssCiphertext<P> cipherText,
-        @NonNull TssCommitment<P> commitment,
+        @NonNull TssCommitment commitment,
         @NonNull TssProof<P> proof) {
 
     /**

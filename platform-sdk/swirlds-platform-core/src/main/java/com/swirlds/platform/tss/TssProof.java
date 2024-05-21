@@ -32,5 +32,5 @@ public interface TssProof<P extends PublicKey> {
      * @param commitment the commitment that was made to the ciphertext // TODO: check correctness of this description
      * @return true if the proof is valid, false otherwise
      */
-    boolean verify(@NonNull final TssCiphertext<P> ciphertext, @NonNull final TssCommitment<P> commitment);
+    boolean verify(@NonNull final TssCiphertext<P> ciphertext, @NonNull final TssCommitment commitment);
 }

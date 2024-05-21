@@ -20,6 +20,8 @@ import com.swirlds.platform.tss.pairings.Curve;
 
 /**
  * BLS12-381 curve.
+ *
+ * // TODO: think about where the initial public/private keys come from
  */
 public class Bls12381Curve
         implements Curve<Bls12381Curve, Bls12381FieldElement, Bls12381Group1Element, Bls12381Group2Element> {
