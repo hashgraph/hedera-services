@@ -252,7 +252,7 @@ public record SavedStateMetadata(
                         final SavedStateMetadataField key = SavedStateMetadataField.valueOf(keyString);
                         map.put(key, valueString);
                     } catch (final IllegalArgumentException e) {
-                        logger.warn(STARTUP.getMarker(), "Invalid key in metadata file: {}", keyString, e);
+                        logger.warn(STARTUP.getMarker(), "Unrecognized key in metadata file: {}", keyString);
                     }
                 }
             }
