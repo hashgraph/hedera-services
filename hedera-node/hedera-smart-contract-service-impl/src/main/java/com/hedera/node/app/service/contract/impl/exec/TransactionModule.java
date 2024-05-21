@@ -74,7 +74,7 @@ import java.util.function.Supplier;
 public interface TransactionModule {
     @Provides
     @TransactionScope
-    static TransactionProcessor provideTransactionProcess(
+    static TransactionProcessor provideTransactionProcessor(
             @NonNull final ContractsConfig contractsConfig,
             @NonNull final Map<HederaEvmVersion, TransactionProcessor> processors) {
         return processors.get(EVM_VERSIONS.get(contractsConfig.evmVersion()));
