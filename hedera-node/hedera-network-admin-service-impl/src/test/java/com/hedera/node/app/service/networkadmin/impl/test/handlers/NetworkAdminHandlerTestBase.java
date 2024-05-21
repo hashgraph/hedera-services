@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
+import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
-import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
