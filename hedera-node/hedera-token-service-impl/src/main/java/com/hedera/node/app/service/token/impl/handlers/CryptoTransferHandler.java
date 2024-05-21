@@ -178,7 +178,7 @@ public class CryptoTransferHandler implements TransactionHandler {
             if (treasuryID != null) {
                 accountStore.warm(treasuryID);
             }
-            for (final AccountAmount amount: tokenTransferList.transfers()) {
+            for (final AccountAmount amount : tokenTransferList.transfers()) {
                 amount.ifAccountID(accountID -> tokenRelationStore.warm(accountID, tokenID));
             }
             for (final NftTransfer nftTransfer : tokenTransferList.nftTransfers()) {
