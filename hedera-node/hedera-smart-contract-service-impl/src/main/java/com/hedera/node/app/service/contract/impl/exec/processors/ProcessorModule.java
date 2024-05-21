@@ -41,7 +41,6 @@ import org.hyperledger.besu.evm.contractvalidation.PrefixCodeRule;
 
 @Module(includes = {HtsTranslatorsModule.class, HasTranslatorsModule.class})
 public interface ProcessorModule {
-    int EVM_ADDRESS_SIZE = 20;
     long INITIAL_CONTRACT_NONCE = 1L;
     boolean REQUIRE_CODE_DEPOSIT_TO_SUCCEED = true;
     int NUM_SYSTEM_ACCOUNTS = 750;

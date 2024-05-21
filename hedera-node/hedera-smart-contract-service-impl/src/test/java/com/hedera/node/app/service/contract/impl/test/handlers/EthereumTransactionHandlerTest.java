@@ -25,7 +25,6 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DAT
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HEVM_CREATION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT_WITH_SIGNER_NONCE;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.processorsForAllCurrentEvmVersions;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.BDDMockito.given;
@@ -132,7 +131,6 @@ class EthereumTransactionHandlerTest {
 
     void setUpTransactionProcessing() {
         final var contractsConfig = DEFAULT_CONFIG.getConfigData(ContractsConfig.class);
-        final var processors = processorsForAllCurrentEvmVersions(transactionProcessor);
 
         final var contextTransactionProcessor = new ContextTransactionProcessor(
                 HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS),
@@ -144,7 +142,7 @@ class EthereumTransactionHandlerTest {
                 baseProxyWorldUpdater,
                 hevmTransactionFactory,
                 feesOnlyUpdater,
-                processors,
+                transactionProcessor,
                 customGasCharging);
 
         given(component.contextTransactionProcessor()).willReturn(contextTransactionProcessor);
