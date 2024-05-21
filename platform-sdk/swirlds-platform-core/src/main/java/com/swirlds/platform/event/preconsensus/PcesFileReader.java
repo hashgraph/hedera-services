@@ -164,7 +164,7 @@ public class PcesFileReader {
     private static void resolveDiscontinuities(
             @NonNull final Path databaseDirectory,
             @NonNull final PcesFileTracker files,
-            final RecycleBin recycleBin,
+            @NonNull final RecycleBin recycleBin,
             final long startingRound)
             throws IOException {
 
