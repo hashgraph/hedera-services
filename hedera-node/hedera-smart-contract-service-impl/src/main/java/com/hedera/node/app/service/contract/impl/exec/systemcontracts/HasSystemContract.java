@@ -16,7 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.NOT_SUPPORTED;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractNativeSystemContract;
@@ -25,6 +29,7 @@ import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -40,9 +45,21 @@ public class HasSystemContract extends AbstractNativeSystemContract implements H
         super(HAS_SYSTEM_CONTRACT_NAME, callFactory, HAS_CONTRACT_ID, gasCalculator);
     }
 
-    // Call type is not relevant for the HAS system contracts
     @Override
-    protected FrameUtils.CallType callTypeOf(MessageFrame frame) {
+    protected FrameUtils.CallType callTypeOf(@NonNull MessageFrame frame) {
         return FrameUtils.callTypeForAccountOf(frame);
+    }
+
+    @Override
+    public FullResult computeFully(@NonNull final Bytes input, @NonNull final MessageFrame frame) {
+        requireNonNull(input);
+        requireNonNull(frame);
+
+        // Check if calls to hedera account service is enabled
+        if (!contractsConfigOf(frame).systemContractAccountServiceEnabled()) {
+            return haltResult(NOT_SUPPORTED, frame.getRemainingGas());
+        }
+
+        return super.computeFully(input, frame);
     }
 }

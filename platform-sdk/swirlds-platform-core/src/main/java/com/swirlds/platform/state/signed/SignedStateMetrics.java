@@ -54,13 +54,6 @@ public class SignedStateMetrics {
             .withUnit("count");
     private final Counter totalNeverSignedStates;
 
-    private static final Counter.Config TOTAL_NEVER_SIGNED_DISK_STATES_CONFIG = new Counter.Config(
-                    CATEGORY, "totalNeverSignedDiskStates")
-            .withDescription(
-                    "total number of disk-bound states that did not receive enough signatures in the allowed time")
-            .withUnit("count");
-    private final Counter totalNeverSignedDiskStates;
-
     private static final SpeedometerMetric.Config STATES_SIGNED_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
                     CATEGORY, "sstatesSigned_per_sec")
             .withDescription("the number of states completely signed per second")
@@ -85,22 +78,6 @@ public class SignedStateMetrics {
             .withUnit("rounds");
     private final RunningAverageMetric stateSignatureAge;
 
-    private static final RunningAverageMetric.Config WRITE_STATE_TO_DISK_TIME_CONFIG = new RunningAverageMetric.Config(
-                    CATEGORY, "writeStateToDisk")
-            .withDescription("average time it takes to write a SignedState to disk (in milliseconds)")
-            .withUnit(MILLISECONDS)
-            .withFormat(FORMAT_10_3);
-
-    private final RunningAverageMetric writeStateToDiskTime;
-
-    private static final RunningAverageMetric.Config STATE_TO_DISK_TIME_CONFIG = new RunningAverageMetric.Config(
-                    CATEGORY, "stateToDisk")
-            .withDescription("average time it takes to do perform all actions when writing a SignedState to disk "
-                    + "(in milliseconds)")
-            .withUnit(MILLISECONDS)
-            .withFormat(FORMAT_10_3);
-    private final RunningAverageMetric stateToDiskTime;
-
     /**
      * Get a metric tracking unsigned states.
      */
@@ -123,13 +100,6 @@ public class SignedStateMetrics {
     }
 
     /**
-     * Get a metric tracking the total number of unsigned states written to disk that were skipped.
-     */
-    public Counter getTotalUnsignedDiskStatesMetric() {
-        return totalNeverSignedDiskStates;
-    }
-
-    /**
      * Get a metric tracking the total number of states signed per second.
      */
     public SpeedometerMetric getStatesSignedPerSecondMetric() {
@@ -144,23 +114,8 @@ public class SignedStateMetrics {
     }
 
     /**
-     * Get a metric tracking the average time required to write a state to disk.
-     */
-    public RunningAverageMetric getWriteStateToDiskTimeMetric() {
-        return writeStateToDiskTime;
-    }
-
-    /**
-     * Get a metric tracking the average time required to perform all actions when saving a state to disk, i.e.
-     * notifying listeners and cleaning up old states on disk.
-     */
-    public RunningAverageMetric getStateToDiskTimeMetric() {
-        return stateToDiskTime;
-    }
-
-    /**
-     * Get a metric tracking the average difference in round number between signature transactions and
-     * the most recent immutable state.
+     * Get a metric tracking the average difference in round number between signature transactions and the most recent
+     * immutable state.
      */
     public RunningAverageMetric getStateSignatureAge() {
         return stateSignatureAge;
@@ -169,19 +124,14 @@ public class SignedStateMetrics {
     /**
      * Register all metrics with a registry.
      *
-     * @param metrics
-     * 		a reference to the metrics-system
+     * @param metrics a reference to the metrics-system
      */
     public SignedStateMetrics(final Metrics metrics) {
         unsignedStates = metrics.getOrCreate(UNSIGNED_STATES_CONFIG);
         averageTimeToFullySignState = metrics.getOrCreate(AVERAGE_TIME_TO_FULLY_SIGN_STATE);
         totalNeverSignedStates = metrics.getOrCreate(TOTAL_NEVER_SIGNED_STATES_CONFIG);
-        totalNeverSignedDiskStates = metrics.getOrCreate(TOTAL_NEVER_SIGNED_DISK_STATES_CONFIG);
         statesSignedPerSecond = metrics.getOrCreate(STATES_SIGNED_PER_SECOND_CONFIG);
         stateSignaturesGatheredPerSecond = metrics.getOrCreate(STATE_SIGNATURES_GATHERED_PER_SECOND_CONFIG);
-
-        stateToDiskTime = metrics.getOrCreate(STATE_TO_DISK_TIME_CONFIG);
-        writeStateToDiskTime = metrics.getOrCreate(WRITE_STATE_TO_DISK_TIME_CONFIG);
         stateSignatureAge = metrics.getOrCreate(STATE_SIGNATURE_AGE_CONFIG);
     }
 }

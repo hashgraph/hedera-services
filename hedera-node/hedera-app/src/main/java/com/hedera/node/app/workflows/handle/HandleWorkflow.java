@@ -610,7 +610,7 @@ public class HandleWorkflow {
         } catch (final Exception e) {
             logger.error("Possibly CATASTROPHIC failure while handling a user transaction", e);
             if (transactionInfo == null) {
-                final var baseData = extractTransactionBaseData(platformTxn.getContents());
+                final var baseData = extractTransactionBaseData(platformTxn.getApplicationPayload());
                 if (baseData.transaction() == null) {
                     // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement
                     logger.error("Failed to parse transaction from creator: {}", creator);
@@ -1034,15 +1034,15 @@ public class HandleWorkflow {
             @Nullable TransactionBody txBody,
             @Nullable AccountID payer) {}
 
-    private TransactionBaseData extractTransactionBaseData(@Nullable final byte[] contents) {
+    private TransactionBaseData extractTransactionBaseData(@NonNull final Bytes content) {
         // This method is only called if something fatal happened. We do a best effort approach to extract the
         // type of the transaction, the TransactionBody and the payer if not known.
-        if (contents == null || contents.length == 0) {
+        if (content.length() == 0) {
             return new TransactionBaseData(NONE, Bytes.EMPTY, null, null, null);
         }
 
         HederaFunctionality function = NONE;
-        Bytes transactionBytes = Bytes.wrap(contents);
+        Bytes transactionBytes = content;
         Transaction transaction = null;
         TransactionBody txBody = null;
         AccountID payer = null;

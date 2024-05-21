@@ -18,8 +18,8 @@ package com.swirlds.platform.state.editor;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.platform.state.editor.StateEditorUtils.formatFile;
-import static com.swirlds.platform.state.signed.SavedStateMetadata.NO_NODE_ID;
-import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateFilesToDirectory;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadata.NO_NODE_ID;
+import static com.swirlds.platform.state.snapshot.SignedStateFileWriter.writeSignedStateFilesToDirectory;
 
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.context.PlatformContext;

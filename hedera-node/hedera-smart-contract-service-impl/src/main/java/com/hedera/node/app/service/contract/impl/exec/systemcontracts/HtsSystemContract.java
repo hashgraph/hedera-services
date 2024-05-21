@@ -41,7 +41,7 @@ public class HtsSystemContract extends AbstractNativeSystemContract implements H
     }
 
     @Override
-    protected FrameUtils.CallType callTypeOf(MessageFrame frame) {
+    protected FrameUtils.CallType callTypeOf(@NonNull MessageFrame frame) {
         return FrameUtils.callTypeOf(frame);
     }
 }

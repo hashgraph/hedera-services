@@ -49,6 +49,8 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Return
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.service.contract.impl.utils.OpcodeUtils;
 import com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils;
@@ -93,7 +95,13 @@ class FrameUtilsTest {
     private WorldUpdater worldUpdater;
 
     @Mock
+    private ProxyWorldUpdater proxyWorldUpdater;
+
+    @Mock
     private FeatureFlags featureFlags;
+
+    @Mock
+    private ProxyEvmAccount proxyEvmAccount;
 
     private final Deque<MessageFrame> stack = new ArrayDeque<>();
 
@@ -205,6 +213,53 @@ class FrameUtilsTest {
         given(initialFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(PERMITTED_CALLERS_CONFIG);
 
         assertEquals(QUALIFIED_DELEGATE, FrameUtils.callTypeOf(frame));
+    }
+
+    @Test
+    void detectDelegateCallToAccount() {
+        // given
+        stack.push(initialFrame);
+        stack.push(frame);
+
+        given(frame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
+        given(frame.getContractAddress()).willReturn(EIP_1014_ADDRESS);
+
+        assertEquals(DIRECT_OR_PROXY_REDIRECT, FrameUtils.callTypeForAccountOf(frame));
+    }
+
+    @Test
+    void detectRedirectToRegularAccount() {
+        // given
+        stack.push(initialFrame);
+        stack.push(frame);
+        given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+
+        given(frame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
+        given(frame.getContractAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
+        given(initialFrame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
+        given(initialFrame.getContractAddress()).willReturn(EIP_1014_ADDRESS);
+
+        given(proxyWorldUpdater.getHederaAccount(EIP_1014_ADDRESS)).willReturn(proxyEvmAccount);
+        given(proxyEvmAccount.isRegularAccount()).willReturn(true);
+
+        assertEquals(DIRECT_OR_PROXY_REDIRECT, FrameUtils.callTypeForAccountOf(frame));
+    }
+
+    @Test
+    void detectRedirectToNonRegularAccount() {
+        // given
+        stack.push(initialFrame);
+        stack.push(frame);
+        given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
+
+        given(frame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
+        given(frame.getContractAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
+
+        given(proxyWorldUpdater.getHederaAccount(EIP_1014_ADDRESS)).willReturn(proxyEvmAccount);
+        given(proxyEvmAccount.isRegularAccount()).willReturn(false);
+
+        assertEquals(UNQUALIFIED_DELEGATE, FrameUtils.callTypeForAccountOf(frame));
     }
 
     @Test

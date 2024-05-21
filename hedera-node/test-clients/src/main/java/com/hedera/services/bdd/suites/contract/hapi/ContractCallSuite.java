@@ -55,6 +55,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCall.DEFAULT_ID_SENTINEL;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -145,7 +146,7 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
+@HapiTestSuite(fuzzyMatch = false)
 @Tag(SMART_CONTRACT)
 public class ContractCallSuite extends HapiSuite {
 
@@ -1597,7 +1598,11 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(uploadInitCode(PAY_RECEIVABLE_CONTRACT), contractCreate(PAY_RECEIVABLE_CONTRACT))
                 .when()
-                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> contractCall(PAY_RECEIVABLE_CONTRACT)));
+                .then(
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> contractCall(PAY_RECEIVABLE_CONTRACT)),
+                        // It's also ok to use a default PBJ ContractID (i.e. an id with
+                        // UNSET contract oneof) to make a no-op call to address 0x00...00
+                        contractCall(DEFAULT_ID_SENTINEL));
     }
 
     @HapiTest
