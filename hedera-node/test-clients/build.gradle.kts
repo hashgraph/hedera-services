@@ -53,25 +53,44 @@ sourceSets {
     create("yahcli")
 }
 
-/**
- * For "crypto" CI check: -DtagExpression='CRYPTO|STREAM_VALIDATION' For "token" CI check:
- * -DtagExpression='TOKEN|STREAM_VALIDATION' For "restart" CI check:
- * -DtagExpression='RESTART|STREAM_VALIDATION' For "smart-contract" CI check:
- * -DtagExpression='SMART_CONTRACT|STREAM_VALIDATION' For "nd-reconnect" CI check:
- * -DtagExpression='ND_RECONNECT|STREAM_VALIDATION' For "time-consuming" CI check:
- * -DtagExpression='LONG_RUNNING|STREAM_VALIDATION' For "misc" CI check:
- * -DtagExpression='!(CRYPTO|TOKEN|SMART_CONTRACT|LONG_RUNNING|RESTART|ND_RECONNECT)|STREAM_VALIDATION'
- */
+val ciCheckTagExpressions =
+    mapOf(
+        "hapiTestCrypto" to "CRYPTO",
+        "hapiTestToken" to "TOKEN",
+        "hapiTestRestart" to "RESTART",
+        "hapiTestSmartContract" to "SMART_CONTRACT",
+        "hapiTestNDReconnect" to "ND_RECONNECT",
+        "hapiTestTimeConsuming" to "LONG_RUNNING",
+        "hapiTestMisc" to "!(CRYPTO|TOKEN|SMART_CONTRACT|LONG_RUNNING|RESTART|ND_RECONNECT)"
+    )
+
+tasks {
+    ciCheckTagExpressions.forEach { (taskName, _) -> register(taskName) { dependsOn("test") } }
+}
+
 tasks.test {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
+    val ciTagExpression =
+        gradle.startParameter.taskNames
+            .stream()
+            .map { ciCheckTagExpressions[it] ?: "" }
+            .toList()
+            .joinToString("|")
     useJUnitPlatform {
-        val expression = System.getProperty("tagExpression") ?: "any()|none()"
-        includeTags(expression)
+        includeTags(
+            if (ciTagExpression.isBlank()) "any()|none()"
+            else "${ciTagExpression}|STREAM_VALIDATION"
+        )
     }
 
-    systemProperty("hapi.spec.quiet.mode", System.getProperty("hapi.spec.quiet.mode") ?: "false")
+    // Default quiet mode is "false" unless we are running in CI or set it explicitly to "true"
+    systemProperty(
+        "hapi.spec.quiet.mode",
+        System.getProperty("hapi.spec.quiet.mode")
+            ?: if (ciTagExpression.isNotBlank()) "true" else "false"
+    )
     systemProperty("junit.jupiter.execution.parallel.enabled", true)
     systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
     // Surprisingly, the Gradle JUnitPlatformTestExecutionListener fails to gather result

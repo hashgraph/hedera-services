@@ -104,7 +104,6 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.SplittableRandom;
@@ -128,7 +127,9 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.function.Executable;
 
 public class HapiSpec implements Runnable, Executable {
+    private static final String CI_CHECK_NAME_SYSTEM_PROPERTY = "ci.check.name";
     private static final String QUIET_MODE_SYSTEM_PROPERTY = "hapi.spec.quiet.mode";
+
     /**
      * The name of the DynamicTest that executes the HapiSpec as written,
      * without modifications such as replacing ContractCall and ContractCreate
@@ -1126,7 +1127,9 @@ public class HapiSpec implements Runnable, Executable {
         this.then = then;
         this.onlySpecToRunInSuite = onlySpecToRunInSuite;
         this.propertiesToPreserve = propertiesToPreserve;
-        this.quietMode = Objects.equals("true", System.getProperty(QUIET_MODE_SYSTEM_PROPERTY));
+        final var quiet = System.getProperty(QUIET_MODE_SYSTEM_PROPERTY);
+        final var isCiCheck = System.getProperty(CI_CHECK_NAME_SYSTEM_PROPERTY) != null;
+        this.quietMode = "true".equalsIgnoreCase(quiet) || (!"false".equalsIgnoreCase(quiet) && isCiCheck);
     }
 
     interface Def {
