@@ -178,6 +178,7 @@ public class ReadableFreezeUpgradeActions {
             log.error(MANUAL_REMEDIATION_ALERT);
         }
     }
+
     private void catchUpOnMissedFreezeScheduling(final PlatformState platformState) {
         final var isUpgradePrepared = freezeStore.updateFileHash() != null;
         if (isFreezeScheduled(platformState) && isUpgradePrepared) {
