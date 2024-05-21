@@ -38,6 +38,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.scratchpad.Scratchpad;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;

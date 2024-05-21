@@ -16,6 +16,8 @@
 
 package com.swirlds.common.scratchpad;
 
+import com.swirlds.platform.scratchpad.ScratchpadType;
+
 /**
  * A scratchpad type for testing.
  */
