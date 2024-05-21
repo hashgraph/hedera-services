@@ -310,7 +310,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
 
         final var newNftTransfer = nftTransfer(ownerId, tokenTreasury, nftID.serialNumber());
         if (tokenTransferListMap.containsKey(tokenId)) {
-            var nftTransfersWithSameTokenId = tokenTransferListMap.get(tokenId).nftTransfers();
+            final var nftTransfersWithSameTokenId = new ArrayList<>(tokenTransferListMap.get(tokenId).nftTransfers());
             nftTransfersWithSameTokenId.add(newNftTransfer);
             tokenTransferListMap.put(tokenId, createNftTransfer(tokenId, nftTransfersWithSameTokenId));
         } else {
