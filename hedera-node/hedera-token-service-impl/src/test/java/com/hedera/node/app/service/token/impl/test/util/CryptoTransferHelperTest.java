@@ -29,8 +29,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CryptoTransferHelperTest {
     private static final TokenID tokenId = TokenID.newBuilder().tokenNum(1).build();
-    private static final AccountID fromAccount = AccountID.newBuilder().accountNum(1001).build();
-    private static final AccountID toAccount = AccountID.newBuilder().accountNum(1002).build();
+    private static final AccountID fromAccount =
+            AccountID.newBuilder().accountNum(1001).build();
+    private static final AccountID toAccount =
+            AccountID.newBuilder().accountNum(1002).build();
 
     @Test
     void testCreateFungibleTransfer() {
@@ -48,7 +50,8 @@ class CryptoTransferHelperTest {
     @Test
     void testCreateNftTransfer() {
         final long serialNumber = 123456L;
-        final var transferList = CryptoTransferHelper.createNftTransfer(tokenId, fromAccount, toAccount, serialNumber);
+        final var transferList = CryptoTransferHelper.createNftTransfer(
+                tokenId, CryptoTransferHelper.nftTransfer(fromAccount, toAccount, serialNumber));
 
         assertThat(transferList.token()).isEqualTo(tokenId);
         assertThat(transferList.nftTransfers()).hasSize(1);

@@ -22,13 +22,27 @@ import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 
+/**
+ * Utility class that provides static methods to facilitate the creation of token transfers for both fungible and
+ * non-fungible tokens (NFTs).
+ */
 public class CryptoTransferHelper {
 
     private CryptoTransferHelper() {
         throw new UnsupportedOperationException("Utility class only");
     }
 
+    /**
+     * Creates a {@link TokenTransferList} for a fungible token transfer.
+     *
+     * @param tokenId the ID of the token to be transferred
+     * @param fromAccount the account ID from which tokens are debited
+     * @param amount the amount of tokens to be transferred
+     * @param toAccount the account ID to which tokens are credited
+     * @return TokenTransferList representing the transfer of fungible tokens
+     */
     public static TokenTransferList createFungibleTransfer(
             final TokenID tokenId, final AccountID fromAccount, final long amount, final AccountID toAccount) {
         return TokenTransferList.newBuilder()
@@ -37,14 +51,42 @@ public class CryptoTransferHelper {
                 .build();
     }
 
-    public static TokenTransferList createNftTransfer(
-            final TokenID tokenId, final AccountID fromAccount, final AccountID toAccount, final long serialNumber) {
+    /**
+     * Creates a {@link TokenTransferList} for a non-fungible token (NFT) transfer.
+     *
+     * @param tokenId the TokenID of the NFT to be transferred
+     * @param nftTransfer the NftTransfer object
+     * @return TokenTransferList containing the NFT transfer
+     */
+    public static TokenTransferList createNftTransfer(final TokenID tokenId, final NftTransfer nftTransfer) {
         return TokenTransferList.newBuilder()
                 .token(tokenId)
-                .nftTransfers(nftTransfer(fromAccount, toAccount, serialNumber))
+                .nftTransfers(nftTransfer)
                 .build();
     }
 
+    /**
+     * Creates a {@link TokenTransferList} for a non-fungible token (NFT) transfer.
+     *
+     * @param tokenId the TokenID of the NFT to be transferred
+     * @param nftTransfers the list of NftTransfer objects
+     * @return TokenTransferList containing the NFT transfer
+     */
+    public static TokenTransferList createNftTransfer(final TokenID tokenId, final List<NftTransfer> nftTransfers) {
+        return TokenTransferList.newBuilder()
+                .token(tokenId)
+                .nftTransfers(nftTransfers)
+                .build();
+    }
+
+    /**
+     * Constructs a {@link NftTransfer} object for transferring a non-fungible token.
+     *
+     * @param from the sender's account ID
+     * @param to the receiver's account ID
+     * @param serialNo the serial number of the NFT
+     * @return NftTransfer object detailing the sender, receiver, and NFT serial number
+     */
     public static NftTransfer nftTransfer(
             @NonNull final AccountID from, @NonNull final AccountID to, final long serialNo) {
         return NftTransfer.newBuilder()
@@ -54,14 +96,35 @@ public class CryptoTransferHelper {
                 .build();
     }
 
+    /**
+     * Creates an {@link AccountAmount} representing a debit from an account.
+     *
+     * @param account the account from which funds will be debited
+     * @param amount  the amount to debit
+     * @return AccountAmount specifying the account and the negative amount debited
+     */
     public static AccountAmount debit(@NonNull final AccountID account, final long amount) {
         return adjust(account, -amount);
     }
 
+    /**
+     * Creates an {@link AccountAmount} representing a credit to an account.
+     *
+     * @param account the account to which funds will be credited
+     * @param amount  the amount to credit
+     * @return AccountAmount specifying the account and the positive amount credited
+     */
     public static AccountAmount credit(@NonNull final AccountID account, final long amount) {
         return adjust(account, amount);
     }
 
+    /**
+     * Helper method to create an {@link AccountAmount} with a specified adjustment.
+     *
+     * @param account the account to be adjusted
+     * @param amount  the amount of the adjustment (can be positive or negative)
+     * @return AccountAmount with the specified adjustment
+     */
     private static AccountAmount adjust(@NonNull final AccountID account, final long amount) {
         return AccountAmount.newBuilder().accountID(account).amount(amount).build();
     }

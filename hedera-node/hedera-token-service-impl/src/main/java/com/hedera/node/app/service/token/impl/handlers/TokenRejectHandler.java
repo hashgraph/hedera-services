@@ -20,13 +20,16 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_OWNER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_REFERENCE_REPEATED;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferHelper.createFungibleTransfer;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferHelper.createNftTransfer;
+import static com.hedera.node.app.service.token.impl.util.CryptoTransferHelper.nftTransfer;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.PERMIT_PAUSED;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsableForAliasedId;
@@ -65,10 +68,13 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -92,19 +98,27 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         // If not specified, payer account is considered as the one rejecting the tokens.
         if (op.hasOwner()) {
             final var accountStore = context.createStore(ReadableAccountStore.class);
-            verifySenderAndRequireKey(op.owner(), context, accountStore);
+            verifyOwnerAndRequireKey(op.owner(), context, accountStore);
         }
     }
 
-    private void verifySenderAndRequireKey(
-            final AccountID senderId, final PreHandleContext context, final ReadableAccountStore accountStore)
+    /**
+     * Verifies that the owner account exists and ensures the account's key is valid and required for the transaction.
+     *
+     * @param ownerId The AccountID of the owner whose key needs to be validated.
+     * @param context The PreHandleContext providing transaction context.
+     * @param accountStore The store to access readable account information.
+     * @throws PreCheckException If the sender's account is immutable or the sender's account ID is invalid.
+     */
+    private void verifyOwnerAndRequireKey(
+            final AccountID ownerId, final PreHandleContext context, final ReadableAccountStore accountStore)
             throws PreCheckException {
 
-        final var senderAccount = accountStore.getAliasedAccountById(senderId);
-        validateTruePreCheck(senderAccount != null, INVALID_ACCOUNT_ID);
+        final var ownerAccount = accountStore.getAliasedAccountById(ownerId);
+        validateTruePreCheck(ownerAccount != null, INVALID_OWNER_ID);
 
         // If the sender account is immutable, then we throw an exception.
-        final var key = senderAccount.key();
+        final var key = ownerAccount.key();
         if (key == null || !isValid(key)) {
             throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
         }
@@ -125,7 +139,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         var uniqueTokenReferences = new HashSet<TokenReference>();
         for (final var rejection : op.rejections()) {
             if (!uniqueTokenReferences.add(rejection)) {
-                throw new PreCheckException(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
+                throw new PreCheckException(TOKEN_REFERENCE_REPEATED);
             }
             // Ensure one token type per single rejection reference.
             validateFalsePreCheck(rejection.hasFungibleToken() && rejection.hasNft(), INVALID_TRANSACTION_BODY);
@@ -151,6 +165,8 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
 
         final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
+        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        validateTrue(tokensConfig.tokenRejectEnabled(), NOT_SUPPORTED);
         validateTrue(rejections.size() <= ledgerConfig.tokenRejectsMaxLen(), INVALID_TRANSACTION_BODY);
 
         final var processedRejectionTransfers =
@@ -166,6 +182,16 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         steps.forEach(step -> step.doIn(transferContext));
     }
 
+    /**
+     * Processes the rejections specified in the transaction to prepare for the transfers. It also removes allowances
+     * that the owner may have granted for the tokens being rejected.
+     *
+     * @param rejections The list of TokenReferences representing the rejections to process.
+     * @param context The HandleContext providing the current handling context.
+     * @param rejectingAccountID The AccountID of the rejecting account.
+     * @param hederaConfig Configuration data for the Hedera network.
+     * @return A list of TokenTransferLists that will be used for the transfer operation.
+     */
     private List<TokenTransferList> processRejectionsForTransferAndRemoveAllowances(
             @NonNull final List<TokenReference> rejections,
             @NonNull final HandleContext context,
@@ -178,12 +204,12 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         final var nftStore = context.writableStore(WritableNftStore.class);
         final var relStore = context.writableStore(WritableTokenRelationStore.class);
 
-        final var rejectingAccount =
-                getIfUsableForAliasedId(rejectingAccountID, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
+        final var rejectingAccount = getIfUsableForAliasedId(
+                rejectingAccountID, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
         final var accountID = rejectingAccount.accountIdOrThrow();
 
         // Prepare collections for processing
-        final var tokenTransferLists = new ArrayList<TokenTransferList>();
+        final var tokenTransferListMap = new HashMap<TokenID, TokenTransferList>();
         final var updatedFungibleTokenAllowances = new ArrayList<>(rejectingAccount.tokenAllowances());
 
         final var allowancesIsEnabled = hederaConfig.allowancesIsEnabled();
@@ -192,7 +218,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
                 processFungibleTokenRejection(
                         rejection,
                         accountID,
-                        tokenTransferLists,
+                        tokenTransferListMap,
                         tokenStore,
                         relStore,
                         updatedFungibleTokenAllowances,
@@ -201,7 +227,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
                 processNftRejectionAndRemoveSpenderAllowance(
                         requireNonNull(rejection.nft()),
                         accountID,
-                        tokenTransferLists,
+                        tokenTransferListMap,
                         nftStore,
                         tokenStore,
                         allowancesIsEnabled);
@@ -216,13 +242,26 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
                     .build();
             accountStore.put(updatedAccount);
         }
-        return tokenTransferLists;
+        return tokenTransferListMap.values().stream().toList();
     }
 
+    /**
+     * Processes a single fungible token rejection by performing validations and adds the transfer
+     * for the rejected token.
+     * Removes allowances from the rejecting account, that are granted for the token being rejected.
+     *
+     * @param rejection The token reference detailing the rejection.
+     * @param rejectingAccountID The AccountID of the account rejecting the token.
+     * @param tokenTransferListMap A map to accumulate the token transfer lists.
+     * @param tokenStore Access to writable token data.
+     * @param relStore Access to writable token relations.
+     * @param tokenAllowancesForRejectingAccount List to be updated with any changes to fungible token allowances.
+     * @param allowancesEnabled Flag indicating if token allowances are enabled on the network.
+     */
     private void processFungibleTokenRejection(
             @NonNull final TokenReference rejection,
             @NonNull final AccountID rejectingAccountID,
-            @NonNull final List<TokenTransferList> tokenTransferLists,
+            @NonNull final Map<TokenID, TokenTransferList> tokenTransferListMap,
             @NonNull final WritableTokenStore tokenStore,
             @NonNull final WritableTokenRelationStore relStore,
             @NonNull final List<AccountFungibleTokenAllowance> tokenAllowancesForRejectingAccount,
@@ -234,18 +273,31 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         validateTrue(token.treasuryAccountId() != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
         validateTrue(tokenRelation.balance() > 0, INSUFFICIENT_TOKEN_BALANCE);
 
-        tokenTransferLists.add(createFungibleTransfer(
-                tokenId, rejectingAccountID, tokenRelation.balance(), token.treasuryAccountId()));
+        tokenTransferListMap.put(
+                tokenId,
+                createFungibleTransfer(
+                        tokenId, rejectingAccountID, tokenRelation.balance(), token.treasuryAccountId()));
 
         if (allowancesEnabled) {
             tokenAllowancesForRejectingAccount.removeIf(allowance -> tokenId.equals(allowance.tokenId()));
         }
     }
 
+    /**
+     * Processes a single NFT rejection by performing validations and adds the transfer for the rejected NFT.
+     * Also removes the allowance for the NFT, if it exists.
+     *
+     * @param nftID The NftID of the NFT being rejected.
+     * @param ownerId The AccountID of the owner rejecting the NFT.
+     * @param tokenTransferListMap A map to accumulate the token transfer lists.
+     * @param nftStore Access to writable NFT data.
+     * @param tokenStore Access to writable token data.
+     * @param allowancesEnabled Flag indicating if NFT allowances are enabled on the network.
+     */
     private void processNftRejectionAndRemoveSpenderAllowance(
             @NonNull final NftID nftID,
             @NonNull final AccountID ownerId,
-            @NonNull final List<TokenTransferList> tokenTransferLists,
+            @NonNull final Map<TokenID, TokenTransferList> tokenTransferListMap,
             @NonNull final WritableNftStore nftStore,
             @NonNull final WritableTokenStore tokenStore,
             final boolean allowancesEnabled) {
@@ -254,8 +306,16 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
 
         final var token = getIfUsable(requireNonNull(nftID.tokenId()), tokenStore, PERMIT_PAUSED);
         final var tokenId = token.tokenId();
-        final var tokenTreasury = token.treasuryAccountId();
-        tokenTransferLists.add(createNftTransfer(tokenId, ownerId, tokenTreasury, nftID.serialNumber()));
+        final var tokenTreasury = token.treasuryAccountIdOrThrow();
+
+        final var newNftTransfer = nftTransfer(ownerId, tokenTreasury, nftID.serialNumber());
+        if (tokenTransferListMap.containsKey(tokenId)) {
+            var nftTransfersWithSameTokenId = tokenTransferListMap.get(tokenId).nftTransfers();
+            nftTransfersWithSameTokenId.add(newNftTransfer);
+            tokenTransferListMap.put(tokenId, createNftTransfer(tokenId, nftTransfersWithSameTokenId));
+        } else {
+            tokenTransferListMap.put(tokenId, createNftTransfer(tokenId, newNftTransfer));
+        }
 
         // Remove allowance for the NFT
         if (nft.hasSpenderId() && allowancesEnabled) {
@@ -263,6 +323,20 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         }
     }
 
+    /**
+     * Decomposes the cryptoTransfer for the Reject operation into a list of steps.
+     * Each step validates the preconditions needed from TransferContextImpl in order to perform the transfers.
+     *
+     * <p>Steps included:</p>
+     * <ol>
+     *     <li>Adjust fungible token balances.</li>
+     *     <li>Change NFT ownerships.</li>
+     * </ol>
+     *
+     * @param txn The transaction body containing the reject transfers.
+     * @param topLevelPayer The account responsible for transaction fees.
+     * @return A list of transfer steps to execute.
+     */
     private List<TransferStep> decomposeTransferIntoSteps(
             final CryptoTransferTransactionBody txn, final AccountID topLevelPayer) {
         final var steps = new ArrayList<TransferStep>();
