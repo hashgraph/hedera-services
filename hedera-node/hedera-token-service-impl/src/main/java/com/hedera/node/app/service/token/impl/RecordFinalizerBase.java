@@ -255,7 +255,7 @@ public class RecordFinalizerBase {
                         originalToken.treasuryAccountId(),
                         modifiedToken.treasuryAccountId(),
                         nftChanges,
-                        null);
+                        tokenRelChanges);
             }
         }
         return nftChanges;
@@ -296,6 +296,7 @@ public class RecordFinalizerBase {
             @Nullable final Map<EntityIDPair, Long> tokenRelChanges) {
         final var isMint = senderAccountId.accountNum() == 0;
         final var isWipeOrBurn = receiverAccountId.accountNum() == 0;
+        final var isTreasuryChange = nftId.serialNumber() == -1;
         final var nftTransfer = NftTransfer.newBuilder()
                 .serialNumber(nftId.serialNumber())
                 .senderAccountID(senderAccountId)
@@ -310,7 +311,7 @@ public class RecordFinalizerBase {
         currentNftChanges.add(nftTransfer);
         nftChanges.put(nftId.tokenId(), currentNftChanges);
 
-        if (tokenRelChanges != null && !tokenRelChanges.isEmpty()) {
+        if (!tokenRelChanges.isEmpty()) {
             final var receiverEntityIdPair = EntityIDPair.newBuilder()
                     .accountId(receiverAccountId)
                     .tokenId(nftId.tokenId())
@@ -319,9 +320,10 @@ public class RecordFinalizerBase {
                     .accountId(senderAccountId)
                     .tokenId(nftId.tokenId())
                     .build();
-            if (isMint || isWipeOrBurn) {
+            if (isMint || isWipeOrBurn || isTreasuryChange) {
                 // The mint amount is not shown in the token transfer list. So for a mint transaction we need not show
-                // the token transfer changes to treasury
+                // the token transfer changes to treasury. If it is a treasury change, we need not show the transfer
+                // changes to treasury
                 tokenRelChanges.remove(receiverEntityIdPair);
                 tokenRelChanges.remove(senderEntityIdPair);
             } else {
