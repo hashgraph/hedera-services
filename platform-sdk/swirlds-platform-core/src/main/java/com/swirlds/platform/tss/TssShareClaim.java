@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.tss;
 
-import com.swirlds.platform.tss.ecdh.EcdhPublicKey;
+import com.swirlds.platform.tss.verification.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A record that contains a share ID, and the ECDH public key of the node that holds claim to the share.
+ * A record that contains a share ID, and the ElGamal public key of the node that holds claim to the share.
  * <p>
  * The purpose of this record is to allow a node to produce a secret intended for a specific recipient, and to
  * encrypt that secret using the appropriate public key.
@@ -28,4 +28,4 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param shareId   the share ID
  * @param publicKey the public key
  */
-public record TssShareClaim(@NonNull TssShareId shareId, @NonNull EcdhPublicKey publicKey) {}
+public record TssShareClaim(@NonNull TssShareId shareId, @NonNull PublicKey publicKey) {}

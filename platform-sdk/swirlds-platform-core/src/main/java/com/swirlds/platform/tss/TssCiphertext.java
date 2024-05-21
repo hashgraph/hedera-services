@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.tss;
 
-import com.swirlds.platform.tss.ecdh.EcdhPrivateKey;
+import com.swirlds.platform.tss.verification.PrivateKey;
 import com.swirlds.platform.tss.verification.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -32,12 +32,12 @@ public interface TssCiphertext<P extends PublicKey> {
      * <p>
      * The private key decrypted by this method is not the final private key. Rather, it is a partial private key.
      *
-     * @param ecdhPrivateKey the private key of the node that is extracting the private shares
-     * @param shareId        the ID of the private key to decrypt
+     * @param elGamalPrivateKey the private key of the node that is extracting the private shares
+     * @param shareId           the ID of the private key to decrypt
      * @return the private key decrypted from this ciphertext
      */
     @NonNull
-    TssPrivateKey<P> decryptPrivateKey(@NonNull final EcdhPrivateKey ecdhPrivateKey, @NonNull TssShareId shareId);
+    TssPrivateKey<P> decryptPrivateKey(@NonNull final PrivateKey<P> elGamalPrivateKey, @NonNull TssShareId shareId);
 
     /**
      * Serialize this ciphertext to bytes.

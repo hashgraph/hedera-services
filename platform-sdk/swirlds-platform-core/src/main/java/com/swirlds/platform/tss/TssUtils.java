@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.tss;
 
-import com.swirlds.platform.tss.ecdh.EcdhPrivateKey;
+import com.swirlds.platform.tss.verification.PrivateKey;
 import com.swirlds.platform.tss.verification.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -37,20 +37,20 @@ public final class TssUtils {
     /**
      * Compute the private shares that belong to this node.
      *
-     * @param tss            the TSS instance
-     * @param shareIds       the share IDs owned by this node, for which the private shares will be decrypted
-     * @param ecdhPrivateKey the ECDH private key of this node
-     * @param cipherTexts    the cipher texts to extract the private shares from
-     * @param threshold      the threshold number of cipher texts required to decrypt the private shares
-     * @param <P>            the type of public key that can be used to verify signatures produced by the secret keys
-     *                       encrypted in the cipher texts
+     * @param tss               the TSS instance
+     * @param shareIds          the share IDs owned by this node, for which the private shares will be decrypted
+     * @param elGamalPrivateKey the ElGamal private key of this node
+     * @param cipherTexts       the cipher texts to extract the private shares from
+     * @param threshold         the threshold number of cipher texts required to decrypt the private shares
+     * @param <P>               the type of public key that can be used to verify signatures produced by the secret keys
+     *                          encrypted in the cipher texts
      * @return the private shares, or null if there aren't enough shares to meet the threshold
      */
     @Nullable
     public static <P extends PublicKey> List<TssPrivateShare<P>> decryptPrivateShares(
             @NonNull final Tss<P> tss,
             @NonNull final List<TssShareId> shareIds,
-            @NonNull final EcdhPrivateKey ecdhPrivateKey,
+            @NonNull final PrivateKey<P> elGamalPrivateKey,
             @NonNull final List<TssCiphertext<P>> cipherTexts,
             final int threshold) {
 
@@ -65,7 +65,7 @@ public final class TssUtils {
             for (final TssShareId shareId : shareIds) {
                 partialPrivateKeys
                         .computeIfAbsent(shareId, k -> new ArrayList<>())
-                        .add(cipherText.decryptPrivateKey(ecdhPrivateKey, shareId));
+                        .add(cipherText.decryptPrivateKey(elGamalPrivateKey, shareId));
             }
         }
 
