@@ -104,7 +104,6 @@ import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.platform.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
-import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.PlatformWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -310,9 +309,6 @@ public class SwirldsPlatform implements Platform {
         final IssHandler issHandler = new IssHandler(
                 stateConfig, this::haltRequested, SystemExitUtils::handleFatalError, blocks.issScratchpad());
 
-        final HashLogger hashLogger =
-                new HashLogger(platformContext.getConfiguration().getConfigData(StateConfig.class));
-
         final BirthRoundMigrationShim birthRoundMigrationShim = buildBirthRoundMigrationShim(initialState, ancientMode);
 
         final AppNotifier appNotifier = new DefaultAppNotifier(blocks.notificationEngine());
@@ -327,7 +323,6 @@ public class SwirldsPlatform implements Platform {
                 eventWindowManager,
                 consensusRoundHandler,
                 issHandler,
-                hashLogger,
                 birthRoundMigrationShim,
                 latestCompleteStateNotifier,
                 latestImmutableStateNexus,

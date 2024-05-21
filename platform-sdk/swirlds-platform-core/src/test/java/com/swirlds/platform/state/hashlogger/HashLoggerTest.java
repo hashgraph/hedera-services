@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.util;
+package com.swirlds.platform.state.hashlogger;
 
 import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,12 +26,15 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -63,9 +66,11 @@ public class HashLoggerTest {
     @BeforeEach
     public void setUp() {
         mockLogger = mock(Logger.class);
-        final StateConfig stateConfig =
-                new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
-        hashLogger = new HashLogger(stateConfig, mockLogger);
+
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        hashLogger = new DefaultHashLogger(platformContext, mockLogger);
         logged = new ArrayList<>();
 
         doAnswer(invocation -> {
@@ -119,23 +124,25 @@ public class HashLoggerTest {
 
     @Test
     public void noLoggingWhenDisabled() {
-        final StateConfig stateConfig = new TestConfigBuilder()
-                .withValue("state.enableHashStreamLogging", "false")
-                .getOrCreateConfig()
-                .getConfigData(StateConfig.class);
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(StateConfig_.ENABLE_HASH_STREAM_LOGGING, false)
+                .getOrCreateConfig();
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
 
-        hashLogger = new HashLogger(stateConfig, mockLogger);
+        hashLogger = new DefaultHashLogger(platformContext, mockLogger);
         hashLogger.logHashes(createSignedState(1));
         assertThat(logged).isEmpty();
     }
 
     @Test
     public void loggerWithDefaultConstructorWorks() {
-        final StateConfig stateConfig =
-                new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
 
         assertDoesNotThrow(() -> {
-            hashLogger = new HashLogger(stateConfig);
+            hashLogger = new DefaultHashLogger(platformContext);
             hashLogger.logHashes(createSignedState(1));
         });
     }
