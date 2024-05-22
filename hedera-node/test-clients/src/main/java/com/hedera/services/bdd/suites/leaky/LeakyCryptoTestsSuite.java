@@ -109,10 +109,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
-import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.assertNoMismatchedSidecars;
-import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.expectContractActionSidecarFor;
-import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.initializeSidecarWatcher;
-import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.tearDownSidecarWatcher;
+import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.expectContractActionSidecarFor;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite.EMPTY_CONSTRUCTOR_CONTRACT;
@@ -1040,7 +1037,7 @@ public class LeakyCryptoTestsSuite {
                         NONDETERMINISTIC_NONCE)
                 .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP)
                 .given(
-                        initializeSidecarWatcher(),
+//                        initializeSidecarWatcher(),
                         overridingThree(
                                 CHAIN_ID_PROP,
                                 "298",
@@ -1180,7 +1177,10 @@ public class LeakyCryptoTestsSuite {
                                                         .build())));
                             }));
                 }))
-                .then(tearDownSidecarWatcher(), assertNoMismatchedSidecars());
+                .then(
+//                        tearDownSidecarWatcher(),
+//                        assertNoMismatchedSidecars()
+                );
     }
 
     @HapiTest

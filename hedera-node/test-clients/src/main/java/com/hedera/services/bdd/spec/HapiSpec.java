@@ -84,6 +84,7 @@ import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
 import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion;
+import com.hedera.services.bdd.spec.verification.traceability.SidecarWatcher;
 import com.hedera.services.bdd.suites.TargetNetworkType;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -248,9 +249,16 @@ public class HapiSpec implements Runnable, Executable {
      */
     @Nullable
     private SpecStateObserver specStateObserver;
-
+    /**
+     * If non-null, a list of shared states to include in this spec's initial state.
+     */
     @Nullable
     private List<SpecStateObserver.SpecState> sharedStates;
+    /**
+     * If non-null, a spec-scoped sidecar watcher to use with sidecar assertions.
+     */
+    @Nullable
+    private SidecarWatcher watcher;
 
     boolean quietMode;
 
@@ -348,6 +356,11 @@ public class HapiSpec implements Runnable, Executable {
 
     public void setSharedStates(@NonNull final List<SpecStateObserver.SpecState> sharedStates) {
         this.sharedStates = sharedStates;
+    }
+
+    @Nullable
+    public SidecarWatcher getSidecarWatcher() {
+        return watcher;
     }
 
     /**

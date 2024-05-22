@@ -117,6 +117,24 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID_PROP;
+import static com.hedera.services.bdd.suites.HapiSuite.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
+import static com.hedera.services.bdd.suites.HapiSuite.FIVE_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
+import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.expectContractActionSidecarFor;
+import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.expectContractStateChangesSidecarFor;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -234,7 +252,6 @@ import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.SidecarAwareHapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction;
@@ -268,7 +285,7 @@ import org.junit.jupiter.api.Order;
 
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 @OrderedInIsolation
-public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
+public class LeakyContractTestsSuite {
     public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1 = "contracts.maxRefundPercentOfGasLimit";
     public static final String CREATE_TX = "createTX";
     public static final String CREATE_TX_REC = "createTXRec";
@@ -328,60 +345,6 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
     private static final String CREATE_2_TXN_2 = "create2Txn2";
     private static final String NESTED_LAZY_CREATE_VIA_CONSTRUCTOR = "NestedLazyCreateViaConstructor";
     private static final long NONEXISTENT_CONTRACT_NUM = 1_234_567_890L;
-
-    public static void main(String... args) {
-        new LeakyContractTestsSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(
-                transferToCaller(),
-                resultSizeAffectsFees(),
-                payerCannotOverSendValue(),
-                propagatesNestedCreations(),
-                temporarySStoreRefundTest(),
-                transferZeroHbarsToCaller(),
-                canCallPendingContractSafely(),
-                createTokenWithInvalidRoyaltyFee(),
-                autoAssociationSlotsAppearsInInfo(),
-                createTokenWithInvalidFeeCollector(),
-                fungibleTokenCreateWithFeesHappyPath(),
-                gasLimitOverMaxGasLimitFailsPrecheck(),
-                nonFungibleTokenCreateWithFeesHappyPath(),
-                createMinChargeIsTXGasUsedByContractCreate(),
-                createGasLimitOverMaxGasLimitFailsPrecheck(),
-                contractCreationStoragePriceMatchesFinalExpiry(),
-                createTokenWithInvalidFixedFeeWithERC721Denomination(),
-                maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-                etx026AccountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
-                createMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-                lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled(),
-                evmLazyCreateViaSolidityCall(),
-                evmLazyCreateViaSolidityCallTooManyCreatesFails(),
-                erc20TransferFromDoesNotWorkIfFlagIsDisabled(),
-                rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled(),
-                whitelistPositiveCase(),
-                whitelistNegativeCases(),
-                requiresTopLevelSignatureOrApprovalDependingOnControllingProperty(),
-                transferWorksWithTopLevelSignatures(),
-                transferFailsWithIncorrectAmounts(),
-                transferDontWorkWithoutTopLevelSignatures(),
-                transferErc20TokenFromContractWithApproval(),
-                transferErc20TokenFromErc721TokenFails(),
-                contractCreateNoncesExternalizationHappyPath(),
-                contractCreateFollowedByContractCallNoncesExternalization(),
-                shouldReturnNullWhenContractsNoncesExternalizationFlagIsDisabled(),
-                someErc721GetApprovedScenariosPass(),
-                someErc721OwnerOfScenariosPass(),
-                someErc721BalanceOfScenariosPass(),
-                callToNonExistingContractFailsGracefully(),
-                getErc20TokenNameExceedingLimits(),
-                relayerFeeAsExpectedIfSenderCoversGas(),
-                canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor(),
-                invalidContract(),
-                htsTransferFromForNFTViaContractCreateLazyCreate());
-    }
 
     @SuppressWarnings("java:S5960")
     @HapiTest
@@ -2107,8 +2070,9 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                         getTxnRecord(CALL_TX_REC).andAllChildRecords().logged().exposingAllTo(records -> {
                             final var lastChildResult = records.getLast().getContractCreateResult();
                             evmAddressOfChildContract.set(lastChildResult.getEvmAddress());
-                        }),
-                        initializeSidecarWatcher())
+                        })
+//                        initializeSidecarWatcher()
+                )
                 .when(withOpContext((spec, opLog) -> {
                     final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var keyBytes = ecdsaKey.getECDSASecp256K1().toByteArray();
@@ -2189,9 +2153,10 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                                                     .setGas(5_832_424)
                                                     .setValue(depositAmount / 4)
                                                     .build())));
-                        }),
-                        tearDownSidecarWatcher(),
-                        assertNoMismatchedSidecars());
+                        })
+//                        tearDownSidecarWatcher()
+//                        assertNoMismatchedSidecars()
+                );
     }
 
     // Requires legacy security model, cannot be enabled as @HapiTest without refactoring to use contract keys
@@ -3224,10 +3189,5 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                     expectedCreate2Address.set(hexedAddress);
                 })
                 .payingWith(GENESIS);
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

@@ -14,81 +14,54 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites;
+package com.hedera.services.bdd.spec.utilops;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.stateChangesToGrpc;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion.recordStreamLocFor;
 import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.getInitcode;
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.StateChange;
 import com.hedera.services.bdd.spec.assertions.matchers.TransactionSidecarRecordMatcher;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.verification.traceability.ExpectedSidecar;
 import com.hedera.services.bdd.spec.verification.traceability.SidecarWatcher;
 import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.stream.proto.ContractActions;
 import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChanges;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
- * A suite that is aware of externalized sidecar files, provides utilities to verify sidecar records.
- * This suite is meant to be extended by other suites that need to test sidecar files.
+ * Provides utilities to verify sidecar records.
  *
  * @author vyanev
  */
-@SuppressWarnings("java:S5960") // "assertions should not be used in production code" - not production
-public abstract class SidecarAwareHapiSuite extends HapiSuite {
-
-    private static final Logger LOG = LogManager.getLogger(SidecarAwareHapiSuite.class);
+// assertions should not be used in production code
+@SuppressWarnings("java:S5960")
+public class SidecarVerbs {
     private static final String RUNTIME_CODE = "runtimeBytecode";
 
-    /**
-     * The sidecar watcher instance that will be used for incoming sidecar files.
-     */
-    private static SidecarWatcher sidecarWatcher;
-
-    /**
-     * Initialize the sidecar watcher for the current spec.
-     * @return A {@link CustomSpecAssert} that will initialize the sidecar watcher.
-     */
-    public static CustomSpecAssert initializeSidecarWatcher() {
-        return withOpContext((spec, opLog) -> {
-            final Path path = Paths.get(recordStreamLocFor(spec));
-            if (LOG.isInfoEnabled()) {
-                LOG.info("Watching for sidecars at absolute path {}", path.toAbsolutePath());
-            }
-            sidecarWatcher = new SidecarWatcher(path);
-            sidecarWatcher.watch();
-        });
-    }
-
-    /**
-     * Waits for expected sidecars and tears down the sidecar watcher for the current spec.
-     * @return A {@link CustomSpecAssert} that will tear down the sidecar watcher.
-     */
-    public static CustomSpecAssert tearDownSidecarWatcher() {
-        return withOpContext((spec, opLog) -> {
-            // send a dummy transaction to trigger externalization of last sidecars
-            allRunFor(spec, sleepFor(3000), cryptoCreate("externalizeFinalSidecars"));
-            sidecarWatcher.waitUntilFinished();
-            sidecarWatcher.tearDown();
-        });
+    private interface MatcherSpec {
+        void customize(TransactionSidecarRecordMatcher.Builder builder, HapiSpec spec, TransactionRecord originRecord);
     }
 
     /**
@@ -96,56 +69,48 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
      * @param expectedSidecar The {@link ExpectedSidecar} to add.
      */
     protected static void addExpectedSidecar(final ExpectedSidecar expectedSidecar) {
-        sidecarWatcher.addExpectedSidecar(expectedSidecar);
+//        sidecarWatcher.addExpectedSidecar(expectedSidecar);
     }
 
-    /**
-     * Expect a sidecar file to be generated for the given transaction name with the given contract actions.
-     * @param txnName The name of the transaction to expect the sidecar for.
-     * @param actions The contract actions to expect in the sidecar.
-     * @return A {@link CustomSpecAssert} that will expect the sidecar file to be generated.
-     */
-    public static CustomSpecAssert expectContractActionSidecarFor(
-            final String txnName, final List<ContractAction> actions) {
-        return withOpContext((spec, opLog) -> {
-            final var txnRecord = getTxnRecord(txnName);
-            allRunFor(spec, txnRecord);
-            addExpectedSidecar(new ExpectedSidecar(
-                    spec.getName(),
-                    TransactionSidecarRecordMatcher.newBuilder()
-                            .setConsensusTimestamp(txnRecord.getResponseRecord().getConsensusTimestamp())
-                            .setActions(ContractActions.newBuilder()
-                                    .addAllContractActions(actions)
-                                    .build())
-                            .build()));
-        });
-    }
+    public static AtomicReference<SidecarWatcher> GLOBAL_WATCHER = new AtomicReference<>();
 
     /**
-     * Expect a sidecar file to be generated for the given transaction name with the given contract state changes.
+     * Expect a sidecar file to be generated for the given transaction name with the given contract state changes,
+     * for the default {@link SidecarWatcher}.
+     *
      * @param txnName The name of the transaction to expect the sidecar for.
      * @param stateChanges The contract state changes to expect in the sidecar.
      * @return A {@link CustomSpecAssert} that will expect the sidecar file to be generated.
      */
     public static CustomSpecAssert expectContractStateChangesSidecarFor(
-            final String txnName, final List<StateChange> stateChanges) {
-        return withOpContext((spec, opLog) -> {
-            final var txnRecord = getTxnRecord(txnName);
-            allRunFor(spec, txnRecord);
-            addExpectedSidecar(new ExpectedSidecar(
-                    spec.getName(),
-                    TransactionSidecarRecordMatcher.newBuilder()
-                            .setConsensusTimestamp(txnRecord.getResponseRecord().getConsensusTimestamp())
-                            .setStateChanges(ContractStateChanges.newBuilder()
-                                    .addAllContractStateChanges(stateChangesToGrpc(stateChanges, spec))
-                                    .build())
-                            .build()));
-        });
+            @NonNull final String txnName,
+            @NonNull final List<StateChange> stateChanges) {
+        requireNonNull(txnName);
+        requireNonNull(stateChanges);
+        return expectSidecarRecord(txnName, (builder, spec, originRecord) -> builder.setStateChanges(ContractStateChanges.newBuilder()
+                .addAllContractStateChanges(stateChangesToGrpc(stateChanges, spec))
+                .build()));
     }
 
     /**
-     * Expect a sidecar file to be generated with a sidecar record
-     * for the given transaction name with the given contract bytecode.
+     * Expect a sidecar file to be generated for the given transaction name with the given contract actions,
+     * for the default {@link SidecarWatcher}.
+     *
+     * @param txnName The name of the transaction to expect the sidecar for.
+     * @param actions The contract actions to expect in the sidecar.
+     * @return a {@link CustomSpecAssert} that will expect the sidecar file to be generated.
+     */
+    public static CustomSpecAssert expectContractActionSidecarFor(
+            @NonNull final String txnName,
+            @NonNull final List<ContractAction> actions) {
+        return expectSidecarRecord(txnName, (builder, spec, originRecord) -> builder.setActions(ContractActions.newBuilder()
+                .addAllContractActions(actions)
+                .build()));
+    }
+
+    /**
+     * Expect a sidecar file to be generated with a sidecar record for the given transaction name with the
+     * given contract bytecode, for the in-scope {@link SidecarWatcher}.
      *
      * @param txnName The name of the transaction to expect the sidecar for.
      * @param contractName The name of the contract to expect the bytecode for.
@@ -154,36 +119,29 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
      * @return {@link CustomSpecAssert} expecting the sidecar file to be generated.
      */
     public static CustomSpecAssert expectContractBytecodeSidecarFor(
-            final String txnName,
-            final String contractName,
-            final String binFileName,
-            final Object... constructorArgs) {
-        return withOpContext((spec, opLog) -> {
-            final var txnRecord = getTxnRecord(txnName);
-            final var contractBytecode = getContractBytecode(contractName).saveResultTo(RUNTIME_CODE);
-            allRunFor(spec, txnRecord, contractBytecode);
-            final var consensusTimestamp = txnRecord.getResponseRecord().getConsensusTimestamp();
-            final var initCode = getInitcode(binFileName, constructorArgs);
-            addExpectedSidecar(new ExpectedSidecar(
-                    spec.getName(),
-                    TransactionSidecarRecordMatcher.newBuilder()
-                            .setConsensusTimestamp(consensusTimestamp)
-                            .setBytecode(ContractBytecode.newBuilder()
-                                    .setContractId(txnRecord
-                                            .getResponseRecord()
-                                            .getContractCreateResult()
-                                            .getContractID())
-                                    .setInitcode(initCode)
-                                    .setRuntimeBytecode(
-                                            ByteString.copyFrom(spec.registry().getBytes(RUNTIME_CODE)))
-                                    .build())
-                            .build()));
+            @NonNull final String txnName,
+            @NonNull final String contractName,
+            @NonNull final String binFileName,
+            @NonNull final Object... constructorArgs) {
+        requireNonNull(txnName);
+        requireNonNull(contractName);
+        requireNonNull(binFileName);
+        requireNonNull(constructorArgs);
+        return expectSidecarRecord(txnName, (builder, spec, originRecord) -> {
+           builder.setBytecode(ContractBytecode.newBuilder()
+                   .setContractId(getTxnRecord(txnName)
+                           .getResponseRecord()
+                           .getContractCreateResult()
+                           .getContractID())
+                   .setInitcode(getInitcode(binFileName, constructorArgs))
+                   .setRuntimeBytecode(ByteString.copyFrom(spec.registry().getBytes(RUNTIME_CODE)))
+                   .build());
         });
     }
 
     /**
      * Expect a sidecar file to be generated with a record (for the given transaction)
-     * that contains the init-code from the given bin file.
+     * that contains the init-code from the given bin file, for the in-scope {@link SidecarWatcher}.
      *
      * @param txnName The name of the transaction to expect the sidecar for.
      * @param binFileName The name of the bin file to get the init-code from.
@@ -191,22 +149,19 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
      * @return {@link CustomSpecAssert} expecting the sidecar file to be generated.
      */
     public static CustomSpecAssert expectFailedContractBytecodeSidecarFor(
-            final String txnName, final String binFileName, final Object... constructorArgs) {
-        return withOpContext((spec, opLog) -> {
-            final var txnRecord = getTxnRecord(txnName);
-            allRunFor(spec, txnRecord);
-            final var consensusTimestamp = txnRecord.getResponseRecord().getConsensusTimestamp();
-            final var initCode = getInitcode(binFileName, constructorArgs);
-            addExpectedSidecar(new ExpectedSidecar(
-                    spec.getName(),
-                    TransactionSidecarRecordMatcher.newBuilder()
-                            .setConsensusTimestamp(consensusTimestamp)
-                            .setBytecode(ContractBytecode.newBuilder()
-                                    .setInitcode(initCode)
-                                    .build())
-                            .build()));
+            @NonNull final String txnName,
+            @NonNull final String binFileName,
+            @NonNull final Object... constructorArgs) {
+        requireNonNull(txnName);
+        requireNonNull(binFileName);
+        requireNonNull(constructorArgs);
+        return expectSidecarRecord(txnName, (builder, spec, originRecord) -> {
+            builder.setBytecode(ContractBytecode.newBuilder()
+                    .setInitcode(getInitcode(binFileName, constructorArgs))
+                    .build());
         });
     }
+
 
     /**
      * Expect a sidecar file to be generated with a record (for the given transaction)
@@ -237,6 +192,22 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
                                             ByteString.copyFrom(spec.registry().getBytes(RUNTIME_CODE)))
                                     .build())
                             .build()));
+        });
+    }
+
+    private static CustomSpecAssert expectSidecarRecord(
+            @NonNull final String txnName,
+            @NonNull final MatcherSpec matcherSpec) {
+        return withOpContext((spec, opLog) -> {
+            final var txnRecord = getTxnRecord(txnName);
+            allRunFor(spec, txnRecord);
+            final var builder = TransactionSidecarRecordMatcher.newBuilder()
+                    .setConsensusTimestamp(txnRecord.getResponseRecord().getConsensusTimestamp());
+            matcherSpec.customize(builder, spec, txnRecord.getResponseRecord());
+            final var watcher = Optional.ofNullable(spec.getSidecarWatcher())
+                    .or(() -> Optional.ofNullable(GLOBAL_WATCHER.get()))
+                    .orElseThrow();
+            watcher.addExpectedSidecar(new ExpectedSidecar(spec.getName(), builder.build()));
         });
     }
 
@@ -301,18 +272,4 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
                         .build()));
     }
 
-    /**
-     * Asserts that there are no mismatched sidecars and no pending sidecars.
-     * @return {@link CustomSpecAssert} with the assertions.
-     */
-    public static CustomSpecAssert assertNoMismatchedSidecars() {
-        return assertionsHold((spec, assertLog) -> {
-            assertTrue(sidecarWatcher.thereAreNoMismatchedSidecars(), sidecarWatcher.getMismatchErrors());
-            assertTrue(
-                    sidecarWatcher.thereAreNoPendingSidecars(),
-                    "There are some sidecars that have not been yet"
-                            + " externalized in the sidecar files after all"
-                            + " specs: " + sidecarWatcher.getPendingErrors());
-        });
-    }
 }

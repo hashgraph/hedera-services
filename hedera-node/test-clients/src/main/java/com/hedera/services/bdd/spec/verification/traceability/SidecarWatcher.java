@@ -16,12 +16,8 @@
 
 package com.hedera.services.bdd.spec.verification.traceability;
 
-import com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils;
-import com.hedera.services.stream.proto.SidecarFile;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,92 +25,45 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
-import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
-import org.apache.commons.io.monitor.FileAlterationMonitor;
-import org.apache.commons.io.monitor.FileAlterationObserver;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
-@SuppressWarnings("java:S1192") // "String literals should not be duplicated" - would impair readability here
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+// string literals should not be duplicated
+@SuppressWarnings("java:S1192")
 public class SidecarWatcher {
-
-    public SidecarWatcher(final Path recordStreamFolderPath) {
-        this.recordStreamFolderPath = recordStreamFolderPath;
-    }
-
-    private static final Logger log = LogManager.getLogger(SidecarWatcher.class);
-    private static final Pattern SIDECAR_FILE_REGEX =
-            Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}_\\d{2}_\\d{2}\\.\\d{9}Z_\\d{2}.rcd");
-    private static final int POLLING_INTERVAL_MS = 500;
-
     private final Queue<ExpectedSidecar> expectedSidecars = new LinkedBlockingDeque<>();
-
     // LinkedHashMap lets us easily print mismatches _in the order added_. Important if the
     // records get out-of-sync at one particular test, then all the _rest_ of the tests fail
     // too: It's good to know the _first_ test which fails.
     private final LinkedHashMap<String, List<MismatchedSidecar>> failedSidecars = new LinkedHashMap<>();
-    private final Path recordStreamFolderPath;
 
     private boolean hasSeenFirstExpectedSidecar = false;
-    private FileAlterationMonitor monitor;
-    private FileAlterationObserver observer;
 
-    public void watch() throws Exception {
-        observer = new FileAlterationObserver(recordStreamFolderPath.toFile());
-        final var listener = new FileAlterationListenerAdaptor() {
-            @Override
-            public void onFileCreate(File file) {
-                final var newFilePath = file.getPath();
-                if (SIDECAR_FILE_REGEX.matcher(newFilePath).find()) {
-                    log.info("New sidecar file: {}", file.getAbsolutePath());
-                    var retryCount = 0;
-                    while (true) {
-                        retryCount++;
-                        try {
-                            final var sidecarFile = RecordStreamingUtils.readMaybeCompressedSidecarFile(newFilePath);
-                            onNewSidecarFile(sidecarFile);
-                            return;
-                        } catch (IOException e) {
-                            // Some number of retries are expected to be necessary due to incomplete files on disk
-                            if (retryCount < 8) {
-                                try {
-                                    Thread.sleep(POLLING_INTERVAL_MS);
-                                } catch (InterruptedException ignored) {
-                                    Thread.currentThread().interrupt();
-                                }
-                            } else {
-                                log.error("Could not read sidecar file {}, exiting now.", newFilePath, e);
-                                throw new IllegalStateException();
-                            }
-                        }
-                    }
-                }
-            }
-
-            @Override
-            public void onFileDelete(File file) {
-                // no-op
-            }
-
-            @Override
-            public void onFileChange(File file) {
-                // no-op
-            }
-        };
-        observer.addListener(listener);
-        monitor = new FileAlterationMonitor(POLLING_INTERVAL_MS);
-        monitor.addObserver(observer);
-        monitor.start();
+    /**
+     * Adds a new expected sidecar to the queue.
+     *
+     * @param newExpectedSidecar the new expected sidecar
+     */
+    public void addExpectedSidecar(@NonNull final ExpectedSidecar newExpectedSidecar) {
+        this.expectedSidecars.add(newExpectedSidecar);
     }
 
-    private void onNewSidecarFile(final SidecarFile sidecarFile) {
-        for (final var actualSidecar : sidecarFile.getSidecarRecordsList()) {
+    /**
+     * Asserts that there are no mismatched sidecars and no pending sidecars.
+     *
+     * @throws AssertionError if there are mismatched sidecars or pending sidecars
+     */
+    public void assertAllExpectations(@NonNull final List<TransactionSidecarRecord> actualSidecarRecords) {
+        for (final var actualSidecar : actualSidecarRecords) {
             final boolean matchesConsensusTimestamp = Optional.ofNullable(expectedSidecars.peek())
                     .map(ExpectedSidecar::expectedSidecarRecord)
                     .map(expected -> expected.matchesConsensusTimestampOf(actualSidecar))
                     .orElse(false);
-
             if (hasSeenFirstExpectedSidecar && matchesConsensusTimestamp) {
                 assertIncomingSidecar(actualSidecar);
             } else {
@@ -130,6 +79,13 @@ public class SidecarWatcher {
                 }
             }
         }
+
+        assertTrue(thereAreNoMismatchedSidecars(), getMismatchErrors());
+        assertTrue(
+                thereAreNoPendingSidecars(),
+                "There are some sidecars that have not been yet"
+                        + " externalized in the sidecar files after all"
+                        + " specs: " + getPendingErrors());
     }
 
     private void assertIncomingSidecar(final TransactionSidecarRecord actualSidecarRecord) {
@@ -137,8 +93,7 @@ public class SidecarWatcher {
         // if the queue is empty here, the specs have missed a sidecar
         // and must be updated to account for it
         if (expectedSidecars.isEmpty()) {
-            throw new IllegalStateException(
-                    "No expected sidecar found for incoming sidecar: %s".formatted(actualSidecarRecord));
+            Assertions.fail("No expected sidecar found for incoming sidecar: %s".formatted(actualSidecarRecord));
         }
         final var expectedSidecar = expectedSidecars.poll();
         final var expectedSidecarRecord = expectedSidecar.expectedSidecarRecord();
@@ -150,61 +105,15 @@ public class SidecarWatcher {
         }
     }
 
-    public void waitUntilFinished() {
-        if (!expectedSidecars.isEmpty()) {
-            log.info("Waiting a maximum of 10 seconds for expected sidecars");
-            var retryCount = 40;
-            while (!expectedSidecars.isEmpty() && retryCount >= 0) {
-                try {
-                    Thread.sleep(POLLING_INTERVAL_MS);
-                } catch (InterruptedException ignored) {
-                    Thread.currentThread().interrupt();
-                    log.warn("Interrupted while waiting for sidecars.");
-                    return;
-                }
-                observer.checkAndNotify();
-                retryCount--;
-            }
-        }
-    }
-
-    public void addExpectedSidecar(final ExpectedSidecar newExpectedSidecar) {
-        this.expectedSidecars.add(newExpectedSidecar);
-    }
-
-    public boolean thereAreNoMismatchedSidecars() {
+    private boolean thereAreNoMismatchedSidecars() {
         return failedSidecars.isEmpty();
     }
 
-    public boolean containsAllExpectedSidecarRecords() {
-        return containsAllExpectedSidecarRecords(sidecarRecord -> true);
-    }
-
-    public boolean containsAllExpectedSidecarRecords(Predicate<MismatchedSidecar> filter) {
-        for (final var entry : failedSidecars.entrySet()) {
-            final var specName = entry.getKey();
-            final var faultySidecars = entry.getValue();
-
-            for (final MismatchedSidecar pair : faultySidecars) {
-                if (!filter.test(pair)) {
-                    continue;
-                }
-                log.error(
-                        "Some expected sidecar records are missing for spec {}: \nExpected: {}\nActual: {}",
-                        specName,
-                        pair.expectedSidecarRecordMatcher().toSidecarRecord(),
-                        pair.actualSidecarRecord());
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public String getMismatchErrors() {
+    private String getMismatchErrors() {
         return getMismatchErrors(pair -> true);
     }
 
-    public String getMismatchErrors(Predicate<MismatchedSidecar> filter) {
+    private String getMismatchErrors(Predicate<MismatchedSidecar> filter) {
         final var messageBuilder = new StringBuilder();
         messageBuilder.append("Mismatch(es) between actual/expected sidecars present: ");
         for (final var kv : failedSidecars.entrySet()) {
@@ -230,11 +139,11 @@ public class SidecarWatcher {
         return messageBuilder.toString();
     }
 
-    public boolean thereAreNoPendingSidecars() {
+    private boolean thereAreNoPendingSidecars() {
         return expectedSidecars.isEmpty();
     }
 
-    public String getPendingErrors() {
+    private String getPendingErrors() {
         final var messageBuilder = new StringBuilder();
         messageBuilder.append("Pending sidecars not yet seen: ");
         int i = 1;
@@ -249,13 +158,5 @@ public class SidecarWatcher {
                     .append(pendingSidecar.expectedSidecarRecord());
         }
         return messageBuilder.toString();
-    }
-
-    public void tearDown() {
-        try {
-            monitor.stop();
-        } catch (Exception e) {
-            log.warn("Exception thrown when closing monitor.");
-        }
     }
 }
