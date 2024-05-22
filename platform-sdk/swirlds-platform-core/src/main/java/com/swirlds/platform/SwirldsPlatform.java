@@ -573,7 +573,7 @@ public class SwirldsPlatform implements Platform {
         logger.info(STARTUP.getMarker(), "Starting platform {}", selfId);
         platformWiring.getModel().preventJvmExit();
 
-        platformContext.getFileSystemManager().start();
+        platformContext.getRecycleBin().start();
         platformContext.getMetrics().start();
         platformWiring.start();
 
@@ -591,7 +591,7 @@ public class SwirldsPlatform implements Platform {
      * </ul>
      */
     public void performPcesRecovery() {
-        platformContext.getFileSystemManager().start();
+        platformContext.getRecycleBin().start();
         platformContext.getMetrics().start();
         platformWiring.start();
 

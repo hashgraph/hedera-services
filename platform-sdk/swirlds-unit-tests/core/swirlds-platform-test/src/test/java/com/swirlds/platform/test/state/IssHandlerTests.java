@@ -22,12 +22,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.utility.SerializableLong;
-import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.config.StateConfig_;
+import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.iss.internal.DefaultIssHandler;
