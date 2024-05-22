@@ -19,6 +19,7 @@ package com.swirlds.platform.event.branching;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Detects branching in the hashgraph.
@@ -29,8 +30,10 @@ public interface BranchDetector {
      * Add an event to the branch detector. Events should be passed to this method in topological order.
      *
      * @param event the event to add
+     * @return the event if it is a branching event or null if the event is not a branching event
      */
-    void addEvent(@NonNull GossipEvent event);
+    @Nullable
+    GossipEvent checkForBranches(@NonNull GossipEvent event);
 
     /**
      * Update the event window in the branch detector. This should be called whenever the event window is updated and

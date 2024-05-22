@@ -26,6 +26,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -109,15 +110,16 @@ public class DefaultBranchDetector implements BranchDetector {
     /**
      * {@inheritDoc}
      */
+    @Nullable
     @Override
-    public void addEvent(@NonNull final GossipEvent event) {
+    public GossipEvent checkForBranches(@NonNull final GossipEvent event) {
         if (currentEventWindow == null) {
             throw new IllegalStateException("Event window must be set before adding events");
         }
 
         if (currentEventWindow.isAncient(event)) {
             // Ignore ancient events.
-            return;
+            return null;
         }
 
         final NodeId creator = event.getCreatorId();
@@ -126,17 +128,22 @@ public class DefaultBranchDetector implements BranchDetector {
         final EventDescriptor previousEvent = mostRecentEvents.get(creator);
         final EventDescriptor selfParent = event.getHashedData().getSelfParent();
 
-        if (selfParent == null) {
-            if (previousEvent != null) {
-                // Event has no self parent even though an eligible self event exists.
+        try {
+            if (selfParent == null) {
+                if (previousEvent != null) {
+                    // Event has no self parent even though an eligible self event exists.
+                    reportBranch(descriptor);
+                    return event;
+                }
+            } else if (previousEvent != null && !previousEvent.equals(selfParent)) {
+                // Event is not a child of the most recent event by the same creator.
                 reportBranch(descriptor);
+                return event;
             }
-        } else if (previousEvent != null && !previousEvent.equals(selfParent)) {
-            // Event is not a child of the most recent event by the same creator.
-            reportBranch(descriptor);
+        } finally {
+            mostRecentEvents.put(creator, event.getDescriptor());
         }
-
-        mostRecentEvents.put(creator, event.getDescriptor());
+        return null;
     }
 
     /**
@@ -145,6 +152,8 @@ public class DefaultBranchDetector implements BranchDetector {
      * @param branchingEvent the branching event
      */
     private void reportBranch(@NonNull final EventDescriptor branchingEvent) {
+        // TODO metrics should be a stand alone box
+
         final NodeId creator = branchingEvent.getCreator();
         nodeLoggers.get(creator).error(EXCEPTION.getMarker(), "Node {} is branching", creator);
 
