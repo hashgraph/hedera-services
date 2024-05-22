@@ -302,6 +302,11 @@ public class TxnVerbs {
         return new HapiTokenReject(account, referencesSources);
     }
 
+    @SafeVarargs
+    public static HapiTokenReject tokenReject(Function<HapiSpec, TokenReference>... referencesSources) {
+        return new HapiTokenReject(referencesSources);
+    }
+
     public static HapiTokenFeeScheduleUpdate tokenFeeScheduleUpdate(String token) {
         return new HapiTokenFeeScheduleUpdate(token);
     }
