@@ -58,7 +58,6 @@ public interface Group extends UnderCurve {
     /**
      * Creates a group element from a seed (32 bytes)
      *
-     * @param seed the seed to generate the element from
      * @return the new group element
      */
     @NonNull

@@ -20,7 +20,7 @@ package com.swirlds.platform.tss.bls.api;
  * An interface representing objects that can be serialized into a byte array, deserialized from a byte array,
  * and validated for correctness.
  *
- * <h3>Usage Example:</h3>
+ * <H2>Usage Example:</H2>
  * <pre>
  * {@code
  * public class MyObject implements ByteRepresentable<MyObject> {

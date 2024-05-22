@@ -41,7 +41,7 @@ public interface Tss<P extends PublicKey> {
      * @return the interpolated signature if the threshold is met, otherwise null.
      */
     @Nullable
-    Signature<P> aggregateSignatures(@NonNull final List<Signature<P>> partialSignatures);
+    Signature aggregateSignatures(@NonNull final List<Signature> partialSignatures);
 
     /**
      * Aggregate a threshold number of {@link TssPublicShare}s.
