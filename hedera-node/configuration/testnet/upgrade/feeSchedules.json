@@ -1378,7 +1378,93 @@
                 }
             } ]
         }
-    }, {
+    },
+        {
+            "transactionFeeSchedule": {
+                "hederaFunctionality": "TokenReject",
+                "fees": [
+                    {
+                        "subType": "TOKEN_FUNGIBLE_COMMON",
+                        "nodedata": {
+                            "constant": 7983519,
+                            "bpt": 12763,
+                            "vpt": 31908136,
+                            "rbh": 9,
+                            "sbh": 1,
+                            "gas": 85,
+                            "bpr": 12763,
+                            "sbpr": 319,
+                            "min": 0,
+                            "max": 1000000000000000
+                        },
+                        "networkdata": {
+                            "constant": 159670382,
+                            "bpt": 255265,
+                            "vpt": 638162730,
+                            "rbh": 170,
+                            "sbh": 13,
+                            "gas": 1702,
+                            "bpr": 255265,
+                            "sbpr": 6382,
+                            "min": 0,
+                            "max": 1000000000000000
+                        },
+                        "servicedata": {
+                            "constant": 159670382,
+                            "bpt": 255265,
+                            "vpt": 638162730,
+                            "rbh": 170,
+                            "sbh": 13,
+                            "gas": 1702,
+                            "bpr": 255265,
+                            "sbpr": 6382,
+                            "min": 0,
+                            "max": 1000000000000000
+                        }
+                    },
+                    {
+                        "subType": "TOKEN_NON_FUNGIBLE_UNIQUE",
+                        "nodedata": {
+                            "constant": 22833842,
+                            "bpt": 36504,
+                            "vpt": 91261178,
+                            "rbh": 24,
+                            "sbh": 2,
+                            "gas": 243,
+                            "bpr": 36504,
+                            "sbpr": 913,
+                            "min": 0,
+                            "max": 1000000000000000
+                        },
+                        "networkdata": {
+                            "constant": 456676846,
+                            "bpt": 730089,
+                            "vpt": 1825223562,
+                            "rbh": 487,
+                            "sbh": 37,
+                            "gas": 4867,
+                            "bpr": 730089,
+                            "sbpr": 18252,
+                            "min": 0,
+                            "max": 1000000000000000
+                        },
+                        "servicedata": {
+                            "constant": 456676846,
+                            "bpt": 730089,
+                            "vpt": 1825223562,
+                            "rbh": 487,
+                            "sbh": 37,
+                            "gas": 4867,
+                            "bpr": 730089,
+                            "sbpr": 18252,
+                            "min": 0,
+                            "max": 1000000000000000
+                        }
+                    }
+                ]
+            }
+        },
+        {
             "transactionFeeSchedule": {
                 "hederaFunctionality": "TokenUpdateNfts",
                 "fees": [
@@ -4559,6 +4645,90 @@
                     "max" : 1000000000000000
                 }
             } ]
+        }
+    }, {
+        "transactionFeeSchedule": {
+            "hederaFunctionality": "TokenReject",
+            "fees": [
+                {
+                    "subType": "TOKEN_FUNGIBLE_COMMON",
+                    "nodedata": {
+                        "constant": 7983519,
+                        "bpt": 12763,
+                        "vpt": 31908136,
+                        "rbh": 9,
+                        "sbh": 1,
+                        "gas": 85,
+                        "bpr": 12763,
+                        "sbpr": 319,
+                        "min": 0,
+                        "max": 1000000000000000
+                    },
+                    "networkdata": {
+                        "constant": 159670382,
+                        "bpt": 255265,
+                        "vpt": 638162730,
+                        "rbh": 170,
+                        "sbh": 13,
+                        "gas": 1702,
+                        "bpr": 255265,
+                        "sbpr": 6382,
+                        "min": 0,
+                        "max": 1000000000000000
+                    },
+                    "servicedata": {
+                        "constant": 159670382,
+                        "bpt": 255265,
+                        "vpt": 638162730,
+                        "rbh": 170,
+                        "sbh": 13,
+                        "gas": 1702,
+                        "bpr": 255265,
+                        "sbpr": 6382,
+                        "min": 0,
+                        "max": 1000000000000000
+                    }
+                },
+                {
+                    "subType": "TOKEN_NON_FUNGIBLE_UNIQUE",
+                    "nodedata": {
+                        "constant": 22833842,
+                        "bpt": 36504,
+                        "vpt": 91261178,
+                        "rbh": 24,
+                        "sbh": 2,
+                        "gas": 243,
+                        "bpr": 36504,
+                        "sbpr": 913,
+                        "min": 0,
+                        "max": 1000000000000000
+                    },
+                    "networkdata": {
+                        "constant": 456676846,
+                        "bpt": 730089,
+                        "vpt": 1825223562,
+                        "rbh": 487,
+                        "sbh": 37,
+                        "gas": 4867,
+                        "bpr": 730089,
+                        "sbpr": 18252,
+                        "min": 0,
+                        "max": 1000000000000000
+                    },
+                    "servicedata": {
+                        "constant": 456676846,
+                        "bpt": 730089,
+                        "vpt": 1825223562,
+                        "rbh": 487,
+                        "sbh": 37,
+                        "gas": 4867,
+                        "bpr": 730089,
+                        "sbpr": 18252,
+                        "min": 0,
+                        "max": 1000000000000000
+                    }
+                }
+            ]
         }
     }, {
         "transactionFeeSchedule": {
