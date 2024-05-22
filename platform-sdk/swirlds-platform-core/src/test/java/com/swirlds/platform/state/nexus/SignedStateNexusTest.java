@@ -24,9 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.platform.config.StateConfig;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -42,14 +41,9 @@ import org.mockito.Mockito;
 
 class SignedStateNexusTest {
     private static Stream<SignedStateNexus> allInstances() {
-        return Stream.concat(
-                raceConditionInstances(),
-                Stream.of(new DefaultLatestCompleteStateNexus(
-                        ConfigurationBuilder.create()
-                                .withConfigDataType(StateConfig.class)
-                                .build()
-                                .getConfigData(StateConfig.class),
-                        new NoOpMetrics())));
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+        return Stream.concat(raceConditionInstances(), Stream.of(new DefaultLatestCompleteStateNexus(platformContext)));
     }
 
     private static Stream<SignedStateNexus> raceConditionInstances() {

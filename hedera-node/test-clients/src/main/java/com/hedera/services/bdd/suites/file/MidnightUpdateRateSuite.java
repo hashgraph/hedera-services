@@ -21,37 +21,30 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.suites.HapiSuite.ADEQUATE_FUNDS;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATES;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.text.ParseException;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 
 // The test in this suite was extracted from ExchangeRateControlSuite. It has to be run shortly
 // before midnight, which is not practical. Either we add functionality to mock time in e2e-test
 // or we move this test to the xtests.
 //
 // https://github.com/hashgraph/hedera-services/issues/8950
-public class MidnightUpdateRateSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(MidnightUpdateRateSuite.class);
-
+public class MidnightUpdateRateSuite {
     final HapiFileUpdate resetRatesOp = fileUpdate(EXCHANGE_RATES)
             .payingWith(EXCHANGE_RATE_CONTROL)
             .fee(ADEQUATE_FUNDS)
             .contents(spec -> spec.ratesProvider().rateSetWith(1, 12).toByteString());
 
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of();
-    }
-
-    final HapiSpec acct57UpdatesMidnightRateAtMidNight() throws ParseException {
+    final Stream<DynamicTest> acct57UpdatesMidnightRateAtMidNight() throws ParseException {
         return defaultHapiSpec("Acct57UpdatesMidnightRateAtMidNight")
                 .given(resetRatesOp, cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, ADEQUATE_FUNDS)))
                 .when(
@@ -81,10 +74,5 @@ public class MidnightUpdateRateSuite extends HapiSuite {
                         getFileContents(EXCHANGE_RATES)
                                 .hasContents(spec -> spec.registry().getBytes("newRates")),
                         resetRatesOp);
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

@@ -20,6 +20,7 @@ import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
 
 import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
@@ -70,13 +71,13 @@ public class DefaultStateSignatureCollector implements StateSignatureCollector {
      * Start empty, with no known signed states. A signed state is considered completed when it has signatures from a
      * sufficient threshold of nodes.
      *
-     * @param stateConfig        configuration for state
+     * @param platformContext    the platform context
      * @param signedStateMetrics a collection of signed state metrics
      */
     public DefaultStateSignatureCollector(
-            @NonNull final StateConfig stateConfig, @NonNull final SignedStateMetrics signedStateMetrics) {
-        this.stateConfig = Objects.requireNonNull(stateConfig, "stateConfig");
-        this.signedStateMetrics = Objects.requireNonNull(signedStateMetrics, "signedStateMetrics");
+            @NonNull final PlatformContext platformContext, @NonNull final SignedStateMetrics signedStateMetrics) {
+        this.stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        this.signedStateMetrics = Objects.requireNonNull(signedStateMetrics);
 
         this.savedSignatures =
                 new StandardSequenceSet<>(0, stateConfig.maxAgeOfFutureStateSignatures(), SavedSignature::round);

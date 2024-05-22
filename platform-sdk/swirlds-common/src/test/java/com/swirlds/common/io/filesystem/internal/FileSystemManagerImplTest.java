@@ -19,9 +19,6 @@ package com.swirlds.common.io.filesystem.internal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.verify;
 
 import com.swirlds.base.test.fixtures.concurrent.TestExecutor;
 import com.swirlds.base.test.fixtures.concurrent.WithTestExecutor;
@@ -35,7 +32,6 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
@@ -58,8 +54,7 @@ public class FileSystemManagerImplTest {
                 getTestRootPath(),
                 FileSystemManagerConfig.DEFAULT_DATA_DIR_NAME,
                 FileSystemManagerConfig.DEFAULT_TMP_DIR_NAME,
-                FileSystemManagerConfig.DEFAULT_RECYCLE_BIN_DIR_NAME,
-                p -> mockRecycleBin);
+                mockRecycleBin);
     }
 
     private String getTestRootPath() {
@@ -86,8 +81,7 @@ public class FileSystemManagerImplTest {
                 largeRootLocation,
                 FileSystemManagerConfig.DEFAULT_DATA_DIR_NAME,
                 FileSystemManagerConfig.DEFAULT_TMP_DIR_NAME,
-                FileSystemManagerConfig.DEFAULT_RECYCLE_BIN_DIR_NAME,
-                p -> mockRecycleBin);
+                mockRecycleBin);
         // then
         assertThat(Path.of(largeRootLocation)).isDirectory().isNotEmptyDirectory();
     }
@@ -110,8 +104,7 @@ public class FileSystemManagerImplTest {
         assertThat(dir)
                 .isNotEmptyDirectory()
                 .isDirectoryContaining("glob:**" + FileSystemManagerConfig.DEFAULT_TMP_DIR_NAME)
-                .isDirectoryContaining("glob:**" + FileSystemManagerConfig.DEFAULT_DATA_DIR_NAME)
-                .isDirectoryContaining("glob:**" + FileSystemManagerConfig.DEFAULT_RECYCLE_BIN_DIR_NAME);
+                .isDirectoryContaining("glob:**" + FileSystemManagerConfig.DEFAULT_DATA_DIR_NAME);
         assertThat(tmpDir).isDirectoryNotContaining("glob:{" + String.join(",", tmpFileNames) + "}");
     }
 
@@ -184,68 +177,6 @@ public class FileSystemManagerImplTest {
                 .doesNotExist()
                 .satisfies(p -> assertThat(p.toAbsolutePath().toString()).contains(getTestRootPath() + "/tmp"))
                 .satisfies(p -> assertThat(p.getFileName().toString()).endsWith("myTempFile"));
-    }
-
-    @Test
-    public void testRecycle_validRelativePath() throws IOException {
-        // given
-        final FileSystemManagerImpl fileSystemManager = getFileSystemManager();
-        final Path relativePath = Paths.get("data/file.txt");
-        fileSystemManager.resolve(relativePath); // Simulate file creation
-
-        doNothing().when(mockRecycleBin).recycle(any(Path.class));
-
-        // when
-        fileSystemManager.recycle(Path.of(getTestRootPath(), relativePath.toString()));
-
-        // then
-        // Assert that the recycle bin method was called with the resolved path
-        verify(mockRecycleBin).recycle(Paths.get(getTestRootPath(), "/data/file.txt"));
-    }
-
-    @Test
-    public void testRecycle_validAbsolutePath() throws IOException {
-        // given
-        final FileSystemManagerImpl fileSystemManager = getFileSystemManager();
-        final Path absolutePath = Paths.get(getTestRootPath(), "data/file.txt");
-
-        doNothing().when(mockRecycleBin).recycle(any(Path.class));
-
-        // when
-        fileSystemManager.recycle(absolutePath);
-
-        // then
-        // Assert that the recycle bin method was called with the resolved path
-        verify(mockRecycleBin).recycle(absolutePath);
-    }
-
-    @Test
-    @Disabled
-    public void testRecycle_emptyPath() {
-        // FUTURE-WORK re-enable this after we reenable the assertion of the deleted file being contained in the root
-        // dir
-        // given
-        final FileSystemManagerImpl fileSystemManager = getFileSystemManager();
-        // then
-        assertThrows(IllegalArgumentException.class, () -> fileSystemManager.recycle(Paths.get("")));
-    }
-
-    @Test
-    public void testRecycle_absolutePath() {
-        // dir
-        // given
-        final FileSystemManagerImpl fileSystemManager = getFileSystemManager();
-        // then
-        assertThrows(IllegalArgumentException.class, () -> fileSystemManager.recycle(Paths.get("/home/user/file.txt")));
-    }
-
-    @Test
-    public void testRecycle_pathEscapingRoot() {
-        // dir
-        // given
-        final FileSystemManagerImpl fileSystemManager = getFileSystemManager();
-        // then
-        assertThrows(IllegalArgumentException.class, () -> fileSystemManager.recycle(Paths.get("../etc/passwd")));
     }
 
     @Test

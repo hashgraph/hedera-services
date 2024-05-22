@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.state.merkle;
 
-import static com.hedera.node.app.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+import static com.hedera.hapi.util.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.ids.WritableEntityIdStore;
-import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.FilteredReadableStates;
@@ -73,7 +73,7 @@ import org.apache.logging.log4j.Logger;
  * then registers each and every {@link Schema} that it has. Each {@link Schema} is associated with
  * a {@link SemanticVersion}.
  *
- * <p>The Hedera application then calls {@link #migrate(MerkleHederaState, SemanticVersion, SemanticVersion, Configuration, NetworkInfo, Metrics, WritableEntityIdStore)}  on each {@link MerkleSchemaRegistry} instance, supplying it the
+ * <p>The Hedera application then calls {@link com.hedera.node.app.Hedera#onMigrate(MerkleHederaState, HederaSoftwareVersion, InitTrigger, Metrics)} on each {@link MerkleSchemaRegistry} instance, supplying it the
  * application version number and the newly created (or deserialized) but not yet hashed copy of the {@link
  * MerkleHederaState}. The registry determines which {@link Schema}s to apply, possibly taking multiple migration steps,
  * to transition the merkle tree from its current version to the final version.
@@ -245,10 +245,12 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                                 (short) 1,
                                                 new OnDiskKeySerializer<>(
                                                         md.onDiskKeySerializerClassId(),
+                                                        md.onDiskKeyClassId(),
                                                         md.stateDefinition().keyCodec()),
                                                 (short) 1,
                                                 new OnDiskValueSerializer<>(
                                                         md.onDiskValueSerializerClassId(),
+                                                        md.onDiskValueClassId(),
                                                         md.stateDefinition().valueCodec()))
                                         .maxNumberOfKeys(def.maxKeysHint());
                                 final var label = StateUtils.computeLabel(serviceName, stateKey);
@@ -464,6 +466,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     OnDiskKeySerializer.class,
                     () -> new OnDiskKeySerializer<>(
                             md.onDiskKeySerializerClassId(),
+                            md.onDiskKeyClassId(),
                             md.stateDefinition().keyCodec())));
             constructableRegistry.registerConstructable(new ClassConstructorPair(
                     OnDiskValue.class,
@@ -473,6 +476,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     OnDiskValueSerializer.class,
                     () -> new OnDiskValueSerializer<>(
                             md.onDiskValueSerializerClassId(),
+                            md.onDiskValueClassId(),
                             md.stateDefinition().valueCodec())));
             constructableRegistry.registerConstructable(new ClassConstructorPair(
                     SingletonNode.class,

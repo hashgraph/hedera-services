@@ -858,8 +858,7 @@ jobs:
       - validate
       - local-node-images
       - validate-production-image
-      - evm-mc-publish
-      - sdk-publish
+      - publish
     if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
     steps:
       - name: Determine Notification Parameters

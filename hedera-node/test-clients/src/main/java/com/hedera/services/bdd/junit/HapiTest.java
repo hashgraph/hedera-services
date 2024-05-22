@@ -16,20 +16,26 @@
 
 package com.hedera.services.bdd.junit;
 
-import com.hedera.services.bdd.spec.HapiSpec;
-import java.lang.annotation.Documented;
+import static org.junit.jupiter.api.parallel.ResourceAccessMode.READ;
+
+import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
+import com.hedera.services.bdd.junit.extensions.SpecNamingExtension;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.junit.platform.commons.annotation.Testable;
+import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
 
 /**
- * {@link HapiTest} is used to signal that the annotated method is a <em>HapiSpec</em> test method. This method may
- * be private, but it must take zero args, and return a {@link HapiSpec}.
+ * The main annotation in this package; marks a method as a factory for dynamic tests
+ * that will target the shared test network and use the {@link SpecNamingExtension} to
+ * name the tests.
  */
-@Target({ElementType.ANNOTATION_TYPE, ElementType.METHOD})
+@Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
-@Documented
-@Testable
+@TestFactory
+@ExtendWith({NetworkTargetingExtension.class, SpecNamingExtension.class})
+@ResourceLock(value = "NETWORK", mode = READ)
 public @interface HapiTest {}
