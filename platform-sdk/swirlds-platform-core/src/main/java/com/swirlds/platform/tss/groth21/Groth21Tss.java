@@ -22,8 +22,8 @@ import com.swirlds.platform.tss.TssPrivateKey;
 import com.swirlds.platform.tss.TssPrivateShare;
 import com.swirlds.platform.tss.TssPublicShare;
 import com.swirlds.platform.tss.TssShareClaim;
-import com.swirlds.platform.tss.verification.PublicKey;
-import com.swirlds.platform.tss.verification.Signature;
+import com.swirlds.platform.tss.bls.api.PublicKey;
+import com.swirlds.platform.tss.bls.api.Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -37,7 +37,7 @@ public class Groth21Tss<P extends PublicKey> implements Tss<P> {
      */
     @Nullable
     @Override
-    public Signature<P> aggregateSignatures(@NonNull final List<Signature<P>> partialSignatures) {
+    public Signature aggregateSignatures(@NonNull final List<Signature> partialSignatures) {
         throw new UnsupportedOperationException("Not implemented");
     }
 

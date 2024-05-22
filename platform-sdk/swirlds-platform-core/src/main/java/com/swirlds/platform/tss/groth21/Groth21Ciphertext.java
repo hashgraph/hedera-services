@@ -19,9 +19,9 @@ package com.swirlds.platform.tss.groth21;
 import com.swirlds.platform.tss.TssCiphertext;
 import com.swirlds.platform.tss.TssPrivateKey;
 import com.swirlds.platform.tss.TssShareId;
-import com.swirlds.platform.tss.pairings.GroupElement;
-import com.swirlds.platform.tss.verification.PrivateKey;
-import com.swirlds.platform.tss.verification.PublicKey;
+import com.swirlds.platform.tss.bls.api.GroupElement;
+import com.swirlds.platform.tss.bls.api.PrivateKey;
+import com.swirlds.platform.tss.bls.api.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +44,7 @@ public record Groth21Ciphertext<P extends PublicKey>(
     @NonNull
     @Override
     public TssPrivateKey<P> decryptPrivateKey(
-            @NonNull final PrivateKey<P> ecdhPrivateKey, @NonNull final TssShareId shareId) {
+            @NonNull final PrivateKey ecdhPrivateKey, @NonNull final TssShareId shareId) {
 
         final List<GroupElement> shareIdCiphertexts = shareCiphertexts.get(shareId);
 

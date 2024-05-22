@@ -14,25 +14,21 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.pairings;
+package com.swirlds.platform.tss.bls.api;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Interface representing a generic field
+ * Represents a finite field used in the Boneh-Lynn-Shacham (BLS) cryptographic scheme.
+ * <p>A finite field, often denoted as 𝔽q, where (q) is a prime power, is a field with a finite number of elements.</p>
  *
- * <p>This is a factory interface, responsible for creating {@link FieldElement field elements}
+ * <p>This is a factory interface, responsible for creating {@link FieldElement} which are scalars belonging to the filed represented by this instance.
+ * </p>
  *
- * @param <C>   the curve type
- * @param <FE>  the field element type
- * @param <GE1> the group 1 element type
- * @param <GE2> the group 2 element type
+ * @see FieldElement
  */
-public interface Field<
-        C extends Curve<C, FE, GE1, GE2>,
-        FE extends FieldElement<C, FE, GE1, GE2>,
-        GE1 extends Group1Element<C, FE, GE1, GE2>,
-        GE2 extends Group2Element<C, FE, GE1, GE2>> {
+public interface Field extends UnderCurve {
+
     /**
      * Creates a new field element from a long
      *
@@ -40,7 +36,7 @@ public interface Field<
      * @return the new field element
      */
     @NonNull
-    FE elementFromLong(long inputLong);
+    FieldElement elementFromLong(long inputLong);
 
     /**
      * Creates a new field element with value 0
@@ -48,7 +44,7 @@ public interface Field<
      * @return the new field element
      */
     @NonNull
-    FE zeroElement();
+    FieldElement zeroElement();
 
     /**
      * Creates a new field element with value 1
@@ -56,7 +52,7 @@ public interface Field<
      * @return the new field element
      */
     @NonNull
-    FE oneElement();
+    FieldElement oneElement();
 
     /**
      * Creates a field element from a seed (32 bytes)
@@ -65,7 +61,15 @@ public interface Field<
      * @return the new field element
      */
     @NonNull
-    FE randomElement(byte[] seed);
+    FieldElement randomElement(byte[] seed);
+
+    /**
+     * Creates a field element from a seed (32 bytes)
+     *
+     * @return the new field element
+     */
+    @NonNull
+    FieldElement randomElement();
 
     /**
      * Creates a field element from its serialized encoding
@@ -74,7 +78,7 @@ public interface Field<
      * @return the new field element, or null if construction fails
      */
     @NonNull
-    FE deserializeElementFromBytes(byte[] bytes);
+    FieldElement elementFromBytes(byte[] bytes);
 
     /**
      * Gets the size in bytes of an element

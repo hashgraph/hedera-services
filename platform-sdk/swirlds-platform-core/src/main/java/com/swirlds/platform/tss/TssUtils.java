@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.tss;
 
-import com.swirlds.platform.tss.verification.PrivateKey;
-import com.swirlds.platform.tss.verification.PublicKey;
+import com.swirlds.platform.tss.bls.api.PrivateKey;
+import com.swirlds.platform.tss.bls.api.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -50,7 +50,7 @@ public final class TssUtils {
     public static <P extends PublicKey> List<TssPrivateShare<P>> decryptPrivateShares(
             @NonNull final Tss<P> tss,
             @NonNull final List<TssShareId> shareIds,
-            @NonNull final PrivateKey<P> elGamalPrivateKey,
+            @NonNull final PrivateKey elGamalPrivateKey,
             @NonNull final List<TssCiphertext<P>> cipherTexts,
             final int threshold) {
 

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.tss;
 
-import com.swirlds.platform.tss.pairings.GroupElement;
+import com.swirlds.platform.tss.bls.api.GroupElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

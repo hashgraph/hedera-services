@@ -14,41 +14,27 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.verification;
+package com.swirlds.platform.tss.bls.api;
 
-import com.swirlds.platform.tss.bls.bls12381.Bls12381Curve;
-import com.swirlds.platform.tss.bls.bls12381.Bls12381Group2;
-import com.swirlds.platform.tss.bls.bls12381.g1pk_g2sig.Bls12381G2Signature;
+import com.swirlds.platform.tss.bls.impl.internal.BlsSchema;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A signature that has been produced by a {@link PrivateKey}.
  *
- * @param <P> the type of public key that can be used to verify this signature
  */
-public interface Signature<P extends PublicKey> {
+public record Signature(GroupElement element) {
+    public static final int MIN = 0;
+    public static final char TYPE = 's';
+
     /**
      * Deserialize a signature from a byte array.
      *
      * @param bytes the serialized signature, with the curve type being represented by the first byte
      * @return the deserialized signature
      */
-    static Signature<?> deserialize(final byte[] bytes) {
-        // the first byte is id of the curve
-        final byte curve = bytes[0];
-        // the second byte is the group the element is in
-        final byte group = bytes[1];
-
-        switch (curve) {
-            case Bls12381Curve.ID_BYTE:
-                if (group == 2) {
-                    return new Bls12381G2Signature(Bls12381Group2.getInstance().deserializeElementFromBytes(bytes));
-                } else {
-                    throw new UnsupportedOperationException("Only group 2 signatures are currently supported");
-                }
-            default:
-                throw new UnsupportedOperationException("Unknown curve");
-        }
+    static Signature deserialize(final byte[] bytes) {
+        return BlsSchema.deserializeSignature(bytes);
     }
 
     /**
@@ -58,7 +44,9 @@ public interface Signature<P extends PublicKey> {
      * @param message   the message that was signed
      * @return true if the signature is valid, false otherwise
      */
-    boolean verifySignature(@NonNull final P publicKey, @NonNull final byte[] message);
+    public boolean verifySignature(@NonNull final PublicKey publicKey, @NonNull final byte[] message) {
+        return BlsSchema.forPairing(publicKey.element().curveTypeId()).verifySignature(message, publicKey, this);
+    }
 
     /**
      * Serialize the signature to a byte array.
@@ -67,5 +55,7 @@ public interface Signature<P extends PublicKey> {
      *
      * @return the serialized signature
      */
-    byte[] serialize();
+    public byte[] serialize() {
+        return BlsSchema.getBytes(TYPE, element().toBytes());
+    }
 }

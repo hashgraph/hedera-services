@@ -14,35 +14,29 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.pairings;
+package com.swirlds.platform.tss.bls.api;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Collection;
 
 /**
- * Interface representing a generic group
+ * Represents a mathematical group used in the Boneh-Lynn-Shacham (BLS) cryptographic scheme.
  *
- * <p>This is a factory interface, responsible for creating {@link GroupElement group elements}
+ * <p>A group in this context is a set of elements combined with an operation that satisfies
+ * the group properties: closure, associativity, identity, and invertibility. When the group
+ * also satisfies the commutativity property, it is referred to as an abelian group.</p>
  *
- * @param <C>   the curve type
- * @param <FE>  the field element type
- * @param <GE>  the type of this group element. Will either be GE1 or GE2.
- * @param <GE1> the group 1 element type
- * @param <GE2> the group 2 element type
+ * <p>This class provides methods to obtain elements belonging to the group represented by the instance.
+ *
+ * @see GroupElement
  */
-public interface Group<
-        C extends Curve<C, FE, GE1, GE2>,
-        FE extends FieldElement<C, FE, GE1, GE2>,
-        GE extends GroupElement<C, FE, GE, GE1, GE2>,
-        GE1 extends Group1Element<C, FE, GE1, GE2>,
-        GE2 extends Group2Element<C, FE, GE1, GE2>> {
+public interface Group extends UnderCurve {
     /**
      * Returns the group's generator
      *
      * @return the group's generator
      */
     @NonNull
-    GE getGenerator();
+    GroupElement getGenerator();
 
     /**
      * Creates a new group element with value 1
@@ -50,7 +44,7 @@ public interface Group<
      * @return the new group element
      */
     @NonNull
-    GE oneElement();
+    GroupElement oneElement();
 
     /**
      * Creates a group element from a seed (32 bytes)
@@ -59,7 +53,15 @@ public interface Group<
      * @return the new group element
      */
     @NonNull
-    GE randomElement(byte[] seed);
+    GroupElement randomElement(byte[] seed);
+
+    /**
+     * Creates a group element from a seed (32 bytes)
+     *
+     * @return the new group element
+     */
+    @NonNull
+    GroupElement randomElement();
 
     /**
      * Hashes an unbounded length input to a group element
@@ -68,7 +70,7 @@ public interface Group<
      * @return the new group element
      */
     @NonNull
-    GE hashToGroup(byte[] input);
+    GroupElement elementFromHash(byte[] input);
 
     /**
      * Multiplies a collection of group elements together
@@ -77,7 +79,7 @@ public interface Group<
      * @return a new group element which is the product the collection of elements
      */
     @NonNull
-    GE batchMultiply(@NonNull Collection<GE> elements);
+    GroupElement batchMultiply(@NonNull GroupElement elements);
 
     /**
      * Creates a group element from its serialized encoding
@@ -86,7 +88,7 @@ public interface Group<
      * @return the new group element, or null if construction failed
      */
     @NonNull
-    GE deserializeElementFromBytes(byte[] bytes);
+    GroupElement elementFromBytes(byte[] bytes);
 
     /**
      * Gets the size in bytes of a compressed group element

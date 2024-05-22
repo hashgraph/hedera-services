@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.tss;
 
-import com.swirlds.platform.tss.verification.PrivateKey;
-import com.swirlds.platform.tss.verification.PublicKey;
+import com.swirlds.platform.tss.bls.api.PrivateKey;
+import com.swirlds.platform.tss.bls.api.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -37,7 +37,7 @@ public interface TssCiphertext<P extends PublicKey> {
      * @return the private key decrypted from this ciphertext
      */
     @NonNull
-    TssPrivateKey<P> decryptPrivateKey(@NonNull final PrivateKey<P> elGamalPrivateKey, @NonNull TssShareId shareId);
+    TssPrivateKey<P> decryptPrivateKey(@NonNull final PrivateKey elGamalPrivateKey, @NonNull TssShareId shareId);
 
     /**
      * Serialize this ciphertext to bytes.

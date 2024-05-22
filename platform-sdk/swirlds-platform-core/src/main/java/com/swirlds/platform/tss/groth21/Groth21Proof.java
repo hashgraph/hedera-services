@@ -19,12 +19,8 @@ package com.swirlds.platform.tss.groth21;
 import com.swirlds.platform.tss.TssCiphertext;
 import com.swirlds.platform.tss.TssCommitment;
 import com.swirlds.platform.tss.TssProof;
-import com.swirlds.platform.tss.pairings.Curve;
-import com.swirlds.platform.tss.pairings.FieldElement;
-import com.swirlds.platform.tss.pairings.Group1Element;
-import com.swirlds.platform.tss.pairings.Group2Element;
-import com.swirlds.platform.tss.pairings.GroupElement;
-import com.swirlds.platform.tss.verification.PublicKey;
+import com.swirlds.platform.tss.bls.api.GroupElement;
+import com.swirlds.platform.tss.bls.api.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -35,18 +31,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param y
  * @param z_r
  * @param z_a
- * @param <C>   the curve type
- * @param <FE>  the field element type
- * @param <GE1> the group 1 element type
- * @param <GE2> the group 2 element type
+ * TODO: removed properties and types for compilation
  */
-public record Groth21Proof<
-                C extends Curve<C, FE, GE1, GE2>,
-                FE extends FieldElement<C, FE, GE1, GE2>,
-                GE1 extends Group1Element<C, FE, GE1, GE2>,
-                GE2 extends Group2Element<C, FE, GE1, GE2>,
-                P extends PublicKey>(
-        @NonNull GroupElement f, @NonNull GroupElement a, @NonNull GroupElement y, @NonNull FE z_r, @NonNull FE z_a)
+public record Groth21Proof<P extends PublicKey>(
+        @NonNull GroupElement f,
+        @NonNull GroupElement a,
+        @NonNull GroupElement y,
+        @NonNull Object z_r,
+        @NonNull Object z_a)
         implements TssProof<P> {
 
     /**

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.tss;
 
-import com.swirlds.platform.tss.pairings.FieldElement;
+import com.swirlds.platform.tss.bls.api.FieldElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

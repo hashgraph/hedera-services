@@ -18,8 +18,8 @@ package com.swirlds.platform.tss.groth21;
 
 import com.swirlds.platform.tss.TssCommitment;
 import com.swirlds.platform.tss.TssShareId;
-import com.swirlds.platform.tss.pairings.FieldElement;
-import com.swirlds.platform.tss.pairings.GroupElement;
+import com.swirlds.platform.tss.bls.api.FieldElement;
+import com.swirlds.platform.tss.bls.api.GroupElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.List;
