@@ -264,7 +264,9 @@ public class GossipEvent implements Event, SelfSerializable {
 
     @Nullable
     public Instant getConsensusTimestamp() {
-        return consensusData == null || consensusData.consensusTimestamp()==null? null: HapiUtils.asInstant(consensusData.consensusTimestamp());
+        return consensusData == null || consensusData.consensusTimestamp() == null
+                ? null
+                : HapiUtils.asInstant(consensusData.consensusTimestamp());
     }
 
     public long getConsensusOrder() {

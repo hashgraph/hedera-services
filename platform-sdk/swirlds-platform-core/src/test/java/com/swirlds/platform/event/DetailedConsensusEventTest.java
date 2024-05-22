@@ -76,9 +76,8 @@ public class DetailedConsensusEventTest {
         final Randotron random = Randotron.create(68651684861L);
         final Instant consensusTimestamp = random.nextInstant();
         final GossipEvent gossipEvent = new TestingEventBuilder(random).build();
-        final EventConsensusData eventConsensusData = EventConsensusData
-                .newBuilder()
-                .consensusTimestamp(//TODO use hapiutils
+        final EventConsensusData eventConsensusData = EventConsensusData.newBuilder()
+                .consensusTimestamp( // TODO use hapiutils
                         Timestamp.newBuilder()
                                 .seconds(consensusTimestamp.getEpochSecond())
                                 .nanos(consensusTimestamp.getNano())

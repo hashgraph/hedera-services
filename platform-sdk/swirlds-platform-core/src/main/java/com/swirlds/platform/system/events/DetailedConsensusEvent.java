@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.system.events;
 
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -62,7 +61,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
      *
      * @param gossipEvent   the pre-consensus event
      */
-    public DetailedConsensusEvent(final GossipEvent gossipEvent) {//TODO must add RR and LIRR
+    public DetailedConsensusEvent(final GossipEvent gossipEvent) { // TODO must add RR and LIRR
         this.gossipEvent = gossipEvent;
     }
 
@@ -75,9 +74,9 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
         gossipEvent.serialize(out);
 
         out.writeInt(ConsensusData.CLASS_VERSION);
-        out.writeLong(UNDEFINED);// ConsensusData.generation
-        out.writeLong(UNDEFINED);// ConsensusData.roundCreated
-        out.writeBoolean(false);// ConsensusData.stale
+        out.writeLong(UNDEFINED); // ConsensusData.generation
+        out.writeLong(UNDEFINED); // ConsensusData.roundCreated
+        out.writeBoolean(false); // ConsensusData.stale
         out.writeBoolean(lastInRoundReceived);
         out.writeInstant(gossipEvent.getConsensusTimestamp());
         out.writeLong(roundReceived);
@@ -101,16 +100,15 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
         this.gossipEvent.deserialize(in, gossipEvent.getVersion());
 
         in.readInt(); // ConsensusData.version
-        in.readLong();// ConsensusData.generation
-        in.readLong();// ConsensusData.roundCreated
-        in.readBoolean();// ConsensusData.stale
+        in.readLong(); // ConsensusData.generation
+        in.readLong(); // ConsensusData.roundCreated
+        in.readBoolean(); // ConsensusData.stale
         lastInRoundReceived = in.readBoolean();
         final Instant consensusTimestamp = in.readInstant();
         roundReceived = in.readLong();
         final long consensusOrder = in.readLong();
 
-        final EventConsensusData eventConsensusData = EventConsensusData
-                .newBuilder()
+        final EventConsensusData eventConsensusData = EventConsensusData.newBuilder()
                 .consensusTimestamp(HapiUtils.asTimestamp(consensusTimestamp))
                 .consensusOrder(consensusOrder)
                 .build();
@@ -137,11 +135,11 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
     }
 
     public long getRoundReceived() {
-        return 0;//TODO
+        return 0; // TODO
     }
 
     public boolean isLastInRoundReceived() {
-        return false;//TODO
+        return false; // TODO
     }
 
     /**
@@ -180,7 +178,8 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
             return false;
         }
         final DetailedConsensusEvent that = (DetailedConsensusEvent) other;
-        return Objects.equals(gossipEvent, that.gossipEvent) && roundReceived == that.roundReceived
+        return Objects.equals(gossipEvent, that.gossipEvent)
+                && roundReceived == that.roundReceived
                 && lastInRoundReceived == that.lastInRoundReceived;
     }
 

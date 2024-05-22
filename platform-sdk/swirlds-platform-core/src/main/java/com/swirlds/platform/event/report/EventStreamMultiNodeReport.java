@@ -59,10 +59,8 @@ public class EventStreamMultiNodeReport {
 
         final Entry<String, EventStreamInfo> entryWithLatestEvent = individualReports.entrySet().stream()
                 .max(Map.Entry.comparingByValue(((o1, o2) -> {
-                    final Instant o1Timestamp =
-                            o1.lastEvent().getGossipEvent().getConsensusTimestamp();
-                    final Instant o2Timestamp =
-                            o2.lastEvent().getGossipEvent().getConsensusTimestamp();
+                    final Instant o1Timestamp = o1.lastEvent().getGossipEvent().getConsensusTimestamp();
+                    final Instant o2Timestamp = o2.lastEvent().getGossipEvent().getConsensusTimestamp();
 
                     return o1Timestamp.compareTo(o2Timestamp);
                 })))

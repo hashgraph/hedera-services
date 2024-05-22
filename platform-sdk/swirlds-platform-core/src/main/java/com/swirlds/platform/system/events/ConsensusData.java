@@ -17,11 +17,6 @@
 package com.swirlds.platform.system.events;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import java.io.IOException;
-import java.time.Instant;
 import java.util.Objects;
 
 /**
@@ -42,7 +37,6 @@ public class ConsensusData {
     /** is this event the last in consensus order of all those with the same received round? */
     private boolean lastInRoundReceived = false;
 
-
     @Override
     public boolean equals(final Object o) {
         if (this == o) {
@@ -55,8 +49,7 @@ public class ConsensusData {
 
         final ConsensusData that = (ConsensusData) o;
 
-        return (roundReceived == that.roundReceived)
-                && (lastInRoundReceived == that.lastInRoundReceived);
+        return (roundReceived == that.roundReceived) && (lastInRoundReceived == that.lastInRoundReceived);
     }
 
     @Override

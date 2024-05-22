@@ -87,8 +87,7 @@ public class EventStreamScanner {
      * we gather all the data from a single chunk of time.
      */
     private void reportGranularData(final DetailedConsensusEvent lastEventInPeriod) {
-        final long granularRoundCount = lastEventInPeriod.getRoundReceived()
-                - granularFirstEvent.getRoundReceived();
+        final long granularRoundCount = lastEventInPeriod.getRoundReceived() - granularFirstEvent.getRoundReceived();
 
         granularInfo.add(new EventStreamInfo(
                 granularFirstEvent.getGossipEvent().getConsensusTimestamp(),
@@ -200,8 +199,7 @@ public class EventStreamScanner {
             writeConsoleSummary(firstEvent, mostRecentEvent);
         }
 
-        final long rounds = mostRecentEvent.getRoundReceived()
-                - firstEvent.getRoundReceived();
+        final long rounds = mostRecentEvent.getRoundReceived() - firstEvent.getRoundReceived();
 
         return new EventStreamReport(
                 granularInfo,

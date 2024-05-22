@@ -218,10 +218,7 @@ public class EventImpl extends EventMetadata
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         DetailedConsensusEvent.serialize(
-                out,
-                baseEvent,
-                consensusData.getRoundReceived(),
-                consensusData.isLastInRoundReceived());
+                out, baseEvent, consensusData.getRoundReceived(), consensusData.isLastInRoundReceived());
     }
 
     /**
