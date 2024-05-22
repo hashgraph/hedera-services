@@ -31,6 +31,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransactionID;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.timeUntilNextPeriod;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
@@ -381,6 +382,38 @@ public class UtilVerbs {
 
     public static HapiSpecWaitUntil waitUntilStartOfNextStakingPeriod(final long stakePeriodMins) {
         return untilStartOfNextStakingPeriod(stakePeriodMins);
+    }
+
+    /**
+     * Returns an operation that, if the current time is "too close" to
+     * the next staking period start (as measured by a given window),
+     * performs a given {@code then} operation.
+     *
+     * <p>Useful when you want to perform consecutive operations to,
+     * <ol>
+     *     <Li>Create a staking account; then</Li>
+     *     <Li>Wait until the start of a staking period; then</Li>
+     *     <Li>Wait until one more staking period starts so that
+     *     the account is eligible for one period of rewards.</Li>
+     * </ol>
+     * To be sure your account will be eligible for only one period of
+     * rewards, you need to ensure that the first two operations occur
+     * <b>in the same period</b>.
+     *
+     * <p>By giving a {@link HapiSpecWaitUntil} operation as {@code then},
+     * and a conservative window, you can ensure that the first two operations
+     * occur in the same period without adding a full period of delay to
+     * every test execution.
+     *
+     * @param window the minimum time until the next period start that will trigger the wait
+     * @param stakePeriodMins the length of the staking period in minutes
+     * @param then the operation to perform if the current time is within the window
+     * @return the operation that conditionally does the {@code then} operation
+     */
+    public static HapiSpecOperation ifNextStakePeriodStartsWithin(
+            @NonNull final Duration window, final long stakePeriodMins, @NonNull final HapiSpecOperation then) {
+        return sourcing(
+                () -> (timeUntilNextPeriod(Instant.now(), stakePeriodMins).compareTo(window) < 0) ? then : noOp());
     }
 
     /**
