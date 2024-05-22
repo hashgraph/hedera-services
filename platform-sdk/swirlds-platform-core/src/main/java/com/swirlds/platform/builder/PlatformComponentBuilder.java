@@ -70,7 +70,9 @@ import com.swirlds.platform.state.hasher.StateHasher;
 import com.swirlds.platform.state.hashlogger.DefaultHashLogger;
 import com.swirlds.platform.state.hashlogger.HashLogger;
 import com.swirlds.platform.state.iss.DefaultIssDetector;
+import com.swirlds.platform.state.iss.DefaultIssHandler;
 import com.swirlds.platform.state.iss.IssDetector;
+import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.signed.DefaultSignedStateSentinel;
 import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
@@ -80,6 +82,7 @@ import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.state.snapshot.DefaultStateSnapshotManager;
 import com.swirlds.platform.state.snapshot.StateSnapshotManager;
 import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.status.DefaultStatusStateMachine;
 import com.swirlds.platform.system.status.StatusStateMachine;
@@ -129,6 +132,7 @@ public class PlatformComponentBuilder {
     private TransactionPrehandler transactionPrehandler;
     private PcesWriter pcesWriter;
     private IssDetector issDetector;
+    private IssHandler issHandler;
     private Gossip gossip;
     private StaleEventDetector staleEventDetector;
     private TransactionResubmitter transactionResubmitter;
@@ -844,6 +848,45 @@ public class PlatformComponentBuilder {
                     roundToIgnore);
         }
         return issDetector;
+    }
+
+    /**
+     * Provide an ISS handler in place of the platform's default ISS handler.
+     *
+     * @param issHandler the ISS handler to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withIssHandler(@NonNull final IssHandler issHandler) {
+        throwIfAlreadyUsed();
+        if (this.issHandler != null) {
+            throw new IllegalStateException("ISS handler has already been set");
+        }
+        this.issHandler = Objects.requireNonNull(issHandler);
+        return this;
+    }
+
+    /**
+     * Build the ISS handler if it has not yet been built. If one has been provided via
+     * {@link #withIssHandler(IssHandler)}, that handler will be used. If this method is called more than once, only the
+     * first call will build the ISS handler. Otherwise, the default handler will be created and returned.
+     *
+     * @return the ISS handler
+     */
+    @NonNull
+    public IssHandler buildIssHandler() {
+        if (issHandler == null) {
+            issHandler = new DefaultIssHandler(
+                    blocks.platformContext(),
+                    ignored -> {
+                        // FUTURE WORK: Previously this lambda was needed in order to stop gossip.
+                        // Now that gossip pays attention to the platform status, it will naturally
+                        // halt without needing to be stopped here. This should eventually be cleaned up.
+                    },
+                    SystemExitUtils::handleFatalError,
+                    blocks.issScratchpad());
+        }
+        return issHandler;
     }
 
     /**
