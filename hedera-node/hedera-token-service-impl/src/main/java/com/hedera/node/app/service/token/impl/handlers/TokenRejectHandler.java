@@ -161,7 +161,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         return feeContext
                 .feeCalculator(getSubType(numOfNFTRejections))
                 .addBytesPerTransaction(bpt)
-                .addRamByteSeconds(rbs * USAGE_PROPERTIES.legacyReceiptStorageSecs())
+                .addRamByteSeconds(rbs)
                 .calculate();
     }
 
