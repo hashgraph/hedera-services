@@ -18,6 +18,10 @@ package com.hedera.services.bdd.suites.contract.traceability;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
+import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
+import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.conditionFuture;
+import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.guaranteedExtant;
+import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
@@ -28,6 +32,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.instantOf;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
@@ -46,7 +51,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
@@ -57,6 +61,7 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.spec.utilops.streams.RecordAssertions.triggerAndCloseAtLeastOneFileIfNotInterrupted;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.FIVE_HBARS;
@@ -118,7 +123,10 @@ import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
+import com.hedera.services.bdd.junit.support.SpecManager;
+import com.hedera.services.bdd.junit.support.StreamDataListener;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.assertions.StateChange;
 import com.hedera.services.bdd.spec.assertions.StorageChange;
@@ -128,26 +136,34 @@ import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 
+@HapiTestLifecycle
 @OrderedInIsolation
 @Tag(SMART_CONTRACT)
 public class TraceabilitySuite {
@@ -177,6 +193,37 @@ public class TraceabilitySuite {
     private static final String CHAIN_ID_PROPERTY = "contracts.chainId";
     private static final String LAZY_CREATE_PROPERTY = "lazyCreation.enabled";
     public static final String SIDECARS_PROP = "contracts.sidecars";
+
+    private static final AtomicReference<Instant> LAST_SIDECAR_CONS_TIME = new AtomicReference<>();
+    private static final AtomicReference<Instant> REQUIRED_LAST_SIDECAR_CONS_TIME = new AtomicReference<>();
+    private static final AtomicReference<Runnable> UNSUBSCRIBE_STREAM_LISTENER = new AtomicReference<>();
+
+    private static boolean isLastRequiredSidecarRead() {
+        return !Optional.ofNullable(LAST_SIDECAR_CONS_TIME.get())
+                .orElse(Instant.MIN)
+                .isBefore(Optional.ofNullable(REQUIRED_LAST_SIDECAR_CONS_TIME.get())
+                        .orElse(Instant.MAX));
+    }
+
+    private static void unsubscribeIfStillListening() {
+        Optional.ofNullable(UNSUBSCRIBE_STREAM_LISTENER.get()).ifPresent(Runnable::run);
+    }
+
+    @BeforeAll
+    static void beforeAll(@NonNull final SpecManager specManager) throws Throwable {
+        specManager.setup(withOpContext((spec, opLog) -> UNSUBSCRIBE_STREAM_LISTENER.set(RECORD_STREAM_ACCESS.subscribe(
+                guaranteedExtant(spec.streamsLoc(byNodeId(0))), new StreamDataListener() {
+                    @Override
+                    public void onNewSidecar(@NonNull final TransactionSidecarRecord sidecar) {
+                        LAST_SIDECAR_CONS_TIME.set(instantOf(sidecar.getConsensusTimestamp()));
+                    }
+                }))));
+    }
+
+    @AfterAll
+    static void afterAll() {
+        unsubscribeIfStillListening();
+    }
 
     @HapiTest
     @Order(1)
@@ -5051,8 +5098,15 @@ public class TraceabilitySuite {
                             final AtomicReference<byte[]> mergedContractBytecode = new AtomicReference<>();
                             final var hapiGetContractBytecode = getContractBytecode(mergedContractIdAsString)
                                     .exposingBytecodeTo(mergedContractBytecode::set);
-                            final var topLevelCallTxnRecord =
-                                    getTxnRecord(CREATE_2_TXN).andAllChildRecords();
+                            final var topLevelCallTxnRecord = getTxnRecord(CREATE_2_TXN)
+                                    .andAllChildRecords()
+                                    .exposingTo(finalRecord -> {
+                                        REQUIRED_LAST_SIDECAR_CONS_TIME.set(
+                                                instantOf(finalRecord.getConsensusTimestamp()));
+                                        log.info(
+                                                "Final sidecar will have consensus time {}",
+                                                REQUIRED_LAST_SIDECAR_CONS_TIME.get());
+                                    });
                             allRunFor(
                                     spec,
                                     topLevelCallTxnRecord,
@@ -5123,22 +5177,21 @@ public class TraceabilitySuite {
                                     asContract(mergedContractIdAsString),
                                     ByteStringUtils.wrapUnsafely(testContractInitcode.get()),
                                     ByteStringUtils.wrapUnsafely(mergedContractBytecode.get()));
+                        }),
+                        withOpContext((spec, opLog) -> {
+                            triggerAndCloseAtLeastOneFileIfNotInterrupted(spec);
+                            log.info(
+                                    "Waiting for last sidecar with consensus timestamp {}",
+                                    REQUIRED_LAST_SIDECAR_CONS_TIME.get());
+                            conditionFuture(TraceabilitySuite::isLastRequiredSidecarRead, Duration.ofSeconds(3))
+                                    .join();
+                            unsubscribeIfStillListening();
                         }));
     }
 
     @HapiTest
     @Order(Integer.MAX_VALUE)
     public final Stream<DynamicTest> assertSidecars() {
-        return hapiTest(
-                // Ensure the final record file and sidecars will be
-                // externalized before tearing down the sidecar watcher
-                // (1) Ensure we are in a new block period
-                sleepFor(2500),
-                // (2) Submit a transaction
-                cryptoTransfer((spec, b) -> {}).payingWith(GENESIS),
-                // (3) Wait long enough for the files to be written
-                sleepFor(500),
-                tearDownSidecarWatcher(),
-                assertNoMismatchedSidecars());
+        return hapiTest(tearDownSidecarWatcher(), assertNoMismatchedSidecars());
     }
 }

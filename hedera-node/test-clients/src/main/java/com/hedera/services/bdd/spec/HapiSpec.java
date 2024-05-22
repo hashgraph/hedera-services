@@ -64,6 +64,7 @@ import com.google.common.io.CharSink;
 import com.google.common.io.Files;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
+import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.support.SpecManager;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
@@ -96,6 +97,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -346,6 +348,18 @@ public class HapiSpec implements Runnable, Executable {
 
     public void setSharedStates(@NonNull final List<SpecStateObserver.SpecState> sharedStates) {
         this.sharedStates = sharedStates;
+    }
+
+    /**
+     * Get the path to the record stream for the node selected by the given selector.
+     *
+     * @param selector the selector for the node
+     * @return the path to the record stream
+     * @throws RuntimeException if the spec has no target network or the node is not found
+     */
+    public @NonNull Path streamsLoc(@NonNull final NodeSelector selector) {
+        requireNonNull(selector);
+        return targetNetworkOrThrow().getRequiredNode(selector).getRecordStreamPath();
     }
 
     public HederaNetwork targetNetworkOrThrow() {

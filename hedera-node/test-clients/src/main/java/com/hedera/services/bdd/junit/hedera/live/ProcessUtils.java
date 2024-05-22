@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.junit.hedera.live;
 
 import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.DATA_DIR;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -24,7 +25,10 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
 public class ProcessUtils {
@@ -32,6 +36,7 @@ public class ProcessUtils {
     private static final long NODE_ID_TO_SUSPEND = -1;
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
     public static final String OVERRIDE_RECORD_STREAM_FOLDER = "recordStreams";
+    private static final long WAIT_SLEEP_MILLIS = 10L;
 
     private ProcessUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -88,6 +93,28 @@ public class ProcessUtils {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    /**
+     * Returns a future that resolves when the given condition is true or the timeout is reached.
+     *
+     * @param condition the condition to wait for
+     * @param timeout the maximum time to wait for the condition
+     * @return a future that resolves when the condition is true or the timeout is reached
+     */
+    public static CompletableFuture<Void> conditionFuture(
+            @NonNull final BooleanSupplier condition, @NonNull Duration timeout) {
+        return CompletableFuture.runAsync(() -> {
+                    while (!condition.getAsBoolean()) {
+                        try {
+                            MILLISECONDS.sleep(WAIT_SLEEP_MILLIS);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            throw new IllegalStateException("Interrupted while waiting for condition", e);
+                        }
+                    }
+                })
+                .orTimeout(timeout.toMillis(), MILLISECONDS);
     }
 
     private static String currentNonTestClientClasspath() {

@@ -165,6 +165,16 @@ public class HederaNetwork {
     }
 
     /**
+     * Returns the node of the network that matches the given selector.
+     *
+     * @param selector the selector
+     * @return the nodes that match the selector
+     */
+    public HederaNode getRequiredNode(@NonNull final NodeSelector selector) {
+        return nodes.stream().filter(selector).findAny().orElseThrow();
+    }
+
+    /**
      * Returns the name of the network.
      *
      * @return the name of the network

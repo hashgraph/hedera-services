@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.destroyAnyS
 import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.startSubProcessNodeFrom;
 import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.recreateWorkingDir;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.hedera.node.app.Hedera;
 import com.hedera.services.bdd.junit.hedera.AbstractNode;
@@ -32,13 +31,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BooleanSupplier;
 
 /**
  * A node running in its own OS process as a subprocess of the JUnit test runner.
  */
 public class SubProcessNode extends AbstractNode implements HederaNode {
-    private static final long WAIT_SLEEP_MILLIS = 10L;
 
     private final GrpcPinger grpcPinger;
     private final PrometheusClient prometheusClient;
@@ -89,7 +86,7 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
 
     @Override
     public CompletableFuture<Void> statusFuture(@NonNull final PlatformStatus status, @NonNull final Duration timeout) {
-        return waitUntil(
+        return ProcessUtils.conditionFuture(
                 () -> {
                     final var currentStatus = prometheusClient.statusFromLocalEndpoint(metadata.prometheusPort());
                     if (!status.equals(currentStatus)) {
@@ -102,26 +99,12 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
 
     @Override
     public CompletableFuture<Void> stopFuture(@NonNull final Duration timeout) {
-        return waitUntil(() -> processHandle == null, timeout);
+        return ProcessUtils.conditionFuture(() -> processHandle == null, timeout);
     }
 
     @Override
     public String toString() {
         return "SubProcessNode{" + "metadata=" + metadata + ", workingDirInitialized=" + workingDirInitialized + '}';
-    }
-
-    private CompletableFuture<Void> waitUntil(@NonNull final BooleanSupplier condition, @NonNull Duration timeout) {
-        return CompletableFuture.runAsync(() -> {
-                    while (!condition.getAsBoolean()) {
-                        try {
-                            MILLISECONDS.sleep(WAIT_SLEEP_MILLIS);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                            throw new IllegalStateException("Interrupted while waiting for condition", e);
-                        }
-                    }
-                })
-                .orTimeout(timeout.toMillis(), MILLISECONDS);
     }
 
     private boolean stopWith(@NonNull final BooleanFunction<ProcessHandle> stop) {
