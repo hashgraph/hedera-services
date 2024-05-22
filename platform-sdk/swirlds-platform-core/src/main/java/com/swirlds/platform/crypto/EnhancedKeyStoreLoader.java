@@ -306,7 +306,8 @@ public class EnhancedKeyStoreLoader {
 
     /**
      * Iterates over the local nodes and creates the agreement key and certificate for each if they do not exist.  This
-     * method must be called after {@link #scan()} and before {@link #verify()}.
+     * method should be called after {@link #scan()} and before {@link #verify()} in order to generate any missing
+     * agreement keys for local nodes to pass verification.
      *
      * @return this {@link EnhancedKeyStoreLoader} instance.
      * @throws NoSuchAlgorithmException if the algorithm required to generate the key pair is not available.

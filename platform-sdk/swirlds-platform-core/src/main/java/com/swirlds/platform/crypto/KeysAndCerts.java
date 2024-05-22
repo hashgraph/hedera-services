@@ -64,7 +64,7 @@ public record KeysAndCerts(
     private static final int AGR_SEED = 0;
 
     /**
-     * Creates an instance holding all the keys and certificates. It just reads its own key pairs from privateKeyStore
+     * Creates an instance holding all the keys and certificates. It reads its own key pairs from privateKeyStore
      * and publicKeyStore, creates the agreement key if absent, and remembers the trust stores.
      *
      * @param name            The name to associate with the key. For example, if it is "alice", then the three key
@@ -88,12 +88,15 @@ public record KeysAndCerts(
 
         // get the agreement key pair and cert, if they exist, otherwise generate them.
         final String agreementName = KeyCertPurpose.AGREEMENT.storeName(name);
-        KeyPair agreementKeyPair = null;
-        X509Certificate agreementCert = null;
+        KeyPair agreementKeyPair;
+        X509Certificate agreementCert;
         try {
             agreementKeyPair = getKeyPair(privateKeyStore, password, agreementName);
             agreementCert = publicStores.getCertificate(KeyCertPurpose.AGREEMENT, name);
-        } catch (KeyLoadingException | KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException e) {
+        } catch (final KeyLoadingException
+                | KeyStoreException
+                | NoSuchAlgorithmException
+                | UnrecoverableKeyException e) {
             // failed to load agreement key or cert from disk, attempt to generate them
             agreementKeyPair = generateAgreementKeyPair();
             // generate the agreement certificate with the signing certificate as the issuer.

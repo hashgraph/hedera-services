@@ -460,7 +460,7 @@ public final class CryptoStatic {
                 final X509Certificate agrCert = publicStores.getCertificate(KeyCertPurpose.AGREEMENT, name);
                 addressBook.add(
                         addressBook.getAddress(nodeId).copySetSigCert(sigCert).copySetAgreeCert(agrCert));
-            } catch (KeyLoadingException e) {
+            } catch (final KeyLoadingException e) {
                 // the agreement key is allowed to be absent and is never used from the address book anymore.
                 addressBook.add(
                         addressBook.getAddress(nodeId).copySetSigCert(sigCert).copySetAgreeCert(null));
