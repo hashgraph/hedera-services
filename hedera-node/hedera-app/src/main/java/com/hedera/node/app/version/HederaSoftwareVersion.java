@@ -207,4 +207,9 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         // alpha versions come before everything else
         return alphaMatch.matches() ? Integer.parseInt(alphaMatch.group(1)) : Integer.MAX_VALUE;
     }
+
+    @Override
+    public SemanticVersion getPbjSemanticVersion() {
+        return toUpgradeComparableSemVer(configVersion, servicesVersion);
+    }
 }
