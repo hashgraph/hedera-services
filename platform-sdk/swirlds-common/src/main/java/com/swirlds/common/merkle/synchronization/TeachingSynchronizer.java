@@ -250,13 +250,6 @@ public class TeachingSynchronizer {
         final MerkleNode root = subtree.getRoot();
         final String route = root == null ? "[]" : root.getRoute().toString();
         final TeacherTreeView<?> view = subtree.getView();
-        try {
-            view.waitUntilReady();
-        } catch (final InterruptedException e) {
-            logger.error("Interrupted while waiting for a view to become ready, {}", view);
-            subtree.close();
-            throw new MerkleSynchronizationException("Interrupted while waiting for a view to become ready");
-        }
         logger.info(RECONNECT.getMarker(), "Sending tree rooted with route {}", route);
         final int viewId = subtree.getViewId();
         subtreesInProgress.put(viewId, subtree);

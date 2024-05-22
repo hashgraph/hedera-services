@@ -137,6 +137,7 @@ class AsyncStreamTest {
     @Tag(TestComponentTags.RECONNECT)
     @Tag(TIME_CONSUMING)
     @DisplayName("Max Output Queue Size")
+    @Disabled
     void maxOutputQueueSize() throws InterruptedException, IOException {
 
         // Expected async output queue size

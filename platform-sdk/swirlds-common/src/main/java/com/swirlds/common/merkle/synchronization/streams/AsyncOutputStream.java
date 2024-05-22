@@ -112,7 +112,7 @@ public class AsyncOutputStream implements AutoCloseable {
 
         this.outputStream = Objects.requireNonNull(outputStream, "outputStream must not be null");
         this.workGroup = Objects.requireNonNull(workGroup, "workGroup must not be null");
-        this.streamQueue = new LinkedBlockingQueue<>(config.asyncStreamBufferSize() * config.maxParallelSubtrees());
+        this.streamQueue = new LinkedBlockingQueue<>(config.asyncStreamBufferSize() * 32);
         this.timeSinceLastFlush = new StopWatch();
         this.timeSinceLastFlush.start();
         this.flushInterval = config.asyncOutputStreamFlush();

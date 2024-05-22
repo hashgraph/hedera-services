@@ -27,6 +27,7 @@ import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
+import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
@@ -76,7 +77,7 @@ public class TeacherPullVirtualTreeView<K extends VirtualKey, V extends VirtualV
     /**
      * The {@link RecordAccessor} used for accessing the original map state.
      */
-    private RecordAccessor<K, V> records;
+    private volatile RecordAccessor<K, V> records;
 
     /**
      * This latch counts down when the view is fully initialized and ready for use.
@@ -173,11 +174,16 @@ public class TeacherPullVirtualTreeView<K extends VirtualKey, V extends VirtualV
      * @return the virtual node hash
      */
     public Hash loadHash(final long path) {
-        assert !closed.get() : "View is closed";
+        if (closed.get()) {
+            throw new MerkleSynchronizationException("View is closed");
+        }
         return records.findHash(path);
     }
 
     public VirtualLeafRecord<K, V> loadLeaf(final long path) {
+        if (closed.get()) {
+            throw new MerkleSynchronizationException("View is closed");
+        }
         return records.findLeafRecord(path, false);
     }
 

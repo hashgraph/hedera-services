@@ -29,6 +29,7 @@ import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.Path;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -98,9 +99,14 @@ public class TeacherPullVirtualTreeReceiveTask {
      * This thread is responsible for sending lessons (and nested queries) to the learner.
      */
     private void run() {
-        long requestCounter = 0;
-        final long start = System.currentTimeMillis();
         try {
+            long requestCounter = 0;
+            final long start = System.currentTimeMillis();
+            // This task may receive a request from the learner for a view, which isn't ready to teach
+            // yet. To solve it, just call view.waitUntilReady(), but it may impact performance if
+            // called for every received message. A workaround is to track what views this task has
+            // already checked to be ready
+            final Set<Integer> viewsCheckedReady = new HashSet<>();
             while (!Thread.currentThread().isInterrupted()) {
                 final PullVirtualTreeRequest request = in.readAnticipatedMessage();
                 if (request == null) {
@@ -122,6 +128,10 @@ public class TeacherPullVirtualTreeReceiveTask {
                 }
                 requestCounter++;
                 final TeacherPullVirtualTreeView<?, ?> view = (TeacherPullVirtualTreeView<?, ?>) views.get(viewId);
+                if (!viewsCheckedReady.contains(viewId)) {
+                    view.waitUntilReady();
+                    viewsCheckedReady.add(viewId);
+                }
                 final long path = request.getPath();
                 final Hash learnerHash = request.getHash();
                 assert learnerHash != null;

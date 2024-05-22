@@ -199,6 +199,7 @@ public class TeacherPushSendTask<T> {
      */
     private void run() {
         try {
+            view.waitUntilReady();
             out.sendAsync(viewId, buildDataLesson(view.getRoot()));
             while (view.areThereNodesToHandle() && !Thread.currentThread().isInterrupted()) {
                 rateLimit();
