@@ -253,7 +253,7 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange updateNode,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange deleteNode,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange getNodeInfo,
-        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenReject){
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenReject) {
 
     private static final EnumMap<HederaFunctionality, Function<ApiPermissionConfig, PermissionedAccountsRange>>
             permissionKeys = new EnumMap<>(HederaFunctionality.class);
