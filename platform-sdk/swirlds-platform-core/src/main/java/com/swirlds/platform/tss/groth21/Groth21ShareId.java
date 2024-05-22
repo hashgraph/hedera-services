@@ -17,24 +17,9 @@
 package com.swirlds.platform.tss.groth21;
 
 import com.swirlds.platform.tss.TssShareId;
-import com.swirlds.platform.tss.pairings.Curve;
-import com.swirlds.platform.tss.pairings.FieldElement;
-import com.swirlds.platform.tss.pairings.Group1Element;
-import com.swirlds.platform.tss.pairings.Group2Element;
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A share ID for the Groth21 TSS scheme.
- *
- * @param id    the share ID
- * @param <C>   the curve type
- * @param <FE>  the field element type
- * @param <GE1> the group 1 element type
- * @param <GE2> the group 2 element type
+ * TODO: complete me, removed for compilation
  */
-public record Groth21ShareId<
-                C extends Curve<C, FE, GE1, GE2>,
-                FE extends FieldElement<C, FE, GE1, GE2>,
-                GE1 extends Group1Element<C, FE, GE1, GE2>,
-                GE2 extends Group2Element<C, FE, GE1, GE2>>(
-        @NonNull FieldElement<C, FE, GE1, GE2> id) implements TssShareId {}
+public record Groth21ShareId() implements TssShareId {}

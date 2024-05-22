@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.tss;
 
-import com.swirlds.platform.tss.verification.PublicKey;
+import com.swirlds.platform.tss.bls.api.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

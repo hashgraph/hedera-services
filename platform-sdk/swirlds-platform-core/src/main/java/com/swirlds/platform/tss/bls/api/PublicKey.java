@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.verification;
+package com.swirlds.platform.tss.bls.api;
 
-import com.swirlds.platform.tss.bls.bls12381.Bls12381Curve;
-import com.swirlds.platform.tss.bls.bls12381.Bls12381Group1;
-import com.swirlds.platform.tss.bls.bls12381.g1pk_g2sig.Bls12381G1PublicKey;
+import com.swirlds.platform.tss.bls.impl.internal.BlsSchema;
 
 /**
  * A public key that can be used to verify a signature.
  */
-public interface PublicKey {
+public record PublicKey(GroupElement element) {
+    public static final char TYPE = 'P';
+    public static final int MIN = 0;
+
     /**
      * Deserialize a public key from a byte array.
      *
@@ -31,21 +32,7 @@ public interface PublicKey {
      * @return the deserialized public key
      */
     static PublicKey deserialize(final byte[] bytes) {
-        // the first byte is id of the curve
-        final byte curve = bytes[0];
-        // the second byte is the group the element is in
-        final byte group = bytes[1];
-
-        switch (curve) {
-            case Bls12381Curve.ID_BYTE:
-                if (group == 1) {
-                    return new Bls12381G1PublicKey(Bls12381Group1.getInstance().deserializeElementFromBytes(bytes));
-                } else {
-                    throw new UnsupportedOperationException("Only group 1 public keys are currently supported");
-                }
-            default:
-                throw new UnsupportedOperationException("Unknown curve");
-        }
+        return BlsSchema.deserializePublicKey(bytes);
     }
 
     /**
@@ -55,5 +42,7 @@ public interface PublicKey {
      *
      * @return the serialized public key
      */
-    byte[] serialize();
+    public byte[] serialize() {
+        return BlsSchema.getBytes(TYPE, element().toBytes());
+    }
 }

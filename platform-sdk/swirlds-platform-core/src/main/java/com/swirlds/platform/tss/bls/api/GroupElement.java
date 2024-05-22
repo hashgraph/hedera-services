@@ -14,32 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.tss.pairings;
+package com.swirlds.platform.tss.bls.api;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Interface representing a cryptographic group element
- *
- * @param <C>   the curve type
- * @param <FE>  the field element type
- * @param <GE>  the type of this group element. Will either be GE1 or GE2
- * @param <GE1> the group 1 element type
- * @param <GE2> the group 2 element type
  */
-public interface GroupElement<
-        C extends Curve<C, FE, GE1, GE2>,
-        FE extends FieldElement<C, FE, GE1, GE2>,
-        GE extends GroupElement<C, FE, GE, GE1, GE2>,
-        GE1 extends Group1Element<C, FE, GE1, GE2>,
-        GE2 extends Group2Element<C, FE, GE1, GE2>> {
-
-    /**
-     * Serializes the group elements to a byte array
-     *
-     * @return the byte array representing the group element
-     */
-    byte[] toBytes();
+public interface GroupElement extends ByteRepresentable<GroupElement>, UnderCurve {
 
     /**
      * Takes the group element to the power of a field element
@@ -48,7 +30,7 @@ public interface GroupElement<
      * @return a new group element which is this group element to the power of a field element
      */
     @NonNull
-    GE power(@NonNull FE exponent);
+    GroupElement power(@NonNull FieldElement exponent);
 
     /**
      * Multiplies this group element with another
@@ -57,7 +39,16 @@ public interface GroupElement<
      * @return a new group element which is the product of this element and another
      */
     @NonNull
-    GE multiply(@NonNull GE other);
+    GroupElement multiply(@NonNull GroupElement other);
+
+    /**
+     * Adds this group element with another
+     *
+     * @param other the other group element
+     * @return a new group element which is the addition of this element and another
+     */
+    @NonNull
+    GroupElement add(@NonNull GroupElement other);
 
     /**
      * Divides this group element by another
@@ -66,7 +57,7 @@ public interface GroupElement<
      * @return a new group element which is the quotient of this element and another
      */
     @NonNull
-    GE divide(@NonNull GE other);
+    GroupElement divide(@NonNull GroupElement other);
 
     /**
      * Compresses the group element
@@ -74,7 +65,7 @@ public interface GroupElement<
      * @return this object, compressed
      */
     @NonNull
-    GE compress();
+    GroupElement compress();
 
     /**
      * Gets whether the group element is compressed
@@ -89,12 +80,5 @@ public interface GroupElement<
      * @return a copy of the group element
      */
     @NonNull
-    GroupElement<C, FE, GE, GE1, GE2> copy();
-
-    /**
-     * Checks whether the element bytes are valid
-     *
-     * @return true of the element bytes are valid, otherwise false
-     */
-    boolean isValid();
+    GroupElement copy();
 }

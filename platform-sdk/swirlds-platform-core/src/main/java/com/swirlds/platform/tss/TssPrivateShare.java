@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.tss;
 
-import com.swirlds.platform.tss.verification.PublicKey;
-import com.swirlds.platform.tss.verification.Signature;
+import com.swirlds.platform.tss.bls.api.PublicKey;
+import com.swirlds.platform.tss.bls.api.Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -35,7 +35,7 @@ public record TssPrivateShare<P extends PublicKey>(@NonNull TssShareId shareId, 
      * @return the signature
      */
     @NonNull
-    Signature<P> sign(@NonNull final byte[] message) {
+    Signature sign(@NonNull final byte[] message) {
         return privateKey.sign(shareId, message);
     }
 }

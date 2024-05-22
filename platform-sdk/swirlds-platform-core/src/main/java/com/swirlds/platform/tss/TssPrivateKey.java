@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.tss;
 
-import com.swirlds.platform.tss.verification.PrivateKey;
-import com.swirlds.platform.tss.verification.PublicKey;
-import com.swirlds.platform.tss.verification.Signature;
+import com.swirlds.platform.tss.bls.api.PrivateKey;
+import com.swirlds.platform.tss.bls.api.PublicKey;
+import com.swirlds.platform.tss.bls.api.Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -26,7 +26,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * @param <P> the type of public key that can verify signatures produced by this private key
  */
-public record TssPrivateKey<P extends PublicKey>(@NonNull PrivateKey<P> privateKey) {
+public record TssPrivateKey<P extends PublicKey>(@NonNull PrivateKey privateKey) {
     /**
      * Sign a message using the TSS private key.
      *
@@ -35,7 +35,7 @@ public record TssPrivateKey<P extends PublicKey>(@NonNull PrivateKey<P> privateK
      * @return the signature
      */
     @NonNull
-    Signature<P> sign(@NonNull TssShareId shareId, @NonNull byte[] message) {
+    Signature sign(@NonNull TssShareId shareId, @NonNull byte[] message) {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

@@ -18,8 +18,8 @@ package com.swirlds.platform.tss.groth21;
 
 import com.swirlds.platform.tss.TssCommitment;
 import com.swirlds.platform.tss.TssShareId;
-import com.swirlds.platform.tss.pairings.GroupElement;
-import com.swirlds.platform.tss.verification.PublicKey;
+import com.swirlds.platform.tss.bls.api.GroupElement;
+import com.swirlds.platform.tss.bls.api.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 

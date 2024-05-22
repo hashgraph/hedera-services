@@ -19,8 +19,8 @@ package com.swirlds.platform.tss.groth21;
 import com.swirlds.platform.tss.TssCiphertext;
 import com.swirlds.platform.tss.TssPrivateKey;
 import com.swirlds.platform.tss.TssShareId;
+import com.swirlds.platform.tss.bls.api.PublicKey;
 import com.swirlds.platform.tss.ecdh.EcdhPrivateKey;
-import com.swirlds.platform.tss.verification.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
