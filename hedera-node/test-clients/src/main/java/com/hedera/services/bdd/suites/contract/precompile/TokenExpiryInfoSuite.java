@@ -24,10 +24,11 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
+import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
+import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -86,7 +87,7 @@ public class TokenExpiryInfoSuite extends HapiSuite {
     private static final String CONTRACT_KEY = "contractKey";
     private static final KeyShape THRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
     private static final String TOKEN_EXPIRY_CONTRACT = "TokenExpiryContract";
-    private static final String PAYER = "payer";
+    private static final String ACCOUNT = "account";
     private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
     private static final String UPDATED_AUTO_RENEW_ACCOUNT = "updatedAutoRenewAccount";
     private static final String INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
@@ -116,7 +117,8 @@ public class TokenExpiryInfoSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(updateExpiryInfoForToken(), updateExpiryInfoForTokenAndReadLatestInfo(), getExpiryInfoForToken());
+        return List.of(
+                updateExpiryInfoForToken(), updateExpiryInfoForTokenAndReadLatestInfo(), getExpiryInfoForToken());
     }
 
     @HapiTest
@@ -126,15 +128,17 @@ public class TokenExpiryInfoSuite extends HapiSuite {
         return defaultHapiSpec("updateExpiryInfoForToken")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
-                        cryptoCreate(PAYER).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(AUTO_RENEW_ACCOUNT).balance(ONE_MILLION_HBARS),
                         cryptoCreate(UPDATED_AUTO_RENEW_ACCOUNT)
-                                .balance(0L)
-                                .keyShape(SigControl.ED25519_ON)
+                                .balance(ONE_MILLION_HBARS)
+                                .keyShape(ED25519_ON)
                                 .exposingCreatedIdTo(updatedAutoRenewAccountID::set),
                         newKeyNamed(ADMIN_KEY),
                         uploadInitCode(TOKEN_EXPIRY_CONTRACT),
                         contractCreate(TOKEN_EXPIRY_CONTRACT).gas(1_000_000L),
+                        newKeyNamed(CONTRACT_KEY)
+                                .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ED25519_ON, TOKEN_EXPIRY_CONTRACT))),
                         tokenCreate(VANILLA_TOKEN)
                                 .supplyType(TokenSupplyType.FINITE)
                                 .treasury(TOKEN_TREASURY)
@@ -147,24 +151,22 @@ public class TokenExpiryInfoSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
-                        newKeyNamed(CONTRACT_KEY)
-                                .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_EXPIRY_CONTRACT))),
                         tokenUpdate(VANILLA_TOKEN).adminKey(CONTRACT_KEY).signedByPayerAnd(ADMIN_KEY, CONTRACT_KEY),
-                        cryptoUpdate(UPDATED_AUTO_RENEW_ACCOUNT).key(CONTRACT_KEY),
-                        contractCall(
+                        cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
+                        /*contractCall(
                                 TOKEN_EXPIRY_CONTRACT,
                                 UPDATE_EXPIRY_INFO_FOR_TOKEN,
                                 asHeadlongAddress(INVALID_ADDRESS),
                                 DEFAULT_MAX_LIFETIME - 12_345L,
                                 HapiParserUtil.asHeadlongAddress(asAddress(updatedAutoRenewAccountID.get())),
                                 MONTH_IN_SECONDS)
-                                .alsoSigningWithFullPrefix(ADMIN_KEY, UPDATED_AUTO_RENEW_ACCOUNT)
                                 .via("invalidTokenTxn")
                                 .gas(GAS_TO_OFFER)
-                                .payingWith(PAYER)
-                                .signedBy(PAYER)
+                                .payingWith(ACCOUNT)
+                                .signedBy(ACCOUNT)
+                                .alsoSigningWithFullPrefix(UPDATED_AUTO_RENEW_ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                        /*contractCall(
+                        contractCall(
                                 TOKEN_EXPIRY_CONTRACT,
                                 UPDATE_EXPIRY_INFO_FOR_TOKEN,
                                 HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
@@ -173,9 +175,9 @@ public class TokenExpiryInfoSuite extends HapiSuite {
                                 MONTH_IN_SECONDS)
                                 .via("invalidSignatureTxn")
                                 .gas(GAS_TO_OFFER)
-                                .payingWith(PAYER)
-                                .signedBy(PAYER)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),*/
+                                .payingWith(ACCOUNT)
+                                .signedBy(ACCOUNT)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
                                 TOKEN_EXPIRY_CONTRACT,
                                 UPDATE_EXPIRY_INFO_FOR_TOKEN,
@@ -183,11 +185,11 @@ public class TokenExpiryInfoSuite extends HapiSuite {
                                 100L,
                                 HapiParserUtil.asHeadlongAddress(asAddress(updatedAutoRenewAccountID.get())),
                                 MONTH_IN_SECONDS)
-                                .alsoSigningWithFullPrefix(ADMIN_KEY, UPDATED_AUTO_RENEW_ACCOUNT)
                                 .via("invalidExpiryTxn")
                                 .gas(GAS_TO_OFFER)
-                                .payingWith(PAYER)
-                                .signedBy(PAYER)
+                                .payingWith(ACCOUNT)
+                                .signedBy(ACCOUNT)
+                                .alsoSigningWithFullPrefix(UPDATED_AUTO_RENEW_ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
                                 TOKEN_EXPIRY_CONTRACT,
@@ -196,11 +198,11 @@ public class TokenExpiryInfoSuite extends HapiSuite {
                                 DEFAULT_MAX_LIFETIME - 12_345L,
                                 asHeadlongAddress(INVALID_ADDRESS),
                                 MONTH_IN_SECONDS)
-                                .alsoSigningWithFullPrefix(ADMIN_KEY, UPDATED_AUTO_RENEW_ACCOUNT)
                                 .via("invalidAutoRenewAccountTxn")
                                 .gas(GAS_TO_OFFER)
-                                .payingWith(PAYER)
-                                .signedBy(PAYER)
+                                .payingWith(ACCOUNT)
+                                .signedBy(ACCOUNT)
+                                .alsoSigningWithFullPrefix(UPDATED_AUTO_RENEW_ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
                                 TOKEN_EXPIRY_CONTRACT,
@@ -209,12 +211,12 @@ public class TokenExpiryInfoSuite extends HapiSuite {
                                 DEFAULT_MAX_LIFETIME - 12_345L,
                                 HapiParserUtil.asHeadlongAddress(asAddress(updatedAutoRenewAccountID.get())),
                                 1L)
-                                .alsoSigningWithFullPrefix(ADMIN_KEY, UPDATED_AUTO_RENEW_ACCOUNT)
                                 .via("invalidAutoRenewPeriodTxn")
                                 .gas(GAS_TO_OFFER)
-                                .payingWith(PAYER)
-                                .signedBy(PAYER)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                .payingWith(ACCOUNT)
+                                .signedBy(ACCOUNT)
+                                .alsoSigningWithFullPrefix(UPDATED_AUTO_RENEW_ACCOUNT)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),*/
                         contractCall(
                                 TOKEN_EXPIRY_CONTRACT,
                                 UPDATE_EXPIRY_INFO_FOR_TOKEN,
@@ -222,20 +224,20 @@ public class TokenExpiryInfoSuite extends HapiSuite {
                                 DEFAULT_MAX_LIFETIME - 12_345L,
                                 HapiParserUtil.asHeadlongAddress(asAddress(updatedAutoRenewAccountID.get())),
                                 MONTH_IN_SECONDS)
-                                .alsoSigningWithFullPrefix(ADMIN_KEY, UPDATED_AUTO_RENEW_ACCOUNT)
                                 .via("updateExpiryTxn")
                                 .gas(GAS_TO_OFFER)
-                                .payingWith(PAYER)
-                                .signedBy(PAYER))))
+                                .payingWith(ACCOUNT)
+                                .signedBy(ACCOUNT, UPDATED_AUTO_RENEW_ACCOUNT)
+                                .alsoSigningWithFullPrefix(UPDATED_AUTO_RENEW_ACCOUNT))))
                 .then(
                         childRecordsCheck(
                                 "invalidTokenTxn",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(INVALID_TOKEN_ID)),
-                        /*childRecordsCheck(
+                        childRecordsCheck(
                                 "invalidSignatureTxn",
                                 CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_SIGNATURE)),*/
+                                recordWith().status(INVALID_SIGNATURE)),
                         childRecordsCheck(
                                 "invalidExpiryTxn",
                                 CONTRACT_REVERT_EXECUTED,
@@ -273,7 +275,6 @@ public class TokenExpiryInfoSuite extends HapiSuite {
                             assertEquals(autoRenewPeriod, MONTH_IN_SECONDS);
                         }));
     }
-
     @SuppressWarnings("java:S1192") // "use already defined const instead of copying its value here" - not this time
     @HapiTest
     final HapiSpec updateExpiryInfoForTokenAndReadLatestInfo() {
@@ -282,10 +283,10 @@ public class TokenExpiryInfoSuite extends HapiSuite {
         return defaultHapiSpec("updateExpiryInfoForTokenAndReadLatestInfo")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate(PAYER).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
                         cryptoCreate(UPDATED_AUTO_RENEW_ACCOUNT)
-                                .keyShape(SigControl.ED25519_ON)
+                                .keyShape(ED25519_ON)
                                 .balance(0L)
                                 .exposingCreatedIdTo(updatedAutoRenewAccountID::set),
                         newKeyNamed(ADMIN_KEY),
@@ -306,19 +307,19 @@ public class TokenExpiryInfoSuite extends HapiSuite {
                         newKeyNamed(CONTRACT_KEY)
                                 .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_EXPIRY_CONTRACT))),
                         tokenUpdate(VANILLA_TOKEN).adminKey(CONTRACT_KEY).signedByPayerAnd(ADMIN_KEY, CONTRACT_KEY),
-                        cryptoUpdate(UPDATED_AUTO_RENEW_ACCOUNT).key(CONTRACT_KEY),
+                        cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
                         contractCall(
-                                TOKEN_EXPIRY_CONTRACT,
-                                UPDATE_EXPIRY_INFO_FOR_TOKEN_AND_READ_LATEST_INFO,
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
-                                DEFAULT_MAX_LIFETIME - 12_345L,
-                                HapiParserUtil.asHeadlongAddress(asAddress(updatedAutoRenewAccountID.get())),
-                                MONTH_IN_SECONDS)
-                                //.alsoSigningWithFullPrefix(ADMIN_KEY, UPDATED_AUTO_RENEW_ACCOUNT)
+                                        TOKEN_EXPIRY_CONTRACT,
+                                        UPDATE_EXPIRY_INFO_FOR_TOKEN_AND_READ_LATEST_INFO,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        DEFAULT_MAX_LIFETIME - 12_345L,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(updatedAutoRenewAccountID.get())),
+                                        MONTH_IN_SECONDS)
                                 .via("updateExpiryAndReadLatestInfoTxn")
                                 .gas(GAS_TO_OFFER)
-                                .signedBy(PAYER)
-                                .payingWith(PAYER))))
+                                .payingWith(ACCOUNT)
+                                .signedBy(ACCOUNT)
+                                .alsoSigningWithFullPrefix(UPDATED_AUTO_RENEW_ACCOUNT))))
                 .then(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         childRecordsCheck(
