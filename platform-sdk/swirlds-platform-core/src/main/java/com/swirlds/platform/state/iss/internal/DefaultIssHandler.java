@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.iss;
+package com.swirlds.platform.state.iss.internal;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.state.iss.IssHandler;
+import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -63,8 +65,8 @@ public class DefaultIssHandler implements IssHandler {
     @Override
     public void issObserved(@NonNull final IssNotification issNotification) {
         switch (issNotification.getIssType()) {
-            case SELF_ISS -> selfIssObserver(issNotification.getRound());
-            case OTHER_ISS -> otherIss();
+            case SELF_ISS -> selfIssObserved(issNotification.getRound());
+            case OTHER_ISS -> otherIssObserved();
             case CATASTROPHIC_ISS -> catastrophicIssObserver(issNotification.getRound());
         }
     }
@@ -72,7 +74,7 @@ public class DefaultIssHandler implements IssHandler {
     /**
      * This method is called whenever any node is observed in disagreement with the consensus hash.
      */
-    private void otherIss() {
+    private void otherIssObserved() {
         if (halted) {
             // don't take any action once halted
             return;
@@ -109,7 +111,7 @@ public class DefaultIssHandler implements IssHandler {
      *
      * @param round the round of the ISS
      */
-    private void selfIssObserver(@NonNull final Long round) {
+    private void selfIssObserved(@NonNull final Long round) {
 
         if (halted) {
             // don't take any action once halted
