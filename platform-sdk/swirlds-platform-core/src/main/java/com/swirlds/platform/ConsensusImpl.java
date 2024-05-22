@@ -20,6 +20,8 @@ import static com.swirlds.logging.legacy.LogMarker.CONSENSUS_VOTING;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.consensus.ConsensusConstants.FIRST_CONSENSUS_NUMBER;
 
+import com.hedera.hapi.platform.event.EventConsensusData;
+import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
@@ -791,7 +793,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         final List<Instant> times = event.getRecTimes();
 
         // take middle. If there are 2 middle (even length) then use the 2nd (max) of them
-        event.setConsensusTimestamp(times.get(times.size() / 2));
+        event.setPreliminaryConsensusTimestamp(times.get(times.size() / 2));
 
         event.setReachedConsTimestamp(Instant.now()); // used for statistics
 
@@ -812,17 +814,22 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         EventImpl last = null;
         for (final EventImpl e : events) {
             last = e;
-            e.setConsensusOrder(numConsensus);
-            numConsensus++;
-
             // the minimum timestamp for this event
             final Instant minTimestamp =
                     lastConsensusTime == null ? null : ConsensusUtils.calcMinTimestampForNextEvent(lastConsensusTime);
             // advance this event's consensus timestamp to be at least minTimestamp
-            if (minTimestamp != null && e.getConsensusTimestamp().isBefore(minTimestamp)) {
-                e.setConsensusTimestamp(minTimestamp);
+            if (minTimestamp != null && e.getPreliminaryConsensusTimestamp().isBefore(minTimestamp)) {
+                e.setPreliminaryConsensusTimestamp(minTimestamp);
             }
             lastConsensusTime = e.getLastTransTime();
+
+            e.getBaseEvent().setConsensusData(
+                    new EventConsensusData(
+                            HapiUtils.asTimestamp(e.getPreliminaryConsensusTimestamp()),
+                            numConsensus
+                    )
+            );
+            numConsensus++;
         }
         if (last != null) {
             last.setLastInRoundReceived(true);

@@ -18,6 +18,7 @@ package com.swirlds.platform.system.events;
 
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.platform.event.EventConsensusData;
+import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
@@ -110,11 +111,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
 
         final EventConsensusData eventConsensusData = EventConsensusData
                 .newBuilder()
-                .consensusTimestamp(//TODO use hapiutils
-                        Timestamp.newBuilder()
-                                .seconds(consensusTimestamp.getEpochSecond())
-                                .nanos(consensusTimestamp.getNano())
-                                .build())
+                .consensusTimestamp(HapiUtils.asTimestamp(consensusTimestamp))
                 .consensusOrder(consensusOrder)
                 .build();
         gossipEvent.setConsensusData(eventConsensusData);

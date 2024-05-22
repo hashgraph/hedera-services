@@ -24,6 +24,8 @@ import static com.swirlds.common.utility.CompareTo.isLessThan;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 
+import com.hedera.hapi.platform.event.EventConsensusData;
+import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
@@ -41,7 +43,6 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.ObjectStreamIterator;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
@@ -110,14 +111,21 @@ public final class RecoveryTestUtils {
 
         final byte[] signature = randomSignature(random).getSignatureBytes();
 
-        final ConsensusData consensusData = new ConsensusData();
-        consensusData.setConsensusTimestamp(now);
-        consensusData.setRoundReceived(round);
-        consensusData.setConsensusOrder(random.nextLong());
-        consensusData.setLastInRoundReceived(lastInRound);
+//        final ConsensusData consensusData = new ConsensusData();
+//        consensusData.setConsensusTimestamp(now);
+//        consensusData.setRoundReceived(round);
+//        consensusData.setConsensusOrder(random.nextLong());
+//        consensusData.setLastInRoundReceived(lastInRound);
+
+        final GossipEvent gossipEvent = new GossipEvent(baseEventHashedData, signature);
+        final EventConsensusData eventConsensusData = new EventConsensusData(
+                HapiUtils.asTimestamp(now),
+                random.nextLong()
+        );
+        gossipEvent.setConsensusData(eventConsensusData);
 
         final EventImpl event =
-                new EventImpl(new GossipEvent(baseEventHashedData, signature), consensusData, null, null);
+                new EventImpl(gossipEvent);
         event.setRoundCreated(random.nextLong());
         event.setStale(random.nextBoolean());
         return event;

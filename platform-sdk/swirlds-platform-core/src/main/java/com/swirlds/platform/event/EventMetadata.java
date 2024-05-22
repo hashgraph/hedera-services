@@ -47,6 +47,11 @@ public class EventMetadata implements Clearable {
     private boolean isJudge;
     /** is this part of the consensus order yet? */
     private boolean isConsensus;
+    /**
+     * a field used to store consensus time while it is still not finalized. depending on the phase of consensus
+     * calculation, this filed may or may not store the final consensus time.
+     */
+    private Instant preliminaryConsensusTimestamp;
     /** the local time (not consensus time) at which the event reached consensus */
     private Instant reachedConsTimestamp;
     /** lastSee[m] is the last ancestor created by m (memoizes function from Swirlds-TR-2020-01) */
@@ -204,6 +209,22 @@ public class EventMetadata implements Clearable {
      */
     public void setConsensus(final boolean consensus) {
         isConsensus = consensus;
+    }
+
+    /**
+     * @return a field used to store consensus time while it is still not finalized. depending on the
+     *     phase of consensus calculation, this filed may or may not store the final consensus time.
+     */
+    public Instant getPreliminaryConsensusTimestamp() {
+        return preliminaryConsensusTimestamp;
+    }
+
+    /**
+     * Set the preliminary consensus timestamp
+     * @param preliminaryConsensusTimestamp the preliminary consensus timestamp
+     */
+    public void setPreliminaryConsensusTimestamp(final Instant preliminaryConsensusTimestamp) {
+        this.preliminaryConsensusTimestamp = preliminaryConsensusTimestamp;
     }
 
     /**

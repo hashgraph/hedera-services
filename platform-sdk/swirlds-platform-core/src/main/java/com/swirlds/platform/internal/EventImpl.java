@@ -101,7 +101,7 @@ public class EventImpl extends EventMetadata
         this(gossipEvent, new ConsensusData(), null, null);
     }
 
-    public EventImpl(
+    private EventImpl(
             final GossipEvent baseEvent,
             final ConsensusData consensusData,
             final EventImpl selfParent,
@@ -394,14 +394,6 @@ public class EventImpl extends EventMetadata
         return baseEvent.getHashedData().getTransactions();
     }
 
-    public int getNumTransactions() {
-        if (baseEvent.getHashedData().getTransactions() == null) {
-            return 0;
-        } else {
-            return baseEvent.getHashedData().getTransactions().length;
-        }
-    }
-
     public boolean isCreatedBy(final NodeId id) {
         return Objects.equals(getCreatorId(), id);
     }
@@ -410,16 +402,12 @@ public class EventImpl extends EventMetadata
     // ConsensusData
     //////////////////////////////////////////
 
-    public void setConsensusTimestamp(final Instant consensusTimestamp) {
-        consensusData.setConsensusTimestamp(consensusTimestamp);
-    }
-
+    /**
+     * @deprecated this will be remove once we start serializing {@link DetailedConsensusEvent} instead of {@link EventImpl}
+     */
+    @Deprecated(forRemoval = true)
     public void setRoundReceived(final long roundReceived) {
         consensusData.setRoundReceived(roundReceived);
-    }
-
-    public void setConsensusOrder(final long consensusOrder) {
-        consensusData.setConsensusOrder(consensusOrder);
     }
 
     /**
@@ -434,6 +422,10 @@ public class EventImpl extends EventMetadata
         return consensusData.isLastInRoundReceived();
     }
 
+    /**
+     * @deprecated this will be remove once we start serializing {@link DetailedConsensusEvent} instead of {@link EventImpl}
+     */
+    @Deprecated(forRemoval = true)
     public void setLastInRoundReceived(final boolean lastInRoundReceived) {
         consensusData.setLastInRoundReceived(lastInRoundReceived);
     }
@@ -448,7 +440,7 @@ public class EventImpl extends EventMetadata
      * @return the consensus timestamp of this event
      */
     public Instant getConsensusTimestamp() {
-        return consensusData.getConsensusTimestamp();
+        return baseEvent.getConsensusTimestamp();
     }
 
     /**
@@ -501,7 +493,7 @@ public class EventImpl extends EventMetadata
      */
     @Override
     public long getConsensusOrder() {
-        return consensusData.getConsensusOrder();
+        return baseEvent.getConsensusOrder();
     }
 
     /**
@@ -548,16 +540,5 @@ public class EventImpl extends EventMetadata
     @Override
     public void setHash(final Hash hash) {
         this.hash = hash;
-    }
-
-    /**
-     * Get a mnemonic string representing this event. Event should be hashed prior to this being called. Useful for
-     * debugging.
-     */
-    public String toMnemonic() {
-        if (getHash() == null) {
-            return "unhashed-event";
-        }
-        return getHash().toMnemonic();
     }
 }

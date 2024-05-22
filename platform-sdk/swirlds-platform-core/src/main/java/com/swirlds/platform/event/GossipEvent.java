@@ -19,6 +19,7 @@ package com.swirlds.platform.event;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 
 import com.hedera.hapi.platform.event.EventConsensusData;
+import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.io.SelfSerializable;
@@ -261,12 +262,9 @@ public class GossipEvent implements Event, SelfSerializable {
         return consensusData;
     }
 
+    @Nullable
     public Instant getConsensusTimestamp() {
-        return consensusData == null? null:
-                Instant.ofEpochSecond(
-                consensusData.consensusTimestamp().seconds(),
-                consensusData.consensusTimestamp().nanos()
-        );
+        return consensusData == null || consensusData.consensusTimestamp()==null? null: HapiUtils.asInstant(consensusData.consensusTimestamp());
     }
 
     public long getConsensusOrder() {
