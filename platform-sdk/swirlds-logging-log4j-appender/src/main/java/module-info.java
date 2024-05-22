@@ -15,5 +15,5 @@ module com.swirlds.logging.log4j.appender {
     provides LogProviderFactory with
             Log4JProviderFactory;
 
-    exports com.swirlds.logging.log4j.factory;
+    opens com.swirlds.logging.log4j.factory to org.apache.logging.log4j, com.swirlds.logging;
 }
