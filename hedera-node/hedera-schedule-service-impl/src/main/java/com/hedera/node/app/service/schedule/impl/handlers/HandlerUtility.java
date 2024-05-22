@@ -156,6 +156,7 @@ public final class HandlerUtility {
             case NODE_CREATE -> HederaFunctionality.NODE_CREATE;
             case NODE_UPDATE -> HederaFunctionality.NODE_UPDATE;
             case NODE_DELETE -> HederaFunctionality.NODE_DELETE;
+            case TOKEN_REJECT -> HederaFunctionality.TOKEN_REJECT;
             case UNSET -> HederaFunctionality.NONE;
         };
     }
