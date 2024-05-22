@@ -100,7 +100,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         // If not specified, payer account is considered as the one rejecting the tokens.
         if (op.hasOwner()) {
             final var accountStore = context.createStore(ReadableAccountStore.class);
-            verifyOwnerAndRequireKey(op.owner(), context, accountStore);
+            verifyOwnerAndRequireKey(op.ownerOrThrow(), context, accountStore);
         }
     }
 
@@ -241,12 +241,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
                         updatedFungibleTokenAllowances);
             } else if (rejection.hasNft()) {
                 processNftRejectionAndRemoveSpenderAllowance(
-                        requireNonNull(rejection.nft()),
-                        accountID,
-                        tokenTransferListMap,
-                        processedNFTs,
-                        nftStore,
-                        tokenStore);
+                        rejection.nftOrThrow(), accountID, tokenTransferListMap, processedNFTs, nftStore, tokenStore);
             }
         }
 
@@ -272,8 +267,8 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
             @NonNull final WritableTokenStore tokenStore,
             @NonNull final WritableTokenRelationStore relStore,
             @NonNull final List<AccountFungibleTokenAllowance> tokenAllowancesForRejectingAccount) {
-        final var token = getIfUsable(requireNonNull(rejection.fungibleToken()), tokenStore, PERMIT_PAUSED);
-        final var tokenId = requireNonNull(token.tokenId());
+        final var token = getIfUsable(rejection.fungibleTokenOrThrow(), tokenStore, PERMIT_PAUSED);
+        final var tokenId = token.tokenIdOrThrow();
 
         final var tokenRelation = getIfUsable(rejectingAccountID, tokenId, relStore, TokenRelValidations.PERMIT_FROZEN);
         validateTrue(token.treasuryAccountId() != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
@@ -307,7 +302,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         final var nft = getIfUsable(nftID, nftStore);
         validateTrue(nft.hasOwnerId() && rejectingAccountID.equals(nft.ownerId()), INVALID_ACCOUNT_ID);
 
-        final var token = getIfUsable(requireNonNull(nftID.tokenId()), tokenStore, PERMIT_PAUSED);
+        final var token = getIfUsable(nftID.tokenIdOrThrow(), tokenStore, PERMIT_PAUSED);
         final var tokenId = token.tokenId();
         final var tokenTreasury = token.treasuryAccountIdOrThrow();
 
