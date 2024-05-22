@@ -503,7 +503,6 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         final var baos = new ByteArrayOutputStream();
         try (final var out = new SerializableDataOutputStream(baos)) {
             serializeNonHashData(out);
-            out.write(blockHashes.getHash().getValue());
             blockHashes.getHash().getBytes().writeTo(out);
             out.writeLong(totalStakedRewardStart);
             out.writeLong(totalStakedStart);
