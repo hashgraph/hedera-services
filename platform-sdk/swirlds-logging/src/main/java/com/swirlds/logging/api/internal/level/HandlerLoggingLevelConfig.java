@@ -62,9 +62,13 @@ public class HandlerLoggingLevelConfig {
     private final Map<String, Level> levelCache = new ConcurrentHashMap<>();
 
     /**
-     * The cache for the markers.
+     * The cache for the marker config.
      */
     private final Map<String, MarkerState> markerConfigCache;
+    /**
+     * The cache for the markers.
+     */
+    private final Map<Marker, MarkerState> markerCache = new ConcurrentHashMap<>();
 
     /**
      * The configuration properties.
@@ -195,27 +199,30 @@ public class HandlerLoggingLevelConfig {
     }
 
     public boolean isEnabled(@NonNull final String name, @NonNull final Level level, @Nullable final Marker marker) {
-
         if (marker != null) {
-
-            final List<String> allMarkerNames = marker.getAllMarkerNames();
-            boolean isEnabled = false;
-            boolean found = false;
-            for (String markerName : allMarkerNames) {
-                final MarkerState markerState = markerConfigCache.get(markerName);
-                if (MarkerState.ENABLED.equals(markerState)) {
-                    isEnabled = true;
-                    found = true;
-                    break;
-                } else if (MarkerState.DISABLED.equals(markerState)) {
-                    found = true;
-                }
-            }
-            if (found) {
-                return isEnabled;
+            final MarkerState markerState = markerCache.computeIfAbsent(marker, this::getMarkerState);
+            if (!markerState.equals(MarkerState.UNDEFINED)) {
+                return markerState.equals(MarkerState.ENABLED);
             }
         }
         return isEnabled(name, level);
+    }
+
+    private MarkerState getMarkerState(@NonNull final Marker marker) {
+        final List<String> allMarkerNames = marker.getAllMarkerNames();
+        MarkerState markerState = MarkerState.UNDEFINED;
+
+        for (String markerName : allMarkerNames) {
+            MarkerState configMarker = markerConfigCache.get(markerName);
+            if (configMarker != null && configMarker != MarkerState.UNDEFINED) {
+                if (configMarker == MarkerState.ENABLED) {
+                    return MarkerState.ENABLED;
+                }
+                markerState = configMarker;
+            }
+        }
+
+        return markerState;
     }
 
     @NonNull
@@ -225,16 +232,17 @@ public class HandlerLoggingLevelConfig {
             return configLevel;
         }
 
-        final StringBuilder buffer = new StringBuilder(name);
-        for (int i = buffer.length() - 1; i > 0; i--) {
-            if ('.' == buffer.charAt(i)) {
-                buffer.setLength(i);
-                configLevel = levelConfigProperties.get(buffer.toString());
-                if (configLevel != null) {
-                    return configLevel;
-                }
+        int lastDotIndex = name.lastIndexOf('.');
+        while (lastDotIndex != -1) {
+            final String substring = name.substring(0, lastDotIndex);
+            configLevel = levelConfigProperties.get(substring);
+            if (configLevel != null) {
+                return configLevel;
             }
+            lastDotIndex = name.lastIndexOf('.', lastDotIndex - 1);
         }
+
         return levelConfigProperties.get("");
+
     }
 }
