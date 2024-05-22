@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.recovery.internal;
 
-import com.swirlds.platform.system.events.ConsensusData;
+import com.swirlds.platform.system.events.DetailedConsensusEvent;
 
 /**
  * A round based lower bound on an event stream.
@@ -43,8 +43,8 @@ public class EventStreamRoundLowerBound implements EventStreamLowerBound {
      * {@inheritDoc}
      */
     @Override
-    public int compareTo(ConsensusData consensusData) {
-        return Long.compare(consensusData.getRoundReceived(), round);
+    public int compareTo(DetailedConsensusEvent consensusEvent) {
+        return Long.compare(consensusEvent.getRoundReceived(), round);
     }
 
     /**

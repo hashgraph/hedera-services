@@ -33,7 +33,7 @@ import java.util.Objects;
 public class ConsensusData implements SelfSerializable {
     private static final long CLASS_ID = 0xddf20b7ce114a711L;
     private static final int CLASS_VERSION_REMOVED_WITNESS_FAMOUS = 2;
-    private static final int CLASS_VERSION = CLASS_VERSION_REMOVED_WITNESS_FAMOUS;
+    public static final int CLASS_VERSION = CLASS_VERSION_REMOVED_WITNESS_FAMOUS;
 
     /** Value used to indicate that consensus has not been reached */
     public static final long NO_CONSENSUS = -1;

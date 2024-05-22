@@ -217,7 +217,11 @@ public class EventImpl extends EventMetadata
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        DetailedConsensusEvent.serialize(out, baseEvent, consensusData);
+        DetailedConsensusEvent.serialize(
+                out,
+                baseEvent,
+                consensusData.getRoundReceived(),
+                consensusData.isLastInRoundReceived());
     }
 
     /**
@@ -237,12 +241,13 @@ public class EventImpl extends EventMetadata
      */
     void buildFromConsensusEvent(final DetailedConsensusEvent consensusEvent) {
         baseEvent = consensusEvent.getGossipEvent();
-        consensusData = consensusEvent.getConsensusData();
         // clears metadata in case there is any
         super.clear();
 
         setDefaultValues();
         findSystemTransactions();
+        consensusData.setRoundReceived(consensusEvent.getRoundReceived());
+        consensusData.setLastInRoundReceived(consensusEvent.isLastInRoundReceived());
     }
 
     /**
