@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -46,6 +47,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
@@ -53,7 +55,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
@@ -167,11 +172,11 @@ public class TokenUpdatePrecompileSuite {
                         cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
                         cryptoUpdate(newTokenTreasury).key(CONTRACT_KEY),
                         contractCall(
-                                TOKEN_UPDATE_CONTRACT,
-                                "updateTokenTreasury",
-                                HapiParserUtil.asHeadlongAddress(asAddress(noAdminKeyToken.get())),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(newTokenTreasury))))
+                                        TOKEN_UPDATE_CONTRACT,
+                                        "updateTokenTreasury",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(noAdminKeyToken.get())),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(newTokenTreasury))))
                                 .via("noAdminKey")
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -180,11 +185,11 @@ public class TokenUpdatePrecompileSuite {
                                 .alsoSigningWithFullPrefix(ACCOUNT, newTokenTreasury)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
-                                TOKEN_UPDATE_CONTRACT,
-                                "updateTokenTreasury",
-                                HapiParserUtil.asHeadlongAddress(asAddress(nftToken.get())),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(newTokenTreasury))))
+                                        TOKEN_UPDATE_CONTRACT,
+                                        "updateTokenTreasury",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(nftToken.get())),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(newTokenTreasury))))
                                 .via("tokenUpdateTxn")
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -238,13 +243,13 @@ public class TokenUpdatePrecompileSuite {
                         tokenUpdate(VANILLA_TOKEN).adminKey(CONTRACT_KEY).signedByPayerAnd(MULTI_KEY, CONTRACT_KEY),
                         cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
                         contractCall(
-                                TOKEN_UPDATE_CONTRACT,
-                                "checkNameAndSymbolLength",
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                tooLongString,
-                                CUSTOM_SYMBOL)
+                                        TOKEN_UPDATE_CONTRACT,
+                                        "checkNameAndSymbolLength",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        tooLongString,
+                                        CUSTOM_SYMBOL)
                                 .via(UPDATE_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -253,13 +258,13 @@ public class TokenUpdatePrecompileSuite {
                                 .alsoSigningWithFullPrefix(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
-                                TOKEN_UPDATE_CONTRACT,
-                                "checkNameAndSymbolLength",
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                CUSTOM_NAME,
-                                tooLongString)
+                                        TOKEN_UPDATE_CONTRACT,
+                                        "checkNameAndSymbolLength",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        CUSTOM_NAME,
+                                        tooLongString)
                                 .via(tooLongSymbolTxn)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -353,25 +358,29 @@ public class TokenUpdatePrecompileSuite {
                         newKeyNamed(CONTRACT_KEY)
                                 .shape(THRESHOLD_ED2_AND_CONTRACT.signedWith(sigs(ON, OFF, TOKEN_UPDATE_CONTRACT)))
                                 .exposingKeyTo(key -> {
-                                    ed25519.set(key.getThresholdKey().getKeys().getKeys(0).getEd25519().toByteArray());
+                                    ed25519.set(key.getThresholdKey()
+                                            .getKeys()
+                                            .getKeys(0)
+                                            .getEd25519()
+                                            .toByteArray());
                                 }))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         tokenUpdate(VANILLA_TOKEN).adminKey(CONTRACT_KEY).signedByPayerAnd(MULTI_KEY, CONTRACT_KEY),
                         cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
                         contractCall(
-                                TOKEN_UPDATE_CONTRACT,
-                                updateTokenWithKeysFunc,
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                ed25519.get(),
-                                spec.registry()
-                                        .getKey(ECDSA_KEY)
-                                        .getECDSASecp256K1()
-                                        .toByteArray(),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getContractId(TOKEN_UPDATE_CONTRACT))))
+                                        TOKEN_UPDATE_CONTRACT,
+                                        updateTokenWithKeysFunc,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        ed25519.get(),
+                                        spec.registry()
+                                                .getKey(ECDSA_KEY)
+                                                .getECDSASecp256K1()
+                                                .toByteArray(),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(TOKEN_UPDATE_CONTRACT))))
                                 .via(NO_FEE_SCHEDULE_KEY_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -380,19 +389,19 @@ public class TokenUpdatePrecompileSuite {
                                 .payingWith(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
-                                TOKEN_UPDATE_CONTRACT,
-                                updateTokenWithKeysFunc,
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(tokenList.get(0).get())),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                ed25519.get(),
-                                spec.registry()
-                                        .getKey(ECDSA_KEY)
-                                        .getECDSASecp256K1()
-                                        .toByteArray(),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getContractId(TOKEN_UPDATE_CONTRACT))))
+                                        TOKEN_UPDATE_CONTRACT,
+                                        updateTokenWithKeysFunc,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(tokenList.get(0).get())),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        ed25519.get(),
+                                        spec.registry()
+                                                .getKey(ECDSA_KEY)
+                                                .getECDSASecp256K1()
+                                                .toByteArray(),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(TOKEN_UPDATE_CONTRACT))))
                                 .via(NO_SUPPLY_KEY_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -401,19 +410,19 @@ public class TokenUpdatePrecompileSuite {
                                 .payingWith(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
-                                TOKEN_UPDATE_CONTRACT,
-                                updateTokenWithKeysFunc,
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(tokenList.get(1).get())),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                ed25519.get(),
-                                spec.registry()
-                                        .getKey(ECDSA_KEY)
-                                        .getECDSASecp256K1()
-                                        .toByteArray(),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getContractId(TOKEN_UPDATE_CONTRACT))))
+                                        TOKEN_UPDATE_CONTRACT,
+                                        updateTokenWithKeysFunc,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(tokenList.get(1).get())),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        ed25519.get(),
+                                        spec.registry()
+                                                .getKey(ECDSA_KEY)
+                                                .getECDSASecp256K1()
+                                                .toByteArray(),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(TOKEN_UPDATE_CONTRACT))))
                                 .via(NO_WIPE_KEY_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -422,19 +431,19 @@ public class TokenUpdatePrecompileSuite {
                                 .payingWith(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
-                                TOKEN_UPDATE_CONTRACT,
-                                updateTokenWithKeysFunc,
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(tokenList.get(2).get())),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                ed25519.get(),
-                                spec.registry()
-                                        .getKey(ECDSA_KEY)
-                                        .getECDSASecp256K1()
-                                        .toByteArray(),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getContractId(TOKEN_UPDATE_CONTRACT))))
+                                        TOKEN_UPDATE_CONTRACT,
+                                        updateTokenWithKeysFunc,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(tokenList.get(2).get())),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        ed25519.get(),
+                                        spec.registry()
+                                                .getKey(ECDSA_KEY)
+                                                .getECDSASecp256K1()
+                                                .toByteArray(),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(TOKEN_UPDATE_CONTRACT))))
                                 .via(NO_PAUSE_KEY_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -443,19 +452,19 @@ public class TokenUpdatePrecompileSuite {
                                 .payingWith(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
-                                TOKEN_UPDATE_CONTRACT,
-                                updateTokenWithKeysFunc,
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(tokenList.get(3).get())),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                ed25519.get(),
-                                spec.registry()
-                                        .getKey(ECDSA_KEY)
-                                        .getECDSASecp256K1()
-                                        .toByteArray(),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getContractId(TOKEN_UPDATE_CONTRACT))))
+                                        TOKEN_UPDATE_CONTRACT,
+                                        updateTokenWithKeysFunc,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(tokenList.get(3).get())),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        ed25519.get(),
+                                        spec.registry()
+                                                .getKey(ECDSA_KEY)
+                                                .getECDSASecp256K1()
+                                                .toByteArray(),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(TOKEN_UPDATE_CONTRACT))))
                                 .via(NO_FREEZE_KEY_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -464,19 +473,19 @@ public class TokenUpdatePrecompileSuite {
                                 .payingWith(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
-                                TOKEN_UPDATE_CONTRACT,
-                                updateTokenWithKeysFunc,
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(tokenList.get(4).get())),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                ed25519.get(),
-                                spec.registry()
-                                        .getKey(ECDSA_KEY)
-                                        .getECDSASecp256K1()
-                                        .toByteArray(),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getContractId(TOKEN_UPDATE_CONTRACT))))
+                                        TOKEN_UPDATE_CONTRACT,
+                                        updateTokenWithKeysFunc,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(tokenList.get(4).get())),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        ed25519.get(),
+                                        spec.registry()
+                                                .getKey(ECDSA_KEY)
+                                                .getECDSASecp256K1()
+                                                .toByteArray(),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(TOKEN_UPDATE_CONTRACT))))
                                 .via(NO_KYC_KEY_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)

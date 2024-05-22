@@ -60,6 +60,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
+import static com.hedera.services.bdd.suites.HapiSuite.UPDATED_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -1102,7 +1103,7 @@ public class TokenInfoHTSSuite {
     }
 
     @HapiTest
-    final HapiSpec happyPathUpdateTokenInfoAndGetLatestInfo() {
+    final Stream<DynamicTest> happyPathUpdateTokenInfoAndGetLatestInfo() {
         final int decimals = 1;
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
         return defaultHapiSpec("happyPathUpdateTokenInfoAndGetLatestInfo")
@@ -1215,7 +1216,7 @@ public class TokenInfoHTSSuite {
     }
 
     @HapiTest
-    final HapiSpec happyPathUpdateFungibleTokenInfoAndGetLatestInfo() {
+    final Stream<DynamicTest> happyPathUpdateFungibleTokenInfoAndGetLatestInfo() {
         final int decimals = 1;
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
         return defaultHapiSpec("happyPathUpdateFungibleTokenInfoAndGetLatestInfo")
@@ -1325,7 +1326,7 @@ public class TokenInfoHTSSuite {
     }
 
     @HapiTest
-    final HapiSpec happyPathUpdateNonFungibleTokenInfoAndGetLatestInfo() {
+    final Stream<DynamicTest> happyPathUpdateNonFungibleTokenInfoAndGetLatestInfo() {
         final int maxSupply = 10;
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
@@ -1448,7 +1449,7 @@ public class TokenInfoHTSSuite {
     }
 
     @HapiTest
-    final HapiSpec happyPathUpdateTokenKeysAndReadLatestInformation() {
+    final Stream<DynamicTest> happyPathUpdateTokenKeysAndReadLatestInformation() {
         final String TOKEN_INFO_AS_KEY = "TOKEN_INFO_CONTRACT_KEY";
         return defaultHapiSpec("happyPathUpdateTokenKeysAndReadLatestInformation")
                 .given(
