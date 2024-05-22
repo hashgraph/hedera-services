@@ -21,9 +21,11 @@ import static com.swirlds.platform.state.manager.SignatureVerificationTestUtils.
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
@@ -79,7 +81,10 @@ class AddIncompleteStateTest extends AbstractStateSignatureCollectorTest {
     @DisplayName("Add Incomplete State Test")
     void addIncompleteStateTest() {
 
-        final StateSignatureCollectorTester manager = new StateSignatureCollectorBuilder(buildStateConfig())
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(buildStateConfig())
+                .build();
+        final StateSignatureCollectorTester manager = new StateSignatureCollectorBuilder(platformContext)
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();

@@ -57,8 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.ExpiryRecordsValidator;
-import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.junit.support.validators.ExpiryRecordsValidator;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -68,8 +67,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class ContractAutoExpirySpecs extends HapiSuite {
 
@@ -90,7 +91,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 renewsUsingContractFundsIfNoAutoRenewAccount(),
                 renewalFeeDistributedToStakingAccounts(),
@@ -105,7 +106,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                 verifyNonFungibleTokenTransferredBackToTreasuryWithoutCharging());
     }
 
-    final HapiSpec renewalWithCustomFeesWorks() {
+    final Stream<DynamicTest> renewalWithCustomFeesWorks() {
         final var minimalLifetime = 4;
         final var aFungibleToken = "aFT";
         final var bFungibleToken = "bFT";
@@ -175,7 +176,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         getTokenNftInfo(nonFungibleToken, 2L).hasAccountID(TOKEN_TREASURY));
     }
 
-    final HapiSpec receiverSigReqBypassedForTreasuryAtEndOfGracePeriod() {
+    final Stream<DynamicTest> receiverSigReqBypassedForTreasuryAtEndOfGracePeriod() {
         final var minimalLifetime = 4;
         final var aFungibleToken = "aFT";
         final var nonFungibleToken = "NFT";
@@ -242,14 +243,14 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         getTokenNftInfo(nonFungibleToken, 2L).hasAccountID(TOKEN_TREASURY));
     }
 
-    final HapiSpec validateStreams() {
+    final Stream<DynamicTest> validateStreams() {
         return defaultHapiSpec("validateStreams")
                 .given()
                 .when()
                 .then(sourcing(() -> assertEventuallyPasses(new ExpiryRecordsValidator(), Duration.ofMillis(2_100))));
     }
 
-    final HapiSpec storageRentChargedOnlyAfterInitialFreePeriodIsComplete() {
+    final Stream<DynamicTest> storageRentChargedOnlyAfterInitialFreePeriodIsComplete() {
         final var contract = "User";
         final var gasToOffer = 1_000_000;
         final var minimalLifetime = 4;
@@ -338,7 +339,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         overriding(INDIVIDUAL_KV_LIMIT_PROP, String.valueOf(16_384_000)));
     }
 
-    final HapiSpec autoRenewWorksAsExpected() {
+    final Stream<DynamicTest> autoRenewWorksAsExpected() {
         final var minimalLifetime = 3;
 
         return defaultHapiSpec("autoRenewWorksAsExpected")
@@ -386,7 +387,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         overriding(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, DEFAULT_MIN_AUTO_RENEW_PERIOD));
     }
 
-    final HapiSpec autoRenewInGracePeriodIfEnoughBalance() {
+    final Stream<DynamicTest> autoRenewInGracePeriodIfEnoughBalance() {
         final var minimalLifetime = 3;
         final var expectedExpiryPostRenew = new AtomicLong();
         final var currentExpiry = new AtomicLong();
@@ -446,7 +447,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         overriding(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, DEFAULT_MIN_AUTO_RENEW_PERIOD));
     }
 
-    final HapiSpec renewalFeeDistributedToStakingAccounts() {
+    final Stream<DynamicTest> renewalFeeDistributedToStakingAccounts() {
         final var initBalance = ONE_HBAR;
         final var minimalLifetime = 3;
         final var standardLifetime = 7776000L;
@@ -519,7 +520,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         overriding(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, DEFAULT_MIN_AUTO_RENEW_PERIOD));
     }
 
-    final HapiSpec chargesContractFundsWhenAutoRenewAccountHasZeroBalance() {
+    final Stream<DynamicTest> chargesContractFundsWhenAutoRenewAccountHasZeroBalance() {
         final var initBalance = ONE_HBAR;
         final var minimalLifetime = 3;
         final var standardLifetime = 7776000L;
@@ -587,7 +588,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         overriding(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, DEFAULT_MIN_AUTO_RENEW_PERIOD));
     }
 
-    final HapiSpec renewsUsingAutoRenewAccountIfSet() {
+    final Stream<DynamicTest> renewsUsingAutoRenewAccountIfSet() {
         final var initBalance = ONE_HBAR;
         final var minimalLifetime = 3;
         final var standardLifetime = 7776000L;
@@ -654,7 +655,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         overriding(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, DEFAULT_MIN_AUTO_RENEW_PERIOD));
     }
 
-    final HapiSpec storageExpiryWorksAtTheExpectedInterval() {
+    final Stream<DynamicTest> storageExpiryWorksAtTheExpectedInterval() {
         final var minimalLifetime = 4;
         final var aFungibleToken = "aFT";
         final var bFungibleToken = "bFT";
@@ -748,7 +749,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         getAccountBalance(TOKEN_TREASURY).hasTinyBars(ONE_HBAR));
     }
 
-    final HapiSpec verifyNonFungibleTokenTransferredBackToTreasuryWithoutCharging() {
+    final Stream<DynamicTest> verifyNonFungibleTokenTransferredBackToTreasuryWithoutCharging() {
         final var minimalLifetime = 4;
         final var nonFungibleToken = "NFT";
         final var initBalance = ONE_HBAR;
@@ -801,7 +802,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         getAccountBalance(TOKEN_TREASURY).hasTinyBars(ONE_HBAR));
     }
 
-    final HapiSpec renewsUsingContractFundsIfNoAutoRenewAccount() {
+    final Stream<DynamicTest> renewsUsingContractFundsIfNoAutoRenewAccount() {
         final var initBalance = ONE_HBAR;
         final var minimalLifetime = 3;
         final var standardLifetime = 7776000L;

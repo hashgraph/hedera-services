@@ -27,40 +27,23 @@ import static java.lang.Integer.MAX_VALUE;
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.SplittableRandom;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class ContractStateSuite extends HapiSuite {
+public class ContractStateSuite {
     private static final String CONTRACT = "StateContract";
     private static final SplittableRandom RANDOM = new SplittableRandom(1_234_567L);
-    private static final Logger LOG = LogManager.getLogger(ContractStateSuite.class);
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(stateChangesSpec());
-    }
 
     @HapiTest
-    HapiSpec stateChangesSpec() {
+    final Stream<DynamicTest> stateChangesSpec() {
         final var iterations = 2;
         final var integralTypes = Map.ofEntries(
                 Map.entry("Uint8", 0x01),

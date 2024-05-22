@@ -33,12 +33,10 @@ public class Version046FeatureFlags extends Version034FeatureFlags {
 
     @Override
     public boolean isAllowCallsToNonContractAccountsEnabled(
-            @NonNull Configuration config, @Nullable Long possiblyGrandFatheredEntityNum) {
+            @NonNull ContractsConfig config, @Nullable Long possiblyGrandFatheredEntityNum) {
         final var grandfathered = possiblyGrandFatheredEntityNum != null
-                && config.getConfigData(ContractsConfig.class)
-                        .evmNonExtantContractsFail()
-                        .contains(possiblyGrandFatheredEntityNum);
-        return config.getConfigData(ContractsConfig.class).evmAllowCallsToNonContractAccounts() && !grandfathered;
+                && config.evmNonExtantContractsFail().contains(possiblyGrandFatheredEntityNum);
+        return config.evmAllowCallsToNonContractAccounts() && !grandfathered;
     }
 
     @Override

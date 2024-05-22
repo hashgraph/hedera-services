@@ -134,7 +134,7 @@ _Please note that the expected behavior described in this section is valid if th
      - success, if the address is a contract, and we are using the correct ABI;
      - success with no op, if there is no contract;
      - fail, if the address is a contract, and we are **not** using the correct ABI.
-   - **Hedera:** success with no op.
+   - **Hedera:** success with no op. (with all gas consumed)
 
 | Address                            | Calls in Ethereum (ABI)                                                                                                                                                            | Calls in Hedera (ABI)                                                                                        |
 |------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|

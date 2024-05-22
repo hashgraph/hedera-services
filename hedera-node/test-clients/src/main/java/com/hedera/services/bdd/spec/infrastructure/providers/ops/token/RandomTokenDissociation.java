@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.token;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
@@ -47,6 +48,7 @@ public class RandomTokenDissociation implements OpProvider {
             ACCOUNT_IS_TREASURY,
             ACCOUNT_FROZEN_FOR_TOKEN,
             TOKEN_NOT_ASSOCIATED_TO_ACCOUNT,
+            ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN,
             TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
 
     @Override

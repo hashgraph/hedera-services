@@ -36,6 +36,7 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction;
+import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;

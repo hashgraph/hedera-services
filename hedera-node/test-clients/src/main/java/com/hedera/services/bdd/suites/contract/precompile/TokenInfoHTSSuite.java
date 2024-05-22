@@ -56,6 +56,10 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FUL
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -67,13 +71,11 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -96,17 +98,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class TokenInfoHTSSuite extends HapiSuite {
-
-    private static final Logger LOG = LogManager.getLogger(TokenInfoHTSSuite.class);
-
+public class TokenInfoHTSSuite {
     private static final String TOKEN_INFO_CONTRACT = "TokenInfoContract";
     private static final String ADMIN_KEY = TokenKeyType.ADMIN_KEY.name();
     private static final String KYC_KEY = TokenKeyType.KYC_KEY.name();
@@ -162,46 +160,8 @@ public class TokenInfoHTSSuite extends HapiSuite {
     private static final int MAX_SUPPLY = 1000;
     public static final String GET_CUSTOM_FEES_FOR_TOKEN = "getCustomFeesForToken";
 
-    public static void main(final String... args) {
-        new TokenInfoHTSSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return allOf(positiveSpecs(), negativeSpecs());
-    }
-
-    List<HapiSpec> positiveSpecs() {
-        return List.of(
-                happyPathGetTokenInfo(),
-                happyPathGetFungibleTokenInfo(),
-                happyPathGetNonFungibleTokenInfo(),
-                happyPathGetTokenCustomFees(),
-                happyPathGetNonFungibleTokenCustomFees(),
-                happyPathUpdateTokenInfoAndGetLatestInfo(),
-                happyPathUpdateFungibleTokenInfoAndGetLatestInfo(),
-                happyPathUpdateNonFungibleTokenInfoAndGetLatestInfo(),
-                happyPathUpdateTokenKeysAndReadLatestInformation());
-    }
-
-    List<HapiSpec> negativeSpecs() {
-        return List.of(
-                getInfoOnDeletedFungibleTokenWorks(),
-                getInfoOnInvalidFungibleTokenFails(),
-                getInfoOnInvalidNonFungibleTokenFails(),
-                getInfoForFungibleTokenByNFTTokenAddressWorks(),
-                getInfoForNFTByFungibleTokenAddressFails(),
-                getInfoForTokenByAccountAddressFails(),
-                getTokenCustomFeesNegativeCases());
-    }
-
     @HapiTest
-    final HapiSpec happyPathGetTokenInfo() {
+    final Stream<DynamicTest> happyPathGetTokenInfo() {
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
         return defaultHapiSpec(
                         "HappyPathGetTokenInfo",
@@ -300,7 +260,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec happyPathGetFungibleTokenInfo() {
+    final Stream<DynamicTest> happyPathGetFungibleTokenInfo() {
         final int decimals = 1;
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
         return defaultHapiSpec(
@@ -400,7 +360,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec happyPathGetNonFungibleTokenInfo() {
+    final Stream<DynamicTest> happyPathGetNonFungibleTokenInfo() {
         final int maxSupply = 10;
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
@@ -517,7 +477,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getInfoOnDeletedFungibleTokenWorks() {
+    final Stream<DynamicTest> getInfoOnDeletedFungibleTokenWorks() {
         return defaultHapiSpec(
                         "getInfoOnDeletedFungibleTokenWorks",
                         HIGHLY_NON_DETERMINISTIC_FEES,
@@ -567,7 +527,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getInfoOnInvalidFungibleTokenFails() {
+    final Stream<DynamicTest> getInfoOnInvalidFungibleTokenFails() {
         return defaultHapiSpec(
                         "getInfoOnInvalidFungibleTokenFails",
                         HIGHLY_NON_DETERMINISTIC_FEES,
@@ -662,7 +622,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getInfoOnDeletedNonFungibleTokenWorks() {
+    final Stream<DynamicTest> getInfoOnDeletedNonFungibleTokenWorks() {
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         return defaultHapiSpec(
                         "getInfoOnDeletedNonFungibleTokenFails",
@@ -709,7 +669,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getInfoOnInvalidNonFungibleTokenFails() {
+    final Stream<DynamicTest> getInfoOnInvalidNonFungibleTokenFails() {
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         return defaultHapiSpec("getInfoOnInvalidNonFungibleTokenFails", FULLY_NONDETERMINISTIC)
                 .given(
@@ -789,7 +749,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getInfoForTokenByAccountAddressFails() {
+    final Stream<DynamicTest> getInfoForTokenByAccountAddressFails() {
         return defaultHapiSpec("getInfoForTokenByAccountAddressFails")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -829,7 +789,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getInfoForNFTByFungibleTokenAddressFails() {
+    final Stream<DynamicTest> getInfoForNFTByFungibleTokenAddressFails() {
         return defaultHapiSpec("getInfoForNFTByFungibleTokenAddressFails")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -874,7 +834,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     @HapiTest
     // FUTURE: This test ensures matching mono === mod behavior. We should consider revising the behavior of allowing
     // NonFungibleToken to be passed to getInfoForFungibleToken and resulting SUCCESS status.
-    final HapiSpec getInfoForFungibleTokenByNFTTokenAddressWorks() {
+    final Stream<DynamicTest> getInfoForFungibleTokenByNFTTokenAddressWorks() {
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         return defaultHapiSpec("getInfoForFungibleTokenByNFTTokenAddressWorks")
                 .given(
@@ -917,7 +877,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec happyPathGetTokenCustomFees() {
+    final Stream<DynamicTest> happyPathGetTokenCustomFees() {
         return defaultHapiSpec(
                         "HappyPathGetTokenCustomFees",
                         HIGHLY_NON_DETERMINISTIC_FEES,
@@ -996,7 +956,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec happyPathGetNonFungibleTokenCustomFees() {
+    final Stream<DynamicTest> happyPathGetNonFungibleTokenCustomFees() {
         final int maxSupply = 10;
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         return defaultHapiSpec(
@@ -1070,7 +1030,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getTokenCustomFeesNegativeCases() {
+    final Stream<DynamicTest> getTokenCustomFeesNegativeCases() {
         final int maxSupply = 10;
         final var accountAddressForToken = "accountAddressForToken";
         final var tokenWithNoFees = "tokenWithNoFees";
@@ -1836,10 +1796,5 @@ public class TokenInfoHTSSuite extends HapiSuite {
 
     private ByteString fromString(final String value) {
         return ByteString.copyFrom(Bytes.fromHexString(value).toArray());
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
     }
 }

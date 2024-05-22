@@ -42,9 +42,6 @@ import java.time.Duration;
  * @param consensusEngine                         configuration for the consensus engine scheduler
  * @param eventCreationManager                    configuration for the event creation manager scheduler
  * @param selfEventSigner                         configuration for the self event signer scheduler
- * @param signedStateFileManagerSchedulerType     the signed state file manager scheduler type
- * @param signedStateFileManagerUnhandledCapacity number of unhandled tasks allowed in the signed state file manager
- *                                                scheduler
  * @param stateSignerSchedulerType                the state signer scheduler type
  * @param stateSignerUnhandledCapacity            number of unhandled tasks allowed in the state signer scheduler,
  *                                                default is -1 (unlimited)
@@ -54,10 +51,8 @@ import java.time.Duration;
  * @param stateSignatureCollector                 configuration for the state signature collector scheduler
  * @param consensusRoundHandlerSchedulerType      the consensus round handler scheduler type
  * @param consensusRoundHandlerUnhandledCapacity  number of unhandled tasks allowed for the consensus round handler
- * @param runningEventHasher                      configuration for the running event hasher scheduler
  * @param issDetector                             configuration for the ISS detector scheduler
- * @param hashLoggerSchedulerType                 the hash logger scheduler type
- * @param hashLoggerUnhandledTaskCapacity         number of unhandled tasks allowed in the hash logger task scheduler
+ * @param hashLogger                              configuration for the hash logger scheduler
  * @param completeStateNotifierUnhandledCapacity  number of unhandled tasks allowed for the state completion notifier
  * @param stateHasher                             configuration for the state hasher scheduler
  * @param stateGarbageCollector                   configuration for the state garbage collector scheduler
@@ -98,8 +93,8 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventCreationManager,
         @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration selfEventSigner,
-        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType signedStateFileManagerSchedulerType,
-        @ConfigProperty(defaultValue = "20") int signedStateFileManagerUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD CAPACITY(20) UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration stateSnapshotManager,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateSignerSchedulerType,
         @ConfigProperty(defaultValue = "-1") int stateSignerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD CAPACITY(500) UNHANDLED_TASK_METRIC")
@@ -111,12 +106,10 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration stateSignatureCollector,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType consensusRoundHandlerSchedulerType,
         @ConfigProperty(defaultValue = "5") int consensusRoundHandlerUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(5) UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
-                TaskSchedulerConfiguration runningEventHasher,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration issDetector,
-        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType hashLoggerSchedulerType,
-        @ConfigProperty(defaultValue = "100") int hashLoggerUnhandledTaskCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(100) UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration hashLogger,
         @ConfigProperty(defaultValue = "1000") int completeStateNotifierUnhandledCapacity,
         @ConfigProperty(
                         defaultValue =
@@ -133,7 +126,7 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration consensusEventStream,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(5) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration roundDurabilityBuffer,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration statusStateMachine,
         @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration platformStatusNexus,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC")

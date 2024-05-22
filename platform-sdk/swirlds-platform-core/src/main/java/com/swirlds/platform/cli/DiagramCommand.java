@@ -20,6 +20,8 @@ import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.common.wiring.model.diagram.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.diagram.ModelGroup;
 import com.swirlds.common.wiring.model.diagram.ModelManualLink;
@@ -116,7 +118,9 @@ public final class DiagramCommand extends AbstractCommand {
 
         final ApplicationCallbacks callbacks = new ApplicationCallbacks(x -> {}, x -> {}, x -> {});
 
-        final PlatformWiring platformWiring = new PlatformWiring(platformContext, callbacks);
+        final WiringModel model = WiringModelBuilder.create(platformContext).build();
+
+        final PlatformWiring platformWiring = new PlatformWiring(platformContext, model, callbacks);
 
         final String diagramString = platformWiring
                 .getModel()
