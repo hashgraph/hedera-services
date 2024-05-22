@@ -14,17 +14,27 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.scratchpad;
+package com.swirlds.platform.scratchpad;
 
 /**
- * Defines a {@link Scratchpad} type. Implementations must be enums.
+ * A scratchpad type for testing.
  */
-public interface ScratchpadType {
+public enum TestScratchpadType implements ScratchpadType {
+    FOO(0),
+    BAR(1),
+    BAZ(2);
+
+    private final int fieldId;
+
+    TestScratchpadType(final int fieldId) {
+        this.fieldId = fieldId;
+    }
 
     /**
-     * Get the field ID for this scratchpad type. Must be unique within this type.
-     *
-     * @return the field ID
+     * {@inheritDoc}
      */
-    int getFieldId();
+    @Override
+    public int getFieldId() {
+        return fieldId;
+    }
 }

@@ -14,27 +14,15 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.scratchpad;
+package com.hedera.hapi.util;
+
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.TransactionBody;
 
 /**
- * A scratchpad type for testing.
+ * Exception raised when mapping from {@link TransactionBody} or {@link Query} to {@link HederaFunctionality}
+ * when there is no known mapping. This should NEVER happen and means there is a new functionality that is
+ * not yet supported in the code.
  */
-public enum TestScratchpadType implements ScratchpadType {
-    FOO(0),
-    BAR(1),
-    BAZ(2);
-
-    private final int fieldId;
-
-    TestScratchpadType(final int fieldId) {
-        this.fieldId = fieldId;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getFieldId() {
-        return fieldId;
-    }
-}
+public class UnknownHederaFunctionality extends Exception {}

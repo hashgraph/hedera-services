@@ -30,13 +30,13 @@ import static com.hedera.hapi.node.base.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
 import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
+import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.LONG_ACCOUNT_AMOUNT_BYTES;
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage.LONG_BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.isStakingAccount;
-import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -178,8 +178,10 @@ public class CryptoTransferHandler implements TransactionHandler {
             if (treasuryID != null) {
                 accountStore.warm(treasuryID);
             }
-            final List<NftTransfer> nftTransfers = tokenTransferList.nftTransfers();
-            for (final NftTransfer nftTransfer : nftTransfers) {
+            for (final AccountAmount amount : tokenTransferList.transfers()) {
+                amount.ifAccountID(accountID -> tokenRelationStore.warm(accountID, tokenID));
+            }
+            for (final NftTransfer nftTransfer : tokenTransferList.nftTransfers()) {
                 warmNftTransfer(accountStore, tokenStore, nftStore, tokenRelationStore, tokenID, nftTransfer);
             }
         });
