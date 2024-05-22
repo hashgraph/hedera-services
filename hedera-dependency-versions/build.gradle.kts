@@ -104,10 +104,10 @@ dependencies.constraints {
     api("io.netty:netty-handler:4.1.87.Final") {
         because("io.netty.handler")
     }
-    api("io.netty:netty-transport:4.1.87.Final") {
+    api("io.netty:netty-transport:4.1.110.Final") {
         because("io.netty.transport")
     }
-    api("io.netty:netty-transport-classes-epoll:4.1.87.Final") {
+    api("io.netty:netty-transport-classes-epoll:4.1.110.Final") {
         because("io.netty.transport.classes.epoll")
     }
     api("io.perfmark:perfmark-api:0.25.0") {
