@@ -16,24 +16,23 @@
 
 package com.swirlds.platform.event;
 
-import static com.swirlds.platform.event.DetGenerateUtils.generateRandomByteArray;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.platform.event.EventConsensusData;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.io.IOException;
+import java.time.Instant;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -74,12 +73,19 @@ public class DetailedConsensusEventTest {
     }
 
     private DetailedConsensusEvent generateConsensusEvent() {
-        Randotron random = Randotron.create(68651684861L);
-        BaseEventHashedData hashedData = DetGenerateUtils.generateBaseEventHashedData(random);
-        ConsensusData consensusData = DetGenerateUtils.generateConsensusEventData(random);
-        return new DetailedConsensusEvent(
-                new GossipEvent(
-                        hashedData, Bytes.wrap(generateRandomByteArray(random, SignatureType.RSA.signatureLength()))),
-                consensusData);
+        final Randotron random = Randotron.create(68651684861L);
+        final Instant consensusTimestamp = random.nextInstant();
+        final GossipEvent gossipEvent = new TestingEventBuilder(random).build();
+        final EventConsensusData eventConsensusData = EventConsensusData
+                .newBuilder()
+                .consensusTimestamp(//TODO use hapiutils
+                        Timestamp.newBuilder()
+                                .seconds(consensusTimestamp.getEpochSecond())
+                                .nanos(consensusTimestamp.getNano())
+                                .build())
+                .consensusOrder(random.nextLong(0, Long.MAX_VALUE))
+                .build();
+        gossipEvent.setConsensusData(eventConsensusData);
+        return new DetailedConsensusEvent(gossipEvent);
     }
 }

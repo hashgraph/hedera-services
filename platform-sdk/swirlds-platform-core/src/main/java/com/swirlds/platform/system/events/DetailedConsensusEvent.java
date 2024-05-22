@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.system.events;
 
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
@@ -26,6 +28,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.event.GossipEvent;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Objects;
 
 /**
@@ -33,16 +36,20 @@ import java.util.Objects;
  * information.
  */
 public class DetailedConsensusEvent extends AbstractSerializableHashable implements SelfSerializable, RunningHashable {
+    /** Value used to indicate that it is undefined*/
+    public static final long UNDEFINED = -1;
 
     public static final long CLASS_ID = 0xe250a9fbdcc4b1baL;
     public static final int CLASS_VERSION = 1;
 
     /** the pre-consensus event */
     private GossipEvent gossipEvent;
-    /** Consensus data calculated for an event */
-    private ConsensusData consensusData;
     /** the running hash of this event */
     private final RunningHash runningHash = new RunningHash();
+    /** the round in which this event received a consensus order and timestamp */
+    private long roundReceived = UNDEFINED;
+    /** true if this event is the last in consensus order of all those with the same received round */
+    private boolean lastInRoundReceived = false;
 
     /**
      * Creates an empty instance
@@ -53,18 +60,27 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
      * Create a new instance with the provided data.
      *
      * @param gossipEvent   the pre-consensus event
-     * @param consensusData the consensus data for this event
      */
-    public DetailedConsensusEvent(final GossipEvent gossipEvent, final ConsensusData consensusData) {
+    public DetailedConsensusEvent(final GossipEvent gossipEvent) {//TODO must add RR and LIRR
         this.gossipEvent = gossipEvent;
-        this.consensusData = consensusData;
     }
 
     public static void serialize(
-            final SerializableDataOutputStream out, final GossipEvent gossipEvent, final ConsensusData consensusData)
+            final SerializableDataOutputStream out,
+            final GossipEvent gossipEvent,
+            final long roundReceived,
+            final boolean lastInRoundReceived)
             throws IOException {
         gossipEvent.serialize(out);
-        out.writeSerializable(consensusData, false);
+
+        out.writeInt(ConsensusData.CLASS_VERSION);
+        out.writeLong(UNDEFINED);// ConsensusData.generation
+        out.writeLong(UNDEFINED);// ConsensusData.roundCreated
+        out.writeBoolean(false);// ConsensusData.stale
+        out.writeBoolean(lastInRoundReceived);
+        out.writeInstant(gossipEvent.getConsensusTimestamp());
+        out.writeLong(roundReceived);
+        out.writeLong(gossipEvent.getConsensusOrder());
     }
 
     /**
@@ -72,7 +88,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        serialize(out, gossipEvent, consensusData);
+        serialize(out, gossipEvent, roundReceived, lastInRoundReceived);
     }
 
     /**
@@ -82,7 +98,26 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         this.gossipEvent = new GossipEvent();
         this.gossipEvent.deserialize(in, gossipEvent.getVersion());
-        consensusData = in.readSerializable(false, ConsensusData::new);
+
+        in.readInt(); // ConsensusData.version
+        in.readLong();// ConsensusData.generation
+        in.readLong();// ConsensusData.roundCreated
+        in.readBoolean();// ConsensusData.stale
+        lastInRoundReceived = in.readBoolean();
+        final Instant consensusTimestamp = in.readInstant();
+        roundReceived = in.readLong();
+        final long consensusOrder = in.readLong();
+
+        final EventConsensusData eventConsensusData = EventConsensusData
+                .newBuilder()
+                .consensusTimestamp(//TODO use hapiutils
+                        Timestamp.newBuilder()
+                                .seconds(consensusTimestamp.getEpochSecond())
+                                .nanos(consensusTimestamp.getNano())
+                                .build())
+                .consensusOrder(consensusOrder)
+                .build();
+        gossipEvent.setConsensusData(eventConsensusData);
     }
 
     @Override
@@ -104,11 +139,12 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
         return gossipEvent.getSignature();
     }
 
-    /**
-     * Returns all the consensus data associated with this event.
-     */
-    public ConsensusData getConsensusData() {
-        return consensusData;
+    public long getRoundReceived() {
+        return 0;//TODO
+    }
+
+    public boolean isLastInRoundReceived() {
+        return false;//TODO
     }
 
     /**
@@ -132,7 +168,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
      */
     @Override
     public int hashCode() {
-        return Objects.hash(gossipEvent, consensusData);
+        return Objects.hash(gossipEvent, roundReceived, lastInRoundReceived);
     }
 
     /**
@@ -147,7 +183,8 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
             return false;
         }
         final DetailedConsensusEvent that = (DetailedConsensusEvent) other;
-        return Objects.equals(gossipEvent, that.gossipEvent) && Objects.equals(consensusData, that.consensusData);
+        return Objects.equals(gossipEvent, that.gossipEvent) && roundReceived == that.roundReceived
+                && lastInRoundReceived == that.lastInRoundReceived;
     }
 
     /**
@@ -157,7 +194,8 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
     public String toString() {
         return new ToStringBuilder(this)
                 .append("gossipEvent", gossipEvent)
-                .append("consensusData", consensusData)
+                .append("roundReceived", roundReceived)
+                .append("lastInRoundReceived", lastInRoundReceived)
                 .toString();
     }
 }

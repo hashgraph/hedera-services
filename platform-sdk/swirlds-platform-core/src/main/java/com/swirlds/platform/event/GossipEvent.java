@@ -261,6 +261,18 @@ public class GossipEvent implements Event, SelfSerializable {
         return consensusData;
     }
 
+    public Instant getConsensusTimestamp() {
+        return consensusData == null? null:
+                Instant.ofEpochSecond(
+                consensusData.consensusTimestamp().seconds(),
+                consensusData.consensusTimestamp().nanos()
+        );
+    }
+
+    public long getConsensusOrder() {
+        return consensusData == null ? -1 : consensusData.consensusOrder();
+    }
+
     /**
      * Set the consensus data for this event
      *

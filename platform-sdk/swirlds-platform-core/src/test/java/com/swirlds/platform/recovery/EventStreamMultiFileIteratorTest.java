@@ -385,7 +385,7 @@ class EventStreamMultiFileIteratorTest {
         Objects.requireNonNull(directory, "directory must not be null");
 
         int startingIndex = 0;
-        while (startingIndex < events.size() && lowerBound.compareTo(events.get(startingIndex)) < 0) {
+        while (startingIndex < events.size() && lowerBound.compareTo(new DetailedConsensusEvent(events.get(startingIndex).getBaseEvent())) < 0) {
             startingIndex++;
         }
 
