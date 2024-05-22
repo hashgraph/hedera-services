@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
@@ -280,6 +281,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
 
         final var tokenRelation = getIfUsable(rejectingAccountID, tokenId, relStore, TokenRelValidations.PERMIT_FROZEN);
         validateTrue(token.treasuryAccountId() != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+        validateTrue(!token.treasuryAccountId().equals(rejectingAccountID), ACCOUNT_IS_TREASURY);
         validateTrue(tokenRelation.balance() > 0, INSUFFICIENT_TOKEN_BALANCE);
 
         tokenTransferListMap.put(
@@ -308,11 +310,12 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
             @NonNull final WritableNftStore nftStore,
             @NonNull final WritableTokenStore tokenStore) {
         final var nft = getIfUsable(nftID, nftStore);
-        validateTrue(nft.hasOwnerId() && rejectingAccountID.equals(nft.ownerId()), INVALID_ACCOUNT_ID);
-
         final var token = getIfUsable(nftID.tokenIdOrThrow(), tokenStore, PERMIT_PAUSED);
+
         final var tokenId = token.tokenId();
         final var tokenTreasury = token.treasuryAccountIdOrThrow();
+        validateTrue(!tokenTreasury.equals(rejectingAccountID), ACCOUNT_IS_TREASURY);
+        validateTrue(nft.hasOwnerId() && rejectingAccountID.equals(nft.ownerId()), INVALID_OWNER_ID);
 
         final var newNftTransfer = nftTransfer(rejectingAccountID, tokenTreasury, nftID.serialNumber());
         if (tokenTransferListMap.containsKey(tokenId)) {
