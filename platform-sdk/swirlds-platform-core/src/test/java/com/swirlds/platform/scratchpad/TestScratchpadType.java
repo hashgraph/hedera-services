@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.scratchpad;
-
-import com.swirlds.platform.scratchpad.ScratchpadType;
+package com.swirlds.platform.scratchpad;
 
 /**
  * A scratchpad type for testing.
