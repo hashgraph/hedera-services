@@ -1163,7 +1163,7 @@ class HandleWorkflowTest extends AppTestBase {
         void testPreHandleCausesUnexpectedException() {
             final var transactionBytes = Transaction.PROTOBUF.toBytes(
                     new TransactionScenarioBuilder().txInfo().transaction());
-            when(platformTxn.getContents()).thenReturn(transactionBytes.toByteArray());
+            when(platformTxn.getApplicationPayload()).thenReturn(transactionBytes);
             when(platformTxn.getMetadata()).thenReturn(null);
             when(preHandleWorkflow.preHandleTransaction(any(), any(), any(), eq(platformTxn), eq(null)))
                     .thenThrow(NullPointerException.class);

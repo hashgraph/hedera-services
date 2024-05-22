@@ -63,7 +63,8 @@ public class AdaptedMonoEventExpansion {
         final List<Transaction> forWorkflows = new ArrayList<>();
         event.forEachTransaction(txn -> {
             try {
-                final var accessor = SignedTxnAccessor.from(txn.getContents());
+                final var accessor =
+                        SignedTxnAccessor.from(txn.getApplicationPayload().toByteArray());
                 if (typesForWorkflows.contains(accessor.getFunction())) {
                     forWorkflows.add(txn);
                 } else {
