@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.token;
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomToken.DEFAULT_MAX_SUPPLY;
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenDissociation.explicit;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
@@ -33,8 +34,8 @@ import java.util.Optional;
 public class RandomTokenMint implements OpProvider {
     private final RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels;
 
-    private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(TOKEN_WAS_DELETED, TOKEN_HAS_NO_SUPPLY_KEY, INVALID_TOKEN_MINT_AMOUNT);
+    private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
+            TOKEN_WAS_DELETED, TOKEN_HAS_NO_SUPPLY_KEY, INVALID_TOKEN_MINT_AMOUNT, ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
     private final ResponseCodeEnum[] customOutcomes;
 
     public RandomTokenMint(

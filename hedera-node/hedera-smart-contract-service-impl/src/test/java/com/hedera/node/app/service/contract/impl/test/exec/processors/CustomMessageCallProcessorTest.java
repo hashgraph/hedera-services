@@ -157,9 +157,9 @@ class CustomMessageCallProcessorTest {
 
     @Test
     void callsToNonStandardSystemContractsAreNotSupported() {
-        final var isHalted = new AtomicBoolean();
-        givenHaltableFrame(isHalted);
+        final Deque<MessageFrame> stack = new ArrayDeque<>();
         givenCallWithCode(NON_EVM_PRECOMPILE_SYSTEM_ADDRESS);
+
         given(addressChecks.isSystemAccount(NON_EVM_PRECOMPILE_SYSTEM_ADDRESS)).willReturn(true);
         when(frame.getValue()).thenReturn(Wei.ZERO);
 
@@ -201,8 +201,6 @@ class CustomMessageCallProcessorTest {
 
     @Test
     void haltsAndTracesInsufficientGasIfPrecompileGasRequirementExceedsRemaining() {
-        final var isHalted = new AtomicBoolean();
-        givenHaltableFrame(isHalted);
         givenEvmPrecompileCall();
         given(nativePrecompile.gasRequirement(INPUT_DATA)).willReturn(GAS_REQUIREMENT);
         given(frame.getRemainingGas()).willReturn(1L);
@@ -221,7 +219,6 @@ class CustomMessageCallProcessorTest {
         given(nativePrecompile.computePrecompile(INPUT_DATA, frame)).willReturn(result);
         given(nativePrecompile.gasRequirement(INPUT_DATA)).willReturn(GAS_REQUIREMENT);
         given(frame.getRemainingGas()).willReturn(3L);
-        given(frame.getState()).willReturn(MessageFrame.State.COMPLETED_SUCCESS);
 
         subject.start(frame, operationTracer);
 
@@ -240,7 +237,6 @@ class CustomMessageCallProcessorTest {
         given(nativePrecompile.computePrecompile(INPUT_DATA, frame)).willReturn(result);
         given(nativePrecompile.gasRequirement(INPUT_DATA)).willReturn(GAS_REQUIREMENT);
         given(frame.getRemainingGas()).willReturn(3L);
-        given(frame.getState()).willReturn(MessageFrame.State.REVERT);
 
         subject.start(frame, operationTracer);
 
@@ -294,6 +290,15 @@ class CustomMessageCallProcessorTest {
                 .getState();
     }
 
+    private void givenCallWithIsTopLevelTransaction(@NonNull final AtomicBoolean isTopLevelTransaction) {
+        doAnswer(invocation -> {
+                    isTopLevelTransaction.set(false);
+                    return null;
+                })
+                .when(frame)
+                .setExceptionalHaltReason(any());
+    }
+
     private void givenCallWithCode(@NonNull final Address contract) {
         given(frame.getContractAddress()).willReturn(contract);
     }
@@ -305,11 +310,9 @@ class CustomMessageCallProcessorTest {
     }
 
     private void givenEvmPrecompileCall() {
-        given(addressChecks.isSystemAccount(ADDRESS_6)).willReturn(true);
         given(registry.get(ADDRESS_6)).willReturn(nativePrecompile);
         given(frame.getContractAddress()).willReturn(ADDRESS_6);
         given(frame.getInputData()).willReturn(INPUT_DATA);
-        given(frame.getValue()).willReturn(Wei.ZERO);
     }
 
     private void givenPrngCall(long gasRequirement) {

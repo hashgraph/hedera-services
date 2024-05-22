@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec;
 
+import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.EVM_VERSIONS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -41,6 +42,7 @@ import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer
 import com.hedera.node.app.service.contract.impl.hevm.HandleContextHevmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
@@ -56,6 +58,7 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.FunctionalityResourcePrices;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import dagger.Binds;
@@ -64,10 +67,25 @@ import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.Map;
 import java.util.function.Supplier;
 
 @Module(includes = {TransactionConfigModule.class, TransactionInitialStateModule.class})
 public interface TransactionModule {
+    @Provides
+    @TransactionScope
+    static TransactionProcessor provideTransactionProcessor(
+            @NonNull final ContractsConfig contractsConfig,
+            @NonNull final Map<HederaEvmVersion, TransactionProcessor> processors) {
+        return processors.get(EVM_VERSIONS.get(contractsConfig.evmVersion()));
+    }
+
+    @Provides
+    @TransactionScope
+    static FeatureFlags provideFeatureFlags(@NonNull final TransactionProcessor processor) {
+        return processor.featureFlags();
+    }
+
     @Provides
     @TransactionScope
     static TinybarValues provideTinybarValues(

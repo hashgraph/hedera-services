@@ -21,7 +21,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -55,6 +54,11 @@ public class SimulatedNetwork {
      * of submitted events in parallel.
      */
     private final Map<NodeId, List<GossipEvent>> newlySubmittedEvents = new HashMap<>();
+
+    /**
+     * A sorted list of node IDs for when deterministic iteration order is required.
+     */
+    final List<NodeId> sortedNodeIds = new ArrayList<>();
 
     /**
      * Events that are currently in transit between nodes in the network.
@@ -92,8 +96,9 @@ public class SimulatedNetwork {
 
         this.random = Objects.requireNonNull(random);
 
-        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
+        for (final NodeId nodeId : addressBook.getNodeIdSet().stream().sorted().toList()) {
             newlySubmittedEvents.put(nodeId, new ArrayList<>());
+            sortedNodeIds.add(nodeId);
             eventsInTransit.put(nodeId, new PriorityQueue<>());
             gossipInstances.put(nodeId, new SimulatedGossip(this, nodeId));
         }
@@ -108,7 +113,8 @@ public class SimulatedNetwork {
      * @param nodeId the id of the node
      * @return the gossip instance for the node
      */
-    public Gossip getGossipInstance(@NonNull final NodeId nodeId) {
+    @NonNull
+    public SimulatedGossip getGossipInstance(@NonNull final NodeId nodeId) {
         return gossipInstances.get(nodeId);
     }
 
@@ -136,6 +142,8 @@ public class SimulatedNetwork {
      * For each node, deliver all events that are eligible for immediate delivery.
      */
     private void deliverEvents(@NonNull final Instant now) {
+        // Iteration order does not need to be deterministic. The nodes are not running on any thread
+        // when this method is called, and so the order in which nodes are provided events makes no difference.
         for (final Map.Entry<NodeId, PriorityQueue<EventInTransit>> entry : eventsInTransit.entrySet()) {
             final NodeId nodeId = entry.getKey();
             final PriorityQueue<EventInTransit> events = entry.getValue();
@@ -160,20 +168,19 @@ public class SimulatedNetwork {
      * @param now the current time
      */
     private void transmitEvents(@NonNull final Instant now) {
-        for (final Map.Entry<NodeId, List<GossipEvent>> senderEntry : newlySubmittedEvents.entrySet()) {
-            final NodeId sender = senderEntry.getKey();
-            final List<GossipEvent> events = senderEntry.getValue();
+        // Transmission order of the loops in this method must be deterministic, else nodes may receive events
+        // in nondeterministic orders with nondeterministic timing.
 
+        for (final NodeId sender : sortedNodeIds) {
+            final List<GossipEvent> events = newlySubmittedEvents.get(sender);
             for (final GossipEvent event : events) {
-                for (final Map.Entry<NodeId, PriorityQueue<EventInTransit>> receiverEntry :
-                        eventsInTransit.entrySet()) {
-                    final NodeId receiver = receiverEntry.getKey();
-                    final PriorityQueue<EventInTransit> receiverEvents = receiverEntry.getValue();
-
+                for (final NodeId receiver : sortedNodeIds) {
                     if (sender.equals(receiver)) {
                         // Don't gossip to ourselves
                         continue;
                     }
+
+                    final PriorityQueue<EventInTransit> receiverEvents = eventsInTransit.get(receiver);
 
                     final Instant deliveryTime = now.plusNanos(
                             (long) (averageDelayNanos + random.nextGaussian() * standardDeviationDelayNanos));

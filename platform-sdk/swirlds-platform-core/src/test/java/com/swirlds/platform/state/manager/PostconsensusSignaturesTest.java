@@ -22,9 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
-import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.DefaultStateSignatureCollector;
@@ -72,9 +73,11 @@ class PostconsensusSignaturesTest extends AbstractStateSignatureCollectorTest {
     @DisplayName("Postconsensus signatures")
     void postconsensusSignatureTests() throws InterruptedException {
         final int count = 100;
-        final StateConfig stateConfig = buildStateConfig();
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(buildStateConfig())
+                .build();
 
-        final StateSignatureCollectorTester manager = new StateSignatureCollectorBuilder(stateConfig)
+        final StateSignatureCollectorTester manager = new StateSignatureCollectorBuilder(platformContext)
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();

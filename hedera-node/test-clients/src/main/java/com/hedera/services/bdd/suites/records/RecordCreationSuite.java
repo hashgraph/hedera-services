@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.records;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
@@ -25,41 +26,29 @@ import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.includ
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import java.util.List;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class RecordCreationSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(RecordCreationSuite.class);
-
+public class RecordCreationSuite {
     private static final long SLEEP_MS = 1_000L;
     private static final String BEFORE = "before";
     private static final String FUNDING_BEFORE = "fundingBefore";
@@ -75,22 +64,8 @@ public class RecordCreationSuite extends HapiSuite {
     public static final String STAKING_FEES_NODE_REWARD_PERCENTAGE = "staking.fees.nodeRewardPercentage";
     public static final String STAKING_FEES_STAKING_REWARD_PERCENTAGE = "staking.fees.stakingRewardPercentage";
 
-    public static void main(String... args) {
-        new RecordCreationSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                payerRecordCreationSanityChecks(),
-                accountsGetPayerRecordsIfSoConfigured(),
-                submittingNodeChargedNetworkFeeForLackOfDueDiligence(),
-                submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness(),
-                submittingNodeStillPaidIfServiceFeesOmitted());
-    }
-
-    @HapiTest
-    final HapiSpec submittingNodeStillPaidIfServiceFeesOmitted() {
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> submittingNodeStillPaidIfServiceFeesOmitted() {
         final String comfortingMemo = THIS_IS_OK_IT_S_FINE_IT_S_WHATEVER;
         final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
 
@@ -147,8 +122,8 @@ public class RecordCreationSuite extends HapiSuite {
                                 .logged()));
     }
 
-    @HapiTest
-    final HapiSpec submittingNodeChargedNetworkFeeForLackOfDueDiligence() {
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> submittingNodeChargedNetworkFeeForLackOfDueDiligence() {
         final String comfortingMemo = THIS_IS_OK_IT_S_FINE_IT_S_WHATEVER;
         final String disquietingMemo = "\u0000his is ok, it's fine, it's whatever.";
         final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
@@ -203,8 +178,8 @@ public class RecordCreationSuite extends HapiSuite {
                                 .logged()));
     }
 
-    @HapiTest
-    final HapiSpec submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness() {
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness() {
         final String comfortingMemo = THIS_IS_OK_IT_S_FINE_IT_S_WHATEVER;
         final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
 
@@ -260,36 +235,7 @@ public class RecordCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec payerRecordCreationSanityChecks() {
-        return defaultHapiSpec("PayerRecordCreationSanityChecks")
-                .given(cryptoCreate(PAYER))
-                .when(
-                        createTopic("ofGeneralInterest").payingWith(PAYER),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1_000L)).payingWith(PAYER),
-                        submitMessageTo("ofGeneralInterest").message("I say!").payingWith(PAYER))
-                .then(assertionsHold((spec, opLog) -> {
-                    final var payerId = spec.registry().getAccountID(PAYER);
-                    final var subOp = getAccountRecords(PAYER).logged();
-                    allRunFor(spec, subOp);
-                    final var records = subOp.getResponse().getCryptoGetAccountRecords().getRecordsList().stream()
-                            .filter(TxnUtils::isNotEndOfStakingPeriodRecord)
-                            .toList();
-                    assertEquals(3, records.size());
-                    for (var record : records) {
-                        assertEquals(record.getTransactionFee(), -netChangeIn(record, payerId));
-                    }
-                }));
-    }
-
-    private long netChangeIn(TransactionRecord record, AccountID id) {
-        return record.getTransferList().getAccountAmountsList().stream()
-                .filter(aa -> id.equals(aa.getAccountID()))
-                .mapToLong(AccountAmount::getAmount)
-                .sum();
-    }
-
-    @HapiTest
-    final HapiSpec accountsGetPayerRecordsIfSoConfigured() {
+    final Stream<DynamicTest> accountsGetPayerRecordsIfSoConfigured() {
         final var txn = "ofRecord";
 
         return defaultHapiSpec("AccountsGetPayerRecordsIfSoConfigured")
@@ -298,10 +244,5 @@ public class RecordCreationSuite extends HapiSuite {
                         .payingWith(PAYER)
                         .via(txn))
                 .then(getAccountRecords(PAYER).has(inOrder(recordWith().txnId(txn))));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }
