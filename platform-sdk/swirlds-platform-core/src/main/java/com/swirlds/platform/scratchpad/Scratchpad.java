@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.scratchpad;
+package com.swirlds.platform.scratchpad;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.scratchpad.internal.StandardScratchpad;
+import com.swirlds.platform.scratchpad.internal.StandardScratchpad;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
