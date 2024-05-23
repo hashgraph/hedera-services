@@ -16,11 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractNativeSystemContract.FUNCTION_SELECTOR_LENGTH;
 import static com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState.HOLLOW_ACCOUNT_KEY;
+import static com.hedera.node.app.service.contract.impl.state.EvmFrameState.AccountBytecodeType.RETURN_PROXY_CONTRACT_BYTECODE;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -49,6 +52,16 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
     protected final AccountID accountID;
     protected final EvmFrameState state;
 
+    /*
+     * Four byte function selectors for the two functions that are eligible for proxy redirection
+     * in the Hedera Account Service system contract
+     */
+    private static final Set<Integer> ACCOUNT_PROXY_FUNCTION_SELECTOR = Set.of(
+            // hbarAllowance(address spender)
+            0xbbee989e,
+            // hbarApprove(spender address, amount int256)
+            0x86aff07c);
+
     public ProxyEvmAccount(final AccountID accountID, @NonNull final EvmFrameState state) {
         this.state = state;
         this.accountID = accountID;
@@ -75,7 +88,17 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
     }
 
     @Override
-    public @NonNull Code getEvmCode() {
+    public @NonNull Code getEvmCode(@NonNull final Bytes functionSelector) {
+
+        // Check to see if the account needs to return the proxy redirect for account bytecode
+        final int selector = functionSelector.size() >= FUNCTION_SELECTOR_LENGTH ? functionSelector.getInt(0) : 0;
+        if (isRegularAccount() && ACCOUNT_PROXY_FUNCTION_SELECTOR.contains(selector)) {
+            // We need to set a state in the EvmFrameState in order for the getCodeHash() from the EVM to return the
+            // correct
+            // proxy contract bytecode and hash
+            state.setAccountBytecodeType(RETURN_PROXY_CONTRACT_BYTECODE);
+        }
+
         return CodeFactory.createCode(getCode(), 0, false);
     }
 

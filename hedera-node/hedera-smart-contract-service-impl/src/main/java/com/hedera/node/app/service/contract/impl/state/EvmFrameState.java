@@ -46,6 +46,15 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  */
 public interface EvmFrameState {
     /**
+     * Determines if the contract bytecode returned for an account or a contract should be the proxy redirect bytecode
+     * or the actual contract bytecode.
+     */
+    public enum AccountBytecodeType {
+        RETURN_PROXY_CONTRACT_BYTECODE,
+        RETURN_CONTRACT_BYTECODE
+    }
+
+    /**
      * Returns the number of bytecodes in state; we use this to enforce the contract creation
      * limit.
      *
@@ -330,4 +339,10 @@ public interface EvmFrameState {
      */
     @NonNull
     RentFactors getRentFactorsFor(ContractID contractID);
+
+    /**
+     * Sets which bytecode to return for a given account.  This should only be modified if a function selector matches
+     * a call supported by the proxy redirect contract.
+     */
+    void setAccountBytecodeType(AccountBytecodeType type);
 }

@@ -73,7 +73,8 @@ public interface HtsTranslatorsModule {
     @Provides
     @Singleton
     @Named("HtsTranslators")
-    static List<CallTranslator> provideCallAttemptTranslators(@NonNull final Set<CallTranslator> translators) {
+    static List<CallTranslator> provideCallAttemptTranslators(
+            @NonNull @Named("HtsTranslators") final Set<CallTranslator> translators) {
         return List.copyOf(translators);
     }
 

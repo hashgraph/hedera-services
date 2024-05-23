@@ -25,6 +25,7 @@ import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExcep
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_ALIAS_KEY;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
+import static com.hedera.node.app.service.contract.impl.state.EvmFrameState.AccountBytecodeType.RETURN_PROXY_CONTRACT_BYTECODE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniUInt256;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
@@ -126,6 +127,10 @@ class DispatchingEvmFrameStateTest {
             AccountID.newBuilder().accountNum(ACCOUNT_NUM).build();
     private static final AccountID B_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(BENEFICIARY_NUM).build();
+    private static final String ADDRESS_BYTECODE_PATTERN = "fefefefefefefefefefefefefefefefefefefefe";
+
+    private static final String ACCOUNT_CALL_REDIRECT_CONTRACT_BINARY =
+            "6080604052348015600f57600080fd5b50600061016a905077e4cbd3a7fefefefefefefefefefefefefefefefefefefefe600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
 
     @Mock
     private HederaNativeOperations nativeOperations;
@@ -290,6 +295,34 @@ class DispatchingEvmFrameStateTest {
         final var actualCode = subject.getCode(A_CONTRACT_ID);
 
         assertEquals(pbjToTuweniBytes(SOME_PRETEND_CODE), actualCode);
+    }
+
+    @Test
+    void getsRedirectProxyCode() {
+        final var accountInHex = String.format("%040X", ACCOUNT_NUM);
+        final var expected = org.apache.tuweni.bytes.Bytes.fromHexString(
+                ACCOUNT_CALL_REDIRECT_CONTRACT_BINARY.replace(ADDRESS_BYTECODE_PATTERN, accountInHex));
+        subject.setAccountBytecodeType(RETURN_PROXY_CONTRACT_BYTECODE);
+        givenWellKnownAccount(A_ACCOUNT_ID, accountWith(A_ACCOUNT_ID));
+
+        final var actualCode = subject.getCode(A_CONTRACT_ID);
+
+        assertEquals(expected, actualCode);
+    }
+
+    @Test
+    void getsRedirectProxyCodeHash() {
+        final var accountInHex = String.format("%040X", ACCOUNT_NUM);
+        final var expectedCode = org.apache.tuweni.bytes.Bytes.fromHexString(
+                ACCOUNT_CALL_REDIRECT_CONTRACT_BINARY.replace(ADDRESS_BYTECODE_PATTERN, accountInHex));
+        final var expectedHash = CodeFactory.createCode(expectedCode, 0, false).getCodeHash();
+
+        subject.setAccountBytecodeType(RETURN_PROXY_CONTRACT_BYTECODE);
+        givenWellKnownAccount(A_ACCOUNT_ID, accountWith(A_ACCOUNT_ID));
+
+        final var actualCodeHash = subject.getCodeHash(A_CONTRACT_ID);
+
+        assertEquals(expectedHash, actualCodeHash);
     }
 
     @Test
