@@ -385,7 +385,7 @@ public class StateView {
         } else {
             // The "memo" of a special upgrade file is its hexed SHA-384 hash for DevOps convenience
             final var upgradeHash =
-                    hex(CryptographyHolder.get().digestSync(contents).getValue());
+                    CryptographyHolder.get().digestSync(contents).toHex();
             info.setMemo(upgradeHash);
         }
         return Optional.of(info.build());
