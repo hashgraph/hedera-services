@@ -300,10 +300,9 @@ public class TokenRejectSuite {
     @HapiTest
     final Stream<DynamicTest> tokenRejectWorksWhileFreezeOrPausedOrSigRequired() {
         return propertyPreservingHapiSpec("tokenRejectWorksWhileFreezeOrPausedOrSigRequired")
-                .preserving(TOKEN_REJECT_ENABLED_PROPERTY, REFERENCES_MAX_SIZE_PROPERTY)
+                .preserving(TOKEN_REJECT_ENABLED_PROPERTY)
                 .given(
                         overriding(TOKEN_REJECT_ENABLED_PROPERTY, "true"),
-                        overriding(REFERENCES_MAX_SIZE_PROPERTY, "10"),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed("freezeKey"),
                         newKeyNamed("pauseKey"),
