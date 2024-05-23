@@ -17,6 +17,7 @@
 package com.swirlds.logging.log4j.factory;
 
 import com.swirlds.logging.api.Level;
+import com.swirlds.logging.api.Loggers;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import com.swirlds.logging.api.extensions.event.LogEventConsumer;
@@ -84,12 +85,16 @@ public class BaseLoggerContext implements LoggerContext {
     public ExtendedLogger getLogger(@NonNull final String name) {
         if (!loggerRegistry.hasLogger(name)) {
             if (logEventFactory == null || logEventConsumer == null) {
-                if (initialisationErrorPrinted.compareAndSet(false, true)) {
-                    EMERGENCY_LOGGER.log(
-                            Level.ERROR,
-                            "LogEventFactory and LogEventConsumer must be set before using the logger context.");
+                final boolean isInitializedCorrectly = Loggers.init();
+                if (!isInitializedCorrectly) {
+                    EMERGENCY_LOGGER.log(Level.ERROR, "Failed to initialise the swirlds logging system");
                 }
-            } else {
+                if (logEventFactory == null || logEventConsumer == null) {
+                    if (initialisationErrorPrinted.compareAndSet(false, true)) {
+                        EMERGENCY_LOGGER.log(Level.ERROR, "Log4J to Swirlds logging bridge not initialised correctly.");
+                    }
+                    return EmergencyBaseLogger.getInstance();
+                }
                 loggerRegistry.putIfAbsent(name, null, new BaseLogger(name, logEventConsumer, logEventFactory));
             }
         }
@@ -144,7 +149,8 @@ public class BaseLoggerContext implements LoggerContext {
      * @return if the logger exists
      */
     @Override
-    public boolean hasLogger(@NonNull final String name, @Nullable final Class<? extends MessageFactory> messageFactoryClass) {
+    public boolean hasLogger(
+            @NonNull final String name, @Nullable final Class<? extends MessageFactory> messageFactoryClass) {
         return loggerRegistry.hasLogger(name);
     }
 

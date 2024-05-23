@@ -47,7 +47,7 @@ public class BaseLoggingProvider extends Provider {
      */
     public BaseLoggingProvider() {
         super(PRIORITY, SUPPORTED_VERSION, BaseLoggerContextFactory.class);
-        if(!Loggers.init()) {
+        if (!Loggers.init()) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to initialise the base logging system");
         }
     }
