@@ -46,6 +46,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -60,19 +65,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_REFERENC
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite()
 @Tag(SMART_CONTRACT)
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
-public class TokenRejectSuite extends HapiSuite {
+public class TokenRejectSuite {
 
     private static final Logger log = LogManager.getLogger(TokenRejectSuite.class);
 
@@ -96,28 +99,8 @@ public class TokenRejectSuite extends HapiSuite {
     private static final String TOKEN_REJECT_ENABLED_PROPERTY = "tokens.reject.enabled";
     private static final String REFERENCES_MAX_SIZE_PROPERTY = "ledger.tokenRejects.maxLen";
 
-    public static void main(final String[] args) {
-        new TokenRejectSuite().runSuiteAsync();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                tokenRejectWorksAndAvoidsCustomFees(),
-                tokenRejectWorksWithFungibleAndNFTTokens(),
-                tokenRejectWorksWithFungibleAndNFTTokensAndRemovesAllowancesCorrectly(),
-                tokenRejectWorksWhileFreezeOrPausedOrSigRequired(),
-                tokenRejectInvalidSignaturesAndInvalidAccountOrTokensFailingScenarios(),
-                tokenRejectFailsWithInvalidBodyInputsScenarios());
-    }
-
     @HapiTest
-    final HapiSpec tokenRejectWorksAndAvoidsCustomFees() {
+    final Stream<DynamicTest> tokenRejectWorksAndAvoidsCustomFees() {
         return propertyPreservingHapiSpec("tokenRejectWorksAndAvoidsCustomFees")
                 .preserving(TOKEN_REJECT_ENABLED_PROPERTY)
                 .given(
@@ -182,7 +165,7 @@ public class TokenRejectSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec tokenRejectWorksWithFungibleAndNFTTokens() {
+    final Stream<DynamicTest> tokenRejectWorksWithFungibleAndNFTTokens() {
         return propertyPreservingHapiSpec("tokenRejectWorksWithFungibleAndNFTTokens")
                 .preserving(TOKEN_REJECT_ENABLED_PROPERTY)
                 .given(
@@ -239,7 +222,7 @@ public class TokenRejectSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec tokenRejectWorksWithFungibleAndNFTTokensAndRemovesAllowancesCorrectly() {
+    final Stream<DynamicTest> tokenRejectWorksWithFungibleAndNFTTokensAndRemovesAllowancesCorrectly() {
         return propertyPreservingHapiSpec("tokenRejectWorksWithFungibleAndNFTTokensAndRemovesAllowances")
                 .preserving(TOKEN_REJECT_ENABLED_PROPERTY)
                 .given(
@@ -319,7 +302,7 @@ public class TokenRejectSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec tokenRejectWorksWhileFreezeOrPausedOrSigRequired() {
+    final Stream<DynamicTest> tokenRejectWorksWhileFreezeOrPausedOrSigRequired() {
         return propertyPreservingHapiSpec("tokenRejectWorksWhileFreezeOrPausedOrSigRequired")
                 .preserving(TOKEN_REJECT_ENABLED_PROPERTY, REFERENCES_MAX_SIZE_PROPERTY)
                 .given(
@@ -404,7 +387,7 @@ public class TokenRejectSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec tokenRejectInvalidSignaturesAndInvalidAccountOrTokensFailingScenarios() {
+    final Stream<DynamicTest> tokenRejectInvalidSignaturesAndInvalidAccountOrTokensFailingScenarios() {
         return propertyPreservingHapiSpec("tokenRejectInvalidSignaturesAndTokensScenarios")
                 .preserving(TOKEN_REJECT_ENABLED_PROPERTY)
                 .given(
@@ -509,7 +492,7 @@ public class TokenRejectSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec tokenRejectFailsWithInvalidBodyInputsScenarios() {
+    final Stream<DynamicTest> tokenRejectFailsWithInvalidBodyInputsScenarios() {
         return propertyPreservingHapiSpec("tokenRejectFailsWithInvalidBodyInputsScenarios")
                 .preserving(REFERENCES_MAX_SIZE_PROPERTY, TOKEN_REJECT_ENABLED_PROPERTY)
                 .given(
