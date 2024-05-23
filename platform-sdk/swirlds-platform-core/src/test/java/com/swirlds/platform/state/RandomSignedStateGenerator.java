@@ -74,6 +74,7 @@ public class RandomSignedStateGenerator {
     private ConsensusSnapshot consensusSnapshot;
     private SignatureVerifier signatureVerifier;
     private boolean deleteOnBackgroundThread;
+    private boolean pcesRound;
 
     /**
      * Create a new signed state generator with a random seed.
@@ -208,7 +209,7 @@ public class RandomSignedStateGenerator {
                 "RandomSignedStateGenerator.build()",
                 freezeStateInstance,
                 deleteOnBackgroundThread,
-                false);
+                pcesRound);
 
         MerkleCryptoFactory.getInstance().digestTreeSync(stateInstance);
         if (stateHash != null) {
@@ -429,6 +430,17 @@ public class RandomSignedStateGenerator {
     @NonNull
     public RandomSignedStateGenerator setSignatureVerifier(@NonNull final SignatureVerifier signatureVerifier) {
         this.signatureVerifier = signatureVerifier;
+        return this;
+    }
+
+    /**
+     * Set if this state was generated during a PCES round.
+     *
+     * @param pcesRound true if this state was generated during a PCES round
+     * @return this object
+     */
+    public RandomSignedStateGenerator setPcesRound(final boolean pcesRound) {
+        this.pcesRound = pcesRound;
         return this;
     }
 }
