@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.internal;
 
-import static com.swirlds.platform.consensus.ConsensusConstants.MIN_TRANS_TIMESTAMP_INCR_NANOS;
-
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
@@ -37,7 +35,6 @@ import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
-import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.Transaction;

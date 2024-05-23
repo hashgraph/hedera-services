@@ -45,7 +45,8 @@ import java.util.concurrent.CountDownLatch;
  * A class used to hold information about an event transferred through gossip
  */
 public class GossipEvent implements Event, SelfSerializable {
-    private static final EventConsensusData NO_CONSENSUS = new EventConsensusData(null, ConsensusConstants.NO_CONSENSUS_ORDER);
+    private static final EventConsensusData NO_CONSENSUS =
+            new EventConsensusData(null, ConsensusConstants.NO_CONSENSUS_ORDER);
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
 
     private static final class ClassVersion {
@@ -386,7 +387,8 @@ public class GossipEvent implements Event, SelfSerializable {
         }
 
         final GossipEvent that = (GossipEvent) o;
-        return Objects.equals(getHashedData(), that.getHashedData()) && Objects.equals(consensusData, that.consensusData);
+        return Objects.equals(getHashedData(), that.getHashedData())
+                && Objects.equals(consensusData, that.consensusData);
     }
 
     /**

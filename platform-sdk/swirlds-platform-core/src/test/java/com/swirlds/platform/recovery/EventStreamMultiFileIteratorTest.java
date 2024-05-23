@@ -386,9 +386,7 @@ class EventStreamMultiFileIteratorTest {
 
         int startingIndex = 0;
         while (startingIndex < events.size()
-                && lowerBound.compareTo(new DetailedConsensusEvent(
-                                events.get(startingIndex)))
-                        < 0) {
+                && lowerBound.compareTo(new DetailedConsensusEvent(events.get(startingIndex))) < 0) {
             startingIndex++;
         }
 

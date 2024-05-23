@@ -18,7 +18,6 @@ package com.swirlds.platform.event;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -31,7 +30,6 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
-import com.swirlds.platform.test.fixtures.event.EventImplTestUtils;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.io.IOException;
 import java.time.Instant;
@@ -79,7 +77,7 @@ public class DetailedConsensusEventTest {
         final Instant consensusTimestamp = random.nextInstant();
         final GossipEvent gossipEvent = new TestingEventBuilder(random).build();
         final EventConsensusData eventConsensusData = EventConsensusData.newBuilder()
-                .consensusTimestamp( HapiUtils.asTimestamp(consensusTimestamp))
+                .consensusTimestamp(HapiUtils.asTimestamp(consensusTimestamp))
                 .consensusOrder(random.nextLong(0, Long.MAX_VALUE))
                 .build();
         gossipEvent.setConsensusData(eventConsensusData);

@@ -64,7 +64,7 @@ public final class EventUtils {
      * @return timestamp of the given index transaction
      */
     public static @NonNull Instant getTransactionTime(@NonNull final GossipEvent event, final int transactionIndex) {
-        if(event.getConsensusTimestamp() == null){
+        if (event.getConsensusTimestamp() == null) {
             throw new IllegalArgumentException("Event is not a consensus event");
         }
         if (transactionIndex >= event.getPayloadCount()) {
@@ -80,7 +80,7 @@ public final class EventUtils {
      * @return timestamp of the last transaction
      */
     public static @NonNull Instant getLastTransTime(@NonNull final GossipEvent event) {
-        if(event.getConsensusTimestamp() == null){
+        if (event.getConsensusTimestamp() == null) {
             throw new IllegalArgumentException("Event is not a consensus event");
         }
         // this is a special case. if an event has 0 or 1 transactions, the timestamp of the last transaction can be
