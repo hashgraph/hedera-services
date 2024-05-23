@@ -297,7 +297,7 @@ public class GossipEvent implements Event, SelfSerializable {
      * @param consensusData the consensus data for this event
      */
     public void setConsensusData(@NonNull final EventConsensusData consensusData) {
-        if(this.consensusData != NO_CONSENSUS){
+        if (this.consensusData != NO_CONSENSUS) {
             throw new IllegalStateException("Consensus data already set");
         }
         Objects.requireNonNull(consensusData, "consensusData");

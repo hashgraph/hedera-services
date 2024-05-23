@@ -500,8 +500,8 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
         // This may leak memory, but is fine in the current testing framework.
         // When the test ends any memory used will be released.
         CryptographyHolder.get().digestSync(next.getBaseEvent().getHashedData());
-        consensus.addEvent(inOrderLinker.linkEvent(new GossipEvent(next.getBaseEvent().getHashedData(), next.getBaseEvent()
-                .getSignature())));
+        consensus.addEvent(inOrderLinker.linkEvent(new GossipEvent(
+                next.getBaseEvent().getHashedData(), next.getBaseEvent().getSignature())));
 
         return next;
     }
