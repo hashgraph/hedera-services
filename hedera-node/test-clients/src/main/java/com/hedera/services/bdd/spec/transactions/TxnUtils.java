@@ -36,6 +36,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRAN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import static java.lang.System.arraycopy;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
@@ -663,5 +664,19 @@ public class TxnUtils {
         } catch (UnsupportedEncodingException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    /**
+     * Calculates the duration until the start of the next staking period.
+     *
+     * @param now the current time
+     * @param stakePeriodMins the duration of a staking period in minutes
+     * @return the duration until the start of the next staking period
+     */
+    public static java.time.Duration timeUntilNextPeriod(@NonNull final Instant now, final long stakePeriodMins) {
+        final var stakePeriodMillis = stakePeriodMins * 60 * 1000L;
+        final var currentPeriod = getPeriod(now, stakePeriodMillis);
+        final var nextPeriod = currentPeriod + 1;
+        return java.time.Duration.between(now, Instant.ofEpochMilli(nextPeriod * stakePeriodMillis));
     }
 }

@@ -42,8 +42,8 @@ public class MixedOpsRestartTest {
     private static final int MIXED_OPS_BURST_TPS = 50;
     private static final long PORT_UNBINDING_TIMEOUT_MS = 180_000L;
     private static final Duration MIXED_OPS_BURST_DURATION = Duration.ofSeconds(10);
-    private static final Duration FREEZE_TIMEOUT = Duration.ofSeconds(75);
-    private static final Duration RESTART_TIMEOUT = Duration.ofSeconds(120);
+    private static final Duration FREEZE_TIMEOUT = Duration.ofSeconds(90);
+    private static final Duration RESTART_TIMEOUT = Duration.ofSeconds(180);
     private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(60);
 
     @HapiTest

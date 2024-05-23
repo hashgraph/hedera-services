@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.state.recordcache;
 
-import static com.hedera.node.app.spi.HapiUtils.TIMESTAMP_COMPARATOR;
-import static com.hedera.node.app.spi.HapiUtils.isBefore;
-import static com.hedera.node.app.spi.HapiUtils.minus;
+import static com.hedera.hapi.util.HapiUtils.TIMESTAMP_COMPARATOR;
+import static com.hedera.hapi.util.HapiUtils.isBefore;
+import static com.hedera.hapi.util.HapiUtils.minus;
 import static com.hedera.node.app.state.recordcache.RecordCacheService.NAME;
 import static com.hedera.node.app.state.recordcache.RecordCacheService.TXN_RECORD_QUEUE;
 import static java.util.Collections.emptyList;
