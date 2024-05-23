@@ -292,7 +292,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
             List.of(withFixedFee(hbarFixedFee, feeCollectorId, false), customFractionalFee);
 
     /* ---------- Misc ---------- */
-    protected final Timestamp consensusTimestamp =
+    protected static final Timestamp consensusTimestamp =
             Timestamp.newBuilder().seconds(1_234_567L).build();
     protected final Instant consensusInstant = Instant.ofEpochSecond(1_234_567L);
     protected final String tokenName = "test token";
