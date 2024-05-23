@@ -87,7 +87,9 @@ public class BaseLoggerContext implements LoggerContext {
             if (logEventFactory == null || logEventConsumer == null) {
                 final boolean isInitializedCorrectly = Loggers.init();
                 if (!isInitializedCorrectly) {
-                    EMERGENCY_LOGGER.log(Level.ERROR, "Failed to initialise the swirlds logging system");
+                    if (initialisationErrorPrinted.compareAndSet(false, true)) {
+                        EMERGENCY_LOGGER.log(Level.ERROR, "Failed to initialise the swirlds logging system");
+                    }
                     return EmergencyBaseLogger.getInstance();
                 }
                 if (logEventFactory == null || logEventConsumer == null) {
