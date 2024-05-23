@@ -821,11 +821,12 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             if (minTimestamp != null && e.getPreliminaryConsensusTimestamp().isBefore(minTimestamp)) {
                 e.setPreliminaryConsensusTimestamp(minTimestamp);
             }
-            lastConsensusTime = e.getLastTransTime();
 
             e.getBaseEvent()
                     .setConsensusData(new EventConsensusData(
                             HapiUtils.asTimestamp(e.getPreliminaryConsensusTimestamp()), numConsensus));
+
+            lastConsensusTime = e.getLastTransTime();
             numConsensus++;
         }
         if (last != null) {
