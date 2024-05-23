@@ -105,8 +105,8 @@ public class NetworkInfoImpl implements NetworkInfo {
             final var address = platformAddressBook.getAddress(nodeId);
             return NodeInfoImpl.fromAddress(address);
         } catch (NoSuchElementException e) {
-            // The node ID is not in the address book
-            logger.warn("Unable to find node with id {} in the platform address book", nodeId, e);
+            // The node ID is not in the address book; this is a normal condition
+            // if user error leads to a request for a non-existent node
             return null;
         } catch (IllegalArgumentException e) {
             logger.warn("Unable to parse memo of node with id {} in the platform address book", nodeId, e);

@@ -27,27 +27,25 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PROPS;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
-import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class GlobalPropertiesSuite extends HapiSuite {
+public class GlobalPropertiesSuite {
 
     private static final Logger LOG = LogManager.getLogger(GlobalPropertiesSuite.class);
     private static final String CONTRACT = "GlobalProperties";
@@ -55,27 +53,8 @@ public class GlobalPropertiesSuite extends HapiSuite {
     private static final String GET_BASE_FEE = "getBaseFee";
     private static final String GET_GAS_LIMIT = "getGasLimit";
 
-    public static void main(String... args) {
-        new GlobalPropertiesSuite().runSuiteAsync();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(chainIdWorks(), baseFeeWorks(), coinbaseWorks(), gasLimitWorks());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
     @HapiTest
-    final HapiSpec chainIdWorks() {
+    final Stream<DynamicTest> chainIdWorks() {
         final var defaultChainId = BigInteger.valueOf(295L);
         final var devChainId = BigInteger.valueOf(298L);
         final Set<Object> acceptableChainIds = Set.of(devChainId, defaultChainId);
@@ -99,7 +78,7 @@ public class GlobalPropertiesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec baseFeeWorks() {
+    final Stream<DynamicTest> baseFeeWorks() {
         final var expectedBaseFee = BigInteger.valueOf(0);
         return defaultHapiSpec("baseFeeWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
@@ -123,7 +102,7 @@ public class GlobalPropertiesSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    final HapiSpec coinbaseWorks() {
+    final Stream<DynamicTest> coinbaseWorks() {
         return defaultHapiSpec("coinbaseWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "getCoinbase").via("coinbase"))
@@ -146,7 +125,7 @@ public class GlobalPropertiesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec gasLimitWorks() {
+    final Stream<DynamicTest> gasLimitWorks() {
         final var gasLimit = Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("contracts.maxGasPerSec"));
         return defaultHapiSpec("gasLimitWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))

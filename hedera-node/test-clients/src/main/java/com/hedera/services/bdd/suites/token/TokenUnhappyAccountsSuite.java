@@ -42,6 +42,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.NODE;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
@@ -53,7 +59,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -62,12 +67,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 
-public class TokenUnhappyAccountsSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(Hip17UnhappyAccountsSuite.class);
+public class TokenUnhappyAccountsSuite {
     private static final String MEMO_1 = "memo1";
     private static final String MEMO_2 = "memo2";
 
@@ -82,23 +85,8 @@ public class TokenUnhappyAccountsSuite extends HapiSuite {
     public static final String TOKENS = " tokens";
     public static final String CREATION = "creation";
 
-    public static void main(String... args) {
-        new Hip17UnhappyAccountsSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            /* Expired Account */
-            uniqueTokenOperationsFailForExpiredAccount(),
-            /* AutoRemoved Account */
-            uniqueTokenOperationsFailForAutoRemovedAccount(),
-            /* Expired Token */
-            dissociationFromExpiredTokensAsExpected()
-        });
-    }
-
-    final HapiSpec uniqueTokenOperationsFailForAutoRemovedAccount() {
+    // (FUTURE) Enable when token expiration is implemented
+    final Stream<DynamicTest> uniqueTokenOperationsFailForAutoRemovedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForAutoRemovedAccount")
                 .given(
                         fileUpdate(APP_PROPERTIES)
@@ -138,7 +126,8 @@ public class TokenUnhappyAccountsSuite extends HapiSuite {
                         wipeTokenAccount(UNIQUE_TOKEN_A, CLIENT_1, List.of(1L)).hasKnownStatus(INVALID_ACCOUNT_ID));
     }
 
-    final HapiSpec uniqueTokenOperationsFailForExpiredAccount() {
+    // (FUTURE) Enable when token expiration is implemented
+    final Stream<DynamicTest> uniqueTokenOperationsFailForExpiredAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForExpiredAccount")
                 .given(
                         fileUpdate(APP_PROPERTIES)
@@ -186,7 +175,7 @@ public class TokenUnhappyAccountsSuite extends HapiSuite {
 
     // Enable when token expiration is implemented
     // @HapiTest
-    public HapiSpec dissociationFromExpiredTokensAsExpected() {
+    final Stream<DynamicTest> dissociationFromExpiredTokensAsExpected() {
         final String treasury = "accountA";
         final String frozenAccount = "frozen";
         final String unfrozenAccount = "unfrozen";
@@ -266,10 +255,5 @@ public class TokenUnhappyAccountsSuite extends HapiSuite {
                         getAccountInfo(frozenAccount)
                                 .hasToken(relationshipWith(expiringToken).freeze(Frozen)),
                         tokenDissociate(frozenAccount, expiringToken).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

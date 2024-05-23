@@ -40,30 +40,33 @@ public final class OnDiskValueSerializer<V> implements ValueSerializer<OnDiskVal
     // guesstimate of the typical size of a serialized value
     private static final int TYPICAL_SIZE = 1024;
 
-    private final long classId;
+    private final long serializerClassId;
+    private final long valueClassId;
     private final Codec<V> codec;
 
     // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
     @Deprecated(forRemoval = true)
     public OnDiskValueSerializer() {
         codec = null;
-        classId = CLASS_ID;
+        serializerClassId = CLASS_ID;
+        valueClassId = 0; // invalid class id
     }
 
     /**
      * Create a new instance. This is created at registration time, it doesn't need to serialize
      * anything to disk.
      */
-    public OnDiskValueSerializer(final long classId, @NonNull final Codec<V> codec) {
+    public OnDiskValueSerializer(final long serializerClassId, final long valueClassId, @NonNull final Codec<V> codec) {
         this.codec = Objects.requireNonNull(codec);
-        this.classId = classId;
+        this.serializerClassId = serializerClassId;
+        this.valueClassId = valueClassId;
     }
 
     // Serializer info
 
     @Override
     public long getClassId() {
-        return classId;
+        return serializerClassId;
     }
 
     @Override
@@ -115,7 +118,7 @@ public final class OnDiskValueSerializer<V> implements ValueSerializer<OnDiskVal
         // Future work: https://github.com/hashgraph/pbj/issues/73
         try {
             final V value = codec.parse(in);
-            return new OnDiskValue<>(classId, codec, value);
+            return new OnDiskValue<>(valueClassId, codec, value);
         } catch (final ParseException e) {
             throw new RuntimeException(e);
         }

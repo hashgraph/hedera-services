@@ -154,8 +154,10 @@ public class MerkleTestBase extends StateTestBase {
         fruitVirtualMap = createVirtualMap(
                 fruitVirtualLabel,
                 onDiskKeySerializerClassId(FRUIT_STATE_KEY),
+                onDiskKeyClassId(FRUIT_STATE_KEY),
                 STRING_CODEC,
                 onDiskValueSerializerClassId(FRUIT_STATE_KEY),
+                onDiskValueClassId(FRUIT_STATE_KEY),
                 STRING_CODEC);
     }
 
@@ -271,16 +273,18 @@ public class MerkleTestBase extends StateTestBase {
     protected VirtualMap<OnDiskKey<String>, OnDiskValue<String>> createVirtualMap(
             String label,
             long keySerializerClassId,
+            long keyClassId,
             Codec<String> keyCodec,
             long valueSerializerClassId,
+            long valueClassId,
             Codec<String> valueCodec) {
         final var merkleDbTableConfig = new MerkleDbTableConfig<>(
                 (short) 1,
                 DigestType.SHA_384,
                 (short) 1,
-                new OnDiskKeySerializer<>(keySerializerClassId, keyCodec),
+                new OnDiskKeySerializer<>(keySerializerClassId, keyClassId, keyCodec),
                 (short) 1,
-                new OnDiskValueSerializer<>(valueSerializerClassId, valueCodec));
+                new OnDiskValueSerializer<>(valueSerializerClassId, valueClassId, valueCodec));
         merkleDbTableConfig.hashesRamToDiskThreshold(0);
         merkleDbTableConfig.maxNumberOfKeys(100);
         merkleDbTableConfig.preferDiskIndices(true);
