@@ -46,6 +46,7 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.state.signed;
     exports com.swirlds.platform.state.address;
     exports com.swirlds.platform.gossip.sync;
+    exports com.swirlds.platform.scratchpad;
     exports com.swirlds.platform.system;
     exports com.swirlds.platform.system.address;
     exports com.swirlds.platform.system.events;
@@ -53,7 +54,6 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.system.state.notifications;
     exports com.swirlds.platform.system.status;
     exports com.swirlds.platform.system.status.actions;
-    exports com.swirlds.platform.threading;
     exports com.swirlds.platform.util;
 
     /* Targeted Exports to External Libraries */
@@ -125,6 +125,7 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.publisher;
     exports com.swirlds.platform.components.consensus;
     exports com.swirlds.platform.pool;
+    exports com.swirlds.platform.state.snapshot;
 
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.cli;

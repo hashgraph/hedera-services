@@ -30,6 +30,7 @@ import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CallType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -49,7 +50,7 @@ public class HtsCallFactory implements CallFactory {
             @NonNull final SyntheticIds syntheticIds,
             @NonNull final CallAddressChecks addressChecks,
             @NonNull final VerificationStrategies verificationStrategies,
-            @NonNull final List<CallTranslator> callTranslators) {
+            @NonNull @Named("HtsTranslators") final List<CallTranslator> callTranslators) {
         this.syntheticIds = requireNonNull(syntheticIds);
         this.addressChecks = requireNonNull(addressChecks);
         this.verificationStrategies = requireNonNull(verificationStrategies);

@@ -82,6 +82,10 @@ public class HapiSpecSetup {
 
     private HapiPropertySource props;
 
+    public static HapiSpecSetup setupFrom(Object... objs) {
+        return new HapiSpecSetup(inPriorityOrder(asSources(objs)));
+    }
+
     public enum NodeSelection {
         FIXED,
         RANDOM
@@ -420,7 +424,7 @@ public class HapiSpecSetup {
         return props.get("exchange.rates.controlAccount.name");
     }
 
-    public HapiSpec.SpecStatus expectedFinalStatus() {
+    final HapiSpec.SpecStatus expectedFinalStatus() {
         return props.getSpecStatus("expected.final.status");
     }
 

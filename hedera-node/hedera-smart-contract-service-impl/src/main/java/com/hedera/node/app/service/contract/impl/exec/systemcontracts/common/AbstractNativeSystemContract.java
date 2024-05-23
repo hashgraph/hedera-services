@@ -57,6 +57,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 @Singleton
 public abstract class AbstractNativeSystemContract extends AbstractFullContract implements HederaSystemContract {
     private static final Logger log = LogManager.getLogger(AbstractNativeSystemContract.class);
+    private static final int FUNCTION_SELECTOR_LENGTH = 4;
     private final CallFactory callFactory;
     private final ContractID contractID;
 
@@ -66,8 +67,8 @@ public abstract class AbstractNativeSystemContract extends AbstractFullContract 
             @NonNull ContractID contractID,
             @NonNull GasCalculator gasCalculator) {
         super(name, gasCalculator);
-        this.callFactory = callFactory;
-        this.contractID = contractID;
+        this.callFactory = requireNonNull(callFactory);
+        this.contractID = requireNonNull(contractID);
     }
 
     @Override
@@ -81,7 +82,7 @@ public abstract class AbstractNativeSystemContract extends AbstractFullContract 
         final Call call;
         final AbstractCallAttempt attempt;
         try {
-            validateTrue(input.size() >= 4, INVALID_TRANSACTION_BODY);
+            validateTrue(input.size() >= FUNCTION_SELECTOR_LENGTH, INVALID_TRANSACTION_BODY);
             attempt = callFactory.createCallAttemptFrom(input, callType, frame);
             call = requireNonNull(attempt.asExecutableCall());
             if (frame.isStatic() && !call.allowsStaticFrame()) {
@@ -177,7 +178,8 @@ public abstract class AbstractNativeSystemContract extends AbstractFullContract 
     }
 
     // potentially other cases could be handled here if necessary
-    private static FullResult haltHandleException(final HandleException handleException, long remainingGas) {
+    private static FullResult haltHandleException(
+            @NonNull final HandleException handleException, final long remainingGas) {
         if (handleException.getStatus().equals(MAX_CHILD_RECORDS_EXCEEDED)) {
             return haltResult(CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS, remainingGas);
         }
@@ -185,5 +187,5 @@ public abstract class AbstractNativeSystemContract extends AbstractFullContract 
     }
 
     //
-    protected abstract FrameUtils.CallType callTypeOf(final MessageFrame frame);
+    protected abstract FrameUtils.CallType callTypeOf(@NonNull final MessageFrame frame);
 }

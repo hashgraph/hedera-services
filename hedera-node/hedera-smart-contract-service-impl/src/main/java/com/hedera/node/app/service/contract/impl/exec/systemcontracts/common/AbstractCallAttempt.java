@@ -18,7 +18,6 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.common;
 
 import static java.util.Objects.requireNonNull;
 
-import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -74,7 +73,7 @@ public class AbstractCallAttempt {
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final List<CallTranslator> callTranslators,
             final boolean isStaticCall,
-            @NonNull Function redirectFunction) {
+            @NonNull final com.esaulpaugh.headlong.abi.Function redirectFunction) {
         requireNonNull(input);
         requireNonNull(redirectFunction);
         this.callTranslators = requireNonNull(callTranslators);
@@ -242,7 +241,7 @@ public class AbstractCallAttempt {
         return redirectAddress != null;
     }
 
-    private boolean isRedirectSelector(final byte[] functionSelector, final byte[] input) {
+    private boolean isRedirectSelector(@NonNull final byte[] functionSelector, @NonNull final byte[] input) {
         return Arrays.equals(input, 0, functionSelector.length, functionSelector, 0, functionSelector.length);
     }
 }
