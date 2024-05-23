@@ -192,18 +192,14 @@ public class HederaNetwork {
      */
     public void startWithin(@NonNull final Duration timeout) {
         final var latch = new CountDownLatch(nodes.size());
-        CompletableFuture.allOf(nodes.stream()
-                        .map(node -> runAsync(() -> {
-                                    node.initWorkingDir(configTxt);
-                                    node.start();
-                                })
-                                .thenCompose(nothing -> node.statusFuture(ACTIVE, timeout)
-                                        .thenRun(() -> {
-                                            log.info("Node '{}' is ready", node.getName());
-                                            latch.countDown();
-                                        })))
-                        .toArray(CompletableFuture[]::new))
-                .orTimeout(timeout.toMillis(), MILLISECONDS);
+        nodes.forEach(node -> {
+            node.initWorkingDir(configTxt);
+            node.start();
+            node.statusFuture(ACTIVE, timeout).thenRun(() -> {
+                log.info("Node '{}' is ready", node.getName());
+                latch.countDown();
+            });
+        });
         ready = runAsync(() -> {
                     try {
                         latch.await();
@@ -212,6 +208,7 @@ public class HederaNetwork {
                         throw new IllegalStateException(e);
                     }
                 })
+                .orTimeout(timeout.toMillis(), MILLISECONDS)
                 .thenRun(() -> log.info("All nodes in network '{}' are ready", name()));
     }
 
