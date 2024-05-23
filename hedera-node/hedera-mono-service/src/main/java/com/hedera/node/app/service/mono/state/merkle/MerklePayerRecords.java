@@ -63,10 +63,10 @@ public class MerklePayerRecords extends PartialMerkleLeaf implements Keyed<Entit
     @Override
     public Hash getHash() {
         final var recordsHash = readOnlyQueue().getHash();
-        final var recordsHashLen = recordsHash.getValue().length;
+        final var recordsHashLen = (int) recordsHash.getBytes().length();
         final byte[] bytes = new byte[recordsHashLen + 4];
         System.arraycopy(Ints.toByteArray(num), 0, bytes, 0, 4);
-        System.arraycopy(recordsHash.getValue(), 0, bytes, 4, recordsHashLen);
+        recordsHash.getBytes().getBytes(0, bytes, 4, recordsHashLen);
         return new Hash(noThrowSha384HashOf(bytes), DigestType.SHA_384);
     }
 
