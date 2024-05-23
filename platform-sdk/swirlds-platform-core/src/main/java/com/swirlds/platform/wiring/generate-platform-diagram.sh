@@ -21,8 +21,8 @@ pcli diagram \
     -s 'extractOldestMinimumGenerationOnDisk:minimum identifier to store:📀' \
     -s 'StaleEventDetectorRouter:non-validated events:🍎' \
     -s 'Mystery Input:mystery data:❔' \
-    -s 'stateSigner:submit transaction:🖋️' \
-    -s 'stateSigner:signature transactions:🖋️' \
+    -s 'StateSigner:submit transaction:🖋️' \
+    -s 'StateSigner:signature transactions:🖋️' \
     -s 'IssDetectorSplitter:IssNotification:💥' \
     -s 'getStatusAction:PlatformStatusAction:💀' \
     -s 'toNotification:state written notification:📦' \
@@ -49,7 +49,7 @@ pcli diagram \
     -g 'Consensus Round Handler:consensusRoundHandler,postHandler_stateAndRoundReserver,getState,savedStateController' \
     -g 'State Hasher:StateHasher,postHasher_stateAndRoundReserver,postHasher_getConsensusRound,postHasher_stateReserver' \
     -g 'Consensus:Consensus Engine,🚽,🌀' \
-    -g 'State Verification:stateSigner,HashLogger,ISS Detector,🖋️,💥,💀' \
+    -g 'State Verification:StateSigner,HashLogger,ISS Detector,🖋️,💥,💀' \
     -g 'Transaction Handling:Consensus Round Handler,latestImmutableStateNexus' \
     -g 'Round Durability Buffer:RoundDurabilityBuffer,RoundDurabilityBufferSplitter' \
     -g 'Stale Event Detector:StaleEventDetector,StaleEventDetectorSplitter,StaleEventDetectorRouter' \

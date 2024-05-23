@@ -80,6 +80,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
+import com.swirlds.platform.state.signer.StateSigner;
 import com.swirlds.platform.state.snapshot.SavedStateInfo;
 import com.swirlds.platform.state.snapshot.StateDumpRequest;
 import com.swirlds.platform.state.snapshot.StateToDiskReason;
@@ -255,7 +256,6 @@ public class SwirldsPlatform implements Platform {
         blocks.statusActionSubmitterReference()
                 .set(x -> platformWiring.getStatusActionSubmitter().submitStatusAction(x));
 
-        final StateSigner stateSigner = new StateSigner(new PlatformSigner(keysAndCerts), statusNexus);
         final PcesReplayer pcesReplayer = new PcesReplayer(
                 platformContext.getTime(),
                 platformWiring.getPcesReplayerEventOutput(),
@@ -301,7 +301,6 @@ public class SwirldsPlatform implements Platform {
 
         platformWiring.bind(
                 builder,
-                stateSigner,
                 pcesReplayer,
                 stateSignatureCollector,
                 eventWindowManager,

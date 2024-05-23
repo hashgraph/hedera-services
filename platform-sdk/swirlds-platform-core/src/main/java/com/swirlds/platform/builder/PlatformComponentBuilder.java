@@ -79,6 +79,8 @@ import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
+import com.swirlds.platform.state.signer.DefaultStateSigner;
+import com.swirlds.platform.state.signer.StateSigner;
 import com.swirlds.platform.state.snapshot.DefaultStateSnapshotManager;
 import com.swirlds.platform.state.snapshot.StateSnapshotManager;
 import com.swirlds.platform.system.Platform;
@@ -140,6 +142,7 @@ public class PlatformComponentBuilder {
     private StateHasher stateHasher;
     private StateSnapshotManager stateSnapshotManager;
     private HashLogger hashLogger;
+    private StateSigner stateSigner;
 
     private boolean metricsDocumentationEnabled = true;
 
@@ -1129,4 +1132,35 @@ public class PlatformComponentBuilder {
         }
         return hashLogger;
     }
+
+    /**
+     * Provide a state signer in place of the platform's default state signer.
+     *
+     * @param stateSigner the state signer to use
+     * @return this builder
+     */
+    public PlatformComponentBuilder withStateSigner(@NonNull final StateSigner stateSigner) {
+        throwIfAlreadyUsed();
+        if (this.stateSigner != null) {
+            throw new IllegalStateException("State signer has already been set");
+        }
+        this.stateSigner = Objects.requireNonNull(stateSigner);
+        return this;
+    }
+
+    /**
+     * Build the state signer if it has not yet been built. If one has been provided via
+     * {@link #withStateSigner(StateSigner)}, that signer will be used. If this method is called more than once, only
+     * the first call will build the state signer. Otherwise, the default signer will be created and returned.
+     *
+     * @return the state signer
+     */
+    @NonNull
+    public StateSigner buildStateSigner() {
+        if (stateSigner == null) {
+            stateSigner = new DefaultStateSigner(new PlatformSigner(blocks.keysAndCerts()), null); // TODO
+        }
+        return stateSigner;
+    }
+
 }

@@ -40,7 +40,7 @@ import com.swirlds.common.wiring.transformers.WireTransformer;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
-import com.swirlds.platform.StateSigner;
+import com.swirlds.platform.state.signer.StateSigner;
 import com.swirlds.platform.builder.ApplicationCallbacks;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.components.AppNotifier;
@@ -134,7 +134,7 @@ public class PlatformWiring {
     private final ComponentWiring<EventCreationManager, BaseEventHashedData> eventCreationManagerWiring;
     private final ComponentWiring<SelfEventSigner, GossipEvent> selfEventSignerWiring;
     private final ComponentWiring<StateSnapshotManager, StateSavingResult> stateSnapshotManagerWiring;
-    private final StateSignerWiring stateSignerWiring;
+    private final ComponentWiring<StateSigner, ConsensusTransactionImpl> stateSignerWiring;
     private final PcesReplayerWiring pcesReplayerWiring;
     private final ComponentWiring<PcesWriter, Long> pcesWriterWiring;
     private final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring;
@@ -240,7 +240,7 @@ public class PlatformWiring {
                 new ComponentWiring<>(model, StateSignatureCollector.class, config.stateSignatureCollector());
         stateSnapshotManagerWiring =
                 new ComponentWiring<>(model, StateSnapshotManager.class, config.stateSnapshotManager());
-        stateSignerWiring = StateSignerWiring.create(schedulers.stateSignerScheduler());
+        stateSignerWiring = new ComponentWiring<>(model, StateSigner.class, config.stateSigner());
         consensusRoundHandlerWiring = ConsensusRoundHandlerWiring.create(schedulers.consensusRoundHandlerScheduler());
         consensusEventStreamWiring =
                 new ComponentWiring<>(model, ConsensusEventStream.class, config.consensusEventStream());
@@ -638,11 +638,10 @@ public class PlatformWiring {
                 .buildTransformer("postHasher_getConsensusRound", "stateAndRound", StateAndRound::round);
 
         hashedStateOutputWire.solderTo(hashLoggerWiring.getInputWire(HashLogger::logHashes));
-        hashedStateOutputWire.solderTo(stateSignerWiring.signState());
+        hashedStateOutputWire.solderTo(stateSignerWiring.getInputWire(StateSigner::signState));
         hashedStateAndRoundOutputWire.solderTo(issDetectorWiring.getInputWire(IssDetector::handleStateAndRound));
 
-        stateSignerWiring
-                .stateSignature()
+        stateSignerWiring.getOutputWire()
                 .solderTo(transactionPoolWiring.getInputWire(TransactionPool::submitSystemTransaction));
 
         // FUTURE WORK: combine the signedStateHasherWiring State and Round outputs into a single StateAndRound output.
@@ -747,7 +746,6 @@ public class PlatformWiring {
      * Bind components to the wiring.
      *
      * @param builder                   builds platform components that need to be bound to wires
-     * @param stateSigner               the state signer to bind
      * @param pcesReplayer              the PCES replayer to bind
      * @param stateSignatureCollector   the signed state manager to bind
      * @param eventWindowManager        the event window manager to bind
@@ -764,7 +762,6 @@ public class PlatformWiring {
      */
     public void bind(
             @NonNull final PlatformComponentBuilder builder,
-            @NonNull final StateSigner stateSigner,
             @NonNull final PcesReplayer pcesReplayer,
             @NonNull final StateSignatureCollector stateSignatureCollector,
             @NonNull final EventWindowManager eventWindowManager,
@@ -785,7 +782,7 @@ public class PlatformWiring {
         orphanBufferWiring.bind(builder::buildOrphanBuffer);
         consensusEngineWiring.bind(builder::buildConsensusEngine);
         stateSnapshotManagerWiring.bind(builder::buildStateSnapshotManager);
-        stateSignerWiring.bind(stateSigner);
+        stateSignerWiring.bind(builder::buildStateSigner);
         pcesReplayerWiring.bind(pcesReplayer);
         pcesWriterWiring.bind(builder::buildPcesWriter);
         roundDurabilityBufferWiring.bind(builder::buildRoundDurabilityBuffer);

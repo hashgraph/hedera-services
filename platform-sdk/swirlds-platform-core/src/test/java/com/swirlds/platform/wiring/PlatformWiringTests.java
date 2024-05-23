@@ -23,7 +23,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.model.WiringModelBuilder;
-import com.swirlds.platform.StateSigner;
+import com.swirlds.platform.state.signer.StateSigner;
 import com.swirlds.platform.builder.ApplicationCallbacks;
 import com.swirlds.platform.builder.PlatformBuildingBlocks;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
@@ -109,7 +109,8 @@ class PlatformWiringTests {
                 .withTransactionResubmitter(mock(TransactionResubmitter.class))
                 .withTransactionPool(mock(TransactionPool.class))
                 .withStateSnapshotManager(mock(StateSnapshotManager.class))
-                .withHashLogger(mock(HashLogger.class));
+                .withHashLogger(mock(HashLogger.class))
+                .withStateSigner(mock(StateSigner.class));
 
         // Gossip is a special case, it's not like other components.
         // Currently we just have a facade between gossip and the wiring framework.
@@ -126,7 +127,6 @@ class PlatformWiringTests {
 
         wiring.bind(
                 componentBuilder,
-                mock(StateSigner.class),
                 mock(PcesReplayer.class),
                 mock(StateSignatureCollector.class),
                 mock(EventWindowManager.class),

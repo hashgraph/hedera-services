@@ -27,11 +27,11 @@ import java.time.Duration;
  *
  * @param defaultPoolMultiplier                  used when calculating the size of the default platform fork join pool.
  *                                               Maximum parallelism in this pool is calculated as max(1,
- *                                               (defaultPoolMultipler * [number of processors] +
+ *                                               (defaultPoolMultiplier * [number of processors] +
  *                                               defaultPoolConstant)).
  * @param defaultPoolConstant                    used when calculating the size of the default platform fork join pool.
  *                                               Maximum parallelism in this pool is calculated as max(1,
- *                                               (defaultPoolMultipler * [number of processors] + defaultPoolConstant)).
+ *                                               (defaultPoolMultiplier * [number of processors] + defaultPoolConstant)).
  *                                               It is legal for this constant to be a negative number.
  * @param eventHasherUnhandledCapacity           number of unhandled tasks allowed in the event hasher scheduler
  * @param internalEventValidator                 configuration for the internal event validator scheduler
@@ -41,9 +41,7 @@ import java.time.Duration;
  * @param consensusEngine                        configuration for the consensus engine scheduler
  * @param eventCreationManager                   configuration for the event creation manager scheduler
  * @param selfEventSigner                        configuration for the self event signer scheduler
- * @param stateSignerSchedulerType               the state signer scheduler type
- * @param stateSignerUnhandledCapacity           number of unhandled tasks allowed in the state signer scheduler,
- *                                               default is -1 (unlimited)
+ * @param stateSigner                            configuration for the state signer scheduler
  * @param pcesWriter                             configuration for the preconsensus event writer scheduler
  * @param pcesSequencer                          configuration for the preconsensus event sequencer scheduler
  * @param applicationTransactionPrehandler       configuration for the application transaction prehandler scheduler
@@ -95,8 +93,7 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration selfEventSigner,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD CAPACITY(20) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration stateSnapshotManager,
-        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateSignerSchedulerType,
-        @ConfigProperty(defaultValue = "-1") int stateSignerUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(10) UNHANDLED_TASK_METRIC") TaskSchedulerConfiguration stateSigner,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD CAPACITY(500) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration pcesWriter,
         @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration pcesSequencer,

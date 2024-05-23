@@ -126,6 +126,7 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.components.consensus;
     exports com.swirlds.platform.pool;
     exports com.swirlds.platform.state.snapshot;
+    exports com.swirlds.platform.state.signer;
 
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.cli;
