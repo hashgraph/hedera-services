@@ -40,6 +40,7 @@ import com.swirlds.platform.consensus.InitJudges;
 import com.swirlds.platform.consensus.RoundElections;
 import com.swirlds.platform.consensus.ThreadSafeConsensusInfo;
 import com.swirlds.platform.event.AncientMode;
+import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -826,7 +827,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                     .setConsensusData(new EventConsensusData(
                             HapiUtils.asTimestamp(e.getPreliminaryConsensusTimestamp()), numConsensus));
 
-            lastConsensusTime = e.getLastTransTime();
+            lastConsensusTime = EventUtils.getLastTransTime(e.getBaseEvent());
             numConsensus++;
         }
         if (last != null) {

@@ -27,6 +27,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.internal.EventImpl;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
@@ -59,10 +60,22 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
     /**
      * Create a new instance with the provided data.
      *
+     */
+    public DetailedConsensusEvent(final EventImpl event) {
+        this.gossipEvent = event.getBaseEvent();
+        this.roundReceived = event.getRoundReceived();
+        this.lastInRoundReceived = event.isLastInRoundReceived();
+    }
+
+    /**
+     * Create a new instance with the provided data.
+     *
      * @param gossipEvent   the pre-consensus event
      */
-    public DetailedConsensusEvent(final GossipEvent gossipEvent) { // TODO must add RR and LIRR
+    public DetailedConsensusEvent(final GossipEvent gossipEvent, long roundReceived, boolean lastInRoundReceived) {
         this.gossipEvent = gossipEvent;
+        this.roundReceived = roundReceived;
+        this.lastInRoundReceived = lastInRoundReceived;
     }
 
     public static void serialize(

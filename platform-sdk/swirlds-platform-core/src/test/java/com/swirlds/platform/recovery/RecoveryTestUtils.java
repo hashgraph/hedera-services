@@ -111,12 +111,6 @@ public final class RecoveryTestUtils {
 
         final byte[] signature = randomSignature(random).getSignatureBytes();
 
-        //        final ConsensusData consensusData = new ConsensusData();
-        //        consensusData.setConsensusTimestamp(now);
-        //        consensusData.setRoundReceived(round);
-        //        consensusData.setConsensusOrder(random.nextLong());
-        //        consensusData.setLastInRoundReceived(lastInRound);
-
         final GossipEvent gossipEvent = new GossipEvent(baseEventHashedData, signature);
         final EventConsensusData eventConsensusData =
                 new EventConsensusData(HapiUtils.asTimestamp(now), random.nextLong());
@@ -125,6 +119,8 @@ public final class RecoveryTestUtils {
         final EventImpl event = new EventImpl(gossipEvent);
         event.setRoundCreated(random.nextLong());
         event.setStale(random.nextBoolean());
+        event.setRoundReceived(round);
+        event.setLastInRoundReceived(lastInRound);
         return event;
     }
 
