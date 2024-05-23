@@ -71,6 +71,6 @@ public final class Loggers {
      * @return {@code true} if the logging system was successfully initialized, {@code false} otherwise
      */
     public static boolean init() {
-        return DefaultLoggingSystem.isInitialized();
+        return DefaultLoggingSystem.getInstance().isInitialized();
     }
 }

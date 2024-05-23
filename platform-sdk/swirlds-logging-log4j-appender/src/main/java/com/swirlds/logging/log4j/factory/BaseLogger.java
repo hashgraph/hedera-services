@@ -101,7 +101,11 @@ public class BaseLogger extends AbstractLogger {
      * {@inheritDoc}
      */
     @Override
-    public boolean isEnabled(@NonNull final Level level, @Nullable final Marker marker, @Nullable final Message data, @Nullable final Throwable t) {
+    public boolean isEnabled(
+            @NonNull final Level level,
+            @Nullable final Marker marker,
+            @Nullable final Message data,
+            @Nullable final Throwable t) {
         return isEnabledFor(level, marker);
     }
 
@@ -109,7 +113,11 @@ public class BaseLogger extends AbstractLogger {
      * {@inheritDoc}
      */
     @Override
-    public boolean isEnabled(@NonNull final Level level, @Nullable final Marker marker, @Nullable final CharSequence data, @Nullable final Throwable t) {
+    public boolean isEnabled(
+            @NonNull final Level level,
+            @Nullable final Marker marker,
+            @Nullable final CharSequence data,
+            @Nullable final Throwable t) {
         return isEnabledFor(level, marker);
     }
 
@@ -117,7 +125,11 @@ public class BaseLogger extends AbstractLogger {
      * {@inheritDoc}
      */
     @Override
-    public boolean isEnabled(@NonNull final Level level, @Nullable final Marker marker, @Nullable final Object data, @Nullable final Throwable t) {
+    public boolean isEnabled(
+            @NonNull final Level level,
+            @Nullable final Marker marker,
+            @Nullable final Object data,
+            @Nullable final Throwable t) {
         return isEnabledFor(level, marker);
     }
 
@@ -133,15 +145,11 @@ public class BaseLogger extends AbstractLogger {
      * {@inheritDoc}
      */
     @Override
-    public boolean isEnabled(@NonNull final Level level, @Nullable final Marker marker, @Nullable final String data, @Nullable final Object... p1) {
-        return isEnabledFor(level, marker);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isEnabled(@NonNull final Level level, @Nullable final Marker marker, @Nullable final String message, @Nullable final Object p0) {
+    public boolean isEnabled(
+            @NonNull final Level level,
+            @Nullable final Marker marker,
+            @Nullable final String data,
+            @Nullable final Object... p1) {
         return isEnabledFor(level, marker);
     }
 
@@ -150,7 +158,23 @@ public class BaseLogger extends AbstractLogger {
      */
     @Override
     public boolean isEnabled(
-            final Level level, @Nullable final Marker marker, @Nullable final String message, @Nullable final Object p0, @Nullable final Object p1) {
+            @NonNull final Level level,
+            @Nullable final Marker marker,
+            @Nullable final String message,
+            @Nullable final Object p0) {
+        return isEnabledFor(level, marker);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isEnabled(
+            final Level level,
+            @Nullable final Marker marker,
+            @Nullable final String message,
+            @Nullable final Object p0,
+            @Nullable final Object p1) {
         return isEnabledFor(level, marker);
     }
 
@@ -298,7 +322,8 @@ public class BaseLogger extends AbstractLogger {
      * {@inheritDoc}
      */
     @Override
-    public boolean isEnabled(@NonNull final Level level, @Nullable final Marker marker, final String data, final Throwable t) {
+    public boolean isEnabled(
+            @NonNull final Level level, @Nullable final Marker marker, final String data, final Throwable t) {
         return isEnabledFor(level, marker);
     }
 
@@ -307,7 +332,11 @@ public class BaseLogger extends AbstractLogger {
      */
     @Override
     public void logMessage(
-            final String fqcn, final Level level, @Nullable final Marker marker, final Message message, final Throwable t) {
+            final String fqcn,
+            final Level level,
+            @Nullable final Marker marker,
+            final Message message,
+            final Throwable t) {
         final com.swirlds.logging.api.Marker baseMarker = getMarker(marker);
         final Log4JMessage log4JMessage = new Log4JMessage(message);
 
@@ -432,7 +461,7 @@ public class BaseLogger extends AbstractLogger {
      * @return the base logging level
      */
     @NonNull
-    private com.swirlds.logging.api.Level convertLevel(@NonNull final Level level) {
+    public static com.swirlds.logging.api.Level convertLevel(@NonNull final Level level) {
         Objects.requireNonNull(level, "level is required");
         return switch (level.getStandardLevel()) {
             case DEBUG -> com.swirlds.logging.api.Level.DEBUG;

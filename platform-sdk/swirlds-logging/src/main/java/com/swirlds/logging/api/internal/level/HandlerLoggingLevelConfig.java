@@ -243,6 +243,5 @@ public class HandlerLoggingLevelConfig {
         }
 
         return levelConfigProperties.get("");
-
     }
 }
