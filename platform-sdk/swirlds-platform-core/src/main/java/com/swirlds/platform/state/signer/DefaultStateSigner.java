@@ -21,8 +21,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.system.status.PlatformStatus;
-import com.swirlds.platform.system.status.PlatformStatusNexus;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -40,19 +38,12 @@ public class DefaultStateSigner implements StateSigner {
     private final PlatformSigner signer;
 
     /**
-     * provides the current platform status
-     */
-    private final PlatformStatusNexus statusNexus;
-
-    /**
      * Constructor.
      *
      * @param signer      an object responsible for signing states with this node's key
-     * @param statusNexus provides the current platform status
      */
-    public DefaultStateSigner(@NonNull final PlatformSigner signer, @NonNull final PlatformStatusNexus statusNexus) {
+    public DefaultStateSigner(@NonNull final PlatformSigner signer) {
         this.signer = Objects.requireNonNull(signer);
-        this.statusNexus = Objects.requireNonNull(statusNexus);
     }
 
     /**
@@ -66,8 +57,8 @@ public class DefaultStateSigner implements StateSigner {
     @Nullable
     public ConsensusTransactionImpl signState(@NonNull final ReservedSignedState reservedSignedState) {
         try (reservedSignedState) {
-            if (statusNexus.getCurrentStatus() == PlatformStatus.REPLAYING_EVENTS) {
-                // the only time we don't want to submit signatures is during PCES replay
+            if (reservedSignedState.get().isPcesRound()) {
+                // don't sign states produced during PCES replay
                 return null;
             }
 

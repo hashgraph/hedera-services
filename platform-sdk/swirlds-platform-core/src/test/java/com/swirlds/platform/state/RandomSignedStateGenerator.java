@@ -207,7 +207,8 @@ public class RandomSignedStateGenerator {
                 stateInstance,
                 "RandomSignedStateGenerator.build()",
                 freezeStateInstance,
-                deleteOnBackgroundThread);
+                deleteOnBackgroundThread,
+                false);
 
         MerkleCryptoFactory.getInstance().digestTreeSync(stateInstance);
         if (stateHash != null) {

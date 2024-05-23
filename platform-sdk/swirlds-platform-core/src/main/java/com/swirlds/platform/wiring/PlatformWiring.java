@@ -40,7 +40,6 @@ import com.swirlds.common.wiring.transformers.WireTransformer;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
-import com.swirlds.platform.state.signer.StateSigner;
 import com.swirlds.platform.builder.ApplicationCallbacks;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.components.AppNotifier;
@@ -89,6 +88,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
+import com.swirlds.platform.state.signer.StateSigner;
 import com.swirlds.platform.state.snapshot.StateDumpRequest;
 import com.swirlds.platform.state.snapshot.StateSavingResult;
 import com.swirlds.platform.state.snapshot.StateSnapshotManager;
@@ -641,7 +641,8 @@ public class PlatformWiring {
         hashedStateOutputWire.solderTo(stateSignerWiring.getInputWire(StateSigner::signState));
         hashedStateAndRoundOutputWire.solderTo(issDetectorWiring.getInputWire(IssDetector::handleStateAndRound));
 
-        stateSignerWiring.getOutputWire()
+        stateSignerWiring
+                .getOutputWire()
                 .solderTo(transactionPoolWiring.getInputWire(TransactionPool::submitSystemTransaction));
 
         // FUTURE WORK: combine the signedStateHasherWiring State and Round outputs into a single StateAndRound output.
@@ -703,6 +704,9 @@ public class PlatformWiring {
         statusStateMachineWiring
                 .getOutputWire()
                 .solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::updatePlatformStatus));
+        statusStateMachineWiring
+                .getOutputWire()
+                .solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::updatePlatformStatus));
 
         solderNotifier();
 

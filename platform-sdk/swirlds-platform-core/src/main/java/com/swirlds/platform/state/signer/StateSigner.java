@@ -28,8 +28,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 public interface StateSigner {
 
     /**
-     * Sign the given state and produce a {@link StateSignaturePayload} containing the signature. This method assumes
-     * that the given {@link ReservedSignedState} is reserved by the caller and will release the state when done.
+     * Sign the given state and produce a {@link StateSignaturePayload} containing the signature. Will not sign any
+     * state produced during PCES replay.
      *
      * @param reservedSignedState the state to sign
      * @return a {@link StateSignaturePayload} containing the signature, or null if the state should not be signed

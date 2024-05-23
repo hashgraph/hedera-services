@@ -1158,9 +1158,8 @@ public class PlatformComponentBuilder {
     @NonNull
     public StateSigner buildStateSigner() {
         if (stateSigner == null) {
-            stateSigner = new DefaultStateSigner(new PlatformSigner(blocks.keysAndCerts()), null); // TODO
+            stateSigner = new DefaultStateSigner(new PlatformSigner(blocks.keysAndCerts()));
         }
         return stateSigner;
     }
-
 }
