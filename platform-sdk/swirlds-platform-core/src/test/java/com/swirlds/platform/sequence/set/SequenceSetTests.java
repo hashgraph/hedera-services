@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.sequence.set;
+package com.swirlds.platform.sequence.set;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.completeBeforeTimeout;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;

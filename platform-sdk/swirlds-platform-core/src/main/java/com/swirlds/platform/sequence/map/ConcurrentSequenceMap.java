@@ -14,25 +14,42 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.sequence.map;
+package com.swirlds.platform.sequence.map;
 
-import com.swirlds.common.sequence.map.internal.AbstractSequenceMap;
-import java.util.HashMap;
+import com.swirlds.common.threading.locks.IndexLock;
+import com.swirlds.common.threading.locks.Locks;
+import com.swirlds.platform.sequence.map.internal.AbstractSequenceMap;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.ToLongFunction;
 
 /**
- * A lock free implementation of {@link SequenceMap}.
+ * A thread safe implementation of {@link SequenceMap}.
  *
  * @param <K> the type of the key
  * @param <V> the type of the value
  */
-public class StandardSequenceMap<K, V> extends AbstractSequenceMap<K, V> {
+public class ConcurrentSequenceMap<K, V> extends AbstractSequenceMap<K, V> {
 
-    private long firstSequenceNumberInWindow;
+    private static final int MAX_PARALLELISM = 1024;
+    private final AtomicLong firstSequenceNumberInWindow;
+    private final int parallelism;
 
     /**
-     * Construct a {@link SequenceMap} that does not permit expansion.
+     * When inserting data into this data structure, it is critical that data is not inserted after the data's sequence
+     * number has been purged (as this would lead to a memory leak). Whenever new data is inserted, acquire a lock that
+     * prevents concurrent purging of that sequence number.
+     */
+    private final IndexLock lock;
+
+    private final Lock windowLock = new ReentrantLock();
+
+    /**
+     * Construct a thread safe {@link SequenceMap} that does not permit expansion.
      *
      * @param firstSequenceNumberInWindow the lowest allowed sequence number
      * @param sequenceNumberCapacity      the number of sequence numbers permitted to exist in this data structure. E.g.
@@ -41,16 +58,16 @@ public class StandardSequenceMap<K, V> extends AbstractSequenceMap<K, V> {
      *                                    and any value with a sequence number outside that range will be rejected.
      * @param getSequenceNumberFromKey    a method that extracts the sequence number from a key
      */
-    public StandardSequenceMap(
+    public ConcurrentSequenceMap(
             final long firstSequenceNumberInWindow,
             final int sequenceNumberCapacity,
-            final ToLongFunction<K> getSequenceNumberFromKey) {
+            @NonNull final ToLongFunction<K> getSequenceNumberFromKey) {
 
         this(firstSequenceNumberInWindow, sequenceNumberCapacity, false, getSequenceNumberFromKey);
     }
 
     /**
-     * Construct a {@link SequenceMap}.
+     * Construct a thread safe {@link SequenceMap}.
      *
      * @param firstSequenceNumberInWindow the lowest allowed sequence number
      * @param sequenceNumberCapacity      the number of sequence numbers permitted to exist in this data structure. E.g.
@@ -63,14 +80,74 @@ public class StandardSequenceMap<K, V> extends AbstractSequenceMap<K, V> {
      *                                    current capacity.
      * @param getSequenceNumberFromKey    a method that extracts the sequence number from a key
      */
-    public StandardSequenceMap(
+    public ConcurrentSequenceMap(
             final long firstSequenceNumberInWindow,
             final int sequenceNumberCapacity,
             final boolean allowExpansion,
-            final ToLongFunction<K> getSequenceNumberFromKey) {
+            @NonNull final ToLongFunction<K> getSequenceNumberFromKey) {
 
         super(firstSequenceNumberInWindow, sequenceNumberCapacity, allowExpansion, getSequenceNumberFromKey);
-        this.firstSequenceNumberInWindow = firstSequenceNumberInWindow;
+
+        parallelism = Math.min(MAX_PARALLELISM, sequenceNumberCapacity);
+        lock = Locks.createIndexLock(parallelism);
+
+        this.firstSequenceNumberInWindow = new AtomicLong(firstSequenceNumberInWindow);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void lockSequenceNumber(final long sequenceNumber) {
+        lock.lock(sequenceNumber);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void unlockSequenceNumber(final long sequenceNumber) {
+        lock.unlock(sequenceNumber);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void fullLock() {
+        lock.fullyLock();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void fullUnlock() {
+        lock.fullyUnlock();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected int getFullLockThreshold() {
+        return parallelism;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void windowLock() {
+        windowLock.lock();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void windowUnlock() {
+        windowLock.unlock();
     }
 
     /**
@@ -78,7 +155,7 @@ public class StandardSequenceMap<K, V> extends AbstractSequenceMap<K, V> {
      */
     @Override
     public long getFirstSequenceNumberInWindow() {
-        return firstSequenceNumberInWindow;
+        return firstSequenceNumberInWindow.get();
     }
 
     /**
@@ -86,7 +163,7 @@ public class StandardSequenceMap<K, V> extends AbstractSequenceMap<K, V> {
      */
     @Override
     protected void setFirstSequenceNumberInWindow(final long firstSequenceNumberInWindow) {
-        this.firstSequenceNumberInWindow = firstSequenceNumberInWindow;
+        this.firstSequenceNumberInWindow.set(firstSequenceNumberInWindow);
     }
 
     /**
@@ -94,6 +171,6 @@ public class StandardSequenceMap<K, V> extends AbstractSequenceMap<K, V> {
      */
     @Override
     protected Map<K, V> buildDataMap() {
-        return new HashMap<>();
+        return new ConcurrentHashMap<>();
     }
 }

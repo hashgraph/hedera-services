@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.sequence.map.internal;
+package com.swirlds.platform.sequence.map.internal;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import java.util.HashSet;

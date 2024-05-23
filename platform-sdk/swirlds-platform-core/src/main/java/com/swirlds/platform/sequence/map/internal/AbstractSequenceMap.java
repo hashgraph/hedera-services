@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.sequence.map.internal;
+package com.swirlds.platform.sequence.map.internal;
 
-import com.swirlds.common.sequence.map.SequenceMap;
+import com.swirlds.platform.sequence.map.SequenceMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.AbstractMap;
 import java.util.LinkedList;
