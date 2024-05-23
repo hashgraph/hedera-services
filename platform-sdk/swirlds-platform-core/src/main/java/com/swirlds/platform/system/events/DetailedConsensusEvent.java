@@ -135,11 +135,11 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
     }
 
     public long getRoundReceived() {
-        return 0; // TODO
+        return roundReceived;
     }
 
     public boolean isLastInRoundReceived() {
-        return false; // TODO
+        return lastInRoundReceived;
     }
 
     /**
