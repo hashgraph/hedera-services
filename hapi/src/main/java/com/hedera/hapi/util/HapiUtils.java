@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi;
+package com.hedera.hapi.util;
 
 import static java.util.Objects.requireNonNull;
 

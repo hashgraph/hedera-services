@@ -44,7 +44,6 @@ module com.swirlds.common {
     exports com.swirlds.common.metrics.platform.prometheus;
     exports com.swirlds.common.notification;
     exports com.swirlds.common.platform;
-    exports com.swirlds.common.scratchpad;
     exports com.swirlds.common.sequence;
     exports com.swirlds.common.sequence.map;
     exports com.swirlds.common.sequence.set;

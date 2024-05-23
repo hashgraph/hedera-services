@@ -161,7 +161,7 @@ public class RandomSignedStateGenerator {
 
         final SoftwareVersion softwareVersionInstance;
         if (softwareVersion == null) {
-            softwareVersionInstance = new BasicSoftwareVersion(Math.abs(random.nextLong()));
+            softwareVersionInstance = new BasicSoftwareVersion(Math.abs(random.nextInt()));
         } else {
             softwareVersionInstance = softwareVersion;
         }
