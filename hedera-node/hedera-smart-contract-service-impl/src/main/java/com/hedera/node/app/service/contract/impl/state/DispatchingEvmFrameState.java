@@ -183,7 +183,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public void setAccountBytecodeType(AccountBytecodeType type) {
+    public void setAccountBytecodeType(@NonNull final AccountBytecodeType type) {
         this.accountBytecodeType = type;
     }
 
@@ -191,7 +191,8 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public @NonNull Bytes getCode(final ContractID contractID) {
+    public @NonNull Bytes getCode(@NonNull final ContractID contractID) {
+        requireNonNull(contractID);
         if (accountBytecodeType == AccountBytecodeType.RETURN_PROXY_CONTRACT_BYTECODE && contractID.hasContractNum()) {
             final var address = getAddress(contractID.contractNumOrElse(0L));
             return address == null ? Bytes.EMPTY : accountProxyBytecodeFor(address);
@@ -210,7 +211,8 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public @NonNull Hash getCodeHash(final ContractID contractID) {
+    public @NonNull Hash getCodeHash(@NonNull final ContractID contractID) {
+        requireNonNull(contractID);
         // return the hash of the proxy contract if the account bytecode type is set to return proxy contract bytecode
         if (accountBytecodeType == AccountBytecodeType.RETURN_PROXY_CONTRACT_BYTECODE) {
             return CodeFactory.createCode(getCode(contractID), 0, false).getCodeHash();
@@ -522,12 +524,14 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         return new ProxyEvmAccount(account.accountId(), this);
     }
 
-    private Bytes proxyBytecodeFor(final Address address) {
+    private Bytes proxyBytecodeFor(@NonNull final Address address) {
+        requireNonNull(address);
         return Bytes.fromHexString(
                 TOKEN_CALL_REDIRECT_CONTRACT_BINARY.replace(ADDRESS_BYTECODE_PATTERN, address.toUnprefixedHexString()));
     }
 
-    private Bytes accountProxyBytecodeFor(final Address address) {
+    private Bytes accountProxyBytecodeFor(@NonNull final Address address) {
+        requireNonNull(address);
         return Bytes.fromHexString(ACCOUNT_CALL_REDIRECT_CONTRACT_BINARY.replace(
                 ADDRESS_BYTECODE_PATTERN, address.toUnprefixedHexString()));
     }
