@@ -38,7 +38,7 @@ import java.util.function.Supplier;
  * Platform-implementation of {@link StatEntry}
  */
 @SuppressWarnings("removal")
-public class DefaultStatEntry extends AbstractMetric implements PlatformMetric, StatEntry {
+public class PlatformStatEntry extends AbstractMetric implements PlatformMetric, StatEntry {
 
     private final @NonNull DataType dataType;
     /**
@@ -64,7 +64,7 @@ public class DefaultStatEntry extends AbstractMetric implements PlatformMetric, 
     private final double halfLife;
 
     @SuppressWarnings("unchecked")
-    public DefaultStatEntry(@NonNull final StatEntry.Config<?> config) {
+    public PlatformStatEntry(@NonNull final StatEntry.Config<?> config) {
         super(config);
         this.dataType = MetricConfig.mapDataType(config.getType());
         this.buffered = config.getBuffered();

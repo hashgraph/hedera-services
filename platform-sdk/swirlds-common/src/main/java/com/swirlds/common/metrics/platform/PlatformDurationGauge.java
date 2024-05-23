@@ -31,11 +31,11 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Platform-implementation of {@link DurationGauge}
  */
-public class DefaultDurationGauge extends AbstractMetric implements PlatformMetric, DurationGauge {
+public class PlatformDurationGauge extends AbstractMetric implements PlatformMetric, DurationGauge {
     private final AtomicLong nanos;
     private final ChronoUnit unit;
 
-    public DefaultDurationGauge(@NonNull final DurationGauge.Config config) {
+    public PlatformDurationGauge(@NonNull final DurationGauge.Config config) {
         super(config);
         this.unit = config.getTimeUnit();
         this.nanos = new AtomicLong();

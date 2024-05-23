@@ -38,7 +38,7 @@ import java.util.function.BiFunction;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class DefaultIntegerPairAccumulatorTest {
+class PlatformIntegerPairAccumulatorTest {
 
     private static final double EPSILON = 1e-6;
 
@@ -59,7 +59,7 @@ class DefaultIntegerPairAccumulatorTest {
                 .withDescription(DESCRIPTION)
                 .withUnit(UNIT)
                 .withFormat(FORMAT);
-        final IntegerPairAccumulator<String> accumulator = new DefaultIntegerPairAccumulator<>(config);
+        final IntegerPairAccumulator<String> accumulator = new PlatformIntegerPairAccumulator<>(config);
 
         assertEquals(CATEGORY, accumulator.getCategory(), "The category was not set correctly in the constructor");
         assertEquals(NAME, accumulator.getName(), "The name was not set correctly in the constructor");
@@ -79,7 +79,7 @@ class DefaultIntegerPairAccumulatorTest {
         // given
         final IntegerPairAccumulator.Config<Long> config =
                 new IntegerPairAccumulator.Config<>(CATEGORY, NAME, Long.class, Math::multiplyFull);
-        final IntegerPairAccumulator<Long> accumulator = new DefaultIntegerPairAccumulator<>(config);
+        final IntegerPairAccumulator<Long> accumulator = new PlatformIntegerPairAccumulator<>(config);
 
         // when
         accumulator.update(2, 3);
@@ -101,7 +101,7 @@ class DefaultIntegerPairAccumulatorTest {
         // given
         final IntegerPairAccumulator.Config<Long> config =
                 new IntegerPairAccumulator.Config<>(CATEGORY, NAME, Long.class, Math::multiplyFull);
-        final IntegerPairAccumulator<Long> accumulator = new DefaultIntegerPairAccumulator<>(config);
+        final IntegerPairAccumulator<Long> accumulator = new PlatformIntegerPairAccumulator<>(config);
         accumulator.update(Integer.MAX_VALUE, Integer.MAX_VALUE);
 
         // when
@@ -118,7 +118,7 @@ class DefaultIntegerPairAccumulatorTest {
         // given
         final IntegerPairAccumulator.Config<Long> config =
                 new IntegerPairAccumulator.Config<>(CATEGORY, NAME, Long.class, Math::multiplyFull);
-        final IntegerPairAccumulator<Long> accumulator = new DefaultIntegerPairAccumulator<>(config);
+        final IntegerPairAccumulator<Long> accumulator = new PlatformIntegerPairAccumulator<>(config);
         accumulator.update(Integer.MIN_VALUE, Integer.MIN_VALUE);
 
         // when
@@ -138,7 +138,7 @@ class DefaultIntegerPairAccumulatorTest {
                         CATEGORY, NAME, Long.class, Math::multiplyFull)
                 .withLeftAccumulator(Integer::max)
                 .withRightAccumulator(Integer::sum);
-        final IntegerPairAccumulator<Long> accumulator = new DefaultIntegerPairAccumulator<>(config);
+        final IntegerPairAccumulator<Long> accumulator = new PlatformIntegerPairAccumulator<>(config);
 
         // when
         accumulator.update(2, 3);
@@ -160,7 +160,7 @@ class DefaultIntegerPairAccumulatorTest {
         // given
         final IntegerPairAccumulator.Config<Double> config =
                 new IntegerPairAccumulator.Config<>(CATEGORY, NAME, Double.class, AVERAGE);
-        final DefaultIntegerPairAccumulator<Double> accumulator = new DefaultIntegerPairAccumulator<>(config);
+        final PlatformIntegerPairAccumulator<Double> accumulator = new PlatformIntegerPairAccumulator<>(config);
         accumulator.update(2, 3);
 
         // when
@@ -179,7 +179,7 @@ class DefaultIntegerPairAccumulatorTest {
         // given
         final IntegerPairAccumulator.Config<Double> config =
                 new IntegerPairAccumulator.Config<>(CATEGORY, NAME, Double.class, AVERAGE);
-        final IntegerPairAccumulator<Double> accumulator = new DefaultIntegerPairAccumulator<>(config);
+        final IntegerPairAccumulator<Double> accumulator = new PlatformIntegerPairAccumulator<>(config);
 
         // then
         assertThrows(
@@ -203,7 +203,7 @@ class DefaultIntegerPairAccumulatorTest {
         // given
         final IntegerPairAccumulator.Config<Double> config =
                 new IntegerPairAccumulator.Config<>(CATEGORY, NAME, Double.class, AVERAGE);
-        final IntegerPairAccumulator<Double> accumulator = new DefaultIntegerPairAccumulator<>(config);
+        final IntegerPairAccumulator<Double> accumulator = new PlatformIntegerPairAccumulator<>(config);
 
         // then
         assertThatCode(accumulator::reset).doesNotThrowAnyException();
@@ -215,7 +215,7 @@ class DefaultIntegerPairAccumulatorTest {
         // given
         final IntegerPairAccumulator.Config<Double> config =
                 new IntegerPairAccumulator.Config<>(CATEGORY, NAME, Double.class, AVERAGE);
-        final DefaultIntegerPairAccumulator<Double> accumulator = new DefaultIntegerPairAccumulator<>(config);
+        final PlatformIntegerPairAccumulator<Double> accumulator = new PlatformIntegerPairAccumulator<>(config);
 
         // when
         final StatsBuffered actual = accumulator.getStatsBuffered();
@@ -229,17 +229,17 @@ class DefaultIntegerPairAccumulatorTest {
         // given
         final IntegerPairAccumulator.Config<Double> config =
                 new IntegerPairAccumulator.Config<>(CATEGORY, NAME, Double.class, AVERAGE);
-        final IntegerPairAccumulator<Double> accumulator1 = new DefaultIntegerPairAccumulator<>(config);
-        final IntegerPairAccumulator<Double> accumulator2 = new DefaultIntegerPairAccumulator<>(config);
+        final IntegerPairAccumulator<Double> accumulator1 = new PlatformIntegerPairAccumulator<>(config);
+        final IntegerPairAccumulator<Double> accumulator2 = new PlatformIntegerPairAccumulator<>(config);
         accumulator2.update(42, 4711);
 
         // then
         assertThat(accumulator1)
                 .isEqualTo(accumulator2)
                 .hasSameHashCodeAs(accumulator2)
-                .isNotEqualTo(new DefaultIntegerPairAccumulator<>(
+                .isNotEqualTo(new PlatformIntegerPairAccumulator<>(
                         new IntegerPairAccumulator.Config<>("Other", NAME, Double.class, AVERAGE)))
-                .isNotEqualTo(new DefaultIntegerPairAccumulator<>(
+                .isNotEqualTo(new PlatformIntegerPairAccumulator<>(
                         new IntegerPairAccumulator.Config<>(CATEGORY, "Other", Double.class, AVERAGE)))
                 .isNotEqualTo(new DefaultIntegerGauge(new IntegerGauge.Config(CATEGORY, NAME)));
     }
@@ -252,7 +252,7 @@ class DefaultIntegerPairAccumulatorTest {
                 .withDescription(DESCRIPTION)
                 .withUnit(UNIT)
                 .withFormat(FORMAT);
-        final IntegerPairAccumulator<Double> accumulator = new DefaultIntegerPairAccumulator<>(config);
+        final IntegerPairAccumulator<Double> accumulator = new PlatformIntegerPairAccumulator<>(config);
 
         // then
         assertThat(accumulator.toString())
@@ -264,7 +264,7 @@ class DefaultIntegerPairAccumulatorTest {
         // given
         final IntegerPairAccumulator.Config<Double> config =
                 new IntegerPairAccumulator.Config<>(CATEGORY, NAME, Double.class, AVERAGE);
-        final IntegerPairAccumulator<Double> accumulator = new DefaultIntegerPairAccumulator<>(config);
+        final IntegerPairAccumulator<Double> accumulator = new PlatformIntegerPairAccumulator<>(config);
         accumulator.update(42, 4711);
 
         // when

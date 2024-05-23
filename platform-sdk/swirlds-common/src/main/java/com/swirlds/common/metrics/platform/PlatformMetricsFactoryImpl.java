@@ -71,7 +71,7 @@ public class PlatformMetricsFactoryImpl implements PlatformMetricsFactory {
 
     @Override
     public DurationGauge createDurationGauge(final DurationGauge.Config config) {
-        return new DefaultDurationGauge(config);
+        return new PlatformDurationGauge(config);
     }
 
     /**
@@ -79,7 +79,7 @@ public class PlatformMetricsFactoryImpl implements PlatformMetricsFactory {
      */
     @Override
     public <T> FunctionGauge<T> createFunctionGauge(final FunctionGauge.Config<T> config) {
-        return new DefaultFunctionGauge<>(config);
+        return new PlatformFunctionGauge<>(config);
     }
 
     /**
@@ -103,7 +103,7 @@ public class PlatformMetricsFactoryImpl implements PlatformMetricsFactory {
      */
     @Override
     public <T> IntegerPairAccumulator<T> createIntegerPairAccumulator(final IntegerPairAccumulator.Config<T> config) {
-        return new DefaultIntegerPairAccumulator<>(config);
+        return new PlatformIntegerPairAccumulator<>(config);
     }
 
     /**
@@ -128,9 +128,9 @@ public class PlatformMetricsFactoryImpl implements PlatformMetricsFactory {
     @Override
     public RunningAverageMetric createRunningAverageMetric(final RunningAverageMetric.Config config) {
         if (config.isUseDefaultHalfLife()) {
-            return new DefaultRunningAverageMetric(config.withHalfLife(metricsConfig.halfLife()));
+            return new PlatformRunningAverageMetric(config.withHalfLife(metricsConfig.halfLife()));
         }
-        return new DefaultRunningAverageMetric(config);
+        return new PlatformRunningAverageMetric(config);
     }
 
     /**
@@ -139,9 +139,9 @@ public class PlatformMetricsFactoryImpl implements PlatformMetricsFactory {
     @Override
     public SpeedometerMetric createSpeedometerMetric(final SpeedometerMetric.Config config) {
         if (config.isUseDefaultHalfLife()) {
-            return new DefaultSpeedometerMetric(config.withHalfLife(metricsConfig.halfLife()));
+            return new PlatformSpeedometerMetric(config.withHalfLife(metricsConfig.halfLife()));
         }
-        return new DefaultSpeedometerMetric(config);
+        return new PlatformSpeedometerMetric(config);
     }
 
     /**
@@ -150,6 +150,6 @@ public class PlatformMetricsFactoryImpl implements PlatformMetricsFactory {
     @SuppressWarnings("removal")
     @Override
     public StatEntry createStatEntry(final StatEntry.Config<?> config) {
-        return new DefaultStatEntry(config);
+        return new PlatformStatEntry(config);
     }
 }

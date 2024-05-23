@@ -31,7 +31,7 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class DefaultDurationGaugeTest {
+class PlatformDurationGaugeTest {
 
     private static final String CATEGORY = "CaTeGoRy";
     private static final String NAME = "NaMe";
@@ -42,7 +42,7 @@ class DefaultDurationGaugeTest {
     @Test
     @DisplayName("Constructor should store values")
     void testConstructor() {
-        DurationGauge gauge = new DefaultDurationGauge(
+        DurationGauge gauge = new PlatformDurationGauge(
                 new DurationGauge.Config(CATEGORY, NAME, SECONDS).withDescription(DESCRIPTION));
 
         assertEquals(CATEGORY, gauge.getCategory(), "The category was not set correctly in the constructor");
@@ -56,21 +56,21 @@ class DefaultDurationGaugeTest {
         assertEquals(0.0, gauge.get(VALUE), EPSILON, "The value was not initialized correctly");
         assertEquals(EnumSet.of(VALUE), gauge.getValueTypes(), "ValueTypes should be [VALUE]");
 
-        gauge = new DefaultDurationGauge(new DurationGauge.Config(CATEGORY, NAME, ChronoUnit.MILLIS));
+        gauge = new PlatformDurationGauge(new DurationGauge.Config(CATEGORY, NAME, ChronoUnit.MILLIS));
         assertEquals(
                 FloatFormats.FORMAT_DECIMAL_3,
                 gauge.getFormat(),
                 "The format was not set correctly in the constructor for milliseconds");
         assertEquals(NAME, gauge.getName(), "The name was not set correctly in the constructor");
 
-        gauge = new DefaultDurationGauge(new DurationGauge.Config(CATEGORY, NAME, ChronoUnit.MICROS));
+        gauge = new PlatformDurationGauge(new DurationGauge.Config(CATEGORY, NAME, ChronoUnit.MICROS));
         assertEquals(
                 FloatFormats.FORMAT_DECIMAL_0,
                 gauge.getFormat(),
                 "The format was not set correctly in the constructor for microsecond");
         assertEquals(NAME, gauge.getName(), "The name was not set correctly in the constructor");
 
-        gauge = new DefaultDurationGauge(new DurationGauge.Config(CATEGORY, NAME, ChronoUnit.NANOS));
+        gauge = new PlatformDurationGauge(new DurationGauge.Config(CATEGORY, NAME, ChronoUnit.NANOS));
         assertEquals(
                 FloatFormats.FORMAT_DECIMAL_0,
                 gauge.getFormat(),
@@ -98,7 +98,7 @@ class DefaultDurationGaugeTest {
     @Test
     void testUpdate() {
         // given
-        final DurationGauge gauge = new DefaultDurationGauge(new DurationGauge.Config(CATEGORY, NAME, SECONDS));
+        final DurationGauge gauge = new PlatformDurationGauge(new DurationGauge.Config(CATEGORY, NAME, SECONDS));
 
         testDurationUpdate(gauge, Duration.ofMillis(1500), SECONDS);
         testDurationUpdate(gauge, Duration.ofMillis(700), SECONDS);
@@ -127,7 +127,8 @@ class DefaultDurationGaugeTest {
     @Test
     void testSnapshot() {
         // given
-        final DefaultDurationGauge gauge = new DefaultDurationGauge(new DurationGauge.Config(CATEGORY, NAME, SECONDS));
+        final PlatformDurationGauge gauge =
+                new PlatformDurationGauge(new DurationGauge.Config(CATEGORY, NAME, SECONDS));
         testDurationUpdate(gauge, Duration.ofMillis(3500), SECONDS);
 
         // when
@@ -141,7 +142,7 @@ class DefaultDurationGaugeTest {
     @Test
     void testInvalidGets() {
         // given
-        final DurationGauge gauge = new DefaultDurationGauge(new DurationGauge.Config(CATEGORY, NAME, SECONDS));
+        final DurationGauge gauge = new PlatformDurationGauge(new DurationGauge.Config(CATEGORY, NAME, SECONDS));
 
         // then
         assertThrows(NullPointerException.class, () -> gauge.get(null), "Calling get() with null should throw an IAE");
@@ -161,19 +162,19 @@ class DefaultDurationGaugeTest {
 
     @Test
     void testUnit() {
-        DurationGauge gauge = new DefaultDurationGauge(new DurationGauge.Config(CATEGORY, NAME, SECONDS));
+        DurationGauge gauge = new PlatformDurationGauge(new DurationGauge.Config(CATEGORY, NAME, SECONDS));
         testDurationUpdate(gauge, Duration.ofNanos(100), SECONDS);
         testDurationUpdate(gauge, Duration.ofMinutes(2), SECONDS);
 
-        gauge = new DefaultDurationGauge(new DurationGauge.Config(CATEGORY, NAME, ChronoUnit.MILLIS));
+        gauge = new PlatformDurationGauge(new DurationGauge.Config(CATEGORY, NAME, ChronoUnit.MILLIS));
         testDurationUpdate(gauge, Duration.ofNanos(100), ChronoUnit.MILLIS);
         testDurationUpdate(gauge, Duration.ofMinutes(2), ChronoUnit.MILLIS);
 
-        gauge = new DefaultDurationGauge(new DurationGauge.Config(CATEGORY, NAME, ChronoUnit.MICROS));
+        gauge = new PlatformDurationGauge(new DurationGauge.Config(CATEGORY, NAME, ChronoUnit.MICROS));
         testDurationUpdate(gauge, Duration.ofNanos(100), ChronoUnit.MICROS);
         testDurationUpdate(gauge, Duration.ofMinutes(2), ChronoUnit.MICROS);
 
-        gauge = new DefaultDurationGauge(new DurationGauge.Config(CATEGORY, NAME, ChronoUnit.NANOS));
+        gauge = new PlatformDurationGauge(new DurationGauge.Config(CATEGORY, NAME, ChronoUnit.NANOS));
         testDurationUpdate(gauge, Duration.ofNanos(100), ChronoUnit.NANOS);
         testDurationUpdate(gauge, Duration.ofMinutes(2), ChronoUnit.NANOS);
     }

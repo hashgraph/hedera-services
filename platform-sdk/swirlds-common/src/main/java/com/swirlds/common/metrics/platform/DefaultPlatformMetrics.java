@@ -43,6 +43,7 @@ import java.util.stream.Stream;
 
 /**
  * Default implementation of the {@link Metrics} interface.
+ * FUTURE: Follow our naming patterns and rename to PlatformMetricsImpl
  */
 public class DefaultPlatformMetrics implements PlatformMetrics {
 

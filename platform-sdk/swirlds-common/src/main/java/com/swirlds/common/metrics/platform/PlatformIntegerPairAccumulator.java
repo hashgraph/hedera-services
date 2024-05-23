@@ -33,7 +33,7 @@ import java.util.function.IntSupplier;
 /**
  * Platform-implementation of {@link IntegerPairAccumulator}
  */
-public class DefaultIntegerPairAccumulator<T> extends AbstractMetric
+public class PlatformIntegerPairAccumulator<T> extends AbstractMetric
         implements PlatformMetric, IntegerPairAccumulator<T> {
 
     private final DataType dataType;
@@ -42,7 +42,7 @@ public class DefaultIntegerPairAccumulator<T> extends AbstractMetric
     private final IntSupplier leftInitializer;
     private final IntSupplier rightInitializer;
 
-    public DefaultIntegerPairAccumulator(@NonNull final Config<T> config) {
+    public PlatformIntegerPairAccumulator(@NonNull final Config<T> config) {
         super(config);
         this.dataType = MetricConfig.mapDataType(config.getType());
         this.container = new AtomicIntPair(config.getLeftAccumulator(), config.getRightAccumulator());

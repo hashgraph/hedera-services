@@ -42,7 +42,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-class DefaultSpeedometerMetricTest {
+class PlatformSpeedometerMetricTest {
 
     private static final String CATEGORY = "CaTeGoRy";
     private static final String NAME = "NaMe";
@@ -63,7 +63,7 @@ class DefaultSpeedometerMetricTest {
                 .withUnit(UNIT)
                 .withFormat(FORMAT)
                 .withHalfLife(Math.PI);
-        final DefaultSpeedometerMetric metric = new DefaultSpeedometerMetric(config);
+        final PlatformSpeedometerMetric metric = new PlatformSpeedometerMetric(config);
 
         // then
         assertEquals(CATEGORY, metric.getCategory(), "The category was not set correctly");
@@ -87,7 +87,7 @@ class DefaultSpeedometerMetricTest {
         final FakeTime time = new FakeTime();
         final SpeedometerMetric.Config config =
                 new SpeedometerMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
-        final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
+        final SpeedometerMetric metric = new PlatformSpeedometerMetric(config, time);
         sendCycles(metric, time, 0, 1000, 1000);
         time.set(Duration.ofSeconds(1000));
         assertEquals(1000.0, metric.get(), 0.001, "Rate should be 1000.0");
@@ -113,7 +113,7 @@ class DefaultSpeedometerMetricTest {
         final FakeTime time = new FakeTime();
         final SpeedometerMetric.Config config =
                 new SpeedometerMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
-        final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
+        final SpeedometerMetric metric = new PlatformSpeedometerMetric(config, time);
 
         for (int i = 0; i < 1000; i++) {
             // when
@@ -133,7 +133,7 @@ class DefaultSpeedometerMetricTest {
         final FakeTime time = new FakeTime();
         final SpeedometerMetric.Config config =
                 new SpeedometerMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
-        final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
+        final SpeedometerMetric metric = new PlatformSpeedometerMetric(config, time);
 
         // when
         for (int i = 0; i < 1000; i++) {
@@ -156,7 +156,7 @@ class DefaultSpeedometerMetricTest {
         final FakeTime time = new FakeTime();
         final SpeedometerMetric.Config config =
                 new SpeedometerMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
-        final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
+        final SpeedometerMetric metric = new PlatformSpeedometerMetric(config, time);
 
         // when
         for (int i = 0; i < 1000; i++) {
@@ -177,7 +177,7 @@ class DefaultSpeedometerMetricTest {
         final FakeTime time = new FakeTime();
         final SpeedometerMetric.Config config =
                 new SpeedometerMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
-        final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
+        final SpeedometerMetric metric = new PlatformSpeedometerMetric(config, time);
 
         // when
         sendCycles(metric, time, 0, 1000, 1000);
@@ -198,7 +198,7 @@ class DefaultSpeedometerMetricTest {
         // given
         final FakeTime time = new FakeTime();
         final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
-        final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
+        final SpeedometerMetric metric = new PlatformSpeedometerMetric(config, time);
 
         // when
         for (int i = 1; i <= 1000; i++) {
@@ -222,7 +222,7 @@ class DefaultSpeedometerMetricTest {
         // given
         final FakeTime time = new FakeTime();
         final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
-        final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
+        final SpeedometerMetric metric = new PlatformSpeedometerMetric(config, time);
 
         // when
         sendCycles(metric, time, 0, 1000, 1000);
@@ -243,7 +243,7 @@ class DefaultSpeedometerMetricTest {
         final FakeTime time = new FakeTime();
         final SpeedometerMetric.Config config =
                 new SpeedometerMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
-        final DefaultSpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
+        final PlatformSpeedometerMetric metric = new PlatformSpeedometerMetric(config, time);
 
         // when
         sendCycles(metric, time, 0, 1000, 1000);
@@ -266,7 +266,7 @@ class DefaultSpeedometerMetricTest {
         // given
         final FakeTime time = new FakeTime();
         final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
-        final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
+        final SpeedometerMetric metric = new PlatformSpeedometerMetric(config, time);
 
         // when
         sendCycles(metric, time, 0, 1000, 1000);
@@ -286,7 +286,7 @@ class DefaultSpeedometerMetricTest {
         // given
         final FakeTime time = new FakeTime();
         final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
-        final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
+        final SpeedometerMetric metric = new PlatformSpeedometerMetric(config, time);
 
         // when
         sendCycles(metric, time, 0, 1000, 7000);
@@ -308,7 +308,7 @@ class DefaultSpeedometerMetricTest {
         final FakeTime time = new FakeTime();
         final SpeedometerMetric.Config config =
                 new SpeedometerMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
-        final DefaultSpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
+        final PlatformSpeedometerMetric metric = new PlatformSpeedometerMetric(config, time);
 
         // when
         sendCycles(metric, time, 0, 1000, 1000);
@@ -336,7 +336,7 @@ class DefaultSpeedometerMetricTest {
     void testInvalidGets() {
         // given
         final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
-        final SpeedometerMetric metric = new DefaultSpeedometerMetric(config);
+        final SpeedometerMetric metric = new PlatformSpeedometerMetric(config);
 
         // then
         assertThrows(NullPointerException.class, () -> metric.get(null), "Calling get() with null should throw an IAE");
@@ -346,16 +346,16 @@ class DefaultSpeedometerMetricTest {
     void testEquals() {
         // given
         final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
-        final SpeedometerMetric metric1 = new DefaultSpeedometerMetric(config);
-        final SpeedometerMetric metric2 = new DefaultSpeedometerMetric(config);
+        final SpeedometerMetric metric1 = new PlatformSpeedometerMetric(config);
+        final SpeedometerMetric metric2 = new PlatformSpeedometerMetric(config);
         metric2.cycle();
 
         // then
         assertThat(metric1)
                 .isEqualTo(metric2)
                 .hasSameHashCodeAs(metric2)
-                .isNotEqualTo(new DefaultSpeedometerMetric(new SpeedometerMetric.Config("Other", NAME)))
-                .isNotEqualTo(new DefaultSpeedometerMetric(new SpeedometerMetric.Config(CATEGORY, "Other")))
+                .isNotEqualTo(new PlatformSpeedometerMetric(new SpeedometerMetric.Config("Other", NAME)))
+                .isNotEqualTo(new PlatformSpeedometerMetric(new SpeedometerMetric.Config(CATEGORY, "Other")))
                 .isNotEqualTo(new DefaultIntegerGauge(new IntegerGauge.Config(CATEGORY, NAME)));
     }
 
@@ -367,7 +367,7 @@ class DefaultSpeedometerMetricTest {
                 .withUnit(UNIT)
                 .withFormat(FORMAT)
                 .withHalfLife(Math.PI);
-        final SpeedometerMetric metric = new DefaultSpeedometerMetric(config);
+        final SpeedometerMetric metric = new PlatformSpeedometerMetric(config);
 
         // then
         assertThat(metric.toString()).contains(CATEGORY, NAME, DESCRIPTION, UNIT, FORMAT, FLOAT.toString(), "3.1415");

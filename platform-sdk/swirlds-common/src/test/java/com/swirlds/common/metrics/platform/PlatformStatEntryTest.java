@@ -46,7 +46,7 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class DefaultStatEntryTest {
+class PlatformStatEntryTest {
 
     private static final String CATEGORY = "CaTeGoRy";
     private static final String NAME = "NaMe";
@@ -77,7 +77,7 @@ class DefaultStatEntryTest {
                 .withInit(init)
                 .withReset(reset)
                 .withResetStatsStringSupplier(getAndReset);
-        final DefaultStatEntry statEntry = new DefaultStatEntry(config);
+        final PlatformStatEntry statEntry = new PlatformStatEntry(config);
 
         // then
         assertEquals(CATEGORY, statEntry.getCategory(), "The category was not set correctly in the constructor");
@@ -110,7 +110,7 @@ class DefaultStatEntryTest {
                 .withBuffered(buffered)
                 .withReset(reset)
                 .withHalfLife(metricsConfig.halfLife());
-        final StatEntry statEntry = new DefaultStatEntry(config);
+        final StatEntry statEntry = new PlatformStatEntry(config);
 
         // when
         statEntry.reset();
@@ -129,7 +129,7 @@ class DefaultStatEntryTest {
         final StatEntry.Config config = new StatEntry.Config(CATEGORY, NAME, Object.class, getter)
                 .withBuffered(buffered)
                 .withHalfLife(metricsConfig.halfLife());
-        final StatEntry statEntry = new DefaultStatEntry(config);
+        final StatEntry statEntry = new PlatformStatEntry(config);
 
         // when
         statEntry.reset();
@@ -144,7 +144,7 @@ class DefaultStatEntryTest {
         // given
         final Supplier<Object> getter = mock(Supplier.class);
         final StatEntry.Config config = new StatEntry.Config(CATEGORY, NAME, Object.class, getter);
-        final StatEntry statEntry = new DefaultStatEntry(config);
+        final StatEntry statEntry = new PlatformStatEntry(config);
 
         // when
         assertDoesNotThrow(statEntry::reset, "Calling reset() should have been a no-op, but was not.");
@@ -158,7 +158,7 @@ class DefaultStatEntryTest {
         final Supplier<Object> getter = mock(Supplier.class);
         final StatEntry.Config config =
                 new StatEntry.Config(CATEGORY, NAME, Object.class, getter).withBuffered(buffered);
-        final DefaultStatEntry statEntry = new DefaultStatEntry(config);
+        final PlatformStatEntry statEntry = new PlatformStatEntry(config);
 
         // when
         when(getter.get()).thenReturn(3 * Math.PI);
@@ -189,7 +189,7 @@ class DefaultStatEntryTest {
         // given
         final Supplier<Object> getter = mock(Supplier.class);
         final StatEntry.Config config = new StatEntry.Config(CATEGORY, NAME, Object.class, getter);
-        final DefaultStatEntry statEntry = new DefaultStatEntry(config);
+        final PlatformStatEntry statEntry = new PlatformStatEntry(config);
 
         // when
         when(getter.get()).thenReturn("Hello World");
@@ -208,7 +208,7 @@ class DefaultStatEntryTest {
         final Supplier<Object> getter = mock(Supplier.class);
         final StatEntry.Config config =
                 new StatEntry.Config(CATEGORY, NAME, Object.class, getter).withBuffered(buffered);
-        final StatEntry statEntry = new DefaultStatEntry(config);
+        final StatEntry statEntry = new PlatformStatEntry(config);
 
         // then
         assertThrows(
@@ -221,7 +221,7 @@ class DefaultStatEntryTest {
         // given
         final Supplier<Object> getter = mock(Supplier.class);
         final StatEntry.Config config = new StatEntry.Config(CATEGORY, NAME, Object.class, getter);
-        final StatEntry statEntry = new DefaultStatEntry(config);
+        final StatEntry statEntry = new PlatformStatEntry(config);
 
         // then
         assertThrows(
@@ -246,17 +246,17 @@ class DefaultStatEntryTest {
         // given
         final Supplier<Object> getter1 = mock(Supplier.class);
         final StatEntry.Config config1 = new StatEntry.Config(CATEGORY, NAME, Object.class, getter1);
-        final StatEntry statEntry1 = new DefaultStatEntry(config1);
+        final StatEntry statEntry1 = new PlatformStatEntry(config1);
         final Supplier<Object> getter2 = mock(Supplier.class);
         final StatEntry.Config config2 = new StatEntry.Config(CATEGORY, NAME, Object.class, getter2);
-        final StatEntry statEntry2 = new DefaultStatEntry(config2);
+        final StatEntry statEntry2 = new PlatformStatEntry(config2);
 
         // then
         assertThat(statEntry1)
                 .isEqualTo(statEntry2)
                 .hasSameHashCodeAs(statEntry2)
-                .isNotEqualTo(new DefaultStatEntry(new StatEntry.Config("Other", NAME, Object.class, getter1)))
-                .isNotEqualTo(new DefaultStatEntry(new StatEntry.Config(CATEGORY, "Other", Object.class, getter1)))
+                .isNotEqualTo(new PlatformStatEntry(new StatEntry.Config("Other", NAME, Object.class, getter1)))
+                .isNotEqualTo(new PlatformStatEntry(new StatEntry.Config(CATEGORY, "Other", Object.class, getter1)))
                 .isNotEqualTo(new DefaultIntegerGauge(new IntegerGauge.Config(CATEGORY, NAME)));
     }
 
@@ -269,7 +269,7 @@ class DefaultStatEntryTest {
                 .withDescription(DESCRIPTION)
                 .withUnit(UNIT)
                 .withFormat(FORMAT);
-        final StatEntry statEntry = new DefaultStatEntry(config);
+        final StatEntry statEntry = new PlatformStatEntry(config);
 
         // then
         assertThat(statEntry.toString()).contains(CATEGORY, NAME, DESCRIPTION, UNIT, FORMAT, STRING.toString());

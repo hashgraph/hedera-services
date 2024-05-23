@@ -38,7 +38,7 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class DefaultRunningAverageMetricTest {
+class PlatformRunningAverageMetricTest {
 
     private static final String CATEGORY = "CaTeGoRy";
     private static final String NAME = "NaMe";
@@ -61,7 +61,7 @@ class DefaultRunningAverageMetricTest {
                 .withUnit(UNIT)
                 .withFormat(FORMAT)
                 .withHalfLife(Math.PI);
-        final DefaultRunningAverageMetric metric = new DefaultRunningAverageMetric(config);
+        final PlatformRunningAverageMetric metric = new PlatformRunningAverageMetric(config);
 
         // then
         assertEquals(CATEGORY, metric.getCategory(), "The category was not set correctly");
@@ -84,7 +84,7 @@ class DefaultRunningAverageMetricTest {
         // given
         final FakeTime time = new FakeTime();
         final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME);
-        final RunningAverageMetric metric = new DefaultRunningAverageMetric(config, time);
+        final RunningAverageMetric metric = new PlatformRunningAverageMetric(config, time);
         recordValues(metric, time, 0, 1000, Math.E);
         time.set(Duration.ofSeconds(1000));
         assertEquals(Math.E, metric.get(), EPSILON, "Mean should be " + Math.E);
@@ -116,7 +116,7 @@ class DefaultRunningAverageMetricTest {
         // given
         final FakeTime time = new FakeTime();
         final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME);
-        final RunningAverageMetric metric = new DefaultRunningAverageMetric(config, time);
+        final RunningAverageMetric metric = new PlatformRunningAverageMetric(config, time);
 
         for (int i = 0; i < 1000; i++) {
             // when
@@ -135,7 +135,7 @@ class DefaultRunningAverageMetricTest {
         // given
         final FakeTime time = new FakeTime();
         final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME);
-        final RunningAverageMetric metric = new DefaultRunningAverageMetric(config, time);
+        final RunningAverageMetric metric = new PlatformRunningAverageMetric(config, time);
 
         // when
         recordValues(metric, time, 0, 1000, Math.PI);
@@ -156,7 +156,7 @@ class DefaultRunningAverageMetricTest {
         final FakeTime time = new FakeTime();
         final RunningAverageMetric.Config config =
                 new RunningAverageMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
-        final RunningAverageMetric metric = new DefaultRunningAverageMetric(config, time);
+        final RunningAverageMetric metric = new PlatformRunningAverageMetric(config, time);
 
         // when
         recordValues(metric, time, 0, 1000, Math.E);
@@ -177,7 +177,7 @@ class DefaultRunningAverageMetricTest {
         final FakeTime time = new FakeTime();
         final RunningAverageMetric.Config config =
                 new RunningAverageMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
-        final RunningAverageMetric metric = new DefaultRunningAverageMetric(config, time);
+        final RunningAverageMetric metric = new PlatformRunningAverageMetric(config, time);
 
         // when
         recordValues(metric, time, 0, 1000, Math.E);
@@ -203,7 +203,7 @@ class DefaultRunningAverageMetricTest {
         final FakeTime time = new FakeTime();
         final RunningAverageMetric.Config config =
                 new RunningAverageMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
-        final RunningAverageMetric metric = new DefaultRunningAverageMetric(config, time);
+        final RunningAverageMetric metric = new PlatformRunningAverageMetric(config, time);
 
         // when
         recordValues(metric, time, 0, 1000, Math.PI);
@@ -224,7 +224,7 @@ class DefaultRunningAverageMetricTest {
         final FakeTime time = new FakeTime();
         final RunningAverageMetric.Config config =
                 new RunningAverageMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
-        final RunningAverageMetric metric = new DefaultRunningAverageMetric(config, time);
+        final RunningAverageMetric metric = new PlatformRunningAverageMetric(config, time);
 
         // when
         recordValues(metric, time, 0, 1000, Math.PI);
@@ -249,7 +249,7 @@ class DefaultRunningAverageMetricTest {
         // given
         final FakeTime time = new FakeTime();
         final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME);
-        final DefaultRunningAverageMetric metric = new DefaultRunningAverageMetric(config, time);
+        final PlatformRunningAverageMetric metric = new PlatformRunningAverageMetric(config, time);
 
         // when
         recordValues(metric, time, 0, 1000, Math.PI);
@@ -277,7 +277,7 @@ class DefaultRunningAverageMetricTest {
     void testInvalidGets() {
         // given
         final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME);
-        final RunningAverageMetric metric = new DefaultRunningAverageMetric(config);
+        final RunningAverageMetric metric = new PlatformRunningAverageMetric(config);
 
         // then
         assertThrows(NullPointerException.class, () -> metric.get(null), "Calling get() with null should throw an IAE");
@@ -287,16 +287,16 @@ class DefaultRunningAverageMetricTest {
     void testEquals() {
         // given
         final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME);
-        final RunningAverageMetric metric1 = new DefaultRunningAverageMetric(config);
-        final RunningAverageMetric metric2 = new DefaultRunningAverageMetric(config);
+        final RunningAverageMetric metric1 = new PlatformRunningAverageMetric(config);
+        final RunningAverageMetric metric2 = new PlatformRunningAverageMetric(config);
         metric2.update(1000.0);
 
         // then
         assertThat(metric1)
                 .isEqualTo(metric2)
                 .hasSameHashCodeAs(metric2)
-                .isNotEqualTo(new DefaultRunningAverageMetric(new RunningAverageMetric.Config("Other", NAME)))
-                .isNotEqualTo(new DefaultRunningAverageMetric(new RunningAverageMetric.Config(CATEGORY, "Other")))
+                .isNotEqualTo(new PlatformRunningAverageMetric(new RunningAverageMetric.Config("Other", NAME)))
+                .isNotEqualTo(new PlatformRunningAverageMetric(new RunningAverageMetric.Config(CATEGORY, "Other")))
                 .isNotEqualTo(new DefaultIntegerGauge(new IntegerGauge.Config(CATEGORY, NAME)));
     }
 
@@ -308,7 +308,7 @@ class DefaultRunningAverageMetricTest {
                 .withUnit(UNIT)
                 .withFormat(FORMAT)
                 .withHalfLife(Math.PI);
-        final RunningAverageMetric metric = new DefaultRunningAverageMetric(config);
+        final RunningAverageMetric metric = new PlatformRunningAverageMetric(config);
 
         // then
         assertThat(metric.toString()).contains(CATEGORY, NAME, DESCRIPTION, UNIT, FORMAT, FLOAT.toString(), "3.1415");

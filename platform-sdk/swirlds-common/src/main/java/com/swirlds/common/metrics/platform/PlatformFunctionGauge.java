@@ -31,12 +31,12 @@ import java.util.function.Supplier;
 /**
  * Platform-implementation of {@link FunctionGauge}
  */
-public class DefaultFunctionGauge<T> extends AbstractMetric implements PlatformMetric, FunctionGauge<T> {
+public class PlatformFunctionGauge<T> extends AbstractMetric implements PlatformMetric, FunctionGauge<T> {
 
     private final DataType dataType;
     private final Supplier<T> supplier;
 
-    public DefaultFunctionGauge(@NonNull final FunctionGauge.Config<T> config) {
+    public PlatformFunctionGauge(@NonNull final FunctionGauge.Config<T> config) {
         super(config);
         this.dataType = MetricConfig.mapDataType(config.getType());
         this.supplier = config.getSupplier();

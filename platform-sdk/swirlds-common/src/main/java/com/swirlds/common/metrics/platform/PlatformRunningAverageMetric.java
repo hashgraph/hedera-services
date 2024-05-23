@@ -18,20 +18,21 @@ package com.swirlds.common.metrics.platform;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
-import com.swirlds.common.metrics.statistics.StatsSpeedometer;
+import com.swirlds.common.metrics.statistics.StatsRunningAverage;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Platform-implementation of {@link SpeedometerMetric}
+ * Platform-implementation of {@link RunningAverageMetric}
  */
-public class DefaultSpeedometerMetric extends AbstractDistributionMetric implements SpeedometerMetric {
+@SuppressWarnings("unused")
+public class PlatformRunningAverageMetric extends AbstractDistributionMetric implements RunningAverageMetric {
 
     @SuppressWarnings("removal")
-    private final StatsSpeedometer speedometer;
+    private final @NonNull StatsRunningAverage runningAverage;
 
-    public DefaultSpeedometerMetric(@NonNull final SpeedometerMetric.Config config) {
+    public PlatformRunningAverageMetric(@NonNull final RunningAverageMetric.Config config) {
         this(config, Time.getCurrent());
     }
 
@@ -39,9 +40,9 @@ public class DefaultSpeedometerMetric extends AbstractDistributionMetric impleme
      * This constructor should only be used for testing.
      */
     @SuppressWarnings("removal")
-    public DefaultSpeedometerMetric(final SpeedometerMetric.Config config, final Time time) {
+    public PlatformRunningAverageMetric(final RunningAverageMetric.Config config, final Time time) {
         super(config, config.getHalfLife());
-        this.speedometer = new StatsSpeedometer(halfLife, time);
+        this.runningAverage = new StatsRunningAverage(halfLife, time);
     }
 
     /**
@@ -51,7 +52,7 @@ public class DefaultSpeedometerMetric extends AbstractDistributionMetric impleme
     @SuppressWarnings("removal")
     @Override
     public StatsBuffered getStatsBuffered() {
-        return speedometer;
+        return runningAverage;
     }
 
     /**
@@ -60,15 +61,7 @@ public class DefaultSpeedometerMetric extends AbstractDistributionMetric impleme
     @SuppressWarnings("removal")
     @Override
     public void update(final double value) {
-        speedometer.update(value);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void cycle() {
-        update(1);
+        runningAverage.recordValue(value);
     }
 
     /**
@@ -77,7 +70,7 @@ public class DefaultSpeedometerMetric extends AbstractDistributionMetric impleme
     @SuppressWarnings("removal")
     @Override
     public double get() {
-        return speedometer.getCyclesPerSecond();
+        return runningAverage.getWeightedMean();
     }
 
     /**
