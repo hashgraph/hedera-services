@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.hcm.impl.tss.groth21;
 
+import com.swirlds.platform.hcm.api.pairings.Field;
+import com.swirlds.platform.hcm.api.pairings.FieldElement;
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
 import com.swirlds.platform.hcm.api.signaturescheme.PrivateKey;
 import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
@@ -23,6 +25,7 @@ import com.swirlds.platform.hcm.api.tss.TssCiphertext;
 import com.swirlds.platform.hcm.api.tss.TssPrivateKey;
 import com.swirlds.platform.hcm.api.tss.TssShareId;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 
@@ -44,7 +47,7 @@ public record Groth21Ciphertext<P extends PublicKey>(
     @NonNull
     @Override
     public TssPrivateKey<P> decryptPrivateKey(
-            @NonNull final PrivateKey ecdhPrivateKey, @NonNull final TssShareId shareId) {
+            @NonNull final PrivateKey elGamalPrivateKey, @NonNull final TssShareId shareId) {
 
         final List<GroupElement> shareIdCiphertexts = shareCiphertexts.get(shareId);
 
@@ -52,19 +55,29 @@ public record Groth21Ciphertext<P extends PublicKey>(
             throw new IllegalArgumentException("Mismatched chunk randomness count and share chunk count");
         }
 
-        //        for (j, c_j) in c.c2[receiver_index as usize].iter().enumerate() {
-        //            let anti_mask_j = c.c1[j].mul(G::ScalarField::zero() - sk); // g^(-r_j  * sk)
-        //            let m_j_commitment = c_j.add(anti_mask_j); // M_j = c2_j * g^(-r_j * sk) = g ^ m_j
-        //            let m_j = ElGamal::<G>::brute_force_decrypt(&m_j_commitment, cache).unwrap();
-        //            msg += G::ScalarField::from(256u64).pow([j as u64]) * m_j;
-        //        }
+        final FieldElement keyElement = elGamalPrivateKey.element();
+        final Field keyField = keyElement.getField();
+        final FieldElement zeroElement = keyField.zeroElement();
 
+        FieldElement output = zeroElement;
         for (int i = 0; i < shareIdCiphertexts.size(); i++) {
             final GroupElement chunkCiphertext = shareIdCiphertexts.get(i);
             final GroupElement chunkRandomness = this.chunkRandomness.get(i);
+
+            final GroupElement antiMask = chunkRandomness.power(zeroElement.subtract(keyElement));
+            final GroupElement commitment = chunkCiphertext.add(antiMask);
+            final FieldElement decryptedSecret = bruteForceDecrypt(commitment);
+
+            output = output.add(
+                    keyField.elementFromLong(256).power(BigInteger.valueOf(i)).multiply(decryptedSecret));
         }
 
-        throw new UnsupportedOperationException("Not implemented");
+        return new TssPrivateKey<>(new PrivateKey(output));
+    }
+
+    private FieldElement bruteForceDecrypt(@NonNull final GroupElement commitment) {
+        // TODO
+        return null;
     }
 
     /**

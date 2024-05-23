@@ -17,6 +17,7 @@
 package com.swirlds.platform.hcm.impl.pairings.bls12381;
 
 import com.swirlds.platform.hcm.api.pairings.CurveType;
+import com.swirlds.platform.hcm.api.pairings.Field;
 import com.swirlds.platform.hcm.api.pairings.FieldElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -25,6 +26,11 @@ import java.math.BigInteger;
  * Represents a field element in BLS12-381
  */
 public class Bls12381FieldElement implements FieldElement {
+
+    @Override
+    public Field getField() {
+        return Bls12381Field.getInstance();
+    }
 
     @NonNull
     @Override

@@ -17,6 +17,7 @@
 package com.swirlds.platform.hcm.impl.tss.groth21;
 
 import com.swirlds.platform.hcm.api.pairings.FieldElement;
+import com.swirlds.platform.hcm.api.pairings.Group;
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
 import com.swirlds.platform.hcm.api.tss.TssCommitment;
 import com.swirlds.platform.hcm.api.tss.TssShareId;
@@ -39,21 +40,17 @@ public record Groth21Commitment(@NonNull List<GroupElement> coefficientCommitmen
             throw new IllegalArgumentException("Coefficient commitments must have at least 2 elements");
         }
 
-        GroupElement product = null;
+        final Group group = coefficientCommitments.getFirst().getGroup();
+
+        GroupElement publicKey = group.oneElement();
         for (int i = 0; i < coefficientCommitments.size(); i++) {
             final GroupElement term = coefficientCommitments.get(i);
             final FieldElement exponentiatedShareId = shareId.id().power(BigInteger.valueOf(i));
 
-            final GroupElement power = term.power(exponentiatedShareId);
-
-            if (product == null) {
-                product = power;
-            } else {
-                product = product.multiply(power);
-            }
+            publicKey = publicKey.multiply(term.power(exponentiatedShareId));
         }
 
-        return product;
+        return publicKey;
     }
 
     /**

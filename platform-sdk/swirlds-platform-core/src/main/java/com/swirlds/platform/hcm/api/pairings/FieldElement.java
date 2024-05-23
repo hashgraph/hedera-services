@@ -21,9 +21,14 @@ import java.math.BigInteger;
 
 /**
  * An interface representing a generic field element
- *
  */
 public interface FieldElement extends ByteRepresentable<FieldElement>, UnderCurve {
+    /**
+     * Returns the field the element is in
+     *
+     * @return the field
+     */
+    Field getField();
 
     /**
      * Adds another field element to this one
