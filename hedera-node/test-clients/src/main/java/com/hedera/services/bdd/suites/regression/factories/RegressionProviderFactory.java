@@ -16,6 +16,10 @@
 
 package com.hedera.services.bdd.suites.regression.factories;
 
+import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT;
+import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -117,7 +121,11 @@ public class RegressionProviderFactory {
 
             return new BiasedDelegatingProvider()
                     /* --- <inventory> --- */
-                    .withInitialization(keyInventory.creationOps())
+                    .withInitialization(flattened(
+                            cryptoCreate(UNIQUE_PAYER_ACCOUNT)
+                                    .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
+                                    .withRecharging(),
+                            keyInventory.creationOps()))
                     /* ----- META ----- */
                     .withOp(new RandomRecord(spec.txns()), intPropOrElse("randomRecord.bias", 0, props))
                     .withOp(new RandomReceipt(spec.txns()), intPropOrElse("randomReceipt.bias", 0, props))

@@ -46,6 +46,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * The default implementation of {@link PlatformMetricsProvider}
+ * FUTURE: Follow our naming patterns and rename to PlatformMetricsProviderImpl
  */
 public class DefaultMetricsProvider implements PlatformMetricsProvider, Lifecycle {
 

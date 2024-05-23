@@ -220,13 +220,14 @@ public class EntityMapWarmer {
                 final PlatformTxnAccessor txnAccess;
                 final TransactionBody txnBody;
                 try {
-                    txnAccess = PlatformTxnAccessor.from(txn.getContents());
+                    txnAccess =
+                            PlatformTxnAccessor.from(txn.getApplicationPayload().toByteArray());
                     txnBody = txnAccess.getTxn();
                 } catch (InvalidProtocolBufferException e) {
                     log.error(
                             "Unable to parse transaction: {} \nErrant Txn: [{}]",
                             e.getMessage(),
-                            Hex.toHexString(txn.getContents()));
+                            Hex.toHexString(txn.getApplicationPayload().toByteArray()));
                     return;
                 }
 

@@ -17,19 +17,11 @@
 package com.swirlds.common.metrics.platform;
 
 import com.swirlds.common.metrics.PlatformMetric;
-import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.metrics.impl.DefaultDoubleAccumulator;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class PlatformDoubleAccumulator extends DefaultDoubleAccumulator implements PlatformMetric {
     public PlatformDoubleAccumulator(@NonNull Config config) {
         super(config);
-    }
-
-    @Nullable
-    @Override
-    public StatsBuffered getStatsBuffered() {
-        return null;
     }
 }

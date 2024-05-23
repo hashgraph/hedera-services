@@ -32,12 +32,15 @@ import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.pool.TransactionPool;
+import com.swirlds.platform.state.hasher.StateHasher;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
-import com.swirlds.platform.wiring.components.StateHasherWiring;
+import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
@@ -65,10 +68,11 @@ public class PlatformCoordinator {
     private final ComponentWiring<StateSignatureCollector, List<ReservedSignedState>> stateSignatureCollectorWiring;
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
     private final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring;
-    private final StateHasherWiring stateHasherWiring;
+    private final ComponentWiring<StateHasher, StateAndRound> stateHasherWiring;
     private final ComponentWiring<StaleEventDetector, List<RoutableData<StaleEventDetectorOutput>>>
             staleEventDetectorWiring;
     private final ComponentWiring<TransactionPool, Void> transactionPoolWiring;
+    private final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring;
 
     /**
      * Constructor
@@ -88,6 +92,7 @@ public class PlatformCoordinator {
      * @param stateHasherWiring                      the state hasher wiring
      * @param staleEventDetectorWiring               the stale event detector wiring
      * @param transactionPoolWiring                  the transaction pool wiring
+     * @param statusStateMachineWiring               the status state machine wiring
      */
     public PlatformCoordinator(
             @NonNull final ObjectCounter hashingObjectCounter,
@@ -104,11 +109,12 @@ public class PlatformCoordinator {
                             stateSignatureCollectorWiring,
             @NonNull final ConsensusRoundHandlerWiring consensusRoundHandlerWiring,
             @NonNull final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring,
-            @NonNull final StateHasherWiring stateHasherWiring,
+            @NonNull final ComponentWiring<StateHasher, StateAndRound> stateHasherWiring,
             @NonNull
                     final ComponentWiring<StaleEventDetector, List<RoutableData<StaleEventDetectorOutput>>>
                             staleEventDetectorWiring,
-            @NonNull final ComponentWiring<TransactionPool, Void> transactionPoolWiring) {
+            @NonNull final ComponentWiring<TransactionPool, Void> transactionPoolWiring,
+            @NonNull final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring) {
 
         this.hashingObjectCounter = Objects.requireNonNull(hashingObjectCounter);
         this.internalEventValidatorWiring = Objects.requireNonNull(internalEventValidatorWiring);
@@ -125,6 +131,7 @@ public class PlatformCoordinator {
         this.stateHasherWiring = Objects.requireNonNull(stateHasherWiring);
         this.staleEventDetectorWiring = Objects.requireNonNull(staleEventDetectorWiring);
         this.transactionPoolWiring = Objects.requireNonNull(transactionPoolWiring);
+        this.statusStateMachineWiring = Objects.requireNonNull(statusStateMachineWiring);
     }
 
     /**
@@ -163,6 +170,10 @@ public class PlatformCoordinator {
         // lines without understanding the implications of doing so. Consult the wiring diagram when deciding
         // whether to change the order of these lines.
 
+        // Phase 0: flush the status state machine.
+        // When reconnecting, this will force us to adopt a status that will halt event creation and gossip.
+        statusStateMachineWiring.flush();
+
         // Phase 1: squelch
         // Break cycles in the system. Flush squelched components just in case there is a task being executed when
         // squelch is activated.
@@ -181,7 +192,7 @@ public class PlatformCoordinator {
         // Phase 2: flush
         // All cycles have been broken via squelching, so now it's time to flush everything out of the system.
         flushIntakePipeline();
-        stateHasherWiring.flushRunnable().run();
+        stateHasherWiring.flush();
         stateSignatureCollectorWiring.flush();
         roundDurabilityBufferWiring.flush();
         consensusRoundHandlerWiring.flushRunnable().run();

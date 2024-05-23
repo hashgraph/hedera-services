@@ -18,7 +18,10 @@ package com.swirlds.common.metrics.noop.internal;
 
 import com.swirlds.common.metrics.PlatformMetric;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
+import com.swirlds.metrics.api.snapshot.Snapshot.SnapshotEntry;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 
 public interface NoOpPlatformMetric extends PlatformMetric {
 
@@ -26,5 +29,11 @@ public interface NoOpPlatformMetric extends PlatformMetric {
     @Override
     default StatsBuffered getStatsBuffered() {
         return NoOpPlatformStatsBuffered.getInstance();
+    }
+
+    @NonNull
+    @Override
+    default List<SnapshotEntry> takeSnapshot() {
+        return List.of();
     }
 }

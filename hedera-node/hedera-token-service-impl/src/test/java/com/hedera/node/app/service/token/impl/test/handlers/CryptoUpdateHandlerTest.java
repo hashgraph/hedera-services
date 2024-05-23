@@ -44,7 +44,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
@@ -59,12 +62,16 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
@@ -86,6 +93,7 @@ import java.util.function.LongSupplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -735,6 +743,44 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
                 .has(responseCode(ACCOUNT_DELETED));
     }
 
+    @Test
+    void testCalculateFeesHappyPath() {
+        FeeContext feeContext = mock(FeeContext.class);
+        FeeCalculator feeCalculator = mock(FeeCalculator.class);
+
+        TransactionBody cryptoUpdateTransaction = new CryptoUpdateBuilder()
+                .withPayer(id)
+                .withAutoRenewPeriod(account.autoRenewSeconds())
+                .withReceiverSigReq(account.receiverSigRequired())
+                .withDeclineReward(account.declineReward())
+                .withStakedNodeId(account.stakedNodeId())
+                .withStakedAccountId(
+                        account.stakedAccountId() == null
+                                ? 0L
+                                : account.stakedAccountId().accountNum())
+                .withExpiration(account.expirationSecond())
+                .withMaxAutoAssociations(account.maxAutoAssociations())
+                .withMemo("")
+                .withKey(account.key())
+                .withTarget(id)
+                .build();
+
+        when(feeContext.readableStore(ReadableAccountStore.class)).thenReturn(readableStore);
+        when(feeContext.body()).thenReturn(cryptoUpdateTransaction);
+        when(feeContext.configuration()).thenReturn(configuration);
+        when(feeContext.feeCalculator(any())).thenReturn(feeCalculator);
+        when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
+        when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
+        when(feeCalculator.calculate()).thenReturn(Fees.FREE);
+
+        subject.calculateFees(feeContext);
+
+        InOrder inOrder = inOrder(feeCalculator);
+        inOrder.verify(feeCalculator, times(1)).addBytesPerTransaction(212L);
+        inOrder.verify(feeCalculator, times(2)).addRamByteSeconds(0L);
+        inOrder.verify(feeCalculator, times(1)).calculate();
+    }
+
     /**
      * A builder for {@link TransactionBody} instances.
      */
@@ -832,7 +878,17 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
             return this;
         }
 
+        public CryptoUpdateHandlerTest.CryptoUpdateBuilder withStakedAccountId(final Long id) {
+            this.stakedAccountId = id;
+            return this;
+        }
+
         public CryptoUpdateHandlerTest.CryptoUpdateBuilder withStakedNodeId(final long id) {
+            this.stakeNodeId = id;
+            return this;
+        }
+
+        public CryptoUpdateHandlerTest.CryptoUpdateBuilder withStakedNodeId(final Long id) {
             this.stakeNodeId = id;
             return this;
         }
@@ -870,6 +926,11 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
 
         public CryptoUpdateBuilder withKey(Key key) {
             this.opKey = key;
+            return this;
+        }
+
+        public CryptoUpdateBuilder withPayer(AccountID payer) {
+            this.payer = payer;
             return this;
         }
     }

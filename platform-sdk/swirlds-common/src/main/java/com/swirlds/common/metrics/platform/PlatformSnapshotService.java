@@ -23,7 +23,8 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.metrics.impl.snapshot.Snapshot;
+import com.swirlds.metrics.api.snapshot.Snapshot;
+import com.swirlds.metrics.api.snapshot.SnapshotableMetric;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -194,7 +195,7 @@ public class PlatformSnapshotService implements Startable {
         final long start = time.nanoTime();
 
         final Map<String, Snapshot> globalSnapshots = globalMetrics.getAll().stream()
-                .map(AbstractPlatformMetric.class::cast)
+                .map(SnapshotableMetric.class::cast)
                 .map(Snapshot::of)
                 .collect(Collectors.toMap(snapshot -> calculateMetricKey(snapshot.metric()), Function.identity()));
 
@@ -206,7 +207,7 @@ public class PlatformSnapshotService implements Startable {
         for (final DefaultPlatformMetrics platformMetrics : platformMetricsList) {
             final List<Snapshot> platformSnapshots = platformMetrics.getAll().stream()
                     .map(metric -> globalSnapshots.getOrDefault(
-                            calculateMetricKey(metric), Snapshot.of((AbstractPlatformMetric) metric)))
+                            calculateMetricKey(metric), Snapshot.of((SnapshotableMetric) metric)))
                     .toList();
 
             logger.trace(() -> String.format(

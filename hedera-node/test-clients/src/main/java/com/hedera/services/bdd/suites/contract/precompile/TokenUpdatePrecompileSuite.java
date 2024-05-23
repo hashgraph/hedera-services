@@ -45,6 +45,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCh
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -58,11 +61,8 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -70,16 +70,12 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class TokenUpdatePrecompileSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(TokenUpdatePrecompileSuite.class);
-
+public class TokenUpdatePrecompileSuite {
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final long AUTO_RENEW_PERIOD = 8_000_000L;
     private static final String ACCOUNT = "account";
@@ -99,45 +95,12 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     private static final String ACCOUNT_TO_ASSOCIATE = "account3";
     private static final String ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
     private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
-    public static final String CUSTOM_NAME = "customName";
-    public static final String CUSTOM_SYMBOL = "Ω";
-    public static final String CUSTOM_MEMO = "Omega";
     private static final long ADMIN_KEY_TYPE = 1L;
     private static final long SUPPLY_KEY_TYPE = 16L;
     private static final KeyShape KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
 
-    public static void main(String... args) {
-        new TokenUpdatePrecompileSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return allOf(negativeCases(), positiveCases());
-    }
-
-    List<HapiSpec> negativeCases() {
-        return List.of(
-                updateTokenWithInvalidKeyValues(),
-                updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey(),
-                getTokenKeyForNonFungibleNegative());
-    }
-
-    List<HapiSpec> positiveCases() {
-        return List.of(tokenUpdateSingleFieldCases());
-    }
-
     @HapiTest
-    final HapiSpec updateTokenWithInvalidKeyValues() {
+    final Stream<DynamicTest> updateTokenWithInvalidKeyValues() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("updateTokenWithInvalidKeyValues")
                 .given(
@@ -186,7 +149,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey() {
+    final Stream<DynamicTest> updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey() {
         final AtomicReference<TokenID> nftToken = new AtomicReference<>();
         return defaultHapiSpec("updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey")
                 .given(
@@ -267,7 +230,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec getTokenKeyForNonFungibleNegative() {
+    final Stream<DynamicTest> getTokenKeyForNonFungibleNegative() {
         final AtomicReference<TokenID> nftToken = new AtomicReference<>();
         return defaultHapiSpec("getTokenKeyForNonFungibleNegative")
                 .given(
@@ -334,7 +297,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec tokenUpdateSingleFieldCases() {
+    final Stream<DynamicTest> tokenUpdateSingleFieldCases() {
         final var tokenInfoUpdateContract = "TokenInfoSingularUpdate";
         final var newTokenTreasury = "new treasury";
         final var oldName = "Old Name";

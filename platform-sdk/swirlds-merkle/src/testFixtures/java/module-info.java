@@ -7,6 +7,7 @@ open module com.swirlds.merkle.test.fixtures {
     exports com.swirlds.merkle.test.fixtures.map.pta;
 
     requires com.fasterxml.jackson.core;
+    requires com.hedera.pbj.runtime;
     requires com.swirlds.base;
     requires com.swirlds.fchashmap;
     requires com.swirlds.fcqueue;

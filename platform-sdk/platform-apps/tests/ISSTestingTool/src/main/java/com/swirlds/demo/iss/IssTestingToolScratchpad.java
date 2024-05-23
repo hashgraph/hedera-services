@@ -16,7 +16,7 @@
 
 package com.swirlds.demo.iss;
 
-import com.swirlds.common.scratchpad.ScratchpadType;
+import com.swirlds.platform.scratchpad.ScratchpadType;
 
 /**
  * Types of data stored in the scratch pad by the ISS Testing Tool.

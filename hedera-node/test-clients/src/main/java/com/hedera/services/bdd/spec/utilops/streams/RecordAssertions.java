@@ -22,8 +22,8 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 
-import com.hedera.services.bdd.junit.RecordStreamValidator;
 import com.hedera.services.bdd.junit.TestBase;
+import com.hedera.services.bdd.junit.support.RecordStreamValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import edu.umd.cs.findbugs.annotations.Nullable;
