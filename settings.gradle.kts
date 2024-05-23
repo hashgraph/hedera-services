@@ -117,6 +117,13 @@ include(":swirlds-benchmarks", "platform-sdk/swirlds-benchmarks")
 
 include(":swirlds-platform-test", "platform-sdk/swirlds-unit-tests/core/swirlds-platform-test")
 
+include(":swirlds-pairings-api", "platform-sdk/swirlds-pairings-api")
+
+include(":swirlds-tss", "platform-sdk/swirlds-tss")
+
+include(":swirlds-nativesupport", "platform-sdk/swirlds-nativesupport")
+include(":swirlds-pairings-bls12381-impl", "platform-sdk/swirlds-pairings-bls12381-impl")
+
 // Platform demo/test applications
 includeAllProjects("platform-sdk/platform-apps/demos")
 

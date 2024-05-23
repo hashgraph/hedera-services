@@ -1,0 +1,23 @@
+[package]
+name = "swirlds-pairings-bls12381-impl"
+version = "0.1.0"
+edition = "2021"
+include = ["src/main/rust/**"]
+
+[dependencies.subtle]
+version = "2.4.1"
+default-features = false
+
+[dependencies]
+jni = "0.20.0"
+bls12_381 = { version = "0.7.0" }
+ff = "0.12.0"
+group = "0.12.0"
+rand_chacha = "0.3.1"
+rand_core = "0.6.3"
+
+
+[lib]
+name = "swirlds_pairings_bls12381_impl"
+crate_type = ["cdylib"]
+path = "src/main/rust/lib.rs"

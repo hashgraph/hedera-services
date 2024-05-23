@@ -144,8 +144,10 @@ module com.swirlds.platform.core {
     requires transitive org.apache.logging.log4j;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
+    requires com.swirlds.tss;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.dataformat.yaml;
+    requires java.compiler;
     requires java.desktop;
     requires java.management;
     requires java.scripting;
@@ -155,7 +157,6 @@ module com.swirlds.platform.core {
     requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
-    requires java.compiler;
 
     provides ConfigurationExtension with
             PlatformConfigurationExtension;

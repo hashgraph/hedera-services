@@ -25,6 +25,7 @@ mainModuleInfo {
     annotationProcessor("com.swirlds.config.processor")
     annotationProcessor("com.google.auto.service.processor")
     runtimeOnly("com.swirlds.config.impl")
+    runtimeOnly("com.swirlds.pairings.bls12381.impl")
 }
 
 jmhModuleInfo {
