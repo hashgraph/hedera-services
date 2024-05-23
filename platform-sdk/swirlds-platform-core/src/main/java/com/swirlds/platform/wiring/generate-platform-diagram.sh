@@ -12,7 +12,6 @@ pcli diagram \
     -l 'TransactionPrehandler:futures:consensusRoundHandler' \
     -l 'gossip:get events:shadowgraph' \
     -l 'EventCreationManager:get transactions:transactionPool' \
-    -l 'RunningEventHasher:future hash:consensusRoundHandler' \
     -s 'eventWindowManager:event window:🌀' \
     -s 'heartbeat:heartbeat:❤️' \
     -s 'TransactionPrehandler:futures:🔮' \
