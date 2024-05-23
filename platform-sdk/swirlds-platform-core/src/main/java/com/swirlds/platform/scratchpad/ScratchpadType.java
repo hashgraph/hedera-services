@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi;
-
-import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.transaction.Query;
-import com.hedera.hapi.node.transaction.TransactionBody;
+package com.swirlds.platform.scratchpad;
 
 /**
- * Exception raised when mapping from {@link TransactionBody} or {@link Query} to {@link HederaFunctionality}
- * when there is no known mapping. This should NEVER happen and means there is a new functionality that is
- * not yet supported in the code.
+ * Defines a {@link Scratchpad} type. Implementations must be enums.
  */
-public class UnknownHederaFunctionality extends Exception {}
+public interface ScratchpadType {
+
+    /**
+     * Get the field ID for this scratchpad type. Must be unique within this type.
+     *
+     * @return the field ID
+     */
+    int getFieldId();
+}
