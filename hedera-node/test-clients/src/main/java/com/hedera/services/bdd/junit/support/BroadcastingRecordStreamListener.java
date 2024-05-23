@@ -77,7 +77,11 @@ public class BroadcastingRecordStreamListener extends FileAlterationListenerAdap
             retryCount++;
             try {
                 exposure.accept(f);
-                log.info("Provided validators with access to {} file {}", fileType, f.getAbsolutePath());
+                log.info(
+                        "Listener@{} gave validators access to {} file {}",
+                        System.identityHashCode(this),
+                        fileType,
+                        f.getAbsolutePath());
                 return;
             } catch (UncheckedIOException e) {
                 if (retryCount < NUM_RETRIES) {

@@ -19,6 +19,8 @@ package com.hedera.services.bdd.spec.verification.traceability;
 import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.guaranteedExtant;
 import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.spec.utilops.streams.RecordAssertions.triggerAndCloseAtLeastOneFileIfNotInterrupted;
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.util.stream.Collectors.joining;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.bdd.junit.support.RecordStreamAccess;
@@ -26,10 +28,13 @@ import com.hedera.services.bdd.junit.support.StreamDataListener;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -65,6 +70,10 @@ public class SidecarWatcher {
 
     private boolean hasSeenFirstExpectedSidecar = false;
 
+    private record ConstructionDetails(String creatingThread, String stackTrace) {}
+
+    private static final Queue<ConstructionDetails> CONSTRUCTION_DETAILS = new LinkedBlockingDeque<>();
+
     public SidecarWatcher(@NonNull final Path path) {
         this.unsubscribe = RECORD_STREAM_ACCESS.subscribe(guaranteedExtant(path), new StreamDataListener() {
             @Override
@@ -72,6 +81,15 @@ public class SidecarWatcher {
                 actualSidecars.add(sidecar);
             }
         });
+        CONSTRUCTION_DETAILS.add(
+                new ConstructionDetails(Thread.currentThread().getName(), stackTrace(new Exception())));
+    }
+
+    public static String stackTrace(Throwable t) {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PrintStream p = new PrintStream(bos, true, US_ASCII);
+        t.printStackTrace(p);
+        return bos.toString(US_ASCII);
     }
 
     /**
@@ -127,12 +145,14 @@ public class SidecarWatcher {
             }
         }
 
-        assertTrue(thereAreNoMismatchedSidecars(), getMismatchErrors());
+        final var allInstanceDetails = "\n\nCONSTRUCTED INSTANCES: "
+                + CONSTRUCTION_DETAILS.stream().map(Objects::toString).collect(joining("\n\n"));
+        assertTrue(thereAreNoMismatchedSidecars(), getMismatchErrors() + allInstanceDetails);
         assertTrue(
                 thereAreNoPendingSidecars(),
                 "There are some sidecars that have not been yet"
                         + " externalized in the sidecar files after all"
-                        + " specs: " + getPendingErrors());
+                        + " specs: " + getPendingErrors() + allInstanceDetails);
     }
 
     private void assertIncomingSidecar(final TransactionSidecarRecord actualSidecarRecord) {

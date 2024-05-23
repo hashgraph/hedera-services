@@ -33,6 +33,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.List;
+import java.util.SplittableRandom;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
@@ -49,20 +50,22 @@ import org.apache.logging.log4j.Logger;
 public class HederaNetwork {
     private static final Logger log = LogManager.getLogger(HederaNetwork.class);
 
-    private static final int FIRST_GRPC_PORT = 50211;
-    private static final int FIRST_GOSSIP_PORT = 60000;
-    private static final int FIRST_GOSSIP_TLS_PORT = 60001;
-    private static final int FIRST_PROMETHEUS_PORT = 10000;
+    private static final SplittableRandom RANDOM = new SplittableRandom();
+    private static final int FIRST_DYNAMIC_PORT = 49152;
+    private static final int LAST_DYNAMIC_PORT = 65535;
+
     private static final long FIRST_NODE_ACCOUNT_NUM = 3;
     private static final String SHARED_NETWORK_NAME = "LAUNCHER_SESSION_SCOPE";
     private static final String[] NODE_NAMES = new String[] {"Alice", "Bob", "Carol", "Dave"};
     private static final GrpcPinger GRPC_PINGER = new GrpcPinger();
     private static final PrometheusClient PROMETHEUS_CLIENT = new PrometheusClient();
 
-    private static int nextGrpcPort = FIRST_GRPC_PORT;
-    private static int nextGossipPort = FIRST_GOSSIP_PORT;
-    private static int nextGossipTlsPort = FIRST_GOSSIP_TLS_PORT;
-    private static int nextPrometheusPort = FIRST_PROMETHEUS_PORT;
+    // We initialize these randomly to reduce risk of port binding conflicts in CI runners
+    private static int nextGrpcPort;
+    private static int nextGossipPort;
+    private static int nextGossipTlsPort;
+    private static int nextPrometheusPort;
+    private static boolean nextPortsInitialized = false;
 
     public static final AtomicReference<HederaNetwork> SHARED_NETWORK = new AtomicReference<>();
 
@@ -120,17 +123,15 @@ public class HederaNetwork {
      * @return the network
      */
     private static synchronized HederaNetwork liveNetwork(@Nullable final String name, final int size) {
+        if (!nextPortsInitialized) {
+            initializeNextPortsForNetwork(size);
+        }
         final var network = new HederaNetwork(
                 name,
                 IntStream.range(0, size)
                         .<HederaNode>mapToObj(
                                 nodeId -> new SubProcessNode(metadataFor(nodeId, name), GRPC_PINGER, PROMETHEUS_CLIENT))
                         .toList());
-        // Reserve ports for the next network
-        nextGrpcPort += size * 2;
-        nextGossipPort += size * 2;
-        nextGossipTlsPort += size * 2;
-        nextPrometheusPort += size;
         Runtime.getRuntime().addShutdownHook(new Thread(network::terminate));
         return network;
     }
@@ -243,9 +244,9 @@ public class HederaNetwork {
                     .append(", ")
                     .append(node.getName())
                     .append(", 1, 127.0.0.1, ")
-                    .append(FIRST_GOSSIP_PORT + (node.getNodeId() * 2))
+                    .append(nextGossipPort + (node.getNodeId() * 2))
                     .append(", 127.0.0.1, ")
-                    .append(FIRST_GOSSIP_TLS_PORT + (node.getNodeId() * 2))
+                    .append(nextGossipTlsPort + (node.getNodeId() * 2))
                     .append(", ")
                     .append("0.0.")
                     .append(node.getAccountId().accountNumOrThrow())
@@ -267,5 +268,18 @@ public class HederaNetwork {
                 nextGossipTlsPort + nodeId * 2,
                 nextPrometheusPort + nodeId,
                 workingDirFor(nodeId, networkName));
+    }
+
+    private static void initializeNextPortsForNetwork(final int size) {
+        // We need 5 ports for each node in the network (gRPC, gRPC, gossip, gossip TLS, prometheus)
+        nextGrpcPort = randomPortAfter(FIRST_DYNAMIC_PORT, size * 5);
+        nextGossipPort = nextGrpcPort + 2 * size;
+        nextGossipTlsPort = nextGossipPort + 1;
+        nextPrometheusPort = nextGossipPort + 2 * size;
+        nextPortsInitialized = true;
+    }
+
+    private static int randomPortAfter(final int firstAvailable, final int numRequired) {
+        return RANDOM.nextInt(firstAvailable, LAST_DYNAMIC_PORT + 1 - numRequired);
     }
 }
