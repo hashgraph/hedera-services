@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_ST
 import static com.hedera.services.bdd.spec.utilops.streams.RecordAssertions.triggerAndCloseAtLeastOneFileIfNotInterrupted;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.services.bdd.junit.support.RecordStreamAccess;
 import com.hedera.services.bdd.junit.support.StreamDataListener;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
@@ -33,15 +34,27 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Predicate;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
+/**
+ * A class that simultaneously,
+ * <ol>
+ *     <li>Listens for the actual sidecars written at the given location via
+ *     the {@link RecordStreamAccess#RECORD_STREAM_ACCESS} utility; and,</li>
+ *     <li>Registers expected sidecars.</li>
+ * </ol>
+ * When a client has registered all its expectations with a {@link SidecarWatcher}
+ * (necessarily after submitting the transactions triggering those sidecars,
+ * since it must look up the consensus timestamp of the expected sidecars), it
+ * should call the {@link SidecarWatcher#assertExpectations(HapiSpec)} method.
+ *
+ * <p>This method throws if any actual sidecar matched the consensus timestamp
+ * of an expected sidecar, but did not match other fields; or if there are
+ * expected sidecars that were never seen in the actual sidecar stream.
+ */
 // string literals should not be duplicated
 @SuppressWarnings("java:S1192")
 public class SidecarWatcher {
-    private static final Logger log = LogManager.getLogger(SidecarWatcher.class);
-
     private final Runnable unsubscribe;
     private final Queue<ExpectedSidecar> expectedSidecars = new LinkedBlockingDeque<>();
     private final Queue<TransactionSidecarRecord> actualSidecars = new LinkedBlockingDeque<>();

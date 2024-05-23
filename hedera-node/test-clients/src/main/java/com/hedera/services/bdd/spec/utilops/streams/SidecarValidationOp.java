@@ -27,10 +27,11 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * A {@link UtilOp} that initializes a {@link SidecarWatcher} for the
- * {@link HapiSpec} watching for {@code node0}'s streams.
+ * given {@link HapiSpec} and registers it with
+ * {@link HapiSpec#setSidecarWatcher(SidecarWatcher)}.
  */
-public class WatchForSidecarsOp extends UtilOp {
-    private static final Logger log = LogManager.getLogger(WatchForSidecarsOp.class);
+public class SidecarValidationOp extends UtilOp {
+    private static final Logger log = LogManager.getLogger(SidecarValidationOp.class);
 
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {

@@ -85,7 +85,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.expectContractActionSidecarFor;
 import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.expectContractStateChangesSidecarFor;
-import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.watchForSidecars;
+import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.sidecarValidation;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmountAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
@@ -2058,7 +2058,7 @@ public class LeakyContractTestsSuite {
                         NONDETERMINISTIC_NONCE)
                 .preserving(lazyCreationProperty, contractsEvmVersionProperty, contractsEvmVersionDynamicProperty)
                 .given(
-                        watchForSidecars(),
+                        sidecarValidation(),
                         overridingThree(
                                 lazyCreationProperty,
                                 "true",

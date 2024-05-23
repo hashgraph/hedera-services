@@ -28,7 +28,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.StateChange;
 import com.hedera.services.bdd.spec.assertions.matchers.TransactionSidecarRecordMatcher;
-import com.hedera.services.bdd.spec.utilops.streams.WatchForSidecarsOp;
+import com.hedera.services.bdd.spec.utilops.streams.SidecarValidationOp;
 import com.hedera.services.bdd.spec.verification.traceability.ExpectedSidecar;
 import com.hedera.services.bdd.spec.verification.traceability.SidecarWatcher;
 import com.hedera.services.stream.proto.ContractAction;
@@ -69,8 +69,8 @@ public class SidecarVerbs {
      *
      * @return A {@link CustomSpecAssert} that will watch for sidecar files.
      */
-    public static WatchForSidecarsOp watchForSidecars() {
-        return new WatchForSidecarsOp();
+    public static SidecarValidationOp sidecarValidation() {
+        return new SidecarValidationOp();
     }
 
     /**

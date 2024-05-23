@@ -70,7 +70,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.expectContractActionSidecarFor;
-import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.watchForSidecars;
+import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.sidecarValidation;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
@@ -1038,7 +1038,7 @@ public class LeakyCryptoTestsSuite {
                         NONDETERMINISTIC_NONCE)
                 .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP)
                 .given(
-                        watchForSidecars(),
+                        sidecarValidation(),
                         overridingThree(
                                 CHAIN_ID_PROP,
                                 "298",
