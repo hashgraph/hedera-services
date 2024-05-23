@@ -10,11 +10,13 @@ contract HRC632Contract is HederaAccountService {
 
     function hbarAllowanceCall(address owner, address spender) external returns (int64 responseCode, int256 amount)
     {
-        return HederaAccountService.hbarAllowance(owner, spender);
+        (responseCode, amount) = HederaAccountService.hbarAllowance(owner, spender);
+        require(responseCode == HederaResponseCodes.SUCCESS, "Hbar allowance failed");
     }
 
     function hbarApproveCall(address owner, address spender, int256 amount) external returns (int64 responseCode)
     {
-        return HederaAccountService.hbarApprove(owner, spender, amount);
+        responseCode = HederaAccountService.hbarApprove(owner, spender, amount);
+        require(responseCode == HederaResponseCodes.SUCCESS, "Hbar approve failed");
     }
 }
