@@ -51,8 +51,8 @@ public class HederaNetwork {
     private static final Logger log = LogManager.getLogger(HederaNetwork.class);
 
     private static final SplittableRandom RANDOM = new SplittableRandom();
-    private static final int FIRST_DYNAMIC_PORT = 49152;
-    private static final int LAST_DYNAMIC_PORT = 65535;
+    private static final int FIRST_CANDIDATE_PORT = 30000;
+    private static final int LAST_CANDIDATE_PORT = 40000;
 
     private static final long FIRST_NODE_ACCOUNT_NUM = 3;
     private static final String SHARED_NETWORK_NAME = "LAUNCHER_SESSION_SCOPE";
@@ -272,7 +272,7 @@ public class HederaNetwork {
 
     private static void initializeNextPortsForNetwork(final int size) {
         // We need 5 ports for each node in the network (gRPC, gRPC, gossip, gossip TLS, prometheus)
-        nextGrpcPort = randomPortAfter(FIRST_DYNAMIC_PORT, size * 5);
+        nextGrpcPort = randomPortAfter(FIRST_CANDIDATE_PORT, size * 5);
         nextGossipPort = nextGrpcPort + 2 * size;
         nextGossipTlsPort = nextGossipPort + 1;
         nextPrometheusPort = nextGossipPort + 2 * size;
@@ -280,6 +280,6 @@ public class HederaNetwork {
     }
 
     private static int randomPortAfter(final int firstAvailable, final int numRequired) {
-        return RANDOM.nextInt(firstAvailable, LAST_DYNAMIC_PORT + 1 - numRequired);
+        return RANDOM.nextInt(firstAvailable, LAST_CANDIDATE_PORT + 1 - numRequired);
     }
 }

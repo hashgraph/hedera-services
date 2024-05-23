@@ -112,6 +112,7 @@ public enum RecordStreamAccess {
                             "Stopping record stream access monitor (locations were {})", validatingListeners.keySet());
                     validatingListeners.clear();
                 }
+                monitor.getObservers().forEach(monitor::removeObserver);
                 // Will throw ISE if already stopped, ignore that
                 monitor.stop();
             } catch (Exception ignore) {
