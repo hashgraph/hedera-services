@@ -16,10 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.test.state;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.hbarallowance.HbarAllowanceTranslator.HBAR_ALLOWANCE_PROXY;
+import static com.hedera.node.app.service.contract.impl.state.EvmFrameState.AccountBytecodeType.RETURN_PROXY_CONTRACT_BYTECODE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuHash;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -119,7 +123,18 @@ class ProxyEvmAccountTest {
     void returnsEvmCode() {
         final var code = pbjToTuweniBytes(SOME_PRETEND_CODE);
         given(hederaState.getCode(CONTRACT_ID)).willReturn(code);
-        assertEquals(CodeFactory.createCode(code, 0, false), subject.getEvmCode());
+        assertEquals(CodeFactory.createCode(code, 0, false), subject.getEvmCode(org.apache.tuweni.bytes.Bytes.EMPTY));
+        verify(hederaState, never()).setAccountBytecodeType(RETURN_PROXY_CONTRACT_BYTECODE);
+    }
+
+    @Test
+    void returnsEvmCodeButSetsState() {
+        final var code = pbjToTuweniBytes(SOME_PRETEND_CODE);
+        given(hederaState.getCode(CONTRACT_ID)).willReturn(code);
+        assertEquals(
+                CodeFactory.createCode(code, 0, false),
+                subject.getEvmCode(org.apache.tuweni.bytes.Bytes.wrap(HBAR_ALLOWANCE_PROXY.selector())));
+        verify(hederaState, times(1)).setAccountBytecodeType(RETURN_PROXY_CONTRACT_BYTECODE);
     }
 
     @Test

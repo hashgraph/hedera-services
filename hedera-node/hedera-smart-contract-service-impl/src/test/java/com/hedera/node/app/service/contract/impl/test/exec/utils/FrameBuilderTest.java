@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.co
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.selfDestructBeneficiariesFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.tinybarValuesFor;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_DATA;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CONTRACT_CODE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_COINBASE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
@@ -113,13 +114,13 @@ class FrameBuilderTest {
     private final FrameBuilder subject = new FrameBuilder();
 
     @Test
-    void constructsExpectedFrameForCallToExtantContractIncludingOptionalContextVaraiables() {
+    void constructsExpectedFrameForCallToExtantContractIncludingOptionalContextVariables() {
         final var transaction = wellKnownHapiCall();
         givenContractExists();
         final var recordBuilder = mock(ContractOperationRecordBuilder.class);
         given(worldUpdater.getHederaAccount(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(account);
         given(worldUpdater.getHederaAccount(CALLED_CONTRACT_ID)).willReturn(account);
-        given(account.getEvmCode()).willReturn(CONTRACT_CODE);
+        given(account.getEvmCode(Bytes.wrap(CALL_DATA.toByteArray()))).willReturn(CONTRACT_CODE);
         given(worldUpdater.updater()).willReturn(stackedUpdater);
         given(blocks.blockValuesOf(GAS_LIMIT)).willReturn(blockValues);
         given(blocks.blockHashOf(SOME_BLOCK_NO)).willReturn(Hash.EMPTY);
@@ -170,7 +171,7 @@ class FrameBuilderTest {
         given(blocks.blockHashOf(SOME_BLOCK_NO)).willReturn(Hash.EMPTY);
         given(worldUpdater.getHederaAccount(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(account);
         given(worldUpdater.getHederaAccount(CALLED_CONTRACT_ID)).willReturn(account);
-        given(account.getEvmCode()).willReturn(CONTRACT_CODE);
+        given(account.getEvmCode(Bytes.wrap(CALL_DATA.toByteArray()))).willReturn(CONTRACT_CODE);
         final var config = HederaTestConfigBuilder.create()
                 .withValue("ledger.fundingAccount", DEFAULT_COINBASE)
                 .withValue("contracts.sidecars", "CONTRACT_BYTECODE,CONTRACT_ACTION")
