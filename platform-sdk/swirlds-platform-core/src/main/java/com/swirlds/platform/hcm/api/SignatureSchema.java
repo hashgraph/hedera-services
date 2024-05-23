@@ -70,6 +70,7 @@ public enum SignatureSchema {
      * @param idByte the byte representation of the curve type
      * @return the curve type
      */
+    @NonNull
     public static SignatureSchema fromIdByte(final byte idByte) {
         if (idByte < 0 || idByte > 63) {
             throw new IllegalArgumentException("Invalid idByte for curveType: " + idByte);
@@ -102,6 +103,7 @@ public enum SignatureSchema {
      *
      * @return the field used for the curve
      */
+    @NonNull
     public Field getField() {
         return pairing.getField();
     }

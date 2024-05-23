@@ -24,6 +24,16 @@ import java.math.BigInteger;
  */
 public interface FieldElement extends ByteRepresentable {
     /**
+     * Check if the field of another element is the same as this element's field
+     *
+     * @param otherElement the other element
+     * @return true if the fields are the same, otherwise false
+     */
+    default boolean isSameField(@NonNull final FieldElement otherElement) {
+        return otherElement.getField().equals(getField());
+    }
+
+    /**
      * Returns the field the element is in
      *
      * @return the field

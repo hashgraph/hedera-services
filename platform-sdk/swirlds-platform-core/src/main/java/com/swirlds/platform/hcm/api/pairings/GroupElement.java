@@ -23,6 +23,26 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public interface GroupElement extends ByteRepresentable {
     /**
+     * Check if the group of another element is the same as this element's group
+     *
+     * @param otherElement the other element
+     * @return true if the groups are the same, otherwise false
+     */
+    default boolean isSameGroup(@NonNull final GroupElement otherElement) {
+        return otherElement.getGroup().equals(getGroup());
+    }
+
+    /**
+     * Check if the group of another element is the opposite of this element's group
+     *
+     * @param otherElement the other element
+     * @return true if the groups are the opposite, otherwise false
+     */
+    default boolean isOppositeGroup(@NonNull final GroupElement otherElement) {
+        return getGroup().getOppositeGroup().equals(otherElement.getGroup());
+    }
+
+    /**
      * Returns the group of the element
      *
      * @return the element's group
