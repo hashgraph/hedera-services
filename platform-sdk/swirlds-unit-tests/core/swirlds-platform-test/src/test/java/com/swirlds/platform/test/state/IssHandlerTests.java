@@ -30,6 +30,7 @@ import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
+import com.swirlds.platform.state.iss.internal.DefaultIssHandler;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
 import com.swirlds.platform.test.fixtures.SimpleScratchpad;
@@ -59,7 +60,7 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler =
-                new IssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.OTHER_ISS));
 
@@ -95,7 +96,7 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler =
-                new IssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.OTHER_ISS));
 
@@ -125,7 +126,7 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler =
-                new IssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.SELF_ISS));
 
@@ -157,7 +158,7 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler =
-                new IssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.SELF_ISS));
 
@@ -189,7 +190,7 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler =
-                new IssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.SELF_ISS));
 
@@ -227,7 +228,7 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler =
-                new IssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.CATASTROPHIC_ISS));
 
@@ -259,7 +260,7 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler =
-                new IssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.CATASTROPHIC_ISS));
 
@@ -297,7 +298,7 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler =
-                new IssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.CATASTROPHIC_ISS));
 
