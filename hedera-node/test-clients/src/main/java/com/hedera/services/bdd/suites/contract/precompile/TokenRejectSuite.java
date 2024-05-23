@@ -159,7 +159,9 @@ public class TokenRejectSuite extends HapiSuite {
                         // Try rejecting NON_FUNGIBLE_TOKEN_A with FIXED hBar custom fee
                         tokenReject(ACCOUNT, rejectingNFT(NON_FUNGIBLE_TOKEN_A, 1L)),
                         // Try rejecting FUNGIBLE_TOKEN_A with FIXED hBar custom fee
-                        tokenReject(ACCOUNT, rejectingToken(FUNGIBLE_TOKEN_A)),
+                        tokenReject(rejectingToken(FUNGIBLE_TOKEN_A))
+                                .payingWith(ACCOUNT)
+                                .signedBy(ACCOUNT),
                         // Try rejecting FUNGIBLE_TOKEN_B with FIXED hts custom fee
                         tokenReject(ACCOUNT, rejectingToken(FUNGIBLE_TOKEN_B)),
                         // Transaction fails because payer does not have hBars

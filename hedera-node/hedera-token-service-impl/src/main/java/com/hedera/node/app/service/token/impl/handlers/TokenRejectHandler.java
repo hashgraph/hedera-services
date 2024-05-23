@@ -186,6 +186,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         final var rejectingAccount = getIfUsableForAliasedId(
                 rejectingAccountID, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
 
+        // Process the rejections to prepare for the transfers and the removal of allowances
         final var processedRejections =
                 processRejectionsForTransferAndAllowancesRemoval(rejections, context, rejectingAccount);
         final var body = CryptoTransferTransactionBody.newBuilder()
@@ -199,19 +200,8 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
 
         // Update the token allowances
         if (hederaConfig.allowancesIsEnabled()) {
-            final var updatedAccount = rejectingAccount
-                    .copyBuilder()
-                    .tokenAllowances(processedRejections.updatedFungibleTokenAllowances)
-                    .build();
-            accountStore.put(updatedAccount);
-
-            // Update the NFT allowances
             final var nftStore = context.writableStore(WritableNftStore.class);
-            processedRejections.processedNFTs.forEach(nft -> {
-                if (nft.hasSpenderId()) {
-                    nftStore.put(nft.copyBuilder().spenderId((AccountID) null).build());
-                }
-            });
+            updateAllowancesInState(rejectingAccount, processedRejections, nftStore, accountStore);
         }
     }
 
@@ -354,6 +344,32 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         steps.add(changeNftOwners);
 
         return steps;
+    }
+
+    /**
+     * Updates the allowances in the state after the token transfers have been processed.
+     *
+     * @param rejectingAccount The Account rejecting its tokens.
+     * @param processedRejections The processed rejections containing updated fungible toke allowances, and processed NFTs.
+     * @param nftStore The store to access writable NFT information.
+     * @param accountStore The store to access writable account information.
+     */
+    private void updateAllowancesInState(
+            @NonNull final Account rejectingAccount,
+            @NonNull final ProcessedRejections processedRejections,
+            @NonNull final WritableNftStore nftStore,
+            @NonNull final WritableAccountStore accountStore) {
+        final var updatedAccount = rejectingAccount
+                .copyBuilder()
+                .tokenAllowances(processedRejections.updatedFungibleTokenAllowances)
+                .build();
+        accountStore.put(updatedAccount);
+
+        processedRejections.processedNFTs.forEach(nft -> {
+            if (nft.hasSpenderId()) {
+                nftStore.put(nft.copyBuilder().spenderId((AccountID) null).build());
+            }
+        });
     }
 
     @NonNull
