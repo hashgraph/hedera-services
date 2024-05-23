@@ -16,15 +16,15 @@
 
 package com.swirlds.platform.hcm.impl.internal;
 
+import com.swirlds.platform.hcm.api.SignatureSchema;
 import com.swirlds.platform.hcm.api.pairings.BilinearPairing;
 import com.swirlds.platform.hcm.api.pairings.Group;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.function.Function;
 
 /**
  * An enum to clarify which group public keys and signatures are in, for a given
- * {@link com.swirlds.platform.hcm.api.pairings.SignatureSchema SignatureSchema}
+ * {@link SignatureSchema SignatureSchema}
  */
 public enum GroupAssignment {
     /**

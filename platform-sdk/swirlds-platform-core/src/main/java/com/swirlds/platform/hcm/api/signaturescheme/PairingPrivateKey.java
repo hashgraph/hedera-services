@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.hcm.api.signaturescheme;
 
+import com.swirlds.platform.hcm.api.SignatureSchema;
 import com.swirlds.platform.hcm.api.pairings.ByteRepresentable;
 import com.swirlds.platform.hcm.api.pairings.Field;
 import com.swirlds.platform.hcm.api.pairings.FieldElement;
 import com.swirlds.platform.hcm.api.pairings.Group;
-import com.swirlds.platform.hcm.api.pairings.SignatureSchema;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Random;
