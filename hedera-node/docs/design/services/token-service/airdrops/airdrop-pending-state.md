@@ -43,43 +43,98 @@ It would extend `ReadableAirdropStoreImpl` that implements the following interfa
 
 ```java
 public interface ReadableAirdropStore {
-	PendingAirdropValue getFungibleAirdropAmount(@NonNull final PendingAirdropId airdropId);
+   /**
+    * Returns the {@link PendingAirdropValue} with the given ID. If no such airdrop exists,
+    * returns {@code null}
+    *
+    * @param tokenAirdropId - the id of the airdrop
+    * @return the airdrop value in case of fungible token
+    */
+   @Nullable
+   PendingAirdropValue get(@NonNull final PendingAirdropId tokenAirdropId);
+   
+   /**
+    * Returns the number of airdrops in the state.
+    * @return the number of airdrops in the state.
+    */
 	long sizeOfState();
+
+   /**
+    * Warms the system by preloading an airdrop into memory
+    *
+    * <p>The default implementation is empty because preloading data into memory is only used for some implementations.
+    *
+    * @param {@link PendingAirdropId} the airdrop id
+    */
 	void warm(@NonNull final PendingAirdropId airdropId);
-    List<PendingAirdropId> getPendingAirdropIdsBySender(final AccountId sender);
 }
 ```
 
-The `ReadableAirdropStoreImpl` would keep an instance of `ReadableKVState<PendingAirdropId, PendingAirdropValue> airdropsState`.
+The `ReadableAirdropStoreImpl` would keep an instance of `ReadableKVState<PendingAirdropId, PendingAirdropValue> readableAirdropState`.
 
-An additional method `getPendingAirdropIdsBySender` would be added to the `ReadableAirdropStore` to get all `PendingAirdropIds` for a specific sender. This would be done via filtering all `PendingAirdropIds` kept in state by the `sender` that is passed as a parameter.
-
-This would be useful for traversing all sender's airdrops when their account expires or gets deleted. Then we should iterate over all of their pending airdrops and cancel them.
-
-The `WritableAirdropStore` would add additional methods for operating over the airdrops state, so it would have the following methods:
+The `WritableAirdropStore` would have the following methods:
 
 ```java
 public class WritableAirdropStore {
 
-    void put(@NonNull final PendingAirdropId airdropId, @NonNull final PendingAirdropValue airdropValue) {
-        // invoked by the `TokenAirdropTransaction`
-    }
+   /**
+    * Persists a new {@link PendingAirdropValue} into the state
+    *
+    * @param airdropId - the airdropId to be persisted
+    * @param airdropValue - the airdropValue to be persisted
+    */
+    void put(@NonNull final PendingAirdropId airdropId, @NonNull final PendingAirdropValue airdropValue) {}
 
-    void remove(@NonNull PendingAirdropId airdropId) {
-        // invoked by the `TokenCancelAirdrop`
-    }
+   /**
+    * Removes a {@link PendingAirdropId} from the state
+    *
+    * @param airdropId the {@code PendingAirdropId} to be removed
+    */
+    void remove(@NonNull PendingAirdropId airdropId) {}
+
+   /**
+    * Returns the {@link PendingAirdropValue} with the given airdrop id.
+    * If no such airdrop exists, returns {@code Optional.empty()}
+    *
+    * @param airdropId - the id of the airdrop, which value should be retrieved
+    * @return the fungible airdrop value, or {@code Optional.empty()} if no such
+    * airdrop exists
+    */
+    PendingAirdropValue getForModify(@NonNull final PendingAirdropId airdropId) {}
+
+   /**
+    * Gets the original value associated with the given airdrop before any modifications were made to
+    * it. The returned value will be {@code null} if the airdrop does not exist.
+    *
+    * @param pendingAirdropId The pendingAirdropId of the airdrop.
+    * @return The original value, or null if there is no such airdrop in the state
+    */
+   @Nullable
+   public PendingAirdropValue getOriginalValue(@NonNull final PendingAirdropId pendingAirdropId) {}
+   
+   /**
+    * @return the set of airdrops modified in existing state
+    */
+    Set<PendingAirdropId> modifiedAirdrops() {}
 }
 ```
 
+The `WritableAirdropStoreImpl` would keep an instance of `WritableKVState<PendingAirdropId, PendingAirdropValue> airdropState`.
+
+An additional method `modifiedAirdrops` would be added to the `WritableAirdropStore` to get all `PendingAirdropIds`.
+
+This would be useful for traversing airdrops when their sender or the token related to them, expires or gets deleted. Then we should iterate over all of the related pending airdrops and cancel them.
+
 ### Operations
 
-1. Fetching airdrop values from the collections. This would be applicable only for fungible airdrops (for both `TokenAirdrop` and `TokenClaimAirdrop` transactions).
-   For a specific `PendingAirdropId`, we would get the corresponding `PendingAirdropValue`.
-2. Handling a new airdrop in state. We can have several cases:
+1. Fetching airdrop values from state for reading or modification. This would be applicable only for fungible airdrops (for both `TokenAirdrop` and `TokenClaimAirdrop` transactions).
+   For a specific `PendingAirdropId`, we would get the corresponding `PendingAirdropValue`. For NFT airdrops we don't have a corresponding `PendingAirdropValue` and the information for them would be encapsulated in the `PendingAirdropId` itself.
+2. Fetching all PendingAirdropIds, so that we can iterate over them and perform business logic (e.g. in case of sender or token expirations)
+3. Handling a new airdrop in state. We can have several cases:
    - Only a single fungible or non-fungible airdrop for a specific token defined - we just put a new entry in the map
-   - An airdrop for an existing `PendingAirdropId` is already defined - we should replace the existing `PendingAirdropValue` for this `PendingAirdropId` with the aggregated new fungible amount
-3. Handling an airdrop `cancel` in state - we remove the `PendingAirdropId` key for the airdrop we want to cancel
-4. Handling an airdrop `claim` in state - we remove the `PendingAirdropId` key for the airdrop after we claim it and create a synthetic crypto transfer for it inside the `TokenClaimAirdropHandler`
+   - An airdrop for an existing `PendingAirdropId` is already defined - we should get the existing `PendingAirdropValue` for this `PendingAirdropId` and modify it with the aggregated new fungible amount
+4. Handling an airdrop `cancel` in state - we remove the `PendingAirdropId` key for the airdrop we want to cancel
+5. Handling an airdrop `claim` in state - we remove the `PendingAirdropId` key for the airdrop we want to claim
 
 ## Acceptance tests
 
