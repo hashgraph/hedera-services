@@ -126,7 +126,9 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
      * Get the byte array representing the value of the hash.
      *
      * @return the hash value
+     * @deprecated in order to make hash immutable, this method should be removed
      */
+    @Deprecated(forRemoval = true)
     public @NonNull byte[] getValue() {
         return value;
     }
