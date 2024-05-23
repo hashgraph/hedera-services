@@ -26,7 +26,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *         e(pk, H(m)) = e([sk]g1, H(m)) = e(g1, H(m))^(sk) = e(g1, [sk]H(m)) = e(g1, σ).
  * </p>
  */
-public interface PairingResult extends ByteRepresentable<PairingResult>, UnderCurve {
+public interface PairingResult extends ByteRepresentable, UnderCurve {
 
     /**
      * Checks both pairings are equals in the mathematical sense

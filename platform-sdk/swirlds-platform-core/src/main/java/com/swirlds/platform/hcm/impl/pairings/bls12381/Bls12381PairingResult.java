@@ -19,35 +19,26 @@ package com.swirlds.platform.hcm.impl.pairings.bls12381;
 import com.swirlds.platform.hcm.api.pairings.CurveType;
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
 import com.swirlds.platform.hcm.api.pairings.PairingResult;
+import com.swirlds.platform.hcm.api.pairings.UnderCurve;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public class Bls12381PairingResult implements PairingResult {
+public class Bls12381PairingResult implements UnderCurve, PairingResult {
     public Bls12381PairingResult(GroupElement aggregatedSignature, GroupElement g1) {
         aggregatedSignature.checkSameCurveType(g1);
         aggregatedSignature.checkSameCurveType(this);
     }
 
-    @Override
-    public PairingResult fromBytes(byte[] bytes) {
-        return null;
-    }
-
-    @Override
-    public boolean isEquals(@NonNull PairingResult other) {
+    public boolean isEquals(final @NonNull PairingResult other) {
         return false;
     }
 
     @Override
-    public byte[] toBytes() {
+    public @NonNull byte[] toBytes() {
         return new byte[0];
     }
 
     @Override
-    public boolean isValid() {
-        return false;
-    }
-
-    @Override
+    @NonNull
     public CurveType curveType() {
         return CurveType.BLS12_381;
     }

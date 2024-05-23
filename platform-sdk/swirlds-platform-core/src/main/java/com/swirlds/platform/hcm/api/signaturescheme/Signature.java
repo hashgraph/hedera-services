@@ -16,25 +16,23 @@
 
 package com.swirlds.platform.hcm.api.signaturescheme;
 
-import com.swirlds.platform.hcm.impl.internal.SignatureSchema;
+import com.swirlds.platform.hcm.api.pairings.ByteRepresentable;
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
+import com.swirlds.platform.hcm.impl.internal.SignatureSchema;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A signature that has been produced by a {@link PrivateKey}.
  *
  */
-public record Signature(GroupElement element) {
-    public static final int MIN = 0;
-    public static final char TYPE = 's';
-
+public record Signature(GroupElement element) implements ByteRepresentable {
     /**
      * Deserialize a signature from a byte array.
      *
      * @param bytes the serialized signature, with the curve type being represented by the first byte
      * @return the deserialized signature
      */
-    static Signature deserialize(final byte[] bytes) {
+    public static Signature fromBytes(final byte[] bytes) {
         return SignatureSchema.deserializeSignature(bytes);
     }
 
@@ -56,7 +54,8 @@ public record Signature(GroupElement element) {
      *
      * @return the serialized signature
      */
-    public byte[] serialize() {
-        return SignatureSchema.getBytes(TYPE, element().toBytes());
+    @NonNull
+    public byte[] toBytes() {
+        return element().toBytes();
     }
 }

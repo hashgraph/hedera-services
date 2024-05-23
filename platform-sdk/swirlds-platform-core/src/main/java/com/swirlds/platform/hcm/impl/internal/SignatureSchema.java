@@ -21,55 +21,61 @@ import com.swirlds.platform.hcm.api.pairings.*;
 import com.swirlds.platform.hcm.api.signaturescheme.PrivateKey;
 import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
 import com.swirlds.platform.hcm.api.signaturescheme.Signature;
-
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.function.Supplier;
 
 /**
  * Internal class implementing the logic for Signature Schema
  */
 public class SignatureSchema {
 
+    private static final int RANDOM_SEED = 32;
     private final BilinearPairing pairing;
-    private final Supplier<Group> signatureGroupSupplier;
-    private final Supplier<Group> publicKeyGroupSupplier;
+    private final GroupAssignment groupAssignment;
 
-    private SignatureSchema(BilinearPairing pairing) {
+    private SignatureSchema(@NonNull final BilinearPairing pairing, @NonNull final GroupAssignment groupAssignment) {
         this.pairing = pairing;
-        this.publicKeyGroupSupplier = pairing::getGroup2;//receive this with an enum and make the decission based on thatsa
-        this.signatureGroupSupplier = pairing::getGroup1;
+        this.groupAssignment = groupAssignment;
     }
 
-    public static SignatureSchema forPairing(byte type) {
-        return new SignatureSchema(CurveTypeMapping.getPairing(CurveType.fromIdByte(type)));
+    @NonNull
+    public static SignatureSchema forPairing(final byte type) {
+        return forPairing(CurveType.fromIdByte(type));
     }
 
-    public static SignatureSchema forPairing(CurveType type) {
-        return new SignatureSchema(CurveTypeMapping.getPairing(type));
+    @NonNull
+    public static SignatureSchema forPairing(@NonNull final CurveType type) {
+        CurveTypeMapping mapping = CurveTypeMapping.getPairing(type);
+        return new SignatureSchema(mapping.pairing, mapping.assignment);
     }
 
+    @NonNull
     private Group signatureGroup() {
-        return signatureGroupSupplier.get();
+        return groupAssignment.getSignatureGroupFor(pairing);
     }
 
+    @NonNull
     private Group publicKeyGroup() {
-        return publicKeyGroupSupplier.get();
+        return groupAssignment.getPublicKeyGroupFor(pairing);
     }
 
     // Secret key and public key
     // A secret key is a randomly chosen number between “1” and “q -1” (q is the order of “Zr”)
+    @NonNull
+    public Pair<PrivateKey, PublicKey> createKeyPair(@NonNull final SecureRandom random) {
+        FieldElement sk = pairing.getField().randomElement(random.generateSeed(RANDOM_SEED));
+        return Pair.of(new PrivateKey(sk), createPublicKey(sk));
+    }
+
     // To generate the corresponding public key (when using “G₁” for public keys), we need to calculate
     // “pk = [sk]g1”, where “g1” is the selected generator of “G₁”.
     // In other words, “sk” is the number of times that “g1” is added to itself.
     // This calculation yields the public key, “pk”, which can be shared with others for verification of digital
     // signatures.
-    public Pair<PrivateKey, PublicKey> createKeyPair() {
-        FieldElement sk = pairing.getField().randomElement();
-        return Pair.of(new PrivateKey(sk), createPublicKey(sk));
-    }
-
-    public PublicKey createPublicKey(FieldElement sk1) {
-        return new PublicKey(publicKeyGroupSupplier.get().getGenerator().power(sk1));
+    @NonNull
+    public PublicKey createPublicKey(@NonNull final FieldElement sk) {
+        return new PublicKey(publicKeyGroup().getGenerator().power(sk));
     }
 
     // Signing:
@@ -80,10 +86,9 @@ public class SignatureSchema {
     // point by the private key.
     // Sign the messages
     // Hash the message to a point in signatureField
-
-    public Signature sign(byte[] message, PrivateKey privateKey) {
-
-        GroupElement h = signatureGroupSupplier.get().elementFromHash(message);
+    @NonNull
+    public Signature sign(@NonNull final byte[] message, @NonNull final PrivateKey privateKey) {
+        GroupElement h = signatureGroup().elementFromHash(message);
         return new Signature(h.power(privateKey.element()));
     }
 
@@ -105,7 +110,8 @@ public class SignatureSchema {
     // message, and their signatures need to be efficiently verified.
     // pkagg: aggregate public key
     // σagg: aggregate signature
-    public Pair<PublicKey, Signature> aggregate(Pair<PublicKey, Signature>... aggregateElements) {
+    @NonNull
+    public Pair<PublicKey, Signature> aggregate(@NonNull final Pair<PublicKey, Signature>... aggregateElements) {
         GroupElement aggregatedSignature = Arrays.stream(aggregateElements)
                 .skip(1)
                 .map(Pair::value)
@@ -128,102 +134,46 @@ public class SignatureSchema {
     // between pk and the hash point “H(m)”.
     // The properties of pairings can be used to confirm this relationship. Specifically, we can calculate that:
     // e(pk, H(m)) = e([sk]g1, H(m)) = e(g1, H(m))^(sk) = e(g1, [sk]H(m)) = e(g1, σ).
-    public boolean verifySignature(byte[] message, PublicKey publicKey, Signature signature) {
-        GroupElement hash = signatureGroupSupplier.get().elementFromHash(message);
+    public boolean verifySignature(
+            @NonNull final byte[] message, @NonNull final PublicKey publicKey, @NonNull final Signature signature) {
+        GroupElement hash = signatureGroup().elementFromHash(message);
         // Verify the signature using pairings
-        PairingResult lhs = pairing.pairingBetween(signature.element(), publicKeyGroupSupplier.get().getGenerator());
+        // TODO: It might be important in which order we send the elements in the method. And given that we can decide
+        // which group to use
+        // we need to add some logic to identify where to put each parameter
+        PairingResult lhs =
+                pairing.pairingBetween(signature.element(), publicKeyGroup().getGenerator());
         PairingResult rhs = pairing.pairingBetween(hash, publicKey.element());
 
         return lhs.isEquals(rhs);
     }
 
-    public static byte[] getBytes(char type, byte[] objectBytes) {
-        byte[] newByteArray = new byte[objectBytes.length];
-        newByteArray[0] = combineEncodedValues(encodeType(type), objectBytes[0]);
-        System.arraycopy(objectBytes, 1, newByteArray, 1, objectBytes.length);
-        return newByteArray;
-    }
-
-    public static Signature deserializeSignature(byte[] bytes) {
+    @NonNull
+    public static Signature deserializeSignature(@NonNull final byte[] bytes) {
         if (bytes == null || bytes.length == 0) {
             throw new IllegalArgumentException("Bytes cannot be null or empty");
         }
-        if (bytes.length < Signature.MIN) {
-            throw new IllegalArgumentException("it is not a valid serialized form of signature");
-        }
-        if (decodeType(bytes[0]) != Signature.TYPE) {
-            throw new IllegalArgumentException("it is not a valid serialized form of signature");
-        }
-        byte curveType = decodeCurveType(bytes[0]);
-        return new Signature(SignatureSchema.forPairing(curveType).signatureGroup().elementFromBytes(bytes));
+        return new Signature(
+                SignatureSchema.forPairing(bytes[0]).signatureGroup().elementFromBytes(bytes));
     }
 
-    public static PrivateKey deserializePrivateKey(byte[] bytes) {
+    @NonNull
+    public static PrivateKey deserializePrivateKey(@NonNull final byte[] bytes) {
         if (bytes == null || bytes.length == 0) {
             throw new IllegalArgumentException("Bytes cannot be null or empty");
         }
-        if (bytes.length < PrivateKey.MIN) {
-            throw new IllegalArgumentException("it is not a valid serialized form of PrivateKey");
-        }
-        if (decodeType(bytes[0]) != PrivateKey.TYPE) {
-            throw new IllegalArgumentException("it is not a valid serialized form of PrivateKey");
-        }
-        byte curveType = decodeCurveType(bytes[0]);
 
-        return new PrivateKey(SignatureSchema.forPairing(curveType).pairing.getField().elementFromBytes(bytes));
+        return new PrivateKey(
+                SignatureSchema.forPairing(bytes[0]).pairing.getField().elementFromBytes(bytes));
     }
 
-    public static PublicKey deserializePublicKey(byte[] bytes) {
+    @NonNull
+    public static PublicKey deserializePublicKey(@NonNull final byte[] bytes) {
         if (bytes == null || bytes.length == 0) {
             throw new IllegalArgumentException("Bytes cannot be null or empty");
         }
-        if (bytes.length < PublicKey.MIN) {
-            throw new IllegalArgumentException("it is not a valid serialized form of PublicKey");
-        }
-        if (decodeType(bytes[0]) != PublicKey.TYPE) {
-            throw new IllegalArgumentException("it is not a valid serialized form of PublicKey");
-        }
-        byte curveType = decodeCurveType(bytes[0]);
 
-        return new PublicKey(SignatureSchema.forPairing(curveType).publicKeyGroup().elementFromBytes(bytes));
-    }
-
-    // Decoding the character from the upper 2 bits
-    private static char decodeType(byte encodedValue) {
-        byte charBits = (byte) ((encodedValue >> 6) & 0b11);
-        return switch (charBits) {
-            case 0b00 -> Signature.TYPE;
-            case 0b01 -> PublicKey.TYPE;
-            case 0b10 -> PrivateKey.TYPE;
-            default -> throw new IllegalArgumentException("Invalid Type encoding");
-        };
-    }
-
-    // Decoding the curve type from the lower 6 bits
-    public static byte decodeCurveType(byte encodedValue) {
-        return (byte) (encodedValue & 0b00111111);
-    }
-
-    // Encoding the character
-    private static byte encodeType(char c) {
-        return switch (c) {
-            case Signature.TYPE -> 0b00;
-            case PublicKey.TYPE -> 0b01;
-            case PrivateKey.TYPE -> 0b10;
-            default -> throw new IllegalArgumentException("Invalid Type encoding");
-        };
-    }
-
-    // Encoding the curve type (assuming the curve type is an integer from 0 to 63)
-    private static byte encodeCurveType(byte curveType) {
-        if (curveType < 0 || curveType > 63) {
-            throw new IllegalArgumentException("Curve type must be between 0 and 63");
-        }
-        return (byte) (curveType & 0b00111111); // Ensure only the lower 6 bits are used
-    }
-
-    // Combining both encoded values into a single byte
-    private static byte combineEncodedValues(byte charEncoded, byte curveTypeEncoded) {
-        return (byte) ((charEncoded << 6) | curveTypeEncoded);
+        return new PublicKey(
+                SignatureSchema.forPairing(bytes[0]).publicKeyGroup().elementFromBytes(bytes));
     }
 }

@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.hcm.impl.tss.groth21;
 
-import com.swirlds.platform.hcm.api.tss.TssCommitment;
-import com.swirlds.platform.hcm.api.tss.TssShareId;
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
 import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
+import com.swirlds.platform.hcm.api.tss.TssCommitment;
+import com.swirlds.platform.hcm.api.tss.TssShareId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 

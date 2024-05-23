@@ -34,9 +34,10 @@ public class Bls12381BilinearPairing implements BilinearPairing {
      */
     private Bls12381BilinearPairing() {}
 
+    @NonNull
     @Override
-    public PairingResult pairingBetween(GroupElement aggregatedSignature, GroupElement g1) {
-        return new Bls12381PairingResult(aggregatedSignature, g1);
+    public PairingResult pairingBetween(@NonNull GroupElement g1Element, @NonNull GroupElement g2Element) {
+        return new Bls12381PairingResult(g1Element, g2Element);
     }
 
     @NonNull
@@ -54,6 +55,6 @@ public class Bls12381BilinearPairing implements BilinearPairing {
     @NonNull
     @Override
     public Group getGroup2() {
-        return new Bls12381Group();
+        return new Bls12381Group2();
     }
 }

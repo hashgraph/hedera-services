@@ -24,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * An element in G1 group used in BLS12-381
  */
-public class Bls12381GroupElement implements GroupElement {
+public class Bls12381Group2Element implements GroupElement {
 
     @NonNull
     @Override

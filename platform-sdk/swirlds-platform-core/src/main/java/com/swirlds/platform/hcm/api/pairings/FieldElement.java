@@ -23,7 +23,7 @@ import java.math.BigInteger;
  * An interface representing a generic field element
  *
  */
-public interface FieldElement extends ByteRepresentable<FieldElement>, UnderCurve {
+public interface FieldElement extends ByteRepresentable, UnderCurve {
 
     /**
      * Adds another field element to this one

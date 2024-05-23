@@ -16,14 +16,14 @@
 
 package com.swirlds.platform.hcm.impl.tss.groth21;
 
+import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
+import com.swirlds.platform.hcm.api.signaturescheme.Signature;
 import com.swirlds.platform.hcm.api.tss.Tss;
 import com.swirlds.platform.hcm.api.tss.TssMessage;
 import com.swirlds.platform.hcm.api.tss.TssPrivateKey;
 import com.swirlds.platform.hcm.api.tss.TssPrivateShare;
 import com.swirlds.platform.hcm.api.tss.TssPublicShare;
 import com.swirlds.platform.hcm.api.tss.TssShareClaim;
-import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
-import com.swirlds.platform.hcm.api.signaturescheme.Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;

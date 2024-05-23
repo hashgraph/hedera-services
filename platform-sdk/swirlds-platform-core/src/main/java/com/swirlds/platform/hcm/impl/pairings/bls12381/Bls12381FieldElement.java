@@ -57,21 +57,13 @@ public class Bls12381FieldElement implements FieldElement {
     }
 
     @Override
-    public FieldElement fromBytes(byte[] bytes) {
-        return null;
-    }
-
-    @Override
+    @NonNull
     public byte[] toBytes() {
         return new byte[0];
     }
 
     @Override
-    public boolean isValid() {
-        return false;
-    }
-
-    @Override
+    @NonNull
     public CurveType curveType() {
         return CurveType.BLS12_381;
     }

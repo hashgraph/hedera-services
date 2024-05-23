@@ -16,14 +16,15 @@
 
 package com.swirlds.platform.hcm.api.pairings;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 /**
- * An interface representing objects that can be serialized into a byte array, deserialized from a byte array,
- * and validated for correctness.
+ * An interface representing objects that can be serialized into a byte array.
  *
  * <H2>Usage Example:</H2>
  * <pre>
  * {@code
- * public class MyObject implements ByteRepresentable<MyObject> {
+ * public class MyObject implements ByteRepresentable {
  *     private int value;
  *
  *     public MyObject(int value) {
@@ -31,40 +32,26 @@ package com.swirlds.platform.hcm.api.pairings;
  *     }
  *
  *     {@literal @}Override
- *     public byte[] toByteArray() {
+ *     public byte[] toBytes() {
  *         // Convert the value to a byte array
  *         ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES);
  *         buffer.putInt(value);
  *         return buffer.array();
  *     }
- *
- *     {@literal @}Override
- *     public MyObject fromBytes(byte[] bytes) {
- *         // Convert the byte array back to an integer
- *         ByteBuffer buffer = ByteBuffer.wrap(bytes);
- *         int value = buffer.getInt();
- *         return new MyObject(value);
- *     }
  * }
  *
  * MyObject obj = new MyObject(123);
- * byte[] bytes = obj.toByteArray();
- * MyObject newObj = obj.fromBytes(bytes);
+ * byte[] bytes = obj.toBytes();
  * }
  * </pre>
  */
-public interface ByteRepresentable<T> {
+public interface ByteRepresentable {
 
-    T fromBytes(byte[] bytes);
     /**
      * Serializes the field element to bytes
      *
      * @return the byte array representing the element
      */
+    @NonNull
     byte[] toBytes();
-
-    /**
-     * TODO: MOVED BUT NEED TO CHECK ITS USEFULNESS
-     */
-    boolean isValid();
 }

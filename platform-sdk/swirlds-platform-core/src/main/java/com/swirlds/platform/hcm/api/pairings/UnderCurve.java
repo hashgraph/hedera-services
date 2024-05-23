@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.hcm.api.pairings;
 
-import com.swirlds.platform.hcm.impl.internal.SignatureSchema;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -59,7 +58,7 @@ public interface UnderCurve {
      * @param serializedOther the serialized version other element to check
      */
     default void checkSameCurveType(byte[] serializedOther) {
-        if (curveTypeId() != SignatureSchema.decodeCurveType(serializedOther[0])) {
+        if (curveTypeId() != serializedOther[0]) {
             throw new IllegalStateException("Not implementing the same curve type");
         }
     }

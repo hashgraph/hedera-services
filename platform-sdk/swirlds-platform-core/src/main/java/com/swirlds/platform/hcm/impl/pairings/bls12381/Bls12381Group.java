@@ -26,7 +26,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class Bls12381Group implements Group {
 
-    //group1 and group2 for BLS12381 need to call different types of native methods so we need to split these into different classes
+    // group1 and group2 for BLS12381 need to call different types of native methods so we need to split these into
+    // different classes
 
     @NonNull
     @Override

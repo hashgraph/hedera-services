@@ -16,40 +16,18 @@
 
 package com.swirlds.platform.hcm.api.signaturescheme;
 
-import com.swirlds.platform.hcm.impl.internal.SignatureSchema;
+import com.swirlds.platform.hcm.api.pairings.ByteRepresentable;
 import com.swirlds.platform.hcm.api.pairings.CurveType;
 import com.swirlds.platform.hcm.api.pairings.FieldElement;
+import com.swirlds.platform.hcm.impl.internal.SignatureSchema;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.security.SecureRandom;
 
 /**
  * A private key that can be used to sign a message.
  *
  */
-public record PrivateKey(FieldElement element) {
-
-    public static final char TYPE = 'p';
-    public static final int MIN = 0; // Review value... does it exist?
-
-    /**
-     * Deserialize a private key from a byte array.
-     *
-     * @param bytes the serialized private key
-     * @return the deserialized private key
-     */
-    static PrivateKey deserialize(final byte[] bytes) {
-        return SignatureSchema.deserializePrivateKey(bytes);
-    }
-
-    /**
-     * Serialize the private key to a byte array.
-     * <p>
-     * The first byte of the serialized private key must represent the curve type.
-     *
-     * @return the serialized private key
-     */
-    public byte[] serialize() {
-        return SignatureSchema.getBytes(TYPE, element().toBytes());
-    }
+public record PrivateKey(FieldElement element) implements ByteRepresentable {
 
     /**
      * Sign a message using the private key.
@@ -62,11 +40,47 @@ public record PrivateKey(FieldElement element) {
         return SignatureSchema.forPairing(element.curveType()).sign(message, this);
     }
 
-    static PrivateKey create(CurveType type) {
-        return SignatureSchema.forPairing(type).createKeyPair().key();
+    /**
+     * Creates a private key out of the CurveType and a random
+     * @param type The implementing curve type
+     * @param random The environment secureRandom to use
+     * @return a privateKey for that CurveType
+     */
+    @NonNull
+    static PrivateKey create(@NonNull final CurveType type, @NonNull final SecureRandom random) {
+        return SignatureSchema.forPairing(type).createKeyPair(random).key();
     }
 
+    /**
+     * Creates a PublicKey for this PrivateKey instance
+     * @return a new publicKey associated to this PrivateKey
+     */
+    @NonNull
     public PublicKey createPublicKey() {
         return SignatureSchema.forPairing(element.curveType()).createPublicKey(element);
+    }
+
+    /**
+     * Deserialize a private key from a byte array.
+     *
+     * @param bytes the serialized private key
+     * @return the deserialized private key
+     */
+    @NonNull
+    public PrivateKey fromBytes(final byte[] bytes) {
+        return SignatureSchema.deserializePrivateKey(bytes);
+    }
+
+    /**
+     * Serialize the private key to a byte array.
+     * <p>
+     * The first byte of the serialized private key must represent the curve type.
+     *
+     * @return the serialized private key
+     */
+    @Override
+    @NonNull
+    public byte[] toBytes() {
+        return element.toBytes();
     }
 }

@@ -61,7 +61,7 @@ public interface Group extends UnderCurve {
      * @return the new group element
      */
     @NonNull
-    default GroupElement randomElement(){ //remvoe this method
+    default GroupElement randomElement() { // remvoe this method
         return randomElement(new byte[32]);
     }
 

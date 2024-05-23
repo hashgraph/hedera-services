@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.hcm.impl.tss.groth21;
 
+import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
 import com.swirlds.platform.hcm.api.tss.TssCiphertext;
 import com.swirlds.platform.hcm.api.tss.TssPrivateKey;
 import com.swirlds.platform.hcm.api.tss.TssShareId;
-import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
 import com.swirlds.platform.hcm.ecdh.EcdhPrivateKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 

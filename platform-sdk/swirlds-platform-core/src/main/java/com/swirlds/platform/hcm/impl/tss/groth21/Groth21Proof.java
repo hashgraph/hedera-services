@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.hcm.impl.tss.groth21;
 
+import com.swirlds.platform.hcm.api.pairings.GroupElement;
+import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
 import com.swirlds.platform.hcm.api.tss.TssCiphertext;
 import com.swirlds.platform.hcm.api.tss.TssCommitment;
 import com.swirlds.platform.hcm.api.tss.TssProof;
-import com.swirlds.platform.hcm.api.pairings.GroupElement;
-import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

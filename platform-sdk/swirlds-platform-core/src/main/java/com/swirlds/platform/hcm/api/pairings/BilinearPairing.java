@@ -46,7 +46,7 @@ public interface BilinearPairing {
      * @param type the type of the curve (?)
      */
     static BilinearPairing using(@NonNull final CurveType type) {
-        return CurveTypeMapping.getPairing(type);
+        return CurveTypeMapping.getPairing(type).getPairing();
     }
 
     /**
@@ -54,7 +54,7 @@ public interface BilinearPairing {
      * @param type the type of the curve (?)
      */
     static BilinearPairing using(final byte type) {
-        return CurveTypeMapping.getPairing(CurveType.fromIdByte(type));
+        return using(CurveType.fromIdByte(type));
     }
 
     /**
@@ -81,5 +81,11 @@ public interface BilinearPairing {
     @NonNull
     Group getGroup2();
 
-    PairingResult pairingBetween(GroupElement aggregatedSignature, GroupElement g1);
+    /**
+     * Returns a pairing between elements from G₁ and G₂
+     *
+     * @return the PairingResult
+     */
+    @NonNull
+    PairingResult pairingBetween(@NonNull GroupElement g1Element, @NonNull GroupElement g2Element);
 }

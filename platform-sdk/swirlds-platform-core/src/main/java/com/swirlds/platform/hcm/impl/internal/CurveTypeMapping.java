@@ -26,16 +26,22 @@ import com.swirlds.platform.hcm.impl.pairings.bls12381.Bls12381BilinearPairing;
 // this class enables only exposing package .api and hide all others.
 // maybe there is a better alternative that is worth analyzing using SPI.
 public enum CurveTypeMapping {
-    BLS_12_381(Bls12381BilinearPairing.getInstance()),
-    ALT_BN_128(null);
+    BLS_12_381(Bls12381BilinearPairing.getInstance(), GroupAssignment.GROUP1_FOR_SIGNING),
+    ALT_BN_128(null, null);
 
     final BilinearPairing pairing;
+    final GroupAssignment assignment;
 
-    CurveTypeMapping(BilinearPairing pairing) {
+    CurveTypeMapping(final BilinearPairing pairing, final GroupAssignment assignment) {
         this.pairing = pairing;
+        this.assignment = assignment;
     }
 
-    public static BilinearPairing getPairing(CurveType curveType) {
-        return CurveTypeMapping.valueOf(curveType.name()).pairing;
+    public static CurveTypeMapping getPairing(CurveType curveType) {
+        return CurveTypeMapping.valueOf(curveType.name());
+    }
+
+    public BilinearPairing getPairing() {
+        return pairing;
     }
 }

@@ -16,15 +16,15 @@
 
 package com.swirlds.platform.hcm.api.signaturescheme;
 
-import com.swirlds.platform.hcm.impl.internal.SignatureSchema;
+import com.swirlds.platform.hcm.api.pairings.ByteRepresentable;
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
+import com.swirlds.platform.hcm.impl.internal.SignatureSchema;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A public key that can be used to verify a signature.
  */
-public record PublicKey(GroupElement element) {
-    public static final char TYPE = 'P';
-    public static final int MIN = 0;
+public record PublicKey(GroupElement element) implements ByteRepresentable {
 
     /**
      * Deserialize a public key from a byte array.
@@ -32,7 +32,7 @@ public record PublicKey(GroupElement element) {
      * @param bytes the serialized public key, with the curve type being represented by the first byte
      * @return the deserialized public key
      */
-    static PublicKey deserialize(final byte[] bytes) {
+    static PublicKey fromBytes(final byte[] bytes) {
         return SignatureSchema.deserializePublicKey(bytes);
     }
 
@@ -43,7 +43,8 @@ public record PublicKey(GroupElement element) {
      *
      * @return the serialized public key
      */
-    public byte[] serialize() {
-        return SignatureSchema.getBytes(TYPE, element().toBytes());
+    @NonNull
+    public byte[] toBytes() {
+        return element().toBytes();
     }
 }
