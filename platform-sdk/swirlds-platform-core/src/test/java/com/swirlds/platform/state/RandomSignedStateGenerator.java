@@ -439,6 +439,7 @@ public class RandomSignedStateGenerator {
      * @param pcesRound true if this state was generated during a PCES round
      * @return this object
      */
+    @NonNull
     public RandomSignedStateGenerator setPcesRound(final boolean pcesRound) {
         this.pcesRound = pcesRound;
         return this;
