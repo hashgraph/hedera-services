@@ -51,14 +51,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class DeleteTokenPrecompileV1SecurityModelSuite extends HapiSuite {
 
@@ -82,11 +83,11 @@ public class DeleteTokenPrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(deleteFungibleTokenWithNegativeCases(), deleteNftTokenWithNegativeCases());
     }
 
-    final HapiSpec deleteFungibleTokenWithNegativeCases() {
+    final Stream<DynamicTest> deleteFungibleTokenWithNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var tokenAlreadyDeletedTxn = "tokenAlreadyDeletedTxn";
 
@@ -146,7 +147,7 @@ public class DeleteTokenPrecompileV1SecurityModelSuite extends HapiSuite {
                                                 htsPrecompileResult().withStatus(TOKEN_WAS_DELETED)))));
     }
 
-    final HapiSpec deleteNftTokenWithNegativeCases() {
+    final Stream<DynamicTest> deleteNftTokenWithNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var notAnAdminTxn = "notAnAdminTxn";
 

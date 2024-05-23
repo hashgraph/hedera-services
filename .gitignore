@@ -1047,7 +1047,6 @@ platform-sdk/sdk/metricsDoc.tsv
 **/swirlds-tmp
 swirlds-platform-core/data/**
 hedera-node/cli-clients/testFile
-hedera-node/hedera-mono-service/src/test/resources/balance*/**
 hedera-node/hedera-mono-service/temp/**
 hedera-node/hedera-mono-service/swirlds-sst-tmp/**
 hedera-node/data/

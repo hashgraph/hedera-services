@@ -661,9 +661,16 @@ class VirtualPipelineTests {
             // Every 11th copy should be flushed
             copy.setEstimatedSize(config.copyFlushThreshold() / 10 - 1);
         }
-        for (DummyVirtualRoot copy : copies) {
-            copy.release();
-        }
+        // Release all copies to make them mergeable / flushable. Note that when the first copy is
+        // released, a thread race between this thread and the pipeline thread starts. It may
+        // happen that the pipeline will check if a copy should be flushed before it's released,
+        // which would result in less than expected number of flushed copies. To avoid that,
+        // pause the pipeline until all copies are released
+        afterCopy.getPipeline().pausePipelineAndExecute("releaseAll", () -> {
+            for (DummyVirtualRoot copy : copies) {
+                copy.release();
+            }
+        });
         afterCopy.release();
         afterCopy.waitUntilFlushed();
         int flushedCount = 0;

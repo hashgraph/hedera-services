@@ -53,7 +53,6 @@ import org.apache.logging.log4j.Logger;
  * </ul>
  */
 abstract class AbstractInOrderLinker implements InOrderLinker {
-    private static final Logger logger = LogManager.getLogger(AbstractInOrderLinker.class);
 
     /**
      * The initial capacity of the {@link #parentDescriptorMap} and {@link #parentHashMap}
@@ -97,6 +96,12 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
      * @param platformContext the platform context
      */
     public AbstractInOrderLinker(@NonNull final PlatformContext platformContext) {
+        // We use a non-static logger here so that we can scope the logger to the concrete
+        // implementation of this class, not to the abstract class. Once instantiated, a
+        // linker has the same life span as a node, so it is not inefficient to
+        // have a non-static logger.
+        final Logger logger = LogManager.getLogger(this.getClass());
+
         this.missingParentLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
         this.generationMismatchLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
         this.birthRoundMismatchLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
@@ -263,6 +268,7 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
 
     /**
      * This method is called when this data structure stops tracking an event because it has become ancient.
+     *
      * @param event the event that has become ancient
      */
     protected void eventHasBecomeAncient(@NonNull final EventImpl event) {

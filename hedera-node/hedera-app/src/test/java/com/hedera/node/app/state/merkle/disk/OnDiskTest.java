@@ -84,10 +84,14 @@ class OnDiskTest extends MerkleTestBase {
                 DigestType.SHA_384,
                 (short) 1,
                 new OnDiskKeySerializer<>(
-                        onDiskKeySerializerClassId(SERVICE_NAME, ACCOUNT_STATE_KEY), AccountID.PROTOBUF),
+                        onDiskKeySerializerClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                        onDiskKeyClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                        AccountID.PROTOBUF),
                 (short) 1,
                 new OnDiskValueSerializer<>(
-                        onDiskValueSerializerClassId(SERVICE_NAME, ACCOUNT_STATE_KEY), Account.PROTOBUF));
+                        onDiskValueSerializerClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                        onDiskValueClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                        Account.PROTOBUF));
         // Force all hashes to disk, to make sure we're going through all the
         // serialization paths we can
         tableConfig.hashesRamToDiskThreshold(0);
