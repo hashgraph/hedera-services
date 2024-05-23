@@ -21,9 +21,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * This class represents the result of the pairing operation between two elements.
  *
- * <p>A signature is considered valid only if the pairing between “g1” and the signature “σ” is equal to the pairing between pk and the hash point “H(m)”.
+ * <p>A signature is considered valid only if the pairing between “g1” and the signature “σ” is equal to the pairing
+ * between pk and the hash point “H(m)”.
  * The properties of pairings can be used to confirm this relationship. Specifically, we can calculate that:
- *         e(pk, H(m)) = e([sk]g1, H(m)) = e(g1, H(m))^(sk) = e(g1, [sk]H(m)) = e(g1, σ).
+ * e(pk, H(m)) = e([sk]g1, H(m)) = e(g1, H(m))^(sk) = e(g1, [sk]H(m)) = e(g1, σ).
  * </p>
  */
 public interface PairingResult extends ByteRepresentable, UnderCurve {

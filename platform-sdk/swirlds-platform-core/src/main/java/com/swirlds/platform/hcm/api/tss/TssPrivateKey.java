@@ -35,7 +35,7 @@ public record TssPrivateKey<P extends PublicKey>(@NonNull PrivateKey privateKey)
      * @return the signature
      */
     @NonNull
-    Signature sign(@NonNull TssShareId shareId, @NonNull byte[] message) {
+    Signature sign(@NonNull final TssShareId shareId, @NonNull final byte[] message) {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

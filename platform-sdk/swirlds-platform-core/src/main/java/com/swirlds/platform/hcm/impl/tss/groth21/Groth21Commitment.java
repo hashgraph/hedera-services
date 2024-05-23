@@ -26,7 +26,8 @@ import java.util.List;
 /**
  * A TSS commitment, as utilized by the Groth21 scheme.
  *
- * @param coefficientCommitments TODO: what group are these elements in? Is it correct for getTerm to return a public key?
+ * @param coefficientCommitments TODO: what group are these elements in? Is it correct for getTerm to return a public
+ *                              key?
  */
 public record Groth21Commitment<P extends PublicKey>(@NonNull List<GroupElement> coefficientCommitments)
         implements TssCommitment<P> {

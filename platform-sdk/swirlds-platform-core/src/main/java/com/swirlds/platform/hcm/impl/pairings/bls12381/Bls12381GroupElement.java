@@ -28,25 +28,25 @@ public class Bls12381GroupElement implements GroupElement {
 
     @NonNull
     @Override
-    public GroupElement power(@NonNull FieldElement exponent) {
+    public GroupElement power(@NonNull final FieldElement exponent) {
         return null;
     }
 
     @NonNull
     @Override
-    public GroupElement multiply(@NonNull GroupElement other) {
+    public GroupElement multiply(@NonNull final GroupElement other) {
         return null;
     }
 
     @NonNull
     @Override
-    public GroupElement add(@NonNull GroupElement other) {
+    public GroupElement add(@NonNull final GroupElement other) {
         return null;
     }
 
     @NonNull
     @Override
-    public GroupElement divide(@NonNull GroupElement other) {
+    public GroupElement divide(@NonNull final GroupElement other) {
         return null;
     }
 

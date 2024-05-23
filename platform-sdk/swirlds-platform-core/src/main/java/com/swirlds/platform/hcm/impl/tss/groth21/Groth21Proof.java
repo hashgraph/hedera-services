@@ -26,12 +26,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * A TSS proof, as utilized by the Groth21 scheme.
  *
- * @param f     TODO: which groups are these in?
+ * @param f   TODO: which groups are these in?
  * @param a
  * @param y
  * @param z_r
  * @param z_a
- * TODO: removed properties and types for compilation
  */
 public record Groth21Proof<P extends PublicKey>(
         @NonNull GroupElement f,

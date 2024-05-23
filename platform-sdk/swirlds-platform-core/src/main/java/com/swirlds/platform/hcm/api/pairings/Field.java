@@ -22,7 +22,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Represents a finite field used in the Boneh-Lynn-Shacham (BLS) cryptographic scheme.
  * <p>A finite field, often denoted as 𝔽q, where (q) is a prime power, is a field with a finite number of elements.</p>
  *
- * <p>This is a factory interface, responsible for creating {@link FieldElement} which are scalars belonging to the filed represented by this instance.
+ * <p>This is a factory interface, responsible for creating {@link FieldElement} which are scalars belonging to the
+ * field represented by this instance.
  * </p>
  *
  * @see FieldElement

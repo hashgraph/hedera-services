@@ -25,7 +25,6 @@ import java.security.SecureRandom;
 
 /**
  * A private key that can be used to sign a message.
- *
  */
 public record PrivateKey(FieldElement element) implements ByteRepresentable {
 
@@ -42,7 +41,8 @@ public record PrivateKey(FieldElement element) implements ByteRepresentable {
 
     /**
      * Creates a private key out of the CurveType and a random
-     * @param type The implementing curve type
+     *
+     * @param type   The implementing curve type
      * @param random The environment secureRandom to use
      * @return a privateKey for that CurveType
      */
@@ -53,6 +53,7 @@ public record PrivateKey(FieldElement element) implements ByteRepresentable {
 
     /**
      * Creates a PublicKey for this PrivateKey instance
+     *
      * @return a new publicKey associated to this PrivateKey
      */
     @NonNull

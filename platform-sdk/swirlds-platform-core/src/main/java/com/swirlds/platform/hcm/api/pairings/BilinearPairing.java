@@ -26,8 +26,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * in a third group, satisfying certain properties that are useful in various cryptographic schemes
  * such as identity-based encryption, short signatures, and more.</p>
  *
- * <p>This class provides access to each of the groups (G₁, G₂) for a specific Pairing and the FiniteField associated with the curves.</p>
- *
+ * <p>This class provides access to each of the groups (G₁, G₂) for a specific Pairing and the FiniteField associated
+ * with the curves.</p>
+ * <p>
  * A pairing is a map: e : G₁ × G₂ -> Gₜ which can satisfy these properties:
  *  <ul>
  *   <li> Bilinearity: “a”, “b” member of “Fq” (Finite Field), “P” member of “G₁”, and “Q” member of “G₂”,
@@ -43,6 +44,7 @@ public interface BilinearPairing {
 
     /**
      * Returns the BilinearPairing instance associated with the {@link CurveType}
+     *
      * @param type the type of the curve (?)
      */
     static BilinearPairing using(@NonNull final CurveType type) {
@@ -51,6 +53,7 @@ public interface BilinearPairing {
 
     /**
      * Returns the BilinearPairing instance associated with the {@link CurveType}
+     *
      * @param type the type of the curve (?)
      */
     static BilinearPairing using(final byte type) {

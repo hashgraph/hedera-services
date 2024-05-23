@@ -43,7 +43,7 @@ public class Bls12381Group2 implements Group {
 
     @NonNull
     @Override
-    public GroupElement randomElement(byte[] seed) {
+    public GroupElement randomElement(final byte[] seed) {
         return null;
     }
 
@@ -55,20 +55,20 @@ public class Bls12381Group2 implements Group {
 
     @NonNull
     @Override
-    public GroupElement elementFromHash(byte[] input) {
+    public GroupElement elementFromHash(final byte[] input) {
         return null;
     }
 
     @NonNull
     @Override
-    public GroupElement batchMultiply(@NonNull GroupElement elements) {
+    public GroupElement batchMultiply(@NonNull final GroupElement elements) {
         checkSameCurveType(elements);
         return null;
     }
 
     @NonNull
     @Override
-    public GroupElement elementFromBytes(byte[] bytes) {
+    public GroupElement elementFromBytes(final byte[] bytes) {
         checkSameCurveType(bytes);
         // We should remove bytes[0] before sending it to the native call
         return null;

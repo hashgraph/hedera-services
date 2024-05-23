@@ -16,7 +16,11 @@
 
 package com.swirlds.platform.hcm.impl.pairings.bls12381;
 
-import com.swirlds.platform.hcm.api.pairings.*;
+import com.swirlds.platform.hcm.api.pairings.BilinearPairing;
+import com.swirlds.platform.hcm.api.pairings.Field;
+import com.swirlds.platform.hcm.api.pairings.Group;
+import com.swirlds.platform.hcm.api.pairings.GroupElement;
+import com.swirlds.platform.hcm.api.pairings.PairingResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -29,6 +33,7 @@ public class Bls12381BilinearPairing implements BilinearPairing {
     public static Bls12381BilinearPairing getInstance() {
         return INSTANCE;
     }
+
     /**
      * Hidden constructor
      */
@@ -36,7 +41,7 @@ public class Bls12381BilinearPairing implements BilinearPairing {
 
     @NonNull
     @Override
-    public PairingResult pairingBetween(@NonNull GroupElement g1Element, @NonNull GroupElement g2Element) {
+    public PairingResult pairingBetween(@NonNull final GroupElement g1Element, @NonNull final GroupElement g2Element) {
         return new Bls12381PairingResult(g1Element, g2Element);
     }
 

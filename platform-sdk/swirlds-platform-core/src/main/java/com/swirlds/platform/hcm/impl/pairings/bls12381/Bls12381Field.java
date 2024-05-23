@@ -42,7 +42,7 @@ public class Bls12381Field implements Field {
 
     @NonNull
     @Override
-    public FieldElement elementFromLong(long inputLong) {
+    public FieldElement elementFromLong(final long inputLong) {
         return null;
     }
 
@@ -60,7 +60,7 @@ public class Bls12381Field implements Field {
 
     @NonNull
     @Override
-    public FieldElement randomElement(byte[] seed) {
+    public FieldElement randomElement(final byte[] seed) {
         return null;
     }
 
@@ -72,7 +72,7 @@ public class Bls12381Field implements Field {
 
     @NonNull
     @Override
-    public FieldElement elementFromBytes(byte[] bytes) {
+    public FieldElement elementFromBytes(final byte[] bytes) {
         checkSameCurveType(bytes);
         return null;
     }

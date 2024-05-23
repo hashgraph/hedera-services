@@ -23,7 +23,7 @@ import com.swirlds.platform.hcm.api.pairings.UnderCurve;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class Bls12381PairingResult implements UnderCurve, PairingResult {
-    public Bls12381PairingResult(GroupElement aggregatedSignature, GroupElement g1) {
+    public Bls12381PairingResult(final GroupElement aggregatedSignature, final GroupElement g1) {
         aggregatedSignature.checkSameCurveType(g1);
         aggregatedSignature.checkSameCurveType(this);
     }

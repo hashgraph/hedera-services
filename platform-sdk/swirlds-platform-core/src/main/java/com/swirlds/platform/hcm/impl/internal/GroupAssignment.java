@@ -28,7 +28,9 @@ public enum GroupAssignment {
     private final Function<BilinearPairing, Group> signatureGroup;
     private final Function<BilinearPairing, Group> publicKeyGroup;
 
-    GroupAssignment(Function<BilinearPairing, Group> signatureGroup, Function<BilinearPairing, Group> publicKeyGroup) {
+    GroupAssignment(
+            final Function<BilinearPairing, Group> signatureGroup,
+            final Function<BilinearPairing, Group> publicKeyGroup) {
         this.signatureGroup = signatureGroup;
         this.publicKeyGroup = publicKeyGroup;
     }

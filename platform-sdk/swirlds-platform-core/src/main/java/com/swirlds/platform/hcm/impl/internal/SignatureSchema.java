@@ -17,7 +17,12 @@
 package com.swirlds.platform.hcm.impl.internal;
 
 import com.swirlds.base.utility.Pair;
-import com.swirlds.platform.hcm.api.pairings.*;
+import com.swirlds.platform.hcm.api.pairings.BilinearPairing;
+import com.swirlds.platform.hcm.api.pairings.CurveType;
+import com.swirlds.platform.hcm.api.pairings.FieldElement;
+import com.swirlds.platform.hcm.api.pairings.Group;
+import com.swirlds.platform.hcm.api.pairings.GroupElement;
+import com.swirlds.platform.hcm.api.pairings.PairingResult;
 import com.swirlds.platform.hcm.api.signaturescheme.PrivateKey;
 import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
 import com.swirlds.platform.hcm.api.signaturescheme.Signature;
@@ -46,7 +51,7 @@ public class SignatureSchema {
 
     @NonNull
     public static SignatureSchema forPairing(@NonNull final CurveType type) {
-        CurveTypeMapping mapping = CurveTypeMapping.getPairing(type);
+        final CurveTypeMapping mapping = CurveTypeMapping.getPairing(type);
         return new SignatureSchema(mapping.pairing, mapping.assignment);
     }
 
@@ -64,7 +69,7 @@ public class SignatureSchema {
     // A secret key is a randomly chosen number between “1” and “q -1” (q is the order of “Zr”)
     @NonNull
     public Pair<PrivateKey, PublicKey> createKeyPair(@NonNull final SecureRandom random) {
-        FieldElement sk = pairing.getField().randomElement(random.generateSeed(RANDOM_SEED));
+        final FieldElement sk = pairing.getField().randomElement(random.generateSeed(RANDOM_SEED));
         return Pair.of(new PrivateKey(sk), createPublicKey(sk));
     }
 
@@ -88,7 +93,7 @@ public class SignatureSchema {
     // Hash the message to a point in signatureField
     @NonNull
     public Signature sign(@NonNull final byte[] message, @NonNull final PrivateKey privateKey) {
-        GroupElement h = signatureGroup().elementFromHash(message);
+        final GroupElement h = signatureGroup().elementFromHash(message);
         return new Signature(h.power(privateKey.element()));
     }
 
@@ -112,12 +117,12 @@ public class SignatureSchema {
     // σagg: aggregate signature
     @NonNull
     public Pair<PublicKey, Signature> aggregate(@NonNull final Pair<PublicKey, Signature>... aggregateElements) {
-        GroupElement aggregatedSignature = Arrays.stream(aggregateElements)
+        final GroupElement aggregatedSignature = Arrays.stream(aggregateElements)
                 .skip(1)
                 .map(Pair::value)
                 .map(Signature::element)
                 .reduce(aggregateElements[0].value().element().copy(), GroupElement::multiply);
-        GroupElement aggregatedPublicKey = Arrays.stream(aggregateElements)
+        final GroupElement aggregatedPublicKey = Arrays.stream(aggregateElements)
                 .skip(1)
                 .map(Pair::key)
                 .map(PublicKey::element)
@@ -136,14 +141,14 @@ public class SignatureSchema {
     // e(pk, H(m)) = e([sk]g1, H(m)) = e(g1, H(m))^(sk) = e(g1, [sk]H(m)) = e(g1, σ).
     public boolean verifySignature(
             @NonNull final byte[] message, @NonNull final PublicKey publicKey, @NonNull final Signature signature) {
-        GroupElement hash = signatureGroup().elementFromHash(message);
+        final GroupElement hash = signatureGroup().elementFromHash(message);
         // Verify the signature using pairings
         // TODO: It might be important in which order we send the elements in the method. And given that we can decide
         // which group to use
         // we need to add some logic to identify where to put each parameter
-        PairingResult lhs =
+        final PairingResult lhs =
                 pairing.pairingBetween(signature.element(), publicKeyGroup().getGenerator());
-        PairingResult rhs = pairing.pairingBetween(hash, publicKey.element());
+        final PairingResult rhs = pairing.pairingBetween(hash, publicKey.element());
 
         return lhs.isEquals(rhs);
     }

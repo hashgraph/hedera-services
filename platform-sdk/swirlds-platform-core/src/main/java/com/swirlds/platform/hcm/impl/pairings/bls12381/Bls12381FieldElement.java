@@ -28,31 +28,31 @@ public class Bls12381FieldElement implements FieldElement {
 
     @NonNull
     @Override
-    public FieldElement add(@NonNull FieldElement other) {
+    public FieldElement add(@NonNull final FieldElement other) {
         return null;
     }
 
     @NonNull
     @Override
-    public FieldElement subtract(@NonNull FieldElement other) {
+    public FieldElement subtract(@NonNull final FieldElement other) {
         return null;
     }
 
     @NonNull
     @Override
-    public FieldElement multiply(@NonNull FieldElement other) {
+    public FieldElement multiply(@NonNull final FieldElement other) {
         return null;
     }
 
     @NonNull
     @Override
-    public FieldElement divide(@NonNull FieldElement other) {
+    public FieldElement divide(@NonNull final FieldElement other) {
         return null;
     }
 
     @NonNull
     @Override
-    public FieldElement power(@NonNull BigInteger exponent) {
+    public FieldElement power(@NonNull final BigInteger exponent) {
         return null;
     }
 

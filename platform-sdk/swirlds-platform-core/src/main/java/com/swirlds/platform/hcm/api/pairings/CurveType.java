@@ -21,9 +21,9 @@ package com.swirlds.platform.hcm.api.pairings;
  *
  * @implNote Given that we pack the type of the curve in serialized forms in 1 byte alongside other information
  * we can only support a limited amount of curves.
- *
- * TODO: define how many we use 2 bytes for type(publicKey,privateKey,signature) possibly need other 2 bytes for (groupElement1 groupElement2 fieldElement) and the remaining for the type of curve
- *
+ * <p>
+ * TODO: define how many we use 2 bytes for type(publicKey,privateKey,signature) possibly need other 2 bytes for
+ * (groupElement1 groupElement2 fieldElement) and the remaining for the type of curve
  */
 public enum CurveType {
     /**
@@ -31,7 +31,8 @@ public enum CurveType {
      */
     BLS12_381,
     /**
-     * ALT_BN_128: Also known as BN256, this curve offers 128-bit security and efficient pairings, used in smart contract platforms.
+     * ALT_BN_128: Also known as BN256, this curve offers 128-bit security and efficient pairings, used in smart
+     * contract platforms.
      */
     ALT_BN_128;
 
@@ -39,7 +40,7 @@ public enum CurveType {
         return (byte) ordinal();
     }
 
-    public static CurveType fromIdByte(byte idByte) {
+    public static CurveType fromIdByte(final byte idByte) {
         if (idByte < 0 || idByte > 63) {
             throw new IllegalArgumentException("Invalid idByte for curveType: " + idByte);
         }

@@ -30,13 +30,15 @@ public interface UnderCurve {
 
     /**
      * Retrieves the type of the elliptic curve.
-     * @return  the type of the elliptic curve.
+     *
+     * @return the type of the elliptic curve.
      */
     @NonNull
     CurveType curveType();
 
     /**
      * Retrieves the ID of the elliptic curve type as a byte
+     *
      * @return the ID of the elliptic curve type as a byte
      */
     default byte curveTypeId() {
@@ -45,6 +47,7 @@ public interface UnderCurve {
 
     /**
      * Checks if another {@code UnderCurve} belongs to the same curve type and throws an exception if not.
+     *
      * @param other the other element to check
      */
     default void checkSameCurveType(@NonNull final UnderCurve other) {
@@ -55,9 +58,10 @@ public interface UnderCurve {
 
     /**
      * Checks if another {@code UnderCurve} belongs to the same curve type and throws an exception if not.
+     *
      * @param serializedOther the serialized version other element to check
      */
-    default void checkSameCurveType(byte[] serializedOther) {
+    default void checkSameCurveType(final byte[] serializedOther) {
         if (curveTypeId() != serializedOther[0]) {
             throw new IllegalStateException("Not implementing the same curve type");
         }

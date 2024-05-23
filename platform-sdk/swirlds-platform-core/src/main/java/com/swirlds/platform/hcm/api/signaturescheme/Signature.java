@@ -23,7 +23,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A signature that has been produced by a {@link PrivateKey}.
- *
  */
 public record Signature(GroupElement element) implements ByteRepresentable {
     /**

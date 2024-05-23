@@ -37,7 +37,7 @@ public enum CurveTypeMapping {
         this.assignment = assignment;
     }
 
-    public static CurveTypeMapping getPairing(CurveType curveType) {
+    public static CurveTypeMapping getPairing(final CurveType curveType) {
         return CurveTypeMapping.valueOf(curveType.name());
     }
 
