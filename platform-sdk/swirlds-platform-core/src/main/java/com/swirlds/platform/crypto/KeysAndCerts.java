@@ -88,8 +88,8 @@ public record KeysAndCerts(
 
         // get the agreement key pair and cert, if they exist, otherwise generate them.
         final String agreementName = KeyCertPurpose.AGREEMENT.storeName(name);
-        KeyPair agreementKeyPair;
-        X509Certificate agreementCert;
+        final KeyPair agreementKeyPair;
+        final X509Certificate agreementCert;
         try {
             agreementKeyPair = getKeyPair(privateKeyStore, password, agreementName);
             agreementCert = publicStores.getCertificate(KeyCertPurpose.AGREEMENT, name);
