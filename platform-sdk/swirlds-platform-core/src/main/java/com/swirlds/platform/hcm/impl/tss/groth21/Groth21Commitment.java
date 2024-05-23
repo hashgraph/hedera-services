@@ -17,7 +17,7 @@
 package com.swirlds.platform.hcm.impl.tss.groth21;
 
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
-import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
 import com.swirlds.platform.hcm.api.tss.TssCommitment;
 import com.swirlds.platform.hcm.api.tss.TssShareId;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,7 +29,7 @@ import java.util.List;
  * @param coefficientCommitments TODO: what group are these elements in? Is it correct for getTerm to return a public
  *                              key?
  */
-public record Groth21Commitment<P extends PublicKey>(@NonNull List<GroupElement> coefficientCommitments)
+public record Groth21Commitment<P extends PairingPublicKey>(@NonNull List<GroupElement> coefficientCommitments)
         implements TssCommitment<P> {
     /**
      * {@inheritDoc}

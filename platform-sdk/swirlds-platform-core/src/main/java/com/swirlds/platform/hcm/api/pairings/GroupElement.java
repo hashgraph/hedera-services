@@ -21,7 +21,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Interface representing a cryptographic group element
  */
-public interface GroupElement extends ByteRepresentable, UnderCurve {
+public interface GroupElement extends ByteRepresentable {
+    /**
+     * Returns the group of the element
+     *
+     * @return the element's group
+     */
+    Group getGroup();
 
     /**
      * Takes the group element to the power of a field element

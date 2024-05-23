@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.hcm.impl.pairings.bls12381;
 
-import com.swirlds.platform.hcm.api.pairings.CurveType;
+import com.swirlds.platform.hcm.api.pairings.BilinearPairing;
 import com.swirlds.platform.hcm.api.pairings.Field;
 import com.swirlds.platform.hcm.api.pairings.FieldElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -66,14 +66,7 @@ public class Bls12381Field implements Field {
 
     @NonNull
     @Override
-    public FieldElement randomElement() {
-        return null;
-    }
-
-    @NonNull
-    @Override
     public FieldElement elementFromBytes(final byte[] bytes) {
-        checkSameCurveType(bytes);
         return null;
     }
 
@@ -87,8 +80,9 @@ public class Bls12381Field implements Field {
         return 0;
     }
 
+    @NonNull
     @Override
-    public CurveType curveType() {
-        return CurveType.BLS12_381;
+    public BilinearPairing getPairing() {
+        return Bls12381BilinearPairing.getInstance();
     }
 }

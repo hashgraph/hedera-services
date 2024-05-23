@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.hcm.api.tss;
 
-import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
 import com.swirlds.platform.hcm.ecdh.EcdhPrivateKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -26,7 +26,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param <P> the type of public key that can be used to verify signatures produced by the secret keys encrypted in this
  *            ciphertext
  */
-public interface TssCiphertext<P extends PublicKey> {
+public interface TssCiphertext<P extends PairingPublicKey> {
     /**
      * Extract the private key data from this ciphertext.
      * <p>

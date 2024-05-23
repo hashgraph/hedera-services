@@ -17,7 +17,7 @@
 package com.swirlds.platform.hcm.impl.tss.groth21;
 
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
-import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
 import com.swirlds.platform.hcm.api.tss.TssCiphertext;
 import com.swirlds.platform.hcm.api.tss.TssCommitment;
 import com.swirlds.platform.hcm.api.tss.TssProof;
@@ -32,7 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param z_r
  * @param z_a
  */
-public record Groth21Proof<P extends PublicKey>(
+public record Groth21Proof<P extends PairingPublicKey>(
         @NonNull GroupElement f,
         @NonNull GroupElement a,
         @NonNull GroupElement y,

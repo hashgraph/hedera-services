@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.hcm.api.tss;
 
-import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -24,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * @param <P> the type of public key to be used during verification of this proof
  */
-public interface TssProof<P extends PublicKey> {
+public interface TssProof<P extends PairingPublicKey> {
     /**
      * Verify this proof.
      *

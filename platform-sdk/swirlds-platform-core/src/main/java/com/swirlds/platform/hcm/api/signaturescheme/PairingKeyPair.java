@@ -14,16 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.hcm.api.tss;
+package com.swirlds.platform.hcm.api.signaturescheme;
 
-import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A record that contains a share ID, and the corresponding public key.
- *
- * @param shareId   the share ID
- * @param publicKey the public key
- * @param <P>       the type of public key in this share
+ * Represents a key pair consisting of a public key and a private key.
  */
-public record TssPublicShare<P extends PairingPublicKey>(@NonNull TssShareId shareId, @NonNull P publicKey) {}
+public record PairingKeyPair(@NonNull PairingPublicKey publicKey, @NonNull PairingPrivateKey privateKey) {}

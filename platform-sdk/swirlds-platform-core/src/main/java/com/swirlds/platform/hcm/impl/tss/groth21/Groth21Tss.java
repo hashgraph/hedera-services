@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.hcm.impl.tss.groth21;
 
-import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
-import com.swirlds.platform.hcm.api.signaturescheme.Signature;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingSignature;
 import com.swirlds.platform.hcm.api.tss.Tss;
 import com.swirlds.platform.hcm.api.tss.TssMessage;
 import com.swirlds.platform.hcm.api.tss.TssPrivateKey;
@@ -31,13 +31,13 @@ import java.util.List;
 /**
  * A Groth21 implementation of a Threshold Signature Scheme.
  */
-public class Groth21Tss<P extends PublicKey> implements Tss<P> {
+public class Groth21Tss<P extends PairingPublicKey> implements Tss<P> {
     /**
      * {@inheritDoc}
      */
     @Nullable
     @Override
-    public Signature aggregateSignatures(@NonNull final List<Signature> partialSignatures) {
+    public PairingSignature aggregateSignatures(@NonNull final List<PairingSignature> partialSignatures) {
         throw new UnsupportedOperationException("Not implemented");
     }
 

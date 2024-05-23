@@ -16,16 +16,14 @@
 
 package com.swirlds.platform.hcm.impl.pairings.bls12381;
 
-import com.swirlds.platform.hcm.api.pairings.CurveType;
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
 import com.swirlds.platform.hcm.api.pairings.PairingResult;
-import com.swirlds.platform.hcm.api.pairings.UnderCurve;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public class Bls12381PairingResult implements UnderCurve, PairingResult {
+public class Bls12381PairingResult implements PairingResult {
     public Bls12381PairingResult(final GroupElement aggregatedSignature, final GroupElement g1) {
-        aggregatedSignature.checkSameCurveType(g1);
-        aggregatedSignature.checkSameCurveType(this);
+        //        aggregatedSignature.checkSameCurveType(g1);
+        //        aggregatedSignature.checkSameCurveType(this);
     }
 
     public boolean isEquals(final @NonNull PairingResult other) {
@@ -35,11 +33,5 @@ public class Bls12381PairingResult implements UnderCurve, PairingResult {
     @Override
     public @NonNull byte[] toBytes() {
         return new byte[0];
-    }
-
-    @Override
-    @NonNull
-    public CurveType curveType() {
-        return CurveType.BLS12_381;
     }
 }

@@ -41,25 +41,36 @@ public class Bls12381BilinearPairing implements BilinearPairing {
 
     @NonNull
     @Override
-    public PairingResult pairingBetween(@NonNull final GroupElement g1Element, @NonNull final GroupElement g2Element) {
-        return new Bls12381PairingResult(g1Element, g2Element);
+    public PairingResult pairingBetween(@NonNull final GroupElement elementA, @NonNull final GroupElement elementB) {
+        return new Bls12381PairingResult(elementA, elementB);
     }
 
     @NonNull
     @Override
     public Field getField() {
-        return new Bls12381Field();
+        return Bls12381Field.getInstance();
     }
 
     @NonNull
     @Override
     public Group getGroup1() {
-        return new Bls12381Group();
+        return Bls12381Group1.getInstance();
     }
 
     @NonNull
     @Override
     public Group getGroup2() {
-        return new Bls12381Group2();
+        return Bls12381Group2.getInstance();
+    }
+
+    @Override
+    public Group getOtherGroup(@NonNull final Group group) {
+        if (group.equals(getGroup1())) {
+            return getGroup2();
+        } else if (group.equals(getGroup2())) {
+            return getGroup1();
+        } else {
+            throw new IllegalArgumentException("Unknown group");
+        }
     }
 }

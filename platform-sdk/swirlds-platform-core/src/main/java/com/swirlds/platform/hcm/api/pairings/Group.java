@@ -29,7 +29,20 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * @see GroupElement
  */
-public interface Group extends UnderCurve {
+public interface Group {
+    /**
+     * Returns the opposite group of the element
+     * <p>
+     * If the group of this element is G1, then the opposite group is G2, and vice versa.
+     * @return the opposite group of the element
+     */
+    default Group getOppositeGroup() {
+        return getPairing().getOtherGroup(this);
+    }
+
+    @NonNull
+    BilinearPairing getPairing();
+
     /**
      * Returns the group's generator
      *

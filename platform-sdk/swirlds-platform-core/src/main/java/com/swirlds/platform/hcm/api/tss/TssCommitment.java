@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.hcm.api.tss;
 
-import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -26,7 +26,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * @param <P> the type of public key that can be derived from this commitment
  */
-public interface TssCommitment<P extends PublicKey> {
+public interface TssCommitment<P extends PairingPublicKey> {
     /**
      * Extract the public key from this commitment for a given share.
      * <p>

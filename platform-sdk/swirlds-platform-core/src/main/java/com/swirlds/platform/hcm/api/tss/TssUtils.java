@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.hcm.api.tss;
 
-import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
 import com.swirlds.platform.hcm.ecdh.EcdhPrivateKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -47,7 +47,7 @@ public final class TssUtils {
      * @return the private shares, or null if there aren't enough shares to meet the threshold
      */
     @Nullable
-    public static <P extends PublicKey> List<TssPrivateShare<P>> decryptPrivateShares(
+    public static <P extends PairingPublicKey> List<TssPrivateShare<P>> decryptPrivateShares(
             @NonNull final Tss<P> tss,
             @NonNull final List<TssShareId> shareIds,
             @NonNull final EcdhPrivateKey ecdhPrivateKey,
@@ -93,7 +93,7 @@ public final class TssUtils {
      * @return the public shares, or null if there aren't enough shares to meet the threshold
      */
     @Nullable
-    public static <P extends PublicKey> Map<TssShareId, P> computePublicShares(
+    public static <P extends PairingPublicKey> Map<TssShareId, P> computePublicShares(
             @NonNull final Tss<P> tss,
             @NonNull final List<TssShareId> shareIds,
             @NonNull final List<TssMessage<P>> tssMessages,

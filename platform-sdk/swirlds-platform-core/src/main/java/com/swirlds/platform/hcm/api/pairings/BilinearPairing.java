@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.hcm.api.pairings;
 
-import com.swirlds.platform.hcm.impl.internal.CurveTypeMapping;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -41,25 +40,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @see Field
  */
 public interface BilinearPairing {
-
-    /**
-     * Returns the BilinearPairing instance associated with the {@link CurveType}
-     *
-     * @param type the type of the curve (?)
-     */
-    static BilinearPairing using(@NonNull final CurveType type) {
-        return CurveTypeMapping.getPairing(type).getPairing();
-    }
-
-    /**
-     * Returns the BilinearPairing instance associated with the {@link CurveType}
-     *
-     * @param type the type of the curve (?)
-     */
-    static BilinearPairing using(final byte type) {
-        return using(CurveType.fromIdByte(type));
-    }
-
     /**
      * Returns the finite field “Fq” associated with the curves of G₁ and G₂.
      *
@@ -85,10 +65,22 @@ public interface BilinearPairing {
     Group getGroup2();
 
     /**
-     * Returns a pairing between elements from G₁ and G₂
+     * Returns G1 if input is G2, and vice versa.
      *
+     * @param group the group to get the "other group" of
+     * @return the other group
+     */
+    Group getOtherGroup(@NonNull Group group);
+
+    /**
+     * Returns a pairing between elements from G₁ and G₂
+     * <p>
+     * The order of the elements is not important, elementA can be from G₁ and elementB from G₂, or vice versa.
+     *
+     * @param elementA one element of the pairing
+     * @param elementB the other element of the pairing
      * @return the PairingResult
      */
     @NonNull
-    PairingResult pairingBetween(@NonNull GroupElement g1Element, @NonNull GroupElement g2Element);
+    PairingResult pairingBetween(@NonNull GroupElement elementA, @NonNull GroupElement elementB);
 }

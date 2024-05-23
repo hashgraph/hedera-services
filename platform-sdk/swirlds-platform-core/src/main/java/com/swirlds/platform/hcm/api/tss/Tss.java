@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.hcm.api.tss;
 
-import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
-import com.swirlds.platform.hcm.api.signaturescheme.Signature;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -33,15 +33,15 @@ import java.util.List;
  *
  * @param <P> the type of public key that verifies signatures in this threshold scheme
  */
-public interface Tss<P extends PublicKey> {
+public interface Tss<P extends PairingPublicKey> {
     /**
-     * Aggregate a threshold number of {@link Signature}s.
+     * Aggregate a threshold number of {@link PairingSignature}s.
      *
      * @param partialSignatures the list of signatures to aggregate
      * @return the interpolated signature if the threshold is met, otherwise null.
      */
     @Nullable
-    Signature aggregateSignatures(@NonNull final List<Signature> partialSignatures);
+    PairingSignature aggregateSignatures(@NonNull final List<PairingSignature> partialSignatures);
 
     /**
      * Aggregate a threshold number of {@link TssPublicShare}s.

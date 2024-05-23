@@ -19,15 +19,32 @@ package com.swirlds.platform.hcm.impl.internal;
 import com.swirlds.platform.hcm.api.pairings.BilinearPairing;
 import com.swirlds.platform.hcm.api.pairings.Group;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.function.Function;
 
+/**
+ * An enum to clarify which group public keys and signatures are in, for a given
+ * {@link com.swirlds.platform.hcm.api.pairings.SignatureSchema SignatureSchema}
+ */
 public enum GroupAssignment {
+    /**
+     * The group for signatures is the first group in the pairing, and the group for public keys is the second group.
+     */
     GROUP1_FOR_SIGNING(BilinearPairing::getGroup1, BilinearPairing::getGroup2),
+    /**
+     * The group for signatures is the second group in the pairing, and the group for public keys is the first group.
+     */
     GROUP1_FOR_PUBLIC_KEY(BilinearPairing::getGroup2, BilinearPairing::getGroup1);
 
     private final Function<BilinearPairing, Group> signatureGroup;
     private final Function<BilinearPairing, Group> publicKeyGroup;
 
+    /**
+     * Constructor
+     *
+     * @param signatureGroup a function that takes a pairing and returns the group for signatures
+     * @param publicKeyGroup a function that takes a pairing and returns the group for public keys
+     */
     GroupAssignment(
             final Function<BilinearPairing, Group> signatureGroup,
             final Function<BilinearPairing, Group> publicKeyGroup) {
@@ -35,11 +52,23 @@ public enum GroupAssignment {
         this.publicKeyGroup = publicKeyGroup;
     }
 
+    /**
+     * Get the group for signatures for a given pairing
+     *
+     * @param pairing the pairing
+     * @return the group for signatures
+     */
     @NonNull
     public Group getSignatureGroupFor(@NonNull final BilinearPairing pairing) {
         return signatureGroup.apply(pairing);
     }
 
+    /**
+     * Get the group for public keys for a given pairing
+     *
+     * @param pairing the pairing
+     * @return the group for public keys
+     */
     @NonNull
     public Group getPublicKeyGroupFor(@NonNull final BilinearPairing pairing) {
         return publicKeyGroup.apply(pairing);

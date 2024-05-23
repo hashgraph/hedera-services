@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.hcm.impl.tss.groth21;
 
-import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
 import com.swirlds.platform.hcm.api.tss.TssCiphertext;
 import com.swirlds.platform.hcm.api.tss.TssPrivateKey;
 import com.swirlds.platform.hcm.api.tss.TssShareId;
@@ -28,7 +28,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * @param <P> the type of public key that verifies signatures produced by the secret key encrypted by this ciphertext
  */
-public class Groth21Ciphertext<P extends PublicKey> implements TssCiphertext<P> {
+public class Groth21Ciphertext<P extends PairingPublicKey> implements TssCiphertext<P> {
 
     // TODO: what members belong here?
 

@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.hcm.impl.pairings.bls12381;
 
-import com.swirlds.platform.hcm.api.pairings.CurveType;
 import com.swirlds.platform.hcm.api.pairings.FieldElement;
+import com.swirlds.platform.hcm.api.pairings.Group;
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -25,6 +25,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * An element in G1 group used in BLS12-381
  */
 public class Bls12381Group2Element implements GroupElement {
+    @Override
+    public Group getGroup() {
+        return Bls12381Group2.getInstance();
+    }
 
     @NonNull
     @Override
@@ -71,11 +75,5 @@ public class Bls12381Group2Element implements GroupElement {
     @NonNull
     public byte[] toBytes() {
         return new byte[0];
-    }
-
-    @Override
-    @NonNull
-    public CurveType curveType() {
-        return CurveType.BLS12_381;
     }
 }

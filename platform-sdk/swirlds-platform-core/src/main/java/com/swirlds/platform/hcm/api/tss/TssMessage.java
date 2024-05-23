@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.hcm.api.tss;
 
-import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -28,7 +28,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param proof      a proof that the polynomial commitment is valid
  * @param <P>        the type of public key that is used to verify the message
  */
-public record TssMessage<P extends PublicKey>(
+public record TssMessage<P extends PairingPublicKey>(
         @NonNull TssShareId shareId,
         @NonNull TssCiphertext<P> cipherText,
         @NonNull TssCommitment<P> commitment,

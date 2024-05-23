@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.hcm.impl.pairings.bls12381;
 
-import com.swirlds.platform.hcm.api.pairings.CurveType;
+import com.swirlds.platform.hcm.api.pairings.BilinearPairing;
 import com.swirlds.platform.hcm.api.pairings.Group;
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -25,9 +25,20 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * G1 group used in BLS12-381
  */
 public class Bls12381Group2 implements Group {
+    private static final Bls12381Group2 INSTANCE = new Bls12381Group2();
 
-    // group1 and group2 for BLS12381 need to call different types of native methods so we need to split these into
-    // different classes
+    /**
+     * Hidden constructor
+     */
+    Bls12381Group2() {}
+
+    /**
+     * @return the singleton instance of this class
+     */
+    @NonNull
+    public static Bls12381Group2 getInstance() {
+        return INSTANCE;
+    }
 
     @NonNull
     @Override
@@ -62,15 +73,12 @@ public class Bls12381Group2 implements Group {
     @NonNull
     @Override
     public GroupElement batchMultiply(@NonNull final GroupElement elements) {
-        checkSameCurveType(elements);
         return null;
     }
 
     @NonNull
     @Override
     public GroupElement elementFromBytes(final byte[] bytes) {
-        checkSameCurveType(bytes);
-        // We should remove bytes[0] before sending it to the native call
         return null;
     }
 
@@ -89,8 +97,9 @@ public class Bls12381Group2 implements Group {
         return 0;
     }
 
+    @NonNull
     @Override
-    public CurveType curveType() {
-        return CurveType.BLS12_381;
+    public BilinearPairing getPairing() {
+        return Bls12381BilinearPairing.getInstance();
     }
 }

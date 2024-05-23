@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.hcm.api.tss;
 
-import com.swirlds.platform.hcm.api.signaturescheme.PrivateKey;
-import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
-import com.swirlds.platform.hcm.api.signaturescheme.Signature;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingPrivateKey;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -26,7 +26,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * @param <P> the type of public key that can verify signatures produced by this private key
  */
-public record TssPrivateKey<P extends PublicKey>(@NonNull PrivateKey privateKey) {
+public record TssPrivateKey<P extends PairingPublicKey>(@NonNull PairingPrivateKey privateKey) {
     /**
      * Sign a message using the TSS private key.
      *
@@ -35,7 +35,7 @@ public record TssPrivateKey<P extends PublicKey>(@NonNull PrivateKey privateKey)
      * @return the signature
      */
     @NonNull
-    Signature sign(@NonNull final TssShareId shareId, @NonNull final byte[] message) {
+    PairingSignature sign(@NonNull final TssShareId shareId, @NonNull final byte[] message) {
         throw new UnsupportedOperationException("Not implemented");
     }
 }
