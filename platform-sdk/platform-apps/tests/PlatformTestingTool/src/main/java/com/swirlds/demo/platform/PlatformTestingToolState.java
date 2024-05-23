@@ -1306,6 +1306,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         if (trigger == InitTrigger.RESTART) {
             rebuildExpectedMapFromState(Instant.EPOCH, true);
             rebuildExpirationQueue();
+            expectedFCMFamily.setNodeId(platform.getSelfId().id());
         }
 
         this.platform = platform;
