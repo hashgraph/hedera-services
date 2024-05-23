@@ -91,7 +91,7 @@ class EventExpansionTest {
 
         verify(prefetchProcessor, times(n)).submit(txnAccessor);
         verify(sigReqsManager, times(n)).expandSigs(sourceState, txnAccessor);
-        verify(engine, times(n)).verifyAsync(Collections.emptyList());
+        verify(engine, times(n)).verifySync(Collections.emptyList());
     }
 
     @Test

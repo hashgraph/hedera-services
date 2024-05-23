@@ -1406,7 +1406,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                         contents, sigOffset, signature.length, msgLen, publicKey.length, 0, msgLen, signatureType);
                 trans.setMetadata(transactionSignature);
 
-                CryptographyHolder.get().verifyAsync(List.of(transactionSignature));
+                CryptographyHolder.get().verifySync(List.of(transactionSignature));
 
             } catch (final InvalidProtocolBufferException ex) {
                 exceptionRateLimiter.handle(
