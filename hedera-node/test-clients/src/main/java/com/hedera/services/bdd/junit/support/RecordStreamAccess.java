@@ -107,8 +107,11 @@ public enum RecordStreamAccess {
                 .sum();
         if (numSubscribers == 0) {
             try {
-                LOGGER.info("Stopping record stream access monitor (locations were {})", validatingListeners.keySet());
-                validatingListeners.clear();
+                if (!validatingListeners.isEmpty()) {
+                    LOGGER.info(
+                            "Stopping record stream access monitor (locations were {})", validatingListeners.keySet());
+                    validatingListeners.clear();
+                }
                 // Will throw ISE if already stopped, ignore that
                 monitor.stop();
             } catch (Exception ignore) {

@@ -16,8 +16,16 @@
 
 package com.hedera.services.bdd.spec.verification.traceability;
 
-import com.hedera.services.stream.proto.TransactionSidecarRecord;
+import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.guaranteedExtant;
+import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
+import static com.hedera.services.bdd.spec.utilops.streams.RecordAssertions.triggerAndCloseAtLeastOneFileIfNotInterrupted;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.services.bdd.junit.support.StreamDataListener;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,24 +33,33 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Predicate;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 // string literals should not be duplicated
 @SuppressWarnings("java:S1192")
 public class SidecarWatcher {
+    private static final Logger log = LogManager.getLogger(SidecarWatcher.class);
+
+    private final Runnable unsubscribe;
     private final Queue<ExpectedSidecar> expectedSidecars = new LinkedBlockingDeque<>();
+    private final Queue<TransactionSidecarRecord> actualSidecars = new LinkedBlockingDeque<>();
     // LinkedHashMap lets us easily print mismatches _in the order added_. Important if the
     // records get out-of-sync at one particular test, then all the _rest_ of the tests fail
     // too: It's good to know the _first_ test which fails.
     private final LinkedHashMap<String, List<MismatchedSidecar>> failedSidecars = new LinkedHashMap<>();
 
     private boolean hasSeenFirstExpectedSidecar = false;
+
+    public SidecarWatcher(@NonNull final Path path) {
+        this.unsubscribe = RECORD_STREAM_ACCESS.subscribe(guaranteedExtant(path), new StreamDataListener() {
+            @Override
+            public void onNewSidecar(@NonNull final TransactionSidecarRecord sidecar) {
+                actualSidecars.add(sidecar);
+            }
+        });
+    }
 
     /**
      * Adds a new expected sidecar to the queue.
@@ -54,12 +71,29 @@ public class SidecarWatcher {
     }
 
     /**
-     * Asserts that there are no mismatched sidecars and no pending sidecars.
+     * Ensures that the sidecar watcher is unsubscribed.
+     */
+    public void ensureUnsubscribed() {
+        unsubscribe.run();
+    }
+
+    /**
+     * Asserts that there are no mismatched sidecars and no pending sidecars in the
+     * context of the given spec.
      *
+     * @param spec the spec to assert within
      * @throws AssertionError if there are mismatched sidecars or pending sidecars
      */
-    public void assertAllExpectations(@NonNull final List<TransactionSidecarRecord> actualSidecarRecords) {
-        for (final var actualSidecar : actualSidecarRecords) {
+    public void assertExpectations(@NonNull final HapiSpec spec) {
+        // Ensure our listener has more than fair opportunity to observe all expected sidecars
+        triggerAndCloseAtLeastOneFileIfNotInterrupted(spec);
+        triggerAndCloseAtLeastOneFileIfNotInterrupted(spec);
+        // Stop listening for any more actual sidecars
+        unsubscribe.run();
+
+        for (final var iter = actualSidecars.iterator(); iter.hasNext(); ) {
+            final var actualSidecar = iter.next();
+            iter.remove();
             final boolean matchesConsensusTimestamp = Optional.ofNullable(expectedSidecars.peek())
                     .map(ExpectedSidecar::expectedSidecarRecord)
                     .map(expected -> expected.matchesConsensusTimestampOf(actualSidecar))

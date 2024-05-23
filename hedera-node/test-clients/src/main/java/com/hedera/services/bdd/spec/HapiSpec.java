@@ -258,7 +258,7 @@ public class HapiSpec implements Runnable, Executable {
      * If non-null, a spec-scoped sidecar watcher to use with sidecar assertions.
      */
     @Nullable
-    private SidecarWatcher watcher;
+    private SidecarWatcher sidecarWatcher;
 
     boolean quietMode;
 
@@ -298,6 +298,10 @@ public class HapiSpec implements Runnable, Executable {
 
     public void setSpecStateObserver(@NonNull final SpecStateObserver specStateObserver) {
         this.specStateObserver = specStateObserver;
+    }
+
+    public void setSidecarWatcher(@NonNull final SidecarWatcher watcher) {
+        this.sidecarWatcher = requireNonNull(watcher);
     }
 
     public void updatePrecheckCounts(ResponseCodeEnum finalStatus) {
@@ -360,7 +364,7 @@ public class HapiSpec implements Runnable, Executable {
 
     @Nullable
     public SidecarWatcher getSidecarWatcher() {
-        return watcher;
+        return sidecarWatcher;
     }
 
     /**
@@ -548,6 +552,9 @@ public class HapiSpec implements Runnable, Executable {
         if (finalizingExecutor != null) {
             finalizingExecutor.shutdown();
         }
+        if (sidecarWatcher != null) {
+            sidecarWatcher.ensureUnsubscribed();
+        }
     }
 
     @SuppressWarnings("java:S2629")
@@ -662,6 +669,15 @@ public class HapiSpec implements Runnable, Executable {
             if (maybeRecordStreamError.isPresent()) {
                 status = FAILED;
                 failure = maybeRecordStreamError.get();
+            }
+            if (sidecarWatcher != null) {
+                try {
+                    sidecarWatcher.assertExpectations(this);
+                } catch (Throwable t) {
+                    log.error("Sidecar assertion failed", t);
+                    status = FAILED;
+                    failure = new Failure(t, "Sidecar assertion");
+                }
             }
         } else if (assertions != null) {
             assertions.forEach(EventualRecordStreamAssertion::unsubscribe);
