@@ -797,8 +797,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         event.setPreliminaryConsensusTimestamp(times.get(times.size() / 2));
 
         event.setReachedConsTimestamp(Instant.now()); // used for statistics
-
-        consensusMetrics.consensusReached(event);
     }
 
     /**
@@ -829,6 +827,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
 
             lastConsensusTime = EventUtils.getLastTransTime(e.getBaseEvent());
             numConsensus++;
+            consensusMetrics.consensusReached(e);
         }
         if (last != null) {
             last.setLastInRoundReceived(true);
