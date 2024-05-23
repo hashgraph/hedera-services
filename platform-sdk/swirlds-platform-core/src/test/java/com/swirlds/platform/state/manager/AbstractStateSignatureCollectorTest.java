@@ -27,7 +27,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.SignedState;
@@ -66,14 +65,13 @@ public class AbstractStateSignatureCollectorTest {
      */
     protected final AtomicBoolean error = new AtomicBoolean(false);
 
-    protected StateConfig buildStateConfig() {
-        final Configuration configuration = new TestConfigBuilder()
+    @NonNull
+    protected Configuration buildStateConfig() {
+        return new TestConfigBuilder()
                 .withValue(StateConfig_.ROUNDS_TO_KEEP_FOR_SIGNING, roundsToKeepForSigning)
                 .withValue(StateConfig_.MAX_AGE_OF_FUTURE_STATE_SIGNATURES, futureStateSignatureRounds)
                 .withValue(StateConfig_.ROUNDS_TO_KEEP_AFTER_SIGNING, roundsToKeepAfterSigning)
                 .getOrCreateConfig();
-
-        return configuration.getConfigData(StateConfig.class);
     }
 
     @AfterEach

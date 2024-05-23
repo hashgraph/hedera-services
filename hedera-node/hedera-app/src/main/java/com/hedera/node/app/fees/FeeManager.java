@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.fees;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static java.util.Objects.requireNonNull;
 
@@ -220,7 +221,11 @@ public final class FeeManager {
         // Now, lookup the fee data for the transaction type.
         final var result = feeDataMap.get(new Entry(functionality, subType));
         if (result == null) {
-            logger.warn("Using default usage prices to calculate fees for {}!", functionality);
+            // There is no point in adding a fee schedule entry for a privileged query type,
+            // since privileged queries are not charged fees in the first place
+            if (functionality != GET_ACCOUNT_DETAILS) {
+                logger.warn("Using default usage prices to calculate fees for {}!", functionality);
+            }
             return DEFAULT_FEE_DATA;
         }
         return result;

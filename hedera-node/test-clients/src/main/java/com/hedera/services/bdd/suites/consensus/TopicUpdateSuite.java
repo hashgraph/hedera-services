@@ -26,6 +26,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.NONSENSE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
@@ -40,63 +44,22 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicUpdate;
-import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.List;
 import java.util.function.Function;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class TopicUpdateSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(TopicUpdateSuite.class);
-
+public class TopicUpdateSuite {
     private static final long validAutoRenewPeriod = 7_000_000L;
     private static final long defaultMaxLifetime =
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 
-    public static final Key IMMUTABILITY_SENTINEL_KEY =
-            Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
-
-    public static void main(String... args) {
-        new TopicUpdateSuite().runSuiteAsync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                pureCheckFails(),
-                validateMultipleFields(),
-                topicUpdateSigReqsEnforcedAtConsensus(),
-                updateSubmitKeyToDiffKey(),
-                updateAdminKeyToDiffKey(),
-                updateAdminKeyToEmpty(),
-                updateMultipleFields(),
-                expirationTimestampIsValidated(),
-                updateSubmitKeyOnTopicWithNoAdminKeyFails(),
-                clearingAdminKeyWhenAutoRenewAccountPresent(),
-                feeAsExpected(),
-                updateExpiryOnTopicWithNoAdminKey(),
-                updateToMissingTopicFails(),
-                canRemoveSubmitKeyDuringUpdate());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
     @HapiTest
-    final HapiSpec pureCheckFails() {
+    final Stream<DynamicTest> pureCheckFails() {
         return defaultHapiSpec("testTopic")
                 .given()
                 .when()
@@ -104,7 +67,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateToMissingTopicFails() {
+    final Stream<DynamicTest> updateToMissingTopicFails() {
         return defaultHapiSpec("updateToMissingTopicFails")
                 .given()
                 .when()
@@ -112,7 +75,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         final var autoRenewAccount = "autoRenewAccount";
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(cryptoCreate(autoRenewAccount), cryptoCreate("replacementAccount"), newKeyNamed("adminKey"))
@@ -122,7 +85,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec validateMultipleFields() {
+    final Stream<DynamicTest> validateMultipleFields() {
         byte[] longBytes = new byte[1000];
         Arrays.fill(longBytes, (byte) 33);
         String longMemo = new String(longBytes, StandardCharsets.UTF_8);
@@ -144,7 +107,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec topicUpdateSigReqsEnforcedAtConsensus() {
+    final Stream<DynamicTest> topicUpdateSigReqsEnforcedAtConsensus() {
         long PAYER_BALANCE = 199_999_999_999L;
         Function<String[], HapiTopicUpdate> updateTopicSignedBy = (signers) -> updateTopic("testTopic")
                 .payingWith("payer")
@@ -183,7 +146,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateSubmitKeyToDiffKey() {
+    final Stream<DynamicTest> updateSubmitKeyToDiffKey() {
         return defaultHapiSpec("updateSubmitKeyToDiffKey")
                 .given(
                         newKeyNamed("adminKey"),
@@ -197,7 +160,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec canRemoveSubmitKeyDuringUpdate() {
+    final Stream<DynamicTest> canRemoveSubmitKeyDuringUpdate() {
         return defaultHapiSpec("updateSubmitKeyToDiffKey")
                 .given(
                         newKeyNamed("adminKey"),
@@ -212,7 +175,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateAdminKeyToDiffKey() {
+    final Stream<DynamicTest> updateAdminKeyToDiffKey() {
         return defaultHapiSpec("updateAdminKeyToDiffKey")
                 .given(
                         newKeyNamed("adminKey"),
@@ -223,7 +186,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateAdminKeyToEmpty() {
+    final Stream<DynamicTest> updateAdminKeyToEmpty() {
         return defaultHapiSpec("updateAdminKeyToEmpty")
                 .given(newKeyNamed("adminKey"), createTopic("testTopic").adminKeyName("adminKey"))
                 /* if adminKey is empty list should clear adminKey */
@@ -232,7 +195,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateMultipleFields() {
+    final Stream<DynamicTest> updateMultipleFields() {
         long expirationTimestamp = Instant.now().getEpochSecond() + 10000000; // more than default.autorenew
         // .secs=7000000
         return defaultHapiSpec("updateMultipleFields")
@@ -266,7 +229,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec expirationTimestampIsValidated() {
+    final Stream<DynamicTest> expirationTimestampIsValidated() {
         long now = Instant.now().getEpochSecond();
         return defaultHapiSpec("expirationTimestampIsValidated")
                 .given(createTopic("testTopic").autoRenewPeriod(validAutoRenewPeriod))
@@ -282,7 +245,7 @@ public class TopicUpdateSuite extends HapiSuite {
 
     /* If admin key is not set, only expiration timestamp updates are allowed */
     @HapiTest
-    final HapiSpec updateExpiryOnTopicWithNoAdminKey() {
+    final Stream<DynamicTest> updateExpiryOnTopicWithNoAdminKey() {
         long overlyDistantNewExpiry = Instant.now().getEpochSecond() + defaultMaxLifetime + 12_345L;
         long reasonableNewExpiry = Instant.now().getEpochSecond() + defaultMaxLifetime - 12_345L;
         return defaultHapiSpec("updateExpiryOnTopicWithNoAdminKey")
@@ -294,7 +257,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec clearingAdminKeyWhenAutoRenewAccountPresent() {
+    final Stream<DynamicTest> clearingAdminKeyWhenAutoRenewAccountPresent() {
         return defaultHapiSpec("clearingAdminKeyWhenAutoRenewAccountPresent")
                 .given(
                         newKeyNamed("adminKey"),
@@ -307,7 +270,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateSubmitKeyOnTopicWithNoAdminKeyFails() {
+    final Stream<DynamicTest> updateSubmitKeyOnTopicWithNoAdminKeyFails() {
         return defaultHapiSpec("updateSubmitKeyOnTopicWithNoAdminKeyFails")
                 .given(newKeyNamed("submitKey"), createTopic("testTopic"))
                 .when(updateTopic("testTopic").submitKey("submitKey").hasKnownStatus(UNAUTHORIZED))
@@ -315,7 +278,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec feeAsExpected() {
+    final Stream<DynamicTest> feeAsExpected() {
         return defaultHapiSpec("feeAsExpected")
                 .given(
                         cryptoCreate("autoRenewAccount"),
@@ -329,10 +292,5 @@ public class TopicUpdateSuite extends HapiSuite {
                         .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
                         .via("updateTopic"))
                 .then(validateChargedUsdWithin("updateTopic", 0.00022, 3.0));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

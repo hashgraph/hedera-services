@@ -20,14 +20,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.network.Network;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.net.Inet4Address;
 import java.net.InetAddress;
-import java.net.SocketException;
 import java.net.UnknownHostException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,9 +41,10 @@ class AddressBookNetworkUtilsTests {
 
     @Test
     @DisplayName("Determine If Local Node")
-    void determineLocalNodeAddress() throws UnknownHostException, SocketException {
+    void determineLocalNodeAddress() throws UnknownHostException {
+        final Randotron randotron = Randotron.create();
         final AddressBook addressBook =
-                new RandomAddressBookGenerator().setSize(2).build();
+                RandomAddressBookBuilder.create(randotron).withSize(2).build();
         final Address address = addressBook.getAddress(addressBook.getNodeId(0));
 
         final Address loopBackAddress = address.copySetHostnameInternal(
@@ -66,9 +67,10 @@ class AddressBookNetworkUtilsTests {
     @Test
     @DisplayName("Error On Invalid Local Address")
     @DisabledOnOs({OS.WINDOWS, OS.MAC})
-    void ErrorOnInvalidLocalAddress() throws UnknownHostException, SocketException {
+    void ErrorOnInvalidLocalAddress() {
+        final Randotron randotron = Randotron.create();
         final AddressBook addressBook =
-                new RandomAddressBookGenerator().setSize(2).build();
+                RandomAddressBookBuilder.create(randotron).withSize(2).build();
         final Address address = addressBook.getAddress(addressBook.getNodeId(0));
 
         final Address badLocalAddress = address.copySetHostnameInternal("500.8.8");

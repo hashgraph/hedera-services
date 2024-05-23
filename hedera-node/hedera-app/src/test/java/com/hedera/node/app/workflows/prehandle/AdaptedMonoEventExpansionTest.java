@@ -28,6 +28,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalStaticPropertie
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.sigs.order.SigReqsManager;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -108,7 +109,7 @@ class AdaptedMonoEventExpansionTest extends AppTestBase {
     void worksAroundUnparseableTxn() {
         final var workflows = Set.of(ConsensusCreateTopic);
         given(staticProperties.workflowsEnabled()).willReturn(workflows);
-        given(nonsenseTxn.getContents()).willReturn("NONSENSE".getBytes());
+        given(nonsenseTxn.getApplicationPayload()).willReturn(Bytes.wrap("NONSENSE"));
         willAnswer(invocation -> {
                     final Consumer<Transaction> consumer = invocation.getArgument(0);
                     consumer.accept(nonsenseTxn);

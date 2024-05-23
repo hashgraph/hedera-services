@@ -30,8 +30,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
-import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
@@ -63,6 +63,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
@@ -80,7 +81,6 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
-import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
@@ -610,7 +610,7 @@ public class HandleWorkflow {
         } catch (final Exception e) {
             logger.error("Possibly CATASTROPHIC failure while handling a user transaction", e);
             if (transactionInfo == null) {
-                final var baseData = extractTransactionBaseData(platformTxn.getContents());
+                final var baseData = extractTransactionBaseData(platformTxn.getApplicationPayload());
                 if (baseData.transaction() == null) {
                     // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement
                     logger.error("Failed to parse transaction from creator: {}", creator);
@@ -1034,15 +1034,15 @@ public class HandleWorkflow {
             @Nullable TransactionBody txBody,
             @Nullable AccountID payer) {}
 
-    private TransactionBaseData extractTransactionBaseData(@Nullable final byte[] contents) {
+    private TransactionBaseData extractTransactionBaseData(@NonNull final Bytes content) {
         // This method is only called if something fatal happened. We do a best effort approach to extract the
         // type of the transaction, the TransactionBody and the payer if not known.
-        if (contents == null || contents.length == 0) {
+        if (content.length() == 0) {
             return new TransactionBaseData(NONE, Bytes.EMPTY, null, null, null);
         }
 
         HederaFunctionality function = NONE;
-        Bytes transactionBytes = Bytes.wrap(contents);
+        Bytes transactionBytes = content;
         Transaction transaction = null;
         TransactionBody txBody = null;
         AccountID payer = null;

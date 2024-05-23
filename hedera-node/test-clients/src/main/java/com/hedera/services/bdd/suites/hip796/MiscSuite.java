@@ -54,14 +54,14 @@ import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.WIPI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.hip796.operations.DesiredAccountTokenRelation;
 import com.hedera.services.bdd.suites.hip796.operations.TokenFeature;
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * A suite for user stories Misc-1 through Misc-6 from HIP-796.
@@ -69,12 +69,11 @@ import org.apache.logging.log4j.Logger;
 
 // too may parameters
 @SuppressWarnings("java:S1192")
-// @HapiTestSuite
 public class MiscSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MiscSuite.class);
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 tokenOpsUnchangedWithPartitionDefinitions(),
                 rentNotYetChargedForPartitionAndDefinitions(),
@@ -93,8 +92,7 @@ public class MiscSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec tokenOpsUnchangedWithPartitionDefinitions() {
+    final Stream<DynamicTest> tokenOpsUnchangedWithPartitionDefinitions() {
         return defaultHapiSpec("TokenOpsUnchangedWithPartitionDefinitions")
                 .given(
                         // Create a partitioned token with all features
@@ -141,8 +139,7 @@ public class MiscSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec rentNotYetChargedForPartitionAndDefinitions() {
+    final Stream<DynamicTest> rentNotYetChargedForPartitionAndDefinitions() {
         return propertyPreservingHapiSpec("RentNotYetChargedForPartitionAndDefinitions")
                 .preserving("ledger.autoRenewPeriod.minDuration")
                 .given(
@@ -182,8 +179,7 @@ public class MiscSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec approvalAllowanceSpecificPartition() {
+    final Stream<DynamicTest> approvalAllowanceSpecificPartition() {
         return defaultHapiSpec("ApprovalAllowanceSpecificPartition")
                 .given(
                         fungibleTokenWithFeatures(PARTITIONING)
@@ -242,8 +238,7 @@ public class MiscSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec accountExpiryAndReclamationIsNotEnabled() {
+    final Stream<DynamicTest> accountExpiryAndReclamationIsNotEnabled() {
         return propertyPreservingHapiSpec("AccountExpiryAndReclamationIsNotEnabled")
                 .preserving("ledger.autoRenewPeriod.minDuration")
                 .given(
@@ -279,8 +274,7 @@ public class MiscSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec accountDeletionWithTokenHoldings() {
+    final Stream<DynamicTest> accountDeletionWithTokenHoldings() {
         return defaultHapiSpec("AccountDeletionWithTokenHoldings")
                 .given(fungibleTokenWithFeatures(PARTITIONING, WIPING)
                         .withPartitions(RED_PARTITION)
@@ -304,8 +298,7 @@ public class MiscSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec customFeesAtTokenDefinitionLevel() {
+    final Stream<DynamicTest> customFeesAtTokenDefinitionLevel() {
         return defaultHapiSpec("CustomFeesAtTokenDefinitionLevel")
                 .given(fungibleTokenWithFeatures(PARTITIONING, CUSTOM_FEE_SCHEDULE_MANAGEMENT)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION)

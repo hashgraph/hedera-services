@@ -47,8 +47,6 @@ import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.preconsensus.durability.DefaultRoundDurabilityBuffer;
 import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
-import com.swirlds.platform.event.runninghash.DefaultRunningEventHasher;
-import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.DefaultSelfEventSigner;
 import com.swirlds.platform.event.signing.SelfEventSigner;
 import com.swirlds.platform.event.stale.DefaultStaleEventDetector;
@@ -67,6 +65,10 @@ import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.pool.DefaultTransactionPool;
 import com.swirlds.platform.pool.TransactionPool;
+import com.swirlds.platform.state.hasher.DefaultStateHasher;
+import com.swirlds.platform.state.hasher.StateHasher;
+import com.swirlds.platform.state.hashlogger.DefaultHashLogger;
+import com.swirlds.platform.state.hashlogger.HashLogger;
 import com.swirlds.platform.state.iss.DefaultIssDetector;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssScratchpad;
@@ -75,6 +77,8 @@ import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
+import com.swirlds.platform.state.snapshot.DefaultStateSnapshotManager;
+import com.swirlds.platform.state.snapshot.StateSnapshotManager;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.status.DefaultStatusStateMachine;
@@ -115,7 +119,6 @@ public class PlatformComponentBuilder {
     private SelfEventSigner selfEventSigner;
     private StateGarbageCollector stateGarbageCollector;
     private OrphanBuffer orphanBuffer;
-    private RunningEventHasher runningEventHasher;
     private EventCreationManager eventCreationManager;
     private ConsensusEngine consensusEngine;
     private ConsensusEventStream consensusEventStream;
@@ -130,6 +133,11 @@ public class PlatformComponentBuilder {
     private StaleEventDetector staleEventDetector;
     private TransactionResubmitter transactionResubmitter;
     private TransactionPool transactionPool;
+    private StateHasher stateHasher;
+    private StateSnapshotManager stateSnapshotManager;
+    private HashLogger hashLogger;
+
+    private boolean metricsDocumentationEnabled = true;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -178,16 +186,30 @@ public class PlatformComponentBuilder {
         try (final ReservedSignedState initialState = blocks.initialState()) {
             return new SwirldsPlatform(this);
         } finally {
-
-            // Future work: eliminate the static variables that require this code to exist
-            if (blocks.firstPlatform()) {
-                MetricsDocUtils.writeMetricsDocumentToFile(
-                        getGlobalMetrics(),
-                        getPlatforms(),
-                        blocks.platformContext().getConfiguration());
-                getMetricsProvider().start();
+            if (metricsDocumentationEnabled) {
+                // Future work: eliminate the static variables that require this code to exist
+                if (blocks.firstPlatform()) {
+                    MetricsDocUtils.writeMetricsDocumentToFile(
+                            getGlobalMetrics(),
+                            getPlatforms(),
+                            blocks.platformContext().getConfiguration());
+                    getMetricsProvider().start();
+                }
             }
         }
+    }
+
+    /**
+     * If enabled, building this object will cause a metrics document to be generated. Default is true.
+     *
+     * @param metricsDocumentationEnabled whether to generate a metrics document
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withMetricsDocumentationEnabled(final boolean metricsDocumentationEnabled) {
+        throwIfAlreadyUsed();
+        this.metricsDocumentationEnabled = metricsDocumentationEnabled;
+        return this;
     }
 
     /**
@@ -421,38 +443,6 @@ public class PlatformComponentBuilder {
         this.orphanBuffer = Objects.requireNonNull(orphanBuffer);
 
         return this;
-    }
-
-    /**
-     * Provide a running event hasher in place of the platform's default running event hasher.
-     *
-     * @param runningEventHasher the running event hasher to use
-     * @return this builder
-     */
-    @NonNull
-    public PlatformComponentBuilder withRunningEventHasher(@NonNull final RunningEventHasher runningEventHasher) {
-        throwIfAlreadyUsed();
-        if (this.runningEventHasher != null) {
-            throw new IllegalStateException("Running event hasher has already been set");
-        }
-        this.runningEventHasher = Objects.requireNonNull(runningEventHasher);
-        return this;
-    }
-
-    /**
-     * Build the running event hasher if it has not yet been built. If one has been provided via
-     * {@link #withRunningEventHasher(RunningEventHasher)}, that hasher will be used. If this method is called more than
-     * once, only the first call will build the running event hasher. Otherwise, the default hasher will be created and
-     * returned.
-     *
-     * @return the running event hasher
-     */
-    @NonNull
-    public RunningEventHasher buildRunningEventHasher() {
-        if (runningEventHasher == null) {
-            runningEventHasher = new DefaultRunningEventHasher();
-        }
-        return runningEventHasher;
     }
 
     /**
@@ -996,5 +986,104 @@ public class PlatformComponentBuilder {
                     blocks.intakeEventCounter());
         }
         return gossip;
+    }
+
+    /**
+     * Provide a state hasher in place of the platform's default state hasher.
+     *
+     * @param stateHasher the state hasher to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withStateHasher(@NonNull final StateHasher stateHasher) {
+        throwIfAlreadyUsed();
+        if (this.stateHasher != null) {
+            throw new IllegalStateException("Signed state hasher has already been set");
+        }
+        this.stateHasher = Objects.requireNonNull(stateHasher);
+        return this;
+    }
+
+    /**
+     * Build the state hasher if it has not yet been built. If one has been provided via
+     * {@link #withStateHasher(StateHasher)}, that hasher will be used. If this method is called more than once, only
+     * the first call will build the state hasher. Otherwise, the default hasher will be created and returned.
+     *
+     * @return the signed state hasher
+     */
+    @NonNull
+    public StateHasher buildStateHasher() {
+        if (stateHasher == null) {
+            stateHasher = new DefaultStateHasher(blocks.platformContext());
+        }
+        return stateHasher;
+    }
+
+    /**
+     * Provide a state snapshot manager in place of the platform's default state snapshot manager.
+     *
+     * @param stateSnapshotManager the state snapshot manager to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withStateSnapshotManager(@NonNull final StateSnapshotManager stateSnapshotManager) {
+        throwIfAlreadyUsed();
+        if (this.stateSnapshotManager != null) {
+            throw new IllegalStateException("State snapshot manager has already been set");
+        }
+        this.stateSnapshotManager = Objects.requireNonNull(stateSnapshotManager);
+        return this;
+    }
+
+    /**
+     * Build the state snapshot manager if it has not yet been built. If one has been provided via
+     * {@link #withStateSnapshotManager(StateSnapshotManager)}, that manager will be used. If this method is called more
+     * than once, only the first call will build the state snapshot manager. Otherwise, the default manager will be
+     * created and returned.
+     *
+     * @return the state snapshot manager
+     */
+    @NonNull
+    public StateSnapshotManager buildStateSnapshotManager() {
+        if (stateSnapshotManager == null) {
+            final StateConfig stateConfig =
+                    blocks.platformContext().getConfiguration().getConfigData(StateConfig.class);
+            final String actualMainClassName = stateConfig.getMainClassName(blocks.mainClassName());
+
+            stateSnapshotManager = new DefaultStateSnapshotManager(
+                    blocks.platformContext(), actualMainClassName, blocks.selfId(), blocks.swirldName());
+        }
+        return stateSnapshotManager;
+    }
+
+    /**
+     * Provide a hash logger in place of the platform's default hash logger.
+     *
+     * @param hashLogger the hash logger to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withHashLogger(@NonNull final HashLogger hashLogger) {
+        throwIfAlreadyUsed();
+        if (this.hashLogger != null) {
+            throw new IllegalStateException("Hash logger has already been set");
+        }
+        this.hashLogger = Objects.requireNonNull(hashLogger);
+        return this;
+    }
+
+    /**
+     * Build the hash logger if it has not yet been built. If one has been provided via
+     * {@link #withHashLogger(HashLogger)}, that logger will be used. If this method is called more than once, only the
+     * first call will build the hash logger. Otherwise, the default logger will be created and returned.
+     *
+     * @return the hash logger
+     */
+    @NonNull
+    public HashLogger buildHashLogger() {
+        if (hashLogger == null) {
+            hashLogger = new DefaultHashLogger(blocks.platformContext());
+        }
+        return hashLogger;
     }
 }

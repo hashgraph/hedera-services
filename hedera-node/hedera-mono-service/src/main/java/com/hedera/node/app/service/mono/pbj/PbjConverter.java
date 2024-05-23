@@ -53,10 +53,10 @@ import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
-import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.ParseException;
@@ -789,6 +789,7 @@ public final class PbjConverter {
             case INVALID_SERVICE_ENDPOINT -> ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
             case INVALID_GOSSIP_CAE_CERTIFICATE -> ResponseCodeEnum.INVALID_GOSSIP_CAE_CERTIFICATE;
             case INVALID_GRPC_CERTIFICATE -> ResponseCodeEnum.INVALID_GRPC_CERTIFICATE;
+            case INVALID_MAX_AUTO_ASSOCIATIONS -> ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
             case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }
@@ -1337,6 +1338,8 @@ public final class PbjConverter {
                     .INVALID_GOSSIP_CAE_CERTIFICATE;
             case INVALID_GRPC_CERTIFICATE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
                     .INVALID_GRPC_CERTIFICATE;
+            case INVALID_MAX_AUTO_ASSOCIATIONS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .INVALID_MAX_AUTO_ASSOCIATIONS;
                 //            case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }

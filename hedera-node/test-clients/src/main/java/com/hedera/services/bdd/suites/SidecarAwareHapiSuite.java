@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.stateChangesToGrpc;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion.recordStreamLocFor;
 import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.getInitcode;
@@ -66,7 +67,7 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
      * Initialize the sidecar watcher for the current spec.
      * @return A {@link CustomSpecAssert} that will initialize the sidecar watcher.
      */
-    protected static CustomSpecAssert initializeSidecarWatcher() {
+    public static CustomSpecAssert initializeSidecarWatcher() {
         return withOpContext((spec, opLog) -> {
             final Path path = Paths.get(recordStreamLocFor(spec));
             if (LOG.isInfoEnabled()) {
@@ -81,10 +82,10 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
      * Waits for expected sidecars and tears down the sidecar watcher for the current spec.
      * @return A {@link CustomSpecAssert} that will tear down the sidecar watcher.
      */
-    protected static CustomSpecAssert tearDownSidecarWatcher() {
+    public static CustomSpecAssert tearDownSidecarWatcher() {
         return withOpContext((spec, opLog) -> {
             // send a dummy transaction to trigger externalization of last sidecars
-            allRunFor(spec, cryptoCreate("externalizeFinalSidecars").delayBy(3000));
+            allRunFor(spec, sleepFor(3000), cryptoCreate("externalizeFinalSidecars"));
             sidecarWatcher.waitUntilFinished();
             sidecarWatcher.tearDown();
         });
@@ -104,7 +105,7 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
      * @param actions The contract actions to expect in the sidecar.
      * @return A {@link CustomSpecAssert} that will expect the sidecar file to be generated.
      */
-    protected static CustomSpecAssert expectContractActionSidecarFor(
+    public static CustomSpecAssert expectContractActionSidecarFor(
             final String txnName, final List<ContractAction> actions) {
         return withOpContext((spec, opLog) -> {
             final var txnRecord = getTxnRecord(txnName);
@@ -126,7 +127,7 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
      * @param stateChanges The contract state changes to expect in the sidecar.
      * @return A {@link CustomSpecAssert} that will expect the sidecar file to be generated.
      */
-    protected static CustomSpecAssert expectContractStateChangesSidecarFor(
+    public static CustomSpecAssert expectContractStateChangesSidecarFor(
             final String txnName, final List<StateChange> stateChanges) {
         return withOpContext((spec, opLog) -> {
             final var txnRecord = getTxnRecord(txnName);
@@ -152,7 +153,7 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
      * @param constructorArgs The constructor arguments to use for the init-code.
      * @return {@link CustomSpecAssert} expecting the sidecar file to be generated.
      */
-    protected static CustomSpecAssert expectContractBytecodeSidecarFor(
+    public static CustomSpecAssert expectContractBytecodeSidecarFor(
             final String txnName,
             final String contractName,
             final String binFileName,
@@ -189,7 +190,7 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
      * @param constructorArgs The constructor arguments to use for the init-code.
      * @return {@link CustomSpecAssert} expecting the sidecar file to be generated.
      */
-    protected static CustomSpecAssert expectFailedContractBytecodeSidecarFor(
+    public static CustomSpecAssert expectFailedContractBytecodeSidecarFor(
             final String txnName, final String binFileName, final Object... constructorArgs) {
         return withOpContext((spec, opLog) -> {
             final var txnRecord = getTxnRecord(txnName);
@@ -215,7 +216,7 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
      * @param contractName The name of the contract to expect the bytecode for.
      * @return {@link CustomSpecAssert} expecting the sidecar file to be generated.
      */
-    protected static CustomSpecAssert expectContractBytecodeWithMinimalFieldsSidecarFor(
+    public static CustomSpecAssert expectContractBytecodeWithMinimalFieldsSidecarFor(
             final String txnName, final String contractName) {
         return withOpContext((spec, opLog) -> {
             final var txnRecord = getTxnRecord(txnName).andAllChildRecords();
@@ -247,7 +248,7 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
      * @param contractName The name of the contract.
      * @return {@link CustomSpecAssert} expecting the sidecar file to be generated.
      */
-    protected static CustomSpecAssert expectContractBytecode(final String txnName, final String contractName) {
+    public static CustomSpecAssert expectContractBytecode(final String txnName, final String contractName) {
         return withOpContext((spec, opLog) -> {
             final var txnRecord = getTxnRecord(txnName);
             final var contractBytecode = getContractBytecode(contractName).saveResultTo(RUNTIME_CODE);
@@ -280,7 +281,7 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
      * @param initCode The init bytecode of the contract.
      * @param runtimeCode The runtime bytecode of the contract.
      */
-    protected static void expectContractBytecode(
+    public static void expectContractBytecode(
             final String specName,
             final Timestamp consensusTimestamp,
             final ContractID contractID,
@@ -304,7 +305,7 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
      * Asserts that there are no mismatched sidecars and no pending sidecars.
      * @return {@link CustomSpecAssert} with the assertions.
      */
-    protected static CustomSpecAssert assertNoMismatchedSidecars() {
+    public static CustomSpecAssert assertNoMismatchedSidecars() {
         return assertionsHold((spec, assertLog) -> {
             assertTrue(sidecarWatcher.thereAreNoMismatchedSidecars(), sidecarWatcher.getMismatchErrors());
             assertTrue(

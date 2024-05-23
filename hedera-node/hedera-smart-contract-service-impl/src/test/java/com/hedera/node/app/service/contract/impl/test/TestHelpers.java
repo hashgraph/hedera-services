@@ -75,6 +75,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerifi
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.TokenKeyType;
 import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadataRef;
@@ -227,6 +228,14 @@ public class TestHelpers {
 
     public static final com.esaulpaugh.headlong.abi.Address NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS =
             asHeadlongAddress(asEvmAddress(NON_FUNGIBLE_TOKEN_ID.tokenNum()));
+
+    public static final Account A_DELETED_CONTRACT = Account.newBuilder()
+            .deleted(true)
+            .smartContract(true)
+            .accountId(AccountID.newBuilder()
+                    .accountNum(CALLED_CONTRACT_ID.contractNumOrThrow())
+                    .build())
+            .build();
 
     public static final Token FUNGIBLE_TOKEN = Token.newBuilder()
             .tokenId(FUNGIBLE_TOKEN_ID)
@@ -825,6 +834,21 @@ public class TestHelpers {
         return org.apache.tuweni.bytes.Bytes.concatenate(
                 org.apache.tuweni.bytes.Bytes.wrap(HtsCallAttempt.REDIRECT_FOR_TOKEN.selector()),
                 tokenAddress,
+                org.apache.tuweni.bytes.Bytes.of(subSelector));
+    }
+
+    // Encode given a ByteBuffer and accountId input bytes for a call to a given contract.
+    // Largely, this is used to encode the call to redirectToAccount() proxy contract for testing purposes.
+    public static org.apache.tuweni.bytes.Bytes bytesForRedirectAccount(
+            final ByteBuffer encodedCall, final AccountID accountID) {
+        return bytesForRedirectAccount(encodedCall.array(), asLongZeroAddress(accountID.accountNum()));
+    }
+
+    public static org.apache.tuweni.bytes.Bytes bytesForRedirectAccount(
+            final byte[] subSelector, final Address accountAddress) {
+        return org.apache.tuweni.bytes.Bytes.concatenate(
+                org.apache.tuweni.bytes.Bytes.wrap(HasCallAttempt.REDIRECT_FOR_ACCOUNT.selector()),
+                accountAddress,
                 org.apache.tuweni.bytes.Bytes.of(subSelector));
     }
 
