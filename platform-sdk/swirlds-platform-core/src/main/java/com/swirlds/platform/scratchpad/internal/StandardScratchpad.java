@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.scratchpad.internal;
+package com.swirlds.platform.scratchpad.internal;
 
 import static com.swirlds.common.io.utility.LegacyTemporaryFileBuilder.buildTemporaryFile;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
@@ -28,11 +28,11 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.scratchpad.Scratchpad;
-import com.swirlds.common.scratchpad.ScratchpadType;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.Locked;
+import com.swirlds.platform.scratchpad.Scratchpad;
+import com.swirlds.platform.scratchpad.ScratchpadType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedInputStream;

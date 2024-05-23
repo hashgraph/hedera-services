@@ -18,9 +18,9 @@ package com.swirlds.platform.state.iss;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.utility.SerializableLong;
-import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
