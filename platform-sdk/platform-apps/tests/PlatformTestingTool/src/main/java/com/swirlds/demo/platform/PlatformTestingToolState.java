@@ -653,11 +653,14 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         throwIfImmutable();
         roundCounter++;
 
-        logger.info(
-                DEMO_INFO.getMarker(),
-                "Copying round {}, transactions ignored by expected map: {}." + " This log is added to debug #11254",
-                roundCounter,
-                transactionsIgnoredByExpectedMap);
+        if (transactionsIgnoredByExpectedMap > 0) {
+            logger.info(
+                    DEMO_INFO.getMarker(),
+                    "Copying round {}, transactions ignored by expected map: {}."
+                            + " This log is added to debug #11254",
+                    roundCounter,
+                    transactionsIgnoredByExpectedMap);
+        }
 
         final PlatformTestingToolState mutableCopy = new PlatformTestingToolState(this);
 
@@ -1306,7 +1309,6 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         if (trigger == InitTrigger.RESTART) {
             rebuildExpectedMapFromState(Instant.EPOCH, true);
             rebuildExpirationQueue();
-            expectedFCMFamily.setNodeId(platform.getSelfId().id());
         }
 
         this.platform = platform;
