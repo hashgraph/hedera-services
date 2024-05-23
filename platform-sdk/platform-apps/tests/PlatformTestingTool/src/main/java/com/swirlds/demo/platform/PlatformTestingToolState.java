@@ -1303,6 +1303,11 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             final InitTrigger trigger,
             final SoftwareVersion previousSoftwareVersion) {
 
+        if (trigger == InitTrigger.RESTART) {
+            rebuildExpectedMapFromState(Instant.EPOCH, true);
+            rebuildExpirationQueue();
+        }
+
         this.platform = platform;
         UnsafeMutablePTTStateAccessor.getInstance().setMutableState(platform.getSelfId(), this);
 
