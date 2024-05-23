@@ -68,16 +68,12 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class TokenRejectSuite {
-
-    private static final Logger log = LogManager.getLogger(TokenRejectSuite.class);
 
     private static final long TOTAL_SUPPLY = 1_000;
 
