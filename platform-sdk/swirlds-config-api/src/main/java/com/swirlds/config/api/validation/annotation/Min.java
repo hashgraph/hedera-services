@@ -35,7 +35,7 @@ import java.lang.annotation.Target;
 public @interface Min {
 
     /**
-     * Defines the minimum value that is allowed for the annotated number
+     * Defines the minimum value that is allowed for the annotated number.
      *
      * @return the minimum value that is allowed
      */

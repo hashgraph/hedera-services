@@ -22,6 +22,8 @@ import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.MetricConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
 
@@ -48,6 +50,7 @@ public abstract class DefaultMetric implements Metric, PlatformMetric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public String getCategory() {
         return category;
@@ -56,6 +59,7 @@ public abstract class DefaultMetric implements Metric, PlatformMetric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public String getName() {
         return name;
@@ -65,11 +69,13 @@ public abstract class DefaultMetric implements Metric, PlatformMetric {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public String getDescription() {
         return description;
     }
 
     @Override
+    @NonNull
     public String getUnit() {
         return unit;
     }
@@ -78,6 +84,7 @@ public abstract class DefaultMetric implements Metric, PlatformMetric {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public String getFormat() {
         return format;
     }
@@ -89,7 +96,7 @@ public abstract class DefaultMetric implements Metric, PlatformMetric {
      *
      * @return the list of {@code ValueTypes} with their current values
      */
-    public abstract List<SnapshotEntry> takeSnapshot();
+    public abstract @NonNull List<SnapshotEntry> takeSnapshot();
 
     /**
      * {@inheritDoc}
@@ -102,6 +109,7 @@ public abstract class DefaultMetric implements Metric, PlatformMetric {
     /**
      * {@inheritDoc}
      */
+    @Nullable
     @SuppressWarnings("removal")
     @Override
     public StatsBuffered getStatsBuffered() {

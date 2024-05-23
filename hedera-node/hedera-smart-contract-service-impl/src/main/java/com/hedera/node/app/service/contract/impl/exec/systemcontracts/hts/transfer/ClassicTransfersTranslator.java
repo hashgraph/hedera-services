@@ -18,14 +18,16 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.trans
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ApprovalSwitchHelper.APPROVAL_SWITCH_HELPER;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.CallStatusStandardizer.CALL_STATUS_STANDARDIZER;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SpecialRewardReceivers.SPECIAL_REWARD_RECEIVERS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SystemAccountCreditScreen.SYSTEM_ACCOUNT_CREDIT_SCREEN;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -34,7 +36,7 @@ import javax.inject.Singleton;
  * Translates "classic" {@code cryptoTransfer()} calls to the HTS system contract.
  */
 @Singleton
-public class ClassicTransfersTranslator extends AbstractHtsCallTranslator {
+public class ClassicTransfersTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     public static final Function CRYPTO_TRANSFER =
             new Function("cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])", ReturnTypes.INT_64);
     public static final Function CRYPTO_TRANSFER_V2 = new Function(
@@ -79,17 +81,24 @@ public class ClassicTransfersTranslator extends AbstractHtsCallTranslator {
                 attempt.systemContractGasCalculator(),
                 attempt.enhancement(),
                 selector,
-                attempt.senderId(),
+                // This is the only place we don't use the EVM sender id, because
+                // we need to switch debits to approvals based on whether the
+                // mono-service would have activated a key; and its key activation
+                // test would use the qualified delegate id if applicable
+                // test would use the qualified delegate id if applicable.
+                // Only certain functions support qualified delegates, so restrict to those.
+                isClassicCallSupportingQualifiedDelegate(selector) ? attempt.authorizingId() : attempt.senderId(),
                 decoder.checkForFailureStatus(attempt),
                 nominalBodyFor(attempt),
                 attempt.configuration(),
                 isClassicCall(selector) ? APPROVAL_SWITCH_HELPER : null,
                 CALL_STATUS_STANDARDIZER,
                 attempt.defaultVerificationStrategy(),
-                SYSTEM_ACCOUNT_CREDIT_SCREEN);
+                SYSTEM_ACCOUNT_CREDIT_SCREEN,
+                SPECIAL_REWARD_RECEIVERS);
     }
 
-    private TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
+    private @Nullable TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
         if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.CRYPTO_TRANSFER.selector())) {
             return decoder.decodeCryptoTransfer(attempt.inputBytes(), attempt.addressIdConverter());
         } else if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.selector())) {
@@ -113,6 +122,13 @@ public class ClassicTransfersTranslator extends AbstractHtsCallTranslator {
         return Arrays.equals(selector, ClassicTransfersTranslator.CRYPTO_TRANSFER.selector())
                 || Arrays.equals(selector, ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.selector())
                 || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_TOKENS.selector())
+                || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_TOKEN.selector())
+                || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_NFTS.selector())
+                || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_NFT.selector());
+    }
+
+    private boolean isClassicCallSupportingQualifiedDelegate(@NonNull final byte[] selector) {
+        return Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_TOKENS.selector())
                 || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_TOKEN.selector())
                 || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_NFTS.selector())
                 || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_NFT.selector());

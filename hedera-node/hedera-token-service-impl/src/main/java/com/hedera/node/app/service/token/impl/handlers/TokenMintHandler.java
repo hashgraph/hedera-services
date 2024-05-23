@@ -38,19 +38,15 @@ import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePr
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
@@ -71,9 +67,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -85,6 +79,10 @@ import javax.inject.Singleton;
 public class TokenMintHandler extends BaseTokenHandler implements TransactionHandler {
     private final TokenSupplyChangeOpsValidator validator;
 
+    /**
+     * Default constructor for injection.
+     * @param validator the token supply change ops validator
+     */
     @Inject
     public TokenMintHandler(@NonNull final TokenSupplyChangeOpsValidator validator) {
         this.validator = requireNonNull(validator);
@@ -163,9 +161,6 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
                     nftStore);
             recordBuilder.newTotalSupply(tokenStore.get(tokenId).totalSupply());
             recordBuilder.serialNumbers(mintedSerials);
-            // TODO: Need to build transfer ownership from list to transfer NFT to treasury
-            // This should probably be done in finalize method on token service which constructs the
-            // transfer list looking at state
         }
         recordBuilder.tokenType(token.tokenType());
     }
@@ -211,7 +206,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         final var tokenId = treasuryRel.tokenId();
 
         // get the treasury account
-        final var treasuryAccount = accountStore.get(treasuryRel.accountId());
+        var treasuryAccount = accountStore.get(treasuryRel.accountIdOrThrow());
         validateTrue(treasuryAccount != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
         // get the latest serial number minted for the token
@@ -220,6 +215,8 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
 
         // Change the supply on token
         changeSupply(token, treasuryRel, metadataCount, FAIL_INVALID, accountStore, tokenStore, tokenRelStore);
+        // Since changeSupply call above modifies the treasuryAccount, we need to get the modified treasuryAccount
+        treasuryAccount = accountStore.get(treasuryRel.accountIdOrThrow());
         // The token is modified in previous step, so we need to get the modified token
         final var modifiedToken = tokenStore.get(token.tokenId());
         final var mintedSerials = new ArrayList<Long>(metadata.size());
@@ -228,8 +225,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         for (final var meta : metadata) {
             currentSerialNumber++;
             // The default sentinel account is used (0.0.0) to represent unique tokens owned by the treasury
-            final var uniqueToken =
-                    buildNewlyMintedNft(treasuryAccount, consensusTime, tokenId, meta, currentSerialNumber);
+            final var uniqueToken = buildNewlyMintedNft(consensusTime, tokenId, meta, currentSerialNumber);
             nftStore.put(uniqueToken);
             // all minted serials should be added to the receipt
             mintedSerials.add(currentSerialNumber);
@@ -251,7 +247,6 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
 
     /**
      * Builds a new unique token when minting a non-fungible token.
-     * @param treasuryAccount - the treasury account
      * @param consensusTime - the consensus time of the transaction
      * @param tokenId - the token id
      * @param meta - the metadata of the nft
@@ -260,7 +255,6 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
      */
     @NonNull
     private Nft buildNewlyMintedNft(
-            @NonNull final Account treasuryAccount,
             @NonNull final Instant consensusTime,
             @NonNull final TokenID tokenId,
             @NonNull final Bytes meta,
@@ -285,17 +279,13 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         final var op = feeContext.body().tokenMintOrThrow();
         final var subType = op.amount() > 0 ? SubType.TOKEN_FUNGIBLE_COMMON : SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
-        final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
-        final var payerId = feeContext.payer();
-        final var payerKey = readableAccountStore.getAccountById(payerId).keyOrThrow();
-
         final var calculator = feeContext.feeCalculator(subType);
         if (SubType.TOKEN_NON_FUNGIBLE_UNIQUE.equals(subType)) {
             calculator.resetUsage();
             // The price of nft mint should be increased based on number of signatures.
             // The first signature is free and is accounted in the base price, so we only need to add
             // the price of the rest of the signatures.
-            calculator.addVerificationsPerTransaction(Math.max(0, numSimpleKeys(payerKey) - 1L));
+            calculator.addVerificationsPerTransaction(Math.max(0, feeContext.numTxnSignatures() - 1));
         }
         // FUTURE: lifetime parameter is not being used by the function below, in order to avoid making changes
         // to mono-service passed a default lifetime of 3 months here
@@ -306,25 +296,5 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         calculator.addRamByteSeconds(meta.getRbs());
         calculator.addNetworkRamByteSeconds(meta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
         return calculator.calculate();
-    }
-
-    private int numSimpleKeys(final Key key) {
-        final var count = new AtomicInteger(0);
-        if (key.hasThresholdKey()) {
-            final var keys =
-                    key.thresholdKeyOrThrow().keysOrElse(KeyList.DEFAULT).keysOrElse(Collections.emptyList());
-            for (final var k : keys) {
-                count.addAndGet(numSimpleKeys(k));
-            }
-        } else if (key.hasKeyList()) {
-            final var keys = key.keyListOrElse(KeyList.DEFAULT).keysOrElse(Collections.emptyList());
-            for (final var k : keys) {
-                count.addAndGet(numSimpleKeys(k));
-            }
-        } else {
-            // FUTURE: We don't need to count contractId keys here, but we need this to pass differential testing
-            count.incrementAndGet();
-        }
-        return count.get();
     }
 }

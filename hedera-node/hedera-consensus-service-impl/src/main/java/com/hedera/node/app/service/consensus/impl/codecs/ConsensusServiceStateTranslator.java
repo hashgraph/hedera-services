@@ -25,8 +25,8 @@ import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.BiConsumer;
 
@@ -85,8 +85,8 @@ public class ConsensusServiceStateTranslator {
             @NonNull TopicID topicID, @NonNull ReadableTopicStore readableTopicStore) {
         requireNonNull(topicID);
         requireNonNull(readableTopicStore);
-        final var optionalFile = readableTopicStore.getTopicLeaf(topicID);
-        return pbjToState(optionalFile.orElseThrow(() -> new IllegalArgumentException("Topic not found")));
+        final var topic = readableTopicStore.getTopic(topicID);
+        return pbjToState(topic);
     }
 
     /**

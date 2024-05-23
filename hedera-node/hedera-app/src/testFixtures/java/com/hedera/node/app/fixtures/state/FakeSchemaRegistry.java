@@ -16,23 +16,24 @@
 
 package com.hedera.node.app.fixtures.state;
 
-import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
+
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
-import com.hedera.node.app.spi.fixtures.throttle.FakeHandleThrottleParser;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.node.app.spi.state.WritableSingletonStateBase;
-import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.spi.throttle.HandleThrottleParser;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.state.spi.WritableSingletonStateBase;
+import com.swirlds.platform.test.fixtures.state.ListWritableQueueState;
+import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -82,6 +83,11 @@ public class FakeSchemaRegistry implements SchemaRegistry {
                     // No-op
                 }
 
+                @Override
+                public SemanticVersion previousVersion() {
+                    return CURRENT_VERSION;
+                }
+
                 @NonNull
                 @Override
                 public ReadableStates previousStates() {
@@ -104,12 +110,6 @@ public class FakeSchemaRegistry implements SchemaRegistry {
                 @Override
                 public GenesisRecordsBuilder genesisRecordsBuilder() {
                     return new NoOpGenesisRecordsBuilder();
-                }
-
-                @NonNull
-                @Override
-                public HandleThrottleParser handleThrottling() {
-                    return new FakeHandleThrottleParser();
                 }
 
                 @Override

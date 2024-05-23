@@ -18,10 +18,10 @@ package com.hedera.node.app.services;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
-import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
@@ -38,6 +38,12 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public final class ServicesRegistryImpl implements ServicesRegistry {
     private static final Logger logger = LogManager.getLogger(ServicesRegistryImpl.class);
+    /**
+     * Use a constant version to be passed to the schema registration.
+     * If the version changes the class id will be different and the upgrade will have issues.
+     */
+    private final SemanticVersion VERSION =
+            SemanticVersion.newBuilder().major(0).minor(49).patch(0).build();
     /** We have to register with the {@link ConstructableRegistry} based on the schemas of the services */
     private final ConstructableRegistry constructableRegistry;
     /** The set of registered services */
@@ -60,14 +66,13 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
      * Register the given service.
      *
      * @param service The service to register
-     * @param version
      */
-    public void register(@NonNull final Service service, final HederaSoftwareVersion version) {
+    public void register(@NonNull final Service service) {
         final var serviceName = service.getServiceName();
 
         logger.debug("Registering schemas for service {}", serviceName);
         final var registry = new MerkleSchemaRegistry(constructableRegistry, serviceName, genesisRecords);
-        service.registerSchemas(registry, version.getServicesVersion());
+        service.registerSchemas(registry, VERSION);
 
         entries.add(new Registration(service, registry));
         logger.info("Registered service {} with implementation {}", service.getServiceName(), service.getClass());

@@ -25,14 +25,16 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.transfer.CustomFeeAssessmentStep;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.api.ServiceApiProvider;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Provides {@link TokenServiceApi} instances.
  */
 public enum TokenServiceApiProvider implements ServiceApiProvider<TokenServiceApi> {
+    /** The singleton instance. */
     TOKEN_SERVICE_API_PROVIDER;
 
     private final StakingValidator stakingValidator = new StakingValidator();
@@ -44,8 +46,10 @@ public enum TokenServiceApiProvider implements ServiceApiProvider<TokenServiceAp
 
     @Override
     public TokenServiceApi newInstance(
-            @NonNull final Configuration configuration, @NonNull final WritableStates writableStates) {
-        return new TokenServiceApiImpl(configuration, stakingValidator, writableStates, op -> {
+            @NonNull final Configuration configuration,
+            @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final WritableStates writableStates) {
+        return new TokenServiceApiImpl(configuration, storeMetricsService, stakingValidator, writableStates, op -> {
             final var assessor = new CustomFeeAssessmentStep(op);
             try {
                 final var result = assessor.assessFees(

@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
-import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.base.MoreObjects;
@@ -31,8 +30,6 @@ import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.stream.proto.SingleAccountBalances;
-import com.hedera.services.stream.proto.TokenUnitBalance;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
@@ -70,8 +67,6 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
     private static final Logger log = LogManager.getLogger(HapiGetAccountBalance.class);
 
     private String account;
-    private Optional<AccountID> accountID = Optional.empty();
-    private boolean exportAccount = false;
     Optional<Long> expected = Optional.empty();
     Optional<Supplier<String>> entityFn = Optional.empty();
     Optional<Function<HapiSpec, Function<Long, Optional<String>>>> expectedCondition = Optional.empty();
@@ -165,11 +160,6 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 
     public HapiGetAccountBalance exposingBalanceTo(final LongConsumer obs) {
         balanceObserver = obs;
-        return this;
-    }
-
-    public HapiGetAccountBalance persists(boolean toExport) {
-        exportAccount = toExport;
         return this;
     }
 
@@ -275,26 +265,11 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
                 }
             }
         }
-
-        if (exportAccount && accountID.isPresent()) {
-            SingleAccountBalances.Builder sab = SingleAccountBalances.newBuilder();
-            List<TokenUnitBalance> tokenUnitBalanceList =
-                    response.getCryptogetAccountBalance().getTokenBalancesList().stream()
-                            .map(a -> TokenUnitBalance.newBuilder()
-                                    .setTokenId(a.getTokenId())
-                                    .setBalance(a.getBalance())
-                                    .build())
-                            .collect(Collectors.toList());
-            sab.setAccountID(accountID.get())
-                    .setHbarBalance(response.getCryptogetAccountBalance().getBalance())
-                    .addAllTokenUnitBalances(tokenUnitBalanceList);
-            spec.saveSingleAccountBalances(sab.build());
-        }
     }
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getAccountBalanceQuery(spec, payment, false);
+        Query query = maybeModified(getAccountBalanceQuery(spec, payment, false), spec);
         response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).cryptoGetBalance(query);
         ResponseCodeEnum status =
                 response.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode();
@@ -311,7 +286,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
                 log.info(message);
             }
             if (yahcliLogger) {
-                COMMON_MESSAGES.info(String.format("%20s | %20d |", repr, balance));
+                System.out.println(".i. " + String.format("%20s | %20d |", repr, balance));
             }
         }
     }
@@ -337,10 +312,9 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             } else if (referenceType == ReferenceType.LITERAL_ACCOUNT_ALIAS) {
                 id = AccountID.newBuilder().setAlias(rawAlias).build();
             } else {
-                id = spec.registry().aliasIdFor(aliasKeySource);
+                id = spec.registry().keyAliasIdFor(aliasKeySource);
             }
             config = b -> b.setAccountID(id);
-            accountID = Optional.of(id);
         }
         CryptoGetAccountBalanceQuery.Builder query = CryptoGetAccountBalanceQuery.newBuilder()
                 .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment));

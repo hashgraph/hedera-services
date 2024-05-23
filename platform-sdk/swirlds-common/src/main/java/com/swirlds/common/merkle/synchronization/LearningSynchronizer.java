@@ -20,22 +20,19 @@ import static com.swirlds.base.units.UnitConstants.MILLISECONDS_TO_SECONDS;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.merkle.synchronization.internal.LearnerThread;
-import com.swirlds.common.merkle.synchronization.internal.Lesson;
-import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
-import com.swirlds.common.merkle.synchronization.internal.ReconnectNodeCount;
-import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
+import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
+import com.swirlds.common.merkle.synchronization.views.LearnerPushMerkleTreeView;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
-import com.swirlds.common.merkle.synchronization.views.StandardLearnerTreeView;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
@@ -132,10 +129,15 @@ public class LearningSynchronizer implements ReconnectNodeCount {
      */
     public void synchronize() throws InterruptedException {
         try {
+            logger.info(RECONNECT.getMarker(), "learner calls receiveTree()");
             receiveTree();
+            logger.info(RECONNECT.getMarker(), "learner calls initialize()");
             initialize();
+            logger.info(RECONNECT.getMarker(), "learner calls hash()");
             hash();
+            logger.info(RECONNECT.getMarker(), "learner calls logStatistics()");
             logStatistics();
+            logger.info(RECONNECT.getMarker(), "learner is done synchronizing");
         } catch (final InterruptedException ex) {
             logger.warn(RECONNECT.getMarker(), "synchronization interrupted");
             Thread.currentThread().interrupt();
@@ -266,39 +268,46 @@ public class LearningSynchronizer implements ReconnectNodeCount {
             return false;
         };
         final StandardWorkGroup workGroup =
-                new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection, reconnectExceptionListener);
+                createStandardWorkGroup(threadManager, breakConnection, reconnectExceptionListener);
 
         final LearnerTreeView<T> view;
         if (root == null || !root.hasCustomReconnectView()) {
-            view = (LearnerTreeView<T>) new StandardLearnerTreeView(root);
+            view = (LearnerTreeView<T>) new LearnerPushMerkleTreeView(reconnectConfig, root);
         } else {
             assert root instanceof CustomReconnectRoot;
-            view = ((CustomReconnectRoot<?, T>) root).buildLearnerView();
+            view = ((CustomReconnectRoot<?, T>) root).buildLearnerView(reconnectConfig);
         }
-
-        final AsyncInputStream<Lesson<T>> in =
-                new AsyncInputStream<>(inputStream, workGroup, () -> new Lesson<>(view), reconnectConfig);
-        final AsyncOutputStream<QueryResponse> out = buildOutputStream(workGroup, outputStream);
-
-        in.start();
-        out.start();
 
         final AtomicReference<T> reconstructedRoot = new AtomicReference<>();
 
-        new LearnerThread<>(workGroup, threadManager, in, out, rootsToReceive, reconstructedRoot, view, this).start();
+        view.startLearnerTasks(this, workGroup, inputStream, outputStream, rootsToReceive, reconstructedRoot);
         InterruptedException interruptException = null;
         try {
             workGroup.waitForTermination();
+
+            logger.info(
+                    RECONNECT.getMarker(),
+                    "received tree rooted at {} with route {}",
+                    root == null ? "(unknown)" : root.getClass().getName(),
+                    root == null ? "[]" : root.getRoute());
         } catch (final InterruptedException e) { // NOSONAR: Exception is rethrown below after cleanup.
             interruptException = e;
             logger.warn(RECONNECT.getMarker(), "interrupted while waiting for work group termination");
+        } catch (final Throwable t) {
+            logger.info(
+                    RECONNECT.getMarker(),
+                    "caught exception while receiving tree rooted at {} with route {}",
+                    root == null ? "(unknown)" : root.getClass().getName(),
+                    root == null ? "[]" : root.getRoute(),
+                    t);
+            throw t;
         }
 
         if (interruptException != null || workGroup.hasExceptions()) {
 
             // Depending on where the failure occurred, there may be deserialized objects still sitting in
             // the async input stream's queue that haven't been attached to any tree.
-            in.abort();
+            view.abort();
 
             final MerkleNode merkleRoot = view.getMerkleRoot(reconstructedRoot.get());
             if (merkleRoot != null && merkleRoot.getReservationCount() == 0) {
@@ -320,10 +329,17 @@ public class LearningSynchronizer implements ReconnectNodeCount {
         return view.getMerkleRoot(reconstructedRoot.get());
     }
 
+    protected StandardWorkGroup createStandardWorkGroup(
+            ThreadManager threadManager,
+            Runnable breakConnection,
+            Function<Throwable, Boolean> reconnectExceptionListener) {
+        return new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection, reconnectExceptionListener);
+    }
+
     /**
      * Build the output stream. Exposed to allow unit tests to override implementation to simulate latency.
      */
-    protected AsyncOutputStream<QueryResponse> buildOutputStream(
+    public <T extends SelfSerializable> AsyncOutputStream<T> buildOutputStream(
             final StandardWorkGroup workGroup, final SerializableDataOutputStream out) {
         return new AsyncOutputStream<>(out, workGroup, reconnectConfig);
     }

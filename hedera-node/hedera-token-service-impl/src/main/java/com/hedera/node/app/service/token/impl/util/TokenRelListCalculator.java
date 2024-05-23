@@ -44,6 +44,10 @@ public class TokenRelListCalculator {
 
     private final ReadableTokenRelationStore tokenRelStore;
 
+    /**
+     * Constructs a new {@link TokenRelListCalculator} object
+     * @param tokenRelStore the token relation store to use for fetching token relations
+     */
     public TokenRelListCalculator(@NonNull final ReadableTokenRelationStore tokenRelStore) {
         this.tokenRelStore = requireNonNull(tokenRelStore);
     }
@@ -272,6 +276,10 @@ public class TokenRelListCalculator {
             @NonNull final Map<TokenID, TokenRelation> tokenRelsToDeleteByTokenId) {
         final var accountId = account.accountId();
 
+        if (currentHeadTokenId == null) {
+            // there is no head token number to begin with, so we return null
+            return null;
+        }
         // Calculate the new head token id by walking the linked token rels until we find a token rel that is not in
         // the list of token rels to delete
         var currentTokenId = currentHeadTokenId;

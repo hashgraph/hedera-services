@@ -17,13 +17,17 @@
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
+import com.hedera.node.app.service.contract.impl.exec.CallOutcome.ExternalizeAbortResult;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.mono.fees.calculation.contract.txns.ContractCallResourceUsage;
@@ -31,6 +35,7 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -59,7 +64,9 @@ public class ContractCallHandler implements TransactionHandler {
         final var outcome = component.contextTransactionProcessor().call();
 
         // Assemble the appropriate top-level record for the result
-        outcome.addCallDetailsTo(context.recordBuilder(ContractCallRecordBuilder.class));
+        // (FUTURE) Remove ExternalizeAbortResult.NO, this is only
+        // for mono-service fidelity during differential testing
+        outcome.addCallDetailsTo(context.recordBuilder(ContractCallRecordBuilder.class), ExternalizeAbortResult.NO);
 
         throwIfUnsuccessful(outcome.status());
     }
@@ -67,6 +74,12 @@ public class ContractCallHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) {
         // No non-payer signatures to verify
+    }
+
+    @Override
+    public void pureChecks(@NonNull TransactionBody txn) throws PreCheckException {
+        final var op = txn.contractCallOrThrow();
+        mustExist(op.contractID(), INVALID_CONTRACT_ID);
     }
 
     @NonNull

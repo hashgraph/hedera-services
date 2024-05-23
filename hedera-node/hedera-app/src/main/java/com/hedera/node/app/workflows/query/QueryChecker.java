@@ -124,7 +124,7 @@ public class QueryChecker {
         final var payerID = txInfo.payerID();
         final var nodeAccountID = txInfo.txBody().nodeAccountIDOrThrow();
         final var transfers =
-                txInfo.txBody().cryptoTransferOrThrow().transfersOrThrow().accountAmountsOrThrow();
+                txInfo.txBody().cryptoTransferOrThrow().transfersOrThrow().accountAmounts();
 
         // FUTURE: Currently we check the solvency twice: once with and once without service fees (in IngestChecker)
         // https://github.com/hashgraph/hedera-services/issues/8356
@@ -218,7 +218,9 @@ public class QueryChecker {
                 feeManager,
                 storeFactory,
                 configuration,
-                authorizer);
+                authorizer,
+                // Signatures aren't applicable to queries
+                -1);
         return cryptoTransferHandler.calculateFees(feeContext).totalFee();
     }
 }

@@ -23,6 +23,7 @@ import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.threading.atomic.AtomicIntPair;
 import com.swirlds.metrics.api.MetricConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.IntSupplier;
@@ -52,6 +53,7 @@ public class DefaultIntegerPairAccumulator<T> extends DefaultMetric implements I
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public DataType getDataType() {
         return dataType;
@@ -60,6 +62,7 @@ public class DefaultIntegerPairAccumulator<T> extends DefaultMetric implements I
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public List<SnapshotEntry> takeSnapshot() {
         final T result =
@@ -70,6 +73,7 @@ public class DefaultIntegerPairAccumulator<T> extends DefaultMetric implements I
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public T get() {
         return container.compute(resultFunction);

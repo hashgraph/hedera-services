@@ -29,7 +29,7 @@ import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.WritableQueueStateBase;
+import com.swirlds.platform.state.spi.WritableQueueStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -47,7 +47,7 @@ public class RecordCacheService implements Service {
     /** The record cache service name */
     public static final String NAME = "RecordCache";
     /** The name of the queue that stores the transaction records */
-    static final String TXN_RECORD_QUEUE = "TransactionRecordQueue";
+    public static final String TXN_RECORD_QUEUE = "TransactionRecordQueue";
 
     private List<ExpirableTxnRecord> fromRecs;
 
@@ -97,6 +97,8 @@ public class RecordCacheService implements Service {
                                 .nanos(fromTransactionValidStart.getNanos());
                         var toTxnId = TransactionID.newBuilder()
                                 .accountID(fromTxnId.getPayerAccount().toPbjAccountId())
+                                .scheduled(fromTxnId.isScheduled())
+                                .nonce(fromTxnId.getNonce())
                                 .transactionValidStart(toTxnValidStart)
                                 .build();
                         var toConsensusTime = Timestamp.newBuilder()

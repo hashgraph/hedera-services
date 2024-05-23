@@ -16,23 +16,22 @@
 
 package com.hedera.node.app.fees;
 
-import static com.hedera.node.app.spi.HapiUtils.functionOf;
+import static com.hedera.hapi.util.HapiUtils.functionOf;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.UnknownHederaFunctionality;
+import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 import java.util.Objects;
 
 /**
@@ -44,21 +43,19 @@ public class ChildFeeContextImpl implements FeeContext {
     private final HandleContextImpl context;
     private final TransactionBody body;
     private final AccountID payerId;
+    private final boolean computeFeesAsInternalDispatch;
 
     public ChildFeeContextImpl(
             @NonNull final FeeManager feeManager,
             @NonNull final HandleContextImpl context,
             @NonNull final TransactionBody body,
-            @NonNull final AccountID payerId) {
+            @NonNull final AccountID payerId,
+            final boolean computeFeesAsInternalDispatch) {
         this.feeManager = Objects.requireNonNull(feeManager);
         this.context = Objects.requireNonNull(context);
         this.body = Objects.requireNonNull(body);
         this.payerId = Objects.requireNonNull(payerId);
-    }
-
-    @Override
-    public Instant currentTime() {
-        return context.consensusNow();
+        this.computeFeesAsInternalDispatch = computeFeesAsInternalDispatch;
     }
 
     @Override
@@ -76,7 +73,15 @@ public class ChildFeeContextImpl implements FeeContext {
         try {
             var storeFactory = new ReadableStoreFactory((HederaState) context.savepointStack());
             return feeManager.createFeeCalculator(
-                    body, Key.DEFAULT, functionOf(body), 0, 0, context.consensusNow(), subType, true, storeFactory);
+                    body,
+                    Key.DEFAULT,
+                    functionOf(body),
+                    0,
+                    0,
+                    context.consensusNow(),
+                    subType,
+                    computeFeesAsInternalDispatch,
+                    storeFactory);
         } catch (UnknownHederaFunctionality e) {
             throw new IllegalStateException(
                     "Child fee context was constructed with invalid transaction body " + body, e);
@@ -96,5 +101,10 @@ public class ChildFeeContextImpl implements FeeContext {
     @Override
     public @Nullable Authorizer authorizer() {
         return context.authorizer();
+    }
+
+    @Override
+    public int numTxnSignatures() {
+        return context.numTxnSignatures();
     }
 }

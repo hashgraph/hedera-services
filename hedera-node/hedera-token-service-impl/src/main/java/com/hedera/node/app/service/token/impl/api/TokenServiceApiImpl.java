@@ -42,7 +42,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
@@ -52,6 +52,7 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Predicate;
@@ -74,14 +75,23 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     private final StakingConfig stakingConfig;
     private final Predicate<CryptoTransferTransactionBody> customFeeTest;
 
+    /**
+     * Constructs a {@link TokenServiceApiImpl}
+     * @param config the configuration
+     * @param storeMetricsService the store metrics service
+     * @param stakingValidator the staking validator
+     * @param writableStates the writable states
+     * @param customFeeTest a predicate for determining if a transfer has custom fees
+     */
     public TokenServiceApiImpl(
             @NonNull final Configuration config,
+            @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final StakingValidator stakingValidator,
             @NonNull final WritableStates writableStates,
             @NonNull final Predicate<CryptoTransferTransactionBody> customFeeTest) {
         this.customFeeTest = customFeeTest;
         requireNonNull(config);
-        this.accountStore = new WritableAccountStore(writableStates);
+        this.accountStore = new WritableAccountStore(writableStates, config, storeMetricsService);
         this.stakingValidator = requireNonNull(stakingValidator);
 
         // Determine whether staking is enabled
@@ -459,8 +469,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     private Account lookupAccount(String logName, AccountID id) {
         var account = accountStore.get(id);
         if (account == null) {
-            logger.fatal("{} account {} does not exist", logName, id);
-            throw new IllegalStateException(logName + " account does not exist");
+            throw new IllegalStateException(logName + " account " + id + " does not exist");
         }
         return account;
     }

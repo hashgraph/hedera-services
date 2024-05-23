@@ -20,7 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BA
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
-import static com.hedera.node.app.spi.HapiUtils.functionOf;
+import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
@@ -53,6 +53,7 @@ import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
@@ -62,24 +63,21 @@ import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.KeyVerifier;
-import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.Scenarios;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.hedera.node.app.spi.fixtures.state.StateTestBase;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableSingletonState;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -88,7 +86,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -99,6 +97,13 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.platform.test.fixtures.state.StateTestBase;
+import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableStates;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
 import java.util.Arrays;
@@ -180,10 +185,22 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     private ChildRecordFinalizer childRecordFinalizer;
 
     @Mock
+    private ParentRecordFinalizer parentRecordFinalizer;
+
+    @Mock
     private SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
 
     @Mock
+    private NetworkUtilizationManager networkUtilizationManager;
+
+    @Mock
     private SelfNodeInfo selfNodeInfo;
+
+    @Mock
+    private PlatformState platformState;
+
+    @Mock
+    private StoreMetricsService storeMetricsService;
 
     @BeforeEach
     void setup() {
@@ -235,7 +252,11 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 authorizer,
                 solvencyPreCheck,
                 childRecordFinalizer,
-                synchronizedThrottleAccumulator);
+                parentRecordFinalizer,
+                networkUtilizationManager,
+                synchronizedThrottleAccumulator,
+                platformState,
+                storeMetricsService);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -265,7 +286,11 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             authorizer,
             solvencyPreCheck,
             childRecordFinalizer,
-            synchronizedThrottleAccumulator
+            parentRecordFinalizer,
+            networkUtilizationManager,
+            synchronizedThrottleAccumulator,
+            platformState,
+            storeMetricsService
         };
 
         final var constructor = HandleContextImpl.class.getConstructors()[0];
@@ -394,7 +419,11 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     authorizer,
                     solvencyPreCheck,
                     childRecordFinalizer,
-                    synchronizedThrottleAccumulator);
+                    parentRecordFinalizer,
+                    networkUtilizationManager,
+                    synchronizedThrottleAccumulator,
+                    platformState,
+                    storeMetricsService);
         }
 
         @Test
@@ -447,6 +476,63 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             assertThat(actual).isEqualTo(43L);
             verify(entityNumberState).get();
             verify(entityNumberState, never()).put(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("Getters work as expected")
+    final class GettersWork {
+
+        @Mock
+        private WritableStates writableStates;
+
+        private HandleContext handleContext;
+
+        @BeforeEach
+        void setUp() {
+            final var payer = ALICE.accountID();
+            final var payerKey = ALICE.account().keyOrThrow();
+            when(stack.getWritableStates(EntityIdService.NAME)).thenReturn(writableStates);
+            when(stack.getWritableStates(TokenService.NAME))
+                    .thenReturn(MapWritableStates.builder()
+                            .state(MapWritableKVState.builder("ACCOUNTS").build())
+                            .state(MapWritableKVState.builder("ALIASES").build())
+                            .build());
+            handleContext = new HandleContextImpl(
+                    defaultTransactionBody(),
+                    HederaFunctionality.CRYPTO_TRANSFER,
+                    0,
+                    payer,
+                    payerKey,
+                    networkInfo,
+                    TransactionCategory.USER,
+                    recordBuilder,
+                    stack,
+                    DEFAULT_CONFIGURATION,
+                    verifier,
+                    recordListBuilder,
+                    checker,
+                    dispatcher,
+                    serviceScopeLookup,
+                    blockRecordInfo,
+                    recordCache,
+                    feeManager,
+                    exchangeRateManager,
+                    DEFAULT_CONSENSUS_NOW,
+                    authorizer,
+                    solvencyPreCheck,
+                    childRecordFinalizer,
+                    parentRecordFinalizer,
+                    networkUtilizationManager,
+                    synchronizedThrottleAccumulator,
+                    platformState,
+                    storeMetricsService);
+        }
+
+        @Test
+        void getsFreezeTime() {
+            given(platformState.getFreezeTime()).willReturn(DEFAULT_CONSENSUS_NOW.plusSeconds(1));
+            assertThat(handleContext.freezeTime()).isEqualTo(DEFAULT_CONSENSUS_NOW.plusSeconds(1));
         }
     }
 
@@ -518,6 +604,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         void testCreateWritableStore(@Mock final WritableStates writableStates) {
             // given
             when(stack.getWritableStates(TokenService.NAME)).thenReturn(writableStates);
+            when(writableStates.get(any())).thenReturn(new MapWritableKVState<>("ACCOUNTS"));
             final var context = createContext(defaultTransactionBody());
 
             // when
@@ -717,7 +804,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             final var fees = new Fees(1L, 2L, 3L);
             given(dispatcher.dispatchComputeFees(any())).willReturn(fees);
             final var captor = ArgumentCaptor.forClass(FeeContext.class);
-            final var result = context.dispatchComputeFees(defaultTransactionBody(), account1002);
+            final var result = context.dispatchComputeFees(
+                    defaultTransactionBody(), account1002, ComputeDispatchFeesAsTopLevel.NO);
             verify(dispatcher).dispatchComputeFees(captor.capture());
             final var feeContext = captor.getValue();
             assertInstanceOf(ChildFeeContextImpl.class, feeContext);
@@ -731,7 +819,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             final var fees = new Fees(1L, 2L, 3L);
             given(dispatcher.dispatchComputeFees(any())).willReturn(fees);
             final var captor = ArgumentCaptor.forClass(FeeContext.class);
-            final var result = context.dispatchComputeFees(transactionBodyWithoutId(), account1002);
+            final var result = context.dispatchComputeFees(
+                    transactionBodyWithoutId(), account1002, ComputeDispatchFeesAsTopLevel.NO);
             verify(dispatcher).dispatchComputeFees(captor.capture());
             final var feeContext = captor.getValue();
             assertInstanceOf(ChildFeeContextImpl.class, feeContext);
@@ -926,7 +1015,11 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     authorizer,
                     solvencyPreCheck,
                     childRecordFinalizer,
-                    synchronizedThrottleAccumulator);
+                    parentRecordFinalizer,
+                    networkUtilizationManager,
+                    synchronizedThrottleAccumulator,
+                    platformState,
+                    storeMetricsService);
         }
 
         @SuppressWarnings("ConstantConditions")
@@ -1089,7 +1182,9 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         @ParameterizedTest
         @EnumSource(TransactionCategory.class)
         void testDispatchPrecedingWithNonUserTxnFails(final TransactionCategory category) {
-            if (category != TransactionCategory.USER && category != TransactionCategory.CHILD) {
+            if (category != TransactionCategory.USER
+                    && category != TransactionCategory.CHILD
+                    && category != TransactionCategory.SCHEDULED) {
                 // given
                 final var context = createContext(defaultTransactionBody(), category);
 

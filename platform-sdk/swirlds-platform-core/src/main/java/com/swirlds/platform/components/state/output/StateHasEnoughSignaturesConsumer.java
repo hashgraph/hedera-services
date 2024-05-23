@@ -20,9 +20,9 @@ import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * An event when a signed state gathers enough signatures to be considered complete. This differs from
- * {@link NewLatestCompleteStateConsumer} in that the signed state in this event may be older than the latest complete
- * signed state but just now gathered enough signatures to be considered complete. If this state is also the latest
+ * An event when a signed state gathers enough signatures to be considered complete.
+ * The signed state in this event may be older than the latest complete
+ * signed state but gathers enough signatures to be considered complete. If this state is also the latest
  * complete signed state, then both events are created.
  */
 @FunctionalInterface

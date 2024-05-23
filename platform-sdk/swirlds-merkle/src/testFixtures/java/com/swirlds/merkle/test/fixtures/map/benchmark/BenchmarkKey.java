@@ -27,7 +27,7 @@ import java.util.Objects;
  */
 public class BenchmarkKey implements SelfSerializable {
 
-    private static final long CLASS_ID = 0x41db5e9d036e36fdL;
+    private static final long CLASS_ID = 0x41db5e9d036e36feL;
 
     /**
      * The actual key.

@@ -61,6 +61,10 @@ import javax.inject.Singleton;
 public class FileGetInfoHandler extends FileQueryBase {
     private final FileOpsUsage fileOpsUsage;
 
+    /**
+     * Constructs a {@link FileGetInfoHandler} with the given {@link FileOpsUsage}.
+     * @param fileOpsUsage the file operations usage to be used for fee calculation
+     */
     @Inject
     public FileGetInfoHandler(final FileOpsUsage fileOpsUsage) {
         this.fileOpsUsage = fileOpsUsage;
@@ -93,7 +97,7 @@ public class FileGetInfoHandler extends FileQueryBase {
         final var query = queryContext.query();
         final var fileStore = queryContext.createStore(ReadableFileStore.class);
         final var op = query.fileGetInfoOrThrow();
-        final var fileId = op.fileIDOrThrow();
+        final var fileId = op.fileIDOrElse(FileID.DEFAULT);
         final File file = fileStore.getFileLeaf(fileId);
 
         return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetFileInfoResourceUsage(fileOpsUsage)
@@ -138,7 +142,7 @@ public class FileGetInfoHandler extends FileQueryBase {
      * Provides information about a file.
      * @param fileID the file to get information about
      * @param fileStore the file store
-     * @param ledgerConfig
+     * @param ledgerConfig Ledger configuration properties
      * @return the information about the file
      */
     @SuppressWarnings("java:S5738") // Suppress the warning that we are using deprecated class(CryptographyHolder)
@@ -161,8 +165,7 @@ public class FileGetInfoHandler extends FileQueryBase {
                 // The "memo" of a special upgrade file is its hexed SHA-384 hash for DevOps convenience
                 final var contents = upgradeFileStore.getFull(fileID).toByteArray();
                 contentSize = contents.length;
-                final var upgradeHash =
-                        hex(CryptographyHolder.get().digestSync(contents).getValue());
+                final var upgradeHash = hex(CryptographyHolder.get().digestBytesSync(contents));
                 meta = new FileMetadata(
                         file.fileId(),
                         Timestamp.newBuilder().seconds(file.expirationSecond()).build(),

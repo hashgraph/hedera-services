@@ -26,8 +26,8 @@ import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.config.data.BootstrapConfig;
+import com.swirlds.platform.state.spi.WritableSingletonStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
@@ -62,7 +62,7 @@ public class FeeService implements Service {
 
             @Override
             public void migrate(@NonNull final MigrationContext ctx) {
-                final var isGenesis = ctx.previousStates().isEmpty();
+                final var isGenesis = ctx.previousVersion() == null;
                 final var midnightRatesState = ctx.newStates().getSingleton(MIDNIGHT_RATES_STATE_KEY);
                 if (isGenesis) {
                     // Set the initial exchange rates (from the bootstrap config) as the midnight rates

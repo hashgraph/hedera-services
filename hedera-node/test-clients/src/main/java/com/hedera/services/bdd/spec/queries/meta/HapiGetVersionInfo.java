@@ -18,7 +18,6 @@ package com.hedera.services.bdd.spec.queries.meta;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
-import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -95,7 +94,7 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) {
-        Query query = getVersionInfoQuery(payment, false);
+        Query query = maybeModified(getVersionInfoQuery(payment, false), spec);
         response = spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls).getVersionInfo(query);
         var info = response.getNetworkGetVersionInfo();
         if (verboseLoggingOn) {
@@ -106,9 +105,10 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
         }
 
         if (yahcliLogger) {
-            COMMON_MESSAGES.info(String.format(
-                    "Versions :: HAPI protobufs @ %s, Hedera Services @ %s",
-                    asReadable(info.getHapiProtoVersion()), asReadable(info.getHederaServicesVersion())));
+            System.out.println(".i. "
+                    + String.format(
+                            "Versions :: HAPI protobufs @ %s, Hedera Services @ %s",
+                            asReadable(info.getHapiProtoVersion()), asReadable(info.getHederaServicesVersion())));
         }
     }
 
@@ -134,7 +134,7 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
 
     @Override
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getVersionInfoQuery(payment, true);
+        Query query = maybeModified(getVersionInfoQuery(payment, true), spec);
         Response response =
                 spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls).getVersionInfo(query);
         return costFrom(response);

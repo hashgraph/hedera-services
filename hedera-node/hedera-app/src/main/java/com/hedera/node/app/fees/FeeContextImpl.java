@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.fees;
 
-import static java.util.Collections.emptyList;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
@@ -47,6 +45,7 @@ public class FeeContextImpl implements FeeContext {
     private final ReadableStoreFactory storeFactory;
     private final Configuration configuration;
     private final Authorizer authorizer;
+    private final int numSignatures;
 
     /**
      * Constructor of {@code FeeContextImpl}
@@ -57,6 +56,7 @@ public class FeeContextImpl implements FeeContext {
      * @param payerId the {@link AccountID} of the payer
      * @param feeManager the {@link FeeManager} to generate a {@link FeeCalculator}
      * @param storeFactory the {@link ReadableStoreFactory} to create readable stores
+     * @param numSignatures the number of signatures in the transaction
      */
     public FeeContextImpl(
             @NonNull final Instant consensusTime,
@@ -66,7 +66,8 @@ public class FeeContextImpl implements FeeContext {
             @NonNull final FeeManager feeManager,
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Configuration configuration,
-            @NonNull final Authorizer authorizer) {
+            @NonNull final Authorizer authorizer,
+            final int numSignatures) {
         this.consensusTime = consensusTime;
         this.txInfo = txInfo;
         this.payerKey = payerKey;
@@ -75,11 +76,7 @@ public class FeeContextImpl implements FeeContext {
         this.storeFactory = storeFactory;
         this.configuration = configuration;
         this.authorizer = authorizer;
-    }
-
-    @Override
-    public Instant currentTime() {
-        return consensusTime;
+        this.numSignatures = numSignatures;
     }
 
     @Override
@@ -97,8 +94,7 @@ public class FeeContextImpl implements FeeContext {
     @Override
     public FeeCalculator feeCalculator(@NonNull SubType subType) {
         // For mono-service compatibility, we treat the sig map size as the number of verifications
-        final var numVerifications =
-                txInfo.signatureMap().sigPairOrElse(emptyList()).size();
+        final var numVerifications = txInfo.signatureMap().sigPair().size();
         final var signatureMapSize = SignatureMap.PROTOBUF.measureRecord(txInfo.signatureMap());
         return feeManager.createFeeCalculator(
                 txInfo.txBody(),
@@ -128,5 +124,10 @@ public class FeeContextImpl implements FeeContext {
     @NonNull
     public Authorizer authorizer() {
         return authorizer;
+    }
+
+    @Override
+    public int numTxnSignatures() {
+        return numSignatures;
     }
 }

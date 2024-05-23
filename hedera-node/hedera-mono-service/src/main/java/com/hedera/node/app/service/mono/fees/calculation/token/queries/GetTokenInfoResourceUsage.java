@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.fees.calculation.token.queries;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.mono.queries.token.GetTokenInfoAnswer.TOKEN_INFO_CTX_KEY;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.putIfNotNull;
+import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.hapi.fees.usage.token.TokenGetInfoUsage;
@@ -96,6 +97,8 @@ public final class GetTokenInfoResourceUsage implements QueryResourceUsageEstima
                     .givenCurrentKycKey(token.hasKycKey() ? Optional.of(fromPbj(token.kycKey())) : Optional.empty())
                     .givenCurrentPauseKey(
                             token.hasPauseKey() ? Optional.of(fromPbj(token.pauseKey())) : Optional.empty())
+                    .givenCurrentMetadataKey(
+                            token.hasMetadataKey() ? Optional.of(fromPbj(token.metadataKey())) : Optional.empty())
                     .givenCurrentName(token.name())
                     .givenCurrentMemo(token.memo())
                     .givenCurrentSymbol(token.symbol());
@@ -104,7 +107,7 @@ public final class GetTokenInfoResourceUsage implements QueryResourceUsageEstima
             }
             return estimate.get();
         } else {
-            return FeeData.getDefaultInstance();
+            return CONSTANT_FEE_DATA;
         }
     }
 

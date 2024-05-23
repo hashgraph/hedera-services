@@ -39,6 +39,7 @@ public interface LongAccumulator extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default MetricType getMetricType() {
         return MetricType.ACCUMULATOR;
@@ -47,6 +48,7 @@ public interface LongAccumulator extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default DataType getDataType() {
         return DataType.INT;
@@ -55,6 +57,7 @@ public interface LongAccumulator extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default EnumSet<ValueType> getValueTypes() {
         return EnumSet.of(VALUE);
@@ -63,9 +66,10 @@ public interface LongAccumulator extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
-    default Long get(final ValueType valueType) {
-        Objects.requireNonNull(valueType, "valueType");
+    default Long get(@NonNull final ValueType valueType) {
+        Objects.requireNonNull(valueType, "valueType must not be null");
         if (valueType == VALUE) {
             return get();
         }
@@ -103,8 +107,8 @@ public interface LongAccumulator extends Metric {
      */
     final class Config extends MetricConfig<LongAccumulator, LongAccumulator.Config> {
 
-        private final LongBinaryOperator accumulator;
-        private final LongSupplier initializer;
+        private final @NonNull LongBinaryOperator accumulator;
+        private final @Nullable LongSupplier initializer;
 
         private final long initialValue;
 
@@ -129,6 +133,24 @@ public interface LongAccumulator extends Metric {
             this.initialValue = 0L;
         }
 
+        /**
+         * Constructor of {@code LongAccumulator.Config}
+         *
+         * By default, the {@link #getAccumulator() accumulator} is set to {@code Long::max},
+         * the {@link #getInitialValue() initialValue} is set to {@code 0L},
+         * and {@link #getFormat() format} is set to {@code "%d"}.
+         *
+         * @param category
+         * 		the kind of metric (metrics are grouped or filtered by this)
+         * @param name
+         * 		a short name for the metric
+         * @param description metric description
+         * @param unit        metric unit
+         * @param accumulator accumulator for metric
+         * @param initializer initializer for metric
+         * @throws NullPointerException     if one of the parameters is {@code null}
+         * @throws IllegalArgumentException if one of the parameters consists only of whitespaces
+         */
         private Config(
                 @NonNull final String category,
                 @NonNull final String name,
@@ -140,7 +162,7 @@ public interface LongAccumulator extends Metric {
                 final long initialValue) {
 
             super(category, name, description, unit, format);
-            this.accumulator = Objects.requireNonNull(accumulator, "accumulator");
+            this.accumulator = Objects.requireNonNull(accumulator, "accumulator must not be null");
             this.initializer = initializer;
             this.initialValue = initialValue;
         }
@@ -148,6 +170,7 @@ public interface LongAccumulator extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public LongAccumulator.Config withDescription(@NonNull final String description) {
             return new LongAccumulator.Config(
@@ -164,6 +187,7 @@ public interface LongAccumulator extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public LongAccumulator.Config withUnit(@NonNull final String unit) {
             return new LongAccumulator.Config(
@@ -183,8 +207,8 @@ public interface LongAccumulator extends Metric {
          * @param format
          * 		the format-string
          * @return a new configuration-object with updated {@code format}
-         * @throws IllegalArgumentException
-         * 		if {@code format} is {@code null} or consists only of whitespaces
+         * @throws NullPointerException     if {@code format} is {@code null}
+         * @throws IllegalArgumentException if {@code format} consists only of whitespaces
          */
         @NonNull
         public LongAccumulator.Config withFormat(@NonNull final String format) {
@@ -296,6 +320,7 @@ public interface LongAccumulator extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public Class<LongAccumulator> getResultClass() {
             return LongAccumulator.class;

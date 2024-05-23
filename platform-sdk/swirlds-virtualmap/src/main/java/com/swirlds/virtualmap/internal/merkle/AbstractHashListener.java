@@ -109,6 +109,7 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
 
     @Override
     public synchronized void onHashingStarted() {
+        assert (hashes == null) && (leaves == null) : "Hashing must not be started yet";
         hashes = new ArrayList<>();
         leaves = new ArrayList<>();
         reconnectFlushInterval =
@@ -178,7 +179,8 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
                         lastLeafPath,
                         hashesToFlush.stream(),
                         leavesToFlush.stream(),
-                        findLeavesToRemove());
+                        findLeavesToRemove(),
+                        true);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

@@ -28,6 +28,7 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator.asAccountId;
+import static java.util.Collections.nCopies;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -49,7 +50,6 @@ import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
-import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.migration.AccountStateTranslator;
 import com.hedera.node.app.service.mono.state.migration.NftStateTranslator;
@@ -62,24 +62,31 @@ import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.token.AliasUtils;
+import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
+import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.codec.NetworkingStakingTranslator;
+import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
-import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.platform.state.spi.WritableKVStateBase;
+import com.swirlds.platform.state.spi.WritableSingletonStateBase;
+import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
@@ -103,10 +110,11 @@ public class InitialModServiceTokenSchema extends Schema {
     // These need to be big so databases are created at right scale. If they are too small then the on disk hash map
     // buckets will be too full which results in very poor performance. Have chosen 10 billion as should give us
     // plenty of runway.
-    private static final long MAX_TOKENS = 10_000_000_000L;
-    private static final long MAX_ACCOUNTS = 10_000_000_000L;
-    private static final long MAX_TOKEN_RELS = 10_000_000_000L;
-    private static final long MAX_MINTABLE_NFTS = 10_000_000_000L;
+    private static final long MAX_STAKING_INFOS = 1_000_000L;
+    private static final long MAX_TOKENS = 1_000_000_000L;
+    private static final long MAX_ACCOUNTS = 1_000_000_000L;
+    private static final long MAX_TOKEN_RELS = 1_000_000_000L;
+    private static final long MAX_MINTABLE_NFTS = 1_000_000_000L;
     private static final long FIRST_RESERVED_SYSTEM_CONTRACT = 350L;
     private static final long LAST_RESERVED_SYSTEM_CONTRACT = 399L;
     private static final long FIRST_POST_SYSTEM_FILE_ENTITY = 200L;
@@ -130,6 +138,12 @@ public class InitialModServiceTokenSchema extends Schema {
      * SyntheticRecordsGenerator} for more details). Even though these sorted sets contain account
      * objects, these account objects may or may not yet exist in state. They're usually not needed,
      * but are required for an event recovery situation.
+     * @param sysAccts a supplier of synthetic system account records
+     * @param stakingAccts a supplier of synthetic staking account records
+     * @param treasuryAccts a supplier of synthetic treasury account records
+     * @param miscAccts a supplier of synthetic miscellaneous account records
+     * @param blocklistAccts a supplier of synthetic account records that are to be blocked
+     * @param version the semantic version of the software
      */
     public InitialModServiceTokenSchema(
             final Supplier<SortedSet<Account>> sysAccts,
@@ -156,26 +170,48 @@ public class InitialModServiceTokenSchema extends Schema {
                 StateDefinition.onDisk(ALIASES_KEY, ProtoBytes.PROTOBUF, AccountID.PROTOBUF, MAX_ACCOUNTS),
                 StateDefinition.onDisk(NFTS_KEY, NftID.PROTOBUF, Nft.PROTOBUF, MAX_MINTABLE_NFTS),
                 StateDefinition.onDisk(TOKEN_RELS_KEY, EntityIDPair.PROTOBUF, TokenRelation.PROTOBUF, MAX_TOKEN_RELS),
-                StateDefinition.inMemory(STAKING_INFO_KEY, EntityNumber.PROTOBUF, StakingNodeInfo.PROTOBUF),
+                StateDefinition.onDisk(
+                        STAKING_INFO_KEY, EntityNumber.PROTOBUF, StakingNodeInfo.PROTOBUF, MAX_STAKING_INFOS),
                 StateDefinition.singleton(STAKING_NETWORK_REWARDS_KEY, NetworkStakingRewards.PROTOBUF));
     }
 
+    /**
+     * Sets the in-state NFTs to be migrated from.
+     * @param fs the in-state NFTs
+     */
     public void setNftsFromState(@Nullable final VirtualMap<UniqueTokenKey, UniqueTokenValue> fs) {
         this.nftsFs = fs;
     }
 
+    /**
+     * Sets the in-state token rels to be migrated from.
+     * @param fs the in-state token rels
+     */
     public void setTokenRelsFromState(@Nullable final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> fs) {
         this.trFs = fs;
     }
 
+    /**
+     * Sets the in-state accounts to be migrated from.
+     * @param fs the in-state accounts
+     */
     public void setAcctsFromState(@Nullable final VirtualMap<EntityNumVirtualKey, OnDiskAccount> fs) {
         this.acctsFs = fs;
     }
 
+    /**
+     * Sets the in-state tokens to be migrated from.
+     * @param fs the in-state tokens
+     */
     public void setTokensFromState(@Nullable final MerkleMap<EntityNum, MerkleToken> fs) {
         this.tFs = fs;
     }
 
+    /**
+     * Sets the in-state staking info to be migrated from.
+     * @param stakingFs the in-state staking info
+     * @param mnc the in-state network context
+     */
     public void setStakingFs(
             @Nullable final MerkleMap<EntityNum, MerkleStakingInfo> stakingFs,
             @Nullable final MerkleNetworkContext mnc) {
@@ -183,9 +219,47 @@ public class InitialModServiceTokenSchema extends Schema {
         this.mnc = mnc;
     }
 
+    /**
+     * Updates in-state staking info to match the address book.
+     * <ol>
+     *     <li>For any node with staking info in state that is no longer in the address book,
+     *     marks it deleted and sets its weight to zero.</li>
+     *     <li>For any node in the address book that is not in state,
+     *     initializes its staking info.</li>
+     *     <li>Ensures all max stake values reflect the current address book size.</li>
+     * </ol>
+     *
+     * @param ctx {@link MigrationContext} for this schema restart operation
+     */
+    @Override
+    public void restart(@NonNull MigrationContext ctx) {
+        final var networkInfo = ctx.networkInfo();
+        final var newStakingStore = new WritableStakingInfoStore(ctx.newStates());
+        // We need to validate and mark any node that are removed during upgrade as deleted.
+        // Since restart is called in the schema after an upgrade, and we don't want to depend on
+        // schema version change, validate all the nodeIds from the addressBook in state and mark
+        // them as deleted if they are not yet deleted in staking info.
+        if (!ctx.previousStates().isEmpty()) {
+            final var oldStakingStore = new ReadableStakingInfoStoreImpl(ctx.previousStates());
+            oldStakingStore.getAll().stream().sorted().forEach(nodeId -> {
+                final var stakingInfo = requireNonNull(oldStakingStore.get(nodeId));
+                if (!networkInfo.containsNode(nodeId) && !stakingInfo.deleted()) {
+                    newStakingStore.put(
+                            nodeId,
+                            stakingInfo.copyBuilder().weight(0).deleted(true).build());
+                    log.info("Marked node{} as deleted since it has been removed from the address book", nodeId);
+                }
+            });
+        }
+        // Validate if any new nodes are added in addressBook and not in staking info.
+        // If so, add them to staking info/ with weight 0. Also update maxStake and
+        // minStake for the new nodes.
+        completeUpdateFromNewAddressBook(newStakingStore, networkInfo.addressBook(), ctx.configuration());
+    }
+
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
-        final var isGenesis = ctx.previousStates().isEmpty();
+        final var isGenesis = ctx.previousVersion() == null;
         if (isGenesis) {
             createGenesisSchema(ctx);
         }
@@ -246,13 +320,8 @@ public class InitialModServiceTokenSchema extends Schema {
                                 entry -> {
                                     var fromTokenRel = entry.right();
                                     var key = fromTokenRel.getKey();
-                                    var translated = TokenRelationStateTranslator.tokenRelationFromMerkleTokenRelStatus(
-                                            new MerkleTokenRelStatus(
-                                                    fromTokenRel.getBalance(),
-                                                    fromTokenRel.isFrozen(),
-                                                    fromTokenRel.isKycGranted(),
-                                                    fromTokenRel.isAutomaticAssociation(),
-                                                    fromTokenRel.getNumbers()));
+                                    var translated = TokenRelationStateTranslator.tokenRelationFromOnDiskTokenRelStatus(
+                                            fromTokenRel);
                                     var newPair = EntityIDPair.newBuilder()
                                             .accountId(AccountID.newBuilder()
                                                     .accountNum(key.getHiOrderAsLong())
@@ -280,7 +349,7 @@ public class InitialModServiceTokenSchema extends Schema {
             // ---------- Staking Info
             log.info("BBM: starting staking info");
             var stakingToState = ctx.newStates().<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
-            stakingFs.forEach((entityNum, merkleStakingInfo) -> {
+            MerkleMapLike.from(stakingFs).forEachNode((entityNum, merkleStakingInfo) -> {
                 var toStakingInfo = StakingNodeInfoStateTranslator.stakingInfoFromMerkleStakingInfo(merkleStakingInfo);
                 stakingToState.put(
                         EntityNumber.newBuilder()
@@ -288,6 +357,7 @@ public class InitialModServiceTokenSchema extends Schema {
                                 .build(),
                         toStakingInfo);
             });
+
             if (stakingToState.isModified()) ((WritableKVStateBase) stakingToState).commit();
             final var stakingConfig = ctx.configuration().getConfigData(StakingConfig.class);
             final var currentStakingPeriod =
@@ -341,6 +411,12 @@ public class InitialModServiceTokenSchema extends Schema {
                                         aliasesState
                                                 .get()
                                                 .put(new ProtoBytes(toAcct.alias()), toAcct.accountIdOrThrow());
+                                        if (toAcct.alias().toByteArray().length > 20) {
+                                            final var result = AliasUtils.extractEvmAddress(toAcct.alias());
+                                            if (result != null) {
+                                                aliasesState.get().put(new ProtoBytes(result), toAcct.accountId());
+                                            }
+                                        }
                                         if (numAliasesInsertions.incrementAndGet() % 10_000 == 0) {
                                             // Make sure we are flushing data to disk as we go
                                             ((WritableKVStateBase) aliasesState.get()).commit();
@@ -356,7 +432,7 @@ public class InitialModServiceTokenSchema extends Schema {
             }
             if (acctsToState.get().isModified()) ((WritableKVStateBase) acctsToState.get()).commit();
             // Also persist the per-node pending reward information
-            stakingFs.forEach((entityNum, ignore) -> {
+            MerkleMapLike.from(stakingFs).forEachNode((entityNum, ignore) -> {
                 final var toKey = new EntityNumber(entityNum.longValue());
                 final var info = requireNonNull(stakingToState.get(toKey));
                 stakingToState.put(
@@ -514,13 +590,7 @@ public class InitialModServiceTokenSchema extends Schema {
 
         // ---------- Balances Safety Check -------------------------
         // Aadd up the balances of all accounts, they must match 50,000,000,000 HBARs (config)
-        var totalBalance = 0L;
-        for (int i = 1; i < hederaConfig.firstUserEntity(); i++) {
-            final var account = accounts.get(asAccountId(i, hederaConfig));
-            if (account != null) {
-                totalBalance += account.tinybarBalance();
-            }
-        }
+        final var totalBalance = getTotalBalanceOfAllAccounts(accounts, hederaConfig);
         if (totalBalance != ledgerConfig.totalTinyBarFloat()) {
             throw new IllegalStateException("Total balance of all accounts does not match the total float: actual: "
                     + totalBalance + " vs expected: " + ledgerConfig.totalTinyBarFloat());
@@ -531,6 +601,35 @@ public class InitialModServiceTokenSchema extends Schema {
                 accounts.modifiedKeys().size());
     }
 
+    /**
+     * Get the total balance of all accounts. Since we cannot iterate over the accounts in VirtualMap,
+     * we have to do this manually.
+     *
+     * @param accounts The accounts map
+     * @param hederaConfig The Hedera configuration
+     * @return The total balance of all accounts
+     */
+    public long getTotalBalanceOfAllAccounts(
+            @NonNull final WritableKVState<AccountID, Account> accounts, @NonNull final HederaConfig hederaConfig) {
+        long totalBalance = 0;
+        long i = 1; // Start with the first account ID
+        long totalAccounts = accounts.size();
+        do {
+            Account account = accounts.get(asAccountId(i, hederaConfig));
+            if (account != null) {
+                totalBalance += account.tinybarBalance();
+                totalAccounts--;
+            }
+            i++;
+        } while (totalAccounts > 0);
+        return totalBalance;
+    }
+
+    /**
+     * Get the entity numbers of all system entities that are not contracts.
+     * @param numReservedSystemEntities The number of reserved system entities
+     * @return The entity numbers of all system entities that are not contracts
+     */
     @VisibleForTesting
     public static long[] nonContractSystemNums(final long numReservedSystemEntities) {
         return LongStream.rangeClosed(FIRST_POST_SYSTEM_FILE_ENTITY, numReservedSystemEntities)
@@ -546,7 +645,7 @@ public class InitialModServiceTokenSchema extends Schema {
         final var numberOfNodes = addressBook.size();
 
         final long maxStakePerNode = ledgerConfig.totalTinyBarFloat() / numberOfNodes;
-        final long minStakePerNode = maxStakePerNode / 2;
+        final long minStakePerNode = 0;
 
         final var numRewardHistoryStoredPeriods = stakingConfig.rewardHistoryNumStoredPeriods();
         final var stakingInfoState = ctx.newStates().get(STAKING_INFO_KEY);
@@ -576,5 +675,36 @@ public class InitialModServiceTokenSchema extends Schema {
                 .stakingRewardsActivated(true)
                 .build();
         networkRewardsState.put(networkRewards);
+    }
+
+    private void completeUpdateFromNewAddressBook(
+            @NonNull final WritableStakingInfoStore store,
+            @NonNull final List<NodeInfo> nodeInfos,
+            @NonNull final Configuration config) {
+        final var numberOfNodesInAddressBook = nodeInfos.size();
+        final long maxStakePerNode =
+                config.getConfigData(LedgerConfig.class).totalTinyBarFloat() / numberOfNodesInAddressBook;
+        final var numRewardHistoryStoredPeriods =
+                config.getConfigData(StakingConfig.class).rewardHistoryNumStoredPeriods();
+        for (final var nodeId : nodeInfos) {
+            final var stakingInfo = store.get(nodeId.nodeId());
+            if (stakingInfo != null) {
+                if (stakingInfo.maxStake() != maxStakePerNode) {
+                    store.put(
+                            nodeId.nodeId(),
+                            stakingInfo.copyBuilder().maxStake(maxStakePerNode).build());
+                }
+            } else {
+                final var newNodeStakingInfo = StakingNodeInfo.newBuilder()
+                        .nodeNumber(nodeId.nodeId())
+                        .maxStake(maxStakePerNode)
+                        .minStake(0L)
+                        .rewardSumHistory(
+                                nCopies(numRewardHistoryStoredPeriods + 1, 0L).toArray(Long[]::new))
+                        .weight(0)
+                        .build();
+                store.put(nodeId.nodeId(), newNodeStakingInfo);
+            }
+        }
     }
 }

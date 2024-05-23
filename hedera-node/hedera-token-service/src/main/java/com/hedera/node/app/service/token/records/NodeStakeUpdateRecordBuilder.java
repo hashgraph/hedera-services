@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.records;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -23,6 +24,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * A {@code RecordBuilder} specialization for tracking {@code NodeStakeUpdate} at midnight UTC every day.
  */
 public interface NodeStakeUpdateRecordBuilder {
+    /**
+     * Sets the status.
+     *
+     * @param status the status
+     * @return the builder
+     */
+    NodeStakeUpdateRecordBuilder status(@NonNull ResponseCodeEnum status);
+
     /**
      * Sets the transaction.
      *

@@ -25,7 +25,6 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
-import java.nio.ByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -47,12 +46,12 @@ class VirtualHashRecordSerializerTest {
                 "Serialized size should be variable");
         final VirtualHashRecord data0 = new VirtualHashRecord(0L, nonDefaultHash);
         assertEquals(
-                1 + 1 + nonDefaultHash.getValue().length, // tag + len + hash
+                1 + 1 + nonDefaultHash.getBytes().length(), // tag + len + hash
                 subject.getSerializedSize(data0),
                 "Serialized size should be 0 bytes for path and 66 bytes for hash");
         final VirtualHashRecord data1 = new VirtualHashRecord(1L, nonDefaultHash);
         assertEquals(
-                1 + 8 + 1 + 1 + nonDefaultHash.getValue().length, // tag + path + tag + len + hash
+                1 + 8 + 1 + 1 + nonDefaultHash.getBytes().length(), // tag + path + tag + len + hash
                 subject.getSerializedSize(data1),
                 "Serialized size should be 9 bytes for path and 75 bytes for hash");
         assertEquals(1L, subject.getCurrentDataVersion(), "Current version should be 1");
@@ -60,11 +59,9 @@ class VirtualHashRecordSerializerTest {
 
     @Test
     void serializeEnforcesDefaultDigest() {
-        final ByteBuffer bbuf = ByteBuffer.allocate(128);
-        final WritableSequentialData out = BufferedData.wrap(bbuf);
+        final WritableSequentialData out = BufferedData.allocate(128);
         final Hash nonDefaultHash = new Hash(DigestType.SHA_512);
         final VirtualHashRecord data = new VirtualHashRecord(1L, nonDefaultHash);
-        assertThrows(IllegalArgumentException.class, () -> subject.serialize(data, bbuf));
         assertThrows(IllegalArgumentException.class, () -> subject.serialize(data, out));
     }
 

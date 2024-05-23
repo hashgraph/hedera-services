@@ -19,7 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grant
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -33,13 +33,11 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.LogBui
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.math.BigInteger;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
 public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
-
     // too many parameters
     @SuppressWarnings("java:S107")
     public ClassicGrantApprovalCall(
@@ -49,7 +47,7 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
             @NonNull final AccountID senderId,
             @NonNull final TokenID token,
             @NonNull final AccountID spender,
-            @NonNull final BigInteger amount,
+            final long amount,
             @NonNull final TokenType tokenType) {
         super(gasCalculator, enhancement, verificationStrategy, senderId, token, spender, amount, tokenType, false);
     }
@@ -63,7 +61,7 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
         final var body = synthApprovalBody();
         final var recordBuilder = systemContractOperations()
                 .dispatch(body, verificationStrategy, senderId, ContractCallRecordBuilder.class);
-        final var status = withMonoStandard(recordBuilder).status();
+        final var status = recordBuilder.status();
         final var gasRequirement = gasCalculator.gasRequirement(body, DispatchType.APPROVE, senderId);
         if (status != SUCCESS) {
             return reversionWith(gasRequirement, recordBuilder);
@@ -78,6 +76,7 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
                     ? GrantApprovalTranslator.GRANT_APPROVAL.getOutputs().encodeElements(status.protoOrdinal(), true)
                     : GrantApprovalTranslator.GRANT_APPROVAL_NFT.getOutputs().encodeElements((long)
                             status.protoOrdinal());
+
             return gasOnly(successResult(encodedOutput, gasRequirement, recordBuilder), status, false);
         }
     }

@@ -19,6 +19,7 @@ package com.swirlds.common.metrics.platform;
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.common.metrics.DurationGauge;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -40,6 +41,7 @@ public class DefaultDurationGauge extends DefaultMetric implements DurationGauge
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public List<Snapshot.SnapshotEntry> takeSnapshot() {
         return List.of(new Snapshot.SnapshotEntry(VALUE, get()));

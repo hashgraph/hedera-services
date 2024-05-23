@@ -21,6 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ExecutorService;
@@ -43,17 +44,6 @@ public class IntakeDispatcher<Element, Provider extends OperationProvider, Handl
     private static final Logger logger = LogManager.getLogger(IntakeDispatcher.class);
 
     /**
-     * The thread used for polling the {@code backingQueue} and submitting tasks to the {@code executorService} thread
-     * pool.
-     */
-    private final Thread worker;
-
-    /**
-     * The queue of incoming items to be processed by the {@code worker} thread.
-     */
-    private final Queue<List<Element>> backingQueue;
-
-    /**
      * The underlying {@link OperationProvider} to use for handling the work items.
      */
     private final Provider provider;
@@ -70,11 +60,6 @@ public class IntakeDispatcher<Element, Provider extends OperationProvider, Handl
     private final ExecutorService executorService;
 
     /**
-     * Flag indicating the current execution state of the {@code worker} thread.
-     */
-    private volatile boolean running = true;
-
-    /**
      * Constructor that initializes all internal variables and launches the background thread. All background threads
      * are launched with a {@link java.lang.Thread.UncaughtExceptionHandler} to handle and log all exceptions thrown by
      * the thread.
@@ -84,7 +69,6 @@ public class IntakeDispatcher<Element, Provider extends OperationProvider, Handl
      *
      * @param threadManager   responsible for managing thread lifecycles
      * @param elementType     the type of Element
-     * @param backingQueue    the queue of Elements to be processed
      * @param provider        the cryptographic transformation provider
      * @param parallelism     the number of threads in the pool
      * @param handlerSupplier the supplier of the handler
@@ -92,11 +76,9 @@ public class IntakeDispatcher<Element, Provider extends OperationProvider, Handl
     public IntakeDispatcher(
             final ThreadManager threadManager,
             final Class<Element> elementType,
-            final Queue<List<Element>> backingQueue,
             final Provider provider,
             final int parallelism,
             final BiFunction<Provider, List<Element>, Handler> handlerSupplier) {
-        this.backingQueue = backingQueue;
         this.provider = provider;
         this.handlerSupplier = handlerSupplier;
 
@@ -109,51 +91,30 @@ public class IntakeDispatcher<Element, Provider extends OperationProvider, Handl
                 .buildFactory();
 
         this.executorService = Executors.newFixedThreadPool(parallelism, threadFactory);
-
-        this.worker = new ThreadConfiguration(threadManager)
-                .setDaemon(true)
-                .setPriority(Thread.NORM_PRIORITY)
-                .setComponent(THREAD_COMPONENT_NAME)
-                .setThreadName(String.format("%s intake dispatcher", elementType.getSimpleName()))
-                .setExceptionHandler(this::handleThreadException)
-                .setRunnable(this::execute)
-                .build();
-
-        this.worker.start();
     }
 
     /**
      * Attempts to forcibly terminate all running threads and free any acquired resources.
      */
     public void shutdown() {
-        this.running = false;
-        this.worker.interrupt();
-
         this.executorService.shutdown();
 
         try {
             if (!this.executorService.awaitTermination(5, TimeUnit.SECONDS)) {
                 this.executorService.shutdownNow();
             }
-        } catch (InterruptedException ex) {
+        } catch (final InterruptedException ex) {
             this.executorService.shutdownNow();
             Thread.currentThread().interrupt();
         }
     }
 
     /**
-     * The main dispatcher thread entry point.
+     * Submits a list of work items to the dispatcher thread pool for processing.
      */
-    private void execute() {
-        while (running) {
-            final List<Element> workItems = backingQueue.poll();
-            if (workItems == null) {
-                Thread.onSpinWait();
-                continue;
-            }
-            if (!workItems.isEmpty()) {
-                executorService.submit(handlerSupplier.apply(provider, workItems));
-            }
+    public void submit(@NonNull final List<Element> element) {
+        if (!element.isEmpty()) {
+            executorService.submit(handlerSupplier.apply(provider, element));
         }
     }
 

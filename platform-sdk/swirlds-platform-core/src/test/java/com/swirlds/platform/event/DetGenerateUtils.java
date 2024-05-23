@@ -16,16 +16,16 @@
 
 package com.swirlds.platform.event;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHashBytes;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
 
+import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -74,12 +74,6 @@ public abstract class DetGenerateUtils {
                         .toArray(new ConsensusTransactionImpl[0])); // transactions
     }
 
-    public static BaseEventUnhashedData generateBaseEventUnhashedData(final Random random) {
-        return new BaseEventUnhashedData(
-                null, // the other node id is no longer stored here.
-                generateRandomByteArray(random, DEFAULT_SIGNATURE_SIZE)); // signature
-    }
-
     public static ConsensusData generateConsensusEventData(final Random random) {
         final ConsensusData data = new ConsensusData();
 
@@ -117,9 +111,13 @@ public abstract class DetGenerateUtils {
             random.nextBytes(bytes);
             final boolean system = random.nextBoolean();
             if (system) {
-                final Signature signature = randomSignature(random);
-                final Hash hash = randomHash(random);
-                list.add(new StateSignatureTransaction(random.nextLong(), signature, hash));
+                final Bytes signature = randomSignatureBytes(random);
+                final Bytes hash = randomHashBytes(random);
+                list.add(new StateSignatureTransaction(StateSignaturePayload.newBuilder()
+                        .round(random.nextLong())
+                        .signature(signature)
+                        .hash(hash)
+                        .build()));
             } else {
                 list.add(new SwirldTransaction(bytes));
             }

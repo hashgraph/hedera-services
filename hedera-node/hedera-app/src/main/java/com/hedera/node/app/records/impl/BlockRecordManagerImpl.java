@@ -26,8 +26,6 @@ import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
-import com.hedera.node.app.spi.state.WritableSingletonStateBase;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
@@ -35,6 +33,9 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.LinkedObjectStreamUtilities;
+import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.spi.WritableSingletonStateBase;
+import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -150,7 +151,10 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     /**
      * {@inheritDoc}
      */
-    public boolean startUserTransaction(@NonNull final Instant consensusTime, @NonNull final HederaState state) {
+    public boolean startUserTransaction(
+            @NonNull final Instant consensusTime,
+            @NonNull final HederaState state,
+            @NonNull final PlatformState platformState) {
         if (EPOCH.equals(lastBlockInfo.firstConsTimeOfCurrentBlock())) {
             // This is the first transaction of the first block, so set both the firstConsTimeOfCurrentBlock
             // and the current consensus time to now
@@ -170,7 +174,16 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         // given consensus time, and if they are different, we'll close out the current block and start a new one.
         final var currentBlockPeriod = getBlockPeriod(lastBlockInfo.firstConsTimeOfCurrentBlock());
         final var newBlockPeriod = getBlockPeriod(consensusTime);
-        if (newBlockPeriod > currentBlockPeriod) {
+
+        // Also check to see if this is the first transaction we're handling after a freeze restart. If so, we also
+        // start a new block.
+        final var isFirstTransactionAfterFreezeRestart = platformState.getFreezeTime() != null
+                && platformState.getFreezeTime().equals(platformState.getLastFrozenTime());
+        if (isFirstTransactionAfterFreezeRestart) {
+            platformState.setFreezeTime(null);
+        }
+        // Now we test if we need to start a new block. If so, create the new block
+        if (newBlockPeriod > currentBlockPeriod || isFirstTransactionAfterFreezeRestart) {
             // Compute the state for the newly completed block. The `lastBlockHashBytes` is the running hash after
             // the last transaction
             final var lastBlockHashBytes = streamFileProducer.getRunningHash();

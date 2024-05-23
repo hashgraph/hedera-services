@@ -22,9 +22,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -65,7 +68,11 @@ class ConsistencyTestingToolRoundTests {
 
             event.forEach(content -> {
                 final ConsensusTransactionImpl transaction = mock(ConsensusTransactionImpl.class);
-                Mockito.when(transaction.getContents()).thenReturn(longToByteArray(content));
+                final Bytes bytes = Bytes.wrap(longToByteArray(content));
+                final OneOf<PayloadOneOfType> payload = new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, bytes);
+                Mockito.when(transaction.getPayload()).thenReturn(payload);
+                Mockito.when(transaction.getApplicationPayload()).thenReturn(bytes);
+                Mockito.when(transaction.isSystem()).thenReturn(false);
                 mockTransactions.add(transaction);
             });
 
@@ -87,7 +94,7 @@ class ConsistencyTestingToolRoundTests {
                 mockEvents,
                 mock(EventImpl.class),
                 mock(GraphGenerations.class),
-                mock(NonAncientEventWindow.class),
+                mock(EventWindow.class),
                 mockSnapshot);
     }
 

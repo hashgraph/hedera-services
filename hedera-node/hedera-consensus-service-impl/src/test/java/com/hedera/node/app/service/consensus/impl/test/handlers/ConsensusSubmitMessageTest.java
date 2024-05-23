@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
 import static com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler.noThrowSha384HashOf;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
@@ -31,6 +32,8 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_SELF;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.lenient;
@@ -56,14 +59,19 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.utils.TxnUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
@@ -107,7 +115,7 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
         given(handleContext.readableStore(ReadableTopicStore.class)).willReturn(readableStore);
-        writableStore = new WritableTopicStore(writableStates);
+        writableStore = new WritableTopicStore(writableStates, config, mock(StoreMetricsService.class));
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
         given(handleContext.configuration()).willReturn(config);
@@ -118,6 +126,28 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
         lenient().when(handleContext.feeAccumulator()).thenReturn(feeAccumulator);
         lenient().when(feeCalculator.calculate()).thenReturn(Fees.FREE);
         lenient().when(feeCalculator.legacyCalculate(any())).thenReturn(Fees.FREE);
+    }
+
+    @Test
+    @DisplayName("pureChecks fails if submit message missing topic ID")
+    void topicWithoutIdNotFound() {
+        assertThrowsPreCheck(() -> subject.pureChecks(newDefaultSubmitMessageTxn()), INVALID_TOPIC_ID);
+    }
+
+    @Test
+    @DisplayName("pureChecks fails if submit message is empty")
+    void failsIfMessageIsEmpty() {
+        givenValidTopic();
+        final var txn = newSubmitMessageTxn(topicEntityNum, "");
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_TOPIC_MESSAGE);
+    }
+
+    @Test
+    @DisplayName("pureChecks works as expected")
+    void pureCheckWorksAsExpexcted() {
+        givenValidTopic();
+        final var txn = newDefaultSubmitMessageTxn(topicEntityNum);
+        assertDoesNotThrow(() -> subject.pureChecks(txn));
     }
 
     @Test
@@ -185,6 +215,28 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
     }
 
     @Test
+    @DisplayName("Handle throws IOException")
+    void handleThrowsIOException() {
+        givenValidTopic();
+        subject = new ConsensusSubmitMessageHandler() {
+            @Override
+            public Topic updateRunningHashAndSequenceNumber(
+                    @NonNull final TransactionBody txn, @NonNull final Topic topic, @Nullable Instant consensusNow)
+                    throws IOException {
+                throw new IOException();
+            }
+        };
+
+        final var txn = newSubmitMessageTxn(topicEntityNum, "");
+        given(handleContext.body()).willReturn(txn);
+
+        given(handleContext.consensusNow()).willReturn(consensusTimestamp);
+
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertThat(msg.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_TRANSACTION);
+    }
+
+    @Test
     @DisplayName("Handle works as expected if Consensus time is null")
     void handleWorksAsExpectedIfConsensusTimeIsNull() {
         givenValidTopic();
@@ -205,17 +257,6 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
         verify(recordBuilder).topicRunningHash(expectedTopic.runningHash());
         verify(recordBuilder).topicSequenceNumber(expectedTopic.sequenceNumber());
         verify(recordBuilder).topicRunningHashVersion(RUNNING_HASH_VERSION);
-    }
-
-    @Test
-    @DisplayName("Handle fails if submit message is empty")
-    void failsIfMessageIsEmpty() {
-        givenValidTopic();
-        final var txn = newSubmitMessageTxn(topicEntityNum, "");
-        given(handleContext.body()).willReturn(txn);
-
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(ResponseCodeEnum.INVALID_TOPIC_MESSAGE, msg.getStatus());
     }
 
     @Test
@@ -299,6 +340,30 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
         assertEquals(ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID, msg.getStatus());
     }
 
+    @Test
+    void calculateFeesHappyPath() {
+        givenValidTopic();
+        final var chunkTxnId =
+                TransactionID.newBuilder().accountID(anotherPayer).build();
+        final var txn = newSubmitMessageTxnWithChunksAndPayer(topicEntityNum, 1, 2, chunkTxnId);
+        final var feeCtx = mock(FeeContext.class);
+        readableStore = mock(ReadableTopicStore.class);
+        given(feeCtx.body()).willReturn(txn);
+
+        final var feeCalc = mock(FeeCalculator.class);
+        given(feeCtx.feeCalculator(notNull())).willReturn(feeCalc);
+        given(feeCalc.addBytesPerTransaction(anyLong())).willReturn(feeCalc);
+        given(feeCalc.addNetworkRamByteSeconds(anyLong())).willReturn(feeCalc);
+        // The fees wouldn't be free in this scenario, but we don't care about the actual return
+        // value here since we're using a mock calculator
+        given(feeCalc.calculate()).willReturn(Fees.FREE);
+
+        subject.calculateFees(feeCtx);
+
+        verify(feeCalc).addBytesPerTransaction(28);
+        verify(feeCalc).addNetworkRamByteSeconds(10080);
+    }
+
     /* ----------------- Helper Methods ------------------- */
 
     private Key mockPayerLookup() {
@@ -322,6 +387,21 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
                         .topicNum(topicEntityNum.longValue())
                         .build())
                 .message(Bytes.wrap(message));
+        return TransactionBody.newBuilder()
+                .transactionID(txnId)
+                .consensusSubmitMessage(submitMessageBuilder.build())
+                .build();
+    }
+
+    private TransactionBody newDefaultSubmitMessageTxn() {
+        return newSubmitMessageTxnWithoutId(
+                "Message for test-" + Instant.now() + "." + Instant.now().getNano());
+    }
+
+    private TransactionBody newSubmitMessageTxnWithoutId(final String message) {
+        final var txnId = TransactionID.newBuilder().accountID(payerId).build();
+        final var submitMessageBuilder =
+                ConsensusSubmitMessageTransactionBody.newBuilder().message(Bytes.wrap(message));
         return TransactionBody.newBuilder()
                 .transactionID(txnId)
                 .consensusSubmitMessage(submitMessageBuilder.build())

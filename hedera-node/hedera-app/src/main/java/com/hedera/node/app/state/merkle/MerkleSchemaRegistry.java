@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.state.merkle;
 
-import static com.hedera.node.app.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+import static com.hedera.hapi.util.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.ids.WritableEntityIdStore;
-import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.FilteredReadableStates;
@@ -30,18 +30,7 @@ import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.throttle.HandleThrottleParser;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
-import com.hedera.node.app.state.merkle.disk.OnDiskKey;
-import com.hedera.node.app.state.merkle.disk.OnDiskKeySerializer;
-import com.hedera.node.app.state.merkle.disk.OnDiskValue;
-import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
-import com.hedera.node.app.state.merkle.memory.InMemoryValue;
-import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
-import com.hedera.node.app.state.merkle.queue.QueueNode;
-import com.hedera.node.app.state.merkle.singleton.SingletonNode;
-import com.hedera.node.app.state.merkle.singleton.StringLeaf;
-import com.hedera.node.app.state.merkle.singleton.ValueLeaf;
 import com.hedera.node.app.workflows.handle.record.MigrationContextImpl;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -51,6 +40,19 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.state.merkle.StateUtils;
+import com.swirlds.platform.state.merkle.disk.OnDiskKey;
+import com.swirlds.platform.state.merkle.disk.OnDiskKeySerializer;
+import com.swirlds.platform.state.merkle.disk.OnDiskValue;
+import com.swirlds.platform.state.merkle.disk.OnDiskValueSerializer;
+import com.swirlds.platform.state.merkle.memory.InMemoryValue;
+import com.swirlds.platform.state.merkle.memory.InMemoryWritableKVState;
+import com.swirlds.platform.state.merkle.queue.QueueNode;
+import com.swirlds.platform.state.merkle.singleton.SingletonNode;
+import com.swirlds.platform.state.merkle.singleton.StringLeaf;
+import com.swirlds.platform.state.merkle.singleton.ValueLeaf;
+import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -58,7 +60,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -71,8 +73,7 @@ import org.apache.logging.log4j.Logger;
  * then registers each and every {@link Schema} that it has. Each {@link Schema} is associated with
  * a {@link SemanticVersion}.
  *
- * <p>The Hedera application then calls {@link #migrate(MerkleHederaState, SemanticVersion,
- * SemanticVersion, Configuration, NetworkInfo, HandleThrottleParser, WritableEntityIdStore)} on each {@link MerkleSchemaRegistry} instance, supplying it the
+ * <p>The Hedera application then calls {@link com.hedera.node.app.Hedera#onMigrate(MerkleHederaState, HederaSoftwareVersion, InitTrigger, Metrics)} on each {@link MerkleSchemaRegistry} instance, supplying it the
  * application version number and the newly created (or deserialized) but not yet hashed copy of the {@link
  * MerkleHederaState}. The registry determines which {@link Schema}s to apply, possibly taking multiple migration steps,
  * to transition the merkle tree from its current version to the final version.
@@ -80,22 +81,30 @@ import org.apache.logging.log4j.Logger;
 public class MerkleSchemaRegistry implements SchemaRegistry {
     private static final Logger logger = LogManager.getLogger(MerkleSchemaRegistry.class);
 
-    /** The name of the service using this registry. */
+    /**
+     * The name of the service using this registry.
+     */
     private final String serviceName;
-    /** The registry to use when deserializing from saved states */
+    /**
+     * The registry to use when deserializing from saved states
+     */
     private final ConstructableRegistry constructableRegistry;
-    /** The ordered set of all schemas registered by the service */
-    private final Set<Schema> schemas = new TreeSet<>();
-    /** Stores system entities created during genesis until the node can build synthetic records */
+    /**
+     * The ordered set of all schemas registered by the service
+     */
+    private final SortedSet<Schema> schemas = new TreeSet<>();
+    /**
+     * Stores system entities created during genesis until the node can build synthetic records
+     */
     private final GenesisRecordsBuilder genesisRecordsBuilder;
 
     /**
      * Create a new instance.
      *
      * @param constructableRegistry The {@link ConstructableRegistry} to register states with for
-     *                              deserialization
-     * @param serviceName           The name of the service using this registry.
-     * @param genesisRecordsBuilder      class used to store entities created at genesis
+     * deserialization
+     * @param serviceName The name of the service using this registry.
+     * @param genesisRecordsBuilder class used to store entities created at genesis
      */
     public MerkleSchemaRegistry(
             @NonNull final ConstructableRegistry constructableRegistry,
@@ -143,10 +152,9 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @param hederaState The {@link MerkleHederaState} instance for this registry to use.
      * @param previousVersion The version of state loaded from disk. Possibly null.
      * @param currentVersion The current version. Never null. Must be newer than {@code
-     *     previousVersion}.
+     * previousVersion}.
      * @param config The system configuration to use at the time of migration
      * @param networkInfo The network information to use at the time of migration
-     * @param handleThrottling The handle throttle accumulator to use at the time of migration
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
     public void migrate(
@@ -155,25 +163,32 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final SemanticVersion currentVersion,
             @NonNull final Configuration config,
             @NonNull final NetworkInfo networkInfo,
-            @NonNull final HandleThrottleParser handleThrottling,
+            @NonNull final Metrics metrics,
             @Nullable final WritableEntityIdStore entityIdStore) {
         requireNonNull(hederaState);
         requireNonNull(currentVersion);
         requireNonNull(config);
         requireNonNull(networkInfo);
-        requireNonNull(handleThrottling);
+        requireNonNull(metrics);
 
         // Figure out which schemas need to be applied based on the previous and current versions, and then for each
         // of those schemas, create the new states and remove the old states and migrate the data.
         final var schemasToApply = computeApplicableSchemas(previousVersion, currentVersion);
+        if (schemasToApply.isEmpty()) {
+            logger.info("Service {} does not use state", serviceName);
+            return;
+        }
         logger.info(
                 "Migrating {} applicable schemas for service {} from {} to {}",
-                () -> schemasToApply.size(),
+                schemasToApply::size,
                 () -> serviceName,
                 () -> HapiUtils.toString(previousVersion),
                 () -> HapiUtils.toString(currentVersion));
-        final var restartInsteadOfMigrate = isSameVersion(previousVersion, currentVersion);
+        final var latestVersion = schemasToApply.getLast().getVersion();
         for (final var schema : schemasToApply) {
+            final var applicationType = checkApplicationType(previousVersion, latestVersion, schema);
+            logger.info("Applying {} schema {} ({})", serviceName, schema.getVersion(), applicationType);
+
             // Now we can migrate the schema and then commit all the changes
             // We just have one merkle tree -- the just-loaded working tree -- to work from.
             // We get a ReadableStates for everything in the current tree, but then wrap
@@ -181,22 +196,38 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             // available at this moment in time. This is done to make sure that even after we
             // add new states into the tree, it doesn't increase the number of states that can
             // be seen by the schema migration code
-            final var readableStates = hederaState.getReadableStates(serviceName);
-            final var previousStates = new FilteredReadableStates(readableStates, readableStates.stateKeys());
+            ReadableStates previousStatesIfNeeded = null;
+            if (applicationType != SchemaApplicationType.ONLY_STATE_MANAGEMENT) {
+                final var readableStates = hederaState.getReadableStates(serviceName);
+                previousStatesIfNeeded = new FilteredReadableStates(readableStates, readableStates.stateKeys());
+            }
 
             // Create the new states (based on the schema) which, thanks to the above, does not
             // expand the set of states that the migration code will see
-            logger.info("Creating states for {}", schema.statesToCreate());
             schema.statesToCreate().stream()
                     .sorted(Comparator.comparing(StateDefinition::stateKey))
                     .forEach(def -> {
                         final var stateKey = def.stateKey();
-                        logger.info("Creating state {} for {}", stateKey, serviceName);
+                        logger.info("  Ensuring {} has state {}", serviceName, stateKey);
                         final var md = new StateMetadata<>(serviceName, schema, def);
                         if (def.singleton()) {
-                            hederaState.putServiceStateIfAbsent(md, () -> new SingletonNode<>(md, null));
+                            hederaState.putServiceStateIfAbsent(
+                                    md,
+                                    () -> new SingletonNode<>(
+                                            md.serviceName(),
+                                            md.stateDefinition().stateKey(),
+                                            md.singletonClassId(),
+                                            md.stateDefinition().valueCodec(),
+                                            null));
                         } else if (def.queue()) {
-                            hederaState.putServiceStateIfAbsent(md, () -> new QueueNode<>(md));
+                            hederaState.putServiceStateIfAbsent(
+                                    md,
+                                    () -> new QueueNode<>(
+                                            md.serviceName(),
+                                            md.stateDefinition().stateKey(),
+                                            md.queueNodeClassId(),
+                                            md.singletonClassId(),
+                                            md.stateDefinition().valueCodec()));
                         } else if (!def.onDisk()) {
                             hederaState.putServiceStateIfAbsent(md, () -> {
                                 final var map = new MerkleMap<>();
@@ -204,6 +235,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                 return map;
                             });
                         } else {
+
                             hederaState.putServiceStateIfAbsent(md, () -> {
                                 // MAX_IN_MEMORY_HASHES (ramToDiskThreshold) = 8388608
                                 // PREFER_DISK_BASED_INDICES = false
@@ -211,13 +243,21 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                                 (short) 1,
                                                 DigestType.SHA_384,
                                                 (short) 1,
-                                                new OnDiskKeySerializer<>(md),
+                                                new OnDiskKeySerializer<>(
+                                                        md.onDiskKeySerializerClassId(),
+                                                        md.onDiskKeyClassId(),
+                                                        md.stateDefinition().keyCodec()),
                                                 (short) 1,
-                                                new OnDiskValueSerializer<>(md))
+                                                new OnDiskValueSerializer<>(
+                                                        md.onDiskValueSerializerClassId(),
+                                                        md.onDiskValueClassId(),
+                                                        md.stateDefinition().valueCodec()))
                                         .maxNumberOfKeys(def.maxKeysHint());
                                 final var label = StateUtils.computeLabel(serviceName, stateKey);
                                 final var dsBuilder = new MerkleDbDataSourceBuilder<>(tableConfig);
-                                return new VirtualMap<>(label, dsBuilder);
+                                final var virtualMap = new VirtualMap<>(label, dsBuilder);
+                                virtualMap.registerMetrics(metrics);
+                                return virtualMap;
                             });
                         }
                     });
@@ -230,37 +270,83 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             remainingStates.removeAll(statesToRemove);
             final var newStates = new FilteredWritableStates(writableStates, remainingStates);
 
-            // For any changes to state that depend on other services outside the current service, we need a reference
-            // to the overall state that we can pass into the context. This reference to overall state will be strictly
-            // controlled via the MigrationContext API so that only changes explicitly specified in the interface can be
-            // made (instead of allowing any arbitrary change to overall state). As above, we won't commit anything
-            // until after this service's migration
-            final var migrationContext = new MigrationContextImpl(
-                    previousStates,
-                    newStates,
-                    config,
-                    networkInfo,
-                    genesisRecordsBuilder,
-                    handleThrottling,
-                    entityIdStore);
-            logger.info(
-                    "{} service {} for schema {}",
-                    restartInsteadOfMigrate ? "Restarting" : "Migrating",
-                    serviceName,
-                    schema);
-            if (restartInsteadOfMigrate) {
-                schema.restart(migrationContext);
-            } else {
-                schema.migrate(migrationContext);
+            if (applicationType != SchemaApplicationType.ONLY_STATE_MANAGEMENT) {
+                // For any changes to state that depend on other services outside the current
+                // service, we need a reference to the overall state that we can pass into the
+                // context. This reference to overall state will be strictly controlled via the
+                // MigrationContext API so that only changes explicitly specified in the
+                // interface can be made (instead of allowing any arbitrary state change).
+                final var migrationContext = new MigrationContextImpl(
+                        requireNonNull(previousStatesIfNeeded),
+                        newStates,
+                        config,
+                        networkInfo,
+                        genesisRecordsBuilder,
+                        entityIdStore,
+                        previousVersion);
+                if (applicationType != SchemaApplicationType.RESTART_ONLY) {
+                    schema.migrate(migrationContext);
+                }
+                if (applicationType != SchemaApplicationType.MIGRATE_ONLY) {
+                    schema.restart(migrationContext);
+                }
             }
+
             // Now commit all the service-specific changes made during this service's update or migration
             if (writableStates instanceof MerkleHederaState.MerkleWritableStates mws) {
                 mws.commit();
             }
-
             // And finally we can remove any states we need to remove
             statesToRemove.forEach(stateKey -> hederaState.removeServiceState(serviceName, stateKey));
         }
+    }
+
+    private SchemaApplicationType checkApplicationType(
+            @Nullable final SemanticVersion previousVersionFromState,
+            @NonNull final SemanticVersion latestRegisteredSchemaVersion,
+            @NonNull final Schema schema) {
+        // If the previous version is the same as the latest version, then we only need to restart
+        // If this schema is the last registered schema, but is before the current version,
+        // then we only need to restart. Since we apply atleast one schema(last registered schema)
+        // if there are no schemas reported to migrate.
+        if (previousVersionFromState != null
+                && (isSameVersion(previousVersionFromState, latestRegisteredSchemaVersion)
+                        || isSoOrdered(latestRegisteredSchemaVersion, previousVersionFromState))) {
+            return SchemaApplicationType.RESTART_ONLY;
+        } else if (isSameVersion(schema.getVersion(), latestRegisteredSchemaVersion)) {
+            return SchemaApplicationType.MIGRATE_THEN_RESTART;
+        } else if (!isSameVersion(schema.getVersion(), previousVersionFromState)) {
+            return SchemaApplicationType.MIGRATE_ONLY;
+        } else {
+            return SchemaApplicationType.ONLY_STATE_MANAGEMENT;
+        }
+    }
+
+    private enum SchemaApplicationType {
+        /**
+         * A schema whose version is the same as the version of the saved state,
+         * but is not the latest version, has no migration work to do, and also
+         * does not have priority for managing the service's restart logic.
+         */
+        ONLY_STATE_MANAGEMENT,
+        /**
+         * A schema whose version is after the version of the saved state, but
+         * is not the latest version, has migration work to do, but also does
+         * not have priority for managing the service's restart logic.
+         */
+        MIGRATE_ONLY,
+        /**
+         * A schema whose version is both the previous and latest version has
+         * no migration work to do, but does have priority for managing the
+         * service's restart logic.
+         */
+        RESTART_ONLY,
+        /**
+         * A schema whose version is after the version of the saved state, and
+         * is also the latest version, has migration work to do, and also has
+         * priority for managing the service's restart logic.
+         */
+        MIGRATE_THEN_RESTART
     }
 
     /**
@@ -271,11 +357,11 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * {@code currentVersion} will be returned.
      *
      * @param previousVersion The previous version of the merkle tree. May be null for genesis. Must
-     *     be less than or equal to {@code currentVersion}.
+     * be less than or equal to {@code currentVersion}.
      * @param currentVersion The current version of the application. May NOT be null under any
-     *     condition. Must be greater than or equal to the {@code previousVersion}.
+     * condition. Must be greater than or equal to the {@code previousVersion}.
      * @return An ordered list of {@link Schema}s which, when applied in order, will transition the
-     *     merkle tree from {@code previousVersion} to {@code currentVersion}.
+     * merkle tree from {@code previousVersion} to {@code currentVersion}.
      */
     @NonNull
     private List<Schema> computeApplicableSchemas(
@@ -295,7 +381,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 applicableSchemas.add(schema);
             }
         }
-        return applicableSchemas;
+        final List<Schema> registeredSchemas = schemas.isEmpty() ? List.of() : List.of(schemas.getLast());
+        return applicableSchemas.isEmpty() ? registeredSchemas : applicableSchemas;
     }
 
     /**
@@ -324,7 +411,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @param maybeBefore The version we hope comes before {@code maybeAfter}
      * @param maybeAfter The version we hope comes after {@code maybeBefore}
      * @return True if, and only if, {@code maybeBefore} is a lower version number than {@code
-     *     maybeAfter}.
+     * maybeAfter}.
      */
     public static boolean isSoOrdered(
             @Nullable final SemanticVersion maybeBefore, @NonNull final SemanticVersion maybeAfter) {
@@ -365,23 +452,53 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         // various delegate writers and parsers, and so can parse/write different types of data
         // based on the id.
         try {
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(InMemoryValue.class, () -> new InMemoryValue(md)));
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(OnDiskKey.class, () -> new OnDiskKey<>(md)));
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(OnDiskKeySerializer.class, () -> new OnDiskKeySerializer<>(md)));
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(OnDiskValue.class, () -> new OnDiskValue<>(md)));
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(OnDiskValueSerializer.class, () -> new OnDiskValueSerializer<>(md)));
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(SingletonNode.class, () -> new SingletonNode<>(md, null)));
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(QueueNode.class, () -> new QueueNode<>(md)));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    InMemoryValue.class,
+                    () -> new InMemoryValue(
+                            md.inMemoryValueClassId(),
+                            md.stateDefinition().keyCodec(),
+                            md.stateDefinition().valueCodec())));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    OnDiskKey.class,
+                    () -> new OnDiskKey<>(
+                            md.onDiskKeyClassId(), md.stateDefinition().keyCodec())));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    OnDiskKeySerializer.class,
+                    () -> new OnDiskKeySerializer<>(
+                            md.onDiskKeySerializerClassId(),
+                            md.onDiskKeyClassId(),
+                            md.stateDefinition().keyCodec())));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    OnDiskValue.class,
+                    () -> new OnDiskValue<>(
+                            md.onDiskValueClassId(), md.stateDefinition().valueCodec())));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    OnDiskValueSerializer.class,
+                    () -> new OnDiskValueSerializer<>(
+                            md.onDiskValueSerializerClassId(),
+                            md.onDiskValueClassId(),
+                            md.stateDefinition().valueCodec())));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    SingletonNode.class,
+                    () -> new SingletonNode<>(
+                            md.serviceName(),
+                            md.stateDefinition().stateKey(),
+                            md.singletonClassId(),
+                            md.stateDefinition().valueCodec(),
+                            null)));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    QueueNode.class,
+                    () -> new QueueNode<>(
+                            md.serviceName(),
+                            md.stateDefinition().stateKey(),
+                            md.queueNodeClassId(),
+                            md.singletonClassId(),
+                            md.stateDefinition().valueCodec())));
             constructableRegistry.registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(ValueLeaf.class, () -> new ValueLeaf<>(md)));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    ValueLeaf.class,
+                    () -> new ValueLeaf<>(
+                            md.singletonClassId(), md.stateDefinition().valueCodec())));
         } catch (ConstructableRegistryException e) {
             // This is a fatal error.
             throw new RuntimeException(

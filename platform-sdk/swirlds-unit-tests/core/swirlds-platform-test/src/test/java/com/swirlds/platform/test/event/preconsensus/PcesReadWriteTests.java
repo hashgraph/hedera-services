@@ -20,6 +20,8 @@ import static com.swirlds.common.test.fixtures.io.FileManipulation.corruptFile;
 import static com.swirlds.common.test.fixtures.io.FileManipulation.truncateFile;
 import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
+import static com.swirlds.platform.test.consensus.ConsensusTestArgs.BIRTH_ROUND_PLATFORM_CONTEXT;
+import static com.swirlds.platform.test.consensus.ConsensusTestArgs.DEFAULT_PLATFORM_CONTEXT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -36,6 +38,8 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesFileIterator;
 import com.swirlds.platform.event.preconsensus.PcesMutableFile;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -51,6 +55,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -72,6 +77,12 @@ class PcesReadWriteTests {
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("");
+        StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
+    }
+
+    @AfterAll
+    static void afterAll() {
+        StaticSoftwareVersion.reset();
     }
 
     @BeforeEach
@@ -98,6 +109,7 @@ class PcesReadWriteTests {
         final int numEvents = 100;
 
         final StandardGraphGenerator generator = new StandardGraphGenerator(
+                ancientMode == GENERATION_THRESHOLD ? DEFAULT_PLATFORM_CONTEXT : BIRTH_ROUND_PLATFORM_CONTEXT,
                 random.nextLong(),
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -150,6 +162,7 @@ class PcesReadWriteTests {
         final int numEvents = 100;
 
         final StandardGraphGenerator generator = new StandardGraphGenerator(
+                ancientMode == GENERATION_THRESHOLD ? DEFAULT_PLATFORM_CONTEXT : BIRTH_ROUND_PLATFORM_CONTEXT,
                 random.nextLong(),
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -237,6 +250,7 @@ class PcesReadWriteTests {
             final int numEvents = 100;
 
             final StandardGraphGenerator generator = new StandardGraphGenerator(
+                    ancientMode == GENERATION_THRESHOLD ? DEFAULT_PLATFORM_CONTEXT : BIRTH_ROUND_PLATFORM_CONTEXT,
                     random.nextLong(),
                     new StandardEventSource(),
                     new StandardEventSource(),
@@ -305,6 +319,7 @@ class PcesReadWriteTests {
         final int numEvents = 100;
 
         final StandardGraphGenerator generator = new StandardGraphGenerator(
+                ancientMode == GENERATION_THRESHOLD ? DEFAULT_PLATFORM_CONTEXT : BIRTH_ROUND_PLATFORM_CONTEXT,
                 random.nextLong(),
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -368,6 +383,7 @@ class PcesReadWriteTests {
         final int numEvents = 100;
 
         final StandardGraphGenerator generator = new StandardGraphGenerator(
+                ancientMode == GENERATION_THRESHOLD ? DEFAULT_PLATFORM_CONTEXT : BIRTH_ROUND_PLATFORM_CONTEXT,
                 random.nextLong(),
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -430,6 +446,7 @@ class PcesReadWriteTests {
         final int numEvents = 100;
 
         final StandardGraphGenerator generator = new StandardGraphGenerator(
+                ancientMode == GENERATION_THRESHOLD ? DEFAULT_PLATFORM_CONTEXT : BIRTH_ROUND_PLATFORM_CONTEXT,
                 random.nextLong(),
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -495,6 +512,7 @@ class PcesReadWriteTests {
         final int numEvents = 100;
 
         final StandardGraphGenerator generator = new StandardGraphGenerator(
+                ancientMode == GENERATION_THRESHOLD ? DEFAULT_PLATFORM_CONTEXT : BIRTH_ROUND_PLATFORM_CONTEXT,
                 random.nextLong(),
                 new StandardEventSource(),
                 new StandardEventSource(),

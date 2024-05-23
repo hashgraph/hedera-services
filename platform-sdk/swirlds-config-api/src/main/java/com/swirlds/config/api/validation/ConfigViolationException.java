@@ -23,14 +23,14 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * An exceptions that wraps collection of violations
+ * An exceptions that wraps collection of violations.
  */
 public class ConfigViolationException extends IllegalStateException {
 
     private final List<ConfigViolation> violations;
 
     /**
-     * Creates a new instance based on violations
+     * Creates a new instance based on violations.
      *
      * @param message    message of the exception
      * @param violations the violations
@@ -42,7 +42,7 @@ public class ConfigViolationException extends IllegalStateException {
     }
 
     /**
-     * Returns the immutable list of violations
+     * Returns the immutable list of violations.
      *
      * @return the list of violations
      */

@@ -30,16 +30,11 @@ import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.fixtures.Scenarios;
-import com.hedera.node.app.spi.fixtures.TestBase;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.ConfigProvider;
@@ -64,6 +59,11 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.platform.test.fixtures.state.TestBase;
+import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedHashSet;
@@ -136,7 +136,8 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
 
     private final HederaSoftwareVersion softwareVersion = new HederaSoftwareVersion(
             SemanticVersion.newBuilder().major(1).minor(2).patch(3).build(),
-            SemanticVersion.newBuilder().major(1).minor(2).patch(3).build());
+            SemanticVersion.newBuilder().major(1).minor(2).patch(3).build(),
+            0);
     /** Represents "this node" in our tests. */
     protected final NodeId nodeSelfId = new NodeId(7);
     /** The AccountID of "this node" in our tests. */
@@ -314,7 +315,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
         }
 
         public App build() {
-            final var hederaSoftwareVersion = new HederaSoftwareVersion(this.hapiVersion, this.softwareVersion);
+            final var hederaSoftwareVersion = new HederaSoftwareVersion(this.hapiVersion, this.softwareVersion, 0);
 
             final SelfNodeInfo realSelfNodeInfo;
             if (this.selfNodeInfo == null) {

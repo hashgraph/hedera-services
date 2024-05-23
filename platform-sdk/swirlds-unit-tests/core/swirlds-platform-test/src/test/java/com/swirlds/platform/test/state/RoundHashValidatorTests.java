@@ -30,7 +30,7 @@ import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.iss.internal.RoundHashValidator;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -54,8 +54,21 @@ class RoundHashValidatorTests {
                 Arguments.of(HashValidityStatus.CATASTROPHIC_ISS));
     }
 
+    /**
+     * Describes a node's hash and the round it was generated in.
+     *
+     * @param nodeId        the node ID
+     * @param nodeStateHash the hash the node will report
+     * @param round         the round the hash was generated in
+     */
     record NodeHashInfo(NodeId nodeId, Hash nodeStateHash, long round) {}
 
+    /**
+     * Holds a list of {@link NodeHashInfo} for a given round, and that round's consensus hash.
+     *
+     * @param nodeList      the node hash info list
+     * @param consensusHash the consensus hash of the round
+     */
     record HashGenerationData(List<NodeHashInfo> nodeList, Hash consensusHash) {}
 
     /**
@@ -70,7 +83,7 @@ class RoundHashValidatorTests {
             final Random random,
             final AddressBook addressBook,
             final HashValidityStatus desiredValidityStatus,
-            long round) {
+            final long round) {
         if (desiredValidityStatus == HashValidityStatus.VALID || desiredValidityStatus == HashValidityStatus.SELF_ISS) {
             return generateRegularNodeHashes(random, addressBook, round);
         } else if (desiredValidityStatus == HashValidityStatus.CATASTROPHIC_ISS) {
@@ -84,7 +97,7 @@ class RoundHashValidatorTests {
      * Generate node hashes without there being a catastrophic ISS.
      */
     static HashGenerationData generateRegularNodeHashes(
-            final Random random, final AddressBook addressBook, long round) {
+            final Random random, final AddressBook addressBook, final long round) {
 
         // Greater than 1/2 must have the same hash. But all other nodes are free to take whatever other hash
         // they want. Choose that fraction randomly.
@@ -177,7 +190,7 @@ class RoundHashValidatorTests {
      * Generate node hashes that result in a catastrophic ISS.
      */
     static HashGenerationData generateCatastrophicNodeHashes(
-            final Random random, final AddressBook addressBook, long round) {
+            final Random random, final AddressBook addressBook, final long round) {
 
         // There should exist no group of nodes with the same hash that >1/2
 
@@ -247,10 +260,10 @@ class RoundHashValidatorTests {
     void selfSignatureLastTest(final HashValidityStatus expectedStatus) {
         final Random random = getRandomPrintSeed();
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(Math.max(10, random.nextInt(1000)))
-                .setAverageWeight(100)
-                .setWeightStandardDeviation(50)
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withSize(Math.max(10, random.nextInt(1000)))
+                .withAverageWeight(100)
+                .withWeightStandardDeviation(50)
                 .build();
 
         final HashGenerationData hashGenerationData = generateNodeHashes(random, addressBook, expectedStatus, 0);
@@ -293,10 +306,10 @@ class RoundHashValidatorTests {
     void selfSignatureFirstTest(final HashValidityStatus expectedStatus) {
         final Random random = getRandomPrintSeed();
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(Math.max(10, random.nextInt(1000)))
-                .setAverageWeight(100)
-                .setWeightStandardDeviation(50)
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withSize(Math.max(10, random.nextInt(1000)))
+                .withAverageWeight(100)
+                .withWeightStandardDeviation(50)
                 .build();
 
         final HashGenerationData hashGenerationData = generateNodeHashes(random, addressBook, expectedStatus, 0);
@@ -337,10 +350,10 @@ class RoundHashValidatorTests {
     void selfSignatureInMiddleTest(final HashValidityStatus expectedStatus) {
         final Random random = getRandomPrintSeed();
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(Math.max(10, random.nextInt(1000)))
-                .setAverageWeight(100)
-                .setWeightStandardDeviation(50)
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withSize(Math.max(10, random.nextInt(1000)))
+                .withAverageWeight(100)
+                .withWeightStandardDeviation(50)
                 .build();
 
         final HashGenerationData hashGenerationData = generateNodeHashes(random, addressBook, expectedStatus, 0);
@@ -387,10 +400,10 @@ class RoundHashValidatorTests {
     void timeoutSelfHashTest() {
         final Random random = getRandomPrintSeed();
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(Math.max(10, random.nextInt(1000)))
-                .setAverageWeight(100)
-                .setWeightStandardDeviation(50)
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withSize(Math.max(10, random.nextInt(1000)))
+                .withAverageWeight(100)
+                .withWeightStandardDeviation(50)
                 .build();
 
         final HashGenerationData hashGenerationData =
@@ -420,10 +433,10 @@ class RoundHashValidatorTests {
     void timeoutSelfHashAndSignaturesTest() {
         final Random random = getRandomPrintSeed();
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(Math.max(10, random.nextInt(1000)))
-                .setAverageWeight(100)
-                .setWeightStandardDeviation(50)
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withSize(Math.max(10, random.nextInt(1000)))
+                .withAverageWeight(100)
+                .withWeightStandardDeviation(50)
                 .build();
         final long totalWeight = addressBook.getTotalWeight();
 
@@ -461,10 +474,10 @@ class RoundHashValidatorTests {
     void timeoutSignaturesTest() {
         final Random random = getRandomPrintSeed();
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(Math.max(10, random.nextInt(1000)))
-                .setAverageWeight(100)
-                .setWeightStandardDeviation(50)
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withSize(Math.max(10, random.nextInt(1000)))
+                .withAverageWeight(100)
+                .withWeightStandardDeviation(50)
                 .build();
         final long totalWeight = addressBook.getTotalWeight();
 
@@ -506,10 +519,10 @@ class RoundHashValidatorTests {
     void timeoutWithSuperMajorityTest() {
         final Random random = getRandomPrintSeed();
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(Math.max(10, random.nextInt(1000)))
-                .setAverageWeight(100)
-                .setWeightStandardDeviation(50)
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withSize(Math.max(10, random.nextInt(1000)))
+                .withAverageWeight(100)
+                .withWeightStandardDeviation(50)
                 .build();
         final long totalWeight = addressBook.getTotalWeight();
 

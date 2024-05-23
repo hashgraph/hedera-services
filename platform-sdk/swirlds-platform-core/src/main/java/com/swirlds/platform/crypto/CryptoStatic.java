@@ -22,7 +22,9 @@ import static com.swirlds.logging.legacy.LogMarker.CERTIFICATES;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.crypto.CryptoConstants.PUBLIC_KEYS_FILE;
+import static com.swirlds.platform.crypto.KeyCertPurpose.SIGNING;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.platform.NodeId;
@@ -33,6 +35,7 @@ import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.PathsConfig;
+import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.SystemExitUtils;
@@ -56,6 +59,7 @@ import java.security.Security;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -189,7 +193,7 @@ public final class CryptoStatic {
      * by a Certificate Authority (CA), whose name is CaDistinguishedName and whose key pair is CaPair.
      * <p>
      * In Swirlds, each member creates a separate certificate for each of their 3 key pairs (signing,
-     * agreement, encryption). The signing certificate is self-signed, and is treated as if it were a CA.
+     * agreement). The signing certificate is self-signed, and is treated as if it were a CA.
      * The other two certificates are each signed by the signing key pair. So for either of them, the
      * complete certificate chain consists of two certificates.
      * <p>
@@ -205,7 +209,7 @@ public final class CryptoStatic {
      * @return the self-signed certificate
      * @throws KeyGeneratingException in any issue occurs
      */
-    static X509Certificate generateCertificate(
+    public static X509Certificate generateCertificate(
             String distinguishedName,
             KeyPair pair,
             String caDistinguishedName,
@@ -251,23 +255,23 @@ public final class CryptoStatic {
     }
 
     /**
-     * See {@link SignatureVerifier#verifySignature(byte[], byte[], PublicKey)}
+     * See {@link SignatureVerifier#verifySignature(Bytes, Bytes, PublicKey)}
      */
     public static boolean verifySignature(
-            @NonNull byte[] data, @NonNull byte[] signature, @NonNull PublicKey publicKey) {
+            @NonNull final Bytes data, @NonNull final Bytes signature, @NonNull final PublicKey publicKey) {
         Objects.requireNonNull(data);
         Objects.requireNonNull(signature);
         Objects.requireNonNull(publicKey);
         try {
             final Signature sig = Signature.getInstance(CryptoConstants.SIG_TYPE2, CryptoConstants.SIG_PROVIDER);
             sig.initVerify(publicKey);
-            sig.update(data);
-            return sig.verify(signature);
-        } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
+            data.updateSignature(sig);
+            return signature.verifySignature(sig);
+        } catch (final NoSuchAlgorithmException | NoSuchProviderException e) {
             // should never happen
-            throw new CryptographyException(e);
-        } catch (InvalidKeyException | SignatureException e) {
-            logger.error(LogMarker.EXCEPTION.getMarker(), "", e);
+            throw new CryptographyException("Exception occurred while validating a signature:", e, LogMarker.EXCEPTION);
+        } catch (final InvalidKeyException | SignatureException e) {
+            logger.error(LogMarker.EXCEPTION.getMarker(), "Exception occurred while validating a signature:", e);
             return false;
         }
     }
@@ -281,14 +285,16 @@ public final class CryptoStatic {
      * @throws KeyStoreException   if {@link #createEmptyTrustStore()} throws
      * @throws KeyLoadingException if the file is empty or another issue occurs while reading it
      */
-    static KeyStore loadKeys(final Path file, final char[] password) throws KeyStoreException, KeyLoadingException {
+    @NonNull
+    public static KeyStore loadKeys(@NonNull final Path file, @NonNull final char[] password)
+            throws KeyStoreException, KeyLoadingException {
         final KeyStore store = createEmptyTrustStore();
         try (final FileInputStream fis = new FileInputStream(file.toFile())) {
             store.load(fis, password);
             if (store.size() == 0) {
                 throw new KeyLoadingException("there are no valid keys or certificates in " + file);
             }
-        } catch (IOException | NoSuchAlgorithmException | CertificateException | KeyStoreException e) {
+        } catch (final IOException | NoSuchAlgorithmException | CertificateException | KeyStoreException e) {
             throw new KeyLoadingException("there was a problem reading: " + file, e);
         }
 
@@ -381,7 +387,7 @@ public final class CryptoStatic {
      * @throws KeyStoreException    if there is no provider that supports {@link CryptoConstants#KEYSTORE_TYPE}
      */
     @NonNull
-    static Map<NodeId, KeysAndCerts> generateKeysAndCerts(@NonNull final AddressBook addressBook)
+    public static Map<NodeId, KeysAndCerts> generateKeysAndCerts(@NonNull final AddressBook addressBook)
             throws ExecutionException, InterruptedException, KeyStoreException {
         Objects.requireNonNull(addressBook, ADDRESS_BOOK_MUST_NOT_BE_NULL);
 
@@ -448,10 +454,10 @@ public final class CryptoStatic {
             final NodeId nodeId = addressBook.getNodeId(i);
             final Address add = addressBook.getAddress(nodeId);
             final String name = nameToAlias(add.getSelfName());
-            PublicKey sigKey = publicStores.getPublicKey(KeyCertPurpose.SIGNING, name);
-            PublicKey agrKey = publicStores.getPublicKey(KeyCertPurpose.AGREEMENT, name);
+            final X509Certificate sigCert = publicStores.getCertificate(SIGNING, name);
+            final X509Certificate agrCert = publicStores.getCertificate(KeyCertPurpose.AGREEMENT, name);
             addressBook.add(
-                    addressBook.getAddress(nodeId).copySetSigPublicKey(sigKey).copySetAgreePublicKey(agrKey));
+                    addressBook.getAddress(nodeId).copySetSigCert(sigCert).copySetAgreeCert(agrCert));
         }
     }
 
@@ -576,5 +582,23 @@ public final class CryptoStatic {
         });
 
         return keysAndCerts;
+    }
+
+    /**
+     * Create a trust store that contains the public keys of all the members in the peer list
+     *
+     * @param peers all the peers in the network
+     * @return a trust store containing the public keys of all the members
+     * @throws KeyStoreException if there is no provider that supports {@link CryptoConstants#KEYSTORE_TYPE}
+     */
+    public static @NonNull KeyStore createPublicKeyStore(@NonNull final List<PeerInfo> peers) throws KeyStoreException {
+        Objects.requireNonNull(peers);
+        final KeyStore store = CryptoStatic.createEmptyTrustStore();
+        for (final PeerInfo peer : peers) {
+            final String name = nameToAlias(peer.nodeName());
+            final Certificate sigCert = peer.signingCertificate();
+            store.setCertificateEntry(SIGNING.storeName(name), sigCert);
+        }
+        return store;
     }
 }

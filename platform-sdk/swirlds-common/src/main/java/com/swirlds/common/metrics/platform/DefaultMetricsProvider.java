@@ -32,6 +32,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
@@ -50,25 +51,25 @@ public class DefaultMetricsProvider implements PlatformMetricsProvider, Lifecycl
 
     private static final Logger logger = LogManager.getLogger(DefaultMetricsProvider.class);
 
-    private final PlatformMetricsFactory factory;
-    private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(
+    private final @NonNull PlatformMetricsFactory factory;
+    private final @NonNull ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(
             getStaticThreadManager().createThreadFactory("platform-core", "MetricsThread"));
 
-    private final MetricKeyRegistry metricKeyRegistry = new MetricKeyRegistry();
-    private final DefaultMetrics globalMetrics;
-    private final ConcurrentMap<NodeId, DefaultMetrics> platformMetrics = new ConcurrentHashMap<>();
-    private final PrometheusEndpoint prometheusEndpoint;
-    private final SnapshotService snapshotService;
-    private final MetricsConfig metricsConfig;
-    private final Configuration configuration;
+    private final @NonNull MetricKeyRegistry metricKeyRegistry = new MetricKeyRegistry();
+    private final @NonNull DefaultMetrics globalMetrics;
+    private final @NonNull ConcurrentMap<NodeId, DefaultMetrics> platformMetrics = new ConcurrentHashMap<>();
+    private final @Nullable PrometheusEndpoint prometheusEndpoint;
+    private final @NonNull SnapshotService snapshotService;
+    private final @NonNull MetricsConfig metricsConfig;
+    private final @NonNull Configuration configuration;
 
-    private LifecyclePhase lifecyclePhase = LifecyclePhase.NOT_STARTED;
+    private @NonNull LifecyclePhase lifecyclePhase = LifecyclePhase.NOT_STARTED;
 
     /**
      * Constructor of {@code DefaultMetricsProvider}
      */
     public DefaultMetricsProvider(@NonNull final Configuration configuration) {
-        this.configuration = Objects.requireNonNull(configuration, "configuration is null");
+        this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
 
         metricsConfig = configuration.getConfigData(MetricsConfig.class);
         final PrometheusConfig prometheusConfig = configuration.getConfigData(PrometheusConfig.class);
@@ -100,16 +101,16 @@ public class DefaultMetricsProvider implements PlatformMetricsProvider, Lifecycl
      * {@inheritDoc}
      */
     @Override
-    public Metrics createGlobalMetrics() {
-        return globalMetrics;
+    public @NonNull Metrics createGlobalMetrics() {
+        return this.globalMetrics;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public Metrics createPlatformMetrics(@NonNull final NodeId nodeId) {
-        Objects.requireNonNull(nodeId, "selfId is null");
+    public @NonNull Metrics createPlatformMetrics(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "selfId must not be null");
 
         final DefaultMetrics newMetrics =
                 new DefaultMetrics(nodeId, metricKeyRegistry, executor, factory, metricsConfig);
@@ -145,7 +146,7 @@ public class DefaultMetricsProvider implements PlatformMetricsProvider, Lifecycl
     }
 
     @Override
-    public LifecyclePhase getLifecyclePhase() {
+    public @NonNull LifecyclePhase getLifecyclePhase() {
         return lifecyclePhase;
     }
 
@@ -171,7 +172,9 @@ public class DefaultMetricsProvider implements PlatformMetricsProvider, Lifecycl
     public void stop() {
         if (lifecyclePhase == LifecyclePhase.STARTED) {
             snapshotService.shutdown();
-            prometheusEndpoint.close();
+            if (prometheusEndpoint != null) {
+                prometheusEndpoint.close();
+            }
             lifecyclePhase = LifecyclePhase.STOPPED;
         }
     }

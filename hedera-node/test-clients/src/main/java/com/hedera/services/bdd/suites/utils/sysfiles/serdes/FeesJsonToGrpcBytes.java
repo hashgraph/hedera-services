@@ -22,6 +22,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.sysfiles.serdes.FeesJsonToProtoSerde;
 import com.hedera.services.bdd.suites.utils.sysfiles.FeeSchedulesListEntry;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -32,7 +33,7 @@ public class FeesJsonToGrpcBytes implements SysFileSerde<String> {
     public static void main(String... args) {
         var subject = new FeesJsonToGrpcBytes();
         try {
-            var grpcBytes = subject.toRawFile(Files.readString(Paths.get("src/main/resource/FeeSchedule.json")));
+            var grpcBytes = subject.toRawFile(Files.readString(Paths.get("src/main/resource/FeeSchedule.json")), null);
             var grpc = CurrentAndNextFeeSchedule.parseFrom(grpcBytes);
             System.out.println(grpc.toString());
             var json = subject.fromRawFile(grpcBytes);
@@ -64,7 +65,7 @@ public class FeesJsonToGrpcBytes implements SysFileSerde<String> {
     }
 
     @Override
-    public byte[] toRawFile(String styledFile) {
+    public byte[] toRawFile(String styledFile, @Nullable String interpolatedSrcDir) {
         try {
             return FeesJsonToProtoSerde.parseFeeScheduleFromJson(styledFile).toByteArray();
         } catch (Exception e) {

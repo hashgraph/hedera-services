@@ -16,13 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
@@ -71,15 +72,19 @@ public interface VerificationStrategy {
      * given this strategy within the given {@link HandleContext}.
      *
      * @param context the context in which this strategy will be used
+     * @param maybeEthSenderKey the key that is the sender of the EVM message, if known
      * @return a predicate that tests whether a given key is a valid signature for a given key
      */
-    default Predicate<Key> asSignatureTestIn(@NonNull final HandleContext context) {
+    default Predicate<Key> asSignatureTestIn(
+            @NonNull final HandleContext context, @Nullable final Key maybeEthSenderKey) {
+        requireNonNull(context);
         return new Predicate<>() {
             @Override
-            public boolean test(Key key) {
+            public boolean test(@NonNull final Key key) {
+                requireNonNull(key);
                 return switch (key.key().kind()) {
                     case KEY_LIST -> {
-                        final var keys = key.keyListOrThrow().keysOrElse(emptyList());
+                        final var keys = key.keyListOrThrow().keys();
                         for (final var childKey : keys) {
                             if (!test(childKey)) {
                                 yield false;
@@ -90,7 +95,7 @@ public interface VerificationStrategy {
                     case THRESHOLD_KEY -> {
                         final var thresholdKey = key.thresholdKeyOrThrow();
                         final var keyList = thresholdKey.keysOrElse(KeyList.DEFAULT);
-                        final var keys = keyList.keysOrElse(emptyList());
+                        final var keys = keyList.keys();
                         final var threshold = thresholdKey.threshold();
                         final var clampedThreshold = Math.max(1, Math.min(threshold, keys.size()));
                         var passed = 0;
@@ -109,8 +114,9 @@ public interface VerificationStrategy {
                             yield switch (decideForPrimitive(key)) {
                                 case VALID -> true;
                                 case INVALID -> false;
-                                case DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION -> context.verificationFor(key)
-                                        .passed();
+                                    // Note the EthereumTransaction sender's key has necessarily signed
+                                case DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION -> Objects.equals(key, maybeEthSenderKey)
+                                        || context.verificationFor(key).passed();
                             };
                         }
                         yield false;

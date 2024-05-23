@@ -21,160 +21,32 @@ import static com.swirlds.metrics.api.Metric.ValueType.MIN;
 import static com.swirlds.metrics.api.Metric.ValueType.STD_DEV;
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.swirlds.common.metrics.statistics.StatsBuffered;
-import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
 import com.swirlds.metrics.api.MetricType;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 @DisplayName("Testing StatEntry")
 class StatEntryTest {
 
-    private final StatEntry sut = new StatEntry() {
-        @Override
-        public StatsBuffered getBuffered() {
-            return null;
-        }
+    private StatEntry sut;
+    private StatEntry sutWithStatsBuffered;
 
-        @Override
-        public Consumer<Double> getReset() {
-            return null;
-        }
-
-        @Override
-        public Supplier<Object> getStatsStringSupplier() {
-            return null;
-        }
-
-        @Override
-        public Supplier<Object> getResetStatsStringSupplier() {
-            return null;
-        }
-
-        @Override
-        public String getCategory() {
-            return null;
-        }
-
-        @Override
-        public String getName() {
-            return null;
-        }
-
-        @Override
-        public String getDescription() {
-            return null;
-        }
-
-        @Override
-        public DataType getDataType() {
-            return null;
-        }
-
-        @Override
-        public String getUnit() {
-            return null;
-        }
-
-        @Override
-        public String getFormat() {
-            return null;
-        }
-
-        @Override
-        public void reset() {}
-    };
-
-    private final StatEntry sutWithStatsBuffered = new StatEntry() {
-        @Override
-        public StatsBuffered getBuffered() {
-            return new StatsBuffered() {
-                @Override
-                public StatsBuffer getAllHistory() {
-                    return null;
-                }
-
-                @Override
-                public StatsBuffer getRecentHistory() {
-                    return null;
-                }
-
-                @Override
-                public void reset(double halflife) {}
-
-                @Override
-                public double getMean() {
-                    return 0;
-                }
-
-                @Override
-                public double getMax() {
-                    return 0;
-                }
-
-                @Override
-                public double getMin() {
-                    return 0;
-                }
-
-                @Override
-                public double getStdDev() {
-                    return 0;
-                }
-            };
-        }
-
-        @Override
-        public Consumer<Double> getReset() {
-            return null;
-        }
-
-        @Override
-        public Supplier<Object> getStatsStringSupplier() {
-            return null;
-        }
-
-        @Override
-        public Supplier<Object> getResetStatsStringSupplier() {
-            return null;
-        }
-
-        @Override
-        public String getCategory() {
-            return null;
-        }
-
-        @Override
-        public String getName() {
-            return null;
-        }
-
-        @Override
-        public String getDescription() {
-            return null;
-        }
-
-        @Override
-        public DataType getDataType() {
-            return null;
-        }
-
-        @Override
-        public String getUnit() {
-            return null;
-        }
-
-        @Override
-        public String getFormat() {
-            return null;
-        }
-
-        @Override
-        public void reset() {}
-    };
+    @BeforeEach
+    void setup() {
+        sut = Mockito.mock(StatEntry.class);
+        when(sut.get(Mockito.any())).thenCallRealMethod();
+        when(sut.getMetricType()).thenCallRealMethod();
+        when(sut.getValueTypes()).thenCallRealMethod();
+        sutWithStatsBuffered = Mockito.mock(StatEntry.class);
+        when(sutWithStatsBuffered.getBuffered()).thenReturn(mock(StatsBuffered.class));
+        when(sutWithStatsBuffered.getValueTypes()).thenCallRealMethod();
+    }
 
     @Test
     void getMetricType() {

@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.conventions") }
+plugins {
+    id("com.hedera.gradle.services")
+    id("com.hedera.gradle.services-publish")
+}
 
 description = "Default Hedera Network Admin Service Implementation"
 
@@ -22,9 +25,11 @@ mainModuleInfo { annotationProcessor("dagger.compiler") }
 
 testModuleInfo {
     requires("com.hedera.node.app")
+    requires("com.hedera.node.app.service.file.impl")
     requires("com.hedera.node.app.service.network.admin.impl")
     requires("com.hedera.node.app.service.token.impl")
     requires("com.hedera.node.app.spi.test.fixtures")
+    requires("com.swirlds.platform.core.test.fixtures")
     requires("com.hedera.node.app.test.fixtures")
     requires("com.hedera.node.config.test.fixtures")
     requires("com.swirlds.fcqueue")

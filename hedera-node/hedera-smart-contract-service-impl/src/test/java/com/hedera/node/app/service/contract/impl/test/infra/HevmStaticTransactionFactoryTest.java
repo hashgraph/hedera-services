@@ -38,6 +38,7 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.infra.HevmStaticTransactionFactory;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Consumer;
@@ -161,6 +162,33 @@ class HevmStaticTransactionFactoryTest {
     @Test
     void fromQueryFailsOverMaxGas() {
         assertCallFailsWith(MAX_GAS_LIMIT_EXCEEDED, b -> b.gas(DEFAULT_CONTRACTS_CONFIG.maxGasPerSec() + 1));
+    }
+
+    @Test
+    void fromQueryException() {
+        given(context.createStore(ReadableAccountStore.class)).willReturn(accountStore);
+        final var transaction = subject.fromHapiQueryException(
+                Query.newBuilder()
+                        .contractCallLocal(callLocalWith(b -> {
+                            b.gas(21_000L);
+                            b.senderId(SENDER_ID);
+                            b.contractID(CALLED_CONTRACT_ID);
+                            b.functionParameters(CALL_DATA);
+                        }))
+                        .build(),
+                new HandleException(ResponseCodeEnum.INVALID_CONTRACT_ID));
+
+        assertThat(transaction.senderId()).isEqualTo(SENDER_ID);
+        assertThat(transaction.relayerId()).isNull();
+        assertThat(transaction.contractId()).isEqualTo(CALLED_CONTRACT_ID);
+        assertThat(transaction.nonce()).isEqualTo(-1);
+        assertThat(transaction.payload()).isEqualTo(CALL_DATA);
+        assertThat(transaction.chainId()).isNull();
+        assertThat(transaction.value()).isZero();
+        assertThat(transaction.gasLimit()).isEqualTo(21_000L);
+        assertThat(transaction.offeredGasPrice()).isEqualTo(1L);
+        assertThat(transaction.maxGasAllowance()).isZero();
+        assertThat(transaction.hapiCreation()).isNull();
     }
 
     private void assertCallFailsWith(

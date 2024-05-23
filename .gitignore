@@ -1032,6 +1032,7 @@ metricsDoc.tsv
 platform-sdk/sdk/data/saved
 platform-sdk/sdk/data/apps
 platform-sdk/sdk/data/lib
+platform-sdk/sdk/data/recycle-bin
 platform-sdk/sdk/data/repos
 platform-sdk/sdk/data/stats
 platform-sdk/sdk/*.csv

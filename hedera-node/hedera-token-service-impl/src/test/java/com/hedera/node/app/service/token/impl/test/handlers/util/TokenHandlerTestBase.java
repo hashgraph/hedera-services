@@ -25,6 +25,7 @@ import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.C_COMPLEX_KEY;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
@@ -45,11 +46,14 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
+import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Collections;
@@ -60,6 +64,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 // FUTURE : Remove this and use CryptoTokenHandlerTestBase instead for all classes extending this class
 
+/**
+ * Base class for token handler tests.
+ */
 @ExtendWith(MockitoExtension.class)
 public class TokenHandlerTestBase {
     protected static final String TOKENS = "TOKENS";
@@ -82,6 +89,8 @@ public class TokenHandlerTestBase {
     protected final HederaKey freezeHederaKey = asHederaKey(freezeKey).get();
     protected final HederaKey feeScheduleHederaKey = asHederaKey(feeScheduleKey).get();
     protected final HederaKey pauseHederaKey = asHederaKey(A_COMPLEX_KEY).get();
+    protected final Bytes metadata = Bytes.wrap(new byte[] {1, 2, 3, 4});
+    protected final Key metadataKey = Key.DEFAULT;
     protected final TokenID tokenId = asToken(1L);
     protected final String tokenName = "test token";
     protected final String tokenSymbol = "TT";
@@ -133,6 +142,9 @@ public class TokenHandlerTestBase {
     protected ReadableTokenStore readableTokenStore;
     protected WritableTokenStore writableTokenStore;
 
+    /**
+     * Sets up the common test environment.
+     */
     @BeforeEach
     public void commonSetUp() {
         givenValidToken();
@@ -145,7 +157,8 @@ public class TokenHandlerTestBase {
         given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableTokenState);
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
         readableTokenStore = new ReadableTokenStoreImpl(readableStates);
-        writableTokenStore = new WritableTokenStore(writableStates);
+        final var configuration = HederaTestConfigBuilder.createConfig();
+        writableTokenStore = new WritableTokenStore(writableStates, configuration, mock(StoreMetricsService.class));
     }
 
     protected void refreshStoresWithCurrentTokenInWritable() {
@@ -154,7 +167,8 @@ public class TokenHandlerTestBase {
         given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableTokenState);
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
         readableTokenStore = new ReadableTokenStoreImpl(readableStates);
-        writableTokenStore = new WritableTokenStore(writableStates);
+        final var configuration = HederaTestConfigBuilder.createConfig();
+        writableTokenStore = new WritableTokenStore(writableStates, configuration, mock(StoreMetricsService.class));
     }
 
     @NonNull
@@ -218,7 +232,9 @@ public class TokenHandlerTestBase {
                 paused,
                 accountsFrozenByDefault,
                 accountsKycGrantedByDefault,
-                Collections.emptyList());
+                Collections.emptyList(),
+                metadata,
+                metadataKey);
     }
 
     protected Token createToken() {

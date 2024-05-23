@@ -18,6 +18,8 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.token;
 
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenDissociation.explicit;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
@@ -33,13 +35,18 @@ import java.util.Optional;
 
 public class RandomTokenAccountWipe implements OpProvider {
     private final RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels;
+    private final ResponseCodeEnum[] customOutcomes;
 
-    public RandomTokenAccountWipe(RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels) {
+    public RandomTokenAccountWipe(
+            RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels, ResponseCodeEnum[] customOutcomes) {
         this.tokenRels = tokenRels;
+        this.customOutcomes = customOutcomes;
     }
 
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
             TOKEN_WAS_DELETED,
+            ACCOUNT_FROZEN_FOR_TOKEN,
+            ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN,
             TOKEN_HAS_NO_WIPE_KEY,
             CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT,
             INVALID_WIPING_AMOUNT,
@@ -56,8 +63,10 @@ public class RandomTokenAccountWipe implements OpProvider {
         var rel = explicit(implicitRel);
         var amount = BASE_RANDOM.nextLong(1, RandomToken.DEFAULT_MAX_SUPPLY);
         var op = wipeTokenAccount(rel.getRight(), rel.getLeft(), amount)
-                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                .hasKnownStatusFrom(permissibleOutcomes);
+                .payingWith(rel.getLeft())
+                .signedBy(rel.getLeft())
+                .hasPrecheckFrom(plus(STANDARD_PERMISSIBLE_PRECHECKS, customOutcomes))
+                .hasKnownStatusFrom(plus(permissibleOutcomes, customOutcomes));
         return Optional.of(op);
     }
 }

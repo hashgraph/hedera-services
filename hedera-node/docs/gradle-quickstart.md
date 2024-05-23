@@ -127,10 +127,3 @@ instance. You can start one in one terminal with `./gradlew run` and then execut
 `./gradlew eet`. Or you can use JRS to start an instance, or use some existing environment.
 
 ![./gradlew eet](assets/gradle-eet.gif)
-
-### SonarQube
-
-We use SonarCloud (cloud hosted SonarQube) for performing code quality checks. This is a gate that must be passed
-before a PR can be merged into **main**. With Gradle, you can run this check from your machine without having to first
-commit your code to Github 🤩. First, define an environment variable called `SONAR_TOKEN` with the value of a token
-created within SonarCloud for an account with 'Execute analysis' permission. Then simply run `./gradlew sonarqube`.

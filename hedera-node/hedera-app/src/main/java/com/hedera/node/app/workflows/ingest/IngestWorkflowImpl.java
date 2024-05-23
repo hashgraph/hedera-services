@@ -20,22 +20,28 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionResponse;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.function.Supplier;
 import javax.inject.Inject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Implementation of {@link IngestWorkflow} */
 public final class IngestWorkflowImpl implements IngestWorkflow {
+
+    private static final Logger logger = LogManager.getLogger(IngestWorkflowImpl.class);
+
     private final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
     private final TransactionChecker transactionChecker;
     private final IngestChecker ingestChecker;
@@ -92,6 +98,13 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
             result = e.responseCode();
         } catch (final PreCheckException e) {
             result = e.responseCode();
+        } catch (final HandleException e) {
+            // Conceptually, this should never happen, because we should use PreCheckException only during pre-checks
+            // But we catch it here to play it safe
+            result = e.getStatus();
+        } catch (final Exception e) {
+            logger.error("Possibly CATASTROPHIC failure while running the ingest workflow", e);
+            result = ResponseCodeEnum.FAIL_INVALID;
         }
 
         // 8. Return PreCheck code and estimated fee

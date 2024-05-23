@@ -34,5 +34,5 @@ public interface ConfigValidator {
      * @return the violations
      */
     @NonNull
-    Stream<ConfigViolation> validate(@NonNull final Configuration configuration);
+    Stream<ConfigViolation> validate(@NonNull Configuration configuration);
 }

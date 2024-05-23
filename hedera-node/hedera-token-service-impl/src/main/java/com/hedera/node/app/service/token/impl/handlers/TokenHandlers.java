@@ -62,9 +62,43 @@ public class TokenHandlers {
     private final TokenGetAccountNftInfosHandler tokenGetAccountNftInfosHandler;
     private final TokenGetNftInfoHandler tokenGetNftInfoHandler;
     private final TokenGetNftInfosHandler tokenGetNftInfosHandler;
+    private final TokenUpdateNftsHandler tokenUpdateNftsHandler;
 
     /**
-     * Constructor for the TokenHandlers class
+     * Constructor for the TokenHandlers.
+     * @param cryptoCreateHandler crypto create handler
+     * @param cryptoUpdateHandler crypto update handler
+     * @param cryptoTransferHandler crypto transfer handler
+     * @param cryptoDeleteHandler crypto delete handler
+     * @param cryptoApproveAllowanceHandler crypto approve allowance handler
+     * @param cryptoDeleteAllowanceHandler crypto delete allowance handler
+     * @param cryptoAddLiveHashHandler crypto add live hash handler
+     * @param cryptoDeleteLiveHashHandler crypto delete live hash handler
+     * @param tokenCreateHandler token create handler
+     * @param tokenUpdateHandler token update handler
+     * @param tokenMintHandler token mint handler
+     * @param tokenBurnHandler token burn handler
+     * @param tokenDeleteHandler token delete handler
+     * @param tokenAccountWipeHandler token account wipe handler
+     * @param tokenFreezeAccountHandler token freeze account handler
+     * @param tokenUnfreezeAccountHandler token unfreeze account handler
+     * @param tokenGrantKycToAccountHandler token grant kyc to account handler
+     * @param tokenRevokeKycFromAccountHandler token revoke kyc from account handler
+     * @param tokenAssociateToAccountHandler token associate to account handler
+     * @param tokenDissociateFromAccountHandler token dissociate from account handler
+     * @param tokenFeeScheduleUpdateHandler token fee schedule update handler
+     * @param tokenPauseHandler token pause handler
+     * @param tokenUnpauseHandler token unpause handler
+     * @param cryptoGetAccountBalanceHandler crypto get account balance handler
+     * @param cryptoGetAccountInfoHandler crypto get account info handler
+     * @param cryptoGetAccountRecordsHandler crypto get account records handler
+     * @param cryptoGetLiveHashHandler crypto get live hash handler
+     * @param cryptoGetStakersHandler crypto get stakers handler
+     * @param tokenGetInfoHandler token get info handler
+     * @param tokenGetAccountNftInfosHandler token get account nft infos handler
+     * @param tokenGetNftInfoHandler token get nft info handler
+     * @param tokenGetNftInfosHandler token get nft infos handler
+     * @param tokenUpdateNftsHandler token update nfts handler
      */
     @Inject
     public TokenHandlers(
@@ -99,7 +133,8 @@ public class TokenHandlers {
             @NonNull final TokenGetInfoHandler tokenGetInfoHandler,
             @NonNull final TokenGetAccountNftInfosHandler tokenGetAccountNftInfosHandler,
             @NonNull final TokenGetNftInfoHandler tokenGetNftInfoHandler,
-            @NonNull final TokenGetNftInfosHandler tokenGetNftInfosHandler) {
+            @NonNull final TokenGetNftInfosHandler tokenGetNftInfosHandler,
+            TokenUpdateNftsHandler tokenUpdateNftsHandler) {
         this.cryptoCreateHandler = Objects.requireNonNull(cryptoCreateHandler, "cryptoCreateHandler must not be null");
         this.cryptoUpdateHandler = Objects.requireNonNull(cryptoUpdateHandler, "cryptoUpdateHandler must not be null");
         this.cryptoTransferHandler =
@@ -153,6 +188,8 @@ public class TokenHandlers {
                 Objects.requireNonNull(tokenGetNftInfoHandler, "tokenGetNftInfoHandler must not be null");
         this.tokenGetNftInfosHandler =
                 Objects.requireNonNull(tokenGetNftInfosHandler, "tokenGetNftInfosHandler must not be null");
+        this.tokenUpdateNftsHandler =
+                Objects.requireNonNull(tokenUpdateNftsHandler, "tokenUpdateNftsHandler must not be null");
     }
 
     /**
@@ -441,5 +478,14 @@ public class TokenHandlers {
      */
     public TokenGetNftInfosHandler tokenGetNftInfosHandler() {
         return tokenGetNftInfosHandler;
+    }
+
+    /**
+     * Gets the tokenUpdateNftsHandler.
+     *
+     * @return the tokenUpdateNftsHandler
+     */
+    public TokenUpdateNftsHandler tokenUpdateNftsHandler() {
+        return tokenUpdateNftsHandler;
     }
 }

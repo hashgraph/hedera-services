@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.records;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransferList;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,18 +30,32 @@ public interface GenesisAccountRecordBuilder {
 
     /**
      * Tracks the created account ID for the system account
+     * @param accountID the account ID of the system account
+     * @return this builder
      */
     @NonNull
     GenesisAccountRecordBuilder accountID(@NonNull final AccountID accountID);
 
     /**
      * Tracks the synthetic transaction that represents the created system account
+     * @param txn the synthetic transaction that represents the created system account
+     * @return this builder
      */
     @NonNull
     GenesisAccountRecordBuilder transaction(@NonNull final Transaction txn);
 
     /**
+     * Tracks the synthetic transaction that represents the created system account
+     * @param status the status of the synthetic transaction that represents the created system account
+     * @return this builder
+     */
+    @NonNull
+    GenesisAccountRecordBuilder status(@NonNull ResponseCodeEnum status);
+
+    /**
      * Tracks the memo for the synthetic record
+     * @param memo the memo for the synthetic record
+     * @return this builder
      */
     @NonNull
     GenesisAccountRecordBuilder memo(@NonNull final String memo);

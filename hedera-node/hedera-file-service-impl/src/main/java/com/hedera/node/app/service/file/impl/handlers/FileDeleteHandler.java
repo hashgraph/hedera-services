@@ -55,6 +55,10 @@ import javax.inject.Singleton;
 public class FileDeleteHandler implements TransactionHandler {
     private final FileFeeBuilder usageEstimator;
 
+    /**
+     * Constructs a {@link FileDeleteHandler} with the given {@link FileFeeBuilder}.
+     * @param usageEstimator the file fee builder to be used for fee calculation
+     */
     @Inject
     public FileDeleteHandler(final FileFeeBuilder usageEstimator) {
         this.usageEstimator = usageEstimator;

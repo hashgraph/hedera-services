@@ -43,6 +43,11 @@ public class DoNothingCryptoEngine implements Cryptography {
     }
 
     @Override
+    public byte[] digestBytesSync(final byte[] message, final DigestType digestType) {
+        return null;
+    }
+
+    @Override
     public Hash getNullHash(DigestType digestType) {
         return null;
     }

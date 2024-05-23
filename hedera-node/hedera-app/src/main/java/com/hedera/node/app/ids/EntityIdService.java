@@ -20,11 +20,11 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.config.data.HederaConfig;
+import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -82,7 +82,7 @@ public class EntityIdService implements Service {
                 final var entityIdState = ctx.newStates().getSingleton(ENTITY_ID_STATE_KEY);
                 final var config = ctx.configuration().getConfigData(HederaConfig.class);
 
-                final var isGenesis = ctx.previousStates().isEmpty();
+                final var isGenesis = ctx.previousVersion() == null;
                 if (isGenesis) {
                     // Set the initial entity id to the first user entity minus one
                     final var entityNum = config.firstUserEntity() - 1;

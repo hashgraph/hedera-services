@@ -22,7 +22,7 @@ import java.time.format.DateTimeFormatter;
 
 /**
  * Concrete {@link ConfigConverter} implementation that provides the support for {@link ZonedDateTime} values in the
- * configuration
+ * configuration.
  */
 public final class ZonedDateTimeConverter implements ConfigConverter<ZonedDateTime> {
 

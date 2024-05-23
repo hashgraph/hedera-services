@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.suites.utils.sysfiles.ExchangeRatesPojo;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 
 public class XRatesJsonToGrpcBytes implements SysFileSerde<String> {
@@ -37,7 +38,7 @@ public class XRatesJsonToGrpcBytes implements SysFileSerde<String> {
     }
 
     @Override
-    public byte[] toRawFile(String styledFile) {
+    public byte[] toRawFile(String styledFile, @Nullable String interpolatedSrcDir) {
         try {
             var pojoRates = mapper.readValue(styledFile, ExchangeRatesPojo.class);
             return pojoRates.toProto().toByteArray();

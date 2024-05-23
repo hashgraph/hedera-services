@@ -25,13 +25,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.swirlds.common.utility.CommonUtils;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -67,20 +68,22 @@ public class SyncValidator {
         assertNoEventsReceived("listener", listener);
     }
 
-    public static void assertRequiredEventsTransferred(final SyncNode caller, final SyncNode listener) {
+    public static void assertRequiredEventsTransferred(
+            final SyncNode caller, final SyncNode listener, @NonNull final AncientMode ancientMode) {
         if (enableLogging) {
             printTipSet("Caller's Tip Set", caller);
             printTipSet("Listener's Tip Set", listener);
             System.out.println("*** Asserting that required events were transferred ***");
         }
-        compareEventLists(caller, listener, false);
+        compareEventLists(caller, listener, false, ancientMode);
     }
 
-    public static void assertOnlyRequiredEventsTransferred(final SyncNode caller, final SyncNode listener) {
+    public static void assertOnlyRequiredEventsTransferred(
+            final SyncNode caller, final SyncNode listener, @NonNull final AncientMode ancientMode) {
         if (enableLogging) {
             System.out.println("*** Asserting that only required events were transferred ***");
         }
-        compareEventLists(caller, listener, true);
+        compareEventLists(caller, listener, true, ancientMode);
     }
 
     public static void assertFallenBehindDetection(final boolean fellBehind, final SyncNode... nodes) {
@@ -121,7 +124,11 @@ public class SyncValidator {
         assertNotNull(listener.getSyncException(), "Expected the listener to have thrown an exception.");
     }
 
-    private static void compareEventLists(final SyncNode caller, final SyncNode listener, final boolean strictCompare) {
+    private static void compareEventLists(
+            final SyncNode caller,
+            final SyncNode listener,
+            final boolean strictCompare,
+            @NonNull final AncientMode ancientMode) {
         // Determine the unique events for the caller and listener, since they could have added some of the
         // same events from step 2.
         final Collection<IndexedEvent> expectedCallerSendList = new ArrayList<>(caller.getGeneratedEvents());
@@ -131,14 +138,16 @@ public class SyncValidator {
         expectedListenerSendList.removeAll(caller.getGeneratedEvents());
 
         // Remove expired events
-        expectedCallerSendList.removeIf(e -> e.getGeneration() < caller.getOldestGeneration());
-        expectedListenerSendList.removeIf(e -> e.getGeneration() < listener.getOldestGeneration());
+        expectedCallerSendList.removeIf(
+                e -> e.getBaseEvent().getAncientIndicator(ancientMode) < caller.getExpirationThreshold());
+        expectedListenerSendList.removeIf(
+                e -> e.getBaseEvent().getAncientIndicator(ancientMode) < listener.getExpirationThreshold());
 
         // Remove events that are ancient for the peer
         expectedCallerSendList.removeIf(
-                e -> e.getGeneration() < listener.getConsensus().getMinGenerationNonAncient());
+                e -> e.getBaseEvent().getAncientIndicator(ancientMode) < listener.getCurrentAncientThreshold());
         expectedListenerSendList.removeIf(
-                e -> e.getGeneration() < caller.getConsensus().getMinGenerationNonAncient());
+                e -> e.getBaseEvent().getAncientIndicator(ancientMode) < caller.getCurrentAncientThreshold());
 
         // Get the events each received from the other in the sync
         final List<GossipEvent> callerReceivedEvents = caller.getReceivedEvents();
@@ -157,15 +166,16 @@ public class SyncValidator {
         }
 
         // Assert that the event each received are the unique events in the other's shadow graph
-        compareEventLists("listener", expectedCallerSendList, listener, strictCompare);
-        compareEventLists("caller", expectedListenerSendList, caller, strictCompare);
+        compareEventLists("listener", expectedCallerSendList, listener, strictCompare, ancientMode);
+        compareEventLists("caller", expectedListenerSendList, caller, strictCompare, ancientMode);
     }
 
     private static void compareEventLists(
             final String node,
             final Collection<IndexedEvent> expectedList,
             final SyncNode receiver,
-            final boolean strictCompare) {
+            final boolean strictCompare,
+            @NonNull final AncientMode ancientMode) {
 
         Collection<GossipEvent> actualList = receiver.getReceivedEvents();
 
@@ -191,10 +201,10 @@ public class SyncValidator {
 
             for (final GossipEvent actual : actualList) {
                 final BaseEventHashedData actualHashedData = actual.getHashedData();
-                final BaseEventUnhashedData actualUnhashedData = actual.getUnhashedData();
+                final Bytes actualSignature = actual.getSignature();
 
-                if (expected.getBaseEventHashedData().equals(actualHashedData)
-                        && expected.getBaseEventUnhashedData().equals(actualUnhashedData)) {
+                if (expected.getHashedData().equals(actualHashedData)
+                        && expected.getBaseEvent().getSignature().equals(actualSignature)) {
                     foundMatch = true;
                     break;
                 }
@@ -212,7 +222,7 @@ public class SyncValidator {
         if (!expectedAndNotFound.isEmpty()) {
             List<String> missingHashes = expectedAndNotFound.stream()
                     .map(EventImpl::getBaseHash)
-                    .map(h -> CommonUtils.hex(h.getValue(), 4))
+                    .map(h -> h.toHex(4))
                     .collect(Collectors.toList());
             fail(format(
                     "Actual list is missing %s expected event(s) with hash(es) %s",

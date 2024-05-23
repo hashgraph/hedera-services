@@ -19,7 +19,6 @@ package com.swirlds.logging.api;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * The level of a log message
@@ -62,26 +61,34 @@ public enum Level {
             EMERGENCY_LOGGER.logNPE("level");
             return true;
         }
-        return this.levelOrdinal >= level.levelOrdinal;
+        return this.levelOrdinal >= level.levelOrdinal && level.levelOrdinal > 0;
     }
 
     /**
-     * Returns the level for the given name or the given default level if no level can be found for the given name.
-     *
-     * @param value        the name of the level
-     * @param defaultLevel the default level
-     * @return the level for the given name
+     * The method returns the name of the logging level as a string with a fixed size of 5 characters.
+     * <p>
+     * e.g:
+     * <ul>
+     * <li>If the logging level is {@code OFF}, the method returns "OFF  ".
+     * <li>If the logging level is none of the predefined levels, the method returns "     ".
+     *</ul>
+     * @return The name of the logging level with a fixed size.
      */
-    public static Level valueOfOrElse(@Nullable final String value, @NonNull final Level defaultLevel) {
-        if (defaultLevel == null) {
-            EMERGENCY_LOGGER.logNPE("defaultLevel");
-            return valueOfOrElse(value, INFO);
-        }
-        try {
-            return valueOf(value);
-        } catch (IllegalArgumentException e) {
-            EMERGENCY_LOGGER.log(ERROR, "Invalid log level: " + value, e);
-            return defaultLevel;
+    public String nameWithFixedSize() {
+        if (this == OFF) {
+            return "OFF  ";
+        } else if (this == ERROR) {
+            return "ERROR";
+        } else if (this == WARN) {
+            return "WARN ";
+        } else if (this == INFO) {
+            return "INFO ";
+        } else if (this == DEBUG) {
+            return "DEBUG";
+        } else if (this == TRACE) {
+            return "TRACE";
+        } else {
+            return "     ";
         }
     }
 }

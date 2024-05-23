@@ -23,7 +23,6 @@ import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Collections;
 
 /**
  * Utility class for working with keys. This validates if the key is empty and valid.
@@ -34,6 +33,7 @@ public class KeyUtils {
 
     public static final Key IMMUTABILITY_SENTINEL_KEY =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
+
     public static final int EVM_ADDRESS_BYTE_LENGTH = 20;
     public static final int ED25519_BYTE_LENGTH = 32;
     private static final byte ODD_PARITY = (byte) 0x03;
@@ -42,10 +42,6 @@ public class KeyUtils {
 
     private KeyUtils() {
         throw new UnsupportedOperationException("Utility Class");
-    }
-
-    public static boolean isEmptyAndNotImmutable(@Nullable final Key pbjKey) {
-        return isEmptyInternal(pbjKey, true);
     }
 
     /**
@@ -82,7 +78,7 @@ public class KeyUtils {
         }
         if (pbjKey.hasKeyList()) {
             final var keyList = (KeyList) key.value();
-            if (!keyList.hasKeys() || keyList.keysOrThrow().isEmpty()) {
+            if (keyList.keys().isEmpty()) {
                 return true;
             }
             for (final var k : keyList.keys()) {
@@ -93,8 +89,7 @@ public class KeyUtils {
             return true;
         } else if (pbjKey.hasThresholdKey()) {
             final var thresholdKey = (ThresholdKey) key.value();
-            if ((!thresholdKey.hasKeys()
-                    || thresholdKey.keys().keysOrElse(Collections.emptyList()).size() == 0)) {
+            if ((!thresholdKey.hasKeys() || thresholdKey.keys().keys().size() == 0)) {
                 return true;
             }
             for (final var k : thresholdKey.keys().keys()) {

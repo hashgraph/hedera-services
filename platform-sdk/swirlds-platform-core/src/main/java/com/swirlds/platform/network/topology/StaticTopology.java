@@ -23,10 +23,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 import java.util.function.Predicate;
 
 /**
- * A topology that never changes. Can be either unidirectional or bidirectional.
+ * A bidirectional topology that never changes.
  */
 public class StaticTopology implements NetworkTopology {
     private static final long SEED = 0;
@@ -38,22 +39,24 @@ public class StaticTopology implements NetworkTopology {
     private final AddressBook addressBook;
 
     private final RandomGraph connectionGraph;
-    private final boolean unidirectional;
 
+    /**
+     * Constructor.
+     *
+     * @param random            a source of randomness, used to chose random neighbors, does not need to be
+     *                          cryptographically secure
+     * @param addressBook       the current address book
+     * @param selfId            the ID of this node
+     * @param numberOfNeighbors the number of neighbors each node should have
+     */
     public StaticTopology(
-            @NonNull final AddressBook addressBook, @NonNull final NodeId selfId, final int numberOfNeighbors) {
-        this(addressBook, selfId, numberOfNeighbors, true);
-    }
-
-    public StaticTopology(
+            @NonNull final Random random,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
-            final int numberOfNeighbors,
-            final boolean unidirectional) {
+            final int numberOfNeighbors) {
         this.addressBook = Objects.requireNonNull(addressBook, "addressBook must not be null");
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
-        this.unidirectional = unidirectional;
-        this.connectionGraph = new RandomGraph(addressBook.getSize(), numberOfNeighbors, SEED);
+        this.connectionGraph = new RandomGraph(random, addressBook.getSize(), numberOfNeighbors, SEED);
 
         if (!addressBook.contains(selfId)) {
             throw new IllegalArgumentException("Address book does not contain selfId");
@@ -85,15 +88,13 @@ public class StaticTopology implements NetworkTopology {
      */
     @Override
     public boolean shouldConnectToMe(final NodeId nodeId) {
-        return isNeighbor(nodeId)
-                && (unidirectional || addressBook.getIndexOfNodeId(nodeId) < addressBook.getIndexOfNodeId(selfId));
+        return isNeighbor(nodeId) && addressBook.getIndexOfNodeId(nodeId) < addressBook.getIndexOfNodeId(selfId);
     }
 
     /**
      * Queries the topology on whether this node is my neighbor
      *
-     * @param nodeId
-     * 		the ID of the node being queried
+     * @param nodeId the ID of the node being queried
      * @return true if this node is my neighbor, false if not
      */
     private boolean isNeighbor(final NodeId nodeId) {
@@ -110,8 +111,7 @@ public class StaticTopology implements NetworkTopology {
      */
     @Override
     public boolean shouldConnectTo(final NodeId nodeId) {
-        return isNeighbor(nodeId)
-                && (unidirectional || addressBook.getIndexOfNodeId(nodeId) > addressBook.getIndexOfNodeId(selfId));
+        return isNeighbor(nodeId) && addressBook.getIndexOfNodeId(nodeId) > addressBook.getIndexOfNodeId(selfId);
     }
 
     /**

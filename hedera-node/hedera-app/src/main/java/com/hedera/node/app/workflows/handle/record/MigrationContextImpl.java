@@ -18,30 +18,30 @@ package com.hedera.node.app.workflows.handle.record;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.FilteredWritableStates;
 import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.spi.throttle.HandleThrottleParser;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * An implementation of {@link MigrationContext}.
  *
- * @param previousStates The previous states.
- * @param newStates The new states, preloaded with any new state definitions.
- * @param configuration The configuration to use
+ * @param previousStates        The previous states.
+ * @param newStates             The new states, preloaded with any new state definitions.
+ * @param configuration         The configuration to use
  * @param genesisRecordsBuilder The instance responsible for genesis records
- * @param handleThrottling The instance responsible for handle throttling
  * @param writableEntityIdStore The instance responsible for generating new entity IDs (ONLY during
  *                              migrations). Note that this is nullable only because it cannot exist
  *                              when the entity ID service itself is being migrated
+ * @param previousVersion
  */
 public record MigrationContextImpl(
         @NonNull ReadableStates previousStates,
@@ -49,8 +49,8 @@ public record MigrationContextImpl(
         @NonNull Configuration configuration,
         @NonNull NetworkInfo networkInfo,
         @NonNull GenesisRecordsBuilder genesisRecordsBuilder,
-        @NonNull HandleThrottleParser handleThrottling,
-        @Nullable WritableEntityIdStore writableEntityIdStore)
+        @Nullable WritableEntityIdStore writableEntityIdStore,
+        @Nullable SemanticVersion previousVersion)
         implements MigrationContext {
 
     public MigrationContextImpl {
@@ -59,7 +59,6 @@ public record MigrationContextImpl(
         requireNonNull(configuration);
         requireNonNull(networkInfo);
         requireNonNull(genesisRecordsBuilder);
-        requireNonNull(handleThrottling);
     }
 
     @Override

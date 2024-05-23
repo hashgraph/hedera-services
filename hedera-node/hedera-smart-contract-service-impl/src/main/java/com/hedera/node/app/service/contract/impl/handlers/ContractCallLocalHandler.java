@@ -17,14 +17,16 @@
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL_LOCAL;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjResponseType;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
@@ -33,6 +35,7 @@ import com.hedera.hapi.node.contract.ContractCallLocalQuery;
 import com.hedera.hapi.node.contract.ContractCallLocalResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.exec.QueryComponent;
 import com.hedera.node.app.service.contract.impl.exec.QueryComponent.Factory;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -42,6 +45,8 @@ import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -89,13 +94,10 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
         // nothing
         // to call)
         final var contract = context.createStore(ReadableAccountStore.class).getContractById(contractID);
-        if (contract != null) {
-            if (contract.deleted()) {
-                throw new PreCheckException(CONTRACT_DELETED);
-            }
-        } else {
-            final var tokenID =
-                    TokenID.newBuilder().tokenNum(contractID.contractNum()).build();
+        if (contract == null) {
+            final var tokenID = TokenID.newBuilder()
+                    .tokenNum(contractID.contractNumOrElse(0L))
+                    .build();
             final var tokenContract =
                     context.createStore(ReadableTokenStore.class).get(tokenID);
             mustExist(tokenContract, INVALID_CONTRACT_ID);
@@ -125,6 +127,22 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
     @NonNull
     @Override
     public Fees computeFees(@NonNull final QueryContext context) {
-        return context.feeCalculator().calculate();
+        requireNonNull(context);
+        final var op = context.query().contractCallLocalOrThrow();
+        final var contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
+        return context.feeCalculator().legacyCalculate(sigValueObj -> {
+            final var contractFnResult = ContractFunctionResult.newBuilder()
+                    .setContractID(fromPbj(op.contractIDOrElse(ContractID.DEFAULT)))
+                    .setContractCallResult(fromPbj(Bytes.wrap(new byte[contractsConfig.localCallEstRetBytes()])))
+                    .build();
+            final var builder = new SmartContractFeeBuilder();
+            final var feeData = builder.getContractCallLocalFeeMatrices(
+                    (int) op.functionParameters().length(),
+                    contractFnResult,
+                    fromPbjResponseType(op.header().responseType()));
+            return feeData.toBuilder()
+                    .setNodedata(feeData.getNodedata().toBuilder().setGas(op.gas()))
+                    .build();
+        });
     }
 }

@@ -101,7 +101,7 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
 
     @Override
     public void setNonce(final long value) {
-        state.setNonce(accountID.accountNumOrElse(AccountID.DEFAULT.accountNum()), value);
+        state.setNonce(accountID.accountNumOrThrow(), value);
     }
 
     @Override
@@ -121,6 +121,14 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
     @Override
     public boolean isTokenFacade() {
         return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isRegularAccount() {
+        return !isContract();
     }
 
     @Override

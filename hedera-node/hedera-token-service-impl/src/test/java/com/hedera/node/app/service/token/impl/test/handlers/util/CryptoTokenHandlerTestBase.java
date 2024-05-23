@@ -78,14 +78,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
-import com.hedera.node.app.spi.state.ReadableSingletonState;
-import com.hedera.node.app.spi.state.ReadableSingletonStateBase;
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableSingletonState;
-import com.hedera.node.app.spi.state.WritableSingletonStateBase;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -93,6 +86,14 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.spi.ReadableSingletonStateBase;
+import com.swirlds.platform.state.spi.WritableSingletonStateBase;
+import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
+import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.state.spi.ReadableSingletonState;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -106,6 +107,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * Base class for testing both Crypto and Token implementations.
+ */
 @ExtendWith(MockitoExtension.class)
 public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected static final Instant originalInstant = Instant.ofEpochSecond(12345678910L);
@@ -128,6 +132,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final Key treasuryKey = C_COMPLEX_KEY;
     protected final Key EMPTY_KEYLIST =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
+    protected final Key metadataKey = A_COMPLEX_KEY;
     /* ---------- Node IDs */
     protected final EntityNumber node0Id = EntityNumber.newBuilder().number(0L).build();
     protected final EntityNumber node1Id = EntityNumber.newBuilder().number(1L).build();
@@ -150,6 +155,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final AccountID feeCollectorId = transferAccountId;
     protected final AccountID stakingRewardId =
             AccountID.newBuilder().accountNum(800).build();
+    protected final AccountID zeroAccountId =
+            AccountID.newBuilder().accountNum(0).build();
 
     /* ---------- Account Numbers ---------- */
     protected final Long accountNum = payerId.accountNum();
@@ -280,8 +287,9 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                     Fraction.newBuilder().numerator(1).denominator(2).build())
             .fallbackFee(hbarFixedFee)
             .build();
-    protected CustomFee customFractionalFee = withFractionalFee(fractionalFee);
-    protected List<CustomFee> customFees = List.of(withFixedFee(hbarFixedFee), customFractionalFee);
+    protected CustomFee customFractionalFee = withFractionalFee(fractionalFee, feeCollectorId, false);
+    protected List<CustomFee> customFees =
+            List.of(withFixedFee(hbarFixedFee, feeCollectorId, false), customFractionalFee);
 
     /* ---------- Misc ---------- */
     protected final Timestamp consensusTimestamp =
@@ -290,6 +298,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final String tokenName = "test token";
     protected final String tokenSymbol = "TT";
     protected final String memo = "test memo";
+    protected final Bytes metadata = Bytes.wrap(new byte[] {1, 2, 3, 4});
     protected final long expirationTime = 1_234_567L;
     protected final long autoRenewSecs = 100L;
     protected static final long payerBalance = 10_000L;
@@ -360,6 +369,9 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected Account delegatingSpenderAccount;
     protected Account treasuryAccount;
     protected Account stakingRewardAccount;
+    protected Account tokenReceiverAccount;
+    protected Account hbarReceiverAccount;
+    protected Account zeroAccount;
 
     /* ---------- Maps for updating both readable and writable stores ---------- */
     private Map<AccountID, Account> accountsMap;
@@ -374,9 +386,14 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     @Mock
     protected WritableStates writableStates;
 
+    @Mock
+    private StoreMetricsService storeMetricsService;
+
     protected Configuration configuration;
     protected VersionedConfigImpl versionedConfig;
-
+    /**
+     * Sets up the test environment.
+     */
     @BeforeEach
     public void setUp() {
         handlerTestBaseInternalSetUp(true);
@@ -398,18 +415,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         accountsMap = new HashMap<>();
         accountsMap.put(payerId, account);
         if (prepopulateReceiverIds) {
-            accountsMap.put(
-                    hbarReceiverId,
-                    Account.newBuilder()
-                            .accountId(hbarReceiverId)
-                            .tinybarBalance(Long.MAX_VALUE)
-                            .build());
-            accountsMap.put(
-                    tokenReceiverId,
-                    Account.newBuilder()
-                            .accountId(tokenReceiverId)
-                            .tinybarBalance(Long.MAX_VALUE)
-                            .build());
+            accountsMap.put(hbarReceiverId, hbarReceiverAccount);
+            accountsMap.put(tokenReceiverId, tokenReceiverAccount);
         }
         accountsMap.put(deleteAccountId, deleteAccount);
         accountsMap.put(transferAccountId, transferAccount);
@@ -417,6 +424,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         accountsMap.put(delegatingSpenderId, delegatingSpenderAccount);
         accountsMap.put(spenderId, spenderAccount);
         accountsMap.put(treasuryId, treasuryAccount);
+        accountsMap.put(zeroAccountId, zeroAccount);
         accountsMap.put(stakingRewardId, stakingRewardAccount);
 
         tokensMap = new HashMap<>();
@@ -477,8 +485,10 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         writableAliases = emptyWritableAliasStateBuilder().build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
+        given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
+        given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
         readableAccountStore = new ReadableAccountStoreImpl(readableStates);
-        writableAccountStore = new WritableAccountStore(writableStates);
+        writableAccountStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
     }
 
     private void givenAccountsInWritableStore() {
@@ -491,7 +501,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
         readableAccountStore = new ReadableAccountStoreImpl(readableStates);
-        writableAccountStore = new WritableAccountStore(writableStates);
+        writableAccountStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
     }
 
     private void givenTokensInReadableStore() {
@@ -500,7 +510,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableTokenState);
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
         readableTokenStore = new ReadableTokenStoreImpl(readableStates);
-        writableTokenStore = new WritableTokenStore(writableStates);
+        writableTokenStore = new WritableTokenStore(writableStates, configuration, storeMetricsService);
     }
 
     private void givenTokensInWritableStore() {
@@ -509,7 +519,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableTokenState);
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
         readableTokenStore = new ReadableTokenStoreImpl(readableStates);
-        writableTokenStore = new WritableTokenStore(writableStates);
+        writableTokenStore = new WritableTokenStore(writableStates, configuration, storeMetricsService);
     }
 
     private void givenReadableStakingInfoStore() {
@@ -556,7 +566,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     private void givenWritableTokenRelsStore() {
         writableTokenRelState = writableTokenRelState();
         given(writableStates.<EntityIDPair, TokenRelation>get(TOKEN_RELS)).willReturn(writableTokenRelState);
-        writableTokenRelStore = new WritableTokenRelationStore(writableStates);
+        writableTokenRelStore = new WritableTokenRelationStore(writableStates, configuration, storeMetricsService);
     }
 
     private void givenReadableNftStore() {
@@ -574,7 +584,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .value(nftIdSl2, nftSl2)
                 .build();
         given(writableStates.<NftID, Nft>get(NFTS)).willReturn(writableNftState);
-        writableNftStore = new WritableNftStore(writableStates);
+        writableNftStore = new WritableNftStore(writableStates, configuration, storeMetricsService);
     }
 
     @NonNull
@@ -724,28 +734,38 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         fungibleTokenB = givenValidFungibleToken()
                 .copyBuilder()
                 .tokenId(fungibleTokenIDB)
-                .customFees(withFixedFee(FixedFee.newBuilder()
-                        .denominatingTokenId(fungibleTokenIDC)
-                        .amount(1000)
-                        .build()))
+                .customFees(withFixedFee(
+                        FixedFee.newBuilder()
+                                .denominatingTokenId(fungibleTokenIDC)
+                                .amount(1000)
+                                .build(),
+                        feeCollectorId,
+                        false))
                 .build();
         fungibleTokenC = givenValidFungibleToken()
                 .copyBuilder()
                 .tokenId(fungibleTokenIDC)
-                .customFees(withFixedFee(FixedFee.newBuilder()
-                        .denominatingTokenId(fungibleTokenId)
-                        .amount(40)
-                        .build()))
+                .customFees(withFixedFee(
+                        FixedFee.newBuilder()
+                                .denominatingTokenId(fungibleTokenId)
+                                .amount(40)
+                                .build(),
+                        feeCollectorId,
+                        false))
                 .build();
         nonFungibleToken = givenValidNonFungibleToken(true);
-        nftSl1 = givenNft(nftIdSl1);
-        nftSl2 = givenNft(nftIdSl2);
+        nftSl1 = givenNft(nftIdSl1).copyBuilder().ownerNextNftId(nftIdSl2).build();
+        nftSl2 = givenNft(nftIdSl2).copyBuilder().ownerPreviousNftId(nftIdSl1).build();
     }
 
     private void givenValidAccounts() {
         account = givenValidAccountBuilder().stakedNodeId(1L).build();
-        spenderAccount =
-                givenValidAccountBuilder().key(spenderKey).accountId(spenderId).build();
+        spenderAccount = givenValidAccountBuilder()
+                .key(spenderKey)
+                .accountId(spenderId)
+                .headNftSerialNumber(0L)
+                .headNftId((NftID) null)
+                .build();
         ownerAccount = givenValidAccountBuilder()
                 .accountId(ownerId)
                 .cryptoAllowances(AccountCryptoAllowance.newBuilder()
@@ -773,6 +793,22 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .build();
         stakingRewardAccount = givenValidAccountBuilder()
                 .accountId(stakingRewardId)
+                .key(EMPTY_KEYLIST)
+                .build();
+        tokenReceiverAccount = givenValidAccountBuilder()
+                .accountId(tokenReceiverId)
+                .tinybarBalance(Long.MAX_VALUE)
+                .headNftId((NftID) null)
+                .headNftSerialNumber(0L)
+                .build();
+        hbarReceiverAccount = givenValidAccountBuilder()
+                .accountId(hbarReceiverId)
+                .tinybarBalance(Long.MAX_VALUE)
+                .headNftId((NftID) null)
+                .headNftSerialNumber(0L)
+                .build();
+        zeroAccount = givenValidAccountBuilder()
+                .accountId(zeroAccountId)
                 .key(EMPTY_KEYLIST)
                 .build();
     }
@@ -818,7 +854,9 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 paused,
                 accountsFrozenByDefault,
                 accountsKycGrantedByDefault,
-                customFees);
+                customFees,
+                metadata,
+                metadataKey);
     }
 
     protected Token givenValidNonFungibleToken(boolean hasKyc) {
@@ -826,7 +864,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .copyBuilder()
                 .tokenId(nonFungibleTokenId)
                 .treasuryAccountId(treasuryId)
-                .customFees(List.of(withRoyaltyFee(royaltyFee)))
+                .customFees(List.of(withRoyaltyFee(royaltyFee, feeCollectorId)))
                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                 .kycKey(hasKyc ? kycKey : null)
                 .build();
@@ -848,6 +886,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .headTokenId(TokenID.newBuilder().tokenNum(3L).build())
                 .headNftId(NftID.newBuilder()
                         .tokenId(TokenID.newBuilder().tokenNum(2L))
+                        .serialNumber(1L)
                         .build())
                 .headNftSerialNumber(1L)
                 .numberOwnedNfts(2L)
@@ -876,7 +915,6 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(true)
-                .deleted(false)
                 .automaticAssociation(true)
                 .nextToken(asToken(2L))
                 .previousToken(asToken(3L))
@@ -890,7 +928,6 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .balance(1)
                 .frozen(false)
                 .kycGranted(true)
-                .deleted(false)
                 .automaticAssociation(true)
                 .nextToken(asToken(2L))
                 .previousToken(asToken(3L))
@@ -898,7 +935,36 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     }
 
     protected Nft givenNft(NftID tokenID) {
-        return Nft.newBuilder().ownerId(ownerId).nftId(tokenID).build();
+        return Nft.newBuilder()
+                .ownerId(ownerId)
+                .metadata(Bytes.wrap("test"))
+                .nftId(tokenID)
+                .build();
+    }
+
+    public static CustomFee withFixedFee(
+            final FixedFee fixedFee, final AccountID feeCollectorId, final boolean allCollectorsExempt) {
+        return CustomFee.newBuilder()
+                .feeCollectorAccountId(feeCollectorId)
+                .allCollectorsAreExempt(allCollectorsExempt)
+                .fixedFee(fixedFee)
+                .build();
+    }
+
+    public static CustomFee withFractionalFee(
+            final FractionalFee fractionalFee, final AccountID feeCollectorId, final boolean allCollectorsExempt) {
+        return CustomFee.newBuilder()
+                .fractionalFee(fractionalFee)
+                .feeCollectorAccountId(feeCollectorId)
+                .allCollectorsAreExempt(allCollectorsExempt)
+                .build();
+    }
+
+    public static CustomFee withRoyaltyFee(final RoyaltyFee royaltyFee, final AccountID feeCollectorId) {
+        return CustomFee.newBuilder()
+                .royaltyFee(royaltyFee)
+                .feeCollectorAccountId(feeCollectorId)
+                .build();
     }
 
     protected CustomFee withFixedFee(final FixedFee fixedFee) {
@@ -945,7 +1011,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
         given(context.readableStore(ReadableNetworkStakingRewardsStore.class)).willReturn(readableRewardsStore);
         given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(writableRewardsStore);
-        given(context.dispatchComputeFees(any(), any())).willReturn(new Fees(1l, 2l, 3l));
+        given(context.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1l, 2l, 3l));
     }
 
     protected void givenStoresAndConfig(final FinalizeContext context) {

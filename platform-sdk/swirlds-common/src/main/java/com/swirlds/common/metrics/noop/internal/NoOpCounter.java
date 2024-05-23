@@ -18,13 +18,14 @@ package com.swirlds.common.metrics.noop.internal;
 
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.MetricConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A no-op counter.
  */
 public class NoOpCounter extends AbstractNoOpMetric implements Counter {
 
-    public NoOpCounter(final MetricConfig<?, ?> config) {
+    public NoOpCounter(final @NonNull MetricConfig<?, ?> config) {
         super(config);
     }
 

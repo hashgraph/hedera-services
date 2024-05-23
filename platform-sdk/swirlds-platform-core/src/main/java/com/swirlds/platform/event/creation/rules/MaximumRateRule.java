@@ -18,7 +18,6 @@ package com.swirlds.platform.event.creation.rules;
 
 import static com.swirlds.platform.event.creation.EventCreationStatus.RATE_LIMITED;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.platform.event.creation.EventCreationConfig;
@@ -36,16 +35,15 @@ public class MaximumRateRule implements EventCreationRule {
      * Constructor.
      *
      * @param platformContext the platform context for this node
-     * @param time            provides wall clock time
      */
-    public MaximumRateRule(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
+    public MaximumRateRule(@NonNull final PlatformContext platformContext) {
 
         final EventCreationConfig eventCreationConfig =
                 platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
 
         final double maxCreationRate = eventCreationConfig.maxCreationRate();
         if (maxCreationRate > 0) {
-            rateLimiter = new RateLimiter(time, maxCreationRate);
+            rateLimiter = new RateLimiter(platformContext.getTime(), maxCreationRate);
         } else {
             // No brakes!
             rateLimiter = null;

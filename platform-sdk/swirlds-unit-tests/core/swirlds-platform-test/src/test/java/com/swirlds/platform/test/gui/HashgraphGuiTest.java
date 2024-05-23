@@ -16,6 +16,11 @@
 
 package com.swirlds.platform.test.gui;
 
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.Randotron;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -23,11 +28,17 @@ class HashgraphGuiTest {
     @Test
     @Disabled("this test is useful for debugging consensus")
     void runGuiWithControls() {
-        final long seed = 1;
+        final Randotron randotron = Randotron.create(1);
         final int numNodes = 4;
         final int initialEvents = 0;
 
-        final TestGuiSource guiSource = new TestGuiSource(seed, numNodes);
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final AddressBook addressBook =
+                RandomAddressBookBuilder.create(randotron).withSize(numNodes).build();
+
+        final TestGuiSource guiSource = new TestGuiSource(platformContext, randotron.nextInt(), addressBook);
         guiSource.generateEvents(initialEvents);
         guiSource.runGui();
     }

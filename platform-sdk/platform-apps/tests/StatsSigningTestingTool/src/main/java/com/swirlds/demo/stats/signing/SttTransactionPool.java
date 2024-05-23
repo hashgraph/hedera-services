@@ -18,11 +18,12 @@ package com.swirlds.demo.stats.signing;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.demo.stats.signing.algorithms.ExtendedSignature;
 import com.swirlds.demo.stats.signing.algorithms.SigningAlgorithm;
 import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
-import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.SignatureException;
@@ -118,12 +119,12 @@ final class SttTransactionPool {
         init();
     }
 
-    void expandSignatures(final Transaction tx) {
-        if (!TransactionCodec.txIsSigned(tx.getContents())) {
-            return;
+    TransactionSignature expandSignatures(final Bytes tx) {
+        if (!TransactionCodec.txIsSigned(tx)) {
+            return null;
         }
 
-        tx.add(TransactionCodec.extractSignature(tx.getContents()));
+        return TransactionCodec.extractSignature(tx);
     }
 
     /**

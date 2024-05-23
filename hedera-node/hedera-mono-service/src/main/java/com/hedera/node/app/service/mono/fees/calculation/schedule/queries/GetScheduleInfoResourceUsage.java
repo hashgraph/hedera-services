@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.fees.calculation.schedule.queries;
 
 import static com.hedera.node.app.service.mono.queries.schedule.GetScheduleInfoAnswer.SCHEDULE_INFO_CTX_KEY;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.putIfNotNull;
+import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 
 import com.hedera.node.app.hapi.fees.usage.schedule.ExtantScheduleContext;
 import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
@@ -82,7 +83,7 @@ public final class GetScheduleInfoResourceUsage implements QueryResourceUsageEst
             }
             return scheduleOpsUsage.scheduleInfoUsage(query, scheduleCtxBuilder.build());
         } else {
-            return FeeData.getDefaultInstance();
+            return CONSTANT_FEE_DATA;
         }
     }
 }

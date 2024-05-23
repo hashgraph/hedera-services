@@ -20,7 +20,7 @@ import com.swirlds.config.api.converter.ConfigConverter;
 
 /**
  * Concrete {@link ConfigConverter} implementation that provides the support for {@link Long} values in the
- * configuration
+ * configuration.
  */
 public final class LongConverter implements ConfigConverter<Long> {
 

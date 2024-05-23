@@ -40,7 +40,8 @@ public final class CodecFactory {
         return new Codec<>() {
             @NonNull
             @Override
-            public T parse(final @NonNull ReadableSequentialData input) throws ParseException {
+            public T parse(final @NonNull ReadableSequentialData input, final boolean strictMode, final int maxDepth)
+                    throws ParseException {
                 if (input instanceof ReadableStreamingData in) {
                     return parser.parse(in);
                 } else {

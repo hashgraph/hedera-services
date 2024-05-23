@@ -21,6 +21,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
+import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -30,6 +31,13 @@ import java.util.List;
  * Exposes the record customizations needed for a HAPI contract call transaction.
  */
 public interface ContractCallRecordBuilder extends ContractOperationRecordBuilder {
+    /**
+     * Returns all assessed custom fees for this call.
+     *
+     * @return the assessed custom fees
+     */
+    @NonNull
+    List<AssessedCustomFee> getAssessedCustomFees();
 
     /**
      * Tracks the final status of a top-level contract call.
@@ -72,6 +80,13 @@ public interface ContractCallRecordBuilder extends ContractOperationRecordBuilde
      */
     @NonNull
     ContractCallRecordBuilder contractCallResult(@Nullable ContractFunctionResult result);
+
+    /**
+     * Returns the in-progress {@link ContractFunctionResult}.
+     *
+     * @return the in-progress {@link ContractFunctionResult}
+     */
+    public ContractFunctionResult contractFunctionResult();
 
     /**
      * Tracks the transaction contained in child records resulting from the contract call.

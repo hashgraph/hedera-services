@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.fees;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static java.util.Objects.requireNonNull;
 
@@ -115,12 +116,7 @@ public final class FeeManager {
 
         // Populate the map of HederaFunctionality -> FeeData for the current schedule
         this.currentFeeDataMap = new HashMap<>();
-        if (currentSchedule.hasTransactionFeeSchedule()) {
-            populateFeeDataMap(currentFeeDataMap, currentSchedule.transactionFeeScheduleOrThrow());
-        } else {
-            logger.warn("The current fee schedule is missing transaction information, effectively disabling all"
-                    + "transactions.");
-        }
+        populateFeeDataMap(currentFeeDataMap, currentSchedule.transactionFeeSchedule());
 
         // Get the expiration time of the current schedule
         if (currentSchedule.hasExpiryTime()) {
@@ -145,12 +141,7 @@ public final class FeeManager {
         } else {
             // Populate the map of HederaFunctionality -> FeeData for the current schedule
             this.nextFeeDataMap = new HashMap<>();
-            if (nextSchedule.hasTransactionFeeSchedule()) {
-                populateFeeDataMap(nextFeeDataMap, nextSchedule.transactionFeeScheduleOrThrow());
-            } else {
-                logger.warn("The next fee schedule is missing transaction information, effectively disabling all"
-                        + "transactions once it becomes active.");
-            }
+            populateFeeDataMap(nextFeeDataMap, nextSchedule.transactionFeeSchedule());
         }
 
         return SUCCESS;
@@ -230,7 +221,11 @@ public final class FeeManager {
         // Now, lookup the fee data for the transaction type.
         final var result = feeDataMap.get(new Entry(functionality, subType));
         if (result == null) {
-            logger.warn("Using default usage prices to calculate fees for {}!", functionality);
+            // There is no point in adding a fee schedule entry for a privileged query type,
+            // since privileged queries are not charged fees in the first place
+            if (functionality != GET_ACCOUNT_DETAILS) {
+                logger.warn("Using default usage prices to calculate fees for {}!", functionality);
+            }
             return DEFAULT_FEE_DATA;
         }
         return result;
@@ -244,8 +239,8 @@ public final class FeeManager {
     private void populateFeeDataMap(
             @NonNull final Map<Entry, FeeData> feeDataMap, @NonNull final List<TransactionFeeSchedule> feeSchedule) {
         feeSchedule.forEach(t -> {
-            if (t.hasFees()) {
-                for (final var feeData : t.feesOrThrow()) {
+            if (!t.fees().isEmpty()) {
+                for (final var feeData : t.fees()) {
                     feeDataMap.put(new Entry(t.hederaFunctionality(), feeData.subType()), feeData);
                 }
             } else if (t.hasFeeData()) {

@@ -54,6 +54,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
     private OptionalLong expiry = OptionalLong.empty();
     private OptionalLong autoRenewPeriod = OptionalLong.empty();
     private boolean hasNoAdminKey = false;
+    private boolean hasNoSubmitKey = false;
     private Optional<String> adminKey = Optional.empty();
     private Optional<String> submitKey = Optional.empty();
     private Optional<String> autoRenewAccount = Optional.empty();
@@ -117,6 +118,11 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
         return this;
     }
 
+    public HapiGetTopicInfo hasNoSubmitKey() {
+        hasNoSubmitKey = true;
+        return this;
+    }
+
     public HapiGetTopicInfo hasSubmitKey(String exp) {
         submitKey = Optional.of(exp);
         return this;
@@ -144,7 +150,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) {
-        Query query = getTopicInfoQuery(spec, payment, false);
+        Query query = maybeModified(maybeModified(getTopicInfoQuery(spec, payment, false), spec), spec);
         response = spec.clients().getConsSvcStub(targetNodeFor(spec), useTls).getTopicInfo(query);
         if (verboseLoggingOn) {
             String message = String.format(
@@ -185,6 +191,10 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
         if (hasNoAdminKey) {
             assertFalse(info.hasAdminKey(), "Should have no admin key!");
         }
+
+        if (hasNoSubmitKey) {
+            assertFalse(info.hasSubmitKey(), "Should have no submit key!");
+        }
         expectedLedgerId.ifPresent(id -> Assertions.assertEquals(id, info.getLedgerId()));
     }
 
@@ -195,7 +205,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 
     @Override
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getTopicInfoQuery(spec, payment, true);
+        Query query = maybeModified(getTopicInfoQuery(spec, payment, true), spec);
         Response response =
                 spec.clients().getConsSvcStub(targetNodeFor(spec), useTls).getTopicInfo(query);
         return costFrom(response);

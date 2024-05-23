@@ -26,10 +26,9 @@ class DiscreteLeakyBucketTest {
     private long capacityUsed = totalCapacity / 4;
 
     @Test
-    void requiresPositiveCapacity() {
+    void requiresNonNegativeCapacity() {
         // expect:
         assertThrows(IllegalArgumentException.class, () -> new DiscreteLeakyBucket(-1L));
-        assertThrows(IllegalArgumentException.class, () -> new DiscreteLeakyBucket(0L));
     }
 
     @Test
@@ -76,12 +75,6 @@ class DiscreteLeakyBucketTest {
 
         // then:
         assertEquals(0L, subject.capacityUsed());
-    }
-
-    @Test
-    void mustHaveNonZeroCapacity() {
-        // expect:
-        assertThrows(IllegalArgumentException.class, () -> new DiscreteLeakyBucket(0, 0));
     }
 
     @Test

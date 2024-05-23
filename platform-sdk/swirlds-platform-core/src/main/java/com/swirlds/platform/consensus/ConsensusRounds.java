@@ -18,7 +18,7 @@ package com.swirlds.platform.consensus;
 
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.state.MinGenInfo;
+import com.swirlds.platform.state.MinimumJudgeInfo;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -36,8 +36,8 @@ public class ConsensusRounds {
     private static final Logger logger = LogManager.getLogger(ConsensusRounds.class);
     /** consensus configuration */
     private final ConsensusConfig config;
-    /** stores the minimum generation for all decided and non-expired rounds */
-    private final SequentialRingBuffer<MinGenInfo> minGenStorage;
+    /** stores the minimum judge ancient identifier for all decided and non-expired rounds */
+    private final SequentialRingBuffer<MinimumJudgeInfo> minimumJudgeStorage;
     /** the only address book currently in use, until address book changes are implemented */
     private final AddressBook addressBook;
     /** The maximum round created of all the known witnesses */
@@ -48,17 +48,17 @@ public class ConsensusRounds {
     /** Constructs an empty object */
     public ConsensusRounds(
             @NonNull final ConsensusConfig config,
-            @NonNull final SequentialRingBuffer<MinGenInfo> minGenStorage,
+            @NonNull final SequentialRingBuffer<MinimumJudgeInfo> minimumJudgeStorage,
             @NonNull final AddressBook addressBook) {
         this.config = Objects.requireNonNull(config);
-        this.minGenStorage = Objects.requireNonNull(minGenStorage);
+        this.minimumJudgeStorage = Objects.requireNonNull(minimumJudgeStorage);
         this.addressBook = Objects.requireNonNull(addressBook);
         reset();
     }
 
     /** Reset this instance to its initial state, equivalent to creating a new instance */
     public void reset() {
-        minGenStorage.reset(ConsensusConstants.ROUND_FIRST);
+        minimumJudgeStorage.reset(ConsensusConstants.ROUND_FIRST);
         maxRoundCreated = ConsensusConstants.ROUND_UNDEFINED;
         roundElections.reset();
     }
@@ -115,7 +115,8 @@ public class ConsensusRounds {
      */
     public boolean isOlderThanDecidedRoundGeneration(@NonNull final EventImpl event) {
         return isAnyRoundDecided() // if no round has been decided, it can't be older
-                && minGenStorage.get(getLastRoundDecided()).minimumGeneration() > event.getGeneration();
+                && minimumJudgeStorage.get(getLastRoundDecided()).minimumJudgeAncientThreshold()
+                        > event.getGeneration();
     }
 
     /**
@@ -129,10 +130,10 @@ public class ConsensusRounds {
      * Notifies the instance that the current elections have been decided. This will start the next election.
      */
     public void currentElectionDecided() {
-        minGenStorage.add(roundElections.getRound(), roundElections.creatMinGenInfo());
+        minimumJudgeStorage.add(roundElections.getRound(), roundElections.createMinimumJudgeInfo());
         roundElections.startNextElection();
         // Delete the oldest rounds with round number which is expired
-        minGenStorage.removeOlderThan(getFameDecidedBelow() - config.roundsExpired());
+        minimumJudgeStorage.removeOlderThan(getFameDecidedBelow() - config.roundsExpired());
     }
 
     /**
@@ -174,35 +175,35 @@ public class ConsensusRounds {
     }
 
     /**
-     * Used when loading rounds from a starting point (a signed state). It will create rounds with their minimum
-     * generation numbers, but we won't know about the witnesses in these rounds. We also don't care about any other
-     * information except for minimum generation since these rounds have already been decided beforehand.
+     * Used when loading rounds from a starting point (a signed state). It will create rounds with their minimum ancient
+     * indicator numbers, but we won't know about the witnesses in these rounds. We also don't care about any other
+     * information except for minimum ancient indicator since these rounds have already been decided beforehand.
      *
-     * @param minGen a list of round numbers and round generation pairs, in ascending round numbers
+     * @param minimumJudgeInfos a list of round numbers and round ancient indicator pairs, in ascending round numbers
      */
-    public void loadFromMinGen(@NonNull final List<MinGenInfo> minGen) {
-        minGenStorage.reset(minGen.get(0).round());
-        for (final MinGenInfo roundGenPair : minGen) {
-            minGenStorage.add(roundGenPair.round(), roundGenPair);
+    public void loadFromMinimumJudge(@NonNull final List<MinimumJudgeInfo> minimumJudgeInfos) {
+        minimumJudgeStorage.reset(minimumJudgeInfos.get(0).round());
+        for (final MinimumJudgeInfo minimumJudgeInfo : minimumJudgeInfos) {
+            minimumJudgeStorage.add(minimumJudgeInfo.round(), minimumJudgeInfo);
         }
-        roundElections.setRound(minGenStorage.getLatest().round() + 1);
+        roundElections.setRound(minimumJudgeStorage.getLatest().round() + 1);
     }
 
     /**
-     * @return A list of {@link MinGenInfo} for all decided and non-ancient rounds
+     * @return A list of {@link MinimumJudgeInfo} for all decided and non-ancient rounds
      */
-    public @NonNull List<MinGenInfo> getMinGenInfo() {
+    public @NonNull List<MinimumJudgeInfo> getMinimumJudgeInfoList() {
         final long oldestNonAncientRound =
                 RoundCalculationUtils.getOldestNonAncientRound(config.roundsNonAncient(), getLastRoundDecided());
         return LongStream.range(oldestNonAncientRound, getFameDecidedBelow())
-                .mapToObj(this::getMinGen)
+                .mapToObj(this::getMinimumJudgeIndicator)
                 .filter(Objects::nonNull)
                 .toList();
     }
 
-    private MinGenInfo getMinGen(final long round) {
-        final MinGenInfo minGenInfo = minGenStorage.get(round);
-        if (minGenInfo == null) {
+    private MinimumJudgeInfo getMinimumJudgeIndicator(final long round) {
+        final MinimumJudgeInfo minimumJudgeInfo = minimumJudgeStorage.get(round);
+        if (minimumJudgeInfo == null) {
             logger.error(
                     LogMarker.EXCEPTION.getMarker(),
                     "Missing round {}. Fame decided below {}, oldest non-ancient round {}",
@@ -211,6 +212,6 @@ public class ConsensusRounds {
                     RoundCalculationUtils.getOldestNonAncientRound(config.roundsNonAncient(), getLastRoundDecided()));
             return null;
         }
-        return minGenInfo;
+        return minimumJudgeInfo;
     }
 }

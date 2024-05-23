@@ -35,54 +35,31 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(TOKEN)
-public class TokenDeleteSpecs extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(TokenDeleteSpecs.class);
-
+public class TokenDeleteSpecs {
     private static final String FIRST_TBD = "firstTbd";
     private static final String SECOND_TBD = "secondTbd";
     private static final String TOKEN_ADMIN = "tokenAdmin";
     private static final String PAYER = "payer";
     private static final String MULTI_KEY = "multiKey";
 
-    public static void main(String... args) {
-        new TokenDeleteSpecs().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                deletionValidatesMissingAdminKey(),
-                deletionWorksAsExpected(),
-                deletionValidatesAlreadyDeletedToken(),
-                treasuryBecomesDeletableAfterTokenDelete(),
-                deletionValidatesRef());
-    }
-
     @HapiTest
-    final HapiSpec treasuryBecomesDeletableAfterTokenDelete() {
+    final Stream<DynamicTest> treasuryBecomesDeletableAfterTokenDelete() {
         return defaultHapiSpec("TreasuryBecomesDeletableAfterTokenDelete")
                 .given(
                         newKeyNamed(TOKEN_ADMIN),
@@ -100,7 +77,7 @@ public class TokenDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec deletionValidatesAlreadyDeletedToken() {
+    final Stream<DynamicTest> deletionValidatesAlreadyDeletedToken() {
         return defaultHapiSpec("DeletionValidatesAlreadyDeletedToken")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -112,7 +89,15 @@ public class TokenDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec deletionValidatesMissingAdminKey() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(newKeyNamed("adminKey"), tokenCreate("t").adminKey("adminKey"))
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> tokenDelete("t")));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> deletionValidatesMissingAdminKey() {
         return defaultHapiSpec("DeletionValidatesMissingAdminKey")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -127,7 +112,7 @@ public class TokenDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec deletionWorksAsExpected() {
+    final Stream<DynamicTest> deletionWorksAsExpected() {
         return defaultHapiSpec("DeletionWorksAsExpected", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -167,17 +152,12 @@ public class TokenDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec deletionValidatesRef() {
+    final Stream<DynamicTest> deletionValidatesRef() {
         return defaultHapiSpec("DeletionValidatesRef")
                 .given(cryptoCreate(PAYER))
                 .when()
                 .then(
                         tokenDelete("0.0.0").payingWith(PAYER).signedBy(PAYER).hasKnownStatus(INVALID_TOKEN_ID),
                         tokenDelete("1.2.3").payingWith(PAYER).signedBy(PAYER).hasKnownStatus(INVALID_TOKEN_ID));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

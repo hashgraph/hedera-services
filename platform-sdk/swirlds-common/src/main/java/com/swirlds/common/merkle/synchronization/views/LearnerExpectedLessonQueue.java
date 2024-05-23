@@ -16,7 +16,7 @@
 
 package com.swirlds.common.merkle.synchronization.views;
 
-import com.swirlds.common.merkle.synchronization.internal.ExpectedLesson;
+import com.swirlds.common.merkle.synchronization.task.ExpectedLesson;
 
 /**
  * Used by the learner during reconnect. These methods implement a queue like interface for expected lessons.

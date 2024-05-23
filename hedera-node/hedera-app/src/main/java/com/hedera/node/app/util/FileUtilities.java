@@ -22,11 +22,11 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class FileUtilities {
@@ -88,7 +88,7 @@ public class FileUtilities {
                 getFileContent(state, propertiesId), getFileContent(state, permissionsId));
     }
 
-    private static FileID createFileID(final long fileNum, @NonNull final Configuration configuration) {
+    public static FileID createFileID(final long fileNum, @NonNull final Configuration configuration) {
         final var hederaConfig = configuration.getConfigData(HederaConfig.class);
         return FileID.newBuilder()
                 .realmNum(hederaConfig.realm())

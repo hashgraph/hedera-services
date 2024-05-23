@@ -20,7 +20,6 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public class IterableContractValueSerializer implements ValueSerializer<IterableContractValue> {
@@ -74,14 +73,6 @@ public class IterableContractValueSerializer implements ValueSerializer<Iterable
         value.serialize(out);
     }
 
-    @Override
-    @Deprecated
-    public void serialize(final IterableContractValue value, final ByteBuffer buffer) {
-        Objects.requireNonNull(value);
-        Objects.requireNonNull(buffer);
-        value.serialize(buffer);
-    }
-
     // Value deserialization
 
     @Override
@@ -89,15 +80,6 @@ public class IterableContractValueSerializer implements ValueSerializer<Iterable
         Objects.requireNonNull(in);
         final IterableContractValue value = new IterableContractValue();
         value.deserialize(in);
-        return value;
-    }
-
-    @Override
-    @Deprecated
-    public IterableContractValue deserialize(final ByteBuffer buffer, final long version) {
-        Objects.requireNonNull(buffer);
-        final IterableContractValue value = new IterableContractValue();
-        value.deserialize(buffer, (int) version);
         return value;
     }
 }

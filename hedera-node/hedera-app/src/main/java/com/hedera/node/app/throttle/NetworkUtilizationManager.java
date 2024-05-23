@@ -16,11 +16,13 @@
 
 package com.hedera.node.app.throttle;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.node.app.state.HederaState;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Interface which purpose is to do the work of tracking network utilization (and its impact on
@@ -28,7 +30,7 @@ import java.time.Instant;
  */
 public interface NetworkUtilizationManager {
 
-    /*
+    /**
      * Updates the throttle usage and congestion pricing using the given transaction.
      *
      * @param txnInfo - the transaction to use for updating the network utilization.
@@ -40,24 +42,22 @@ public interface NetworkUtilizationManager {
             @NonNull final Instant consensusTime,
             @NonNull final HederaState state);
 
-    /*
+    /**
      * Updates the throttle usage and congestion pricing for cases where the transaction is not valid, but we want to track the fee payments related to it.
      *
-     * @param payer - the payer of the transaction.
      * @param consensusNow - the consensus time of the transaction.
      * @param state - the state of the node.
      */
-    void trackFeePayments(
-            @NonNull AccountID payer, @NonNull final Instant consensusNow, @NonNull final HederaState state);
+    void trackFeePayments(@NonNull final Instant consensusNow, @NonNull final HederaState state);
 
-    /*
+    /**
      * Indicates whether the last transaction was throttled by gas.
      *
      * @return true if the last transaction was throttled by gas; false otherwise.
      */
     boolean wasLastTxnGasThrottled();
 
-    /*
+    /**
      * Leaks the gas amount previously reserved for the given transaction.
      *
      * @param txnInfo the transaction to leak the gas for
@@ -65,17 +65,42 @@ public interface NetworkUtilizationManager {
      */
     void leakUnusedGasPreviouslyReserved(@NonNull final TransactionInfo txnInfo, final long value);
 
-    /*
-     * Resets the throttle usage and congestion multiplier from the given state.
+    /**
+     * Updates the throttle requirements for the given transaction and returns whether the transaction
+     * should be throttled for the current time(Instant.now).
      *
-     * @param state the state of the node
+     * @param txnInfo the transaction to update the throttle requirements for
+     * @param state the current state of the node
+     * @param consensusTime the consensus time
+     * @return whether the transaction should be throttled
      */
-    void resetFrom(@NonNull final HederaState state);
+    boolean shouldThrottle(
+            @NonNull final TransactionInfo txnInfo,
+            @NonNull final HederaState state,
+            @NonNull final Instant consensusTime);
 
-    /*
-     * Saves the throttle usage and congestion multiplier to the given state.
+    /**
+     * Verifies if the throttle in this operation context has enough capacity to handle the given number of the
+     * given function at the given time. (The time matters because we want to consider how much
+     * will have leaked between now and that time.)
      *
-     * @param state the state of the node
+     * @param n the number of the given function
+     * @param function the function
+     * @return true if the system should throttle the given number of the given function
+     * at the instant for which throttling should be calculated
      */
-    void saveTo(@NonNull final HederaState state);
+    boolean shouldThrottleNOfUnscaled(int n, @NonNull HederaFunctionality function, @NonNull Instant consensusTime);
+
+    /**
+     * Returns a list of snapshots of the current usage of all active throttles.
+     * @return the active snapshots
+     */
+    List<DeterministicThrottle.UsageSnapshot> getUsageSnapshots();
+
+    /**
+     * Resets the current usage of all active throttles to the given snapshots.
+     *
+     * @param snapshots the snapshots to reset to
+     */
+    void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots);
 }

@@ -122,7 +122,7 @@ public class CreateSyntheticTxnFactory {
         final var fixedFees = tokenCreateWrapper.getFixedFees().stream().map(FixedFeeWrapper::asGrpc);
         final var royaltyFees = tokenCreateWrapper.getRoyaltyFees().stream().map(RoyaltyFeeWrapper::asGrpc);
 
-        var allFees = Stream.of(fractionalFees, fixedFees, royaltyFees)
+        var allFees = Stream.of(fixedFees, fractionalFees, royaltyFees)
                 .flatMap(Function.identity())
                 .toList();
 

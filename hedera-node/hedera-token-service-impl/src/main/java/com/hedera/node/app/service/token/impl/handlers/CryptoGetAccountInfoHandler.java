@@ -65,6 +65,10 @@ import javax.inject.Singleton;
 public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
     private final CryptoOpsUsage cryptoOpsUsage;
 
+    /**
+     * Default constructor for injection.
+     * @param cryptoOpsUsage the usage of the crypto operations for calculating fees
+     */
     @Inject
     public CryptoGetAccountInfoHandler(final CryptoOpsUsage cryptoOpsUsage) {
         this.cryptoOpsUsage = cryptoOpsUsage;
@@ -91,7 +95,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         final var accountStore = context.createStore(ReadableAccountStore.class);
         final CryptoGetInfoQuery op = query.cryptoGetInfoOrThrow();
         if (op.hasAccountID()) {
-            final var account = accountStore.getAccountById(requireNonNull(op.accountID()));
+            final var account = accountStore.getAliasedAccountById(requireNonNull(op.accountID()));
             validateFalsePreCheck(account == null, INVALID_ACCOUNT_ID);
             validateFalsePreCheck(account.deleted(), ACCOUNT_DELETED);
         } else {
@@ -145,7 +149,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         final var stakingInfoStore = context.createStore(ReadableStakingInfoStore.class);
         final var stakingRewardsStore = context.createStore(ReadableNetworkStakingRewardsStore.class);
 
-        final var account = accountStore.getAccountById(accountID);
+        final var account = accountStore.getAliasedAccountById(accountID);
         if (account == null) {
             return Optional.empty();
         } else {
@@ -190,8 +194,8 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         final var query = queryContext.query();
         final var accountStore = queryContext.createStore(ReadableAccountStore.class);
         final var op = query.cryptoGetInfoOrThrow();
-        final var accountId = op.accountIDOrThrow();
-        final var account = accountStore.getAccountById(accountId);
+        final var accountId = op.accountIDOrElse(AccountID.DEFAULT);
+        final var account = accountStore.getAliasedAccountById(accountId);
 
         return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetAccountInfoResourceUsage(
                         cryptoOpsUsage, null, null, null)

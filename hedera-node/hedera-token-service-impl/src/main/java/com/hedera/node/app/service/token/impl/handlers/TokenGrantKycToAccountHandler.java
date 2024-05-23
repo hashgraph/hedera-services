@@ -53,7 +53,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenGrantKycToAccountHandler implements TransactionHandler {
-
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenGrantKycToAccountHandler() {}
 

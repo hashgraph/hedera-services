@@ -31,7 +31,7 @@ public final class CryptoConstants {
     public static final int SIG_SIZE_BYTES = 384;
     // size of each symmetric key, in bytes
     public static final int SYM_KEY_SIZE_BYTES = 32; // 256 bits
-    // the algorithms and providers to use (AGR is key agreement, ENC is encryption, SIG is signatures)
+    // the algorithms and providers to use (AGR is key agreement, SIG is signatures)
     public static final String AGR_TYPE = "EC";
     public static final String AGR_PROVIDER = "SunEC";
     public static final String SIG_TYPE1 = "RSA"; // or SHA384withRSA

@@ -26,18 +26,16 @@ import com.hedera.pbj.runtime.io.WritableSequentialData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
+/**
+ * Codec for {@link EntityNum}.
+ */
 public class EntityNumCodec implements Codec<EntityNum> {
     @NonNull
     @Override
-    public EntityNum parse(final @NonNull ReadableSequentialData input) throws ParseException {
+    public EntityNum parse(final @NonNull ReadableSequentialData input, final boolean strictMode, final int maxDepth)
+            throws ParseException {
         requireNonNull(input);
         return new EntityNum(input.readInt());
-    }
-
-    @NonNull
-    @Override
-    public EntityNum parseStrict(final @NonNull ReadableSequentialData dataInput) throws ParseException {
-        return parse(requireNonNull(dataInput));
     }
 
     @Override

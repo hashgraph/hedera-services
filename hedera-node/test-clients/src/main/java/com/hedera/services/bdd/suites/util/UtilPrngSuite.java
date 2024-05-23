@@ -21,41 +21,25 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.hapiPrng;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PRNG_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class UtilPrngSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(UtilPrngSuite.class);
+public class UtilPrngSuite {
     private static final String PRNG_IS_ENABLED = "utilPrng.isEnabled";
     public static final String BOB = "bob";
 
-    public static void main(String... args) {
-        new UtilPrngSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return allOf(positiveTests());
-    }
-
-    private List<HapiSpec> positiveTests() {
-        return List.of(happyPathWorksForRangeAndBitString(), failsInPreCheckForNegativeRange(), usdFeeAsExpected());
-    }
-
     @HapiTest
-    final HapiSpec usdFeeAsExpected() {
+    final Stream<DynamicTest> usdFeeAsExpected() {
         double baseFee = 0.001;
         double plusRangeFee = 0.0010010316;
 
@@ -83,7 +67,7 @@ public class UtilPrngSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec failsInPreCheckForNegativeRange() {
+    final Stream<DynamicTest> failsInPreCheckForNegativeRange() {
         return defaultHapiSpec("failsInPreCheckForNegativeRange")
                 .given(
                         overridingAllOf(Map.of(PRNG_IS_ENABLED, "true")),
@@ -99,7 +83,15 @@ public class UtilPrngSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec happyPathWorksForRangeAndBitString() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given()
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> hapiPrng(123)));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> happyPathWorksForRangeAndBitString() {
         final var rangeTxn = "prngWithRange";
         final var rangeTxn1 = "prngWithRange1";
         final var prngWithoutRange = "prngWithoutRange";
@@ -155,10 +147,5 @@ public class UtilPrngSuite extends HapiSuite {
                                 .blankMemo()
                                 .payingWith(BOB)
                                 .hasPrecheck(INVALID_PRNG_RANGE));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

@@ -81,7 +81,7 @@ class TransactionRecordFeeTest {
 
     @Test
     void testTransactionRecordRBH() {
-        final long transactionRecordRbh = FeeBuilder.getTxRecordUsageRBH(transactionRecord, receiptStorageTime);
+        final long transactionRecordRbh = FeeBuilder.getTxRecordUsageRbh(transactionRecord, receiptStorageTime);
         assertNotEquals(0, transactionRecordRbh);
     }
 }

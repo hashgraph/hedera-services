@@ -503,7 +503,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         final var baos = new ByteArrayOutputStream();
         try (final var out = new SerializableDataOutputStream(baos)) {
             serializeNonHashData(out);
-            out.write(blockHashes.getHash().getValue());
+            blockHashes.getHash().getBytes().writeTo(out);
             out.writeLong(totalStakedRewardStart);
             out.writeLong(totalStakedStart);
         } catch (final IOException | UncheckedIOException e) {
@@ -819,7 +819,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         return consensusTime == null ? NOT_AVAILABLE : consensusTime.toString();
     }
 
-    private String stringifiedBlockHashes() {
+    @VisibleForTesting
+    public String stringifiedBlockHashes() {
         final var jsonSb = new StringBuilder("[");
         final var firstAvailable = blockNo - blockHashes.size();
         final var hashIter = blockHashes.iterator();
@@ -991,7 +992,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         return consensusTimeOfLastHandledTxn;
     }
 
-    DeterministicThrottle.UsageSnapshot[] usageSnapshots() {
+    @VisibleForTesting
+    public DeterministicThrottle.UsageSnapshot[] usageSnapshots() {
         return usageSnapshots;
     }
 
@@ -1008,7 +1010,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     }
 
     @Nullable
-    MultiplierSources getMultiplierSources() {
+    @VisibleForTesting
+    public MultiplierSources getMultiplierSources() {
         return multiplierSources;
     }
 
@@ -1016,7 +1019,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         return throttling;
     }
 
-    DeterministicThrottle.UsageSnapshot getGasThrottleUsageSnapshot() {
+    @VisibleForTesting
+    public DeterministicThrottle.UsageSnapshot getGasThrottleUsageSnapshot() {
         return gasThrottleUsageSnapshot;
     }
 
@@ -1034,10 +1038,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
 
     /* --- Utility methods --- */
     public static org.hyperledger.besu.datatypes.Hash ethHashFrom(final Hash hash) {
-        final byte[] hashBytesToConvert = hash.getValue();
-        final byte[] prefixBytes = new byte[32];
-        System.arraycopy(hashBytesToConvert, 0, prefixBytes, 0, 32);
-        return org.hyperledger.besu.datatypes.Hash.wrap(Bytes32.wrap(prefixBytes));
+        return org.hyperledger.besu.datatypes.Hash.wrap(
+                Bytes32.wrap(hash.getBytes().toByteArray(0, 32)));
     }
 
     /* --- Used for tests --- */
@@ -1088,5 +1090,9 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     @VisibleForTesting
     public void setSeqNoPostUpgrade(final long seqNoPostUpgrade) {
         this.seqNoPostUpgrade = seqNoPostUpgrade;
+    }
+
+    public DeterministicThrottle.UsageSnapshot[] getUsageSnapshots() {
+        return usageSnapshots;
     }
 }

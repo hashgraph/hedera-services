@@ -23,8 +23,8 @@ import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiConstants;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.HashgraphPictureOptions;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.PlatformEvent;
 import java.awt.AWTException;
 import java.awt.Color;
 import java.awt.Font;
@@ -37,7 +37,7 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.Serial;
 import java.time.Instant;
-import java.util.Arrays;
+import java.util.List;
 import javax.swing.JPanel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -90,7 +90,7 @@ public class HashgraphPicture extends JPanel {
             final int numMem = addressBook.getSize();
             final AddressBookMetadata currentMetadata = options.isExpanded() ? expandedMetadata : nonExpandedMetadata;
 
-            PlatformEvent[] events;
+            List<EventImpl> events;
             if (options.displayLatestEvents()) {
                 final long startGen = Math.max(
                         hashgraphSource.getMaxGeneration() - options.getNumGenerationsDisplay(),
@@ -104,10 +104,10 @@ public class HashgraphPicture extends JPanel {
             if (events == null) { // in case a screen refresh happens before any events
                 return;
             }
-            events = Arrays.stream(events)
+            events = events.stream()
                     .filter(e -> addressBook.contains(e.getCreatorId()))
                     .filter(e -> addressBook.getIndexOfNodeId(e.getCreatorId()) < numMem)
-                    .toArray(PlatformEvent[]::new);
+                    .toList();
 
             pictureMetadata = new PictureMetadata(fm, this.getSize(), currentMetadata, events);
 
@@ -130,12 +130,12 @@ public class HashgraphPicture extends JPanel {
             final int d = (int) (2 * pictureMetadata.getR());
 
             // for each event, draw 2 downward lines to its parents
-            for (final PlatformEvent event : events) {
+            for (final EventImpl event : events) {
                 drawLinksToParents(g, event);
             }
 
             // for each event, draw its circle
-            for (final PlatformEvent event : events) {
+            for (final EventImpl event : events) {
                 drawEventCircle(g, event, options, d);
             }
         } catch (final Exception e) {
@@ -143,10 +143,10 @@ public class HashgraphPicture extends JPanel {
         }
     }
 
-    private void drawLinksToParents(final Graphics g, final PlatformEvent event) {
+    private void drawLinksToParents(final Graphics g, final EventImpl event) {
         g.setColor(HashgraphGuiUtils.eventColor(event, options));
-        final PlatformEvent e1 = event.getSelfParent();
-        PlatformEvent e2 = event.getOtherParent();
+        final EventImpl e1 = event.getSelfParent();
+        EventImpl e2 = event.getOtherParent();
         final AddressBook addressBook = hashgraphSource.getAddressBook();
         if (e2 != null
                 && (!addressBook.contains(e2.getCreatorId())
@@ -172,11 +172,11 @@ public class HashgraphPicture extends JPanel {
     }
 
     private void drawEventCircle(
-            final Graphics g, final PlatformEvent event, final HashgraphPictureOptions options, final int d) {
+            final Graphics g, final EventImpl event, final HashgraphPictureOptions options, final int d) {
         final FontMetrics fm = g.getFontMetrics();
         final int fa = fm.getMaxAscent();
         final int fd = fm.getMaxDescent();
-        final PlatformEvent e2 = event.getOtherParent() != null
+        final EventImpl e2 = event.getOtherParent() != null
                         && hashgraphSource
                                 .getAddressBook()
                                 .contains(event.getOtherParent().getCreatorId())

@@ -40,7 +40,7 @@ import com.swirlds.platform.event.creation.rules.AggregateEventCreationRules;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
 import com.swirlds.platform.event.creation.rules.MaximumRateRule;
 import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
-import com.swirlds.platform.eventhandling.TransactionPool;
+import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.system.status.PlatformStatus;
 import java.time.Duration;
 import java.util.Random;
@@ -135,8 +135,8 @@ class EventCreationRulesTests {
         final Supplier<PlatformStatus> platformStatusSupplier = () -> FREEZING;
 
         final AtomicInteger numSignatureTransactions = new AtomicInteger(0);
-        final TransactionPool transactionPool = mock(TransactionPool.class);
-        when(transactionPool.hasBufferedSignatureTransactions())
+        final TransactionPoolNexus transactionPoolNexus = mock(TransactionPoolNexus.class);
+        when(transactionPoolNexus.hasBufferedSignatureTransactions())
                 .thenAnswer(invocation -> numSignatureTransactions.get() > 0);
 
         final AtomicInteger eventCreationCount = new AtomicInteger(0);
@@ -146,7 +146,7 @@ class EventCreationRulesTests {
             return null;
         });
 
-        final EventCreationRule rule = new PlatformStatusRule(platformStatusSupplier, transactionPool);
+        final EventCreationRule rule = new PlatformStatusRule(platformStatusSupplier, transactionPoolNexus);
 
         assertFalse(rule.isEventCreationPermitted());
         numSignatureTransactions.set(1);
@@ -156,7 +156,7 @@ class EventCreationRulesTests {
     @Test
     @DisplayName("Blocked by Status Test")
     void blockedByStatus() {
-        final TransactionPool transactionPool = mock(TransactionPool.class);
+        final TransactionPoolNexus transactionPoolNexus = mock(TransactionPoolNexus.class);
 
         final AtomicReference<PlatformStatus> status = new AtomicReference<>();
 
@@ -167,7 +167,7 @@ class EventCreationRulesTests {
             return null;
         });
 
-        final EventCreationRule rule = new PlatformStatusRule(status::get, transactionPool);
+        final EventCreationRule rule = new PlatformStatusRule(status::get, transactionPoolNexus);
 
         for (final PlatformStatus platformStatus : PlatformStatus.values()) {
             if (platformStatus == FREEZING) {
@@ -188,10 +188,9 @@ class EventCreationRulesTests {
     @Test
     @DisplayName("No Rate Limit Test")
     void noRateLimitTest() {
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
-
         final Time time = new FakeTime();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().withTime(time).build();
 
         final AtomicInteger eventCreationCount = new AtomicInteger(0);
         final EventCreator baseEventCreator = mock(EventCreator.class);
@@ -200,7 +199,7 @@ class EventCreationRulesTests {
             return mock(GossipEvent.class);
         });
 
-        final EventCreationRule rule = new MaximumRateRule(platformContext, time);
+        final EventCreationRule rule = new MaximumRateRule(platformContext);
 
         // Ask for a bunch of events to be created without advancing the time.
         for (int i = 0; i < 100; i++) {
@@ -220,13 +219,13 @@ class EventCreationRulesTests {
                 .withValue(EventCreationConfig_.MAX_CREATION_RATE, maxRate)
                 .getOrCreateConfig();
 
+        final FakeTime time = new FakeTime();
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(configuration)
+                .withTime(time)
                 .build();
 
-        final FakeTime time = new FakeTime();
-
-        final EventCreationRule rule = new MaximumRateRule(platformContext, time);
+        final EventCreationRule rule = new MaximumRateRule(platformContext);
 
         int millisSinceLastEvent = (int) period.toMillis();
         for (int i = 0; i < 100; i++) {

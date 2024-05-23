@@ -35,7 +35,7 @@ public final class FileFeeBuilder extends FeeBuilder {
     }
 
     /**
-     * This method returns fee matrices for file content query
+     * Creates fee matrices for a file content query.
      *
      * @param contentSize content size
      * @param responseType response type
@@ -57,7 +57,7 @@ public final class FileFeeBuilder extends FeeBuilder {
          * Transaction processing) ResponseType - INT_SIZE FileID - BASIC_ENTITY_ID_SIZE
          */
 
-        bpt = calculateBPT();
+        bpt = calculateBpt();
         /*
          *
          * Response header NodeTransactionPrecheckCode - 4 bytes ResponseType - 4 bytes
@@ -100,9 +100,9 @@ public final class FileFeeBuilder extends FeeBuilder {
         bpt = bpt + BASIC_ENTITY_ID_SIZE + LONG_SIZE;
         vpt = numSignatures.getTotalSigCount();
 
-        rbs = calculateRBS(txBody);
+        rbs = calculateRbs(txBody);
 
-        long rbsNetwork = getDefaultRBHNetworkSize();
+        long rbsNetwork = getDefaultRbhNetworkSize();
 
         // sbs should not be charged as the fee for storage was already paid. What if expiration is
         // changed though?
@@ -135,8 +135,8 @@ public final class FileFeeBuilder extends FeeBuilder {
         bpt = getCommonTransactionBodyBytes(txBody);
         bpt = bpt + BASIC_ENTITY_ID_SIZE + LONG_SIZE;
         vpt = numSignatures.getTotalSigCount();
-        rbs = calculateRBS(txBody);
-        long rbsNetwork = getDefaultRBHNetworkSize();
+        rbs = calculateRbs(txBody);
+        long rbsNetwork = getDefaultRbhNetworkSize();
 
         // sbs should not be charged as the fee for storage was already paid. What if expiration is
         // changed though?
@@ -175,9 +175,9 @@ public final class FileFeeBuilder extends FeeBuilder {
 
         bpr = INT_SIZE;
 
-        rbs = calculateRBS(txBody);
+        rbs = calculateRbs(txBody);
 
-        long rbsNetwork = getDefaultRBHNetworkSize();
+        long rbsNetwork = getDefaultRbhNetworkSize();
 
         FeeComponents feeMatricesForTx = FeeComponents.newBuilder()
                 .setBpt(bpt)

@@ -26,8 +26,12 @@ import com.hedera.node.app.records.impl.codec.RunningHashesTranslator;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.state.*;
+import com.hedera.node.app.spi.state.MigrationContext;
+import com.hedera.node.app.spi.state.Schema;
+import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.state.spi.WritableSingletonStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -82,7 +86,7 @@ public final class BlockRecordService implements Service {
             public void migrate(@NonNull final MigrationContext ctx) {
                 final var runningHashState = ctx.newStates().getSingleton(RUNNING_HASHES_STATE_KEY);
                 final var blocksState = ctx.newStates().getSingleton(BLOCK_INFO_STATE_KEY);
-                final var isGenesis = ctx.previousStates().isEmpty();
+                final var isGenesis = ctx.previousVersion() == null;
                 if (isGenesis) {
                     final var blocks = new BlockInfo(-1, EPOCH, Bytes.EMPTY, EPOCH, false, EPOCH);
                     blocksState.put(blocks);

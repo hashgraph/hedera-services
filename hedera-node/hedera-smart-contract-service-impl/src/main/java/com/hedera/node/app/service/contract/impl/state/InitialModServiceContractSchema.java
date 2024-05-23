@@ -31,9 +31,9 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
+import com.swirlds.platform.state.spi.WritableKVStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -55,7 +55,7 @@ public class InitialModServiceContractSchema extends Schema {
     public static final String STORAGE_KEY = "STORAGE";
     public static final String BYTECODE_KEY = "BYTECODE";
     private static final int MAX_BYTECODES = 50_000_000;
-    private static final int MAX_STORAGE_ENTRIES = 500_000_000;
+    private static final int MAX_STORAGE_ENTRIES = 1_000_000_000;
 
     private VirtualMapLike<ContractKey, IterableContractValue> storageFromState;
     private Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> contractBytecodeFromState;

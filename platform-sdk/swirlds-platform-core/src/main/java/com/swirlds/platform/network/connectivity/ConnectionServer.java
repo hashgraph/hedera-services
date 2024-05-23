@@ -39,11 +39,6 @@ public class ConnectionServer implements InterruptableRunnable {
     private static final int SLEEP_AFTER_BIND_FAILED_MS = 100;
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
     private static final Logger logger = LogManager.getLogger(ConnectionServer.class);
-    /** overrides ip if null */
-    private static final byte[] LISTEN_IP = new byte[] {0, 0, 0, 0};
-
-    /** the IP address that this server listens on for establishing new connections */
-    private final byte[] ip;
     /** the port that this server listens on for establishing new connections */
     private final int port;
     /** responsible for creating and binding the server socket */
@@ -54,25 +49,16 @@ public class ConnectionServer implements InterruptableRunnable {
     private final ExecutorService incomingConnPool;
 
     /**
-     * * @param threadManager
-     * * 		responsible for managing thread lifecycles
-     *
-     * @param ip
-     * 		the IP address to use
-     * @param port
-     * 		the port ot use
-     * @param socketFactory
-     * 		responsible for creating new sockets
-     * @param newConnectionHandler
-     * 		handles a new connection after it has been created
+     * @param threadManager        responsible for managing thread lifecycles
+     * @param port                 the port ot use
+     * @param socketFactory        responsible for creating new sockets
+     * @param newConnectionHandler handles a new connection after it has been created
      */
     public ConnectionServer(
             final ThreadManager threadManager,
-            final byte[] ip,
             final int port,
             final SocketFactory socketFactory,
             final Consumer<Socket> newConnectionHandler) {
-        this.ip = (ip != null) ? ip : LISTEN_IP;
         this.port = port;
         this.newConnectionHandler = newConnectionHandler;
         this.socketFactory = socketFactory;
@@ -83,7 +69,7 @@ public class ConnectionServer implements InterruptableRunnable {
 
     @Override
     public void run() throws InterruptedException {
-        try (ServerSocket serverSocket = socketFactory.createServerSocket(ip, port)) {
+        try (final ServerSocket serverSocket = socketFactory.createServerSocket(port)) {
             listen(serverSocket);
         } catch (final RuntimeException | IOException e) {
             logger.error(EXCEPTION.getMarker(), "Cannot bind ServerSocket", e);

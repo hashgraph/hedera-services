@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.records;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
@@ -46,6 +47,14 @@ public interface ContractCreateRecordBuilder extends SingleTransactionRecordBuil
      */
     @NonNull
     ContractCreateRecordBuilder contractID(@Nullable ContractID contractId);
+
+    /**
+     * Tracks the account id created by a successful top-level contract creation.
+     * @param accountID the {@link AccountID} of the new top-level contract
+     * @return this builder
+     */
+    @NonNull
+    ContractCreateRecordBuilder accountID(@Nullable AccountID accountID);
 
     /**
      * Tracks the result of a top-level contract creation.

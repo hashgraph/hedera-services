@@ -16,6 +16,7 @@
 
 package com.hedera.services.cli.signedstate;
 
+import static com.hedera.services.cli.utils.Formatters.getNullableFormatter;
 import static com.hedera.services.cli.utils.ThingsToStrings.getMaybeStringifyByteString;
 import static com.hedera.services.cli.utils.ThingsToStrings.quoteForCsv;
 import static java.util.Objects.requireNonNull;
@@ -27,8 +28,8 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.services.cli.signedstate.DumpStateCommand.EmitSummary;
-import com.hedera.services.cli.signedstate.DumpTokensSubcommand.FieldBuilder;
 import com.hedera.services.cli.signedstate.SignedStateCommand.Verbosity;
+import com.hedera.services.cli.utils.FieldBuilder;
 import com.hedera.services.cli.utils.ThingsToStrings;
 import com.hedera.services.cli.utils.Writer;
 import com.swirlds.base.utility.Pair;
@@ -188,10 +189,6 @@ public class DumpTopicsSubcommand {
     static <T> BiConsumer<FieldBuilder, Topic> getFieldFormatter(
             @NonNull final Function<Topic, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, t) -> formatField(fb, t, fun, formatter);
-    }
-
-    static <T> Function<T, String> getNullableFormatter(@NonNull final Function<T, String> formatter) {
-        return t -> null != t ? formatter.apply(t) : "";
     }
 
     static <T> void formatField(

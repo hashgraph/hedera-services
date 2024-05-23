@@ -39,6 +39,7 @@ public interface RunningAverageMetric extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default MetricType getMetricType() {
         return MetricType.RUNNING_AVERAGE;
@@ -47,6 +48,7 @@ public interface RunningAverageMetric extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default DataType getDataType() {
         return DataType.FLOAT;
@@ -55,6 +57,7 @@ public interface RunningAverageMetric extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     default EnumSet<ValueType> getValueTypes() {
         return EnumSet.of(VALUE, MAX, MIN, STD_DEV);
     }
@@ -62,8 +65,9 @@ public interface RunningAverageMetric extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
-    Double get(final ValueType valueType);
+    Double get(@NonNull final ValueType valueType);
 
     /**
      * Getter of the {@code halfLife}
@@ -116,8 +120,8 @@ public interface RunningAverageMetric extends Metric {
          * 		the kind of metric (stats are grouped or filtered by this)
          * @param name
          * 		a short name for the statistic
-         * @throws IllegalArgumentException
-         * 		if one of the parameters is {@code null} or consists only of whitespaces
+         * @throws NullPointerException     if one of the parameters is {@code null}
+         * @throws IllegalArgumentException if one of the parameters consists only of whitespaces
          */
         public Config(@NonNull final String category, @NonNull final String name) {
             super(category, name, FloatFormats.FORMAT_11_3);
@@ -125,6 +129,26 @@ public interface RunningAverageMetric extends Metric {
             this.useDefaultHalfLife = true;
         }
 
+        /**
+         * Constructor of {@code RunningAverageMetric.Config}
+         *
+         * The {@code useDefaultHalfLife} determines whether the default {@code halfLife} value
+         * (see {@link MetricsConfig#halfLife()}) should be used during the creation of a metric based on
+         * this configuration. If set to {@code false}, the specific {@code halfLife} defined in this configuration will
+         * be used instead.
+         *
+         * @param category
+         * 		the kind of metric (stats are grouped or filtered by this)
+         * @param name
+         * 		a short name for the statistic
+         * @param description metric description
+         * @param unit metric unit
+         * @param format metric format
+         * @param halfLife metric halfLife
+         * @param useDefaultHalfLife if a default should be used
+         * @throws NullPointerException     if one of the parameters is {@code null}
+         * @throws IllegalArgumentException if one of the parameters consists only of whitespaces
+         */
         private Config(
                 @NonNull final String category,
                 @NonNull final String name,
@@ -142,6 +166,7 @@ public interface RunningAverageMetric extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public RunningAverageMetric.Config withDescription(@NonNull final String description) {
             return new RunningAverageMetric.Config(
@@ -157,6 +182,7 @@ public interface RunningAverageMetric extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public RunningAverageMetric.Config withUnit(@NonNull final String unit) {
             return new RunningAverageMetric.Config(
@@ -175,8 +201,8 @@ public interface RunningAverageMetric extends Metric {
          * @param format
          * 		the format-string
          * @return a new configuration-object with updated {@code format}
-         * @throws IllegalArgumentException
-         * 		if {@code format} is {@code null} or consists only of whitespaces
+         * @throws NullPointerException     if one of the parameters is {@code null}
+         * @throws IllegalArgumentException if one of the parameters consists only of whitespaces
          */
         @NonNull
         public RunningAverageMetric.Config withFormat(@NonNull final String format) {
@@ -224,6 +250,7 @@ public interface RunningAverageMetric extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public Class<RunningAverageMetric> getResultClass() {
             return RunningAverageMetric.class;

@@ -22,15 +22,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.bdd.junit.utils.AccountClassifier;
-import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.junit.support.validators.utils.AccountClassifier;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class BalanceValidation extends HapiSuite {
     private static final Logger log = LogManager.getLogger(BalanceValidation.class);
@@ -55,11 +56,11 @@ public class BalanceValidation extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(validateBalances());
     }
 
-    final HapiSpec validateBalances() {
+    final Stream<DynamicTest> validateBalances() {
         return customHapiSpec("ValidateBalances")
                 .withProperties(Map.of(
                         "fees.useFixedOffer", "true",

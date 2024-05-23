@@ -30,7 +30,7 @@ ADD checksums/* /tmp/checksums/
 RUN apt-get update && \
 	apt-get install -y tar gzip
 
-# Download PostgreSQL deb archive
+# Download Haveged deb archive
 WORKDIR "/tmp/deb"
 RUN	apt-get update && \
 	apt-get download --yes haveged=${HAVEGED_VERSION} libhavege1=${HAVEGED_VERSION} && \

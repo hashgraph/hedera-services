@@ -35,7 +35,7 @@ import java.lang.annotation.Target;
 public @interface Max {
 
     /**
-     * Defines the maximum value that is allowed for the annotated number
+     * Defines the maximum value that is allowed for the annotated number.
      *
      * @return the maximum value that is allowed
      */

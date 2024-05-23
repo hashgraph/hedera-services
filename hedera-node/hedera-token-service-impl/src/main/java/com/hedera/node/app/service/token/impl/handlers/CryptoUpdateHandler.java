@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -34,6 +35,7 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getAccountKeyStorage
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_NODE_ID;
+import static com.hedera.node.app.spi.validation.AttributeValidator.isImmutableKey;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -86,6 +88,12 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
     private final StakingValidator stakingValidator;
     private final NetworkInfo networkInfo;
 
+    /**
+     * Default constructor for injection.
+     * @param waivers the {@link CryptoSignatureWaivers} to use for checking signature waivers
+     * @param stakingValidator the {@link StakingValidator} to use for staking validation
+     * @param networkInfo the {@link NetworkInfo} to use for network information
+     */
     @Inject
     public CryptoUpdateHandler(
             @NonNull final CryptoSignatureWaivers waivers,
@@ -100,7 +108,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final var op = txn.cryptoUpdateAccountOrThrow();
-        validateTruePreCheck(op.hasAccountIDToUpdate(), INVALID_ACCOUNT_ID);
+        validateTruePreCheck(op.hasAccountIDToUpdate(), ACCOUNT_ID_DOES_NOT_EXIST);
         validateFalsePreCheck(
                 op.hasProxyAccountID() && !op.proxyAccountID().equals(AccountID.DEFAULT),
                 PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
@@ -265,7 +273,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         }
 
         // validate auto associations
-        if (builderAccount.maxAutoAssociations() != 0) {
+        if (op.hasMaxAutomaticTokenAssociations()) {
             final long newMax = builderAccount.maxAutoAssociations();
             validateFalse(
                     newMax < updateAccount.usedAutoAssociations(), EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
@@ -295,7 +303,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
             context.attributeValidator().validateMemo(op.memo());
         }
         // Empty key list is allowed and is used for immutable entities (e.g. system accounts)
-        if (op.hasKey() && !context.attributeValidator().isImmutableKey(op.key())) {
+        if (op.hasKey() && !isImmutableKey(op.key())) {
             context.attributeValidator().validateKey(op.key());
         }
 
@@ -403,12 +411,10 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         final var accountMemoSize = (account == null || account.memo() == null)
                 ? 0L
                 : account.memo().getBytes(StandardCharsets.UTF_8).length;
-        final long newVariableBytes = (newMemoSize != 0L
-                ? newMemoSize
-                : accountMemoSize
-                        + (keySize == 0L && account != null
-                                ? getAccountKeyStorageSize(fromPbj(account.keyOrElse(Key.DEFAULT)))
-                                : keySize));
+        final long newVariableBytes = (newMemoSize != 0L ? newMemoSize : accountMemoSize)
+                + (keySize == 0L && account != null
+                        ? getAccountKeyStorageSize(fromPbj(account.keyOrElse(Key.DEFAULT)))
+                        : keySize);
 
         final long tokenRelBytes =
                 (account == null ? 0 : account.numberAssociations()) * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();

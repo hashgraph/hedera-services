@@ -22,11 +22,8 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.FreezePeriodChecker;
-import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
-import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -38,12 +35,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 
 /**
  * Manages all interactions with the state object required by {@link SwirldState}.
  */
-public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSignedState {
+public class SwirldStateManager implements FreezePeriodChecker {
 
     /**
      * Stats relevant to SwirldState operations.
@@ -71,86 +67,55 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
     private final UptimeTracker uptimeTracker;
 
     /**
-     * Handles system transactions post-consensus
-     */
-    private final BiConsumer<State, ConsensusRound> roundAndStateConsumer;
-
-    /**
      * The current software version.
      */
     private final SoftwareVersion softwareVersion;
 
     /**
-     * Creates a new instance with the provided state.
+     * Constructor.
      *
      * @param platformContext       the platform context
      * @param addressBook           the address book
      * @param selfId                this node's id
-     * @param roundAndStateConsumer consumes a consensus round and the state that results from applying the consensus
-     *                              transactions
-     * @param swirldStateMetrics    metrics related to SwirldState
      * @param statusActionSubmitter enables submitting platform status actions
-     * @param state                 the genesis state
      * @param softwareVersion       the current software version
      */
     public SwirldStateManager(
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
-            @NonNull final BiConsumer<State, ConsensusRound> roundAndStateConsumer,
-            @NonNull final SwirldStateMetrics swirldStateMetrics,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
-            @NonNull final State state,
             @NonNull final SoftwareVersion softwareVersion) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(selfId);
-        this.roundAndStateConsumer = Objects.requireNonNull(roundAndStateConsumer);
-        this.stats = Objects.requireNonNull(swirldStateMetrics);
+        this.stats = new SwirldStateMetrics(platformContext.getMetrics());
         Objects.requireNonNull(statusActionSubmitter);
-        Objects.requireNonNull(state);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
 
         this.transactionHandler = new TransactionHandler(selfId, stats);
         this.uptimeTracker =
                 new UptimeTracker(platformContext, addressBook, statusActionSubmitter, selfId, Time.getCurrent());
-        initialState(state);
     }
 
     /**
-     * Prehandles application transactions. Similar to {@link #prehandleApplicationTransactions(EventImpl)} but accepts
-     * a {@link GossipEvent} instead of an {@link EventImpl}.
+     * Set the initial state for the platform. This method should only be called once.
      *
-     * @param event the event to handle
+     * @param state the initial state
      */
-    public void prehandleApplicationTransactions(final GossipEvent event) {
-        // As a temporary work around, convert to EventImpl.
-        // Once we remove the legacy pathway, we can remove this.
-        final EventImpl eventImpl = new EventImpl(event, null, null);
-        prehandleApplicationTransactions(eventImpl);
-    }
+    public void setInitialState(@NonNull final State state) {
+        Objects.requireNonNull(state);
+        state.throwIfDestroyed("state must not be destroyed");
+        state.throwIfImmutable("state must be mutable");
 
-    /**
-     * Prehandles application transactions.
-     *
-     * @param event the event to handle
-     */
-    public void prehandleApplicationTransactions(final EventImpl event) {
-        final long startTime = System.nanoTime();
-
-        State immutableState = latestImmutableState.get();
-        while (!immutableState.tryReserve()) {
-            immutableState = latestImmutableState.get();
+        if (stateRef.get() != null) {
+            throw new IllegalStateException("Attempt to set initial state when there is already a state reference.");
         }
-        try {
-            transactionHandler.preHandle(event, immutableState.getSwirldState());
-        } finally {
-            event.getBaseEvent().signalPrehandleCompletion();
-            immutableState.release();
 
-            stats.preHandleTime(startTime, System.nanoTime());
-        }
+        // Create a fast copy so there is always an immutable state to
+        // invoke handleTransaction on for pre-consensus transactions
+        fastCopyAndUpdateRefs(state);
     }
 
     /**
@@ -167,7 +132,6 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
                 state.getPlatformState().getUptimeData(),
                 state.getPlatformState().getAddressBook());
         transactionHandler.handleRound(round, state);
-        roundAndStateConsumer.accept(state, round);
         updateEpoch();
     }
 
@@ -194,28 +158,16 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
     }
 
     /**
-     * {@inheritDoc}
+     * Loads all necessary data from the {@code reservedSignedState}.
+     *
+     * @param signedState the signed state to load
      */
-    @Override
-    public void loadFromSignedState(final SignedState signedState) {
+    public void loadFromSignedState(@NonNull final SignedState signedState) {
         final State state = signedState.getState();
 
         state.throwIfDestroyed("state must not be destroyed");
         state.throwIfImmutable("state must be mutable");
 
-        fastCopyAndUpdateRefs(state);
-    }
-
-    private void initialState(final State state) {
-        state.throwIfDestroyed("state must not be destroyed");
-        state.throwIfImmutable("state must be mutable");
-
-        if (stateRef.get() != null) {
-            throw new IllegalStateException("Attempt to set initial state when there is already a state reference.");
-        }
-
-        // Create a fast copy so there is always an immutable state to
-        // invoke handleTransaction on for pre-consensus transactions
         fastCopyAndUpdateRefs(state);
     }
 

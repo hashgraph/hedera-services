@@ -28,7 +28,9 @@ import org.junit.jupiter.api.Test;
 final class BlockRecordFactoryImplTest extends AppTestBase {
     @Test
     void createV6BasedOnConfig() throws Exception {
-        final var app = appBuilder().build();
+        final var app = appBuilder()
+                .withConfigValue("hedera.recordStream.logDir", "hedera-node/data/recordStreams")
+                .build();
         final var factory =
                 new BlockRecordWriterFactoryImpl(app.configProvider(), selfNodeInfo, SIGNER, FileSystems.getDefault());
         final var writer = factory.create();
@@ -39,6 +41,7 @@ final class BlockRecordFactoryImplTest extends AppTestBase {
     void createV7BasedOnConfigThrows() throws Exception {
         final var app = appBuilder()
                 .withConfigValue("hedera.recordStream.recordFileVersion", 7)
+                .withConfigValue("hedera.recordStream.logDir", "hedera-node/data/recordStreams")
                 .build();
 
         final var factory =
@@ -52,6 +55,7 @@ final class BlockRecordFactoryImplTest extends AppTestBase {
     void createUnknownVersionBasedOnConfigThrows() throws Exception {
         final var app = appBuilder()
                 .withConfigValue("hedera.recordStream.recordFileVersion", 99999)
+                .withConfigValue("hedera.recordStream.logDir", "hedera-node/data/recordStreams")
                 .build();
 
         final var factory =

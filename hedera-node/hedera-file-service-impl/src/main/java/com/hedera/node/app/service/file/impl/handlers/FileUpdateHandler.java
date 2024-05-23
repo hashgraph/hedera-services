@@ -68,10 +68,15 @@ public class FileUpdateHandler implements TransactionHandler {
     private final FileOpsUsage fileOpsUsage;
     private final FileSignatureWaivers fileSignatureWaivers;
 
+    /**
+     * Constructs a {@link FileUpdateHandler} with the given {@link FileOpsUsage} and {@link FileSignatureWaivers}.
+     * @param fileOpsUsage the file operation usage calculator
+     * @param fileSignatureWaivers the file signature waivers
+     */
     @Inject
-    public FileUpdateHandler(final FileOpsUsage fileOpsUsage, final FileSignatureWaivers fileSignatureWaivers1) {
+    public FileUpdateHandler(final FileOpsUsage fileOpsUsage, final FileSignatureWaivers fileSignatureWaivers) {
         this.fileOpsUsage = fileOpsUsage;
-        this.fileSignatureWaivers = fileSignatureWaivers1;
+        this.fileSignatureWaivers = fileSignatureWaivers;
     }
 
     /**
@@ -147,7 +152,10 @@ public class FileUpdateHandler implements TransactionHandler {
 
         // First validate this file is mutable; and the pending mutations are allowed
         if (wantsToMutateNonExpiryField(fileUpdate)) {
-            validateFalse(file.keys() == null, UNAUTHORIZED);
+            if (handleContext.hasPrivilegedAuthorization() != SystemPrivilege.AUTHORIZED) {
+                validateTrue(file.hasKeys() && !file.keys().keys().isEmpty(), UNAUTHORIZED);
+            }
+
             validateMaybeNewMemo(handleContext.attributeValidator(), fileUpdate);
         }
 
@@ -256,6 +264,12 @@ public class FileUpdateHandler implements TransactionHandler {
         }
     }
 
+    /**
+     * Determines if the update operation wants to mutate non-expiry fields.
+     *
+     * @param op the update operation transaction body
+     * @return {@code true} if the operation wants to mutate non-expiry fields, {@code false} otherwise
+     */
     public static boolean wantsToMutateNonExpiryField(@NonNull final FileUpdateTransactionBody op) {
         return op.hasMemo() || op.hasKeys() || op.contents().length() > 0;
     }

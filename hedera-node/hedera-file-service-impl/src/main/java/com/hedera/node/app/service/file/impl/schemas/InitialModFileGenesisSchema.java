@@ -56,8 +56,6 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.FilesConfig;
@@ -66,6 +64,8 @@ import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.spi.WritableKVStateBase;
+import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -98,11 +98,16 @@ public class InitialModFileGenesisSchema extends Schema {
     private static final int MAX_FILES_HINT = 50_000_000;
 
     private final ConfigProvider configProvider;
-    private Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fss;
+    private Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fileFromState;
     private Map<com.hederahashgraph.api.proto.java.FileID, byte[]> fileContents;
     private Map<com.hederahashgraph.api.proto.java.FileID, HFileMeta> fileAttrs;
 
-    /** Create a new instance */
+    /**
+     * Constructs a new {@link InitialModFileGenesisSchema} instance with the given {@link SemanticVersion} and {@link ConfigProvider}.
+     *
+     * @param version the version of the schema
+     * @param configProvider the configuration provider
+     */
     public InitialModFileGenesisSchema(
             @NonNull final SemanticVersion version, @NonNull final ConfigProvider configProvider) {
         super(version);
@@ -136,7 +141,7 @@ public class InitialModFileGenesisSchema extends Schema {
     }
 
     public void setFs(@Nullable final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fss) {
-        this.fss = fss;
+        this.fileFromState = fss;
         var blobStore = new FcBlobsBytesStore(fss);
         this.fileContents = DataMapFactory.dataMapFrom(blobStore);
         this.fileAttrs = MetadataMapFactory.metaMapFrom(blobStore);
@@ -145,7 +150,7 @@ public class InitialModFileGenesisSchema extends Schema {
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
         logger.debug("Migrating genesis state");
-        final var isGenesis = ctx.previousStates().isEmpty();
+        final var isGenesis = ctx.previousVersion() == null;
         if (isGenesis) {
             final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
             final var filesConfig = ctx.configuration().getConfigData(FilesConfig.class);
@@ -161,11 +166,11 @@ public class InitialModFileGenesisSchema extends Schema {
             createGenesisSoftwareUpdateFiles(bootstrapConfig, hederaConfig, filesConfig, files);
         }
 
-        if (fss != null && fss.get() != null) {
-            var ts = ctx.newStates().<FileID, File>get(BLOBS_KEY);
+        if (fileFromState != null && fileFromState.get() != null) {
+            var toBlobsState = ctx.newStates().<FileID, File>get(BLOBS_KEY);
 
             logger.info("BBM: Running file service migration...");
-            var allFileIds = extractFileIds(fss.get());
+            var allFileIds = extractFileIds(fileFromState.get());
             var migratedFileIds = new ArrayList<Long>();
             allFileIds.forEach(fromFileIdRaw -> {
                 var fromFileId = com.hederahashgraph.api.proto.java.FileID.newBuilder()
@@ -177,19 +182,20 @@ public class InitialModFileGenesisSchema extends Schema {
                 if (fromFileMeta != null) {
                     File toFile = FileServiceStateTranslator.stateToPbj(
                             fileContents.get(fromFileId), fromFileMeta, fromFileId);
-                    ts.put(FileID.newBuilder().fileNum(fromFileId.getFileNum()).build(), toFile);
+                    toBlobsState.put(
+                            FileID.newBuilder().fileNum(fromFileId.getFileNum()).build(), toFile);
                     migratedFileIds.add(fromFileIdRaw);
                 }
             });
 
-            if (ts.isModified()) ((WritableKVStateBase) ts).commit();
+            if (toBlobsState.isModified()) ((WritableKVStateBase) toBlobsState).commit();
 
             logger.info("BBM: finished file service migration. Migrated fileIds are : " + migratedFileIds);
         } else {
             logger.warn("BBM: no file 'from' state found");
         }
 
-        fss = null;
+        fileFromState = null;
         fileContents = null;
         fileAttrs = null;
     }
@@ -199,9 +205,7 @@ public class InitialModFileGenesisSchema extends Schema {
         try {
             fileStorage.extractVirtualMapData(
                     AdHocThreadManager.getStaticThreadManager(),
-                    entry -> {
-                        fileIds.add((long) entry.left().getEntityNumCode());
-                    },
+                    entry -> fileIds.add((long) entry.left().getEntityNumCode()),
                     1);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
@@ -559,7 +563,7 @@ public class InitialModFileGenesisSchema extends Schema {
             @NonNull final WritableKVState<FileID, File> files) {
         logger.debug("Creating genesis throttle definitions file");
 
-        byte[] throttleDefinitionsProtoBytes = readThrottleDefinitionsBytes(bootstrapConfig);
+        byte[] throttleDefinitionsProtoBytes = loadBootstrapThrottleDefinitions(bootstrapConfig);
 
         // Store the configuration in state
         final var fileNum = filesConfig.throttleDefinitions();
@@ -580,7 +584,13 @@ public class InitialModFileGenesisSchema extends Schema {
                         .build());
     }
 
-    public static byte[] readThrottleDefinitionsBytes(@NonNull BootstrapConfig bootstrapConfig) {
+    /**
+     * Load the throttle definitions from the bootstrap configuration.
+     *
+     * @param bootstrapConfig the bootstrap configuration
+     * @return the throttle definitions proto as a byte array
+     */
+    public static byte[] loadBootstrapThrottleDefinitions(@NonNull BootstrapConfig bootstrapConfig) {
         // Get the path to the throttles permissions file
         final var throttleDefinitionsResource = bootstrapConfig.throttleDefsJsonResource();
         final var pathToThrottleDefinitions = Path.of(throttleDefinitionsResource);

@@ -31,12 +31,14 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.EventStreamLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamMultiFileIterator;
 import com.swirlds.platform.recovery.internal.EventStreamRoundLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamTimestampLowerBound;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -51,6 +53,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Random;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -61,6 +64,12 @@ class EventStreamMultiFileIteratorTest {
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+        StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
+    }
+
+    @AfterAll
+    static void afterAll() {
+        StaticSoftwareVersion.reset();
     }
 
     public static void assertEventsAreEqual(final EventImpl expected, final EventImpl actual) {
@@ -72,7 +81,7 @@ class EventStreamMultiFileIteratorTest {
     @DisplayName("Read All Events Test")
     void readAllEventsTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
@@ -94,8 +103,7 @@ class EventStreamMultiFileIteratorTest {
                 final DetailedConsensusEvent event = deserializedEvents.get(eventIndex);
 
                 // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
+                final EventImpl e = new EventImpl(event);
                 assertEventsAreEqual(e, events.get(eventIndex));
             }
 
@@ -108,7 +116,7 @@ class EventStreamMultiFileIteratorTest {
     @DisplayName("Read Events Starting At Round Test")
     void readEventsStartingAtRoundTest() throws NoSuchAlgorithmException, IOException {
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
@@ -135,8 +143,7 @@ class EventStreamMultiFileIteratorTest {
                 final DetailedConsensusEvent event = deserializedEvents.get(eventIndex);
 
                 // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
+                final EventImpl e = new EventImpl(event);
                 assertEventsAreEqual(e, events.get(eventIndex + startingIndex));
             }
 
@@ -150,7 +157,7 @@ class EventStreamMultiFileIteratorTest {
     void readEventsStartingAtNonExistentRoundTest() throws NoSuchAlgorithmException, IOException {
 
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
@@ -181,7 +188,7 @@ class EventStreamMultiFileIteratorTest {
     void missingEventStreamFileTest() throws IOException, NoSuchAlgorithmException {
 
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
@@ -207,8 +214,7 @@ class EventStreamMultiFileIteratorTest {
                 final DetailedConsensusEvent event = deserializedEvents.get(eventIndex);
 
                 // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
+                final EventImpl e = new EventImpl(event);
                 assertEquals(e, events.get(eventIndex), "event should match input event");
             }
 
@@ -225,7 +231,7 @@ class EventStreamMultiFileIteratorTest {
     @DisplayName("Truncate Last File Test")
     void truncatedLastFileTest() throws NoSuchAlgorithmException, IOException {
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
@@ -263,8 +269,7 @@ class EventStreamMultiFileIteratorTest {
                 final DetailedConsensusEvent event = deserializedEvents.get(eventIndex);
 
                 // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
+                final EventImpl e = new EventImpl(event);
                 assertEventsAreEqual(e, events.get(eventIndex));
             }
 
@@ -277,7 +282,7 @@ class EventStreamMultiFileIteratorTest {
     @DisplayName("Truncate Middle File Test")
     void truncatedMiddleFileTest() throws NoSuchAlgorithmException, IOException {
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
@@ -303,8 +308,7 @@ class EventStreamMultiFileIteratorTest {
                 final DetailedConsensusEvent event = deserializedEvents.get(eventIndex);
 
                 // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
+                final EventImpl e = new EventImpl(event);
                 assertEquals(e, events.get(eventIndex), "event should match input event");
             }
 
@@ -323,7 +327,7 @@ class EventStreamMultiFileIteratorTest {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
         final int roundsPerSecond = 1;
@@ -408,8 +412,7 @@ class EventStreamMultiFileIteratorTest {
                 final DetailedConsensusEvent event = deserializedEvents.get(eventIndex);
 
                 // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
+                final EventImpl e = new EventImpl(event);
                 assertEventsAreEqual(e, events.get(startingIndex + eventIndex));
             }
         }

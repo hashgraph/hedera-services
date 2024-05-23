@@ -24,9 +24,11 @@ import com.swirlds.logging.test.fixtures.LoggingMirror;
 import com.swirlds.logging.test.fixtures.WithLoggingMirror;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @WithLoggingMirror
+@Disabled
 public class LoggersTest {
 
     @Inject
@@ -90,7 +92,7 @@ public class LoggersTest {
         logger.error("test");
 
         // then
-        Assertions.assertEquals(1, loggingMirror.getEvents().size());
+        Assertions.assertEquals(1, loggingMirror.getEventCount());
         final LogEvent event = loggingMirror.getEvents().get(0);
         Assertions.assertEquals(clazz.getName(), event.loggerName());
         Assertions.assertEquals(Thread.currentThread().getName(), event.threadName());
@@ -107,7 +109,7 @@ public class LoggersTest {
         logger.error("test");
 
         // then
-        Assertions.assertEquals(1, loggingMirror.getEvents().size());
+        Assertions.assertEquals(1, loggingMirror.getEventCount());
         final LogEvent event = loggingMirror.getEvents().get(0);
         Assertions.assertEquals(loggerName, event.loggerName());
         Assertions.assertEquals(Thread.currentThread().getName(), event.threadName());

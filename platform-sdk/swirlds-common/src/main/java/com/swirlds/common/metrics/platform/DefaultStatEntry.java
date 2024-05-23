@@ -26,6 +26,8 @@ import com.swirlds.common.metrics.StatEntry;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.metrics.api.MetricConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -36,23 +38,23 @@ import java.util.function.Supplier;
 @SuppressWarnings("removal")
 public class DefaultStatEntry extends DefaultMetric implements StatEntry {
 
-    private final DataType dataType;
+    private final @NonNull DataType dataType;
     /**
      * the statistics object (if it implements StatsBuffered), else null
      */
-    private final StatsBuffered buffered;
+    private final @Nullable StatsBuffered buffered;
     /**
      * a lambda that resets the statistic, using the given half life
      */
-    private final Consumer<Double> reset;
+    private final @Nullable Consumer<Double> reset;
     /**
      * a lambda that returns the statistic string
      */
-    private final Supplier<Object> statsStringSupplier;
+    private final @NonNull Supplier<Object> statsStringSupplier;
     /**
      * a lambda that returns the statistic string and resets it at the same time
      */
-    private final Supplier<Object> resetStatsStringSupplier;
+    private final @NonNull Supplier<Object> resetStatsStringSupplier;
 
     /**
      * the half life of the statistic, in seconds
@@ -76,6 +78,7 @@ public class DefaultStatEntry extends DefaultMetric implements StatEntry {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public DataType getDataType() {
         return dataType;
@@ -85,6 +88,7 @@ public class DefaultStatEntry extends DefaultMetric implements StatEntry {
      * {@inheritDoc}
      */
     @Override
+    @Nullable
     public StatsBuffered getBuffered() {
         return buffered;
     }
@@ -92,6 +96,7 @@ public class DefaultStatEntry extends DefaultMetric implements StatEntry {
     /**
      * {@inheritDoc}
      */
+    @Nullable
     @Override
     public Consumer<Double> getReset() {
         return reset;
@@ -100,6 +105,7 @@ public class DefaultStatEntry extends DefaultMetric implements StatEntry {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public Supplier<Object> getStatsStringSupplier() {
         return statsStringSupplier;
@@ -108,6 +114,7 @@ public class DefaultStatEntry extends DefaultMetric implements StatEntry {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public Supplier<Object> getResetStatsStringSupplier() {
         return resetStatsStringSupplier;
@@ -116,6 +123,7 @@ public class DefaultStatEntry extends DefaultMetric implements StatEntry {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public List<SnapshotEntry> takeSnapshot() {
         if (buffered == null) {
@@ -148,6 +156,7 @@ public class DefaultStatEntry extends DefaultMetric implements StatEntry {
     /**
      * {@inheritDoc}
      */
+    @Nullable
     @SuppressWarnings("removal")
     @Override
     public StatsBuffered getStatsBuffered() {

@@ -76,19 +76,6 @@ class RoundCalculationUtilsTest {
 
         final AtomicLong lastRoundDecided = new AtomicLong();
         when(signedState.getRound()).thenAnswer(a -> lastRoundDecided.get());
-        when(signedState.getMinGen(Mockito.anyLong())).thenAnswer(a -> map.get(a.getArgument(0, Long.class)));
         when(platformState.getRound()).thenAnswer(a -> lastRoundDecided.get());
-        when(platformState.getMinGen(Mockito.anyLong())).thenAnswer(a -> map.get(a.getArgument(0, Long.class)));
-
-        lastRoundDecided.set(10);
-        Assertions.assertEquals(
-                60,
-                RoundCalculationUtils.getMinGenNonAncient(5, signedState),
-                "if the oldest non-ancient round is 6, then the generation should 60");
-        lastRoundDecided.set(5);
-        Assertions.assertEquals(
-                10,
-                RoundCalculationUtils.getMinGenNonAncient(10, signedState),
-                "if no rounds are ancient yet, then the minGenNonAncient is the first round generation");
     }
 }

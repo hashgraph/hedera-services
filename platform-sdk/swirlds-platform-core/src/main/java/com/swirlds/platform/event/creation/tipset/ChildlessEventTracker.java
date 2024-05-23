@@ -17,7 +17,7 @@
 package com.swirlds.platform.event.creation.tipset;
 
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -81,11 +81,11 @@ public class ChildlessEventTracker {
     /**
      * Remove ancient events.
      *
-     * @param nonAncientEventWindow the non-ancient event window
+     * @param eventWindow the event window
      */
-    public void pruneOldEvents(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
+    public void pruneOldEvents(@NonNull final EventWindow eventWindow) {
         for (final EventDescriptor event : getChildlessEvents()) {
-            if (nonAncientEventWindow.isAncient(event)) {
+            if (eventWindow.isAncient(event)) {
                 removeEvent(event);
             }
         }
@@ -117,6 +117,14 @@ public class ChildlessEventTracker {
         if (removed) {
             eventsByCreator.remove(eventDescriptor.getCreator());
         }
+    }
+
+    /**
+     * Clear the internal state of this object.
+     */
+    public void clear() {
+        childlessEvents.clear();
+        eventsByCreator.clear();
     }
 
     @NonNull
