@@ -77,7 +77,7 @@ public record KeysAndCerts(
      * @throws NoSuchAlgorithmException  if the algorithm for recovering a required key cannot be found
      * @throws KeyLoadingException       if a required certificate is missing or is not an instance of X509Certificate
      */
-    public static KeysAndCerts loadOrCreateKeys(
+    public static KeysAndCerts loadExistingAndCreateAgrKeyIfMissing(
             final String name, final char[] password, final KeyStore privateKeyStore, final PublicStores publicStores)
             throws KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyLoadingException,
                     NoSuchProviderException, KeyGeneratingException {
@@ -88,8 +88,8 @@ public record KeysAndCerts(
 
         // get the agreement key pair and cert, if they exist, otherwise generate them.
         final String agreementName = KeyCertPurpose.AGREEMENT.storeName(name);
-        final KeyPair agreementKeyPair;
-        final X509Certificate agreementCert;
+        KeyPair agreementKeyPair;
+        X509Certificate agreementCert;
         try {
             agreementKeyPair = getKeyPair(privateKeyStore, password, agreementName);
             agreementCert = publicStores.getCertificate(KeyCertPurpose.AGREEMENT, name);
