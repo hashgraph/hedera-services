@@ -344,5 +344,5 @@ public interface EvmFrameState {
      * Sets which bytecode to return for a given account.  This should only be modified if a function selector matches
      * a call supported by the proxy redirect contract.
      */
-    void setAccountBytecodeType(AccountBytecodeType type);
+    void setAccountBytecodeType(@NonNull final AccountBytecodeType type);
 }
