@@ -834,6 +834,8 @@ public class PlatformWiring {
         transactionResubmitterWiring.bind(builder::buildTransactionResubmitter);
         transactionPoolWiring.bind(builder::buildTransactionPool);
         gossipWiring.bind(builder.buildGossip());
+        branchDetectorWiring.bind(builder::buildBranchDetector);
+        branchReporterWiring.bind(builder::buildBranchReporter);
     }
 
     /**
