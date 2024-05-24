@@ -16,6 +16,36 @@
 
 package com.hedera.node.app;
 
+import static com.hedera.node.app.records.impl.BlockRecordManagerImpl.isDefaultConsTimeOfLastHandledTxn;
+import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.ACCOUNTS;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.CONTRACT_STORAGE;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.NETWORK_CTX;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.RECORD_STREAM_RUNNING_HASH;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.SCHEDULE_TXS;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.STAKING_INFO;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.STORAGE;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKENS;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOPICS;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
+import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
+import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MOD_POST_MIGRATION;
+import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MONO_PRE_MIGRATION;
+import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
+import static com.hedera.node.app.service.mono.statedumpers.StateDumper.dumpMonoChildrenFrom;
+import static com.hedera.node.app.state.merkle.MerkleSchemaRegistry.isSoOrdered;
+import static com.hedera.node.app.statedumpers.StateDumper.dumpModChildrenFrom;
+import static com.hedera.node.app.util.FileUtilities.observePropertiesAndPermissions;
+import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
+import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
+import static com.swirlds.platform.system.InitTrigger.GENESIS;
+import static com.swirlds.platform.system.InitTrigger.RECONNECT;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
@@ -101,9 +131,6 @@ import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.nio.charset.Charset;
 import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
@@ -112,36 +139,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
-import static com.hedera.node.app.records.impl.BlockRecordManagerImpl.isDefaultConsTimeOfLastHandledTxn;
-import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.ACCOUNTS;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.CONTRACT_STORAGE;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.NETWORK_CTX;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.RECORD_STREAM_RUNNING_HASH;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.SCHEDULE_TXS;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.STAKING_INFO;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.STORAGE;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKENS;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOPICS;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
-import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
-import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MOD_POST_MIGRATION;
-import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MONO_PRE_MIGRATION;
-import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
-import static com.hedera.node.app.service.mono.statedumpers.StateDumper.dumpMonoChildrenFrom;
-import static com.hedera.node.app.state.merkle.MerkleSchemaRegistry.isSoOrdered;
-import static com.hedera.node.app.statedumpers.StateDumper.dumpModChildrenFrom;
-import static com.hedera.node.app.util.FileUtilities.observePropertiesAndPermissions;
-import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
-import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
-import static com.swirlds.platform.system.InitTrigger.GENESIS;
-import static com.swirlds.platform.system.InitTrigger.RECONNECT;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Objects.requireNonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /*
  ****************        ****************************************************************************************
