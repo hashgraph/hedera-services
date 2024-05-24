@@ -109,6 +109,10 @@ public class DefaultBranchReporter implements BranchReporter {
      */
     @Override
     public void reportBranch(@NonNull final GossipEvent event) {
+        if (currentEventWindow == null) {
+            throw new IllegalStateException("Event window must be set before reporting branches");
+        }
+
         if (currentEventWindow.isAncient(event)) {
             // Ignore ancient events.
             return;

@@ -75,24 +75,14 @@ public class DefaultBranchDetector implements BranchDetector {
         }
 
         final NodeId creator = event.getCreatorId();
-
         final EventDescriptor previousEvent = mostRecentEvents.get(creator);
         final EventDescriptor selfParent = event.getHashedData().getSelfParent();
 
-        try {
-            if (selfParent == null) {
-                if (previousEvent != null) {
-                    // Event has no self parent even though an eligible self event exists.
-                    return event;
-                }
-            } else if (previousEvent != null && !previousEvent.equals(selfParent)) {
-                // Event is not a child of the most recent event by the same creator.
-                return event;
-            }
-        } finally {
-            mostRecentEvents.put(creator, event.getDescriptor());
-        }
-        return null;
+        final boolean branching = !(previousEvent == null || previousEvent.equals(selfParent));
+
+        mostRecentEvents.put(creator, event.getDescriptor());
+
+        return branching ? event : null;
     }
 
     /**
