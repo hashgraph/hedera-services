@@ -28,8 +28,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.hedera.hapi.platform.event.EventConsensusData;
-import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
@@ -80,7 +78,8 @@ class ConsensusRoundHandlerTests {
     }
 
     private EventImpl buildEvent() {
-        final EventImpl event = EventImplTestUtils.createEventImpl(new TestingEventBuilder(random).setConsensusTimestamp(time.now()), null, null);
+        final EventImpl event = EventImplTestUtils.createEventImpl(
+                new TestingEventBuilder(random).setConsensusTimestamp(time.now()), null, null);
 
         event.getBaseEvent().signalPrehandleCompletion();
         event.getRunningHash().setHash(mock(Hash.class));

@@ -18,8 +18,6 @@ package com.swirlds.platform.event;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.hapi.platform.event.EventConsensusData;
-import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -32,7 +30,6 @@ import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.io.IOException;
-import java.time.Instant;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -74,7 +71,9 @@ public class DetailedConsensusEventTest {
 
     private DetailedConsensusEvent generateConsensusEvent() {
         final Randotron random = Randotron.create(68651684861L);
-        final GossipEvent gossipEvent = new TestingEventBuilder(random).setConsensusTimestamp(random.nextInstant()).build();
+        final GossipEvent gossipEvent = new TestingEventBuilder(random)
+                .setConsensusTimestamp(random.nextInstant())
+                .build();
 
         return new DetailedConsensusEvent(gossipEvent, random.nextPositiveLong(), random.nextBoolean());
     }

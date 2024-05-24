@@ -18,14 +18,11 @@ package com.swirlds.platform.recovery;
 
 import static com.swirlds.base.units.UnitConstants.SECONDS_TO_NANOSECONDS;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 
-import com.hedera.hapi.platform.event.EventConsensusData;
-import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
@@ -41,12 +38,6 @@ import com.swirlds.platform.event.stream.DefaultConsensusEventStream;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.ObjectStreamIterator;
-import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.EventConstants;
-import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -61,7 +52,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,10 +80,12 @@ public final class RecoveryTestUtils {
                 .setAppTransactionCount(random.nextInt(10))
                 .setTransactionSize(random.nextInt(10) + 1)
                 .setSystemTransactionCount(0)
-                .setSelfParent(
-                        new TestingEventBuilder(random).setCreatorId(new NodeId(random.nextLong())).build())
-                .setOtherParent(
-                        new TestingEventBuilder(random).setCreatorId(new NodeId(random.nextLong())).build())
+                .setSelfParent(new TestingEventBuilder(random)
+                        .setCreatorId(new NodeId(random.nextLong()))
+                        .build())
+                .setOtherParent(new TestingEventBuilder(random)
+                        .setCreatorId(new NodeId(random.nextLong()))
+                        .build())
                 .setTimeCreated(now)
                 .setConsensusTimestamp(now)
                 .build();

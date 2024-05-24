@@ -555,14 +555,11 @@ public class TestingEventBuilder {
         final GossipEvent gossipEvent = new GossipEvent(hashedData, signature);
 
         if (consensusTimestamp != null || consensusOrder != null) {
-            gossipEvent.setConsensusData(
-                    new EventConsensusData.Builder()
-                            .consensusTimestamp(HapiUtils.asTimestamp(
-                                    Optional.ofNullable(consensusTimestamp).orElse(RandomUtils.randomInstant(random))))
-                            .consensusOrder(
-                                    Optional.ofNullable(consensusOrder).orElse(random.nextLong(1, Long.MAX_VALUE)))
-                            .build()
-            );
+            gossipEvent.setConsensusData(new EventConsensusData.Builder()
+                    .consensusTimestamp(HapiUtils.asTimestamp(
+                            Optional.ofNullable(consensusTimestamp).orElse(RandomUtils.randomInstant(random))))
+                    .consensusOrder(Optional.ofNullable(consensusOrder).orElse(random.nextLong(1, Long.MAX_VALUE)))
+                    .build());
         }
 
         return gossipEvent;

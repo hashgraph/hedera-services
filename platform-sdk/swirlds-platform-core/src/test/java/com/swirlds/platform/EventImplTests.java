@@ -22,8 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.hapi.platform.event.EventConsensusData;
-import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -138,13 +136,12 @@ public class EventImplTests {
         mixedTransactions[4] = TransactionUtils.incrementingSystemTransaction();
 
         final Instant eventConsTime = Instant.now();
-        final EventImpl event =
-                createEventImpl(
-                        new TestingEventBuilder(random)
+        final EventImpl event = createEventImpl(
+                new TestingEventBuilder(random)
                         .setTransactions(mixedTransactions)
-                                .setConsensusTimestamp(eventConsTime),
-                        null,
-                        null);
+                        .setConsensusTimestamp(eventConsTime),
+                null,
+                null);
 
         event.consensusReached();
 

@@ -76,7 +76,8 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
      * @param lastInRoundReceived true if this event is the last in consensus order of all those with the same received
      *                            round
      */
-    public DetailedConsensusEvent(final GossipEvent gossipEvent, final long roundReceived, final boolean lastInRoundReceived) {
+    public DetailedConsensusEvent(
+            final GossipEvent gossipEvent, final long roundReceived, final boolean lastInRoundReceived) {
         this.gossipEvent = gossipEvent;
         this.roundReceived = roundReceived;
         this.lastInRoundReceived = lastInRoundReceived;
