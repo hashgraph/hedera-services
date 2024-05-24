@@ -16,81 +16,64 @@
 
 package com.swirlds.platform.hcm.impl.pairings.bls12381;
 
-import com.swirlds.platform.hcm.api.pairings.CurveType;
+import com.swirlds.platform.hcm.api.pairings.FieldElement;
 import com.swirlds.platform.hcm.api.pairings.Group;
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * G1 group used in BLS12-381
+ * An element in G1 group used in BLS12-381
  */
-public class Bls12381Group implements Group {
-
-    // group1 and group2 for BLS12381 need to call different types of native methods so we need to split these into
-    // different classes
+public class Bls12381Group1Element implements GroupElement {
+    @Override
+    public Group getGroup() {
+        return Bls12381Group1.getInstance();
+    }
 
     @NonNull
     @Override
-    public GroupElement getGenerator() {
+    public GroupElement power(@NonNull final FieldElement exponent) {
         return null;
     }
 
     @NonNull
     @Override
-    public GroupElement oneElement() {
+    public GroupElement multiply(@NonNull final GroupElement other) {
         return null;
     }
 
     @NonNull
     @Override
-    public GroupElement randomElement(byte[] seed) {
+    public GroupElement add(@NonNull final GroupElement other) {
         return null;
     }
 
     @NonNull
     @Override
-    public GroupElement randomElement() {
+    public GroupElement divide(@NonNull final GroupElement other) {
         return null;
     }
 
     @NonNull
     @Override
-    public GroupElement elementFromHash(byte[] input) {
+    public GroupElement compress() {
         return null;
+    }
+
+    @Override
+    public boolean isCompressed() {
+        return false;
     }
 
     @NonNull
     @Override
-    public GroupElement batchMultiply(@NonNull GroupElement elements) {
-        checkSameCurveType(elements);
+    public GroupElement copy() {
         return null;
     }
 
+    @Override
     @NonNull
-    @Override
-    public GroupElement elementFromBytes(byte[] bytes) {
-        checkSameCurveType(bytes);
-        // We should remove bytes[0] before sending it to the native call
-        return null;
-    }
-
-    @Override
-    public int getCompressedSize() {
-        return 0;
-    }
-
-    @Override
-    public int getUncompressedSize() {
-        return 0;
-    }
-
-    @Override
-    public int getSeedSize() {
-        return 0;
-    }
-
-    @Override
-    public CurveType curveType() {
-        return CurveType.BLS12_381;
+    public byte[] toBytes() {
+        return new byte[0];
     }
 }

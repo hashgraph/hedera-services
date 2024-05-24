@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.hcm.api.tss;
 
-import com.swirlds.platform.hcm.api.signaturescheme.PrivateKey;
-import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingPrivateKey;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -42,16 +42,14 @@ public final class TssUtils {
      * @param elGamalPrivateKey the ElGamal private key of this node
      * @param cipherTexts       the cipher texts to extract the private shares from
      * @param threshold         the threshold number of cipher texts required to decrypt the private shares
-     * @param <P>               the type of public key that can be used to verify signatures produced by the secret keys
-     *                          encrypted in the cipher texts
      * @return the private shares, or null if there aren't enough shares to meet the threshold
      */
     @Nullable
-    public static <P extends PublicKey> List<TssPrivateShare<P>> decryptPrivateShares(
-            @NonNull final Tss<P> tss,
+    public static List<TssPrivateShare> decryptPrivateShares(
+            @NonNull final Tss tss,
             @NonNull final List<TssShareId> shareIds,
-            @NonNull final PrivateKey elGamalPrivateKey,
-            @NonNull final List<TssCiphertext<P>> cipherTexts,
+            @NonNull final PairingPrivateKey elGamalPrivateKey,
+            @NonNull final List<TssCiphertext> cipherTexts,
             final int threshold) {
 
         // check if there are enough cipher texts to meet the required threshold
@@ -60,8 +58,8 @@ public final class TssUtils {
         }
 
         // decrypt the partial private shares from the cipher texts
-        final Map<TssShareId, List<TssPrivateKey<P>>> partialPrivateKeys = new HashMap<>();
-        for (final TssCiphertext<P> cipherText : cipherTexts) {
+        final Map<TssShareId, List<TssPrivateKey>> partialPrivateKeys = new HashMap<>();
+        for (final TssCiphertext cipherText : cipherTexts) {
             for (final TssShareId shareId : shareIds) {
                 partialPrivateKeys
                         .computeIfAbsent(shareId, k -> new ArrayList<>())
@@ -70,13 +68,13 @@ public final class TssUtils {
         }
 
         // aggregate the decrypted partial private keys, creating the actual private shares
-        final List<TssPrivateShare<P>> privateShares = new ArrayList<>();
-        for (final Map.Entry<TssShareId, List<TssPrivateKey<P>>> entry : partialPrivateKeys.entrySet()) {
+        final List<TssPrivateShare> privateShares = new ArrayList<>();
+        for (final Map.Entry<TssShareId, List<TssPrivateKey>> entry : partialPrivateKeys.entrySet()) {
             final TssShareId shareId = entry.getKey();
-            final List<TssPrivateKey<P>> partialKeysForId = entry.getValue();
+            final List<TssPrivateKey> partialKeysForId = entry.getValue();
 
             // TODO: make sure private key aggregate doesn't return null
-            privateShares.add(new TssPrivateShare<>(shareId, tss.aggregatePrivateKeys(partialKeysForId)));
+            privateShares.add(new TssPrivateShare(shareId, tss.aggregatePrivateKeys(partialKeysForId)));
         }
 
         return privateShares;
@@ -89,14 +87,13 @@ public final class TssUtils {
      * @param shareIds    the share IDs to compute the public shares for
      * @param tssMessages the TSS messages
      * @param threshold   the threshold number of commitments required to compute the public shares
-     * @param <P>         the type of public that will be computed
      * @return the public shares, or null if there aren't enough shares to meet the threshold
      */
     @Nullable
-    public static <P extends PublicKey> Map<TssShareId, P> computePublicShares(
-            @NonNull final Tss<P> tss,
+    public static Map<TssShareId, PairingPublicKey> computePublicShares(
+            @NonNull final Tss tss,
             @NonNull final List<TssShareId> shareIds,
-            @NonNull final List<TssMessage<P>> tssMessages,
+            @NonNull final List<TssMessage> tssMessages,
             final int threshold) {
 
         // check if there are enough TSS messages to meet the required threshold
@@ -104,7 +101,7 @@ public final class TssUtils {
             return null;
         }
 
-        final Map<TssShareId, P> outputShares = new HashMap<>();
+        final Map<TssShareId, PairingPublicKey> outputShares = new HashMap<>();
 
         // go through each specified share ID and compute the corresponding public key
         for (final TssShareId shareId : shareIds) {
@@ -113,7 +110,7 @@ public final class TssUtils {
             // NOT to the share ID that the public key is for
             final List<TssPublicShare> partialShares = new ArrayList<>();
 
-            for (final TssMessage<P> tssMessage : tssMessages) {
+            for (final TssMessage tssMessage : tssMessages) {
                 partialShares.add(new TssPublicShare(
                         tssMessage.shareId(), tssMessage.commitment().extractPublicKey(shareId)));
             }

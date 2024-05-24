@@ -22,12 +22,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Represents a finite field used in the Boneh-Lynn-Shacham (BLS) cryptographic scheme.
  * <p>A finite field, often denoted as 𝔽q, where (q) is a prime power, is a field with a finite number of elements.</p>
  *
- * <p>This is a factory interface, responsible for creating {@link FieldElement} which are scalars belonging to the filed represented by this instance.
+ * <p>This is a factory interface, responsible for creating {@link FieldElement} which are scalars belonging to the
+ * field represented by this instance.
  * </p>
  *
  * @see FieldElement
  */
-public interface Field extends UnderCurve {
+public interface Field {
 
     /**
      * Creates a new field element from a long
@@ -64,14 +65,6 @@ public interface Field extends UnderCurve {
     FieldElement randomElement(byte[] seed);
 
     /**
-     * Creates a field element from a seed (32 bytes)
-     *
-     * @return the new field element
-     */
-    @NonNull
-    FieldElement randomElement();
-
-    /**
      * Creates a field element from its serialized encoding
      *
      * @param bytes serialized form
@@ -93,4 +86,7 @@ public interface Field extends UnderCurve {
      * @return the size of a seed needed to generate a new element
      */
     int getSeedSize();
+
+    @NonNull
+    BilinearPairing getPairing();
 }

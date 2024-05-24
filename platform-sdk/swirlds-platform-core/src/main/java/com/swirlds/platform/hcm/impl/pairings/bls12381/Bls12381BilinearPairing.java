@@ -16,7 +16,11 @@
 
 package com.swirlds.platform.hcm.impl.pairings.bls12381;
 
-import com.swirlds.platform.hcm.api.pairings.*;
+import com.swirlds.platform.hcm.api.pairings.BilinearPairing;
+import com.swirlds.platform.hcm.api.pairings.Field;
+import com.swirlds.platform.hcm.api.pairings.Group;
+import com.swirlds.platform.hcm.api.pairings.GroupElement;
+import com.swirlds.platform.hcm.api.pairings.PairingResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -29,31 +33,57 @@ public class Bls12381BilinearPairing implements BilinearPairing {
     public static Bls12381BilinearPairing getInstance() {
         return INSTANCE;
     }
+
     /**
      * Hidden constructor
      */
     private Bls12381BilinearPairing() {}
 
+    @NonNull
     @Override
-    public PairingResult pairingBetween(GroupElement aggregatedSignature, GroupElement g1) {
-        return new Bls12381PairingResult(aggregatedSignature, g1);
+    public PairingResult pairingBetween(@NonNull final GroupElement element1, @NonNull final GroupElement element2) {
+        if (!element1.isOppositeGroup(element2)) {
+            throw new IllegalArgumentException("Pairing elements must be from opposite groups");
+        }
+
+        return new Bls12381PairingResult(element1, element2);
+    }
+
+    @Override
+    public boolean comparePairings(
+            @NonNull final GroupElement pairingAElement1,
+            @NonNull final GroupElement pairingAElement2,
+            @NonNull final GroupElement pairingBElement1,
+            @NonNull final GroupElement pairingBElement2) {
+        return false;
     }
 
     @NonNull
     @Override
     public Field getField() {
-        return new Bls12381Field();
+        return Bls12381Field.getInstance();
     }
 
     @NonNull
     @Override
     public Group getGroup1() {
-        return new Bls12381Group();
+        return Bls12381Group1.getInstance();
     }
 
     @NonNull
     @Override
     public Group getGroup2() {
-        return new Bls12381Group();
+        return Bls12381Group2.getInstance();
+    }
+
+    @Override
+    public Group getOtherGroup(@NonNull final Group group) {
+        if (group.equals(getGroup1())) {
+            return getGroup2();
+        } else if (group.equals(getGroup2())) {
+            return getGroup1();
+        } else {
+            throw new IllegalArgumentException("Unknown group");
+        }
     }
 }

@@ -16,81 +16,90 @@
 
 package com.swirlds.platform.hcm.impl.pairings.bls12381;
 
-import com.swirlds.platform.hcm.api.pairings.CurveType;
-import com.swirlds.platform.hcm.api.pairings.FieldElement;
+import com.swirlds.platform.hcm.api.pairings.BilinearPairing;
 import com.swirlds.platform.hcm.api.pairings.Group;
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * An element in G1 group used in BLS12-381
+ * G1 group used in BLS12-381
  */
-public class Bls12381GroupElement implements GroupElement {
+public class Bls12381Group2 implements Group {
+    private static final Bls12381Group2 INSTANCE = new Bls12381Group2();
 
+    /**
+     * Hidden constructor
+     */
+    Bls12381Group2() {}
+
+    /**
+     * @return the singleton instance of this class
+     */
+    @NonNull
+    public static Bls12381Group2 getInstance() {
+        return INSTANCE;
+    }
+
+    @NonNull
     @Override
-    public Group getGroup() {
-        // TODO
+    public GroupElement getGenerator() {
         return null;
     }
 
     @NonNull
     @Override
-    public GroupElement power(@NonNull FieldElement exponent) {
+    public GroupElement oneElement() {
         return null;
     }
 
     @NonNull
     @Override
-    public GroupElement multiply(@NonNull GroupElement other) {
+    public GroupElement randomElement(final byte[] seed) {
         return null;
     }
 
     @NonNull
     @Override
-    public GroupElement add(@NonNull GroupElement other) {
+    public GroupElement randomElement() {
         return null;
     }
 
     @NonNull
     @Override
-    public GroupElement divide(@NonNull GroupElement other) {
+    public GroupElement elementFromHash(final byte[] input) {
         return null;
     }
 
     @NonNull
     @Override
-    public GroupElement compress() {
+    public GroupElement batchMultiply(@NonNull final GroupElement elements) {
         return null;
-    }
-
-    @Override
-    public boolean isCompressed() {
-        return false;
     }
 
     @NonNull
     @Override
-    public GroupElement copy() {
+    public GroupElement elementFromBytes(final byte[] bytes) {
         return null;
     }
 
     @Override
-    public GroupElement fromBytes(byte[] bytes) {
-        return null;
+    public int getCompressedSize() {
+        return 0;
     }
 
     @Override
-    public byte[] toBytes() {
-        return new byte[0];
+    public int getUncompressedSize() {
+        return 0;
     }
 
     @Override
-    public boolean isValid() {
-        return false;
+    public int getSeedSize() {
+        return 0;
     }
 
+    @NonNull
     @Override
-    public CurveType curveType() {
-        return CurveType.BLS12_381;
+    public BilinearPairing getPairing() {
+        return Bls12381BilinearPairing.getInstance();
     }
 }

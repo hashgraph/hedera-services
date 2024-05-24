@@ -17,72 +17,89 @@
 package com.swirlds.platform.hcm.impl.pairings.bls12381;
 
 import com.swirlds.platform.hcm.api.pairings.BilinearPairing;
-import com.swirlds.platform.hcm.api.pairings.Field;
-import com.swirlds.platform.hcm.api.pairings.FieldElement;
+import com.swirlds.platform.hcm.api.pairings.Group;
+import com.swirlds.platform.hcm.api.pairings.GroupElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Represents the finite field used in BLS12-381
+ * G1 group used in BLS12-381
  */
-public class Bls12381Field implements Field {
-    private static final Bls12381Field INSTANCE = new Bls12381Field();
+public class Bls12381Group1 implements Group {
+    private static final Bls12381Group1 INSTANCE = new Bls12381Group1();
 
     /**
      * Hidden constructor
      */
-    Bls12381Field() {}
+    private Bls12381Group1() {}
 
     /**
      * @return the singleton instance of this class
      */
     @NonNull
-    public static Bls12381Field getInstance() {
+    public static Bls12381Group1 getInstance() {
         return INSTANCE;
-    }
-
-    @NonNull
-    @Override
-    public FieldElement elementFromLong(final long inputLong) {
-        return null;
-    }
-
-    @NonNull
-    @Override
-    public FieldElement zeroElement() {
-        return null;
-    }
-
-    @NonNull
-    @Override
-    public FieldElement oneElement() {
-        return null;
-    }
-
-    @NonNull
-    @Override
-    public FieldElement randomElement(final byte[] seed) {
-        return null;
-    }
-
-    @NonNull
-    @Override
-    public FieldElement elementFromBytes(final byte[] bytes) {
-        return null;
-    }
-
-    @Override
-    public int getElementSize() {
-        return 0;
-    }
-
-    @Override
-    public int getSeedSize() {
-        return 0;
     }
 
     @NonNull
     @Override
     public BilinearPairing getPairing() {
         return Bls12381BilinearPairing.getInstance();
+    }
+
+    @NonNull
+    @Override
+    public GroupElement getGenerator() {
+        return null;
+    }
+
+    @NonNull
+    @Override
+    public GroupElement oneElement() {
+        return null;
+    }
+
+    @NonNull
+    @Override
+    public GroupElement randomElement(final byte[] seed) {
+        return null;
+    }
+
+    @NonNull
+    @Override
+    public GroupElement randomElement() {
+        return null;
+    }
+
+    @NonNull
+    @Override
+    public GroupElement elementFromHash(final byte[] input) {
+        return null;
+    }
+
+    @NonNull
+    @Override
+    public GroupElement batchMultiply(@NonNull final GroupElement elements) {
+        return null;
+    }
+
+    @NonNull
+    @Override
+    public GroupElement elementFromBytes(final byte[] bytes) {
+        return null;
+    }
+
+    @Override
+    public int getCompressedSize() {
+        return 0;
+    }
+
+    @Override
+    public int getUncompressedSize() {
+        return 0;
+    }
+
+    @Override
+    public int getSeedSize() {
+        return 0;
     }
 }

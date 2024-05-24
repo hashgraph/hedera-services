@@ -16,73 +16,64 @@
 
 package com.swirlds.platform.hcm.impl.pairings.bls12381;
 
-import com.swirlds.platform.hcm.api.pairings.BilinearPairing;
-import com.swirlds.platform.hcm.api.pairings.Field;
 import com.swirlds.platform.hcm.api.pairings.FieldElement;
+import com.swirlds.platform.hcm.api.pairings.Group;
+import com.swirlds.platform.hcm.api.pairings.GroupElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Represents the finite field used in BLS12-381
+ * An element in G1 group used in BLS12-381
  */
-public class Bls12381Field implements Field {
-    private static final Bls12381Field INSTANCE = new Bls12381Field();
-
-    /**
-     * Hidden constructor
-     */
-    Bls12381Field() {}
-
-    /**
-     * @return the singleton instance of this class
-     */
-    @NonNull
-    public static Bls12381Field getInstance() {
-        return INSTANCE;
+public class Bls12381Group2Element implements GroupElement {
+    @Override
+    public Group getGroup() {
+        return Bls12381Group2.getInstance();
     }
 
     @NonNull
     @Override
-    public FieldElement elementFromLong(final long inputLong) {
+    public GroupElement power(@NonNull final FieldElement exponent) {
         return null;
     }
 
     @NonNull
     @Override
-    public FieldElement zeroElement() {
+    public GroupElement multiply(@NonNull final GroupElement other) {
         return null;
     }
 
     @NonNull
     @Override
-    public FieldElement oneElement() {
+    public GroupElement add(@NonNull final GroupElement other) {
         return null;
     }
 
     @NonNull
     @Override
-    public FieldElement randomElement(final byte[] seed) {
+    public GroupElement divide(@NonNull final GroupElement other) {
         return null;
     }
 
     @NonNull
     @Override
-    public FieldElement elementFromBytes(final byte[] bytes) {
+    public GroupElement compress() {
         return null;
     }
 
     @Override
-    public int getElementSize() {
-        return 0;
-    }
-
-    @Override
-    public int getSeedSize() {
-        return 0;
+    public boolean isCompressed() {
+        return false;
     }
 
     @NonNull
     @Override
-    public BilinearPairing getPairing() {
-        return Bls12381BilinearPairing.getInstance();
+    public GroupElement copy() {
+        return null;
+    }
+
+    @Override
+    @NonNull
+    public byte[] toBytes() {
+        return new byte[0];
     }
 }

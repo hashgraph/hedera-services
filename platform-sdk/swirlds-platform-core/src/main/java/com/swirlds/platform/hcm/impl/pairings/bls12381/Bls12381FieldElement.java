@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.hcm.impl.pairings.bls12381;
 
-import com.swirlds.platform.hcm.api.pairings.CurveType;
 import com.swirlds.platform.hcm.api.pairings.Field;
 import com.swirlds.platform.hcm.api.pairings.FieldElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -26,7 +25,6 @@ import java.math.BigInteger;
  * Represents a field element in BLS12-381
  */
 public class Bls12381FieldElement implements FieldElement {
-
     @Override
     public Field getField() {
         return Bls12381Field.getInstance();
@@ -34,51 +32,37 @@ public class Bls12381FieldElement implements FieldElement {
 
     @NonNull
     @Override
-    public FieldElement add(@NonNull FieldElement other) {
+    public FieldElement add(@NonNull final FieldElement other) {
         return null;
     }
 
     @NonNull
     @Override
-    public FieldElement subtract(@NonNull FieldElement other) {
+    public FieldElement subtract(@NonNull final FieldElement other) {
         return null;
     }
 
     @NonNull
     @Override
-    public FieldElement multiply(@NonNull FieldElement other) {
+    public FieldElement multiply(@NonNull final FieldElement other) {
         return null;
     }
 
     @NonNull
     @Override
-    public FieldElement divide(@NonNull FieldElement other) {
+    public FieldElement divide(@NonNull final FieldElement other) {
         return null;
     }
 
     @NonNull
     @Override
-    public FieldElement power(@NonNull BigInteger exponent) {
+    public FieldElement power(@NonNull final BigInteger exponent) {
         return null;
     }
 
     @Override
-    public FieldElement fromBytes(byte[] bytes) {
-        return null;
-    }
-
-    @Override
+    @NonNull
     public byte[] toBytes() {
         return new byte[0];
-    }
-
-    @Override
-    public boolean isValid() {
-        return false;
-    }
-
-    @Override
-    public CurveType curveType() {
-        return CurveType.BLS12_381;
     }
 }

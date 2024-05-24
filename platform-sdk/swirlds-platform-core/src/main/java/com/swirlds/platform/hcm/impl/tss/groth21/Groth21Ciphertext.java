@@ -19,8 +19,7 @@ package com.swirlds.platform.hcm.impl.tss.groth21;
 import com.swirlds.platform.hcm.api.pairings.Field;
 import com.swirlds.platform.hcm.api.pairings.FieldElement;
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
-import com.swirlds.platform.hcm.api.signaturescheme.PrivateKey;
-import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingPrivateKey;
 import com.swirlds.platform.hcm.api.tss.TssCiphertext;
 import com.swirlds.platform.hcm.api.tss.TssPrivateKey;
 import com.swirlds.platform.hcm.api.tss.TssShareId;
@@ -34,20 +33,18 @@ import java.util.Map;
  *
  * @param chunkRandomness  TODO
  * @param shareCiphertexts TODO
- * @param <P>              the type of public key that verifies signatures produced by the secret key encrypted by
- *                         this ciphertext
  */
-public record Groth21Ciphertext<P extends PublicKey>(
+public record Groth21Ciphertext(
         @NonNull List<GroupElement> chunkRandomness, @NonNull Map<TssShareId, List<GroupElement>> shareCiphertexts)
-        implements TssCiphertext<P> {
+        implements TssCiphertext {
 
     /**
      * {@inheritDoc}
      */
     @NonNull
     @Override
-    public TssPrivateKey<P> decryptPrivateKey(
-            @NonNull final PrivateKey elGamalPrivateKey, @NonNull final TssShareId shareId) {
+    public TssPrivateKey decryptPrivateKey(
+            @NonNull final PairingPrivateKey elGamalPrivateKey, @NonNull final TssShareId shareId) {
 
         final List<GroupElement> shareIdCiphertexts = shareCiphertexts.get(shareId);
 
@@ -55,7 +52,7 @@ public record Groth21Ciphertext<P extends PublicKey>(
             throw new IllegalArgumentException("Mismatched chunk randomness count and share chunk count");
         }
 
-        final FieldElement keyElement = elGamalPrivateKey.element();
+        final FieldElement keyElement = elGamalPrivateKey.secretElement();
         final Field keyField = keyElement.getField();
         final FieldElement zeroElement = keyField.zeroElement();
 
@@ -72,7 +69,7 @@ public record Groth21Ciphertext<P extends PublicKey>(
                     keyField.elementFromLong(256).power(BigInteger.valueOf(i)).multiply(decryptedSecret));
         }
 
-        return new TssPrivateKey<>(new PrivateKey(output));
+        return new TssPrivateKey(new PairingPrivateKey(elGamalPrivateKey.signatureSchema(), output));
     }
 
     private FieldElement bruteForceDecrypt(@NonNull final GroupElement commitment) {

@@ -21,7 +21,36 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Interface representing a cryptographic group element
  */
-public interface GroupElement extends ByteRepresentable<GroupElement>, UnderCurve {
+public interface GroupElement {
+    /**
+     * Check if the group of another element is the same as this element's group
+     *
+     * @param otherElement the other element
+     * @return true if the groups are the same, otherwise false
+     */
+    default boolean isSameGroup(@NonNull final GroupElement otherElement) {
+        return otherElement.getGroup().equals(getGroup());
+    }
+
+    /**
+     * Check if the group of another element is the opposite of this element's group
+     *
+     * @param otherElement the other element
+     * @return true if the groups are the opposite, otherwise false
+     */
+    default boolean isOppositeGroup(@NonNull final GroupElement otherElement) {
+        return getGroup().getOppositeGroup().equals(otherElement.getGroup());
+    }
+
+    /**
+     * Returns the size of the group element in bytes
+     *
+     * @return the size of the group element in bytes
+     */
+    default int size() {
+        return isCompressed() ? getGroup().getCompressedSize() : getGroup().getUncompressedSize();
+    }
+
     /**
      * Returns the group of the element
      *
@@ -87,4 +116,12 @@ public interface GroupElement extends ByteRepresentable<GroupElement>, UnderCurv
      */
     @NonNull
     GroupElement copy();
+
+    /**
+     * Returns the byte array representation of the group element
+     *
+     * @return the byte array representation of the group element
+     */
+    @NonNull
+    byte[] toBytes();
 }

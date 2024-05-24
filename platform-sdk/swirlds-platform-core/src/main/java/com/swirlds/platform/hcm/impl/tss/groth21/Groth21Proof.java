@@ -17,7 +17,6 @@
 package com.swirlds.platform.hcm.impl.tss.groth21;
 
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
-import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
 import com.swirlds.platform.hcm.api.tss.TssCiphertext;
 import com.swirlds.platform.hcm.api.tss.TssCommitment;
 import com.swirlds.platform.hcm.api.tss.TssProof;
@@ -26,26 +25,25 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * A TSS proof, as utilized by the Groth21 scheme.
  *
- * @param f     TODO: which groups are these in?
+ * @param f   TODO: which groups are these in?
  * @param a
  * @param y
  * @param z_r
  * @param z_a
- * TODO: removed properties and types for compilation
  */
-public record Groth21Proof<P extends PublicKey>(
+public record Groth21Proof(
         @NonNull GroupElement f,
         @NonNull GroupElement a,
         @NonNull GroupElement y,
         @NonNull Object z_r,
         @NonNull Object z_a)
-        implements TssProof<P> {
+        implements TssProof {
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public boolean verify(@NonNull final TssCiphertext<P> ciphertext, @NonNull final TssCommitment commitment) {
+    public boolean verify(@NonNull final TssCiphertext ciphertext, @NonNull final TssCommitment commitment) {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

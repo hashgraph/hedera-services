@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.hcm.api.tss;
 
-import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
-import com.swirlds.platform.hcm.api.signaturescheme.Signature;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -30,18 +30,16 @@ import java.util.List;
  *     <li>produce a public key for each share</li>
  *     <li>give the corresponding secret to the shareholder</li>
  * </ul>
- *
- * @param <P> the type of public key that verifies signatures in this threshold scheme
  */
-public interface Tss<P extends PublicKey> {
+public interface Tss {
     /**
-     * Aggregate a threshold number of {@link Signature}s.
+     * Aggregate a threshold number of {@link PairingSignature}s.
      *
      * @param partialSignatures the list of signatures to aggregate
      * @return the interpolated signature if the threshold is met, otherwise null.
      */
     @Nullable
-    Signature aggregateSignatures(@NonNull final List<Signature> partialSignatures);
+    PairingSignature aggregateSignatures(@NonNull final List<PairingSignature> partialSignatures);
 
     /**
      * Aggregate a threshold number of {@link TssPublicShare}s.
@@ -56,7 +54,7 @@ public interface Tss<P extends PublicKey> {
      * @return the interpolated public key if the threshold is met, otherwise null.
      */
     @Nullable
-    P aggregatePublicShares(@NonNull final List<TssPublicShare> publicShares);
+    PairingPublicKey aggregatePublicShares(@NonNull final List<TssPublicShare> publicShares);
 
     /**
      * Aggregate a threshold number of {@link TssPrivateKey}s.
@@ -65,7 +63,7 @@ public interface Tss<P extends PublicKey> {
      * @return the aggregate private key, or null if the threshold is not met
      */
     @Nullable
-    TssPrivateKey<P> aggregatePrivateKeys(@NonNull final List<TssPrivateKey<P>> privateKeys);
+    TssPrivateKey aggregatePrivateKeys(@NonNull final List<TssPrivateKey> privateKeys);
 
     /**
      * Generate a TSS message for a set of share claims, from a private share.
@@ -76,8 +74,8 @@ public interface Tss<P extends PublicKey> {
      * @return the TSS message produced for the input share claims
      */
     @NonNull
-    TssMessage<P> generateTssMessage(
+    TssMessage generateTssMessage(
             @NonNull final List<TssShareClaim> pendingShareClaims,
-            @NonNull final TssPrivateShare<P> privateShare,
+            @NonNull final TssPrivateShare privateShare,
             final int threshold);
 }

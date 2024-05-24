@@ -14,20 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.hcm.api.tss;
+package com.swirlds.platform.hcm.api.signaturescheme;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A TSS proof.
+ * Represents a key pair consisting of a public key and a private key.
  */
-public interface TssProof {
-    /**
-     * Verify this proof.
-     *
-     * @param ciphertext the ciphertext that this proof is for
-     * @param commitment the commitment that was made to the ciphertext // TODO: check correctness of this description
-     * @return true if the proof is valid, false otherwise
-     */
-    boolean verify(@NonNull final TssCiphertext ciphertext, @NonNull final TssCommitment commitment);
-}
+public record PairingKeyPair(@NonNull PairingPublicKey publicKey, @NonNull PairingPrivateKey privateKey) {}

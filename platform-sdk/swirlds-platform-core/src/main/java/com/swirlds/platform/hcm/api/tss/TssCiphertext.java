@@ -16,17 +16,13 @@
 
 package com.swirlds.platform.hcm.api.tss;
 
-import com.swirlds.platform.hcm.api.signaturescheme.PrivateKey;
-import com.swirlds.platform.hcm.api.signaturescheme.PublicKey;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingPrivateKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A ciphertext produced by a single node.
- *
- * @param <P> the type of public key that can be used to verify signatures produced by the secret keys encrypted in this
- *            ciphertext
  */
-public interface TssCiphertext<P extends PublicKey> {
+public interface TssCiphertext {
     /**
      * Extract the private key data from this ciphertext.
      * <p>
@@ -37,7 +33,7 @@ public interface TssCiphertext<P extends PublicKey> {
      * @return the private key decrypted from this ciphertext
      */
     @NonNull
-    TssPrivateKey<P> decryptPrivateKey(@NonNull final PrivateKey elGamalPrivateKey, @NonNull TssShareId shareId);
+    TssPrivateKey decryptPrivateKey(@NonNull final PairingPrivateKey elGamalPrivateKey, @NonNull TssShareId shareId);
 
     /**
      * Serialize this ciphertext to bytes.

@@ -22,7 +22,26 @@ import java.math.BigInteger;
 /**
  * An interface representing a generic field element
  */
-public interface FieldElement extends ByteRepresentable<FieldElement>, UnderCurve {
+public interface FieldElement {
+    /**
+     * Check if the field of another element is the same as this element's field
+     *
+     * @param otherElement the other element
+     * @return true if the fields are the same, otherwise false
+     */
+    default boolean isSameField(@NonNull final FieldElement otherElement) {
+        return otherElement.getField().equals(getField());
+    }
+
+    /**
+     * Get the size of the field element
+     *
+     * @return the size of the field element
+     */
+    default int size() {
+        return getField().getElementSize();
+    }
+
     /**
      * Returns the field the element is in
      *
@@ -74,4 +93,12 @@ public interface FieldElement extends ByteRepresentable<FieldElement>, UnderCurv
      */
     @NonNull
     FieldElement power(@NonNull BigInteger exponent);
+
+    /**
+     * Returns the byte array representation of the field element
+     *
+     * @return the byte array representation of the field element
+     */
+    @NonNull
+    byte[] toBytes();
 }
