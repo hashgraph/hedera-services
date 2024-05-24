@@ -22,7 +22,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class PlatformIntegerGauge extends DefaultIntegerGauge implements PlatformMetric {
 
-    public PlatformIntegerGauge(@NonNull Config config) {
+    public PlatformIntegerGauge(@NonNull final Config config) {
         super(config);
     }
 }
