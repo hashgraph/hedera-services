@@ -39,9 +39,7 @@ public class StaticTopology implements NetworkTopology {
      * @param peers             the set of peers in the network
      * @param selfId            the ID of this node
      */
-    public StaticTopology(
-            @NonNull final List<PeerInfo> peers,
-            @NonNull final NodeId selfId) {
+    public StaticTopology(@NonNull final List<PeerInfo> peers, @NonNull final NodeId selfId) {
         Objects.requireNonNull(peers);
         Objects.requireNonNull(selfId);
         peers.forEach(peer -> nodeIdToIndexSet.add(peer.nodeId()));

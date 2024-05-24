@@ -38,7 +38,6 @@ import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticTopology;
-import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
@@ -61,7 +60,6 @@ class SyncManagerTest {
         public AddressBook addressBook;
         public NodeId selfId;
         public TransactionPoolNexus transactionPoolNexus;
-        public RandomGraph connectionGraph;
         public SyncManagerImpl syncManager;
         public Configuration configuration;
 
