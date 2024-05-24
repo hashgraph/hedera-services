@@ -139,9 +139,12 @@ public class EventImplTests {
 
         final Instant eventConsTime = Instant.now();
         final EventImpl event =
-                createEventImpl(new TestingEventBuilder(random).setTransactions(mixedTransactions), null, null);
-
-        event.getBaseEvent().setConsensusData(new EventConsensusData(HapiUtils.asTimestamp(eventConsTime), 1L));
+                createEventImpl(
+                        new TestingEventBuilder(random)
+                        .setTransactions(mixedTransactions)
+                                .setConsensusTimestamp(eventConsTime),
+                        null,
+                        null);
 
         event.consensusReached();
 

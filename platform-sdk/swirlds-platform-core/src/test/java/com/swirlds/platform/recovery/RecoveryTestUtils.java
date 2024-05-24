@@ -47,6 +47,7 @@ import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.FileInputStream;
@@ -85,40 +86,19 @@ public final class RecoveryTestUtils {
     public static EventImpl generateRandomEvent(
             final Random random, final long round, final boolean lastInRound, final Instant now) {
 
-        final ConsensusTransactionImpl[] transactions = new ConsensusTransactionImpl[random.nextInt(10)];
-        for (int transactionIndex = 0; transactionIndex < transactions.length; transactionIndex++) {
-            final byte[] contents = new byte[random.nextInt(10) + 1];
-            random.nextBytes(contents);
-            transactions[transactionIndex] = new SwirldTransaction(contents);
-        }
-
-        final NodeId selfId = new NodeId(random.nextLong(Long.MAX_VALUE));
-        final NodeId otherId = new NodeId(random.nextLong(Long.MAX_VALUE));
-
-        final EventDescriptor selfDescriptor = new EventDescriptor(
-                randomHash(random), selfId, random.nextLong(), EventConstants.BIRTH_ROUND_UNDEFINED);
-        final EventDescriptor otherDescriptor = new EventDescriptor(
-                randomHash(random), otherId, random.nextLong(), EventConstants.BIRTH_ROUND_UNDEFINED);
-
-        final BaseEventHashedData baseEventHashedData = new BaseEventHashedData(
-                new BasicSoftwareVersion(1),
-                selfId,
-                selfDescriptor,
-                Collections.singletonList(otherDescriptor),
-                EventConstants.BIRTH_ROUND_UNDEFINED,
-                now,
-                transactions);
-
-        final byte[] signature = randomSignature(random).getSignatureBytes();
-
-        final GossipEvent gossipEvent = new GossipEvent(baseEventHashedData, signature);
-        final EventConsensusData eventConsensusData =
-                new EventConsensusData(HapiUtils.asTimestamp(now), random.nextLong());
-        gossipEvent.setConsensusData(eventConsensusData);
+        final GossipEvent gossipEvent = new TestingEventBuilder(random)
+                .setAppTransactionCount(random.nextInt(10))
+                .setTransactionSize(random.nextInt(10) + 1)
+                .setSystemTransactionCount(0)
+                .setSelfParent(
+                        new TestingEventBuilder(random).setCreatorId(new NodeId(random.nextLong())).build())
+                .setOtherParent(
+                        new TestingEventBuilder(random).setCreatorId(new NodeId(random.nextLong())).build())
+                .setTimeCreated(now)
+                .setConsensusTimestamp(now)
+                .build();
 
         final EventImpl event = new EventImpl(gossipEvent);
-        event.setRoundCreated(random.nextLong());
-        event.setStale(random.nextBoolean());
         event.setRoundReceived(round);
         event.setLastInRoundReceived(lastInRound);
         return event;

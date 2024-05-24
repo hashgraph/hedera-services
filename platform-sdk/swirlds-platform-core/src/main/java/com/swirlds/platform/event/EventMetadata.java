@@ -85,8 +85,6 @@ public class EventMetadata implements Clearable {
      * neg infinity)
      */
     private long roundCreated = ConsensusConstants.ROUND_UNDEFINED;
-    /** is there a consensus that this event is stale (no order, transactions ignored) */
-    private boolean stale;
     /**
      * an array that holds votes for witness elections. the index for each vote matches the index of
      * the witness in the current election
@@ -387,14 +385,6 @@ public class EventMetadata implements Clearable {
 
     public void setRoundCreated(final long roundCreated) {
         this.roundCreated = roundCreated;
-    }
-
-    public boolean isStale() {
-        return stale;
-    }
-
-    public void setStale(final boolean stale) {
-        this.stale = stale;
     }
 
     /**

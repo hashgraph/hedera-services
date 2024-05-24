@@ -74,13 +74,7 @@ public class DetailedConsensusEventTest {
 
     private DetailedConsensusEvent generateConsensusEvent() {
         final Randotron random = Randotron.create(68651684861L);
-        final Instant consensusTimestamp = random.nextInstant();
-        final GossipEvent gossipEvent = new TestingEventBuilder(random).build();
-        final EventConsensusData eventConsensusData = EventConsensusData.newBuilder()
-                .consensusTimestamp(HapiUtils.asTimestamp(consensusTimestamp))
-                .consensusOrder(random.nextLong(0, Long.MAX_VALUE))
-                .build();
-        gossipEvent.setConsensusData(eventConsensusData);
+        final GossipEvent gossipEvent = new TestingEventBuilder(random).setConsensusTimestamp(random.nextInstant()).build();
 
         return new DetailedConsensusEvent(gossipEvent, random.nextPositiveLong(), random.nextBoolean());
     }

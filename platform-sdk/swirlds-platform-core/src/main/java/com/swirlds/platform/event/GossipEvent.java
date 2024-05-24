@@ -262,10 +262,6 @@ public class GossipEvent implements Event, SelfSerializable {
         this.senderId = senderId;
     }
 
-    public boolean isConsensusEvent() {
-        return consensusData != NO_CONSENSUS;
-    }
-
     /**
      * @return this event's consensus data, this will be null if the event has not reached consensus
      */
