@@ -19,7 +19,7 @@ import com.hedera.services.bdd.suites.contract.evm.Evm38ValidationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite;
 import com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite;
 import com.hedera.services.bdd.suites.crypto.staking.StakingSuite;
-import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
+import com.hedera.services.bdd.suites.fees.FeeScheduleUpdateWaiverTest;
 import com.hedera.services.bdd.suites.leaky.FeatureFlagSuite;
 import com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite;
 import com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite;
@@ -44,7 +44,7 @@ public class SequentialSuites {
     @SuppressWarnings("unchecked")
     static Supplier<HapiSuite>[] sequentialSuites() {
         return (Supplier<HapiSuite>[]) new Supplier[] {
-            SpecialAccountsAreExempted::new,
+            FeeScheduleUpdateWaiverTest::new,
             PrivilegedOpsSuite::new,
             TraceabilitySuite::new,
             LeakyContractTestsSuite::new,

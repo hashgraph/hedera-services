@@ -48,6 +48,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -59,8 +64,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
@@ -68,7 +71,6 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
@@ -76,21 +78,21 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 // Some of the test cases cannot be converted to use eth calls,
 // since they use admin keys, which are held by the txn payer.
 // In the case of an eth txn, we revoke the payers keys and the txn would fail.
 // The only way an eth account to create a token is the admin key to be of a contractId type.
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class CreatePrecompileSuite extends HapiSuite {
+public class CreatePrecompileSuite {
     public static final String ACCOUNT_2 = "account2";
     public static final String CONTRACT_ADMIN_KEY = "contractAdminKey";
     public static final String ACCOUNT_TO_ASSOCIATE = "account3";
@@ -122,50 +124,9 @@ public class CreatePrecompileSuite extends HapiSuite {
     private static final String TOKEN_MISC_OPERATIONS_CONTRACT = "TokenMiscOperations";
     private static final String CREATE_FUNGIBLE_TOKEN_WITH_KEYS_AND_EXPIRY_FUNCTION = "createTokenWithKeysAndExpiry";
 
-    public static void main(String... args) {
-        new CreatePrecompileSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    // TODO: Fix contract name in TokenCreateContract.sol
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return allOf(positiveSpecs(), negativeSpecs());
-    }
-
-    List<HapiSpec> positiveSpecs() {
-        return List.of(
-                // TODO: where are the security model V2 _positive_ tests?
-                );
-    }
-
-    List<HapiSpec> negativeSpecs() {
-        return List.of(
-                fungibleTokenCreateHappyPath(),
-                nonFungibleTokenCreateHappyPath(),
-                fungibleTokenCreateThenQueryAndTransfer(),
-                nonFungibleTokenCreateThenQuery(),
-                inheritsSenderAutoRenewAccountIfAnyForNftCreate(),
-                inheritsSenderAutoRenewAccountForTokenCreate(),
-                createTokenWithDefaultExpiryAndEmptyKeys(),
-                tokenCreateWithEmptyKeysReverts(),
-                tokenCreateWithKeyWithMultipleKeyValuesReverts(),
-                tokenCreateWithFixedFeeWithMultiplePaymentsReverts(),
-                createTokenWithEmptyTokenStruct(),
-                createTokenWithInvalidExpiry(),
-                createTokenWithInvalidTreasury(),
-                createTokenWithInsufficientValueSent(),
-                createTokenWithFixedFeeThenTransferAndAssessFee(),
-                delegateCallTokenCreateFails());
-    }
-
     // TEST-001
     @HapiTest
-    final HapiSpec fungibleTokenCreateHappyPath() {
+    final Stream<DynamicTest> fungibleTokenCreateHappyPath() {
         final var tokenCreateContractAsKeyDelegate = "tokenCreateContractAsKeyDelegate";
         final var createTokenNum = new AtomicLong();
         final AtomicReference<byte[]> ed2551Key = new AtomicReference<>();
@@ -282,7 +243,7 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TEST-002
     @HapiTest
-    final HapiSpec inheritsSenderAutoRenewAccountIfAnyForNftCreate() {
+    final Stream<DynamicTest> inheritsSenderAutoRenewAccountIfAnyForNftCreate() {
         final var createdNftTokenNum = new AtomicLong();
         final AtomicReference<byte[]> ed2551Key = new AtomicReference<>();
         return defaultHapiSpec("inheritsSenderAutoRenewAccountIfAnyForNftCreate")
@@ -350,7 +311,7 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TEST-001
     @HapiTest
-    final HapiSpec inheritsSenderAutoRenewAccountForTokenCreate() {
+    final Stream<DynamicTest> inheritsSenderAutoRenewAccountForTokenCreate() {
         final var createTokenNum = new AtomicLong();
         final AtomicReference<byte[]> ed2551Key = new AtomicReference<>();
         return defaultHapiSpec("inheritsSenderAutoRenewAccountForTokenCreate")
@@ -420,7 +381,7 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TEST-003
     @HapiTest
-    final HapiSpec nonFungibleTokenCreateHappyPath() {
+    final Stream<DynamicTest> nonFungibleTokenCreateHappyPath() {
         final var createdTokenNum = new AtomicLong();
         return defaultHapiSpec("nonFungibleTokenCreateHappyPath")
                 .given(
@@ -511,7 +472,7 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TEST-005
     @HapiTest
-    final HapiSpec fungibleTokenCreateThenQueryAndTransfer() {
+    final Stream<DynamicTest> fungibleTokenCreateThenQueryAndTransfer() {
         final var createdTokenNum = new AtomicLong();
         final AtomicReference<byte[]> ed2551Key = new AtomicReference<>();
         return defaultHapiSpec("fungibleTokenCreateThenQueryAndTransfer")
@@ -608,7 +569,7 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TEST-006
     @HapiTest
-    final HapiSpec nonFungibleTokenCreateThenQuery() {
+    final Stream<DynamicTest> nonFungibleTokenCreateThenQuery() {
         final var createdTokenNum = new AtomicLong();
         return defaultHapiSpec("nonFungibleTokenCreateThenQuery")
                 .given(
@@ -680,7 +641,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createTokenWithDefaultExpiryAndEmptyKeys() {
+    final Stream<DynamicTest> createTokenWithDefaultExpiryAndEmptyKeys() {
         final var tokenCreateContractAsKeyDelegate = "createTokenWithDefaultExpiryAndEmptyKeys";
         final var createdTokenNum = new AtomicLong();
         return defaultHapiSpec("createTokenWithDefaultExpiryAndEmptyKeys")
@@ -734,7 +695,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     // TEST-007 & TEST-016
     // Should fail on insufficient value sent
     @HapiTest
-    final HapiSpec tokenCreateWithEmptyKeysReverts() {
+    final Stream<DynamicTest> tokenCreateWithEmptyKeysReverts() {
         return defaultHapiSpec(
                         "tokenCreateWithEmptyKeysReverts",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -783,7 +744,7 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TEST-008
     @HapiTest
-    final HapiSpec tokenCreateWithKeyWithMultipleKeyValuesReverts() {
+    final Stream<DynamicTest> tokenCreateWithKeyWithMultipleKeyValuesReverts() {
         return defaultHapiSpec(
                         "tokenCreateWithKeyWithMultipleKeyValuesReverts",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -815,7 +776,7 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TEST-009
     @HapiTest
-    final HapiSpec tokenCreateWithFixedFeeWithMultiplePaymentsReverts() {
+    final Stream<DynamicTest> tokenCreateWithFixedFeeWithMultiplePaymentsReverts() {
         return defaultHapiSpec(
                         "tokenCreateWithFixedFeeWithMultiplePaymentsReverts",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -855,7 +816,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     // TEST-010 & TEST-017
     // Should fail on insufficient value sent
     @HapiTest
-    final HapiSpec createTokenWithEmptyTokenStruct() {
+    final Stream<DynamicTest> createTokenWithEmptyTokenStruct() {
         return defaultHapiSpec("createTokenWithEmptyTokenStruct", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS), uploadInitCode(TOKEN_CREATE_CONTRACT))
                 .when(withOpContext((spec, opLog) ->
@@ -903,7 +864,7 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TEST-011
     @HapiTest
-    final HapiSpec createTokenWithInvalidExpiry() {
+    final Stream<DynamicTest> createTokenWithInvalidExpiry() {
         return defaultHapiSpec(
                         "createTokenWithInvalidExpiry",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -941,7 +902,7 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TEST-013
     @HapiTest
-    final HapiSpec createTokenWithInvalidTreasury() {
+    final Stream<DynamicTest> createTokenWithInvalidTreasury() {
         return defaultHapiSpec(
                         "createTokenWithInvalidTreasury",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -987,7 +948,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     // TEST-018
     // Should fail on insufficient value sent
     @HapiTest
-    final HapiSpec createTokenWithInsufficientValueSent() {
+    final Stream<DynamicTest> createTokenWithInsufficientValueSent() {
         return defaultHapiSpec(
                         "createTokenWithInsufficientValueSent",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -1049,7 +1010,7 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TEST-020
     @HapiTest
-    final HapiSpec delegateCallTokenCreateFails() {
+    final Stream<DynamicTest> delegateCallTokenCreateFails() {
         return defaultHapiSpec(
                         "delegateCallTokenCreateFails",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -1081,7 +1042,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createTokenWithFixedFeeThenTransferAndAssessFee() {
+    final Stream<DynamicTest> createTokenWithFixedFeeThenTransferAndAssessFee() {
         final var createTokenNum = new AtomicLong();
         final var FEE_COLLECTOR = "feeCollector";
         final var RECIPIENT = "recipient";
@@ -1153,10 +1114,5 @@ public class CreatePrecompileSuite extends HapiSuite {
                                                 .build()),
                                         199L),
                         getAccountBalance(FEE_COLLECTOR).hasTinyBars(10L))));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

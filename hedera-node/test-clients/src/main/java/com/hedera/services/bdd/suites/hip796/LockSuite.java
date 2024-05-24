@@ -31,22 +31,21 @@ import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.PART
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * A suite for user stories Lock-1 through Lock-8 from HIP-796.
  */
-// @HapiTestSuite
 public class LockSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(LockSuite.class);
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 canLockSubsetOfUnlockedTokens(),
                 canLockSubsetOfUnlockedTokensInPartition(),
@@ -67,8 +66,7 @@ public class LockSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec canLockSubsetOfUnlockedTokens() {
+    final Stream<DynamicTest> canLockSubsetOfUnlockedTokens() {
         return defaultHapiSpec("CanLockSubsetOfUnlockedTokens")
                 .given(fungibleTokenWithFeatures(LOCKING).withRelation(ALICE))
                 .when(lockUnits(ALICE, TOKEN_UNDER_TEST, FUNGIBLE_INITIAL_BALANCE / 2))
@@ -96,8 +94,7 @@ public class LockSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec canLockSubsetOfUnlockedTokensInPartition() {
+    final Stream<DynamicTest> canLockSubsetOfUnlockedTokensInPartition() {
         return defaultHapiSpec("CanLockSubsetOfUnlockedTokensInPartition")
                 .given(fungibleTokenWithFeatures(LOCKING, PARTITIONING)
                         .withPartition(RED_PARTITION)
@@ -119,8 +116,7 @@ public class LockSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec canUnlockSubsetOfLockedTokens() {
+    final Stream<DynamicTest> canUnlockSubsetOfLockedTokens() {
         return defaultHapiSpec("CanLockSubsetOfUnlockedTokens")
                 .given(fungibleTokenWithFeatures(LOCKING).withRelation(ALICE))
                 .when(lockUnits(ALICE, TOKEN_UNDER_TEST, FUNGIBLE_INITIAL_BALANCE / 2))
@@ -144,8 +140,7 @@ public class LockSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec canUnlockSubsetOfLockedTokensInPartition() {
+    final Stream<DynamicTest> canUnlockSubsetOfLockedTokensInPartition() {
         return defaultHapiSpec("CanUnlockSubsetOfLockedTokensInPartition")
                 .given(fungibleTokenWithFeatures(LOCKING)
                         .withPartition(RED_PARTITION)
@@ -171,8 +166,7 @@ public class LockSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec canLockSpecificNFTSerials() {
+    final Stream<DynamicTest> canLockSpecificNFTSerials() {
         return defaultHapiSpec("CanLockSpecificNFTSerials")
                 .given(nonFungibleTokenWithFeatures(LOCKING).withRelation(ALICE, r -> r.ownedSerialNos(1L, 2L)))
                 .when(lockNfts(ALICE, TOKEN_UNDER_TEST, 1L))
@@ -193,8 +187,7 @@ public class LockSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec canLockSpecificNFTSerialsInPartition() {
+    final Stream<DynamicTest> canLockSpecificNFTSerialsInPartition() {
         return defaultHapiSpec("CanLockSpecificNFTSerialsInPartition")
                 .given(nonFungibleTokenWithFeatures(LOCKING, PARTITIONING)
                         .withPartition(RED_PARTITION)
@@ -218,8 +211,7 @@ public class LockSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec canUnlockSpecificNFTSerials() {
+    final Stream<DynamicTest> canUnlockSpecificNFTSerials() {
         return defaultHapiSpec("CanUnlockSpecificNFTSerials")
                 .given(nonFungibleTokenWithFeatures(LOCKING).withRelation(ALICE, r -> r.ownedSerialNos(1L, 2L)))
                 .when(lockNfts(ALICE, TOKEN_UNDER_TEST, 1L))
@@ -241,8 +233,7 @@ public class LockSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec canUnlockSpecificNFTSerialsInPartition() {
+    final Stream<DynamicTest> canUnlockSpecificNFTSerialsInPartition() {
         return defaultHapiSpec("CanUnlockSpecificNFTSerialsInPartition")
                 .given(nonFungibleTokenWithFeatures(LOCKING, PARTITIONING)
                         .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION, pr -> pr.ownedSerialNos(1L, 2L))))

@@ -46,6 +46,7 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.state.signed;
     exports com.swirlds.platform.state.address;
     exports com.swirlds.platform.gossip.sync;
+    exports com.swirlds.platform.scratchpad;
     exports com.swirlds.platform.system;
     exports com.swirlds.platform.system.address;
     exports com.swirlds.platform.system.events;

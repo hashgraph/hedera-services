@@ -17,7 +17,6 @@
 package com.swirlds.platform;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
@@ -72,7 +71,6 @@ import com.swirlds.platform.publisher.PlatformPublisher;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.nexus.DefaultLatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.LockFreeStateNexus;
@@ -89,7 +87,6 @@ import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
@@ -296,9 +293,6 @@ public class SwirldsPlatform implements Platform {
         blocks.intakeQueueSizeSupplierSupplier().set(intakeQueueSizeSupplier);
         blocks.isInFreezePeriodReference().set(swirldStateManager::isInFreezePeriod);
 
-        final IssHandler issHandler = new IssHandler(
-                platformContext, this::haltRequested, SystemExitUtils::handleFatalError, blocks.issScratchpad());
-
         final BirthRoundMigrationShim birthRoundMigrationShim = buildBirthRoundMigrationShim(initialState, ancientMode);
 
         final AppNotifier appNotifier = new DefaultAppNotifier(blocks.notificationEngine());
@@ -312,7 +306,6 @@ public class SwirldsPlatform implements Platform {
                 stateSignatureCollector,
                 eventWindowManager,
                 consensusRoundHandler,
-                issHandler,
                 birthRoundMigrationShim,
                 latestCompleteStateNotifier,
                 latestImmutableStateNexus,
@@ -573,16 +566,6 @@ public class SwirldsPlatform implements Platform {
     }
 
     /**
-     * This observer is called when a system freeze is requested. Permanently stops event creation and gossip.
-     *
-     * @param reason the reason why the system is being frozen.
-     */
-    private void haltRequested(final String reason) {
-        logger.error(EXCEPTION.getMarker(), "System halt requested. Reason: {}", reason);
-        platformWiring.stopGossip();
-    }
-
-    /**
      * Start this platform.
      */
     @Override
@@ -590,7 +573,7 @@ public class SwirldsPlatform implements Platform {
         logger.info(STARTUP.getMarker(), "Starting platform {}", selfId);
         platformWiring.getModel().preventJvmExit();
 
-        platformContext.getFileSystemManager().start();
+        platformContext.getRecycleBin().start();
         platformContext.getMetrics().start();
         platformWiring.start();
 
@@ -608,7 +591,7 @@ public class SwirldsPlatform implements Platform {
      * </ul>
      */
     public void performPcesRecovery() {
-        platformContext.getFileSystemManager().start();
+        platformContext.getRecycleBin().start();
         platformContext.getMetrics().start();
         platformWiring.start();
 

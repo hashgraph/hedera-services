@@ -191,7 +191,7 @@ dependencies.constraints {
     api("org.json:json:20231013") {
         because("org.json")
     }
-    api("org.junit.jupiter:junit-jupiter-api:5.10.1") {
+    api("org.junit.jupiter:junit-jupiter-api:5.10.2") {
         because("org.junit.jupiter.api")
     }
     api("org.junit-pioneer:junit-pioneer:2.0.1") {

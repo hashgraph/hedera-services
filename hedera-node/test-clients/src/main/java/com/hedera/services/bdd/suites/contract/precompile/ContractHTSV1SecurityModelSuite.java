@@ -64,7 +64,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
@@ -78,8 +77,10 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class ContractHTSV1SecurityModelSuite extends HapiSuite {
@@ -117,15 +118,15 @@ public class ContractHTSV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiSpec> negativeSpecs() {
+    List<Stream<DynamicTest>> negativeSpecs() {
         return List.of(hscsPrec017RollbackAfterInsufficientBalance());
     }
 
-    List<HapiSpec> positiveSpecs() {
+    List<Stream<DynamicTest>> positiveSpecs() {
         return List.of(
                 distributeMultipleTokens(),
                 depositAndWithdrawFungibleTokens(),
@@ -136,7 +137,7 @@ public class ContractHTSV1SecurityModelSuite extends HapiSuite {
                 hbarTransferFromFeeCollector());
     }
 
-    final HapiSpec hscsPrec017RollbackAfterInsufficientBalance() {
+    final Stream<DynamicTest> hscsPrec017RollbackAfterInsufficientBalance() {
         final var alice = "alice";
         final var bob = "bob";
         final var treasuryForToken = "treasuryForToken";
@@ -217,7 +218,7 @@ public class ContractHTSV1SecurityModelSuite extends HapiSuite {
                                 .has(AccountInfoAsserts.accountWith().balance(0L)));
     }
 
-    final HapiSpec depositAndWithdrawFungibleTokens() {
+    final Stream<DynamicTest> depositAndWithdrawFungibleTokens() {
         final var theContract = "ZenosBank";
 
         return propertyPreservingHapiSpec("depositAndWithdrawFungibleTokens")
@@ -296,7 +297,7 @@ public class ContractHTSV1SecurityModelSuite extends HapiSuite {
                                                 .including(A_TOKEN, RECEIVER, 25L))));
     }
 
-    final HapiSpec distributeMultipleTokens() {
+    final Stream<DynamicTest> distributeMultipleTokens() {
         final var theSecondReceiver = "somebody2";
 
         return propertyPreservingHapiSpec("distributeMultipleTokens")
@@ -366,7 +367,7 @@ public class ContractHTSV1SecurityModelSuite extends HapiSuite {
                                         .including(A_TOKEN, theSecondReceiver, 5L))));
     }
 
-    final HapiSpec tokenTransferFromFeeCollector() {
+    final Stream<DynamicTest> tokenTransferFromFeeCollector() {
         return propertyPreservingHapiSpec("tokenTransferFromFeeCollector")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
@@ -521,7 +522,7 @@ public class ContractHTSV1SecurityModelSuite extends HapiSuite {
                         getAccountBalance(FEE_COLLECTOR).hasTokenBalance(FEE_TOKEN, 0));
     }
 
-    final HapiSpec tokenTransferFromFeeCollectorStaticNestedCall() {
+    final Stream<DynamicTest> tokenTransferFromFeeCollectorStaticNestedCall() {
         return propertyPreservingHapiSpec("tokenTransferFromFeeCollectorStaticNestedCall")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
@@ -681,7 +682,7 @@ public class ContractHTSV1SecurityModelSuite extends HapiSuite {
      * Contract that otherwise wouldn't have enough balance for a transfer of hbars can perform the transfer after
      * collecting the custom hbar fees from a nested token transfer through the HTS precompile
      * */
-    final HapiSpec hbarTransferFromFeeCollector() {
+    final Stream<DynamicTest> hbarTransferFromFeeCollector() {
         final var outerContract = "HbarFeeCollector";
         final var innerContract = "NestedHTSTransferrer";
 
@@ -761,7 +762,7 @@ public class ContractHTSV1SecurityModelSuite extends HapiSuite {
                         getAccountBalance(SECOND_RECEIVER).hasTinyBars(CUSTOM_HBAR_FEE_AMOUNT));
     }
 
-    final HapiSpec transferNft() {
+    final Stream<DynamicTest> transferNft() {
         return propertyPreservingHapiSpec("transferNft")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
@@ -832,7 +833,7 @@ public class ContractHTSV1SecurityModelSuite extends HapiSuite {
                                                 .including(NFT, ACCOUNT, RECEIVER, 1L))));
     }
 
-    final HapiSpec transferMultipleNfts() {
+    final Stream<DynamicTest> transferMultipleNfts() {
         return propertyPreservingHapiSpec("transferMultipleNfts")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
