@@ -24,11 +24,17 @@ import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.io.SelfSerializable;
 import java.util.List;
+import org.jetbrains.annotations.NotNull;
 
 public class DoNothingCryptoEngine implements Cryptography {
 
     @Override
     public Hash digestSync(byte[] bytes, DigestType digestType) {
+        return null;
+    }
+
+    @Override
+    public byte[] digestBytesSync(@NotNull final SelfSerializable serializable, @NotNull final DigestType digestType) {
         return null;
     }
 

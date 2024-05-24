@@ -199,7 +199,7 @@ public class CryptoEngine implements Cryptography {
      * {@inheritDoc}
      */
     @Override
-    public Hash digestSync(final SelfSerializable serializable, final DigestType digestType) {
+    public byte[] digestBytesSync(final SelfSerializable serializable, final DigestType digestType) {
         try {
             return serializationDigestProvider.compute(serializable, digestType);
         } catch (final NoSuchAlgorithmException ex) {
@@ -214,7 +214,7 @@ public class CryptoEngine implements Cryptography {
     public Hash digestSync(
             final SerializableHashable serializableHashable, final DigestType digestType, final boolean setHash) {
         try {
-            final Hash hash = serializationDigestProvider.compute(serializableHashable, digestType);
+            final Hash hash = new Hash(serializationDigestProvider.compute(serializableHashable, digestType), digestType);
             if (setHash) {
                 serializableHashable.setHash(hash);
             }
