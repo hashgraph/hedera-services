@@ -49,6 +49,8 @@ public class ContractHandlers {
 
     private final EthereumTransactionHandler ethereumTransactionHandler;
 
+    public static final long MAX_GAS_LIMIT = 15_000_000L;
+
     @Inject
     public ContractHandlers(
             @NonNull final ContractCallHandler contractCallHandler,
