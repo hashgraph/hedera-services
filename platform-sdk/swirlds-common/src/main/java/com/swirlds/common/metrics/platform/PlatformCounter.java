@@ -22,7 +22,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class PlatformCounter extends DefaultCounter implements PlatformMetric {
 
-    public PlatformCounter(@NonNull Config config) {
+    public PlatformCounter(@NonNull final Config config) {
         super(config);
     }
 }
