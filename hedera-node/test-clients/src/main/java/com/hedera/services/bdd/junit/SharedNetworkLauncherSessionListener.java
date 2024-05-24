@@ -31,9 +31,7 @@ import org.junit.platform.launcher.TestPlan;
  * plan execution finishes.
  */
 public class SharedNetworkLauncherSessionListener implements LauncherSessionListener {
-    // Small size to reduce CI thread contention; and also guarantee that if
-    // any single node has a self ISS, the entire network will lose consensus
-    public static final int DEFAULT_SHARED_NETWORK_SIZE = 3;
+    public static final int DEFAULT_SHARED_NETWORK_SIZE = 4;
 
     @Override
     public void launcherSessionOpened(@NonNull final LauncherSession session) {

@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.junit.hedera;
 
-import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.EXECUTOR;
 import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.workingDirFor;
 import static com.hedera.services.bdd.suites.TargetNetworkType.SHARED_HAPI_TEST_NETWORK;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
@@ -35,7 +34,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.SplittableRandom;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
@@ -191,25 +189,9 @@ public class HederaNetwork {
      * @param timeout the maximum time to wait for all nodes to start
      */
     public void startWithin(@NonNull final Duration timeout) {
-        final var latch = new CountDownLatch(nodes.size());
-        nodes.forEach(node -> {
-            node.initWorkingDir(configTxt);
-            node.start();
-            node.statusFuture(ACTIVE).thenRun(() -> {
-                log.info("Node '{}' is ready", node.getName());
-                latch.countDown();
-            });
-        });
-        ready = CompletableFuture.runAsync(
-                        () -> {
-                            try {
-                                latch.await();
-                            } catch (InterruptedException e) {
-                                Thread.currentThread().interrupt();
-                                throw new IllegalStateException(e);
-                            }
-                        },
-                        EXECUTOR)
+        ready = CompletableFuture.allOf(nodes.stream()
+                        .map(node -> node.initWorkingDir(configTxt).start().statusFuture(ACTIVE))
+                        .toArray(CompletableFuture[]::new))
                 .orTimeout(timeout.toMillis(), MILLISECONDS)
                 .thenRun(() -> log.info("All nodes in network '{}' are ready", name()));
     }

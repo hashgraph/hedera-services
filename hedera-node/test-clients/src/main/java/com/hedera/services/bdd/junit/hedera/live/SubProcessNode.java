@@ -16,10 +16,14 @@
 
 package com.hedera.services.bdd.junit.hedera.live;
 
+import static com.hedera.services.bdd.junit.hedera.live.NodeStatus.GrpcStatus.DOWN;
+import static com.hedera.services.bdd.junit.hedera.live.NodeStatus.GrpcStatus.NA;
+import static com.hedera.services.bdd.junit.hedera.live.NodeStatus.GrpcStatus.UP;
 import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.conditionFuture;
 import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.destroyAnySubProcessNodeWithId;
 import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.startSubProcessNodeFrom;
 import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.recreateWorkingDir;
+import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.Hedera;
@@ -31,6 +35,7 @@ import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 /**
  * A node running in its own OS process as a subprocess of the JUnit test runner.
@@ -61,17 +66,19 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
     }
 
     @Override
-    public void initWorkingDir(@NonNull final String configTxt) {
+    public SubProcessNode initWorkingDir(@NonNull final String configTxt) {
         recreateWorkingDir(metadata.workingDir(), configTxt);
         workingDirInitialized = true;
+        return this;
     }
 
     @Override
-    public void start() {
+    public SubProcessNode start() {
         assertStopped();
         assertWorkingDirInitialized();
         destroyAnySubProcessNodeWithId(metadata.nodeId());
         processHandle = startSubProcessNodeFrom(metadata);
+        return this;
     }
 
     @Override
@@ -85,13 +92,20 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
     }
 
     @Override
-    public CompletableFuture<Void> statusFuture(@NonNull final PlatformStatus status) {
+    public CompletableFuture<Void> statusFuture(
+            @NonNull final PlatformStatus status, @Nullable Consumer<NodeStatus> nodeStatusObserver) {
         return conditionFuture(() -> {
             final var currentStatus = prometheusClient.statusFromLocalEndpoint(metadata.prometheusPort());
-            if (!status.equals(currentStatus)) {
-                return false;
+            var grpcStatus = NA;
+            var statusReached = currentStatus == status;
+            if (statusReached && status == ACTIVE) {
+                grpcStatus = grpcPinger.isLive(metadata.grpcPort()) ? UP : DOWN;
+                statusReached = grpcStatus == UP;
             }
-            return status != PlatformStatus.ACTIVE || grpcPinger.isLive(metadata.grpcPort());
+            if (nodeStatusObserver != null) {
+                nodeStatusObserver.accept(new NodeStatus(currentStatus, grpcStatus));
+            }
+            return statusReached;
         });
     }
 
