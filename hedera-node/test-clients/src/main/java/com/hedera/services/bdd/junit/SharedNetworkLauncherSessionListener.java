@@ -20,8 +20,6 @@ import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.platform.launcher.LauncherSession;
 import org.junit.platform.launcher.LauncherSessionListener;
 import org.junit.platform.launcher.TestExecutionListener;
@@ -33,8 +31,6 @@ import org.junit.platform.launcher.TestPlan;
  * plan execution finishes.
  */
 public class SharedNetworkLauncherSessionListener implements LauncherSessionListener {
-    private static final Logger log = LogManager.getLogger(SharedNetworkLauncherSessionListener.class);
-
     public static final int DEFAULT_SHARED_NETWORK_SIZE = 4;
 
     @Override
@@ -48,7 +44,6 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
         @Override
         public void testPlanExecutionStarted(@NonNull final TestPlan testPlan) {
             final var sharedNetwork = HederaNetwork.newSharedSubProcessNetwork(DEFAULT_SHARED_NETWORK_SIZE);
-            log.info("Waiting for shared network to start within {}", SHARED_NETWORK_STARTUP_TIMEOUT);
             sharedNetwork.startWithin(SHARED_NETWORK_STARTUP_TIMEOUT);
         }
 

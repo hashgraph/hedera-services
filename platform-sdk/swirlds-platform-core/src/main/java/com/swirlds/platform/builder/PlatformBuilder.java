@@ -461,7 +461,7 @@ public final class PlatformBuilder {
 
         final Configuration configuration = buildConfiguration(configurationBuilder, settingsPath);
 
-        final Cryptography cryptography = CryptographyFactory.create(configuration);
+        final Cryptography cryptography = CryptographyFactory.create();
         final MerkleCryptography merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
 
         // For backwards compatibility with the old static access pattern.
