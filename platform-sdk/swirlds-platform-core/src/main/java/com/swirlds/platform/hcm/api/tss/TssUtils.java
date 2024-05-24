@@ -18,6 +18,7 @@ package com.swirlds.platform.hcm.api.tss;
 
 import com.swirlds.platform.hcm.api.signaturescheme.PairingPrivateKey;
 import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
+import com.swirlds.platform.hcm.impl.tss.groth21.ElGamalCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -41,6 +42,7 @@ public final class TssUtils {
      * @param shareIds          the share IDs owned by this node, for which the private shares will be decrypted
      * @param elGamalPrivateKey the ElGamal private key of this node
      * @param cipherTexts       the cipher texts to extract the private shares from
+     * @param elGamalCache      the ElGamal cache
      * @param threshold         the threshold number of cipher texts required to decrypt the private shares
      * @return the private shares, or null if there aren't enough shares to meet the threshold
      */
@@ -50,6 +52,7 @@ public final class TssUtils {
             @NonNull final List<TssShareId> shareIds,
             @NonNull final PairingPrivateKey elGamalPrivateKey,
             @NonNull final List<TssCiphertext> cipherTexts,
+            @NonNull final ElGamalCache elGamalCache,
             final int threshold) {
 
         // check if there are enough cipher texts to meet the required threshold
@@ -63,7 +66,7 @@ public final class TssUtils {
             for (final TssShareId shareId : shareIds) {
                 partialPrivateKeys
                         .computeIfAbsent(shareId, k -> new ArrayList<>())
-                        .add(cipherText.decryptPrivateKey(elGamalPrivateKey, shareId));
+                        .add(cipherText.decryptPrivateKey(elGamalPrivateKey, shareId, elGamalCache));
             }
         }
 

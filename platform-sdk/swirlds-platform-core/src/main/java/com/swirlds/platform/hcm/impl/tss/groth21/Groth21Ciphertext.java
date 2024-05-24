@@ -44,7 +44,9 @@ public record Groth21Ciphertext(
     @NonNull
     @Override
     public TssPrivateKey decryptPrivateKey(
-            @NonNull final PairingPrivateKey elGamalPrivateKey, @NonNull final TssShareId shareId) {
+            @NonNull final PairingPrivateKey elGamalPrivateKey,
+            @NonNull final TssShareId shareId,
+            @NonNull final ElGamalCache elGamalCache) {
 
         final List<GroupElement> shareIdCiphertexts = shareCiphertexts.get(shareId);
 
@@ -63,18 +65,14 @@ public record Groth21Ciphertext(
 
             final GroupElement antiMask = chunkRandomness.power(zeroElement.subtract(keyElement));
             final GroupElement commitment = chunkCiphertext.add(antiMask);
-            final FieldElement decryptedSecret = bruteForceDecrypt(commitment);
+            final FieldElement decryptedCommitment = elGamalCache.cacheMap().get(commitment);
 
-            output = output.add(
-                    keyField.elementFromLong(256).power(BigInteger.valueOf(i)).multiply(decryptedSecret));
+            output = output.add(keyField.elementFromLong(elGamalCache.cacheMap().size())
+                    .power(BigInteger.valueOf(i))
+                    .multiply(decryptedCommitment));
         }
 
         return new TssPrivateKey(new PairingPrivateKey(elGamalPrivateKey.signatureSchema(), output));
-    }
-
-    private FieldElement bruteForceDecrypt(@NonNull final GroupElement commitment) {
-        // TODO
-        return null;
     }
 
     /**

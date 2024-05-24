@@ -17,6 +17,7 @@
 package com.swirlds.platform.hcm.api.tss;
 
 import com.swirlds.platform.hcm.api.signaturescheme.PairingPrivateKey;
+import com.swirlds.platform.hcm.impl.tss.groth21.ElGamalCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -30,10 +31,14 @@ public interface TssCiphertext {
      *
      * @param elGamalPrivateKey the private key of the node that is extracting the private shares
      * @param shareId           the ID of the private key to decrypt
+     * @param elGamalCache      TODO
      * @return the private key decrypted from this ciphertext
      */
     @NonNull
-    TssPrivateKey decryptPrivateKey(@NonNull final PairingPrivateKey elGamalPrivateKey, @NonNull TssShareId shareId);
+    TssPrivateKey decryptPrivateKey(
+            @NonNull final PairingPrivateKey elGamalPrivateKey,
+            @NonNull TssShareId shareId,
+            @NonNull final ElGamalCache elGamalCache);
 
     /**
      * Serialize this ciphertext to bytes.
