@@ -16,13 +16,18 @@
 
 package com.swirlds.virtualmap.test.fixtures;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 public final class TestValue implements VirtualValue {
+
     private String s;
     public boolean readOnly = false;
     private boolean released = false;
@@ -53,10 +58,27 @@ public final class TestValue implements VirtualValue {
         this.s = s;
     }
 
+    public int getProtoSizeInBytes() {
+        return Integer.BYTES + s.getBytes(StandardCharsets.UTF_8).length;
+    }
+
+    public void protoSerialize(final WritableSequentialData out) {
+        final byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
+        out.writeInt(bytes.length);
+        out.writeBytes(bytes);
+    }
+
     @Override
     public void serialize(SerializableDataOutputStream out) throws IOException {
         assertNotReleased("serialize");
         out.writeNormalisedString(s);
+    }
+
+    public void protoDeserialize(final ReadableSequentialData in) {
+        final int len = in.readInt();
+        final byte[] bytes = new byte[len];
+        in.readBytes(bytes);
+        s = new String(bytes, StandardCharsets.UTF_8);
     }
 
     @Override
@@ -127,5 +149,52 @@ public final class TestValue implements VirtualValue {
     @Override
     public boolean isImmutable() {
         return readOnly;
+    }
+
+    public static class Serializer implements ValueSerializer<TestValue> {
+
+        private static final long CLASS_ID = 0x1f139bc81c6baf9fL;
+
+        @Override
+        public long getClassId() {
+            return CLASS_ID;
+        }
+
+        @Override
+        public int getVersion() {
+            return 1;
+        }
+
+        @Override
+        public long getCurrentDataVersion() {
+            return 1;
+        }
+
+        @Override
+        public int getSerializedSize() {
+            return VARIABLE_DATA_SIZE;
+        }
+
+        @Override
+        public int getSerializedSize(final TestValue value) {
+            return value.getProtoSizeInBytes();
+        }
+
+        @Override
+        public int getTypicalSerializedSize() {
+            return 32;
+        }
+
+        @Override
+        public void serialize(final TestValue value, final WritableSequentialData out) {
+            value.protoSerialize(out);
+        }
+
+        @Override
+        public TestValue deserialize(final ReadableSequentialData in) {
+            final TestValue value = new TestValue();
+            value.protoDeserialize(in);
+            return value;
+        }
     }
 }

@@ -16,14 +16,20 @@
 
 package com.swirlds.virtualmap.test.fixtures;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public final class TestKey implements VirtualLongKey {
+
     public static final int BYTES = Long.BYTES;
+
     private long k;
 
     private static final long CLASS_ID = 0x5491740ab996d4b1L;
@@ -87,13 +93,63 @@ public final class TestKey implements VirtualLongKey {
         return CLASS_ID;
     }
 
+    public void serialize(final WritableSequentialData out) {
+        out.writeLong(k);
+    }
+
     @Override
     public void serialize(SerializableDataOutputStream out) throws IOException {
         out.writeLong(k);
     }
 
+    public void deserialize(final ReadableSequentialData in) {
+        k = in.readLong();
+    }
+
     @Override
     public void deserialize(SerializableDataInputStream in, int version) throws IOException {
         k = in.readLong();
+    }
+
+    public static class Serializer implements KeySerializer<TestKey> {
+
+        private static final long CLASS_ID = 0xce65e1e0f6774de7L;
+
+        @Override
+        public long getClassId() {
+            return CLASS_ID;
+        }
+
+        @Override
+        public int getVersion() {
+            return 1;
+        }
+
+        @Override
+        public long getCurrentDataVersion() {
+            return 1;
+        }
+
+        @Override
+        public int getSerializedSize() {
+            return TestKey.BYTES;
+        }
+
+        @Override
+        public void serialize(final TestKey key, final WritableSequentialData out) {
+            key.serialize(out);
+        }
+
+        @Override
+        public TestKey deserialize(final ReadableSequentialData in) {
+            final TestKey key = new TestKey();
+            key.deserialize(in);
+            return key;
+        }
+
+        @Override
+        public boolean equals(final BufferedData buffer, final TestKey keyToCompare) {
+            return keyToCompare.getKeyAsLong() == buffer.readLong();
+        }
     }
 }

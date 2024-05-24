@@ -28,6 +28,9 @@ open module com.swirlds.merkledb {
     exports com.swirlds.merkledb.serialize;
     exports com.swirlds.merkledb.utilities;
 
+    provides com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder with
+            com.swirlds.merkledb.MerkleDbDataSourceBuilder;
+
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.metrics.api;

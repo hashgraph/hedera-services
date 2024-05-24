@@ -18,6 +18,7 @@ package com.swirlds.virtualmap.internal.merkle;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createMerkleDbBuilder;
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createRoot;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,6 +41,7 @@ import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig_;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode.ClassVersion;
 import com.swirlds.virtualmap.test.fixtures.DummyVirtualStateAccessor;
 import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
 import com.swirlds.virtualmap.test.fixtures.InMemoryDataSource;
@@ -51,6 +53,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -211,7 +214,20 @@ class VirtualRootNodeTest extends VirtualTestBase {
      */
     @Test
     void testDeserializeFromFileOfVersion1() throws IOException, InterruptedException {
-        deserializeRootNodeAndVerify(getClass().getResourceAsStream("/virtualRootNode_ver1/rootNode.bin"));
+        deserializeRootNodeAndVerify(
+                getClass().getResourceAsStream("/virtualRootNode_ver1/rootNode.bin"), ClassVersion.VERSION_1_ORIGINAL);
+    }
+
+    /**
+     * This test deserializes a VirtualRootNode that was serialized with version 2 of the serialization format.
+     */
+    @Test
+    void testDeserializeFromFileOfVersion2() throws IOException, InterruptedException {
+        final Path folder =
+                Path.of(getClass().getResource("/virtualRootNode_ver2").getPath());
+        try (final InputStream in = Files.newInputStream(folder.resolve("rootNode.bin"))) {
+            deserializeRootNodeAndVerify(in, folder, ClassVersion.VERSION_2_NODSBUILDER);
+        }
     }
 
     /**
@@ -225,14 +241,18 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final VirtualRootNode<TestKey, TestValue> root2 = createRoot();
 
         deserializeRootNodeAndVerify(
-                new FileInputStream(tempDir.resolve(fileName).toFile()));
+                new FileInputStream(tempDir.resolve(fileName).toFile()), ClassVersion.CURRENT_VERSION);
     }
 
-    private void deserializeRootNodeAndVerify(InputStream resourceAsStream) throws IOException {
-        final VirtualRootNode<TestKey, TestValue> root = createRoot();
+    private void deserializeRootNodeAndVerify(InputStream resourceAsStream, int version) throws IOException {
+        deserializeRootNodeAndVerify(resourceAsStream, tempDir, version);
+    }
+
+    private void deserializeRootNodeAndVerify(InputStream resourceAsStream, Path dir, int version) throws IOException {
+        final VirtualRootNode<TestKey, TestValue> root = createRoot(createMerkleDbBuilder());
 
         try (SerializableDataInputStream input = new SerializableDataInputStream(resourceAsStream)) {
-            root.deserialize(input, tempDir, -1);
+            root.deserialize(input, dir, version);
             root.postInit(new DummyVirtualStateAccessor());
             for (int i = 0; i < 100; i++) {
                 if (i % 7 != 0) {
@@ -257,7 +277,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
     }
 
     private static VirtualRootNode<TestKey, TestValue> prepareRootForSerialization() {
-        final VirtualRootNode<TestKey, TestValue> root = createRoot();
+        final VirtualRootNode<TestKey, TestValue> root = createRoot(createMerkleDbBuilder());
         root.enableFlush();
 
         Set<TestKey> keysToRemove = new HashSet<>();
@@ -506,7 +526,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
 
     @Test
     void getVersion() {
-        assertEquals(1, createRoot().getVersion());
+        assertEquals(2, createRoot().getVersion());
     }
 
     @Test

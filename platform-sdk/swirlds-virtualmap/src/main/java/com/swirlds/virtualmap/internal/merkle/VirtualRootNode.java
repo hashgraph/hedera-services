@@ -146,8 +146,9 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     public static class ClassVersion {
         public static final int VERSION_1_ORIGINAL = 1;
+        public static final int VERSION_2_NODSBUILDER = 2;
 
-        public static final int CURRENT_VERSION = VERSION_1_ORIGINAL;
+        public static final int CURRENT_VERSION = VERSION_2_NODSBUILDER;
     }
 
     /**
@@ -1209,7 +1210,6 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         final RecordAccessor<K, V> detachedRecords = pipeline.detachCopy(this, outputDirectory);
         assert detachedRecords.getDataSource() == null : "No data source should be created.";
         out.writeNormalisedString(state.getLabel());
-        out.writeSerializable(dataSourceBuilder, true);
         out.writeSerializable(detachedRecords.getCache(), true);
     }
 
@@ -1220,7 +1220,15 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     public void deserialize(final SerializableDataInputStream in, final Path inputDirectory, final int version)
             throws IOException {
         final String label = in.readNormalisedString(MAX_LABEL_LENGTH);
-        dataSourceBuilder = in.readSerializable();
+        if (version < ClassVersion.VERSION_2_NODSBUILDER) {
+            // Skip data source builder
+            dataSourceBuilder = in.readSerializable();
+        } else {
+            dataSourceBuilder = VirtualDataSourceBuilder.newDeserializedBuilder();
+            if (dataSourceBuilder == null) {
+                throw new UnsupportedOperationException("Cannot create a data source builder");
+            }
+        }
         dataSource = dataSourceBuilder.restore(label, inputDirectory);
         cache = in.readSerializable();
     }
