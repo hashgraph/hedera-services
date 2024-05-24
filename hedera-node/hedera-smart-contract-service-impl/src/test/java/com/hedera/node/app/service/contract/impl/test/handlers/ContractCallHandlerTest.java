@@ -50,7 +50,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ContractCallHandlerTest extends ContractHandlerTestBase {
-    public static final long INTRINSIC_GAS = 21064L;
+    public static final long INTRINSIC_GAS_FOR_0_ARG_METHOD = 21064L;
 
     @Mock
     private TransactionComponent component;
@@ -138,7 +138,7 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
         // check at least intrinsic gas
         final var txn2 = contractCallTransactionWithInsufficientGas();
         given(gasCalculator.transactionIntrinsicGasCost(org.apache.tuweni.bytes.Bytes.wrap(new byte[0]), false))
-                .willReturn(INTRINSIC_GAS);
+                .willReturn(INTRINSIC_GAS_FOR_0_ARG_METHOD);
         assertThrows(PreCheckException.class, () -> subject.pureChecks(txn2));
 
         // check does not exceed max gas
@@ -170,7 +170,7 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
         return TransactionBody.newBuilder()
                 .transactionID(transactionID)
                 .contractCall(ContractCallTransactionBody.newBuilder()
-                        .gas(INTRINSIC_GAS - 1)
+                        .gas(INTRINSIC_GAS_FOR_0_ARG_METHOD - 1)
                         .contractID(targetContract))
                 .build();
     }

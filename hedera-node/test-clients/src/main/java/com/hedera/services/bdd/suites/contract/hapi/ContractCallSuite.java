@@ -213,6 +213,7 @@ public class ContractCallSuite extends HapiSuite {
     private static final String RECEIVER_2_INFO = "receiver2Info";
     private static final String RECEIVER_3_INFO = "receiver3Info";
     public static final String DELEGATE_CALL_SPECIFIC = "delegateCallSpecific";
+    private static final long INTRINSIC_GAS_FOR_0_ARG_METHOD = 21_064L;
 
     public static void main(String... args) {
         new ContractCallSuite().runSuiteAsync();
@@ -2626,7 +2627,7 @@ public class ContractCallSuite extends HapiSuite {
                 .when(withOpContext((spec, ctxLog) -> allRunFor(
                         spec,
                         contractCallWithFunctionAbi(CONTRACT, getABIFor(FUNCTION, functionName, contractName))
-                                .gas(21_063L)
+                                .gas(INTRINSIC_GAS_FOR_0_ARG_METHOD - 1)
                                 .signingWith(ACCOUNT)
                                 .hasPrecheck(INSUFFICIENT_GAS))))
                 .then();
