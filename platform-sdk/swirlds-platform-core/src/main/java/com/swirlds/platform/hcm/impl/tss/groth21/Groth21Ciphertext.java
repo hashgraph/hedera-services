@@ -48,9 +48,8 @@ public record Groth21Ciphertext(
             @NonNull final TssShareId shareId,
             @NonNull final ElGamalCache elGamalCache) {
 
-        final List<GroupElement> shareIdCiphertexts = shareCiphertexts.get(shareId);
-
-        if (chunkRandomness.size() != shareIdCiphertexts.size()) {
+        final List<GroupElement> shareIdChunks = shareCiphertexts.get(shareId);
+        if (chunkRandomness.size() != shareIdChunks.size()) {
             throw new IllegalArgumentException("Mismatched chunk randomness count and share chunk count");
         }
 
@@ -59,8 +58,8 @@ public record Groth21Ciphertext(
         final FieldElement zeroElement = keyField.zeroElement();
 
         FieldElement output = zeroElement;
-        for (int i = 0; i < shareIdCiphertexts.size(); i++) {
-            final GroupElement chunkCiphertext = shareIdCiphertexts.get(i);
+        for (int i = 0; i < shareIdChunks.size(); i++) {
+            final GroupElement chunkCiphertext = shareIdChunks.get(i);
             final GroupElement chunkRandomness = this.chunkRandomness.get(i);
 
             final GroupElement antiMask = chunkRandomness.power(zeroElement.subtract(keyElement));

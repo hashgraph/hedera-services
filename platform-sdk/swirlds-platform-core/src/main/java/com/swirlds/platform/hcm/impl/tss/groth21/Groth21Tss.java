@@ -16,8 +16,12 @@
 
 package com.swirlds.platform.hcm.impl.tss.groth21;
 
+import com.swirlds.platform.hcm.api.pairings.Field;
+import com.swirlds.platform.hcm.api.pairings.FieldElement;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingPrivateKey;
 import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
 import com.swirlds.platform.hcm.api.signaturescheme.PairingSignature;
+import com.swirlds.platform.hcm.api.signaturescheme.SignatureSchema;
 import com.swirlds.platform.hcm.api.tss.Tss;
 import com.swirlds.platform.hcm.api.tss.TssMessage;
 import com.swirlds.platform.hcm.api.tss.TssPrivateKey;
@@ -26,12 +30,16 @@ import com.swirlds.platform.hcm.api.tss.TssPublicShare;
 import com.swirlds.platform.hcm.api.tss.TssShareClaim;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+
+import static com.swirlds.platform.hcm.api.tss.TssUtils.computeLagrangeCoefficient;
 
 /**
  * A Groth21 implementation of a Threshold Signature Scheme.
  */
-public class Groth21Tss implements Tss {
+public record Groth21Tss(@NonNull SignatureSchema signatureSchema) implements Tss {
     /**
      * {@inheritDoc}
      */
@@ -53,10 +61,36 @@ public class Groth21Tss implements Tss {
     /**
      * {@inheritDoc}
      */
-    @Nullable
+    @NonNull
     @Override
-    public TssPrivateKey aggregatePrivateKeys(@NonNull final List<TssPrivateKey> privateKeys) {
-        return null;
+    public TssPrivateKey aggregatePrivateShares(@NonNull final List<TssPrivateShare> privateShares) {
+        if (privateShares.isEmpty()) {
+            throw new IllegalArgumentException("At least one private share is required to recover a secret");
+        }
+
+        final List<FieldElement> xCoordinates = new ArrayList<>();
+        final List<FieldElement> yCoordinates = new ArrayList<>();
+        privateShares.forEach(share -> {
+            xCoordinates.add(share.shareId().id());
+            yCoordinates.add(share.privateKey().privateKey().secretElement());
+        });
+
+        if (xCoordinates.size() != Set.of(xCoordinates).size()) {
+            throw new IllegalArgumentException("x-coordinates must be distinct");
+        }
+
+        final List<FieldElement> lagrangeCoefficients = new ArrayList<>();
+        for (int i = 0; i < xCoordinates.size(); i++) {
+            lagrangeCoefficients.add(computeLagrangeCoefficient(xCoordinates, i));
+        }
+
+        final Field field = xCoordinates.getFirst().getField();
+        FieldElement sum = field.zeroElement();
+        for (int i = 0; i < lagrangeCoefficients.size(); i++) {
+            sum = sum.add(lagrangeCoefficients.get(i).multiply(yCoordinates.get(i)));
+        }
+
+        return new TssPrivateKey(new PairingPrivateKey(signatureSchema, sum));
     }
 
     /**

@@ -65,4 +65,6 @@ public class Bls12381FieldElement implements FieldElement {
     public byte[] toBytes() {
         return new byte[0];
     }
+
+    // TODO: implement equals and hashCode
 }

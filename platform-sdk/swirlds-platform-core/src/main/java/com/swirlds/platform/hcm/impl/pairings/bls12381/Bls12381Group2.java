@@ -102,4 +102,6 @@ public class Bls12381Group2 implements Group {
     public BilinearPairing getPairing() {
         return Bls12381BilinearPairing.getInstance();
     }
+
+    // TODO: implement equals and hashCode
 }

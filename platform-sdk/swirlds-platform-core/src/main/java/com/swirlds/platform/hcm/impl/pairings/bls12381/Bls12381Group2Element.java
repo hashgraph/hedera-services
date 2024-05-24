@@ -76,4 +76,6 @@ public class Bls12381Group2Element implements GroupElement {
     public byte[] toBytes() {
         return new byte[0];
     }
+
+    // TODO: implement equals and hashCode
 }

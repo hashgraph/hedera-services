@@ -57,13 +57,13 @@ public interface Tss {
     PairingPublicKey aggregatePublicShares(@NonNull final List<TssPublicShare> publicShares);
 
     /**
-     * Aggregate a threshold number of {@link TssPrivateKey}s.
+     * Aggregate a threshold number of {@link TssPrivateShare}s.
      *
-     * @param privateKeys the private keys to aggregate
-     * @return the aggregate private key, or null if the threshold is not met
+     * @param privateShares the private shares to aggregate
+     * @return the aggregate private key
      */
-    @Nullable
-    TssPrivateKey aggregatePrivateKeys(@NonNull final List<TssPrivateKey> privateKeys);
+    @NonNull
+    TssPrivateKey aggregatePrivateShares(@NonNull final List<TssPrivateShare> privateShares);
 
     /**
      * Generate a TSS message for a set of share claims, from a private share.

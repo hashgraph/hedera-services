@@ -86,4 +86,6 @@ public class Bls12381BilinearPairing implements BilinearPairing {
             throw new IllegalArgumentException("Unknown group");
         }
     }
+
+    // TODO: implement equals and hashCode
 }

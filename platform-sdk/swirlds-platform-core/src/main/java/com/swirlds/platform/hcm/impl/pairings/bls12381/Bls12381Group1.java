@@ -102,4 +102,6 @@ public class Bls12381Group1 implements Group {
     public int getSeedSize() {
         return 0;
     }
+
+    // TODO: implement equals and hashCode
 }
