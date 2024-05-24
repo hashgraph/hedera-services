@@ -228,7 +228,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         fallenBehindManager = new FallenBehindManagerImpl(
                 addressBook,
                 selfId,
-                topology.getConnectionGraph(),
+                topology,
                 statusActionSubmitter,
                 () -> getReconnectController().start(),
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
@@ -390,23 +390,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                                     syncProtocolFactory.build(otherId)))))
                     .build());
         }
-    }
-
-    /**
-     * Build the fallen behind manager.
-     */
-    @NonNull
-    protected FallenBehindManagerImpl buildFallenBehindManager() {
-        return new FallenBehindManagerImpl(
-                addressBook,
-                selfId,
-                topology,
-                statusActionSubmitter,
-                // this fallen behind impl is different from that of
-                // SingleNodeSyncGossip which was a no-op. Same for the pause/resume impls
-                // which only logged (but they do more here)
-                () -> getReconnectController().start(),
-                platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
     }
 
     /**
