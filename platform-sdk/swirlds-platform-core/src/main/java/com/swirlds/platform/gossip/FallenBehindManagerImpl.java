@@ -39,6 +39,10 @@ public class FallenBehindManagerImpl implements FallenBehindManager {
      * a set of all neighbors of this node
      */
     private final Set<NodeId> allNeighbors;
+    /**
+     * the number of neighbors we have
+     */
+    private final int numNeighbors;
 
     /**
      * set of neighbors who report that this node has fallen behind
@@ -80,6 +84,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager {
         notYetReportFallenBehind = ConcurrentHashMap.newKeySet();
         reportFallenBehind = new HashSet<>();
         allNeighbors = topology.getNeighbors();
+        numNeighbors = allNeighbors.size();
 
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
         this.fallenBehindCallback =
@@ -118,7 +123,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager {
 
     @Override
     public boolean hasFallenBehind() {
-        return (allNeighbors.size() + 1) * config.fallenBehindThreshold() < numReportFallenBehind;
+        return numNeighbors * config.fallenBehindThreshold() < numReportFallenBehind;
     }
 
     @Override
