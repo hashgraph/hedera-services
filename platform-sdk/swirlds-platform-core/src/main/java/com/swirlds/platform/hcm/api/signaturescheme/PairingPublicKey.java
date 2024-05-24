@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.hcm.api.signaturescheme;
 
-import com.swirlds.platform.hcm.api.SignatureSchema;
-import com.swirlds.platform.hcm.api.pairings.ByteRepresentable;
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -25,7 +23,7 @@ import java.util.Objects;
 /**
  * A public key that can be used to verify a signature.
  */
-public record PairingPublicKey(@NonNull GroupElement element) implements ByteRepresentable {
+public record PairingPublicKey(@NonNull GroupElement element) {
     /**
      * Create a public key from a private key.
      *

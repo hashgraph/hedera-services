@@ -16,9 +16,7 @@
 
 package com.swirlds.platform.hcm.api.signaturescheme;
 
-import com.swirlds.platform.hcm.api.SignatureSchema;
 import com.swirlds.platform.hcm.api.pairings.BilinearPairing;
-import com.swirlds.platform.hcm.api.pairings.ByteRepresentable;
 import com.swirlds.platform.hcm.api.pairings.Group;
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
 import com.swirlds.platform.hcm.api.pairings.PairingResult;
@@ -28,7 +26,7 @@ import java.util.Objects;
 /**
  * A signature that has been produced by a {@link PairingPrivateKey}.
  */
-public record PairingSignature(@NonNull GroupElement signatureElement) implements ByteRepresentable {
+public record PairingSignature(@NonNull GroupElement signatureElement) {
     /**
      * Deserialize a signature from a byte array.
      *
@@ -69,13 +67,10 @@ public record PairingSignature(@NonNull GroupElement signatureElement) implement
         final BilinearPairing pairing = publicKeyGroup.getPairing();
         final GroupElement messageHashedToGroup = signatureGroup.elementFromHash(message);
 
-        // TODO: I recall serializing the result of a pairing was non-trivially expensive
-        //  I think we should probably leave it up to the library to return a bool, rather than serializing the each
-        //  result
         final PairingResult lhs = pairing.pairingBetween(signatureElement, publicKeyGroup.getGenerator());
         final PairingResult rhs = pairing.pairingBetween(messageHashedToGroup, publicKey.element());
 
-        return lhs.isEquals(rhs);
+        return pairing.comparePairingResults(lhs, rhs);
     }
 
     /**

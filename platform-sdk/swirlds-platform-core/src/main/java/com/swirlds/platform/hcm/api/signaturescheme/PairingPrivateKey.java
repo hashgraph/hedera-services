@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.hcm.api.signaturescheme;
 
-import com.swirlds.platform.hcm.api.SignatureSchema;
-import com.swirlds.platform.hcm.api.pairings.ByteRepresentable;
 import com.swirlds.platform.hcm.api.pairings.Field;
 import com.swirlds.platform.hcm.api.pairings.FieldElement;
 import com.swirlds.platform.hcm.api.pairings.Group;
@@ -28,7 +26,7 @@ import java.util.Random;
 /**
  * A private key that can be used to sign a message.
  */
-public record PairingPrivateKey(@NonNull FieldElement secretElement) implements ByteRepresentable {
+public record PairingPrivateKey(@NonNull FieldElement secretElement) {
 
     /**
      * Sign a message using the private key.
@@ -95,7 +93,6 @@ public record PairingPrivateKey(@NonNull FieldElement secretElement) implements 
      *
      * @return the serialized private key
      */
-    @Override
     @NonNull
     public byte[] toBytes() {
         return secretElement.toBytes();

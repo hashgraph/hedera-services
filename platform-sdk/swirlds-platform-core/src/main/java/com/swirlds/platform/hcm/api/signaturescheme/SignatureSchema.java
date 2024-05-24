@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.hcm.api;
+package com.swirlds.platform.hcm.api.signaturescheme;
 
 import com.swirlds.platform.hcm.api.pairings.BilinearPairing;
 import com.swirlds.platform.hcm.api.pairings.Field;

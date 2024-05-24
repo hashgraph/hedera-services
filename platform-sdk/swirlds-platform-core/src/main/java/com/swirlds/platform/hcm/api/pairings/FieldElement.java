@@ -22,7 +22,7 @@ import java.math.BigInteger;
 /**
  * An interface representing a generic field element
  */
-public interface FieldElement extends ByteRepresentable {
+public interface FieldElement {
     /**
      * Check if the field of another element is the same as this element's field
      *
@@ -84,4 +84,12 @@ public interface FieldElement extends ByteRepresentable {
      */
     @NonNull
     FieldElement power(@NonNull BigInteger exponent);
+
+    /**
+     * Returns the byte array representation of the field element
+     *
+     * @return the byte array representation of the field element
+     */
+    @NonNull
+    byte[] toBytes();
 }

@@ -16,21 +16,31 @@
 
 package com.swirlds.platform.hcm.api.pairings;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-
 /**
- * This class represents the result of the pairing operation between two elements.
- *
- * <p>A signature is considered valid only if the pairing between “g1” and the signature “σ” is equal to the pairing
- * between pk and the hash point “H(m)”.
- * The properties of pairings can be used to confirm this relationship. Specifically, we can calculate that:
- * e(pk, H(m)) = e([sk]g1, H(m)) = e(g1, H(m))^(sk) = e(g1, [sk]H(m)) = e(g1, σ).
- * </p>
+ * This class represents the result of the pairing operation between two elements
  */
-public interface PairingResult extends ByteRepresentable {
+public interface PairingResult {
+    /**
+     * Get the first input element. This element is in the opposite group of the second input element
+     *
+     * @return the first input element
+     */
+    GroupElement getInputElement1();
 
     /**
-     * Checks both pairings are equals in the mathematical sense
+     * Get the second input element. This element is in the opposite group of the first input element
+     *
+     * @return the second input element
      */
-    boolean isEquals(@NonNull PairingResult other);
+    GroupElement getInputElement2();
+
+    /**
+     * Get the bytes of the pairing result
+     * <p>
+     * If the implementation so wishes, it might throw an {@link UnsupportedOperationException}. Serializing the
+     * pairing result is an expensive operation, and may not be supported by all implementations.
+     *
+     * @return the bytes of the pairing result
+     */
+    byte[] getPairingBytes();
 }

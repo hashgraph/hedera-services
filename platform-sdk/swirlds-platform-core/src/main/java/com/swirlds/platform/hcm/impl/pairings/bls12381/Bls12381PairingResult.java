@@ -20,18 +20,36 @@ import com.swirlds.platform.hcm.api.pairings.GroupElement;
 import com.swirlds.platform.hcm.api.pairings.PairingResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public class Bls12381PairingResult implements PairingResult {
-    public Bls12381PairingResult(final GroupElement aggregatedSignature, final GroupElement g1) {
-        //        aggregatedSignature.checkSameCurveType(g1);
-        //        aggregatedSignature.checkSameCurveType(this);
-    }
+/**
+ * A BLS12-381 implementation of a pairing result.
+ *
+ * @param element1 the first element. must be in the opposite group of the second element
+ * @param element2 the second element. must be in the opposite group of the first element
+ */
+public record Bls12381PairingResult(@NonNull GroupElement element1, @NonNull GroupElement element2)
+        implements PairingResult {
 
-    public boolean isEquals(final @NonNull PairingResult other) {
-        return false;
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public @NonNull byte[] toBytes() {
-        return new byte[0];
+    public GroupElement getInputElement1() {
+        return element1;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public GroupElement getInputElement2() {
+        return element2;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public byte[] getPairingBytes() {
+        throw new UnsupportedOperationException("Pairing result serialization is not supported");
     }
 }

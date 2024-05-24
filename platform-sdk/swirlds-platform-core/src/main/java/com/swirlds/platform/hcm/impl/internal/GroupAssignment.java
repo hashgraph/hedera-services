@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.hcm.impl.internal;
 
-import com.swirlds.platform.hcm.api.SignatureSchema;
 import com.swirlds.platform.hcm.api.pairings.BilinearPairing;
 import com.swirlds.platform.hcm.api.pairings.Group;
+import com.swirlds.platform.hcm.api.signaturescheme.SignatureSchema;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Function;
 

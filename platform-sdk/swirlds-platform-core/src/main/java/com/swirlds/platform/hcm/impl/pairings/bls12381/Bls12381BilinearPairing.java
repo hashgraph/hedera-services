@@ -41,8 +41,17 @@ public class Bls12381BilinearPairing implements BilinearPairing {
 
     @NonNull
     @Override
-    public PairingResult pairingBetween(@NonNull final GroupElement elementA, @NonNull final GroupElement elementB) {
-        return new Bls12381PairingResult(elementA, elementB);
+    public PairingResult pairingBetween(@NonNull final GroupElement element1, @NonNull final GroupElement element2) {
+        return new Bls12381PairingResult(element1, element2);
+    }
+
+    @Override
+    public boolean comparePairings(
+            @NonNull final GroupElement pairingAElement1,
+            @NonNull final GroupElement pairingAElement2,
+            @NonNull final GroupElement pairingBElement1,
+            @NonNull final GroupElement pairingBElement2) {
+        return false;
     }
 
     @NonNull

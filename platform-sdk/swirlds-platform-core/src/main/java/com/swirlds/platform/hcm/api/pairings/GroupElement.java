@@ -21,7 +21,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Interface representing a cryptographic group element
  */
-public interface GroupElement extends ByteRepresentable {
+public interface GroupElement {
     /**
      * Check if the group of another element is the same as this element's group
      *
@@ -107,4 +107,12 @@ public interface GroupElement extends ByteRepresentable {
      */
     @NonNull
     GroupElement copy();
+
+    /**
+     * Returns the byte array representation of the group element
+     *
+     * @return the byte array representation of the group element
+     */
+    @NonNull
+    byte[] toBytes();
 }

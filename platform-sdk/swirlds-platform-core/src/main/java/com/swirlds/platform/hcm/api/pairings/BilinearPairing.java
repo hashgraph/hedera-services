@@ -75,12 +75,51 @@ public interface BilinearPairing {
     /**
      * Returns a pairing between elements from G₁ and G₂
      * <p>
-     * The order of the elements is not important, elementA can be from G₁ and elementB from G₂, or vice versa.
+     * The order of the elements is not important, element1 can be from G₁ and element2 from G₂, or vice versa.
      *
-     * @param elementA one element of the pairing
-     * @param elementB the other element of the pairing
+     * @param element1 one element of the pairing
+     * @param element2 the other element of the pairing
      * @return the PairingResult
      */
     @NonNull
-    PairingResult pairingBetween(@NonNull GroupElement elementA, @NonNull GroupElement elementB);
+    PairingResult pairingBetween(@NonNull GroupElement element1, @NonNull GroupElement element2);
+
+    /**
+     * Compares two pairing results.
+     * <p>
+     * This default implementation uses {@link #comparePairings} under the hood, with the assumption that the actual
+     * pairing computation was not performed upon construction of the {@link PairingResult} objects. If an
+     * implementation of {@link PairingResult} is used that actually does perform the pairing computation upon
+     * construction, this method should be overridden to compare the results directly.
+     *
+     * @param result1 the first pairing result
+     * @param result2 the second pairing result
+     * @return true if the pairings are equal, otherwise false
+     */
+    default boolean comparePairingResults(@NonNull final PairingResult result1, @NonNull final PairingResult result2) {
+        return comparePairings(
+                result1.getInputElement1(),
+                result1.getInputElement2(),
+                result2.getInputElement1(),
+                result2.getInputElement2());
+    }
+
+    /**
+     * Compares two pairings, referred to as A and B.
+     * <p>
+     * The 2 elements of each pairing must be in opposite groups.
+     * <p>
+     * The order of the elements in each pairing is not important.
+     *
+     * @param pairingAElement1 the first element of the first pairing
+     * @param pairingAElement2 the second element of the first pairing
+     * @param pairingBElement1 the first element of the second pairing
+     * @param pairingBElement2 the second element of the second pairing
+     * @return true if the pairings are equal, otherwise false
+     */
+    boolean comparePairings(
+            @NonNull GroupElement pairingAElement1,
+            @NonNull GroupElement pairingAElement2,
+            @NonNull GroupElement pairingBElement1,
+            @NonNull GroupElement pairingBElement2);
 }
