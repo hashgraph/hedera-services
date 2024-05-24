@@ -17,8 +17,23 @@
 package com.swirlds.platform.hcm.api.signaturescheme;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Random;
 
 /**
  * Represents a key pair consisting of a public key and a private key.
  */
-public record PairingKeyPair(@NonNull PairingPublicKey publicKey, @NonNull PairingPrivateKey privateKey) {}
+public record PairingKeyPair(@NonNull PairingPublicKey publicKey, @NonNull PairingPrivateKey privateKey) {
+    /**
+     * Create a key pair for a given schema, from a source of randomness.
+     *
+     * @param schema the signature schema to create the key pair for
+     * @param random the source of randomness
+     * @return the key pair
+     */
+    public static PairingKeyPair create(@NonNull final SignatureSchema schema, @NonNull final Random random) {
+        final PairingPrivateKey privateKey = PairingPrivateKey.create(schema, random);
+        final PairingPublicKey publicKey = PairingPublicKey.create(privateKey);
+
+        return new PairingKeyPair(publicKey, privateKey);
+    }
+}
