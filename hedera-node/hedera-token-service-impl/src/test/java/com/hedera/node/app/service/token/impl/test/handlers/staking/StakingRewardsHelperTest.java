@@ -22,10 +22,19 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper;
+import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import java.util.Map;
+import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class StakingRewardsHelperTest {
+class StakingRewardsHelperTest extends CryptoTokenHandlerTestBase {
+    @BeforeEach
+    public void setUp() {
+        super.setUp();
+        refreshWritableStores();
+    }
+
     @Test
     void onlyNonZeroRewardsIncludedInAccountAmounts() {
         final var zeroRewardId = AccountID.newBuilder().accountNum(1234L).build();
@@ -56,5 +65,82 @@ class StakingRewardsHelperTest {
         final var nonZeroRewardId = AccountID.newBuilder().accountNum(4321L).build();
         final var someRewards = Map.of(zeroRewardId, 0L, nonZeroRewardId, 1L);
         assertThat(requiresExternalization(someRewards)).isTrue();
+    }
+
+    @Test
+    void getsAllRewardReceiversForStakeMetaChanges() {
+        final var stakeToMeRewardReceiver = AccountID.newBuilder()
+                .accountNum(account.accountId().accountNum())
+                .build();
+        final var explicitRewardReceiver =
+                AccountID.newBuilder().accountNum(1234567L).build();
+
+        final var stakeToMeRewardReceivers = Set.of(stakeToMeRewardReceiver);
+        final var explicitRewardReceivers = Set.of(explicitRewardReceiver);
+        writableAccountStore.put(account.copyBuilder().stakedNodeId(0L).build());
+        final var rewardReceivers = StakingRewardsHelper.getAllRewardReceivers(
+                writableAccountStore, stakeToMeRewardReceivers, explicitRewardReceivers);
+        assertThat(rewardReceivers).contains(stakeToMeRewardReceiver);
+    }
+
+    @Test
+    void getsAllRewardReceiversForBalanceChanges() {
+        final var stakeToMeRewardReceiver = AccountID.newBuilder()
+                .accountNum(account.accountId().accountNum())
+                .build();
+        final var explicitRewardReceiver =
+                AccountID.newBuilder().accountNum(1234567L).build();
+
+        final var stakeToMeRewardReceivers = Set.of(stakeToMeRewardReceiver);
+        final var explicitRewardReceivers = Set.of(explicitRewardReceiver);
+        writableAccountStore.put(account.copyBuilder().tinybarBalance(1000L).build());
+        final var rewardReceivers = StakingRewardsHelper.getAllRewardReceivers(
+                writableAccountStore, stakeToMeRewardReceivers, explicitRewardReceivers);
+        assertThat(rewardReceivers).contains(stakeToMeRewardReceiver);
+    }
+
+    @Test
+    void getsAllRewardReceiversIfAlreadyStakedToNode() {
+        final var stakeToMeRewardReceiver = AccountID.newBuilder()
+                .accountNum(account.accountId().accountNum())
+                .build();
+        final var explicitRewardReceiver =
+                AccountID.newBuilder().accountNum(1234567L).build();
+
+        final var stakeToMeRewardReceivers = Set.of(stakeToMeRewardReceiver);
+        final var explicitRewardReceivers = Set.of(explicitRewardReceiver);
+        final var rewardReceivers = StakingRewardsHelper.getAllRewardReceivers(
+                writableAccountStore, stakeToMeRewardReceivers, explicitRewardReceivers);
+        assertThat(rewardReceivers).contains(stakeToMeRewardReceiver);
+    }
+
+    @Test
+    void getsAllRewardReceiversIfExplicitlyStakedToNode() {
+        final var alreadyStakedToNodeRewardReceiver =
+                AccountID.newBuilder().accountNum(payerId.accountNum()).build();
+        final var explicitRewardReceiver =
+                AccountID.newBuilder().accountNum(1234567L).build();
+
+        final var stakeToMeRewardReceivers = Set.of(alreadyStakedToNodeRewardReceiver);
+        final var explicitRewardReceivers = Set.of(explicitRewardReceiver);
+        final var rewardReceivers = StakingRewardsHelper.getAllRewardReceivers(
+                writableAccountStore, stakeToMeRewardReceivers, explicitRewardReceivers);
+        assertThat(rewardReceivers).contains(alreadyStakedToNodeRewardReceiver);
+    }
+
+    @Test
+    void decreasesPendingRewardsAccurately() {
+        final var subject = new StakingRewardsHelper();
+        assertThat(writableRewardsStore.get().pendingRewards()).isEqualTo(1000L);
+        subject.decreasePendingRewardsBy(writableStakingInfoStore, writableRewardsStore, 100L, node0Id.number());
+        assertThat(writableRewardsStore.get().pendingRewards()).isEqualTo(900L);
+    }
+
+    @Test
+    void increasesPendingRewardsAccurately() {
+        final var subject = new StakingRewardsHelper();
+        assertThat(writableRewardsStore.get().pendingRewards()).isEqualTo(1000L);
+        subject.increasePendingRewardsBy(writableRewardsStore, 100L, writableStakingInfoStore.get(0L));
+        assertThat(writableRewardsStore.get().pendingRewards()).isEqualTo(1100L);
     }
 }

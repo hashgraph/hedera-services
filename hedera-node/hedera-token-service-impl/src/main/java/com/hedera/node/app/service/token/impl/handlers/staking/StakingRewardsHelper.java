@@ -209,7 +209,7 @@ public class StakingRewardsHelper {
      * @param currStakingInfo    The current staking info
      * @return The clamped pending rewards
      */
-    StakingNodeInfo increasePendingRewardsBy(
+    public StakingNodeInfo increasePendingRewardsBy(
             final WritableNetworkStakingRewardsStore stakingRewardsStore,
             long amount,
             final StakingNodeInfo currStakingInfo) {
