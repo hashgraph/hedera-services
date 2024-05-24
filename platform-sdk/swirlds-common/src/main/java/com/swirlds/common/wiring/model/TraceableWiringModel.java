@@ -79,7 +79,7 @@ public abstract class TraceableWiringModel implements WiringModel {
     /**
      * All task schedulers in the model.
      */
-    private final List<TaskScheduler<?>> schedulers = new ArrayList<>();
+    protected final List<TaskScheduler<?>> schedulers = new ArrayList<>();
 
     /**
      * True if start() has been called.

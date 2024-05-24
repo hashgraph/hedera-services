@@ -21,6 +21,7 @@ import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -45,6 +46,11 @@ public class WiringHealthMonitor {
     private final List<Instant> lastHealthyTimes = new ArrayList<>();
 
     /**
+     * The previous value returned by {@link #checkSystemHealth(Instant)}. Used to avoid sending repeat output.
+     */
+    private Duration previouslyReportedDuration = Duration.ZERO;
+
+    /**
      * Constructor.
      *
      * @param schedulers the task schedulers to monitor
@@ -63,9 +69,10 @@ public class WiringHealthMonitor {
      * Called periodically. Scans the task schedulers for health issues.
      *
      * @param now the current time
-     * @return the amount of time any single scheduler has been concurrently unhealthy
+     * @return the amount of time any single scheduler has been concurrently unhealthy. Returns {@link Duration#ZERO} if
+     * all schedulers are healthy, returns null if there is no change in health status.
      */
-    @NonNull
+    @Nullable
     public Duration checkSystemHealth(@NonNull final Instant now) {
         Duration longestUnhealthyDuration = Duration.ZERO;
 
@@ -82,6 +89,11 @@ public class WiringHealthMonitor {
             }
         }
 
-        return longestUnhealthyDuration;
+        try {
+            // Only return a new value if it is different from the previous value.
+            return longestUnhealthyDuration.equals(previouslyReportedDuration) ? null : longestUnhealthyDuration;
+        } finally {
+            previouslyReportedDuration = longestUnhealthyDuration;
+        }
     }
 }

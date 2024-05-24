@@ -24,6 +24,7 @@ import com.swirlds.common.wiring.model.internal.deterministic.DeterministicHeart
 import com.swirlds.common.wiring.model.internal.deterministic.DeterministicTaskSchedulerBuilder;
 import com.swirlds.common.wiring.model.internal.standard.JvmAnchor;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
+import com.swirlds.common.wiring.wires.output.NoOpOutputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -114,6 +115,15 @@ public class DeterministicWiringModel extends TraceableWiringModel {
     @Override
     public OutputWire<Instant> buildHeartbeatWire(@NonNull final Duration period) {
         return heartbeatScheduler.buildHeartbeatWire(period);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public OutputWire<Duration> getHealthMonitorWire() {
+        return new NoOpOutputWire<>(this, "HealthMonitor");
     }
 
     /**

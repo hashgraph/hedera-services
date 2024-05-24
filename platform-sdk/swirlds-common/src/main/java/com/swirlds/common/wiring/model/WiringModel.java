@@ -113,6 +113,16 @@ public interface WiringModel extends Startable, Stoppable {
     OutputWire<Instant> buildHeartbeatWire(@NonNull final Duration period);
 
     /**
+     * Get the output of the wiring model's health monitor. The output of this wire is the length of time that any
+     * particular scheduler has been in an unhealthy state, or {@link Duration#ZERO} if all schedulers are currently
+     * healthy.
+     *
+     * @return the output wire
+     */
+    @NonNull
+    OutputWire<Duration> getHealthMonitorWire();
+
+    /**
      * Build a wire that produces an instant (reflecting current time) at the specified rate. Note that the exact rate
      * of heartbeats may vary. This is a best effort algorithm, and actual rates may vary depending on a variety of
      * factors.
