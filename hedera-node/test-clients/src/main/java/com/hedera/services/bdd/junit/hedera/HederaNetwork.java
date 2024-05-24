@@ -16,11 +16,11 @@
 
 package com.hedera.services.bdd.junit.hedera;
 
+import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.EXECUTOR;
 import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.workingDirFor;
 import static com.hedera.services.bdd.suites.TargetNetworkType.SHARED_HAPI_TEST_NETWORK;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -200,14 +200,16 @@ public class HederaNetwork {
                 latch.countDown();
             });
         });
-        ready = runAsync(() -> {
-                    try {
-                        latch.await();
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new IllegalStateException(e);
-                    }
-                })
+        ready = CompletableFuture.runAsync(
+                        () -> {
+                            try {
+                                latch.await();
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                                throw new IllegalStateException(e);
+                            }
+                        },
+                        EXECUTOR)
                 .orTimeout(timeout.toMillis(), MILLISECONDS)
                 .thenRun(() -> log.info("All nodes in network '{}' are ready", name()));
     }

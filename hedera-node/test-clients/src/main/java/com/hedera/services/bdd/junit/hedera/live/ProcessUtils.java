@@ -27,6 +27,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
@@ -36,6 +38,8 @@ public class ProcessUtils {
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
     public static final String OVERRIDE_RECORD_STREAM_FOLDER = "recordStreams";
     private static final long WAIT_SLEEP_MILLIS = 10L;
+
+    public static final Executor EXECUTOR = Executors.newCachedThreadPool();
 
     private ProcessUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -101,16 +105,18 @@ public class ProcessUtils {
      * @return a future that resolves when the condition is true or the timeout is reached
      */
     public static CompletableFuture<Void> conditionFuture(@NonNull final BooleanSupplier condition) {
-        return CompletableFuture.runAsync(() -> {
-            while (!condition.getAsBoolean()) {
-                try {
-                    MILLISECONDS.sleep(WAIT_SLEEP_MILLIS);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new IllegalStateException("Interrupted while waiting for condition", e);
-                }
-            }
-        });
+        return CompletableFuture.runAsync(
+                () -> {
+                    while (!condition.getAsBoolean()) {
+                        try {
+                            MILLISECONDS.sleep(WAIT_SLEEP_MILLIS);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            throw new IllegalStateException("Interrupted while waiting for condition", e);
+                        }
+                    }
+                },
+                EXECUTOR);
     }
 
     private static String currentNonTestClientClasspath() {
