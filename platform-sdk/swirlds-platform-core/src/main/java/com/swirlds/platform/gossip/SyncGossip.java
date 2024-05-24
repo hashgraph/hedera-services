@@ -89,7 +89,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
@@ -138,7 +137,6 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
      * Builds the gossip engine, depending on which flavor is requested in the configuration.
      *
      * @param platformContext               the platform context
-     * @param random                        a source of randomness, does not need to be cryptographically secure
      * @param threadManager                 the thread manager
      * @param keysAndCerts                  private keys and public certificates
      * @param notificationEngine            used to send notifications to the app
@@ -162,7 +160,6 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
      */
     protected SyncGossip(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Random random,
             @NonNull final ThreadManager threadManager,
             @NonNull final KeysAndCerts keysAndCerts,
             @NonNull final NotificationEngine notificationEngine,
@@ -195,7 +192,7 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
 
-        topology = new StaticTopology(random, peers, selfId, basicConfig.numConnections());
+        topology = new StaticTopology(peers, selfId);
         final NetworkPeerIdentifier peerIdentifier = new NetworkPeerIdentifier(platformContext, peers);
         final SocketFactory socketFactory =
                 NetworkUtils.createSocketFactory(selfId, peers, keysAndCerts, platformContext.getConfiguration());
@@ -403,7 +400,7 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         return new FallenBehindManagerImpl(
                 addressBook,
                 selfId,
-                topology.getConnectionGraph(),
+                topology,
                 statusActionSubmitter,
                 // this fallen behind impl is different from that of
                 // SingleNodeSyncGossip which was a no-op. Same for the pause/resume impls

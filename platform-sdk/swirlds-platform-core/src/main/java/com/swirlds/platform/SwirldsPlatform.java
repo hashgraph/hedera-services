@@ -541,7 +541,6 @@ public class SwirldsPlatform implements Platform {
 
         gossip = new SyncGossip(
                 platformContext,
-                blocks.randomBuilder().buildNonCryptographicRandom(),
                 threadManager,
                 keysAndCerts,
                 notificationEngine,

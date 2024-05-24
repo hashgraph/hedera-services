@@ -18,7 +18,7 @@ package com.swirlds.platform.gossip;
 
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.network.RandomGraph;
+import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.FallenBehindAction;
@@ -38,11 +38,8 @@ public class FallenBehindManagerImpl implements FallenBehindManager {
     /**
      * a set of all neighbors of this node
      */
-    private final HashSet<NodeId> allNeighbors;
-    /**
-     * the number of neighbors we have
-     */
-    private final int numNeighbors;
+    private final Set<NodeId> allNeighbors;
+
     /**
      * set of neighbors who report that this node has fallen behind
      */
@@ -72,23 +69,18 @@ public class FallenBehindManagerImpl implements FallenBehindManager {
     public FallenBehindManagerImpl(
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
-            @NonNull final RandomGraph connectionGraph,
+            @NonNull final NetworkTopology topology,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Runnable fallenBehindCallback,
             @NonNull final ReconnectConfig config) {
         Objects.requireNonNull(addressBook, "addressBook");
         Objects.requireNonNull(selfId, "selfId");
-        Objects.requireNonNull(connectionGraph, "connectionGraph");
+        Objects.requireNonNull(topology, "topology");
 
         notYetReportFallenBehind = ConcurrentHashMap.newKeySet();
         reportFallenBehind = new HashSet<>();
-        allNeighbors = new HashSet<>();
-        /* an array with all the neighbor ids */
-        final int[] neighbors = connectionGraph.getNeighbors(addressBook.getIndexOfNodeId(selfId));
-        numNeighbors = neighbors.length;
-        for (final int neighbor : neighbors) {
-            allNeighbors.add(addressBook.getNodeId(neighbor));
-        }
+        allNeighbors = topology.getNeighbors();
+
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
         this.fallenBehindCallback =
                 Objects.requireNonNull(fallenBehindCallback, "fallenBehindCallback must not be null");
@@ -126,7 +118,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager {
 
     @Override
     public boolean hasFallenBehind() {
-        return numNeighbors * config.fallenBehindThreshold() < numReportFallenBehind;
+        return (allNeighbors.size() + 1) * config.fallenBehindThreshold() < numReportFallenBehind;
     }
 
     @Override
@@ -137,7 +129,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager {
     }
 
     @Override
-    public boolean shouldReconnectFrom(final NodeId peerId) {
+    public boolean shouldReconnectFrom(@NonNull final NodeId peerId) {
         if (!hasFallenBehind()) {
             return false;
         }

@@ -55,14 +55,14 @@ class StaticConnectionManagersTest {
 
     @ParameterizedTest
     @MethodSource("topologicalVariations")
-    void testShouldConnectToMe(final int numNodes, final int numNeighbors) throws Exception {
+    void testShouldConnectToMe(final int numNodes) throws Exception {
         final Random r = RandomUtils.getRandomPrintSeed();
         final AddressBook addressBook =
                 new RandomAddressBookGenerator(r).setSize(numNodes).build();
         final NodeId selfId = addressBook.getNodeId(r.nextInt(numNodes));
 
         final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
-        final NetworkTopology topology = new StaticTopology(r, peers, selfId, numNeighbors);
+        final NetworkTopology topology = new StaticTopology(peers, selfId);
 
         final StaticConnectionManagers managers = new StaticConnectionManagers(topology, connectionCreator);
         final List<NodeId> neighbors = topology.getNeighbors().stream().toList();
@@ -91,13 +91,13 @@ class StaticConnectionManagersTest {
 
     @ParameterizedTest
     @MethodSource("topologicalVariations")
-    void testShouldConnectTo(final int numNodes, final int numNeighbors) throws Exception {
+    void testShouldConnectTo(final int numNodes) throws Exception {
         final Random r = RandomUtils.getRandomPrintSeed();
         final AddressBook addressBook =
                 new RandomAddressBookGenerator(r).setSize(numNodes).build();
         final NodeId selfId = addressBook.getNodeId(r.nextInt(numNodes));
         final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
-        final NetworkTopology topology = new StaticTopology(r, peers, selfId, numNeighbors);
+        final NetworkTopology topology = new StaticTopology(peers, selfId);
 
         final StaticConnectionManagers managers = new StaticConnectionManagers(topology, connectionCreator);
         final List<NodeId> neighbors = topology.getNeighbors().stream().toList();

@@ -37,7 +37,7 @@ public class DummyHashgraph {
         isInCriticalQuorum = new HashMap<>();
         numUserTransEvents = 0;
         lastRoundReceivedAllTransCons = 0;
-        addressBook = new RandomAddressBookGenerator(random).setSize(100).build();
+        addressBook = new RandomAddressBookGenerator(random).setSize(40).build();
         this.selfId = addressBook.getNodeId(selfIndex);
     }
 

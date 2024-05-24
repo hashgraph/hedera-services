@@ -120,17 +120,16 @@ class TopologyTest {
 
     @ParameterizedTest
     @MethodSource("fullyConnected")
-    void testFullyConnectedTopology(final int numNodes, final int numNeighbors, final long ignoredSeed) {
+    void testFullyConnectedTopology(final int numNodes, final long ignoredSeed) {
         final AddressBook addressBook =
                 new RandomAddressBookGenerator().setSize(numNodes).build();
         for (int thisNode = 0; thisNode < numNodes; thisNode++) {
             final NodeId outOfBoundsId = addressBook.getNextNodeId();
             final NodeId thisNodeId = addressBook.getNodeId(thisNode);
-            final Random random = getRandomPrintSeed();
 
             final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, thisNodeId);
 
-            final NetworkTopology topology = new StaticTopology(random, peers, thisNodeId, numNeighbors);
+            final NetworkTopology topology = new StaticTopology(peers, thisNodeId);
             final Set<NodeId> neighbors = topology.getNeighbors();
             final Set<NodeId> expected = IntStream.range(0, numNodes)
                     .mapToObj(addressBook::getNodeId)
@@ -148,8 +147,6 @@ class TopologyTest {
             assertFalse(topology.shouldConnectToMe(thisNodeId), "I should not connect to myself");
 
             assertFalse(topology.shouldConnectToMe(outOfBoundsId), "values >=numNodes should return to false");
-
-            testRandomGraphWithSets(topology.getConnectionGraph(), numNodes, numNeighbors);
         }
     }
 
