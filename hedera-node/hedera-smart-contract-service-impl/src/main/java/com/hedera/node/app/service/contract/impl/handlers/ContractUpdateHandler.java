@@ -26,10 +26,10 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CON
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.hapi.util.HapiUtils.EMPTY_KEY_LIST;
+import static com.hedera.node.app.service.contract.impl.handlers.CommonHandlerPureChecks.simpleValidateContractId;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
-import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -103,7 +103,9 @@ public class ContractUpdateHandler implements TransactionHandler {
     @Override
     public void pureChecks(@NonNull TransactionBody txn) throws PreCheckException {
         final var op = txn.contractUpdateInstanceOrThrow();
-        mustExist(op.contractID(), INVALID_CONTRACT_ID);
+
+        // Must have a contract id
+        simpleValidateContractId(op.contractID());
 
         if (op.hasAdminKey() && processAdminKey(op)) {
             throw new PreCheckException(INVALID_ADMIN_KEY);

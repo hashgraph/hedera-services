@@ -17,10 +17,9 @@
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.handlers.CommonHandlerPureChecks.simpleValidateContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
-import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -79,7 +78,9 @@ public class ContractCallHandler implements TransactionHandler {
     @Override
     public void pureChecks(@NonNull TransactionBody txn) throws PreCheckException {
         final var op = txn.contractCallOrThrow();
-        mustExist(op.contractID(), INVALID_CONTRACT_ID);
+
+        // Must have a contract id
+        simpleValidateContractId(op.contractID());
     }
 
     @NonNull

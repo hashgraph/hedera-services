@@ -24,6 +24,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OBTAINER_REQUIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION;
+import static com.hedera.node.app.service.contract.impl.handlers.CommonHandlerPureChecks.simpleValidateContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumericContractId;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
@@ -71,9 +72,8 @@ public class ContractDeleteHandler implements TransactionHandler {
         final var op = txn.contractDeleteInstanceOrThrow();
         validateFalsePreCheck(op.permanentRemoval(), PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION);
 
-        // The contract ID must be present on the transaction
-        final var contractID = op.contractID();
-        mustExist(contractID, INVALID_CONTRACT_ID);
+        // Must have a contract id
+        simpleValidateContractId(op.contractID());
 
         validateTruePreCheck(op.hasTransferAccountID() || op.hasTransferContractID(), OBTAINER_REQUIRED);
     }
