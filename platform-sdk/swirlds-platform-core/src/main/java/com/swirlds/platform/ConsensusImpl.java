@@ -263,7 +263,14 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         updateRoundGenerations(rounds.getFameDecidedBelow());
     }
 
-    public void setPcesMode(final boolean pcesMode) {}
+    /**
+     * Set whether events are currently being sourced from the PCES.
+     *
+     * @param pcesMode true if we are currently replaying the PCES, false otherwise
+     */
+    public void setPcesMode(final boolean pcesMode) {
+        this.pcesMode = pcesMode;
+    }
 
     /**
      * Add an event to consensus. It must already have been instantiated, checked for being a
