@@ -21,7 +21,7 @@ import com.swirlds.metrics.impl.DefaultDoubleAccumulator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class PlatformDoubleAccumulator extends DefaultDoubleAccumulator implements PlatformMetric {
-    public PlatformDoubleAccumulator(@NonNull Config config) {
+    public PlatformDoubleAccumulator(@NonNull final Config config) {
         super(config);
     }
 }
