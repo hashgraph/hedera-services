@@ -20,7 +20,7 @@ import com.swirlds.common.constructable.ConstructableIgnored;
 import java.util.Arrays;
 
 @ConstructableIgnored
-@Deprecated(forRemoval = true)// this class does not need to exist since Hash is already immutable
+@Deprecated(forRemoval = true) // this class does not need to exist since Hash is already immutable
 public class ImmutableHash extends Hash {
     /**
      * {@inheritDoc}

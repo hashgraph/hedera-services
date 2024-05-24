@@ -67,7 +67,7 @@ public interface Cryptography {
      * @return the cryptographic hash for the {@link SelfSerializable} object
      * @throws CryptographyException if an unrecoverable error occurs while computing the digest
      */
-    default Hash digestSync(final SelfSerializable serializable, final DigestType digestType){
+    default Hash digestSync(final SelfSerializable serializable, final DigestType digestType) {
         return new Hash(digestBytesSync(serializable, digestType), digestType);
     }
 

@@ -214,7 +214,8 @@ public class CryptoEngine implements Cryptography {
     public Hash digestSync(
             final SerializableHashable serializableHashable, final DigestType digestType, final boolean setHash) {
         try {
-            final Hash hash = new Hash(serializationDigestProvider.compute(serializableHashable, digestType), digestType);
+            final Hash hash =
+                    new Hash(serializationDigestProvider.compute(serializableHashable, digestType), digestType);
             if (setHash) {
                 serializableHashable.setHash(hash);
             }
