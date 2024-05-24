@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.sequence;
+package com.swirlds.platform.sequence;
 
 /**
  * A data structure with a shifting window of acceptable values. When a new value is added, if the value

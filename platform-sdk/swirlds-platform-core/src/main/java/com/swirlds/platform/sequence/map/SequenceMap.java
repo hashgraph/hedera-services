@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.sequence.map;
+package com.swirlds.platform.sequence.map;
 
-import com.swirlds.common.sequence.Shiftable;
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.platform.sequence.Shiftable;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;

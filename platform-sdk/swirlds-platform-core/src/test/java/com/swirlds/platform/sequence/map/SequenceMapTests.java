@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.sequence.map;
+package com.swirlds.platform.sequence.map;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.completeBeforeTimeout;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;

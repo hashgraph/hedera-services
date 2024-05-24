@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.sequence.set;
+package com.swirlds.platform.sequence.set;
 
-import com.swirlds.common.sequence.map.ConcurrentSequenceMap;
-import com.swirlds.common.sequence.map.SequenceMap;
-import com.swirlds.common.sequence.set.internal.AbstractSequenceSet;
+import com.swirlds.platform.sequence.map.ConcurrentSequenceMap;
+import com.swirlds.platform.sequence.map.SequenceMap;
+import com.swirlds.platform.sequence.set.internal.AbstractSequenceSet;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.ToLongFunction;
