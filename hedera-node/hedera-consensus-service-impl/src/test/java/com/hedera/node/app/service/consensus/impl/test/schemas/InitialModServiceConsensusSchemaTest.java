@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.service.consensus.impl.test.schemas;
 
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
@@ -7,12 +23,9 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.hapi.node.base.TopicID;
-import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.schemas.InitialModServiceConsensusSchema;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.networkadmin.impl.schemas.InitialModServiceAdminSchema;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
@@ -21,9 +34,7 @@ import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.state.spi.WritableKVState;
-import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,7 +62,6 @@ public class InitialModServiceConsensusSchemaTest {
     @LoggingSubject
     private InitialModServiceConsensusSchema subject;
 
-
     @BeforeEach
     void setUp() {
         subject = new InitialModServiceConsensusSchema(CURRENT_VERSION);
@@ -65,7 +75,6 @@ public class InitialModServiceConsensusSchemaTest {
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
         assertEquals(TOPICS_KEY, iter.next());
     }
-
 
     @Test
     void checkFSSetupCorrectly() {
@@ -82,8 +91,6 @@ public class InitialModServiceConsensusSchemaTest {
         assertThatCode(() -> subject.migrate(migrationContext)).doesNotThrowAnyException();
         assertThat(logCaptor.infoLogs()).contains("BBM: running consensus migration...");
         assertThat(logCaptor.infoLogs()).contains("BBM: finished consensus service migration");
-
-
     }
 
     @Test
@@ -91,7 +98,5 @@ public class InitialModServiceConsensusSchemaTest {
 
         assertThatCode(() -> subject.migrate(migrationContext)).doesNotThrowAnyException();
         assertThat(logCaptor.warnLogs()).contains("BBM: no consensus 'from' state found");
-
     }
-
 }
