@@ -46,7 +46,7 @@ class BranchDetectorTests {
      * @return a list of events
      */
     @NonNull
-    private List<GossipEvent> generateSimpleSequenceOfEvents(
+    static List<GossipEvent> generateSimpleSequenceOfEvents(
             @NonNull final Randotron randotron,
             @NonNull final NodeId creatorId,
             final int initialBirthRound,
