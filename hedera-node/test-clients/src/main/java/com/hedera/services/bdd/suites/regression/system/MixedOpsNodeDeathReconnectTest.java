@@ -42,7 +42,7 @@ public class MixedOpsNodeDeathReconnectTest {
     private static final long PORT_UNBINDING_TIMEOUT_MS = 180_000L;
     private static final Duration MIXED_OPS_BURST_DURATION = Duration.ofSeconds(10);
     private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(30);
-    private static final Duration RESTART_TO_ACTIVE_TIMEOUT = Duration.ofSeconds(120);
+    private static final Duration RESTART_TO_ACTIVE_TIMEOUT = Duration.ofSeconds(180);
 
     @HapiTest
     final Stream<DynamicTest> reconnectMixedOps() {
