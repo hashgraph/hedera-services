@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event.branching;
 
+import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,6 +42,7 @@ public interface BranchDetector {
      *
      * @param eventWindow the new event window
      */
+    @InputWireLabel("event window")
     void updateEventWindow(@NonNull EventWindow eventWindow);
 
     /**
