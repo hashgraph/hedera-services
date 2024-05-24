@@ -20,6 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.utility.Threshold;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
@@ -48,6 +49,8 @@ public class DefaultBranchReporter implements BranchReporter {
      * node to spam the logs.
      */
     private final Map<NodeId, RateLimitedLogger> nodeLoggers = new HashMap<>();
+
+    private final RateLimitedLogger excessiveBranchingLogger;
 
     /**
      * The current roster.
@@ -98,6 +101,7 @@ public class DefaultBranchReporter implements BranchReporter {
             nodes.add(nodeId);
             nodeLoggers.put(nodeId, new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(10)));
         }
+        excessiveBranchingLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(10));
 
         Collections.sort(nodes);
 
@@ -131,7 +135,33 @@ public class DefaultBranchReporter implements BranchReporter {
 
         metrics.reportBranchingEvent();
         metrics.reportBranchingNodeCount(branchingCount);
-        metrics.reportBranchingWeightFraction((double) branchingWeight / currentRoster.getTotalWeight());
+        final double fraction = (double) branchingWeight / currentRoster.getTotalWeight();
+        metrics.reportBranchingWeightFraction(fraction);
+
+        if (Threshold.STRONG_MINORITY.isSatisfiedBy(branchingWeight, currentRoster.getTotalWeight())) {
+            // Uh oh.
+
+            final List<NodeId> branchingNodes = new ArrayList<>();
+            for (final NodeId nodeId : nodes) {
+                if (mostRecentBranchingEvents.get(nodeId) != null) {
+                    branchingNodes.add(nodeId);
+                }
+            }
+            final StringBuilder sb = new StringBuilder();
+            for (int index = 0; index < branchingNodes.size(); index++) {
+                sb.append(branchingNodes.get(index));
+                if (index < branchingNodes.size() - 1) {
+                    sb.append(", ");
+                }
+            }
+
+            excessiveBranchingLogger.fatal(
+                    EXCEPTION.getMarker(),
+                    "Excessive branching detected! {} weight, fraction: {}, nodes: {}",
+                    branchingWeight,
+                    fraction,
+                    sb);
+        }
     }
 
     /**

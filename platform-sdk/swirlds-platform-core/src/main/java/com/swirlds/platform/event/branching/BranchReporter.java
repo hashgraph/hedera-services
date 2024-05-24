@@ -43,5 +43,5 @@ public interface BranchReporter {
     /**
      * Clear the branch detector, returning it to its initial state.
      */
-    void clear(); // TODO necessary?
+    void clear();
 }
