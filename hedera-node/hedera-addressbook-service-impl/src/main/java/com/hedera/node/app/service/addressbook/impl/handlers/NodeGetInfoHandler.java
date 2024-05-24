@@ -16,9 +16,6 @@
 
 package com.hedera.node.app.service.addressbook.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
-import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
-import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.addressbook.NodeGetInfoQuery;
@@ -26,7 +23,6 @@ import com.hedera.hapi.node.addressbook.NodeGetInfoResponse;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
-import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
@@ -61,16 +57,6 @@ public class NodeGetInfoHandler extends PaidQueryHandler {
         requireNonNull(header);
         final var response = NodeGetInfoResponse.newBuilder().header(header);
         return Response.newBuilder().nodeGetInfo(response).build();
-    }
-
-    @Override
-    public boolean requiresNodePayment(@NonNull ResponseType responseType) {
-        return responseType == ANSWER_ONLY || responseType == ANSWER_STATE_PROOF;
-    }
-
-    @Override
-    public boolean needsAnswerOnlyCost(@NonNull ResponseType responseType) {
-        return COST_ANSWER == responseType;
     }
 
     @Override
