@@ -50,7 +50,7 @@ public class NodeDeleteHandler implements TransactionHandler {
         requireNonNull(context);
 
         final var op = context.body().nodeDelete();
-        // implement
+        throw new UnsupportedOperationException("need implementation");
     }
 
     /**
@@ -64,7 +64,7 @@ public class NodeDeleteHandler implements TransactionHandler {
         requireNonNull(context, "The argument 'context' must not be null");
 
         final var op = context.body().nodeDelete();
-        // implement
+        throw new UnsupportedOperationException("need implementation");
     }
 
     @NonNull
@@ -73,7 +73,6 @@ public class NodeDeleteHandler implements TransactionHandler {
         requireNonNull(feeContext);
         final var op = feeContext.body();
 
-        // implement
-        return Fees.FREE;
+        throw new UnsupportedOperationException("need implementation");
     }
 }

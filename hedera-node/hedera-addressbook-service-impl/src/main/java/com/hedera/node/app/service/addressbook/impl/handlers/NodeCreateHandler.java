@@ -42,15 +42,14 @@ public class NodeCreateHandler implements TransactionHandler {
 
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-        // implement
+        throw new UnsupportedOperationException("need implementation");
     }
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().nodeCreate();
-
-        // implement
+        throw new UnsupportedOperationException("need implementation");
     }
 
     /**
@@ -67,7 +66,7 @@ public class NodeCreateHandler implements TransactionHandler {
 
         final var configuration = handleContext.configuration();
 
-        // implement
+        throw new UnsupportedOperationException("need implementation");
     }
 
     @NonNull
@@ -76,7 +75,6 @@ public class NodeCreateHandler implements TransactionHandler {
         requireNonNull(feeContext);
         final var op = feeContext.body();
 
-        // implement
-        return Fees.FREE;
+        throw new UnsupportedOperationException("need implementation");
     }
 }

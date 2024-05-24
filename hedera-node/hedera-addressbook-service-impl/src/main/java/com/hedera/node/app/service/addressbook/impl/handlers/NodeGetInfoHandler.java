@@ -79,7 +79,7 @@ public class NodeGetInfoHandler extends PaidQueryHandler {
         final var query = context.query();
         final var store = context.createStore(ReadableNodeStore.class);
         final NodeGetInfoQuery op = query.nodeGetInfoOrThrow();
-        // implement
+        throw new UnsupportedOperationException("need implementation");
     }
 
     @Override
@@ -88,8 +88,7 @@ public class NodeGetInfoHandler extends PaidQueryHandler {
         requireNonNull(header);
         final var query = context.query();
         final var config = context.configuration().getConfigData(LedgerConfig.class);
-        // implement
-        return null;
+        throw new UnsupportedOperationException("need implementation");
     }
 
     @NonNull
@@ -98,7 +97,6 @@ public class NodeGetInfoHandler extends PaidQueryHandler {
         final var query = queryContext.query();
         final var nodeStore = queryContext.createStore(ReadableNodeStore.class);
         final var op = query.nodeGetInfoOrThrow();
-        // implement
-        return Fees.FREE;
+        throw new UnsupportedOperationException("need implementation");
     }
 }

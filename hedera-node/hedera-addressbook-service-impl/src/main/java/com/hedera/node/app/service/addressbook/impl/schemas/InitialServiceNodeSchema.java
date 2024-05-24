@@ -52,6 +52,6 @@ public class InitialServiceNodeSchema extends Schema {
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
-        // implement migration logic here
+        throw new UnsupportedOperationException("need implementation");
     }
 }
