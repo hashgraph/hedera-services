@@ -30,6 +30,7 @@ public class WiringModelBuilder {
 
     private boolean deterministicModeEnabled;
     private ForkJoinPool defaultPool = ForkJoinPool.commonPool();
+    private boolean healthMonitorEnabled = false;
 
     /**
      * Create a new builder.
@@ -74,6 +75,18 @@ public class WiringModelBuilder {
     @NonNull
     public WiringModelBuilder withDeterministicModeEnabled(final boolean deterministicModeEnabled) {
         this.deterministicModeEnabled = deterministicModeEnabled;
+        return this;
+    }
+
+    /**
+     * Set if the health monitor should be enabled. Default is false.
+     *
+     * @param healthMonitorEnabled whether to enable the health monitor
+     * @return this
+     */
+    @NonNull
+    public WiringModelBuilder withHealthMonitorEnabled(final boolean healthMonitorEnabled) {
+        this.healthMonitorEnabled = healthMonitorEnabled;
         return this;
     }
 
