@@ -32,6 +32,8 @@ import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
+import com.swirlds.platform.event.branching.BranchDetector;
+import com.swirlds.platform.event.branching.BranchReporter;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.hashing.EventHasher;
@@ -109,7 +111,9 @@ class PlatformWiringTests {
                 .withTransactionResubmitter(mock(TransactionResubmitter.class))
                 .withTransactionPool(mock(TransactionPool.class))
                 .withStateSnapshotManager(mock(StateSnapshotManager.class))
-                .withHashLogger(mock(HashLogger.class));
+                .withHashLogger(mock(HashLogger.class))
+                .withBranchDetector(mock(BranchDetector.class))
+                .withBranchReporter(mock(BranchReporter.class));
 
         // Gossip is a special case, it's not like other components.
         // Currently we just have a facade between gossip and the wiring framework.
