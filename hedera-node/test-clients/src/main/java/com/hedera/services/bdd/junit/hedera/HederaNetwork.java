@@ -195,7 +195,7 @@ public class HederaNetwork {
         nodes.forEach(node -> {
             node.initWorkingDir(configTxt);
             node.start();
-            node.statusFuture(ACTIVE, timeout).thenRun(() -> {
+            node.statusFuture(ACTIVE).thenRun(() -> {
                 log.info("Node '{}' is ready", node.getName());
                 latch.countDown();
             });

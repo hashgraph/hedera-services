@@ -21,7 +21,6 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 public interface HederaNode {
@@ -85,17 +84,16 @@ public interface HederaNode {
      * Returns a future that resolves when the node has the given status.
      *
      * @param status the status to wait for
-     * @param timeout the maximum time to wait for the node to reach the status
      * @return a future that resolves when the node has the given status
      */
-    CompletableFuture<Void> statusFuture(@NonNull PlatformStatus status, @NonNull Duration timeout);
+    CompletableFuture<Void> statusFuture(@NonNull PlatformStatus status);
 
     /**
      * Returns a future that resolves when the node has stopped.
      *
      * @return a future that resolves when the node has stopped
      */
-    CompletableFuture<Void> stopFuture(@NonNull Duration timeout);
+    CompletableFuture<Void> stopFuture();
 
     /**
      * Returns the string that would identify this node as a target

@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.spec.utilops.lifecycle.ops;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
@@ -47,7 +48,7 @@ public class WaitForStatusOp extends AbstractLifecycleOp {
     @Override
     public void run(@NonNull final HederaNode node) {
         log.info("Waiting for node '{}' to be {} within {}", node.getName(), status, timeout);
-        node.statusFuture(status, timeout).join();
+        node.statusFuture(status).orTimeout(timeout.toMillis(), MILLISECONDS).join();
         log.info("Node '{}' is {}", node.getName(), status);
     }
 

@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.junit.hedera.live;
 
+import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.conditionFuture;
 import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.destroyAnySubProcessNodeWithId;
 import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.startSubProcessNodeFrom;
 import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.recreateWorkingDir;
@@ -29,7 +30,6 @@ import com.swirlds.base.function.BooleanFunction;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -85,21 +85,19 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
     }
 
     @Override
-    public CompletableFuture<Void> statusFuture(@NonNull final PlatformStatus status, @NonNull final Duration timeout) {
-        return ProcessUtils.conditionFuture(
-                () -> {
-                    final var currentStatus = prometheusClient.statusFromLocalEndpoint(metadata.prometheusPort());
-                    if (!status.equals(currentStatus)) {
-                        return false;
-                    }
-                    return status != PlatformStatus.ACTIVE || grpcPinger.isLive(metadata.grpcPort());
-                },
-                timeout);
+    public CompletableFuture<Void> statusFuture(@NonNull final PlatformStatus status) {
+        return conditionFuture(() -> {
+            final var currentStatus = prometheusClient.statusFromLocalEndpoint(metadata.prometheusPort());
+            if (!status.equals(currentStatus)) {
+                return false;
+            }
+            return status != PlatformStatus.ACTIVE || grpcPinger.isLive(metadata.grpcPort());
+        });
     }
 
     @Override
-    public CompletableFuture<Void> stopFuture(@NonNull final Duration timeout) {
-        return ProcessUtils.conditionFuture(() -> processHandle == null, timeout);
+    public CompletableFuture<Void> stopFuture() {
+        return conditionFuture(() -> processHandle == null);
     }
 
     @Override

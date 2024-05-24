@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BooleanSupplier;
@@ -96,25 +95,22 @@ public class ProcessUtils {
     }
 
     /**
-     * Returns a future that resolves when the given condition is true or the timeout is reached.
+     * Returns a future that resolves when the given condition is true.
      *
      * @param condition the condition to wait for
-     * @param timeout the maximum time to wait for the condition
      * @return a future that resolves when the condition is true or the timeout is reached
      */
-    public static CompletableFuture<Void> conditionFuture(
-            @NonNull final BooleanSupplier condition, @NonNull Duration timeout) {
+    public static CompletableFuture<Void> conditionFuture(@NonNull final BooleanSupplier condition) {
         return CompletableFuture.runAsync(() -> {
-                    while (!condition.getAsBoolean()) {
-                        try {
-                            MILLISECONDS.sleep(WAIT_SLEEP_MILLIS);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                            throw new IllegalStateException("Interrupted while waiting for condition", e);
-                        }
-                    }
-                })
-                .orTimeout(timeout.toMillis(), MILLISECONDS);
+            while (!condition.getAsBoolean()) {
+                try {
+                    MILLISECONDS.sleep(WAIT_SLEEP_MILLIS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("Interrupted while waiting for condition", e);
+                }
+            }
+        });
     }
 
     private static String currentNonTestClientClasspath() {
