@@ -22,7 +22,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class PlatformIntegerAccumulator extends DefaultIntegerAccumulator implements PlatformMetric {
 
-    public PlatformIntegerAccumulator(@NonNull Config config) {
+    public PlatformIntegerAccumulator(@NonNull final Config config) {
         super(config);
     }
 }
