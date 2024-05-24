@@ -42,6 +42,10 @@ public class Bls12381BilinearPairing implements BilinearPairing {
     @NonNull
     @Override
     public PairingResult pairingBetween(@NonNull final GroupElement element1, @NonNull final GroupElement element2) {
+        if (!element1.isOppositeGroup(element2)) {
+            throw new IllegalArgumentException("Pairing elements must be from opposite groups");
+        }
+
         return new Bls12381PairingResult(element1, element2);
     }
 

@@ -18,39 +18,16 @@ package com.swirlds.platform.hcm.api.signaturescheme;
 
 import com.swirlds.platform.hcm.api.pairings.Field;
 import com.swirlds.platform.hcm.api.pairings.FieldElement;
-import com.swirlds.platform.hcm.api.pairings.Group;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 import java.util.Random;
 
 /**
  * A private key that can be used to sign a message.
+ *
+ * @param signatureSchema the signature schema
+ * @param secretElement   the secret element
  */
-public record PairingPrivateKey(@NonNull FieldElement secretElement) {
-
-    /**
-     * Sign a message using the private key.
-     * <p>
-     * Signing:
-     * In order to sign a message “m”, the first step is to map it onto a point in the signature group.
-     * After this step, the resulting point in the signature group is referred to as “H(m)”.
-     * <p>
-     * The message is signed by computing the signature “σ = [sk]H(m)”, where “[sk]H(m)” represents multiplying the
-     * hash point by the private key.
-     *
-     * @param publicKey the public key that corresponds to this private key. This is needed, so that we know which
-     *                  group to use for the signature
-     * @param message   the message to sign
-     * @return the signature, which will be in the group opposite to the group of the public key
-     */
-    @NonNull
-    public PairingSignature sign(@NonNull final PairingPublicKey publicKey, @NonNull final byte[] message) {
-        final Group publicKeyGroup = publicKey.element().getGroup();
-        final Group signatureGroup = publicKeyGroup.getOppositeGroup();
-
-        return new PairingSignature(signatureGroup.elementFromHash(message).power(secretElement));
-    }
-
+public record PairingPrivateKey(@NonNull SignatureSchema signatureSchema, @NonNull FieldElement secretElement) {
     /**
      * Creates a private key out of the CurveType and a random
      *
@@ -64,37 +41,56 @@ public record PairingPrivateKey(@NonNull FieldElement secretElement) {
         final byte[] seed = new byte[field.getSeedSize()];
         random.nextBytes(seed);
 
-        return new PairingPrivateKey(field.randomElement(seed));
+        return new PairingPrivateKey(type, field.randomElement(seed));
     }
 
     /**
-     * Deserialize a private key from a byte array.
+     * Deserialize a pairing private key from the serialized schema object.
      *
-     * @param bytes the serialized private key
+     * @param schemaObject the serialized private key, with the corresponding signature schema
      * @return the deserialized private key
      */
     @NonNull
-    public static PairingPrivateKey fromBytes(final @NonNull byte[] bytes) {
-        Objects.requireNonNull(bytes);
+    public static PairingPrivateKey fromSchemaObject(@NonNull final SerializedSignatureSchemaObject schemaObject) {
+        return new PairingPrivateKey(
+                schemaObject.schema(), schemaObject.schema().getField().elementFromBytes(schemaObject.elementBytes()));
+    }
 
-        if (bytes.length == 0) {
-            throw new IllegalArgumentException("Bytes cannot be empty");
-        }
-
-        final SignatureSchema curveType = SignatureSchema.fromIdByte(bytes[0]);
-        // TODO: do we actually want the elementFromBytes method to have to ignore the curve type byte?
-        return new PairingPrivateKey(curveType.getField().elementFromBytes(bytes));
+    /**
+     * Sign a message using the private key.
+     * <p>
+     * Signing:
+     * In order to sign a message “m”, the first step is to map it onto a point in the signature group.
+     * After this step, the resulting point in the signature group is referred to as “H(m)”.
+     * <p>
+     * The message is signed by computing the signature “σ = [sk]H(m)”, where “[sk]H(m)” represents multiplying the
+     * hash point by the private key.
+     *
+     * @param message the message to sign
+     * @return the signature, which will be in the group opposite to the group of the public key
+     */
+    @NonNull
+    public PairingSignature sign(@NonNull final byte[] message) {
+        return new PairingSignature(
+                signatureSchema,
+                signatureSchema.getSignatureGroup().elementFromHash(message).power(secretElement));
     }
 
     /**
      * Serialize the private key to a byte array.
      * <p>
-     * The first byte of the serialized private key must represent the curve type.
+     * The first byte of the serialized private key represents the curve type.
      *
      * @return the serialized private key
      */
     @NonNull
     public byte[] toBytes() {
-        return secretElement.toBytes();
+        final int elementSize = secretElement.size();
+        final byte[] output = new byte[1 + elementSize];
+
+        output[0] = signatureSchema.getIdByte();
+        System.arraycopy(secretElement.toBytes(), 0, output, 1, elementSize);
+
+        return output;
     }
 }

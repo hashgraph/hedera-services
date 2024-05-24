@@ -18,52 +18,55 @@ package com.swirlds.platform.hcm.api.signaturescheme;
 
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 
 /**
  * A public key that can be used to verify a signature.
+ *
+ * @param signatureSchema the signature schema
+ * @param keyElement      the public key element
  */
-public record PairingPublicKey(@NonNull GroupElement element) {
+public record PairingPublicKey(@NonNull SignatureSchema signatureSchema, @NonNull GroupElement keyElement) {
     /**
      * Create a public key from a private key.
      *
-     * @param signingCurveType the signing curve type
-     * @param privateKey       the private key
+     * @param schema     the signing curve type
+     * @param privateKey the private key
      * @return the public key
      */
     public static PairingPublicKey create(
-            @NonNull final SignatureSchema signingCurveType, @NonNull final PairingPrivateKey privateKey) {
+            @NonNull final SignatureSchema schema, @NonNull final PairingPrivateKey privateKey) {
         return new PairingPublicKey(
-                signingCurveType.getPublicKeyGroup().getGenerator().power(privateKey.secretElement()));
+                schema, schema.getPublicKeyGroup().getGenerator().power(privateKey.secretElement()));
     }
 
     /**
-     * Deserialize a public key from a byte array.
+     * Deserialize a pairing public key from the serialized schema object
      *
-     * @param bytes the serialized public key, with the curve type being represented by the first byte
+     * @param schemaObject the serialized public key, with the corresponding signature schema
      * @return the deserialized public key
      */
-    public static PairingPublicKey fromBytes(final @NonNull byte[] bytes) {
-        Objects.requireNonNull(bytes);
-
-        if (bytes.length == 0) {
-            throw new IllegalArgumentException("Bytes cannot be empty");
-        }
-
-        final SignatureSchema curveType = SignatureSchema.fromIdByte(bytes[0]);
-        // TODO: do we actually want the elementFromBytes method to have to ignore the curve type byte?
-        return new PairingPublicKey(curveType.getPublicKeyGroup().elementFromBytes(bytes));
+    @NonNull
+    public static PairingPublicKey fromSchemaObject(@NonNull final SerializedSignatureSchemaObject schemaObject) {
+        return new PairingPublicKey(
+                schemaObject.schema(),
+                schemaObject.schema().getPublicKeyGroup().elementFromBytes(schemaObject.elementBytes()));
     }
 
     /**
      * Serialize the public key to a byte array.
      * <p>
-     * The first byte of the serialized public key must represent the curve type.
+     * The first byte of the serialized public key will represent the curve type.
      *
      * @return the serialized public key
      */
     @NonNull
     public byte[] toBytes() {
-        return element().toBytes();
+        final int elementSize = keyElement.size();
+        final byte[] output = new byte[1 + elementSize];
+
+        output[0] = signatureSchema.getIdByte();
+        System.arraycopy(keyElement.toBytes(), 0, output, 1, elementSize);
+
+        return output;
     }
 }

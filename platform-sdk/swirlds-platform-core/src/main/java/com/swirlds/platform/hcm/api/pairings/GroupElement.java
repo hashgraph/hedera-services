@@ -43,6 +43,15 @@ public interface GroupElement {
     }
 
     /**
+     * Returns the size of the group element in bytes
+     *
+     * @return the size of the group element in bytes
+     */
+    default int size() {
+        return isCompressed() ? getGroup().getCompressedSize() : getGroup().getUncompressedSize();
+    }
+
+    /**
      * Returns the group of the element
      *
      * @return the element's group

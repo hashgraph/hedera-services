@@ -21,28 +21,25 @@ import com.swirlds.platform.hcm.api.pairings.Group;
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
 import com.swirlds.platform.hcm.api.pairings.PairingResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 
 /**
  * A signature that has been produced by a {@link PairingPrivateKey}.
+ *
+ * @param signatureSchema  the schema of the signature
+ * @param signatureElement the signature element
  */
-public record PairingSignature(@NonNull GroupElement signatureElement) {
+public record PairingSignature(@NonNull SignatureSchema signatureSchema, @NonNull GroupElement signatureElement) {
     /**
-     * Deserialize a signature from a byte array.
+     * Deserialize a pairing signature from the serialized schema object
      *
-     * @param bytes the serialized signature, with the curve type being represented by the first byte
+     * @param schemaObject the serialized signature, with the corresponding signature schema
      * @return the deserialized signature
      */
-    public static PairingSignature fromBytes(final @NonNull byte[] bytes) {
-        Objects.requireNonNull(bytes);
-
-        if (bytes.length == 0) {
-            throw new IllegalArgumentException("Bytes cannot be empty");
-        }
-
-        final SignatureSchema curveType = SignatureSchema.fromIdByte(bytes[0]);
-        // TODO: do we actually want the elementFromBytes method to have to ignore the curve type byte?
-        return new PairingSignature(curveType.getSignatureGroup().elementFromBytes(bytes));
+    @NonNull
+    public static PairingSignature fromSchemaObject(@NonNull final SerializedSignatureSchemaObject schemaObject) {
+        return new PairingSignature(
+                schemaObject.schema(),
+                schemaObject.schema().getSignatureGroup().elementFromBytes(schemaObject.elementBytes()));
     }
 
     /**
@@ -62,26 +59,36 @@ public record PairingSignature(@NonNull GroupElement signatureElement) {
      * @return true if the signature is valid, false otherwise
      */
     public boolean verifySignature(@NonNull final PairingPublicKey publicKey, @NonNull final byte[] message) {
-        final Group publicKeyGroup = publicKey.element().getGroup();
-        final Group signatureGroup = publicKeyGroup.getOppositeGroup();
-        final BilinearPairing pairing = publicKeyGroup.getPairing();
+        final Group publicKeyGroup = publicKey.keyElement().getGroup();
+        if (!publicKeyGroup.equals(signatureSchema.getPublicKeyGroup())) {
+            throw new IllegalArgumentException("The public key group does not match the signature schema.");
+        }
+
+        final Group signatureGroup = signatureElement.getGroup();
+        final BilinearPairing pairing = signatureSchema.getPairing();
         final GroupElement messageHashedToGroup = signatureGroup.elementFromHash(message);
 
         final PairingResult lhs = pairing.pairingBetween(signatureElement, publicKeyGroup.getGenerator());
-        final PairingResult rhs = pairing.pairingBetween(messageHashedToGroup, publicKey.element());
+        final PairingResult rhs = pairing.pairingBetween(messageHashedToGroup, publicKey.keyElement());
 
         return pairing.comparePairingResults(lhs, rhs);
     }
 
     /**
-     * Serialize the signature to a byte array.
+     * Serialize the public key to a byte array.
      * <p>
-     * The first byte of the serialized signature must represent the curve type.
+     * The first byte of the serialized public key will represent the curve type.
      *
-     * @return the serialized signature
+     * @return the serialized public key
      */
     @NonNull
     public byte[] toBytes() {
-        return signatureElement.toBytes();
+        final int elementSize = signatureElement.size();
+        final byte[] output = new byte[1 + elementSize];
+
+        output[0] = signatureSchema.getIdByte();
+        System.arraycopy(signatureElement.toBytes(), 0, output, 1, elementSize);
+
+        return output;
     }
 }

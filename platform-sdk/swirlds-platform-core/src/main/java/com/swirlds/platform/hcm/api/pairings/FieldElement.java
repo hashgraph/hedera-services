@@ -34,6 +34,15 @@ public interface FieldElement {
     }
 
     /**
+     * Get the size of the field element
+     *
+     * @return the size of the field element
+     */
+    default int size() {
+        return getField().getElementSize();
+    }
+
+    /**
      * Returns the field the element is in
      *
      * @return the field

@@ -29,9 +29,6 @@ import java.util.Objects;
  *
  * @implNote Given that we pack the type of the curve in serialized forms in 1 byte alongside other information
  * we can only support a limited amount of curves.
- * <p>
- * TODO: define how many we use 2 bytes for type(publicKey,privateKey,signature) possibly need other 2 bytes for
- * (groupElement1 groupElement2 fieldElement) and the remaining for the type of curve
  */
 public enum SignatureSchema {
     /**
@@ -106,6 +103,16 @@ public enum SignatureSchema {
     @NonNull
     public Field getField() {
         return pairing.getField();
+    }
+
+    /**
+     * Get the pairing
+     *
+     * @return the pairing
+     */
+    @NonNull
+    public BilinearPairing getPairing() {
+        return pairing;
     }
 
     /**
