@@ -173,7 +173,7 @@ public class PlatformWiring {
     private final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring;
     private final ComponentWiring<PlatformStatusNexus, Void> statusNexusWiring;
     private final ComponentWiring<BranchDetector, GossipEvent> branchDetectorWiring;
-    private final ComponentWiring<BranchReporter, GossipEvent> branchReporterWiring;
+    private final ComponentWiring<BranchReporter, Void> branchReporterWiring;
 
     /**
      * Constructor.
@@ -351,7 +351,9 @@ public class PlatformWiring {
                 stateHasherWiring,
                 staleEventDetectorWiring,
                 transactionPoolWiring,
-                statusStateMachineWiring);
+                statusStateMachineWiring,
+                branchDetectorWiring,
+                branchReporterWiring);
 
         wire();
     }
@@ -753,6 +755,8 @@ public class PlatformWiring {
         staleEventDetectorWiring.getInputWire(StaleEventDetector::clear);
         transactionPoolWiring.getInputWire(TransactionPool::clear);
         stateSnapshotManagerWiring.getInputWire(StateSnapshotManager::dumpStateTask);
+        branchDetectorWiring.getInputWire(BranchDetector::clear);
+        branchReporterWiring.getInputWire(BranchReporter::clear);
     }
 
     /**
