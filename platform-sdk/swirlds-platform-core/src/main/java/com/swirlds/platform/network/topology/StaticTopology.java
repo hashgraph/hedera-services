@@ -25,16 +25,12 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * A bidirectional topology that never changes.
+ * A fully connected topology that never changes.
  */
 public class StaticTopology implements NetworkTopology {
 
     /** nodes are mapped so lookups are efficient. **/
     private final Set<NodeId> nodeIdToIndexSet = new HashSet<>();
-
-    /**
-     * Two nodes are neighbors if their node indexes are neighbors in the connection graph.
-     */
 
     private final NodeId selfId;
 
