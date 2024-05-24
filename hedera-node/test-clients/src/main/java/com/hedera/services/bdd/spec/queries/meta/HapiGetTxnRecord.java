@@ -1020,7 +1020,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     @Override
     protected long lookupCostWith(final HapiSpec spec, final Transaction payment) throws Throwable {
-        final Query query = getRecordQuery(spec, payment, true);
+        final Query query = maybeModified(getRecordQuery(spec, payment, true), spec);
         final Response response =
                 spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTxRecordByTxID(query);
         return costFrom(response);

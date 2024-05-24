@@ -23,7 +23,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.filesystem.FileSystemManager;
-import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.test.fixtures.TestFileSystemManager;
@@ -51,7 +50,6 @@ public final class TestPlatformContextBuilder {
     private Metrics metrics;
     private Cryptography cryptography;
     private Time time = Time.getCurrent();
-    private boolean buildFileSystemManagerFromConfig = false;
     private BiFunction<Metrics, Time, FileSystemManager> fileSystemManagerProvider;
 
     private TestPlatformContextBuilder() {}
@@ -112,15 +110,8 @@ public final class TestPlatformContextBuilder {
     }
 
     @NonNull
-    public TestPlatformContextBuilder withFileSystemManagerFromConfig() {
-        this.buildFileSystemManagerFromConfig = true;
-        return this;
-    }
-
-    @NonNull
     public TestPlatformContextBuilder withFileSystemManager(
             @NonNull final BiFunction<Metrics, Time, FileSystemManager> fileSystemManagerProvider) {
-        this.buildFileSystemManagerFromConfig = false;
         this.fileSystemManagerProvider = fileSystemManagerProvider;
         return this;
     }
@@ -128,7 +119,6 @@ public final class TestPlatformContextBuilder {
     @NonNull
     public TestPlatformContextBuilder withTestFileSystemManager(
             @NonNull final Path rootPath, @NonNull final BiFunction<Metrics, Time, RecycleBin> recycleBinProvider) {
-        this.buildFileSystemManagerFromConfig = false;
         this.fileSystemManagerProvider = (m, t) -> {
             TestFileSystemManager fsm = new TestFileSystemManager(rootPath);
             fsm.setBin(recycleBinProvider.apply(m, t));
@@ -139,7 +129,6 @@ public final class TestPlatformContextBuilder {
 
     @NonNull
     public TestPlatformContextBuilder withTestFileSystemManager(@NonNull final Path rootPath) {
-        this.buildFileSystemManagerFromConfig = false;
         this.fileSystemManagerProvider = (m, t) -> {
             TestFileSystemManager fsm = new TestFileSystemManager(rootPath);
             fsm.setBin(TestRecycleBin.getInstance());
@@ -151,7 +140,6 @@ public final class TestPlatformContextBuilder {
     @NonNull
     public TestPlatformContextBuilder withTestFileSystemManager(
             @NonNull final Path rootPath, @NonNull final RecycleBin recycleBin) {
-        this.buildFileSystemManagerFromConfig = false;
         this.fileSystemManagerProvider = (m, t) -> {
             TestFileSystemManager fsm = new TestFileSystemManager(rootPath);
             fsm.setBin(recycleBin);
@@ -177,12 +165,10 @@ public final class TestPlatformContextBuilder {
         }
 
         final FileSystemManager fileSystemManager;
-        if (buildFileSystemManagerFromConfig) {
-            fileSystemManager = FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, metrics);
-        } else if (fileSystemManagerProvider != null) {
+        if (fileSystemManagerProvider != null) {
             fileSystemManager = fileSystemManagerProvider.apply(metrics, time);
         } else {
-            fileSystemManager = getDefaultManager();
+            fileSystemManager = getTestFileSystemManager();
         }
 
         return new PlatformContext() {
@@ -218,7 +204,7 @@ public final class TestPlatformContextBuilder {
         };
     }
 
-    private static TestFileSystemManager getDefaultManager() {
+    private static TestFileSystemManager getTestFileSystemManager() {
         Path defaultRootLocation = rethrowIO(() -> Files.createTempDirectory("testRootDir"));
         TestFileSystemManager fsm = new TestFileSystemManager(defaultRootLocation);
         fsm.setBin(TestRecycleBin.getInstance());

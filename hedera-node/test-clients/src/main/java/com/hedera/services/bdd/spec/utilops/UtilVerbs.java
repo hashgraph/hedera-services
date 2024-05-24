@@ -292,7 +292,7 @@ public class UtilVerbs {
     public static SubmitModificationsOp submitModifiedWithFixedPayer(
             @NonNull final Function<Transaction, List<TxnModification>> modificationsFn,
             @NonNull final Supplier<HapiTxnOp<?>> txnOpSupplier) {
-        return new SubmitModificationsOp(txnOpSupplier, modificationsFn);
+        return new SubmitModificationsOp(false, txnOpSupplier, modificationsFn);
     }
 
     /**
@@ -312,6 +312,12 @@ public class UtilVerbs {
             @NonNull final Function<Query, List<QueryModification>> modificationsFn,
             @NonNull final Supplier<HapiQueryOp<?>> queryOpSupplier) {
         return new QueryModificationsOp(queryOpSupplier, modificationsFn);
+    }
+
+    public static QueryModificationsOp sendModifiedWithFixedPayer(
+            @NonNull final Function<Query, List<QueryModification>> modificationsFn,
+            @NonNull final Supplier<HapiQueryOp<?>> queryOpSupplier) {
+        return new QueryModificationsOp(false, queryOpSupplier, modificationsFn);
     }
 
     public static SourcedOp sourcing(Supplier<HapiSpecOperation> source) {

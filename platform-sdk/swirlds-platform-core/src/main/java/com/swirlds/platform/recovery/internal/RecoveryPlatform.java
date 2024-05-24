@@ -25,6 +25,9 @@ import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
+import com.swirlds.common.io.utility.NoOpRecycleBin;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
@@ -87,8 +90,10 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
         final Metrics metrics = new NoOpMetrics();
 
         notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
-
-        context = new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get(), Time.getCurrent());
+        final FileSystemManager fileSystemManager =
+                FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, new NoOpRecycleBin());
+        context = new DefaultPlatformContext(
+                configuration, metrics, CryptographyHolder.get(), Time.getCurrent(), fileSystemManager);
 
         setLatestState(initialState);
     }

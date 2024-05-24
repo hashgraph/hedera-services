@@ -70,6 +70,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.status.DefaultStatusStateMachine;
 import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.util.MetricsDocUtils;
@@ -587,11 +588,23 @@ public class PlatformComponentBuilder {
     @NonNull
     public ConsensusEventStream buildConsensusEventStream() {
         if (consensusEventStream == null) {
+
+            // Required for conformity with legacy behavior. This sort of funky logic is normally something
+            // we'd try to move away from, but since we will be removing the CES entirely, it's simpler
+            // to just wait until the entire component disappears.
+            final Address address = blocks.initialState().get().getAddressBook().getAddress(blocks.selfId());
+            final String consensusEventStreamName;
+            if (!address.getMemo().isEmpty()) {
+                consensusEventStreamName = address.getMemo();
+            } else {
+                consensusEventStreamName = String.valueOf(blocks.selfId());
+            }
+
             consensusEventStream = new DefaultConsensusEventStream(
                     blocks.platformContext(),
                     blocks.selfId(),
                     (byte[] data) -> new PlatformSigner(blocks.keysAndCerts()).sign(data),
-                    "" + blocks.selfId().id(),
+                    consensusEventStreamName,
                     (EventImpl event) -> event.isLastInRoundReceived()
                             && blocks.isInFreezePeriodReference().get().test(event.getConsensusTimestamp()));
         }
