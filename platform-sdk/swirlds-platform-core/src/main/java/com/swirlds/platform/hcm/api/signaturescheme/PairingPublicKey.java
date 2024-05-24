@@ -29,14 +29,23 @@ public record PairingPublicKey(@NonNull SignatureSchema signatureSchema, @NonNul
     /**
      * Create a public key from a private key.
      *
-     * @param schema     the signing curve type
      * @param privateKey the private key
      * @return the public key
      */
-    public static PairingPublicKey create(
-            @NonNull final SignatureSchema schema, @NonNull final PairingPrivateKey privateKey) {
+    public static PairingPublicKey create(@NonNull final PairingPrivateKey privateKey) {
         return new PairingPublicKey(
-                schema, schema.getPublicKeyGroup().getGenerator().power(privateKey.secretElement()));
+                privateKey.signatureSchema(),
+                privateKey.signatureSchema().getPublicKeyGroup().getGenerator().power(privateKey.secretElement()));
+    }
+
+    /**
+     * Deserialize a public key from a byte array.
+     *
+     * @param bytes the serialized public key, with the first byte representing the curve type
+     * @return the deserialized public key
+     */
+    public static PairingPublicKey fromBytes(@NonNull final byte[] bytes) {
+        return fromSchemaObject(SerializedSignatureSchemaObject.fromByteArray(bytes));
     }
 
     /**
@@ -46,7 +55,7 @@ public record PairingPublicKey(@NonNull SignatureSchema signatureSchema, @NonNul
      * @return the deserialized public key
      */
     @NonNull
-    public static PairingPublicKey fromSchemaObject(@NonNull final SerializedSignatureSchemaObject schemaObject) {
+    private static PairingPublicKey fromSchemaObject(@NonNull final SerializedSignatureSchemaObject schemaObject) {
         return new PairingPublicKey(
                 schemaObject.schema(),
                 schemaObject.schema().getPublicKeyGroup().elementFromBytes(schemaObject.elementBytes()));
