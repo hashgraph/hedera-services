@@ -22,7 +22,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class PlatformLongAccumulator extends DefaultLongAccumulator implements PlatformMetric {
 
-    public PlatformLongAccumulator(@NonNull Config config) {
+    public PlatformLongAccumulator(@NonNull final Config config) {
         super(config);
     }
 }
