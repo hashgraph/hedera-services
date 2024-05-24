@@ -17,11 +17,12 @@
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.node.app.service.contract.impl.handlers.ContractHandlers.MAX_GAS_LIMIT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HALT_RESULT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertFailsWith;
-import static com.hedera.node.app.service.contract.impl.test.handlers.ContractCallHandlerTest.INTRINSIC_GAS;
+import static com.hedera.node.app.service.contract.impl.test.handlers.ContractCallHandlerTest.INTRINSIC_GAS_FOR_0_ARG_METHOD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -185,11 +186,11 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         // check at least intrinsic gas
         final var txn1 = contractCreateTransactionWithInsufficientGas();
         given(gasCalculator.transactionIntrinsicGasCost(org.apache.tuweni.bytes.Bytes.wrap(new byte[0]), true))
-                .willReturn(INTRINSIC_GAS);
+                .willReturn(INTRINSIC_GAS_FOR_0_ARG_METHOD);
         assertThrows(PreCheckException.class, () -> subject.pureChecks(txn1));
 
         // check does not exceed max gas
-        final var txn2 = contractCreateTransactionWithInsufficientGas();
+        final var txn2 = contractCreateTransactionWithAboveMaxGas();
         assertThrows(PreCheckException.class, () -> subject.pureChecks(txn2));
     }
 
@@ -220,7 +221,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         return TransactionBody.newBuilder()
                 .transactionID(transactionID)
                 .contractCreateInstance(
-                        ContractCreateTransactionBody.newBuilder().gas(INTRINSIC_GAS - 1))
+                        ContractCreateTransactionBody.newBuilder().gas(INTRINSIC_GAS_FOR_0_ARG_METHOD - 1))
                 .build();
     }
 
@@ -229,7 +230,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         return TransactionBody.newBuilder()
                 .transactionID(transactionID)
                 .contractCreateInstance(
-                        ContractCreateTransactionBody.newBuilder().gas(INTRINSIC_GAS - 1))
+                        ContractCreateTransactionBody.newBuilder().gas(MAX_GAS_LIMIT + 1))
                 .build();
     }
 }
