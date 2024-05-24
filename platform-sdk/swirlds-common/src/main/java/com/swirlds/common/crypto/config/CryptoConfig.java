@@ -40,7 +40,7 @@ public record CryptoConfig(
         @ConfigProperty(defaultValue = "0.5") double cpuVerifierThreadRatio,
         @ConfigProperty(defaultValue = "0.5") double cpuDigestThreadRatio,
         @ConfigProperty(defaultValue = "password") String keystorePassword,
-        @ConfigProperty(defaultValue = "false") boolean enableNewKeyStoreModel) {
+        @ConfigProperty(defaultValue = "true") boolean enableNewKeyStoreModel) {
 
     /**
      * Calculates the number of threads needed to achieve the CPU core ratio given by {@link
