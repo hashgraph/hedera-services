@@ -22,7 +22,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class PlatformLongGauge extends DefaultLongGauge implements PlatformMetric {
 
-    public PlatformLongGauge(@NonNull Config config) {
+    public PlatformLongGauge(@NonNull final Config config) {
         super(config);
     }
 }
