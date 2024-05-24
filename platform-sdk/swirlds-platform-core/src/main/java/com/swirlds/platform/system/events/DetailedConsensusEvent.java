@@ -58,8 +58,9 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
     public DetailedConsensusEvent() {}
 
     /**
-     * Create a new instance with the provided data.
+     * Create a new instance.
      *
+     * @param event the event to copy the data from
      */
     public DetailedConsensusEvent(final EventImpl event) {
         this.gossipEvent = event.getBaseEvent();
@@ -70,9 +71,12 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
     /**
      * Create a new instance with the provided data.
      *
-     * @param gossipEvent   the pre-consensus event
+     * @param gossipEvent         the pre-consensus event
+     * @param roundReceived       the round in which this event received a consensus order and timestamp
+     * @param lastInRoundReceived true if this event is the last in consensus order of all those with the same received
+     *                            round
      */
-    public DetailedConsensusEvent(final GossipEvent gossipEvent, long roundReceived, boolean lastInRoundReceived) {
+    public DetailedConsensusEvent(final GossipEvent gossipEvent, final long roundReceived, final boolean lastInRoundReceived) {
         this.gossipEvent = gossipEvent;
         this.roundReceived = roundReceived;
         this.lastInRoundReceived = lastInRoundReceived;
@@ -147,10 +151,16 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
         return gossipEvent.getSignature();
     }
 
+    /**
+     * @return the round in which this event received a consensus order and timestamp
+     */
     public long getRoundReceived() {
         return roundReceived;
     }
 
+    /**
+     * @return true if this event is the last in consensus order of all those with the same received round
+     */
     public boolean isLastInRoundReceived() {
         return lastInRoundReceived;
     }
