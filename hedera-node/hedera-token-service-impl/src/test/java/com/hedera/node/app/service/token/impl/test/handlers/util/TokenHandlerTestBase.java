@@ -46,14 +46,14 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
+import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Collections;
@@ -64,6 +64,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 // FUTURE : Remove this and use CryptoTokenHandlerTestBase instead for all classes extending this class
 
+/**
+ * Base class for token handler tests.
+ */
 @ExtendWith(MockitoExtension.class)
 public class TokenHandlerTestBase {
     protected static final String TOKENS = "TOKENS";
@@ -139,6 +142,9 @@ public class TokenHandlerTestBase {
     protected ReadableTokenStore readableTokenStore;
     protected WritableTokenStore writableTokenStore;
 
+    /**
+     * Sets up the common test environment.
+     */
     @BeforeEach
     public void commonSetUp() {
         givenValidToken();

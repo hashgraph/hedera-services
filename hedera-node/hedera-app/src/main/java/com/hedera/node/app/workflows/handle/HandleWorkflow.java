@@ -30,8 +30,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
-import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
@@ -63,6 +63,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
@@ -80,7 +81,6 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
-import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
@@ -96,7 +96,6 @@ import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
 import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
@@ -125,6 +124,7 @@ import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -317,8 +317,8 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
-        // Determine if this is the first transaction after startup. This needs to be determined BEFORE starting the
-        // user transaction
+        // (FUTURE) We actually want consider exporting synthetic transactions on every
+        // first post-upgrade transaction, not just the first transaction after genesis.
         final var consTimeOfLastHandledTxn = blockRecordManager.consTimeOfLastHandledTxn();
         final var isFirstTransaction = !consTimeOfLastHandledTxn.isAfter(Instant.EPOCH);
 
@@ -610,7 +610,7 @@ public class HandleWorkflow {
         } catch (final Exception e) {
             logger.error("Possibly CATASTROPHIC failure while handling a user transaction", e);
             if (transactionInfo == null) {
-                final var baseData = extractTransactionBaseData(platformTxn.getContents());
+                final var baseData = extractTransactionBaseData(platformTxn.getApplicationPayload());
                 if (baseData.transaction() == null) {
                     // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement
                     logger.error("Failed to parse transaction from creator: {}", creator);
@@ -826,11 +826,17 @@ public class HandleWorkflow {
         return switch (function) {
             case CONTRACT_CREATE -> txnBody.contractCreateInstance().gas();
             case CONTRACT_CALL -> txnBody.contractCall().gas();
-            case ETHEREUM_TRANSACTION -> EthTxData.populateEthTxData(
-                            txnBody.ethereumTransaction().ethereumData().toByteArray())
-                    .gasLimit();
+            case ETHEREUM_TRANSACTION -> getGasLimitFromEthTxData(txnBody);
             default -> 0L;
         };
+    }
+
+    private static long getGasLimitFromEthTxData(final TransactionBody txn) {
+        final var ethTxBody = txn.ethereumTransaction();
+        if (ethTxBody == null) return 0L;
+        final var ethTxData =
+                EthTxData.populateEthTxData(ethTxBody.ethereumData().toByteArray());
+        return ethTxData != null ? ethTxData.gasLimit() : 0L;
     }
 
     private ValidationResult validate(
@@ -1028,15 +1034,15 @@ public class HandleWorkflow {
             @Nullable TransactionBody txBody,
             @Nullable AccountID payer) {}
 
-    private TransactionBaseData extractTransactionBaseData(@Nullable final byte[] contents) {
+    private TransactionBaseData extractTransactionBaseData(@NonNull final Bytes content) {
         // This method is only called if something fatal happened. We do a best effort approach to extract the
         // type of the transaction, the TransactionBody and the payer if not known.
-        if (contents == null || contents.length == 0) {
+        if (content.length() == 0) {
             return new TransactionBaseData(NONE, Bytes.EMPTY, null, null, null);
         }
 
         HederaFunctionality function = NONE;
-        Bytes transactionBytes = Bytes.wrap(contents);
+        Bytes transactionBytes = content;
         Transaction transaction = null;
         TransactionBody txBody = null;
         AccountID payer = null;

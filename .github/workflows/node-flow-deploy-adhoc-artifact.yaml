@@ -51,7 +51,7 @@ jobs:
     with:
       version-policy: branch-commit
       trigger-env-deploy: none
-      sdk-release-profile: AdhocCommit
+      release-profile: AdhocCommit
       dry-run-enabled: ${{ github.event.inputs.dry-run-enabled == 'true' }}
       java-version: ${{ github.event.inputs.java-version || '21.0.1' }}
       java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}

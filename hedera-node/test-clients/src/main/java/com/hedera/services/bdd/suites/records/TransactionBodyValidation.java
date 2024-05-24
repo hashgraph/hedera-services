@@ -20,13 +20,14 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertEventuallyPasses;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 
-import com.hedera.services.bdd.junit.TransactionBodyValidator;
-import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.junit.support.validators.TransactionBodyValidator;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Duration;
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class TransactionBodyValidation extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TransactionBodyValidation.class);
@@ -36,11 +37,11 @@ public class TransactionBodyValidation extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(validateTransactionBodySet());
     }
 
-    final HapiSpec validateTransactionBodySet() {
+    final Stream<DynamicTest> validateTransactionBodySet() {
         return defaultHapiSpec("TransactionBodyValidation")
                 .given()
                 .when()

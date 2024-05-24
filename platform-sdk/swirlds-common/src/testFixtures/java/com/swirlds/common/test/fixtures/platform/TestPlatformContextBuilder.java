@@ -17,26 +17,27 @@
 package com.swirlds.common.test.fixtures.platform;
 
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.concurrent.ExecutorFactory;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.filesystem.FileSystemManager;
-import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
+import com.swirlds.common.io.utility.NoOpRecycleBin;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.test.fixtures.TestFileSystemManager;
-import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
-import java.util.function.BiFunction;
 
 /**
  * A simple builder to create a {@link PlatformContext} for unit tests.
@@ -51,8 +52,8 @@ public final class TestPlatformContextBuilder {
     private Metrics metrics;
     private Cryptography cryptography;
     private Time time = Time.getCurrent();
-    private boolean buildFileSystemManagerFromConfig = false;
-    private BiFunction<Metrics, Time, FileSystemManager> fileSystemManagerProvider;
+    private FileSystemManager fileSystemManager;
+    private RecycleBin recycleBin;
 
     private TestPlatformContextBuilder() {}
 
@@ -112,51 +113,20 @@ public final class TestPlatformContextBuilder {
     }
 
     @NonNull
-    public TestPlatformContextBuilder withFileSystemManagerFromConfig() {
-        this.buildFileSystemManagerFromConfig = true;
+    public TestPlatformContextBuilder withRecycleBin(@Nullable final RecycleBin recycleBin) {
+        this.recycleBin = recycleBin;
         return this;
     }
 
     @NonNull
-    public TestPlatformContextBuilder withFileSystemManager(
-            @NonNull final BiFunction<Metrics, Time, FileSystemManager> fileSystemManagerProvider) {
-        this.buildFileSystemManagerFromConfig = false;
-        this.fileSystemManagerProvider = fileSystemManagerProvider;
+    public TestPlatformContextBuilder withFileSystemManager(@NonNull final FileSystemManager fileSystemManager) {
+        this.fileSystemManager = fileSystemManager;
         return this;
     }
 
     @NonNull
-    public TestPlatformContextBuilder withTestFileSystemManager(
-            @NonNull final Path rootPath, @NonNull final BiFunction<Metrics, Time, RecycleBin> recycleBinProvider) {
-        this.buildFileSystemManagerFromConfig = false;
-        this.fileSystemManagerProvider = (m, t) -> {
-            TestFileSystemManager fsm = new TestFileSystemManager(rootPath);
-            fsm.setBin(recycleBinProvider.apply(m, t));
-            return fsm;
-        };
-        return this;
-    }
-
-    @NonNull
-    public TestPlatformContextBuilder withTestFileSystemManager(@NonNull final Path rootPath) {
-        this.buildFileSystemManagerFromConfig = false;
-        this.fileSystemManagerProvider = (m, t) -> {
-            TestFileSystemManager fsm = new TestFileSystemManager(rootPath);
-            fsm.setBin(TestRecycleBin.getInstance());
-            return fsm;
-        };
-        return this;
-    }
-
-    @NonNull
-    public TestPlatformContextBuilder withTestFileSystemManager(
-            @NonNull final Path rootPath, @NonNull final RecycleBin recycleBin) {
-        this.buildFileSystemManagerFromConfig = false;
-        this.fileSystemManagerProvider = (m, t) -> {
-            TestFileSystemManager fsm = new TestFileSystemManager(rootPath);
-            fsm.setBin(recycleBin);
-            return fsm;
-        };
+    public TestPlatformContextBuilder withTestFileSystemManagerUnder(@NonNull final Path rootPath) {
+        this.fileSystemManager = new TestFileSystemManager(rootPath);
         return this;
     }
 
@@ -167,23 +137,28 @@ public final class TestPlatformContextBuilder {
      */
     public PlatformContext build() {
         if (configuration == null) {
-            configuration = defaultConfig;
+            this.configuration = defaultConfig;
         }
         if (metrics == null) {
-            metrics = defaultMetrics; // FUTURE WORK: replace this with NoOp Metrics
+            this.metrics = defaultMetrics; // FUTURE WORK: replace this with NoOp Metrics
         }
         if (this.cryptography == null) {
             this.cryptography = defaultCryptography;
         }
 
-        final FileSystemManager fileSystemManager;
-        if (buildFileSystemManagerFromConfig) {
-            fileSystemManager = FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, metrics);
-        } else if (fileSystemManagerProvider != null) {
-            fileSystemManager = fileSystemManagerProvider.apply(metrics, time);
-        } else {
-            fileSystemManager = getDefaultManager();
+        if (recycleBin == null) {
+            this.recycleBin = new NoOpRecycleBin();
         }
+        if (this.fileSystemManager == null) {
+            this.fileSystemManager = getTestFileSystemManager();
+        }
+
+        final ExecutorFactory executorFactory = ExecutorFactory.create("test", new UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                fail("Uncaught exception in thread " + t.getName(), e);
+            }
+        });
 
         return new PlatformContext() {
             @NonNull
@@ -215,13 +190,23 @@ public final class TestPlatformContextBuilder {
             public FileSystemManager getFileSystemManager() {
                 return fileSystemManager;
             }
+
+            @NonNull
+            @Override
+            public ExecutorFactory getExecutorFactory() {
+                return executorFactory;
+            }
+
+            @NonNull
+            @Override
+            public RecycleBin getRecycleBin() {
+                return recycleBin;
+            }
         };
     }
 
-    private static TestFileSystemManager getDefaultManager() {
+    private static TestFileSystemManager getTestFileSystemManager() {
         Path defaultRootLocation = rethrowIO(() -> Files.createTempDirectory("testRootDir"));
-        TestFileSystemManager fsm = new TestFileSystemManager(defaultRootLocation);
-        fsm.setBin(TestRecycleBin.getInstance());
-        return fsm;
+        return new TestFileSystemManager(defaultRootLocation);
     }
 }

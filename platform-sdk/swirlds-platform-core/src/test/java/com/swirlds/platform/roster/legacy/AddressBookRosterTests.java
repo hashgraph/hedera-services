@@ -24,11 +24,12 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.roster.Roster;
 import com.swirlds.platform.roster.RosterEntry;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -41,8 +42,9 @@ public class AddressBookRosterTests {
     @Test
     @DisplayName("Serialize and deserialize AddressBook derived Roster")
     void serializeDeserializeTest() throws IOException, ConstructableRegistryException {
+        final Randotron randotron = Randotron.create();
         final AddressBook addressBook =
-                new RandomAddressBookGenerator().setSize(100).build();
+                RandomAddressBookBuilder.create(randotron).withSize(100).build();
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         final AddressBookRoster roster = new AddressBookRoster(addressBook);
 
@@ -62,8 +64,9 @@ public class AddressBookRosterTests {
     @Test
     @DisplayName("Roster derived from AddressBook")
     void addressBookRosterTest() {
+        final Randotron randotron = Randotron.create();
         final AddressBook addressBook =
-                new RandomAddressBookGenerator().setSize(100).build();
+                RandomAddressBookBuilder.create(randotron).withSize(100).build();
         final Roster roster = new AddressBookRoster(addressBook);
         final Iterator<RosterEntry> entries = roster.iterator();
         for (int i = 0; i < addressBook.getSize(); i++) {
@@ -82,8 +85,9 @@ public class AddressBookRosterTests {
     @Test
     @DisplayName("Serialize and deserialize AddressBook derived Roster")
     void serializeDeserializeEntryTest() throws IOException, ConstructableRegistryException {
+        final Randotron randotron = Randotron.create();
         final AddressBook addressBook =
-                new RandomAddressBookGenerator().setSize(100).build();
+                RandomAddressBookBuilder.create(randotron).withSize(100).build();
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         final Roster roster = new AddressBookRoster(addressBook);
 

@@ -27,14 +27,15 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.*;
 import com.hedera.services.bdd.spec.assertions.*;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
@@ -42,18 +43,17 @@ import com.hedera.services.bdd.suites.*;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.*;
 import java.util.concurrent.atomic.*;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.*;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 // Some of the test cases cannot be converted to use eth calls,
 // since they use admin keys, which are held by the txn payer.
 // In the case of an eth txn, we revoke the payers keys and the txn would fail.
 // The only way an eth account to create a token is the admin key to be of a contractId type.
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class SigningReqsSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(SigningReqsSuite.class);
-
+public class SigningReqsSuite {
     private static final String FIRST_CREATE_TXN = "firstCreateTxn";
     private static final String SECOND_CREATE_TXN = "secondCreateTxn";
     private static final long DEFAULT_AMOUNT_TO_SEND = 20 * ONE_HBAR;
@@ -63,22 +63,8 @@ public class SigningReqsSuite extends HapiSuite {
     public static final String AUTO_RENEW = "autoRenew";
     public static final int GAS_TO_OFFER = 1_000_000;
 
-    public static void main(String... args) {
-        new SigningReqsSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(autoRenewAccountCanUseLegacySigActivationIfConfigured());
-    }
-
     @HapiTest
-    final HapiSpec autoRenewAccountCanUseLegacySigActivationIfConfigured() {
+    final Stream<DynamicTest> autoRenewAccountCanUseLegacySigActivationIfConfigured() {
         final var autoRenew = AUTO_RENEW;
         final AtomicReference<Address> autoRenewMirrorAddr = new AtomicReference<>();
         final AtomicLong contractId = new AtomicLong();
@@ -97,7 +83,8 @@ public class SigningReqsSuite extends HapiSuite {
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
                         contractCreate(MINIMAL_CREATIONS_CONTRACT)
                                 .exposingNumTo(contractId::set)
-                                .gas(GAS_TO_OFFER),
+                                .gas(GAS_TO_OFFER)
+                                .refusingEthConversion(),
                         cryptoCreate(autoRenew)
                                 .keyShape(origKey.signedWith(sigs(ON, MINIMAL_CREATIONS_CONTRACT)))
                                 .exposingCreatedIdTo(id -> autoRenewMirrorAddr.set(idAsHeadlongAddress(id))))
@@ -147,10 +134,5 @@ public class SigningReqsSuite extends HapiSuite {
                                         .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)),
                         sourcing(() ->
                                 getTokenInfo(asTokenString(createdToken.get())).hasAutoRenewAccount(autoRenew)));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

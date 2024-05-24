@@ -35,6 +35,7 @@ import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import org.apache.tuweni.bytes.Bytes;
@@ -50,9 +51,13 @@ import org.apache.tuweni.bytes.Bytes;
 public class HandleSystemContractOperations implements SystemContractOperations {
     private final HandleContext context;
 
+    @Nullable
+    private final Key maybeEthSenderKey;
+
     @Inject
-    public HandleSystemContractOperations(@NonNull final HandleContext context) {
+    public HandleSystemContractOperations(@NonNull final HandleContext context, @Nullable Key maybeEthSenderKey) {
         this.context = requireNonNull(context);
+        this.maybeEthSenderKey = maybeEthSenderKey;
     }
 
     /**
@@ -60,7 +65,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
      */
     @Override
     public @NonNull Predicate<Key> activeSignatureTestWith(@NonNull final VerificationStrategy strategy) {
-        return strategy.asSignatureTestIn(context);
+        return strategy.asSignatureTestIn(context, maybeEthSenderKey);
     }
 
     /**
@@ -118,7 +123,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
     }
 
     @Override
-    public Transaction syntheticTransactionForHtsCall(Bytes input, ContractID contractID, boolean isViewCall) {
+    public Transaction syntheticTransactionForNativeCall(Bytes input, ContractID contractID, boolean isViewCall) {
         var functionParameters = tuweniToPbjBytes(input);
         var contractCallBodyBuilder =
                 ContractCallTransactionBody.newBuilder().contractID(contractID).functionParameters(functionParameters);

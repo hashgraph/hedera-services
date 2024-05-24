@@ -40,5 +40,5 @@ public record FileSystemManagerConfig(
 
     public static final String DEFAULT_TMP_DIR_NAME = "tmp";
     public static final String DEFAULT_DATA_DIR_NAME = "saved";
-    public static final String DEFAULT_RECYCLE_BIN_DIR_NAME = "recycle-bin";
+    public static final String DEFAULT_RECYCLE_BIN_DIR_NAME = "saved/swirlds-recycle-bin";
 }

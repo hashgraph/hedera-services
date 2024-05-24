@@ -101,7 +101,7 @@ public class ConsensusRoundHandler {
     /**
      * If true then write the legacy running event hash each round.
      */
-    private boolean writeLegacyRunningEventHash;
+    private final boolean writeLegacyRunningEventHash;
 
     /**
      * If true then wait for application transactions to be prehandled before handling the consensus round.
@@ -250,8 +250,6 @@ public class ConsensusRoundHandler {
     private void updateRunningEventHash(@NonNull final ConsensusRound round) throws InterruptedException {
         final PlatformState platformState =
                 swirldStateManager.getConsensusState().getPlatformState();
-
-        platformState.setRunningEventHash(round.getRunningEventHash());
 
         if (writeLegacyRunningEventHash) {
             // Update the running hash object. If there are no events, the running hash does not change.

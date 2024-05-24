@@ -67,7 +67,7 @@ public class AccountBalanceSigningUtils {
 
         try {
             final Hash entireHash = computeEntireHash(streamFileToSign.toFile());
-            final byte[] fileHashByte = entireHash.getValue();
+            final byte[] fileHashByte = entireHash.copyToByteArray();
             final byte[] signature = signData(fileHashByte, keyPair);
 
             generateSigBalanceFile(signatureFileDestination.toFile(), signature, fileHashByte);

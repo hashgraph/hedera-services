@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.state.recordcache;
 
-import static com.hedera.node.app.spi.HapiUtils.TIMESTAMP_COMPARATOR;
-import static com.hedera.node.app.spi.HapiUtils.isBefore;
-import static com.hedera.node.app.spi.HapiUtils.minus;
+import static com.hedera.hapi.util.HapiUtils.TIMESTAMP_COMPARATOR;
+import static com.hedera.hapi.util.HapiUtils.isBefore;
+import static com.hedera.hapi.util.HapiUtils.minus;
 import static com.hedera.node.app.state.recordcache.RecordCacheService.NAME;
 import static com.hedera.node.app.state.recordcache.RecordCacheService.TXN_RECORD_QUEUE;
 import static java.util.Collections.emptyList;
@@ -30,9 +30,6 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.spi.state.CommittableWritableStates;
-import com.hedera.node.app.spi.state.ReadableQueueState;
-import com.hedera.node.app.spi.state.WritableQueueState;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.validation.TruePredicate;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaRecordCache;
@@ -41,6 +38,9 @@ import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.swirlds.state.spi.ReadableQueueState;
+import com.swirlds.state.spi.WritableQueueState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;

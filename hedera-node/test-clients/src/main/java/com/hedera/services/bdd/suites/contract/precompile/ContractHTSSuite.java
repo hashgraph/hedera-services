@@ -41,6 +41,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
@@ -56,22 +60,15 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class ContractHTSSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(ContractHTSSuite.class);
-
+public class ContractHTSSuite {
     public static final String VERSATILE_TRANSFERS_CONTRACT = "VersatileTransfers";
     public static final String TOKEN_TRANSFERS_CONTRACT = "TokenTransferContract";
     public static final String FEE_DISTRIBUTOR_CONTRACT = "FeeDistributor";
@@ -95,35 +92,8 @@ public class ContractHTSSuite extends HapiSuite {
 
     private static final String UNIVERSAL_KEY = "multipurpose";
 
-    public static void main(String... args) {
-        new ContractHTSSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return allOf(positiveSpecs(), negativeSpecs());
-    }
-
-    List<HapiSpec> negativeSpecs() {
-        return List.of(
-                nonZeroTransfersFail(),
-                shouldFailWhenTransferringTokensWithInvalidParametersAndConditions(),
-                shouldFailOnInvalidTokenTransferParametersAndConditions(),
-                shouldFailWhenTransferringMultipleNFTsWithInvalidParametersAndConditions(),
-                shouldFailOnInvalidTokenTransferParametersAndConditions());
-    }
-
-    List<HapiSpec> positiveSpecs() {
-        return List.of();
-    }
-
     @HapiTest
-    final HapiSpec nonZeroTransfersFail() {
+    final Stream<DynamicTest> nonZeroTransfersFail() {
         final var theSecondReceiver = "somebody2";
         return defaultHapiSpec(
                         "NonZeroTransfersFail",
@@ -141,12 +111,19 @@ public class ContractHTSSuite extends HapiSuite {
                                 .initialSupply(TOTAL_SUPPLY)
                                 .treasury(TOKEN_TREASURY),
                         uploadInitCode(VERSATILE_TRANSFERS_CONTRACT, FEE_DISTRIBUTOR_CONTRACT),
-                        contractCreate(FEE_DISTRIBUTOR_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(FEE_DISTRIBUTOR_CONTRACT).refusingEthConversion(),
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
                                 contractCreate(
-                                        VERSATILE_TRANSFERS_CONTRACT,
-                                        asHeadlongAddress(getNestedContractAddress(FEE_DISTRIBUTOR_CONTRACT, spec))))),
+                                                VERSATILE_TRANSFERS_CONTRACT,
+                                                asHeadlongAddress(
+                                                        getNestedContractAddress(FEE_DISTRIBUTOR_CONTRACT, spec)))
+                                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                        // tokenAssociate,
+                                        // since we have CONTRACT_ID key
+                                        .refusingEthConversion())),
                         tokenAssociate(ACCOUNT, List.of(A_TOKEN)),
                         tokenAssociate(VERSATILE_TRANSFERS_CONTRACT, List.of(A_TOKEN)),
                         tokenAssociate(RECEIVER, List.of(A_TOKEN)),
@@ -186,7 +163,7 @@ public class ContractHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec shouldFailWhenTransferringTokensWithInvalidParametersAndConditions() {
+    final Stream<DynamicTest> shouldFailWhenTransferringTokensWithInvalidParametersAndConditions() {
         final var TXN_WITH_EMPTY_AMOUNTS_ARRAY = "TXN_WITH_EMPTY_AMOUNTS_ARRAY";
         final var TXN_WITH_EMPTY_ACCOUNTS_ARRAY = "TXN_WITH_EMPTY_ACCOUNTS_ARRAY";
         final var TXN_WITH_NOT_LENGTH_MATCHING_ACCOUNTS_AND_AMOUNTS =
@@ -322,7 +299,7 @@ public class ContractHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec shouldFailOnInvalidTokenTransferParametersAndConditions() {
+    final Stream<DynamicTest> shouldFailOnInvalidTokenTransferParametersAndConditions() {
         final var TXN_WITH_INVALID_TOKEN_ADDRESS = "TXN_WITH_INVALID_TOKEN_ADDRESS";
         final var TXN_WITH_INVALID_RECEIVER_ADDRESS = "TXN_WITH_INVALID_RECEIVER_ADDRESS";
         final var TXN_WITH_INVALID_SENDER_ADDRESS = "TXN_WITH_INVALID_SENDER_ADDRESS";
@@ -440,7 +417,7 @@ public class ContractHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec shouldFailWhenTransferringMultipleNFTsWithInvalidParametersAndConditions() {
+    final Stream<DynamicTest> shouldFailWhenTransferringMultipleNFTsWithInvalidParametersAndConditions() {
         final var TXN_WITH_INVALID_TOKEN_ADDRESS = "TXN_WITH_INVALID_TOKEN_ADDRESS";
         final var TXN_WITH_EMPTY_SENDER_ARRAY = "TXN_WITH_EMPTY_SENDER_ARRAY";
         final var TXN_WITH_EMPTY_RECEIVER_ARRAY = "TXN_WITH_EMPTY_RECEIVER_ARRAY";
@@ -598,7 +575,7 @@ public class ContractHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec shouldFailOnInvalidNFTTransferParametersAndConditions() {
+    final Stream<DynamicTest> shouldFailOnInvalidNFTTransferParametersAndConditions() {
         final var TXN_WITH_INVALID_TOKEN_ADDRESS = "TXN_WITH_INVALID_TOKEN_ADDRESS";
         final var TXN_WITH_INVALID_RECEIVER_ADDRESS = "TXN_WITH_INVALID_RECEIVER_ADDRESS";
         final var TXN_WITH_INVALID_SENDER_ADDRESS = "TXN_WITH_INVALID_SENDER_ADDRESS";
@@ -724,10 +701,5 @@ public class ContractHTSSuite extends HapiSuite {
                                 TXN_ACCOUNT_DOES_NOT_OWN_NFT,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

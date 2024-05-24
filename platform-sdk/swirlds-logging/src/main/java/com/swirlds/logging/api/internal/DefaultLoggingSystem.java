@@ -51,7 +51,7 @@ public class DefaultLoggingSystem {
     /**
      * The singleton instance holder for a more flexible singelton instantiation.
      */
-    private static class InstanceHolder {
+    private static final class InstanceHolder {
 
         /**
          * The real singleton instance.

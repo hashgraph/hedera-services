@@ -33,12 +33,13 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.EventConfig_;
-import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticTopology;
+import com.swirlds.platform.network.RandomGraph;
+import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import java.util.List;
@@ -59,7 +60,8 @@ class SyncManagerTest {
         public DummyHashgraph hashgraph;
         public AddressBook addressBook;
         public NodeId selfId;
-        public TransactionPool transactionPool;
+        public TransactionPoolNexus transactionPoolNexus;
+        public RandomGraph connectionGraph;
         public SyncManagerImpl syncManager;
         public Configuration configuration;
 
@@ -69,7 +71,7 @@ class SyncManagerTest {
             final PlatformContext platformContext =
                     TestPlatformContextBuilder.create().build();
 
-            transactionPool = spy(new TransactionPool(platformContext));
+            transactionPoolNexus = spy(new TransactionPoolNexus(platformContext));
 
             this.addressBook = hashgraph.getAddressBook();
             this.selfId = addressBook.getNodeId(0);
