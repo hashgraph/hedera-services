@@ -23,9 +23,9 @@ import com.swirlds.metrics.api.LongGauge;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Encapsulates metrics for the branch detector.
+ * Encapsulates metrics for branching events.
  */
-public class BranchDetectorMetrics {
+public class BranchingMetrics {
 
     private static final SpeedometerMetric.Config BRANCHING_EVENT_SPEEDOMETER_CONFIG =
             new SpeedometerMetric.Config("platform", "branchingEvents").withUnit("hz");
@@ -44,7 +44,7 @@ public class BranchDetectorMetrics {
      *
      * @param platformContext the platform context
      */
-    public BranchDetectorMetrics(@NonNull final PlatformContext platformContext) {
+    public BranchingMetrics(@NonNull final PlatformContext platformContext) {
         branchingEvents = platformContext.getMetrics().getOrCreate(BRANCHING_EVENT_SPEEDOMETER_CONFIG);
         branchingNodeCount = platformContext.getMetrics().getOrCreate(BRANCHING_NODE_COUNT_CONFIG);
         branchingWeightFraction = platformContext.getMetrics().getOrCreate(BRANCHING_WEIGHT_FRACTION_CONFIG);
