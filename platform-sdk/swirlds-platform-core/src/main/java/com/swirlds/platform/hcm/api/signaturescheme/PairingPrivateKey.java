@@ -51,17 +51,8 @@ public record PairingPrivateKey(@NonNull SignatureSchema signatureSchema, @NonNu
      * @return the deserialized private key
      */
     public static PairingPrivateKey fromBytes(@NonNull final byte[] bytes) {
-        return fromSchemaObject(SerializedSignatureSchemaObject.fromByteArray(bytes));
-    }
+        final SerializedSignatureSchemaObject schemaObject = SerializedSignatureSchemaObject.fromByteArray(bytes);
 
-    /**
-     * Deserialize a pairing private key from the serialized schema object.
-     *
-     * @param schemaObject the serialized private key, with the corresponding signature schema
-     * @return the deserialized private key
-     */
-    @NonNull
-    private static PairingPrivateKey fromSchemaObject(@NonNull final SerializedSignatureSchemaObject schemaObject) {
         return new PairingPrivateKey(
                 schemaObject.schema(), schemaObject.schema().getField().elementFromBytes(schemaObject.elementBytes()));
     }

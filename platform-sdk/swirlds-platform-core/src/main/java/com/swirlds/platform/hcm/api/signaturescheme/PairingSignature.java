@@ -36,17 +36,8 @@ public record PairingSignature(@NonNull SignatureSchema signatureSchema, @NonNul
      * @return the deserialized signature
      */
     public static PairingSignature fromBytes(@NonNull final byte[] bytes) {
-        return fromSchemaObject(SerializedSignatureSchemaObject.fromByteArray(bytes));
-    }
+        final SerializedSignatureSchemaObject schemaObject = SerializedSignatureSchemaObject.fromByteArray(bytes);
 
-    /**
-     * Deserialize a pairing signature from the serialized schema object
-     *
-     * @param schemaObject the serialized signature, with the corresponding signature schema
-     * @return the deserialized signature
-     */
-    @NonNull
-    private static PairingSignature fromSchemaObject(@NonNull final SerializedSignatureSchemaObject schemaObject) {
         return new PairingSignature(
                 schemaObject.schema(),
                 schemaObject.schema().getSignatureGroup().elementFromBytes(schemaObject.elementBytes()));

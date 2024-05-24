@@ -50,6 +50,7 @@ public record TssMessage<P extends PairingPublicKey>(
      *
      * @return the byte array representation of the message
      */
+    @NonNull
     byte[] toBytes() {
         throw new UnsupportedOperationException("Not implemented");
     }
