@@ -114,7 +114,7 @@ public class StandardWiringModel extends TraceableWiringModel {
         }
 
         healthMonitorScheduler = healthMonitorSchedulerBuilder.build();
-        healthMonitorInputWire = healthMonitorScheduler.buildInputWire("heartbeat");
+        healthMonitorInputWire = healthMonitorScheduler.buildInputWire("check system health");
         buildHeartbeatWire(Duration.ofMillis(100))
                 .solderTo(healthMonitorInputWire); // TODO time should be configurable!
     }
@@ -247,7 +247,7 @@ public class StandardWiringModel extends TraceableWiringModel {
     @NonNull
     private HeartbeatScheduler getHeartbeatScheduler() {
         if (heartbeatScheduler == null) {
-            heartbeatScheduler = new HeartbeatScheduler(this, platformContext.getTime(), "heartbeat");
+            heartbeatScheduler = new HeartbeatScheduler(this, platformContext.getTime(), "Heartbeat");
         }
         return heartbeatScheduler;
     }

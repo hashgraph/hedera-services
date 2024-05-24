@@ -13,7 +13,7 @@ pcli diagram \
     -l 'EventCreationManager:get transactions:TransactionPool' \
     -l 'ConsensusEventStream:future hash:consensusRoundHandler' \
     -s 'eventWindowManager:event window:🌀' \
-    -s 'heartbeat:heartbeat:❤️' \
+    -s 'Heartbeat:heartbeat:❤️' \
     -s 'TransactionPrehandler:futures:🔮' \
     -s 'pcesReplayer:done streaming pces:✅' \
     -s 'OrphanBufferSplitter:events to gossip:📬' \
@@ -21,11 +21,10 @@ pcli diagram \
     -s 'extractOldestMinimumGenerationOnDisk:minimum identifier to store:📀' \
     -s 'StaleEventDetectorRouter:non-validated events:🍎' \
     -s 'Mystery Input:mystery data:❔' \
-    -s 'StateSigner:submit transaction:🖋️' \
-    -s 'StateSigner:signature transactions:🖋️' \
+    -s 'stateSigner:submit transaction:🖋️' \
+    -s 'stateSigner:signature transactions:🖋️' \
     -s 'IssDetectorSplitter:IssNotification:💥' \
     -s 'getStatusAction:PlatformStatusAction:💀' \
-    -s 'toNotification:state written notification:📦' \
     -s 'latestCompleteStateNotifier:complete state notification:💢' \
     -s 'OrphanBufferSplitter:preconsensus signatures:🔰' \
     -s 'RunningEventHashOverride:hash override:💨' \
@@ -38,18 +37,17 @@ pcli diagram \
     -g 'Orphan Buffer:OrphanBuffer,OrphanBufferSplitter' \
     -g 'Consensus Engine:ConsensusEngine,ConsensusEngineSplitter,eventWindowManager,getKeystoneEventSequenceNumber,getConsensusEvents' \
     -g 'State Snapshot Manager:saveToDiskFilter,StateSnapshotManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction,toNotification' \
-    -g 'State File Management:State Snapshot Manager,📦,📀,💾' \
+    -g 'State File Management:State Snapshot Manager,📀,💾' \
     -g 'State Signature Collector:StateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions,latestCompleteStateNotifier' \
     -g 'State Signature Collection:State Signature Collector,latestCompleteStateNexus,💢' \
     -g 'Preconsensus Event Stream:PcesSequencer,PcesWriter' \
     -g 'Event Creation:EventCreationManager,TransactionPool,SelfEventSigner' \
     -g 'ISS Detector:IssDetector,IssDetectorSplitter,IssHandler,getStatusAction' \
-    -g 'Heartbeat:heartbeat,❤️' \
     -g 'PCES Replay:pcesReplayer,✅' \
     -g 'Consensus Round Handler:consensusRoundHandler,postHandler_stateAndRoundReserver,getState,savedStateController' \
     -g 'State Hasher:StateHasher,postHasher_stateAndRoundReserver,postHasher_getConsensusRound,postHasher_stateReserver' \
     -g 'Consensus:Consensus Engine,🚽,🌀' \
-    -g 'State Verification:StateSigner,HashLogger,ISS Detector,🖋️,💥,💀' \
+    -g 'State Verification:stateSigner,HashLogger,ISS Detector,🖋️,💥,💀' \
     -g 'Transaction Handling:Consensus Round Handler,latestImmutableStateNexus' \
     -g 'Round Durability Buffer:RoundDurabilityBuffer,RoundDurabilityBufferSplitter' \
     -g 'Stale Event Detector:StaleEventDetector,StaleEventDetectorSplitter,StaleEventDetectorRouter' \
