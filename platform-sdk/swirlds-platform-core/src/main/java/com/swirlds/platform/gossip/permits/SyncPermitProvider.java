@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gossip;
+package com.swirlds.platform.gossip.permits;
 
 import static com.swirlds.common.units.TimeUnit.UNIT_NANOSECONDS;
 import static com.swirlds.common.units.TimeUnit.UNIT_SECONDS;
@@ -93,12 +93,18 @@ public class SyncPermitProvider {
     private final Duration unhealthyGracePeriod = Duration.ofSeconds(5); // TODO
 
     /**
+     * The metrics for this class.
+     */
+    private final SyncPermitMetrics metrics;
+
+    /**
      * Constructor.
      *
      * @param platformContext the platform context
      * @param totalPermits    the total number of available permits
      */
     public SyncPermitProvider(@NonNull final PlatformContext platformContext, final int totalPermits) {
+        this.metrics = new SyncPermitMetrics(platformContext);
 
         this.totalPermits = totalPermits;
         this.time = platformContext.getTime();
@@ -116,6 +122,7 @@ public class SyncPermitProvider {
     public synchronized boolean acquire() {
         if (getAvailablePermits() > 0) {
             usedPermits++;
+            updateMetrics();
             return true;
         }
         return false;
@@ -155,6 +162,7 @@ public class SyncPermitProvider {
             throw new IllegalStateException("No permits to release");
         }
         usedPermits--;
+        updateMetrics();
     }
 
     /**
@@ -226,5 +234,15 @@ public class SyncPermitProvider {
                 revokedPermitDelta = 0;
             }
         }
+    }
+
+    /**
+     * Update the metrics with the current permit counts.
+     */
+    private void updateMetrics() {
+        metrics.reportPermits(
+                getAvailablePermits(),
+                revokedPermits + (int) revokedPermitDelta + (int) returnedPermitDelta,
+                usedPermits);
     }
 }

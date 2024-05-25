@@ -17,7 +17,7 @@
 package com.swirlds.platform.gossip;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.platform.gossip.LegacySyncPermitProvider.PermitRequestResult.PERMIT_ACQUIRED;
+import static com.swirlds.platform.gossip.permits.LegacySyncPermitProvider.PermitRequestResult.PERMIT_ACQUIRED;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.gossip.permits.LegacySyncPermitProvider;
 import com.swirlds.platform.system.address.AddressBook;
 import java.time.Duration;
 import java.util.Set;

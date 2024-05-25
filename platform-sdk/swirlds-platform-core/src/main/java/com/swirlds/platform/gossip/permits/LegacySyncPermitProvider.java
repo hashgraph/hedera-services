@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gossip;
+package com.swirlds.platform.gossip.permits;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.concurrent.Semaphore;
