@@ -122,6 +122,8 @@ public class RecordCacheService implements Service {
                     ((WritableQueueStateBase) toState).commit();
 
                     log.info("BBM: finished expirable record (cache) migration");
+                } else {
+                    log.warn("BBM: no record cache 'from' state found");
                 }
 
                 fromRecs = null;

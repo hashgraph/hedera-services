@@ -171,6 +171,8 @@ public class InitialModServiceContractSchema extends Schema {
             if (bytecodeTs.get().isModified()) ((WritableKVStateBase) bytecodeTs.get()).commit();
 
             log.info("BBM: contract migration finished");
+        } else {
+            log.warn("BBM: no contract 'from' state found");
         }
 
         storageFromState = null;

@@ -191,6 +191,8 @@ public class InitialModFileGenesisSchema extends Schema {
             if (toBlobsState.isModified()) ((WritableKVStateBase) toBlobsState).commit();
 
             logger.info("BBM: finished file service migration. Migrated fileIds are : " + migratedFileIds);
+        } else {
+            logger.warn("BBM: no file 'from' state found");
         }
 
         fileFromState = null;

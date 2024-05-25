@@ -117,6 +117,8 @@ public final class BlockRecordService implements Service {
                     if (toBlockState.isModified()) ((WritableSingletonStateBase) toBlockState).commit();
 
                     logger.info("BBM: finished block record migration");
+                } else {
+                    logger.warn("BBM: no block 'from' state found");
                 }
 
                 fs = null;
