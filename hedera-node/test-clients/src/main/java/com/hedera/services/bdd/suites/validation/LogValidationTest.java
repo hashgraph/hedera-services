@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.suites.validation;
 
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateLogsAfter;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateAllLogsAfter;
 
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import java.time.Duration;
@@ -33,6 +33,6 @@ public class LogValidationTest {
 
     @LeakyHapiTest
     final Stream<DynamicTest> logsContainNoUnexpectedProblems() {
-        return hapiTest(validateLogsAfter(VALIDATION_DELAY));
+        return hapiTest(validateAllLogsAfter(VALIDATION_DELAY));
     }
 }

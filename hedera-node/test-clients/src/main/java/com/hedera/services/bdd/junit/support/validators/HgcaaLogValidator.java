@@ -54,9 +54,10 @@ public class HgcaaLogValidator {
 
         private static final List<List<String>> PROBLEM_PATTERNS_TO_IGNORE = List.of(
                 List.of("BBM:"),
-                List.of("Could not start TLS server, will continue without it"),
                 List.of("Specified TLS cert", "doesn't exist"),
-                List.of("Properties file", "does not exist and won't be used as configuration source"));
+                List.of("Could not start TLS server, will continue without it"),
+                List.of("Properties file", "does not exist and won't be used as configuration source"),
+                List.of("Throttle multiplier for CryptoTransfer throughput congestion has no throttle buckets"));
 
         private int numProblems = 0;
         private int linesSinceInitialProblem = -1;

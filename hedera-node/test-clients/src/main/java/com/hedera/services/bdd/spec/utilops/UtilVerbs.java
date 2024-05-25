@@ -47,7 +47,6 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.log;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilJustBeforeStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextAdhocPeriod;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextStakingPeriod;
-import static com.hedera.services.bdd.spec.utilops.streams.RecordAssertions.doIfNotInterrupted;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
@@ -82,7 +81,6 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.support.RecordStreamValidator;
-import com.hedera.services.bdd.junit.support.validators.HgcaaLogValidator;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -137,6 +135,7 @@ import com.hedera.services.bdd.spec.utilops.pauses.NodeLivenessTimeout;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
+import com.hedera.services.bdd.spec.utilops.streams.LogValidationOp;
 import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
 import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
 import com.hedera.services.bdd.spec.utilops.streams.StreamValidationOp;
@@ -252,25 +251,22 @@ public class UtilVerbs {
 
     /**
      * Returns an operation that delays for the given time and then validates
-     * all the target network's application logs.
+     * any of the target network node application logs.
      *
-     * @return the operation that validates the logs
+     * @return the operation that validates the logs of a node
      */
-    public static HapiSpecOperation validateLogsAfter(@NonNull final Duration delay) {
-        return withOpContext((spec, opLog) -> {
-            doIfNotInterrupted(() -> sleepFor(delay.toMillis()));
-            spec.targetNetworkOrThrow().nodes().forEach(node -> {
-                try {
-                    new HgcaaLogValidator(node.getApplicationLogPath()
-                                    .toAbsolutePath()
-                                    .normalize()
-                                    .toString())
-                            .validate();
-                } catch (IOException e) {
-                    Assertions.fail("Could not read log for node '" + node.getName() + "' " + e);
-                }
-            });
-        });
+    public static HapiSpecOperation validateAnyLogAfter(@NonNull final Duration delay) {
+        return new LogValidationOp(LogValidationOp.Scope.ANY_NODE, delay);
+    }
+
+    /**
+     * Returns an operation that delays for the given time and then validates
+     * all of the target network node application logs.
+     *
+     * @return the operation that validates the logs of the target network
+     */
+    public static HapiSpecOperation validateAllLogsAfter(@NonNull final Duration delay) {
+        return new LogValidationOp(LogValidationOp.Scope.ALL_NODES, delay);
     }
 
     /* Some fairly simple utility ops */

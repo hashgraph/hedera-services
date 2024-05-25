@@ -16,9 +16,7 @@
 
 package com.hedera.services.bdd.junit.hedera.live;
 
-import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
@@ -29,7 +27,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
@@ -56,15 +53,10 @@ public class PrometheusClient {
      * port; or null if the node is not available.
      *
      * @param port the port of the node's Prometheus endpoint
-     * @return the status of the node; or null if the node is not available
+     * @return the status lookup attempt
      */
-    public @Nullable PlatformStatus statusFromLocalEndpoint(final int port) {
-        return Optional.ofNullable(platformStatusAt(port))
-                .map(PlatformStatus::valueOf)
-                .orElse(null);
-    }
-
-    private @Nullable String platformStatusAt(final int port) {
+    public StatusLookupAttempt statusFromLocalEndpoint(final int port) {
+        String failureReason = null;
         final Map<String, String> statusMap = new HashMap<>();
         final AtomicReference<String> statusKey = new AtomicReference<>();
         try {
@@ -75,12 +67,17 @@ public class PrometheusClient {
                 fillStatusMapIfHelp(line, statusMap);
                 setStatusIfCurrent(line, statusKey);
             });
+            if (statusMap.get(statusKey.get()) == null) {
+                failureReason = "Legend " + statusMap + " missing current status key '" + statusKey.get() + "'";
+            }
         } catch (IOException ignore) {
             // We allow unavailable statuses
+            failureReason = "Prometheus endpoint not available at port " + port;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
         }
-        return statusMap.get(statusKey.get());
+        return StatusLookupAttempt.from(statusMap.get(statusKey.get()), failureReason);
     }
 
     private void setStatusIfCurrent(@NonNull final String line, @NonNull final AtomicReference<String> statusKey) {

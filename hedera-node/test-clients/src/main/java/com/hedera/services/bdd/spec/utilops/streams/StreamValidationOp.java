@@ -43,10 +43,9 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 /**
- * A {@link UtilOp} that initializes validates the streams produced by the
- * target network of the given {@link HapiSpec}. Note it suffices to validate
- * the streams produced by a single node in the network since at minimum
- * a subsequent log validation will fail.
+ * A {@link UtilOp} that validates the streams produced by the target network of the given
+ * {@link HapiSpec}. Note it suffices to validate the streams produced by a single node in
+ * the network since at minimum log validation will fail in case of an ISS.
  */
 public class StreamValidationOp extends UtilOp {
     private static final Logger log = LogManager.getLogger(StreamValidationOp.class);

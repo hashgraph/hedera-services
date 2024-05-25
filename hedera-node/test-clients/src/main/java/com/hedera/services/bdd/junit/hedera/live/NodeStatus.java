@@ -16,11 +16,16 @@
 
 package com.hedera.services.bdd.junit.hedera.live;
 
-import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 
-public record NodeStatus(@Nullable PlatformStatus platformStatus, @NonNull GrpcStatus grpcStatus, int retryCount) {
+/**
+ * Represents the status of a node in the network.
+ *
+ * @param lastAttempt the last attempt to look up the status of the node
+ * @param grpcStatus the last known gRPC status of the node
+ * @param retryCount the number of times the status lookup has been retried
+ */
+public record NodeStatus(@NonNull StatusLookupAttempt lastAttempt, @NonNull GrpcStatus grpcStatus, int retryCount) {
     public enum GrpcStatus {
         NA,
         UP,

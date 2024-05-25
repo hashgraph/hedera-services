@@ -95,17 +95,18 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
     @Override
     public CompletableFuture<Void> statusFuture(
             @NonNull final PlatformStatus status, @Nullable Consumer<NodeStatus> nodeStatusObserver) {
+        requireNonNull(status);
         final var retryCount = new AtomicInteger();
         return conditionFuture(() -> {
-            final var currentStatus = prometheusClient.statusFromLocalEndpoint(metadata.prometheusPort());
+            final var lookupAttempt = prometheusClient.statusFromLocalEndpoint(metadata.prometheusPort());
             var grpcStatus = NA;
-            var statusReached = currentStatus == status;
+            var statusReached = lookupAttempt.status() == status;
             if (statusReached && status == ACTIVE) {
                 grpcStatus = grpcPinger.isLive(metadata.grpcPort()) ? UP : DOWN;
                 statusReached = grpcStatus == UP;
             }
             if (nodeStatusObserver != null) {
-                nodeStatusObserver.accept(new NodeStatus(currentStatus, grpcStatus, retryCount.getAndIncrement()));
+                nodeStatusObserver.accept(new NodeStatus(lookupAttempt, grpcStatus, retryCount.getAndIncrement()));
             }
             return statusReached;
         });

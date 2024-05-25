@@ -98,6 +98,7 @@ public class AllBaseOpFeesSuite {
     private static final double EXPECTED_NFT_MINT_PRICE_USD = 0.02;
     private static final double EXPECTED_NFT_BURN_PRICE_USD = 0.001;
     private static final double EXPECTED_NFT_WIPE_PRICE_USD = 0.001;
+    private static final double EXPECTED_UNAUTHORIZED_FREEZE_PRICE_USD = 0.001;
 
     @HapiTest
     final Stream<DynamicTest> baseNftMintOperationIsChargedExpectedFee() {
