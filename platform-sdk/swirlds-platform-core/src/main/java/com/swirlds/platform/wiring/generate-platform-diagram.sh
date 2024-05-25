@@ -34,7 +34,6 @@ pcli diagram \
     -s 'StatusStateMachine:PlatformStatus:🚦' \
     -s 'HealthMonitor:health info:🏥' \
     -g 'Event Validation:InternalEventValidator,EventDeduplicator,EventSignatureValidator' \
-    -g 'Event Hashing:EventHasher,PostHashCollector' \
     -g 'Orphan Buffer:OrphanBuffer,OrphanBufferSplitter' \
     -g 'Consensus Engine:ConsensusEngine,ConsensusEngineSplitter,eventWindowManager,getKeystoneEventSequenceNumber,getConsensusEvents' \
     -g 'State Snapshot Manager:saveToDiskFilter,StateSnapshotManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction,toNotification' \

@@ -129,4 +129,5 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(-1) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventHasher,
         @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(-1) UNHANDLED_TASK_METRIC")
-                TaskSchedulerConfiguration postHashCollector) {}
+                TaskSchedulerConfiguration postHashCollector,
+        @ConfigProperty(defaultValue = "false") boolean hashCollectorEnabled) {}
