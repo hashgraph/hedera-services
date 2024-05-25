@@ -93,7 +93,7 @@ public class StatsDemoState extends PartialMerkleLeaf implements SwirldState, Me
     @Override
     public void handleConsensusRound(final Round round, final PlatformState platformState) {
 
-        if (selfId.id() == 0) {
+        if (selfId.id() == 3) {
             if (x.getAndDecrement() <= 0) { // Don't start sleeping for a little while
                 if (x.get() == 0) {
                     System.out.println("<<<<<<<<<<<<< engaging throttle >>>>>>>>>>>>>>>>");

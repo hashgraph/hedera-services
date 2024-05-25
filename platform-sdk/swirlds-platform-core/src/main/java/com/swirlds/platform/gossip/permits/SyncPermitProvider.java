@@ -191,7 +191,7 @@ public class SyncPermitProvider {
      */
     private int getAvailablePermits() {
         computeRevokedPermits();
-        final int revokedCount = revokedPermits - (int) revokedPermitDelta + (int) returnedPermitDelta;
+        final int revokedCount = revokedPermits + (int) revokedPermitDelta - (int) returnedPermitDelta;
         return Math.max(0, totalPermits - usedPermits - revokedCount);
     }
 
@@ -211,7 +211,7 @@ public class SyncPermitProvider {
             final double healthySeconds = UNIT_NANOSECONDS.convertTo(healthyDuration.toNanos(), UNIT_SECONDS);
             returnedPermitDelta = Math.min(revokedPermits, healthySeconds * permitsReturnedPerSecond);
 
-            if (returnedPermitDelta == revokedPermitDelta) {
+            if (returnedPermitDelta == revokedPermits) {
                 // We have returned all permits that were revoked.
                 revokedPermits = 0;
                 returnedPermitDelta = 0;
@@ -242,7 +242,7 @@ public class SyncPermitProvider {
     private void updateMetrics() {
         metrics.reportPermits(
                 getAvailablePermits(),
-                revokedPermits + (int) revokedPermitDelta + (int) returnedPermitDelta,
+                revokedPermits + (int) revokedPermitDelta - (int) returnedPermitDelta,
                 usedPermits);
     }
 }
