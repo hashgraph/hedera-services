@@ -313,7 +313,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             permitCount = syncConfig.syncProtocolPermitCount();
         }
 
-        syncPermitProvider = new SyncPermitProvider(permitCount, intakeEventCounter);
+        syncPermitProvider = new SyncPermitProvider(platformContext, permitCount);
 
         buildSyncProtocolThreads(
                 platformContext,
@@ -351,6 +351,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 syncShadowgraphSynchronizer,
                 fallenBehindManager,
                 syncPermitProvider,
+                intakeEventCounter,
                 gossipHalted::get,
                 () -> intakeQueueSizeSupplier.getAsLong() >= eventConfig.eventIntakeQueueThrottleSize(),
                 Duration.ZERO,
@@ -424,7 +425,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         gossipHalted.set(true);
         // wait for all existing syncs to stop. no new ones will be started, since gossip has been halted, and
         // we've fallen behind
-        syncPermitProvider.waitForAllSyncsToFinish();
+        syncPermitProvider.waitForAllPermitsToBeReleased();
         for (final StoppableThread thread : syncProtocolThreads) {
             thread.stop();
         }
@@ -456,7 +457,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             throw new IllegalStateException("Gossip not started");
         }
         gossipHalted.set(true);
-        syncPermitProvider.waitForAllSyncsToFinish();
+        syncPermitProvider.waitForAllPermitsToBeReleased();
     }
 
     /**

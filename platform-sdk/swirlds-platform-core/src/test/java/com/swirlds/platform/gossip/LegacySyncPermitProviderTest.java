@@ -17,7 +17,7 @@
 package com.swirlds.platform.gossip;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.platform.gossip.SyncPermitProvider.PermitRequestResult.PERMIT_ACQUIRED;
+import static com.swirlds.platform.gossip.LegacySyncPermitProvider.PermitRequestResult.PERMIT_ACQUIRED;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -35,15 +35,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-class SyncPermitProviderTest {
+class LegacySyncPermitProviderTest {
     private final NodeId nodeId = new NodeId(0);
 
     @Test
     @DisplayName("Permits are acquired and released properly")
     void testPermitRelease() {
         final int numPermits = 3;
-        final SyncPermitProvider syncPermitProvider =
-                new SyncPermitProvider(numPermits, Mockito.mock(IntakeEventCounter.class));
+        final LegacySyncPermitProvider syncPermitProvider =
+                new LegacySyncPermitProvider(numPermits, Mockito.mock(IntakeEventCounter.class));
 
         assertEquals(numPermits, syncPermitProvider.getNumAvailable(), "all permits should be available");
 
@@ -65,8 +65,8 @@ class SyncPermitProviderTest {
     @DisplayName("Once all permits are acquired, further attempts to acquire fail")
     void testAllPermitsAcquired() {
         final int numPermits = 9;
-        final SyncPermitProvider syncPermitProvider =
-                new SyncPermitProvider(numPermits, Mockito.mock(IntakeEventCounter.class));
+        final LegacySyncPermitProvider syncPermitProvider =
+                new LegacySyncPermitProvider(numPermits, Mockito.mock(IntakeEventCounter.class));
 
         assertEquals(numPermits, syncPermitProvider.getNumAvailable(), "all permits should be available");
 
@@ -99,8 +99,8 @@ class SyncPermitProviderTest {
     @DisplayName("waitForAllSyncsToFinish blocks until all permits are released")
     void testWaitForAllSyncsToFinish() {
         final int numPermits = 3;
-        final SyncPermitProvider syncPermitProvider =
-                new SyncPermitProvider(numPermits, Mockito.mock(IntakeEventCounter.class));
+        final LegacySyncPermitProvider syncPermitProvider =
+                new LegacySyncPermitProvider(numPermits, Mockito.mock(IntakeEventCounter.class));
 
         // Acquire all the permits
         for (int i = 0; i < numPermits; i++) {
@@ -151,7 +151,8 @@ class SyncPermitProviderTest {
         final DefaultIntakeEventCounter intakeEventCounter = new DefaultIntakeEventCounter(addressBook);
 
         final int numPermits = 3;
-        final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits, intakeEventCounter);
+        final LegacySyncPermitProvider syncPermitProvider =
+                new LegacySyncPermitProvider(numPermits, intakeEventCounter);
 
         assertSame(
                 syncPermitProvider.tryAcquire(nodeId),

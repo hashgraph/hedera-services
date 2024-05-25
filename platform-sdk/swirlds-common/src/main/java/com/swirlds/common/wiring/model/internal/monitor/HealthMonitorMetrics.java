@@ -52,6 +52,9 @@ public class HealthMonitorMetrics {
         unhealthyDuration = platformContext.getMetrics().getOrCreate(DURATION_GAUGE_CONFIG);
         healthy = platformContext.getMetrics().getOrCreate(HEALTHY_CONFIG);
 
+        // Always initialize the system as healthy
+        healthy.set(1);
+
         healthThreshold = platformContext
                 .getConfiguration()
                 .getConfigData(WiringConfig.class)
