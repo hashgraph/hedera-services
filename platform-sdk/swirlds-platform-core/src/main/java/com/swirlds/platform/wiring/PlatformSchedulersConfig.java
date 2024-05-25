@@ -25,14 +25,6 @@ import java.time.Duration;
 /**
  * Contains configuration values for the platform schedulers.
  *
- * @param defaultPoolMultiplier                  used when calculating the size of the default platform fork join pool.
- *                                               Maximum parallelism in this pool is calculated as max(1,
- *                                               (defaultPoolMultipler * [number of processors] +
- *                                               defaultPoolConstant)).
- * @param defaultPoolConstant                    used when calculating the size of the default platform fork join pool.
- *                                               Maximum parallelism in this pool is calculated as max(1,
- *                                               (defaultPoolMultipler * [number of processors] + defaultPoolConstant)).
- *                                               It is legal for this constant to be a negative number.
  * @param eventHasherUnhandledCapacity           number of unhandled tasks allowed in the event hasher scheduler
  * @param internalEventValidator                 configuration for the internal event validator scheduler
  * @param eventDeduplicator                      configuration for the event deduplicator scheduler
@@ -75,8 +67,6 @@ import java.time.Duration;
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
-        @ConfigProperty(defaultValue = "1.0") double defaultPoolMultiplier,
-        @ConfigProperty(defaultValue = "0") int defaultPoolConstant,
         @ConfigProperty(defaultValue = "500") int eventHasherUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration internalEventValidator,

@@ -25,7 +25,7 @@ import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.internal.AutoLock;
 import com.swirlds.common.threading.locks.locked.Locked;
 import com.swirlds.common.wiring.model.diagram.HyperlinkBuilder;
-import com.swirlds.common.wiring.model.internal.monitor.WiringHealthMonitor;
+import com.swirlds.common.wiring.model.internal.monitor.HealthMonitor;
 import com.swirlds.common.wiring.model.internal.standard.HeartbeatScheduler;
 import com.swirlds.common.wiring.model.internal.standard.JvmAnchor;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
@@ -106,7 +106,7 @@ public class StandardWiringModel extends TraceableWiringModel {
         this.defaultPool = Objects.requireNonNull(defaultPool);
 
         final TaskSchedulerBuilder<Duration> healthMonitorSchedulerBuilder = this.schedulerBuilder("HealthMonitor");
-        healthMonitorSchedulerBuilder.withHyperlink(HyperlinkBuilder.platformCoreHyperlink(WiringHealthMonitor.class));
+        healthMonitorSchedulerBuilder.withHyperlink(HyperlinkBuilder.platformCoreHyperlink(HealthMonitor.class));
         if (healthMonitorEnabled) {
             healthMonitorSchedulerBuilder.withType(SEQUENTIAL).withUnhandledTaskCapacity(500); // TODO configure
         } else {
@@ -203,8 +203,7 @@ public class StandardWiringModel extends TraceableWiringModel {
         throwIfStarted();
         markAsStarted();
 
-        final WiringHealthMonitor healthMonitor =
-                new WiringHealthMonitor(schedulers, platformContext.getTime().now());
+        final HealthMonitor healthMonitor = new HealthMonitor(platformContext, schedulers);
         healthMonitorInputWire.bind(healthMonitor::checkSystemHealth);
 
         // We don't have to do anything with the output of these sanity checks.

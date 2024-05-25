@@ -18,6 +18,7 @@ package com.swirlds.common.wiring.model.internal.monitor;
 
 import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -32,9 +33,7 @@ import java.util.Objects;
  * Monitors the health of a wiring model. A healthy wiring model is a model without too much work backed up in queues.
  * An unhealthy wiring model is a model with at least one queue that is backed up with too much work.
  */
-public class WiringHealthMonitor {
-
-    // TODO future cody: create some metrics why not
+public class HealthMonitor {
 
     /**
      * A list of task schedulers without unlimited capacities.
@@ -53,18 +52,37 @@ public class WiringHealthMonitor {
     private Duration previouslyReportedDuration = Duration.ZERO;
 
     /**
+     * Metrics for the health monitor.
+     */
+    private final HealthMonitorMetrics metrics;
+
+    /**
+     * Logs health issues.
+     */
+    private final HealthMonitorLogger logger;
+
+    // TODO: create a special configuration for wiring framework stuff that is isolated from the schedulers config
+
+    /**
      * Constructor.
      *
-     * @param schedulers the task schedulers to monitor
+     * @param platformContext    the platform context
+     * @param schedulers         the task schedulers to monitor
      */
-    public WiringHealthMonitor(@NonNull final List<TaskScheduler<?>> schedulers, @NonNull final Instant now) {
+    public HealthMonitor(
+            @NonNull final PlatformContext platformContext, @NonNull final List<TaskScheduler<?>> schedulers) {
+
+        metrics = new HealthMonitorMetrics(platformContext);
+
         this.schedulers = new ArrayList<>();
         for (final TaskScheduler<?> scheduler : schedulers) {
             if (scheduler.getCapacity() != TaskSchedulerBuilder.UNLIMITED_CAPACITY) {
                 this.schedulers.add(Objects.requireNonNull(scheduler));
-                lastHealthyTimes.add(now);
+                lastHealthyTimes.add(platformContext.getTime().now());
             }
         }
+
+        logger = new HealthMonitorLogger(platformContext, this.schedulers);
     }
 
     /**
@@ -85,6 +103,7 @@ public class WiringHealthMonitor {
                 lastHealthyTimes.set(i, now);
             } else {
                 final Duration unhealthyDuration = Duration.between(lastHealthyTimes.get(i), now);
+                logger.reportUnhealthyScheduler(scheduler, unhealthyDuration);
                 if (isGreaterThan(unhealthyDuration, longestUnhealthyDuration)) {
                     longestUnhealthyDuration = unhealthyDuration;
                 }
@@ -92,7 +111,8 @@ public class WiringHealthMonitor {
         }
 
         try {
-            // Only return a new value if it is different from the previous value.
+            // Only report when there is a change in health status
+            metrics.reportUnhealthyDuration(longestUnhealthyDuration);
             return longestUnhealthyDuration.equals(previouslyReportedDuration) ? null : longestUnhealthyDuration;
         } finally {
             previouslyReportedDuration = longestUnhealthyDuration;

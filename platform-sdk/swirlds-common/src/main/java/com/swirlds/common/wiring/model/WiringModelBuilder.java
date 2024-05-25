@@ -78,6 +78,7 @@ public class WiringModelBuilder {
         return this;
     }
 
+    // TODO: configure automatically with setting
     /**
      * Set if the health monitor should be enabled. Default is true.
      *
