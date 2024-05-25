@@ -491,7 +491,8 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             @NonNull final StandardOutputWire<GossipEvent> eventOutput,
             @NonNull final BindableInputWire<NoInput, Void> startInput,
             @NonNull final BindableInputWire<NoInput, Void> stopInput,
-            @NonNull final BindableInputWire<NoInput, Void> clearInput) {
+            @NonNull final BindableInputWire<NoInput, Void> clearInput,
+            @NonNull final BindableInputWire<Duration, Void> systemHealthInput) {
 
         startInput.bindConsumer(ignored -> start());
         stopInput.bindConsumer(ignored -> stop());
@@ -508,6 +509,8 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             inOrderLinker.setEventWindow(eventWindow);
             shadowgraph.updateEventWindow(eventWindow);
         });
+
+        systemHealthInput.bindConsumer(syncPermitProvider::reportUnhealthyDuration);
 
         final boolean useOldStyleIntakeQueue = platformContext
                 .getConfiguration()

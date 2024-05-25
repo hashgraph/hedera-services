@@ -32,8 +32,12 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -65,24 +69,44 @@ public class StatsDemoState extends PartialMerkleLeaf implements SwirldState, Me
 
     private static final long CLASS_ID = 0xc550a1cd94e91ca3L;
 
+    @Override
+    public void init(
+            Platform platform,
+            PlatformState platformState,
+            InitTrigger trigger,
+            SoftwareVersion previousSoftwareVersion) {
+        this.selfId = platform.getSelfId();
+    }
+
+    private NodeId selfId;
+
     public StatsDemoState() {}
 
     private StatsDemoState(final StatsDemoState sourceState) {
         super(sourceState);
+        this.selfId = sourceState.selfId;
     }
 
-    private static final AtomicInteger y = new AtomicInteger(60 * 4);
-    private static final AtomicInteger x = new AtomicInteger(60 * 4);
+    private static final AtomicInteger y = new AtomicInteger(60);
+    private static final AtomicInteger x = new AtomicInteger(60);
 
     @Override
     public void handleConsensusRound(final Round round, final PlatformState platformState) {
 
-        if (x.getAndDecrement() <= 0) { // Don't start sleeping for a little while
-            if (y.getAndDecrement() >= 0) { // don't sleep forever
-                try {
-                    SECONDS.sleep(1); // TODO
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+        if (selfId.id() == 0) {
+            if (x.getAndDecrement() <= 0) { // Don't start sleeping for a little while
+                if (x.get() == 0) {
+                    System.out.println("<<<<<<<<<<<<< engaging throttle >>>>>>>>>>>>>>>>");
+                }
+                if (y.getAndDecrement() >= 0) { // don't sleep forever
+                    try {
+                        SECONDS.sleep(1); // TODO
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                if (y.get() == 0) {
+                    System.out.println("<<<<<<<<<<<<< disengaging throttle >>>>>>>>>>>>>>>>");
                 }
             }
         }
