@@ -2617,7 +2617,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> failsWithLessThanIntrinsicGas() {
+    final HapiSpec failsWithLessThanIntrinsicGas() {
         final String randomContract = "0.0.1051";
         final String functionName = "name";
         final String contractName = "ERC721ABI";
