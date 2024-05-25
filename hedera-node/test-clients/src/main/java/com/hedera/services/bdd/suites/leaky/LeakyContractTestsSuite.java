@@ -3166,12 +3166,14 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
     final HapiSpec htsTransferFromForNFTViaContractCreateLazyCreate() {
         final var depositAmount = 1000;
 
-        return defaultHapiSpec(
+        return propertyPreservingHapiSpec(
                         "htsTransferFromForNFTViaContractCreateLazyCreate",
                         NONDETERMINISTIC_NONCE,
                         NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
                         HIGHLY_NON_DETERMINISTIC_FEES)
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE_VALUE),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         uploadInitCode(NESTED_LAZY_CREATE_VIA_CONSTRUCTOR))
                 .when(withOpContext((spec, opLog) -> {

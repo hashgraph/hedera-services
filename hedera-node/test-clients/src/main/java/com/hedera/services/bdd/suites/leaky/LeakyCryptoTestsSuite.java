@@ -218,7 +218,7 @@ public class LeakyCryptoTestsSuite extends SidecarAwareHapiSuite {
     public static final String V_0_34 = "v0.34";
     private static final String ERC20_ABI = "ERC20ABI";
     private static final String SENDER_TXN = "senderTxn";
-    private static final long GAS_PRICE = 71L;
+    private static final long GAS_PRICE = 66L;
 
     public static void main(String... args) {
         new LeakyCryptoTestsSuite().runSuiteSync();
