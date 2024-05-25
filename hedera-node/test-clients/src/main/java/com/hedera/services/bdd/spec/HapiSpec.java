@@ -100,6 +100,7 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -132,6 +133,7 @@ import org.junit.jupiter.api.function.Executable;
 public class HapiSpec implements Runnable, Executable {
     private static final String CI_CHECK_NAME_SYSTEM_PROPERTY = "ci.check.name";
     private static final String QUIET_MODE_SYSTEM_PROPERTY = "hapi.spec.quiet.mode";
+    private static final Duration NETWORK_ACTIVE_TIMEOUT = Duration.ofSeconds(300);
 
     /**
      * The name of the DynamicTest that executes the HapiSpec as written,
@@ -398,7 +400,7 @@ public class HapiSpec implements Runnable, Executable {
     @Override
     public void execute() throws Throwable {
         // Only JUnit will use execute(), and in that case the target network must be set
-        requireNonNull(targetNetwork).waitForReady();
+        requireNonNull(targetNetwork).awaitReady(NETWORK_ACTIVE_TIMEOUT);
         run();
         if (failure != null) {
             throw failure.cause;

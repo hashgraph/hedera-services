@@ -16,21 +16,22 @@
 
 package com.hedera.services.bdd.junit.hedera;
 
+import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.awaitStatus;
 import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.workingDirFor;
 import static com.hedera.services.bdd.suites.TargetNetworkType.SHARED_HAPI_TEST_NETWORK;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.CompletableFuture.runAsync;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.services.bdd.junit.hedera.live.GrpcPinger;
 import com.hedera.services.bdd.junit.hedera.live.PrometheusClient;
 import com.hedera.services.bdd.junit.hedera.live.SubProcessNode;
 import com.hedera.services.bdd.suites.TargetNetworkType;
-import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.SplittableRandom;
 import java.util.concurrent.CompletableFuture;
@@ -75,9 +76,7 @@ public class HederaNetwork {
     private final String networkName;
 
     private final List<HederaNode> nodes;
-
-    @Nullable
-    private CompletableFuture<Void> ready;
+    private AtomicReference<CompletableFuture<Void>> ready = new AtomicReference<>();
 
     private HederaNetwork(@Nullable final String networkName, @NonNull final List<HederaNode> nodes) {
         this.nodes = requireNonNull(nodes);
@@ -183,17 +182,10 @@ public class HederaNetwork {
     }
 
     /**
-     * Starts all nodes in the network and waits for them to reach the
-     * {@link PlatformStatus#ACTIVE} status, or times out.
-     *
-     * @param timeout the maximum time to wait for all nodes to start
+     * Starts all nodes in the network.
      */
-    public void startWithin(@NonNull final Duration timeout) {
-        ready = CompletableFuture.allOf(nodes.stream()
-                        .map(node -> node.initWorkingDir(configTxt).start().statusFuture(ACTIVE))
-                        .toArray(CompletableFuture[]::new))
-                .orTimeout(timeout.toMillis(), MILLISECONDS)
-                .thenRun(() -> log.info("All nodes in network '{}' are ready", name()));
+    public void start() {
+        nodes.forEach(node -> node.initWorkingDir(configTxt).start());
     }
 
     /**
@@ -204,10 +196,20 @@ public class HederaNetwork {
     }
 
     /**
-     * Waits for all nodes in the network to be ready.
+     * Waits for all nodes in the network to be ready within the given timeout.
      */
-    public void waitForReady() {
-        requireNonNull(ready).join();
+    public void awaitReady(@NonNull final Duration timeout) {
+        if (ready.get() == null) {
+            final var future = runAsync(() -> {
+                final var deadline = Instant.now().plus(timeout);
+                nodes.forEach(node -> awaitStatus(node, ACTIVE, Duration.between(Instant.now(), deadline)));
+            });
+            if (!ready.compareAndSet(null, future)) {
+                // We only need one thread to wait for readiness
+                future.cancel(true);
+            }
+        }
+        ready.get().join();
     }
 
     private static String configTxtFor(@NonNull final String networkName, @NonNull final List<HederaNode> nodes) {

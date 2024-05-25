@@ -35,6 +35,7 @@ import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 /**
@@ -94,6 +95,7 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
     @Override
     public CompletableFuture<Void> statusFuture(
             @NonNull final PlatformStatus status, @Nullable Consumer<NodeStatus> nodeStatusObserver) {
+        final var retryCount = new AtomicInteger();
         return conditionFuture(() -> {
             final var currentStatus = prometheusClient.statusFromLocalEndpoint(metadata.prometheusPort());
             var grpcStatus = NA;
@@ -103,7 +105,7 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
                 statusReached = grpcStatus == UP;
             }
             if (nodeStatusObserver != null) {
-                nodeStatusObserver.accept(new NodeStatus(currentStatus, grpcStatus));
+                nodeStatusObserver.accept(new NodeStatus(currentStatus, grpcStatus, retryCount.getAndIncrement()));
             }
             return statusReached;
         });
