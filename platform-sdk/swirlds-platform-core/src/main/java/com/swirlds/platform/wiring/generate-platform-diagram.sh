@@ -32,6 +32,7 @@ pcli diagram \
     -s 'StaleEventDetectorRouter:publishStaleEvent:⚰️' \
     -s 'toStateWrittenToDiskAction:PlatformStatusAction:💾' \
     -s 'StatusStateMachine:PlatformStatus:🚦' \
+    -s 'HealthMonitor:health info:🏥' \
     -g 'Event Validation:InternalEventValidator,EventDeduplicator,EventSignatureValidator' \
     -g 'Event Hashing:EventHasher,PostHashCollector' \
     -g 'Orphan Buffer:OrphanBuffer,OrphanBufferSplitter' \

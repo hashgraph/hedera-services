@@ -71,16 +71,19 @@ public class StatsDemoState extends PartialMerkleLeaf implements SwirldState, Me
         super(sourceState);
     }
 
+    private static final AtomicInteger y = new AtomicInteger(60 * 4);
     private static final AtomicInteger x = new AtomicInteger(60 * 4);
 
     @Override
     public void handleConsensusRound(final Round round, final PlatformState platformState) {
 
-        if (x.getAndDecrement() >= 0) {
-            try {
-                SECONDS.sleep(1); // TODO
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+        if (x.getAndDecrement() <= 0) { // Don't start sleeping for a little while
+            if (y.getAndDecrement() >= 0) { // don't sleep forever
+                try {
+                    SECONDS.sleep(1); // TODO
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
     }

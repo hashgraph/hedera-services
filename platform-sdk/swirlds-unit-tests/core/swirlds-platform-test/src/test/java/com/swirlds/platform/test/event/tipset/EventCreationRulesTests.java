@@ -43,6 +43,7 @@ import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.system.status.PlatformStatus;
 import java.time.Duration;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -56,7 +57,7 @@ class EventCreationRulesTests {
     @Test
     @DisplayName("Empty Aggregate Test")
     void emptyAggregateTest() {
-        final EventCreationRule rule = AggregateEventCreationRules.of();
+        final EventCreationRule rule = AggregateEventCreationRules.of(List.of());
         assertTrue(rule.isEventCreationPermitted());
 
         // should not throw
@@ -106,7 +107,7 @@ class EventCreationRulesTests {
                 .when(rule4)
                 .eventWasCreated();
 
-        final EventCreationRule aggregateRule = AggregateEventCreationRules.of(rule1, rule2, rule3, rule4);
+        final EventCreationRule aggregateRule = AggregateEventCreationRules.of(List.of(rule1, rule2, rule3, rule4));
 
         assertTrue(aggregateRule.isEventCreationPermitted());
 
