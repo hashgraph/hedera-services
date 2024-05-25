@@ -46,6 +46,7 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NOD
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
+import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
@@ -121,7 +122,9 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.HederaState;
@@ -134,6 +137,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -173,6 +177,8 @@ public class HandleWorkflow {
     private final HandleWorkflowMetrics handleWorkflowMetrics;
     private final ThrottleServiceManager throttleServiceManager;
     private final StoreMetricsService storeMetricsService;
+    private final InitTrigger initTrigger;
+    private final SoftwareVersion softwareVersion;
 
     @Inject
     public HandleWorkflow(
@@ -200,7 +206,9 @@ public class HandleWorkflow {
             @NonNull final CacheWarmer cacheWarmer,
             @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
             @NonNull final ThrottleServiceManager throttleServiceManager,
-            @NonNull final StoreMetricsService storeMetricsService) {
+            @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final InitTrigger initTrigger,
+            @NonNull final SoftwareVersion softwareVersion) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -230,6 +238,8 @@ public class HandleWorkflow {
         this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics, "handleWorkflowMetrics must not be null");
         this.throttleServiceManager = requireNonNull(throttleServiceManager, "throttleServiceManager must not be null");
         this.storeMetricsService = requireNonNull(storeMetricsService, "storeMetricsService must not be null");
+        this.initTrigger = requireNonNull(initTrigger, "initTrigger must not be null");
+        this.softwareVersion = requireNonNull(softwareVersion, "softwareVersion must not be null");
     }
 
     /**
@@ -317,7 +327,7 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
-        // (FUTURE) We actually want consider exporting synthetic transactions on every
+        // (FUTURE) We actually want to consider exporting synthetic transactions on every
         // first post-upgrade transaction, not just the first transaction after genesis.
         final var consTimeOfLastHandledTxn = blockRecordManager.consTimeOfLastHandledTxn();
         final var isFirstTransaction = !consTimeOfLastHandledTxn.isAfter(Instant.EPOCH);
@@ -412,6 +422,22 @@ public class HandleWorkflow {
                     .transactionID(transactionInfo.transactionID())
                     .exchangeRate(exchangeRateManager.exchangeRates())
                     .memo(txBody.memo());
+
+            // now we have payer and record builder, check:
+            // Check if the transaction is submitted by a version before the deployed version.
+            // If so, set the status on the receipt to BUSY and return
+            if (this.initTrigger != EVENT_STREAM_RECOVERY
+                    && softwareVersion.compareTo(platformEvent.getSoftwareVersion()) > 0) {
+                final var record = recordBuilder.status(ResponseCodeEnum.BUSY).build();
+
+                blockRecordManager.endUserTransaction(Stream.of(record), state);
+                recordCache.add(creator.nodeId(), payer, List.of(record));
+
+                // We won't worry about updating the updateTransactionDuration metric here since the transaction was not
+                // really handled
+
+                return;
+            }
 
             // Set up the verifier
             final var hederaConfig = configuration.getConfigData(HederaConfig.class);
