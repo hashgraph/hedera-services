@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
@@ -101,6 +102,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2M
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.SALT;
+import static com.hedera.services.bdd.suites.regression.factories.HollowAccountCompletedFuzzingFactory.CONTRACT;
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.randomHeadlongAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
@@ -225,6 +227,7 @@ public class ContractCallSuite {
     private static final String RECEIVER_2_INFO = "receiver2Info";
     private static final String RECEIVER_3_INFO = "receiver3Info";
     public static final String DELEGATE_CALL_SPECIFIC = "delegateCallSpecific";
+    private static final long INTRINSIC_GAS_FOR_0_ARG_METHOD = 21_064L;
 
     @HapiTest
     final Stream<DynamicTest> canHandleInvalidContractCallTransactions() {
@@ -2622,6 +2625,23 @@ public class ContractCallSuite {
                 .when()
                 .then(contractCall(
                         contract, "callRequested", nonExtantEvmAddress, new byte[0], BigInteger.valueOf(88_888L)));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> failsWithLessThanIntrinsicGas() {
+        final String randomContract = "0.0.1051";
+        final String functionName = "name";
+        final String contractName = "ERC721ABI";
+        return defaultHapiSpec("failsWithLessThanIntrinsicGas")
+                .given(cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS), withOpContext((spec, opLog) -> spec.registry()
+                        .saveContractId(CONTRACT, asContract(randomContract))))
+                .when(withOpContext((spec, ctxLog) -> allRunFor(
+                        spec,
+                        contractCallWithFunctionAbi(CONTRACT, getABIFor(FUNCTION, functionName, contractName))
+                                .gas(INTRINSIC_GAS_FOR_0_ARG_METHOD - 1)
+                                .signingWith(ACCOUNT)
+                                .hasPrecheck(INSUFFICIENT_GAS))))
+                .then();
     }
 
     private String getNestedContractAddress(final String contract, final HapiSpec spec) {
