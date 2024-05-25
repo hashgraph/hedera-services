@@ -108,8 +108,6 @@ public class FeeService implements Service {
                     if (toState.isModified()) ((WritableSingletonStateBase) toState).commit();
 
                     log.info("BBM: finished migrating fee service");
-                } else {
-                    log.warn("BBM: no fee 'from' state found");
                 }
 
                 fs = null;

@@ -93,8 +93,6 @@ public class EntityIdService implements Service {
                 if (fs > -1) {
                     log.info("BBM: Setting initial entity id to " + fs);
                     entityIdState.put(new EntityNumber(fs - 1));
-                } else {
-                    log.warn("BBM: no entity ID 'from' state found");
                 }
 
                 // Usually we un-assign the 'from' state here, but in this case there's no need because the only field

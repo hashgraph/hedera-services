@@ -86,8 +86,6 @@ public class InitialModServiceConsensusSchema extends Schema {
             if (topicStoreRef.get().isModified()) ((WritableKVStateBase) topicStoreRef.get()).commit();
 
             log.info("BBM: finished consensus service migration");
-        } else {
-            log.warn("BBM: no consensus 'from' state found");
         }
 
         fs = null;

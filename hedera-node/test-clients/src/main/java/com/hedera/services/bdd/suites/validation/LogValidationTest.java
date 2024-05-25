@@ -17,19 +17,22 @@
 package com.hedera.services.bdd.suites.validation;
 
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateStreams;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateLogsAfter;
 
 import com.hedera.services.bdd.junit.LeakyHapiTest;
+import java.time.Duration;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 
-@Tag("STREAM_VALIDATION")
-@Order(Integer.MAX_VALUE - 1)
-public class StreamValidationTest {
+@Tag("LOG_VALIDATION")
+@Order(Integer.MAX_VALUE)
+public class LogValidationTest {
+    private static final Duration VALIDATION_DELAY = Duration.ofSeconds(1);
+
     @LeakyHapiTest
-    final Stream<DynamicTest> streamsAreValid() {
-        return hapiTest(validateStreams());
+    final Stream<DynamicTest> logsContainNoUnexpectedProblems() {
+        return hapiTest(validateLogsAfter(VALIDATION_DELAY));
     }
 }

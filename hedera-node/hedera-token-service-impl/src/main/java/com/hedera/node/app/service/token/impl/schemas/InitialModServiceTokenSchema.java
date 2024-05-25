@@ -462,8 +462,6 @@ public class InitialModServiceTokenSchema extends Schema {
             srToState.put(toSr);
             if (srToState.isModified()) ((WritableSingletonStateBase) srToState).commit();
             log.info("BBM: finished staking rewards");
-        } else {
-            log.warn("BBM: no token 'from' state found");
         }
 
         nftsFs = null;

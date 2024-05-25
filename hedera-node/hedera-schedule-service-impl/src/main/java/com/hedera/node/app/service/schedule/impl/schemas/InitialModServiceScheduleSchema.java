@@ -153,8 +153,6 @@ public final class InitialModServiceScheduleSchema extends Schema {
             log.info("BBM: finished schedule by equality migration");
 
             log.info("BBM: finished schedule service migration migration");
-        } else {
-            log.warn("BBM: no schedule 'from' state found");
         }
 
         fs = null;
