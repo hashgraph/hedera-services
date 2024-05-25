@@ -1677,14 +1677,14 @@ public class ContractCallSuite extends HapiSuite {
                                     .balance(0)
                                     .payingWith(civilian)
                                     .gas(1)
-                                    .hasKnownStatus(INSUFFICIENT_GAS)
+                                    .hasPrecheck(INSUFFICIENT_GAS)
                                     .via(FAIL_INSUFFICIENT_GAS);
-                            final var subop3 = getTxnRecord(FAIL_INSUFFICIENT_GAS);
-                            allRunFor(spec, subop1, subop2, subop3);
-                            final var delta = subop3.getResponseRecord().getTransactionFee();
-                            final var subop4 = getAccountBalance(civilian)
+                            // There should be no fee charged for this transaction as it fails in precheck
+                            allRunFor(spec, subop1, subop2);
+                            final var delta = 0;
+                            final var subop3 = getAccountBalance(civilian)
                                     .hasTinyBars(changeFromSnapshot("balanceBefore0", -delta));
-                            allRunFor(spec, subop4);
+                            allRunFor(spec, subop3);
                         }),
                         withOpContext((spec, ignore) -> {
                             final var subop1 = balanceSnapshot("balanceBefore1", civilian);
@@ -1766,10 +1766,7 @@ public class ContractCallSuite extends HapiSuite {
                                     .hasTinyBars(changeFromSnapshot("balanceBefore5", -delta));
                             allRunFor(spec, subop4);
                         }))
-                .then(
-                        getTxnRecord(FAIL_INSUFFICIENT_GAS),
-                        getTxnRecord(SUCCESS_WITH_ZERO_INITIAL_BALANCE),
-                        getTxnRecord(FAIL_INVALID_INITIAL_BALANCE));
+                .then(getTxnRecord(SUCCESS_WITH_ZERO_INITIAL_BALANCE), getTxnRecord(FAIL_INVALID_INITIAL_BALANCE));
     }
 
     @HapiTest
