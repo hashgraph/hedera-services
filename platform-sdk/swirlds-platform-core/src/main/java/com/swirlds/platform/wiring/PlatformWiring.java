@@ -212,13 +212,18 @@ public class PlatformWiring {
         }
 
         // Provides back pressure across both the event hasher and the post hash collector
-        final ObjectCounter hashingObjectCounter = new BackpressureObjectCounter(
-                "hashingObjectCounter",
-                platformContext
-                        .getConfiguration()
-                        .getConfigData(PlatformSchedulersConfig.class)
-                        .eventHasherUnhandledCapacity(),
-                Duration.ofNanos(100));
+        final ObjectCounter hashingObjectCounter;
+        if (hashCollectorEnabled) {
+            hashingObjectCounter = new BackpressureObjectCounter(
+                    "hashingObjectCounter",
+                    platformContext
+                            .getConfiguration()
+                            .getConfigData(PlatformSchedulersConfig.class)
+                            .eventHasherUnhandledCapacity(),
+                    Duration.ofNanos(100));
+        } else {
+            hashingObjectCounter = null;
+        }
 
         eventHasherWiring =
                 new ComponentWiring<>(model, EventHasher.class, buildEventHasherScheduler(hashingObjectCounter));
@@ -338,7 +343,13 @@ public class PlatformWiring {
         transactionPoolWiring = new ComponentWiring<>(model, TransactionPool.class, config.transactionPool());
 
         platformCoordinator = new PlatformCoordinator(
-                hashingObjectCounter,
+                () -> {
+                    if (hashCollectorEnabled) {
+                        hashingObjectCounter.waitUntilEmpty();
+                    } else {
+                        eventHasherWiring.flush();
+                    }
+                },
                 internalEventValidatorWiring,
                 eventDeduplicatorWiring,
                 eventSignatureValidatorWiring,
@@ -377,18 +388,13 @@ public class PlatformWiring {
             builder.withOnRamp(hashingObjectCounter).withExternalBackPressure(true);
         } else {
             builder.withUnhandledTaskCapacity(platformContext
-                    .getConfiguration()
-                    .getConfigData(PlatformSchedulersConfig.class)
-                    .eventHasherUnhandledCapacity());
+                            .getConfiguration()
+                            .getConfigData(PlatformSchedulersConfig.class)
+                            .eventHasherUnhandledCapacity())
+                    .withFlushingEnabled(true);
         }
 
-        return model.schedulerBuilder("EventHasher")
-                .configure(config.eventHasher())
-                .withOnRamp(hashingObjectCounter)
-                .withExternalBackPressure(true)
-                .withHyperlink(platformCoreHyperlink(EventHasher.class))
-                .build()
-                .cast();
+        return builder.build().cast();
     }
 
     /**
