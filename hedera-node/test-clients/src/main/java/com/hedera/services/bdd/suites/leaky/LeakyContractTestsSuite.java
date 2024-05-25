@@ -1603,6 +1603,7 @@ public class LeakyContractTestsSuite {
                 .preserving(CONTRACTS_MAX_GAS_PER_SEC)
                 .given(
                         uploadInitCode(SIMPLE_UPDATE_CONTRACT),
+                        uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
                         contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
                         overriding(CONTRACTS_MAX_GAS_PER_SEC, "100"))
                 .when()
@@ -1610,7 +1611,9 @@ public class LeakyContractTestsSuite {
                         contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
                                 .gas(23_000L)
                                 .hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
-                        contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(23_000L).hasPrecheck(MAX_GAS_LIMIT_EXCEEDED));
+                        contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+                                .gas(1_000_000L)
+                                .hasPrecheck(MAX_GAS_LIMIT_EXCEEDED));
     }
 
     @HapiTest
