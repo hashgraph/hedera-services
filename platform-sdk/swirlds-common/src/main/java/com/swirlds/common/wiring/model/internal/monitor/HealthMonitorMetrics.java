@@ -29,7 +29,6 @@ public class HealthMonitorMetrics {
 
     private static final DurationGauge.Config DURATION_GAUGE_CONFIG = new DurationGauge.Config(
                     "platform", "unhealthyDuration", ChronoUnit.SECONDS)
-            .withUnit("s")
             .withDescription("The duration that the most unhealthy scheduler has been in an unhealthy state.");
     private final DurationGauge unhealthyDuration;
 

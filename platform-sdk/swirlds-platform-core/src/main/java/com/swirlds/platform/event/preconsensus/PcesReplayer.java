@@ -38,6 +38,8 @@ import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+// TODO this needs to be made to work with the health monitor
+
 /**
  * This class encapsulates the logic for replaying preconsensus events at boot up time.
  */

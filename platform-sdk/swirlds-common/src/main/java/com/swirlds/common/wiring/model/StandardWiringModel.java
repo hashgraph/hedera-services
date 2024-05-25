@@ -206,10 +206,11 @@ public class StandardWiringModel extends TraceableWiringModel {
     @Override
     public void start() {
         throwIfStarted();
-        markAsStarted();
 
         final HealthMonitor healthMonitor = new HealthMonitor(platformContext, schedulers);
         healthMonitorInputWire.bind(healthMonitor::checkSystemHealth);
+
+        markAsStarted();
 
         // We don't have to do anything with the output of these sanity checks.
         // The methods below will log errors if they find problems.

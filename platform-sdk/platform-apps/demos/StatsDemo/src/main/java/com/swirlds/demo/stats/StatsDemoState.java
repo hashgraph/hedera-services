@@ -26,6 +26,8 @@ package com.swirlds.demo.stats;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -33,6 +35,7 @@ import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldState;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This demo collects statistics on the running of the network and consensus systems. It writes them to the
@@ -68,8 +71,19 @@ public class StatsDemoState extends PartialMerkleLeaf implements SwirldState, Me
         super(sourceState);
     }
 
+    private static final AtomicInteger x = new AtomicInteger(60 * 4);
+
     @Override
-    public void handleConsensusRound(final Round round, final PlatformState platformState) {}
+    public void handleConsensusRound(final Round round, final PlatformState platformState) {
+
+        if (x.getAndDecrement() >= 0) {
+            try {
+                SECONDS.sleep(1); // TODO
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 
     /**
      * {@inheritDoc}

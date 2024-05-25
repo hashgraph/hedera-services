@@ -88,7 +88,6 @@ public class HealthMonitorLogger {
                 STARTUP.getMarker(),
                 "Task scheduler {} has been unhealthy for {}. It currently has {}/{} unhandled tasks.",
                 scheduler.getName(),
-                unhealthyDuration,
                 formattedDuration,
                 scheduler.getUnprocessedTaskCount(),
                 scheduler.getCapacity());
