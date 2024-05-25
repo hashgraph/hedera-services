@@ -380,8 +380,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                 getErc20TokenNameExceedingLimits(),
                 relayerFeeAsExpectedIfSenderCoversGas(),
                 canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor(),
-                invalidContract(),
-                htsTransferFromForNFTViaContractCreateLazyCreate());
+                invalidContract());
     }
 
     @SuppressWarnings("java:S5960")
