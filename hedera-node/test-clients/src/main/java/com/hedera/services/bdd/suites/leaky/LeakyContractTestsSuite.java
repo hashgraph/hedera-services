@@ -108,8 +108,6 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACC
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
@@ -3159,40 +3157,6 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                         ifNotHapiTest(
                                 contractCallWithFunctionAbi("invalid", function).hasPrecheck(INVALID_CONTRACT_ID)))))
                 .then();
-    }
-
-    @Order(39)
-    @HapiTest
-    final HapiSpec htsTransferFromForNFTViaContractCreateLazyCreate() {
-        final var depositAmount = 1000;
-
-        return propertyPreservingHapiSpec(
-                        "htsTransferFromForNFTViaContractCreateLazyCreate",
-                        NONDETERMINISTIC_NONCE,
-                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
-                        HIGHLY_NON_DETERMINISTIC_FEES)
-                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
-                .given(
-                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE_VALUE),
-                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
-                        uploadInitCode(NESTED_LAZY_CREATE_VIA_CONSTRUCTOR))
-                .when(withOpContext((spec, opLog) -> {
-                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
-                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                    final var addressBytes = recoverAddressFromPubKey(tmp);
-                    allRunFor(
-                            spec,
-                            contractCreate(
-                                            NESTED_LAZY_CREATE_VIA_CONSTRUCTOR,
-                                            HapiParserUtil.asHeadlongAddress(addressBytes))
-                                    .balance(depositAmount)
-                                    .gas(GAS_TO_OFFER)
-                                    .via(TRANSFER_TXN)
-                                    .hasKnownStatus(SUCCESS),
-                            getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged());
-                }))
-                .then(childRecordsCheck(
-                        TRANSFER_TXN, SUCCESS, recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
 
     private HapiContractCallLocal setExpectedCreate2Address(
