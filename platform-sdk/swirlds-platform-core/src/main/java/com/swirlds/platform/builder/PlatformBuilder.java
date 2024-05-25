@@ -627,8 +627,9 @@ public final class PlatformBuilder {
             logger.info(STARTUP.getMarker(), "Default platform pool parallelism: {}", parallelism);
 
             model = WiringModelBuilder.create(platformContext)
-                    .withHealthMonitorEnabled(wiringConfig.healthMonitorEnabled())
                     .withDefaultPool(defaultPool)
+                    .withHealthMonitorEnabled(wiringConfig.healthMonitorEnabled())
+                    .withHardBackpressureEnabled(wiringConfig.hardBackpressureEnabled())
                     .build();
         }
 

@@ -91,16 +91,18 @@ public class StandardWiringModel extends TraceableWiringModel {
     /**
      * Constructor.
      *
-     * @param platformContext      the platform context
-     * @param defaultPool          the default fork join pool, schedulers not explicitly assigned a pool will use this
-     *                             one
-     * @param healthMonitorEnabled true if the health monitor should be enabled, false otherwise
+     * @param platformContext         the platform context
+     * @param defaultPool             the default fork join pool, schedulers not explicitly assigned a pool will use
+     *                                this one
+     * @param healthMonitorEnabled    true if the health monitor should be enabled, false otherwise
+     * @param hardBackpressureEnabled true if hard backpressure should be enabled, false otherwise
      */
     StandardWiringModel(
             @NonNull final PlatformContext platformContext,
             @NonNull final ForkJoinPool defaultPool,
-            final boolean healthMonitorEnabled) {
-        super(true);
+            final boolean healthMonitorEnabled,
+            final boolean hardBackpressureEnabled) {
+        super(hardBackpressureEnabled);
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.defaultPool = Objects.requireNonNull(defaultPool);
@@ -108,7 +110,10 @@ public class StandardWiringModel extends TraceableWiringModel {
         final TaskSchedulerBuilder<Duration> healthMonitorSchedulerBuilder = this.schedulerBuilder("HealthMonitor");
         healthMonitorSchedulerBuilder.withHyperlink(HyperlinkBuilder.platformCoreHyperlink(HealthMonitor.class));
         if (healthMonitorEnabled) {
-            healthMonitorSchedulerBuilder.withType(SEQUENTIAL).withUnhandledTaskCapacity(500); // TODO configure
+            healthMonitorSchedulerBuilder
+                    .withType(SEQUENTIAL)
+                    .withUnhandledTaskMetricEnabled(true)
+                    .withUnhandledTaskCapacity(500); // TODO configure
         } else {
             healthMonitorSchedulerBuilder.withType(NO_OP);
         }

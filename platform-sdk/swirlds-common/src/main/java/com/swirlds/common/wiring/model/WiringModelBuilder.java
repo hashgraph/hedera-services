@@ -31,6 +31,7 @@ public class WiringModelBuilder {
     private boolean deterministicModeEnabled;
     private ForkJoinPool defaultPool = ForkJoinPool.commonPool();
     private boolean healthMonitorEnabled = true;
+    private boolean hardBackpressureEnabled = false; // TODO this will break tests, fix then remove TODO
 
     /**
      * Create a new builder.
@@ -78,7 +79,6 @@ public class WiringModelBuilder {
         return this;
     }
 
-    // TODO: configure automatically with setting
     /**
      * Set if the health monitor should be enabled. Default is true.
      *
@@ -88,6 +88,18 @@ public class WiringModelBuilder {
     @NonNull
     public WiringModelBuilder withHealthMonitorEnabled(final boolean healthMonitorEnabled) {
         this.healthMonitorEnabled = healthMonitorEnabled;
+        return this;
+    }
+
+    /**
+     * Set if hard backpressure should be enabled. Default is false.
+     *
+     * @param hardBackpressureEnabled whether to enable hard backpressure
+     * @return this
+     */
+    @NonNull
+    public WiringModelBuilder withHardBackpressureEnabled(final boolean hardBackpressureEnabled) {
+        this.hardBackpressureEnabled = hardBackpressureEnabled;
         return this;
     }
 
@@ -103,7 +115,8 @@ public class WiringModelBuilder {
         if (deterministicModeEnabled) {
             return (T) new DeterministicWiringModel(platformContext);
         } else {
-            return (T) new StandardWiringModel(platformContext, defaultPool, healthMonitorEnabled);
+            return (T) new StandardWiringModel(
+                    platformContext, defaultPool, healthMonitorEnabled, hardBackpressureEnabled);
         }
     }
 }

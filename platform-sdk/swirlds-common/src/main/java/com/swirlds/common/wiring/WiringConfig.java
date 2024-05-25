@@ -20,6 +20,8 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import java.time.Duration;
 
+// TODO we should read all of these settings in the platform builder, NOT inside the framework
+
 /**
  * Configuration for the wiring framework.
  *
