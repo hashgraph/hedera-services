@@ -60,7 +60,7 @@ public class HealthMonitorLogger {
 
         final WiringConfig wiringConfig = platformContext.getConfiguration().getConfigData(WiringConfig.class);
 
-        this.healthLogThreshold = wiringConfig.healthLogThreshold();
+        this.healthLogThreshold = wiringConfig.healthThreshold();
         for (final TaskScheduler<?> scheduler : schedulers) {
             final String schedulerName = scheduler.getName();
             final RateLimitedLogger rateLimitedLogger =

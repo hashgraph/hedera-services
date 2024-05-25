@@ -34,7 +34,8 @@ import java.time.Duration;
  *                                parallelism in this pool is calculated as max(1, (defaultPoolMultipler * [number of
  *                                processors] + defaultPoolConstant)). It is legal for this constant to be a negative
  *                                number.
- * @param healthLogThreshold      the amount of time a scheduler may be unhealthy before a warning is logged
+ * @param healthThreshold         the amount of time a scheduler may be unhealthy before the platform is considered to
+ *                                be unhealthy
  * @param healthLogPeriod         the minimum amount of time that must pass between health log messages for the same
  *                                scheduler
  */
@@ -44,5 +45,5 @@ public record WiringConfig(
         @ConfigProperty(defaultValue = "false") boolean hardBackpressureEnabled,
         @ConfigProperty(defaultValue = "1.0") double defaultPoolMultiplier,
         @ConfigProperty(defaultValue = "0") int defaultPoolConstant,
-        @ConfigProperty(defaultValue = "5s") Duration healthLogThreshold,
+        @ConfigProperty(defaultValue = "5s") Duration healthThreshold,
         @ConfigProperty(defaultValue = "10m") Duration healthLogPeriod) {}

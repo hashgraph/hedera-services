@@ -16,8 +16,12 @@
 
 package com.swirlds.common.wiring.model.internal.monitor;
 
+import static com.swirlds.common.utility.CompareTo.isLessThan;
+
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.DurationGauge;
+import com.swirlds.common.wiring.WiringConfig;
+import com.swirlds.metrics.api.IntegerGauge;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -32,7 +36,12 @@ public class HealthMonitorMetrics {
             .withDescription("The duration that the most unhealthy scheduler has been in an unhealthy state.");
     private final DurationGauge unhealthyDuration;
 
-    // TODO metric for number of unhealthy schedulers? Should use minimum threshold maybe
+    private static final IntegerGauge.Config HEALTHY_CONFIG = new IntegerGauge.Config("platform", "healthy")
+            .withDescription("1 if the platform is healthy, 0 otherwise. "
+                    + "Triggers once unhealthyDuration metric crosses configured threshold.");
+    private final IntegerGauge healthy;
+
+    private final Duration healthThreshold;
 
     /**
      * Constructor.
@@ -41,6 +50,12 @@ public class HealthMonitorMetrics {
      */
     public HealthMonitorMetrics(@NonNull final PlatformContext platformContext) {
         unhealthyDuration = platformContext.getMetrics().getOrCreate(DURATION_GAUGE_CONFIG);
+        healthy = platformContext.getMetrics().getOrCreate(HEALTHY_CONFIG);
+
+        healthThreshold = platformContext
+                .getConfiguration()
+                .getConfigData(WiringConfig.class)
+                .healthThreshold();
     }
 
     /**
@@ -50,5 +65,6 @@ public class HealthMonitorMetrics {
      */
     public void reportUnhealthyDuration(@NonNull final Duration duration) {
         unhealthyDuration.set(duration);
+        healthy.set(isLessThan(duration, healthThreshold) ? 1 : 0);
     }
 }
