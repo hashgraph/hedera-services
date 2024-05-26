@@ -23,6 +23,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -87,22 +88,22 @@ public class SyncPermitProvider {
     /**
      * The number of permits that are revoked per second when the system is unhealthy.
      */
-    private final double permitsRevokedPerSecond = 1.0; // TODO
+    private final double permitsRevokedPerSecond;
 
     /**
      * The number of revoked permits that are returned per second when the system is healthy.
      */
-    private final double permitsReturnedPerSecond = 0.1; // TODO
+    private final double permitsReturnedPerSecond;
 
     /**
      * The grace period that the system is given to become healthy before permits begin to be revoked.
      */
-    private final Duration unhealthyGracePeriod = Duration.ofSeconds(5); // TODO
+    private final Duration unhealthyGracePeriod;
 
     /**
      * The minimum number of non-revoked permits while healthy. While unhealthy, the minimum number is always 0.
      */
-    private final int minimumUnrevokedPermitCount = 1; // TODO
+    private final int minimumUnrevokedPermitCount;
 
     /**
      * The metrics for this class.
@@ -120,6 +121,12 @@ public class SyncPermitProvider {
 
         this.totalPermits = totalPermits;
         this.time = platformContext.getTime();
+
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+        permitsRevokedPerSecond = syncConfig.permitsRevokedPerSecond();
+        permitsReturnedPerSecond = syncConfig.permitsReturnedPerSecond();
+        unhealthyGracePeriod = syncConfig.unhealthyGracePeriod();
+        minimumUnrevokedPermitCount = Math.max(totalPermits, syncConfig.minimumHealthyUnrevokedPermitCount());
 
         // We are healthy at startup time
         healthy = true;
