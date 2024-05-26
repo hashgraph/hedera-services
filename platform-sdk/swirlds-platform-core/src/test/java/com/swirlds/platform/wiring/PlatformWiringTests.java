@@ -148,6 +148,8 @@ class PlatformWiringTests {
                 mock(PlatformPublisher.class),
                 mock(PlatformStatusNexus.class));
 
+        wiring.start();
         assertFalse(wiring.getModel().checkForUnboundInputWires());
+        wiring.stop();
     }
 }

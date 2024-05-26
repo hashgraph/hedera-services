@@ -38,6 +38,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -120,6 +121,10 @@ class EventCreationManagerTests {
         assertSame(eventsToCreate.get(1), e1);
     }
 
+    /**
+     * this type of back pressure is disabled now, delete this test when we commit to removing it permanently
+     */
+    @Disabled
     @Test
     @DisplayName("Backpressure prevents creation")
     void backpressurePreventsCreation() {
@@ -164,4 +169,6 @@ class EventCreationManagerTests {
         assertNotNull(e1);
         assertSame(eventsToCreate.get(1), e1);
     }
+
+    // TODO add test for new rule
 }
