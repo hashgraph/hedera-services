@@ -29,6 +29,7 @@ import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.config.VersionedConfiguration;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
@@ -41,7 +42,7 @@ import org.apache.logging.log4j.Logger;
  * The entire purpose of this class is to ensure that inter-service dependencies are respected between
  * migrations. The only required dependency right now is the {@link EntityIdService}, which is needed
  * for genesis blocklist accounts in the token service genesis migration. (See {@link
- * Service#registerSchemas(SchemaRegistry, SemanticVersion)}).
+ * Service#registerSchemas(SchemaRegistry)}).
  *
  * <p>Note: there are only two ordering requirements to maintain: first, that the entity ID service
  * is migrated before the token service; and second, that the remaining services are migrated _in any
@@ -60,7 +61,7 @@ public class OrderedServiceMigrator {
      * Migrates the services registered with the {@link ServicesRegistry}
      */
     public void doMigrations(
-            @NonNull final MerkleHederaState state,
+            @NonNull final HederaState state,
             @NonNull final SemanticVersion currentVersion,
             @Nullable final SemanticVersion previousVersion,
             @NonNull final VersionedConfiguration versionedConfiguration,

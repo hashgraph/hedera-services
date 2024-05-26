@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.node.app.fees.schemas.V0490FeeSchema;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.util.FileUtilities;
@@ -91,7 +92,7 @@ public final class ExchangeRateManager {
         // Services states must have a non-null midnight rates set, even at genesis, as
         // FeeService schema migrate() creates them in that case)
         midnightRates = state.getReadableStates(FeeService.NAME)
-                .<ExchangeRateSet>getSingleton(FeeService.MIDNIGHT_RATES_STATE_KEY)
+                .<ExchangeRateSet>getSingleton(V0490FeeSchema.MIDNIGHT_RATES_STATE_KEY)
                 .get();
         requireNonNull(midnightRates, "an initialized state must have a midnight rates set");
         log.info(
@@ -174,7 +175,7 @@ public final class ExchangeRateManager {
     public void updateMidnightRates(@NonNull final HederaState state) {
         midnightRates = currentExchangeRateInfo.exchangeRates();
         final var singleton = state.getWritableStates(FeeService.NAME)
-                .<ExchangeRateSet>getSingleton(FeeService.MIDNIGHT_RATES_STATE_KEY);
+                .<ExchangeRateSet>getSingleton(V0490FeeSchema.MIDNIGHT_RATES_STATE_KEY);
         singleton.put(midnightRates);
         log.info("Updated midnight rates to {}", midnightRates);
     }

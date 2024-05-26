@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.token.impl.schemas;
 
 import static com.hedera.hapi.util.HapiUtils.CONTRACT_ID_COMPARATOR;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;

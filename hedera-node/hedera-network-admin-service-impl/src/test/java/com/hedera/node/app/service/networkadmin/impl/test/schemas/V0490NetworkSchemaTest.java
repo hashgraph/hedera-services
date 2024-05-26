@@ -16,11 +16,10 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test.schemas;
 
-import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 
-import com.hedera.node.app.service.networkadmin.impl.schemas.InitialModServiceNetworkSchema;
+import com.hedera.node.app.service.networkadmin.impl.schemas.V0490NetworkSchema;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
@@ -33,7 +32,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
-public class InitialModServiceNetworkSchemaTest {
+public class V0490NetworkSchemaTest {
 
     @LoggingTarget
     private LogCaptor logCaptor;
@@ -42,11 +41,11 @@ public class InitialModServiceNetworkSchemaTest {
     private MigrationContext migrationContext;
 
     @LoggingSubject
-    private InitialModServiceNetworkSchema subject;
+    private V0490NetworkSchema subject;
 
     @BeforeEach
     void setUp() {
-        subject = new InitialModServiceNetworkSchema(CURRENT_VERSION);
+        subject = new V0490NetworkSchema();
     }
 
     @Test

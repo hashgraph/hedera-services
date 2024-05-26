@@ -19,6 +19,8 @@ package com.hedera.node.app.state.merkle;
 import static com.hedera.node.app.state.merkle.SchemaUseType.MIGRATION;
 import static com.hedera.node.app.state.merkle.SchemaUseType.RESTART;
 import static com.hedera.node.app.state.merkle.SchemaUseType.STATE_DEFINITIONS;
+import static com.hedera.node.app.state.merkle.VersionUtils.isSameVersion;
+import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -54,6 +56,7 @@ import com.swirlds.platform.state.merkle.queue.QueueNode;
 import com.swirlds.platform.state.merkle.singleton.SingletonNode;
 import com.swirlds.platform.state.merkle.singleton.StringLeaf;
 import com.swirlds.platform.state.merkle.singleton.ValueLeaf;
+import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -165,7 +168,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * to perform any necessary logic on restart. Most services have nothing to do, but some may need
      * to read files from disk, and could potentially change their state as a result.
      *
-     * @param hederaState The {@link MerkleHederaState} instance for this registry to use.
+     * @param state The {@link MerkleHederaState} instance for this registry to use.
      * @param previousVersion The version of state loaded from disk. Possibly null.
      * @param currentVersion The current version. Never null. Must be newer than {@code
      * previousVersion}.
@@ -176,7 +179,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     // too many parameters, commented out code
     @SuppressWarnings({"java:S107", "java:S125"})
     public void migrate(
-            @NonNull final MerkleHederaState hederaState,
+            @NonNull final HederaState hederaState,
             @Nullable final SemanticVersion previousVersion,
             @NonNull final SemanticVersion currentVersion,
             @NonNull final Configuration config,
@@ -190,9 +193,11 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         requireNonNull(networkInfo);
         requireNonNull(metrics);
         requireNonNull(sharedValues);
-        if (!VersionUtils.isSameVersion(previousVersion, currentVersion)
-                && !VersionUtils.isSoOrdered(previousVersion, currentVersion)) {
+        if (!isSameVersion(previousVersion, currentVersion) && !isSoOrdered(previousVersion, currentVersion)) {
             throw new IllegalArgumentException("The currentVersion must be strictly greater than the previousVersion");
+        }
+        if (!(hederaState instanceof MerkleHederaState state)) {
+            throw new IllegalArgumentException("The state must be an instance of MerkleHederaState");
         }
         if (schemas.isEmpty()) {
             logger.info("Service {} does not use state", serviceName);
@@ -217,7 +222,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             // available at this moment in time. This is done to make sure that even after we
             // add new states into the tree, it doesn't increase the number of states that can
             // be seen by the schema migration code
-            final var readableStates = hederaState.getReadableStates(serviceName);
+            final var readableStates = state.getReadableStates(serviceName);
             final var previousStates = new FilteredReadableStates(readableStates, readableStates.stateKeys());
             // Similarly, we distinguish between the writable states before and after
             // applying the schema's state definitions. This is done to ensure that we
@@ -227,11 +232,11 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             final WritableStates writableStates;
             final WritableStates newStates;
             if (uses.contains(STATE_DEFINITIONS)) {
-                final var redefinedWritableStates = applyStateDefinitions(schema, metrics, hederaState);
+                final var redefinedWritableStates = applyStateDefinitions(schema, metrics, state);
                 writableStates = redefinedWritableStates.beforeStates();
                 newStates = redefinedWritableStates.afterStates();
             } else {
-                newStates = writableStates = hederaState.getWritableStates(serviceName);
+                newStates = writableStates = state.getWritableStates(serviceName);
             }
             final var migrationContext = new MigrationContextImpl(
                     previousStates,
@@ -253,7 +258,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 mws.commit();
             }
             // And finally we can remove any states we need to remove
-            schema.statesToRemove().forEach(stateKey -> hederaState.removeServiceState(serviceName, stateKey));
+            schema.statesToRemove()
+                    .forEach(stateKey -> ((MerkleHederaState) state).removeServiceState(serviceName, stateKey));
         }
     }
 

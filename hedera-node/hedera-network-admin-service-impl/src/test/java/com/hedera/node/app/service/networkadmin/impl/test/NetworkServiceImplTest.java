@@ -21,7 +21,6 @@ import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.networkadmin.NetworkService;
 import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 import com.hedera.node.app.spi.state.SchemaRegistry;
@@ -47,10 +46,9 @@ class NetworkServiceImplTest {
     @SuppressWarnings("DataFlowIssue")
     @Test
     void registerSchemasNullArgsThrow() {
-        assertThatThrownBy(() -> subject.registerSchemas(null, SemanticVersion.DEFAULT))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.registerSchemas(null)).isInstanceOf(NullPointerException.class);
 
-        assertThatThrownBy(() -> subject.registerSchemas(mock(SchemaRegistry.class), null))
+        assertThatThrownBy(() -> subject.registerSchemas(mock(SchemaRegistry.class)))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -58,7 +56,7 @@ class NetworkServiceImplTest {
     void registerSchemasRegistersTopicSchema() {
         final var schemaRegistry = mock(SchemaRegistry.class);
 
-        subject.registerSchemas(schemaRegistry, SemanticVersion.DEFAULT);
+        subject.registerSchemas(schemaRegistry);
         verify(schemaRegistry).register(notNull());
     }
 

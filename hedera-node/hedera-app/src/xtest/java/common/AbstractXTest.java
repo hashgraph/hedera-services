@@ -49,11 +49,14 @@ import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -337,21 +340,21 @@ public abstract class AbstractXTest {
         return component()
                 .hederaState()
                 .getReadableStates(TokenServiceImpl.NAME)
-                .get(TokenServiceImpl.TOKENS_KEY);
+                .get(V0490TokenSchema.TOKENS_KEY);
     }
 
     private ReadableKVState<NftID, Nft> finalNfts() {
         return component()
                 .hederaState()
                 .getReadableStates(TokenServiceImpl.NAME)
-                .get(TokenServiceImpl.NFTS_KEY);
+                .get(V0490TokenSchema.NFTS_KEY);
     }
 
     private ReadableKVState<ProtoBytes, AccountID> finalAliases() {
         return component()
                 .hederaState()
                 .getReadableStates(TokenServiceImpl.NAME)
-                .get(TokenServiceImpl.ALIASES_KEY);
+                .get(V0490TokenSchema.ALIASES_KEY);
     }
 
     private ReadableKVState<SlotKey, SlotValue> finalStorage() {
@@ -372,14 +375,14 @@ public abstract class AbstractXTest {
         return component()
                 .hederaState()
                 .getReadableStates(TokenServiceImpl.NAME)
-                .get(TokenServiceImpl.ACCOUNTS_KEY);
+                .get(V0490TokenSchema.ACCOUNTS_KEY);
     }
 
     private ReadableKVState<EntityIDPair, TokenRelation> finalTokenRelations() {
         return component()
                 .hederaState()
                 .getReadableStates(TokenServiceImpl.NAME)
-                .get(TokenServiceImpl.TOKEN_RELS_KEY);
+                .get(V0490TokenSchema.TOKEN_RELS_KEY);
     }
 
     private Map<FileID, File> initialFilesWithExchangeRate() {
@@ -421,7 +424,7 @@ public abstract class AbstractXTest {
         fakeHederaState.addService(
                 BlockRecordService.NAME,
                 Map.of(
-                        BlockRecordService.BLOCK_INFO_STATE_KEY,
+                        V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY,
                                 new AtomicReference<>(new BlockInfo(
                                         -1L,
                                         Timestamp.DEFAULT,
@@ -429,18 +432,19 @@ public abstract class AbstractXTest {
                                         Timestamp.DEFAULT,
                                         true,
                                         Timestamp.DEFAULT)),
-                        BlockRecordService.RUNNING_HASHES_STATE_KEY, new AtomicReference<>(initialRunningHashes())));
+                        V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY,
+                                new AtomicReference<>(initialRunningHashes())));
 
         fakeHederaState.addService(
                 TokenService.NAME,
                 Map.of(
-                        TokenServiceImpl.ACCOUNTS_KEY, initialAccounts(),
-                        TokenServiceImpl.TOKENS_KEY, initialTokens(),
-                        TokenServiceImpl.TOKEN_RELS_KEY, initialTokenRelationships(),
-                        TokenServiceImpl.ALIASES_KEY, initialAliases(),
-                        TokenServiceImpl.NFTS_KEY, initialNfts()));
+                        V0490TokenSchema.ACCOUNTS_KEY, initialAccounts(),
+                        V0490TokenSchema.TOKENS_KEY, initialTokens(),
+                        V0490TokenSchema.TOKEN_RELS_KEY, initialTokenRelationships(),
+                        V0490TokenSchema.ALIASES_KEY, initialAliases(),
+                        V0490TokenSchema.NFTS_KEY, initialNfts()));
         fakeHederaState.addService(
-                FileServiceImpl.NAME, Map.of(FileServiceImpl.BLOBS_KEY, initialFilesWithExchangeRate()));
+                FileServiceImpl.NAME, Map.of(V0490FileSchema.BLOBS_KEY, initialFilesWithExchangeRate()));
         fakeHederaState.addService(
                 ContractServiceImpl.NAME,
                 Map.of(

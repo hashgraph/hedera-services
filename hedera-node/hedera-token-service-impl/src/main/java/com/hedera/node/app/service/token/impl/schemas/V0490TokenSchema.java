@@ -19,13 +19,6 @@ package com.hedera.node.app.service.token.impl.schemas;
 import static com.hedera.node.app.service.token.api.StakingRewardsApi.clampedStakePeriodStart;
 import static com.hedera.node.app.service.token.api.StakingRewardsApi.computeRewardFromDetails;
 import static com.hedera.node.app.service.token.api.StakingRewardsApi.stakePeriodAt;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.NFTS_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_NETWORK_REWARDS_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator.asAccountId;
 import static java.util.Collections.nCopies;
@@ -64,7 +57,6 @@ import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.AliasUtils;
 import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.codec.NetworkingStakingTranslator;
 import com.hedera.node.app.spi.info.NodeInfo;
@@ -100,10 +92,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * General schema for the token service
- * (FUTURE) When mod-service release is finalized, rename this class to e.g.
- * {@code Release47TokenSchema} as it will no longer be appropriate to assume
- * this schema is always correct for the current version of the software.
+ * Initial mod-service schema for the token service.
  */
 public class V0490TokenSchema extends Schema {
     private static final Logger log = LogManager.getLogger(V0490TokenSchema.class);
@@ -122,18 +111,30 @@ public class V0490TokenSchema extends Schema {
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(49).patch(0).build();
 
+    public static final String NFTS_KEY = "NFTS";
+    public static final String TOKENS_KEY = "TOKENS";
+    public static final String ALIASES_KEY = "ALIASES";
+    public static final String ACCOUNTS_KEY = "ACCOUNTS";
+    public static final String TOKEN_RELS_KEY = "TOKEN_RELS";
+    public static final String STAKING_INFO_KEY = "STAKING_INFOS";
+    public static final String STAKING_NETWORK_REWARDS_KEY = "STAKING_NETWORK_REWARDS";
+
     private final Supplier<SortedSet<Account>> sysAccts;
     private final Supplier<SortedSet<Account>> stakingAccts;
     private final Supplier<SortedSet<Account>> treasuryAccts;
     private final Supplier<SortedSet<Account>> miscAccts;
     private final Supplier<SortedSet<Account>> blocklistAccts;
 
-    private VirtualMap<EntityNumVirtualKey, OnDiskAccount> acctsFs;
-    private MerkleMap<EntityNum, MerkleToken> tFs;
-    private MerkleMap<EntityNum, MerkleStakingInfo> stakingFs;
-    private VirtualMap<UniqueTokenKey, UniqueTokenValue> nftsFs;
-    private VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> trFs;
-    private MerkleNetworkContext mnc;
+    /**
+     * These fields hold data from a mono-service state.
+     */
+    private static VirtualMap<EntityNumVirtualKey, OnDiskAccount> acctsFs;
+
+    private static MerkleMap<EntityNum, MerkleToken> tFs;
+    private static MerkleMap<EntityNum, MerkleStakingInfo> stakingFs;
+    private static VirtualMap<UniqueTokenKey, UniqueTokenValue> nftsFs;
+    private static VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> trFs;
+    private static MerkleNetworkContext mnc;
 
     /**
      * Constructor for this schema. Each of the supplier params should produce a {@link SortedSet} of
@@ -174,50 +175,6 @@ public class V0490TokenSchema extends Schema {
                 StateDefinition.onDisk(
                         STAKING_INFO_KEY, EntityNumber.PROTOBUF, StakingNodeInfo.PROTOBUF, MAX_STAKING_INFOS),
                 StateDefinition.singleton(STAKING_NETWORK_REWARDS_KEY, NetworkStakingRewards.PROTOBUF));
-    }
-
-    /**
-     * Sets the in-state NFTs to be migrated from.
-     * @param fs the in-state NFTs
-     */
-    public void setNftsFromState(@Nullable final VirtualMap<UniqueTokenKey, UniqueTokenValue> fs) {
-        this.nftsFs = fs;
-    }
-
-    /**
-     * Sets the in-state token rels to be migrated from.
-     * @param fs the in-state token rels
-     */
-    public void setTokenRelsFromState(@Nullable final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> fs) {
-        this.trFs = fs;
-    }
-
-    /**
-     * Sets the in-state accounts to be migrated from.
-     * @param fs the in-state accounts
-     */
-    public void setAcctsFromState(@Nullable final VirtualMap<EntityNumVirtualKey, OnDiskAccount> fs) {
-        this.acctsFs = fs;
-    }
-
-    /**
-     * Sets the in-state tokens to be migrated from.
-     * @param fs the in-state tokens
-     */
-    public void setTokensFromState(@Nullable final MerkleMap<EntityNum, MerkleToken> fs) {
-        this.tFs = fs;
-    }
-
-    /**
-     * Sets the in-state staking info to be migrated from.
-     * @param stakingFs the in-state staking info
-     * @param mnc the in-state network context
-     */
-    public void setStakingFs(
-            @Nullable final MerkleMap<EntityNum, MerkleStakingInfo> stakingFs,
-            @Nullable final MerkleNetworkContext mnc) {
-        this.stakingFs = stakingFs;
-        this.mnc = mnc;
     }
 
     /**
@@ -471,7 +428,6 @@ public class V0490TokenSchema extends Schema {
         trFs = null;
         acctsFs = null;
         tFs = null;
-
         stakingFs = null;
         mnc = null;
     }
@@ -549,7 +505,7 @@ public class V0490TokenSchema extends Schema {
         counter = 0;
         final var newBlocklistAccts = new TreeSet<>(ACCOUNT_COMPARATOR);
         if (accountsConfig.blocklistEnabled()) {
-            final var existingAliases = ctx.newStates().<Bytes, AccountID>get(TokenServiceImpl.ALIASES_KEY);
+            final var existingAliases = ctx.newStates().<Bytes, AccountID>get(ALIASES_KEY);
 
             for (final Account acctWithoutId : blocklistAccts.get()) {
                 final var acctWithIdBldr = acctWithoutId.copyBuilder();
@@ -707,5 +663,49 @@ public class V0490TokenSchema extends Schema {
                 store.put(nodeId.nodeId(), newNodeStakingInfo);
             }
         }
+    }
+
+    /**
+     * Sets the in-state NFTs to be migrated from.
+     * @param fs the in-state NFTs
+     */
+    public static void setNftsFromState(@Nullable final VirtualMap<UniqueTokenKey, UniqueTokenValue> fs) {
+        V0490TokenSchema.nftsFs = fs;
+    }
+
+    /**
+     * Sets the in-state token rels to be migrated from.
+     * @param fs the in-state token rels
+     */
+    public static void setTokenRelsFromState(@Nullable final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> fs) {
+        V0490TokenSchema.trFs = fs;
+    }
+
+    /**
+     * Sets the in-state accounts to be migrated from.
+     * @param fs the in-state accounts
+     */
+    public static void setAcctsFromState(@Nullable final VirtualMap<EntityNumVirtualKey, OnDiskAccount> fs) {
+        V0490TokenSchema.acctsFs = fs;
+    }
+
+    /**
+     * Sets the in-state tokens to be migrated from.
+     * @param fs the in-state tokens
+     */
+    public static void setTokensFromState(@Nullable final MerkleMap<EntityNum, MerkleToken> fs) {
+        V0490TokenSchema.tFs = fs;
+    }
+
+    /**
+     * Sets the in-state staking info to be migrated from.
+     * @param stakingFs the in-state staking info
+     * @param mnc the in-state network context
+     */
+    public static void setStakingFs(
+            @Nullable final MerkleMap<EntityNum, MerkleStakingInfo> stakingFs,
+            @Nullable final MerkleNetworkContext mnc) {
+        V0490TokenSchema.stakingFs = stakingFs;
+        V0490TokenSchema.mnc = mnc;
     }
 }

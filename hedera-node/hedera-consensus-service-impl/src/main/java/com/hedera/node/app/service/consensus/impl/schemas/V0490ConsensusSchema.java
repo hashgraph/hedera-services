@@ -44,25 +44,27 @@ import org.apache.logging.log4j.Logger;
  * {@code Release47ConsensusSchema} as it will no longer be appropriate to assume
  * this schema is always correct for the current version of the software.
  */
-public class InitialModServiceConsensusSchema extends Schema {
-    private static final Logger log = LogManager.getLogger(InitialModServiceConsensusSchema.class);
+public class V0490ConsensusSchema extends Schema {
+    private static final Logger log = LogManager.getLogger(V0490ConsensusSchema.class);
+
+    /**
+     * The version of the schema.
+     */
+    private static final SemanticVersion VERSION =
+            SemanticVersion.newBuilder().major(0).minor(49).patch(0).build();
 
     private static final long MAX_TOPICS = 1_000_000_000L;
 
-    private MerkleMap<EntityNum, MerkleTopic> fs;
+    private static MerkleMap<EntityNum, MerkleTopic> fs;
 
-    public InitialModServiceConsensusSchema(@NonNull final SemanticVersion version) {
-        super(version);
+    public V0490ConsensusSchema() {
+        super(VERSION);
     }
 
     @NonNull
     @Override
     public Set<StateDefinition> statesToCreate() {
         return Set.of(StateDefinition.onDisk(TOPICS_KEY, TopicID.PROTOBUF, Topic.PROTOBUF, MAX_TOPICS));
-    }
-
-    public void setFromState(@Nullable final MerkleMap<EntityNum, MerkleTopic> fs) {
-        this.fs = fs;
     }
 
     @Override
@@ -91,5 +93,9 @@ public class InitialModServiceConsensusSchema extends Schema {
         }
 
         fs = null;
+    }
+
+    public static void setFromState(@Nullable final MerkleMap<EntityNum, MerkleTopic> fs) {
+        V0490ConsensusSchema.fs = fs;
     }
 }

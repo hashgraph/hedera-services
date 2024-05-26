@@ -43,7 +43,7 @@ final class RecordCacheServiceTest {
     @Test
     void schema(@Mock final SchemaRegistry registry) {
         final var svc = new RecordCacheService();
-        svc.registerSchemas(registry, CURRENT_VERSION);
+        svc.registerSchemas(registry);
         verify(registry).register(captor.capture());
         final var schema = captor.getValue();
         assertThat(schema.getVersion()).isEqualTo(CURRENT_VERSION);

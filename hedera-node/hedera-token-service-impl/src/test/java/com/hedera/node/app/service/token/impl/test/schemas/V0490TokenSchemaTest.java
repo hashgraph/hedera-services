@@ -18,12 +18,12 @@ package com.hedera.node.app.service.token.impl.test.schemas;
 
 import static com.hedera.node.app.service.mono.state.migration.ContractStateMigrator.bytesFromInts;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.asPackedInts;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_NETWORK_REWARDS_KEY;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ALIASES_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_INFO_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_NETWORK_REWARDS_KEY;
 import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.NODE_NUM_1;
 import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.NODE_NUM_2;
 import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.NODE_NUM_3;
@@ -55,11 +55,10 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
-import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.ids.schemas.V0490EntityIdSchema;
 import com.hedera.node.app.service.mono.state.migration.AccountStateTranslator;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
@@ -127,7 +126,7 @@ final class V0490TokenSchemaTest {
 
     @BeforeEach
     void setUp() {
-        accounts = MapWritableKVState.<AccountID, Account>builder(TokenServiceImpl.ACCOUNTS_KEY)
+        accounts = MapWritableKVState.<AccountID, Account>builder(V0490TokenSchema.ACCOUNTS_KEY)
                 .build();
 
         newStates = newStatesInstance(
@@ -165,7 +164,7 @@ final class V0490TokenSchemaTest {
     @Test
     void nonGenesisDoesntCreate() {
         // To simulate a non-genesis case, we'll add a single account object to the `previousStates` param
-        accounts = MapWritableKVState.<AccountID, Account>builder(TokenServiceImpl.ACCOUNTS_KEY)
+        accounts = MapWritableKVState.<AccountID, Account>builder(V0490TokenSchema.ACCOUNTS_KEY)
                 .value(ACCT_IDS[1], Account.DEFAULT)
                 .build();
         final var nonEmptyPrevStates = newStatesInstance(
@@ -705,7 +704,7 @@ final class V0490TokenSchemaTest {
 
     @Test
     void marksNonExistingNodesToDeletedInStateAndAddsNewNodesToState() {
-        accounts = MapWritableKVState.<AccountID, Account>builder(TokenServiceImpl.ACCOUNTS_KEY)
+        accounts = MapWritableKVState.<AccountID, Account>builder(V0490TokenSchema.ACCOUNTS_KEY)
                 .build();
         // State has nodeIds 1, 2, 3
         final var stakingInfosState = new MapWritableKVState.Builder<EntityNumber, StakingNodeInfo>(STAKING_INFO_KEY)
@@ -774,7 +773,7 @@ final class V0490TokenSchemaTest {
 
     private WritableSingletonState<EntityNumber> newWritableEntityIdState() {
         return new WritableSingletonStateBase<>(
-                EntityIdService.ENTITY_ID_STATE_KEY, () -> new EntityNumber(BEGINNING_ENTITY_ID), c -> {});
+                V0490EntityIdSchema.ENTITY_ID_STATE_KEY, () -> new EntityNumber(BEGINNING_ENTITY_ID), c -> {});
     }
 
     private MapWritableStates newStatesInstance(
@@ -785,7 +784,7 @@ final class V0490TokenSchemaTest {
         return MapWritableStates.builder()
                 .state(accts)
                 .state(aliases)
-                .state(MapWritableKVState.builder(TokenServiceImpl.STAKING_INFO_KEY)
+                .state(MapWritableKVState.builder(V0490TokenSchema.STAKING_INFO_KEY)
                         .build())
                 .state(new WritableSingletonStateBase<>(STAKING_NETWORK_REWARDS_KEY, () -> null, c -> {}))
                 .state(entityIdState)

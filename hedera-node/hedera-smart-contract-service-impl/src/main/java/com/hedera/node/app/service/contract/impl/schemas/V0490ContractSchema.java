@@ -60,23 +60,20 @@ public class V0490ContractSchema extends Schema {
     public static final String STORAGE_KEY = "STORAGE";
     public static final String BYTECODE_KEY = "BYTECODE";
 
-    private VirtualMapLike<ContractKey, IterableContractValue> storageFromState;
-    private Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> contractBytecodeFromState;
+    /**
+     * Fields used to hold data during a mono-service migration.
+     */
+    private static VirtualMapLike<ContractKey, IterableContractValue> storageFromState;
+
+    private static Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> contractBytecodeFromState;
 
     public V0490ContractSchema() {
         super(VERSION);
     }
 
-    public void setStorageFromState(
-            @Nullable final VirtualMapLike<ContractKey, IterableContractValue> storageFromState) {
-        this.storageFromState = storageFromState;
-    }
-
-    public void setBytecodeFromState(
-            @Nullable final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecodeFromState) {
-        this.contractBytecodeFromState = bytecodeFromState;
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
         if (storageFromState != null) {
@@ -193,5 +190,15 @@ public class V0490ContractSchema extends Schema {
 
     private @NonNull StateDefinition<ContractID, Bytecode> bytecodeDef() {
         return StateDefinition.onDisk(BYTECODE_KEY, ContractID.PROTOBUF, Bytecode.PROTOBUF, MAX_BYTECODES);
+    }
+
+    public static void setStorageFromState(
+            @Nullable final VirtualMapLike<ContractKey, IterableContractValue> storageFromState) {
+        V0490ContractSchema.storageFromState = storageFromState;
+    }
+
+    public static void setBytecodeFromState(
+            @Nullable final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecodeFromState) {
+        V0490ContractSchema.contractBytecodeFromState = bytecodeFromState;
     }
 }

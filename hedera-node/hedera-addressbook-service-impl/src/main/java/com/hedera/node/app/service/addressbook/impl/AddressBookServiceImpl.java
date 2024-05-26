@@ -16,9 +16,8 @@
 
 package com.hedera.node.app.service.addressbook.impl;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.addressbook.AddressBookService;
-import com.hedera.node.app.service.addressbook.impl.schemas.InitialServiceNodeSchema;
+import com.hedera.node.app.service.addressbook.impl.schemas.V050AddressBookSchema;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -30,8 +29,7 @@ public final class AddressBookServiceImpl implements AddressBookService {
     public static final String NODES_KEY = "NODES";
 
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry, @NonNull final SemanticVersion version) {
-        InitialServiceNodeSchema nodeSchema = new InitialServiceNodeSchema(version);
-        registry.register(nodeSchema);
+    public void registerSchemas(@NonNull SchemaRegistry registry) {
+        registry.register(new V050AddressBookSchema());
     }
 }

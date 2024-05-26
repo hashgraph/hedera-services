@@ -16,20 +16,12 @@
 
 package com.hedera.node.app.service.contract.impl;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.service.contract.impl.schemas.V050ContractSchema;
-import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
-import com.hedera.node.app.service.mono.state.virtual.ContractKey;
-import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.function.Supplier;
 
 /**
  * Implementation of the {@link ContractService}.
@@ -38,28 +30,16 @@ public enum ContractServiceImpl implements ContractService {
     CONTRACT_SERVICE;
 
     public static final long INTRINSIC_GAS_LOWER_BOUND = 21_000L;
-    private final ContractServiceComponent component;
 
-    private V0490ContractSchema initialContractSchema;
+    private final ContractServiceComponent component;
 
     ContractServiceImpl() {
         this.component = DaggerContractServiceComponent.create();
     }
 
-    public void setStorageFromState(
-            @Nullable final VirtualMapLike<ContractKey, IterableContractValue> storageFromState) {
-        initialContractSchema.setStorageFromState(storageFromState);
-    }
-
-    public void setBytecodeFromState(
-            @Nullable final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecodeFromState) {
-        initialContractSchema.setBytecodeFromState(bytecodeFromState);
-    }
-
     @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
-        initialContractSchema = new V0490ContractSchema();
-        registry.register(initialContractSchema);
+    public void registerSchemas(@NonNull final SchemaRegistry registry) {
+        registry.register(new V0490ContractSchema());
         registry.register(new V050ContractSchema());
     }
 

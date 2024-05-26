@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
-import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
-import static com.hedera.node.app.records.BlockRecordService.RUNNING_HASHES_STATE_KEY;
+import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
+import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY;
 import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -89,6 +89,6 @@ final class BlockRecordServiceTest {
             return null;
         });
         BlockRecordService blockRecordService = new BlockRecordService();
-        blockRecordService.registerSchemas(schemaRegistry, CURRENT_VERSION);
+        blockRecordService.registerSchemas(schemaRegistry);
     }
 }

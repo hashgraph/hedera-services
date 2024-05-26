@@ -17,13 +17,12 @@
 package com.hedera.node.app.service.consensus.impl.test.schemas;
 
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
-import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.consensus.impl.schemas.InitialModServiceConsensusSchema;
+import com.hedera.node.app.service.consensus.impl.schemas.V0490ConsensusSchema;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
@@ -42,7 +41,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
-public class InitialModServiceConsensusSchemaTest {
+public class V0490ConsensusSchemaTest {
 
     @LoggingTarget
     private LogCaptor logCaptor;
@@ -60,11 +59,11 @@ public class InitialModServiceConsensusSchemaTest {
     private WritableKVState ctx;
 
     @LoggingSubject
-    private InitialModServiceConsensusSchema subject;
+    private V0490ConsensusSchema subject;
 
     @BeforeEach
     void setUp() {
-        subject = new InitialModServiceConsensusSchema(CURRENT_VERSION);
+        subject = new V0490ConsensusSchema();
     }
 
     @Test

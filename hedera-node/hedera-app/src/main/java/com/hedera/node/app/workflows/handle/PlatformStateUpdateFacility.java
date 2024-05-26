@@ -19,13 +19,13 @@ package com.hedera.node.app.workflows.handle;
 import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_ABORT;
 import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_ONLY;
 import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_UPGRADE;
+import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.FREEZE_TIME_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.freeze.FreezeType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.networkadmin.FreezeService;
-import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.ReadableSingletonState;
@@ -72,8 +72,7 @@ public class PlatformStateUpdateFacility {
                 logger.info("Transaction freeze of type {} detected", freezeType);
                 // copy freeze state to platform state
                 final ReadableStates states = state.getReadableStates(FreezeService.NAME);
-                final ReadableSingletonState<Timestamp> freezeTime =
-                        states.getSingleton(FreezeServiceImpl.FREEZE_TIME_KEY);
+                final ReadableSingletonState<Timestamp> freezeTime = states.getSingleton(FREEZE_TIME_KEY);
                 requireNonNull(freezeTime.get());
                 final Instant freezeTimeInstant = Instant.ofEpochSecond(
                         freezeTime.get().seconds(), freezeTime.get().nanos());
