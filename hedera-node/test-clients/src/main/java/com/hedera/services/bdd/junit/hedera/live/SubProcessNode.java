@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.junit.hedera.live.NodeStatus.GrpcStatus.UP
 import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.conditionFuture;
 import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.destroyAnySubProcessNodeWithId;
 import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.startSubProcessNodeFrom;
+import static com.hedera.services.bdd.junit.hedera.live.StatusLookupAttempt.newLogAttempt;
 import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.recreateWorkingDir;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
@@ -34,15 +35,35 @@ import com.swirlds.base.function.BooleanFunction;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * A node running in its own OS process as a subprocess of the JUnit test runner.
  */
 public class SubProcessNode extends AbstractNode implements HederaNode {
+    /**
+     * The maximum number of retries to make when looking up the status of a node via Prometheus
+     * before resorting to scanning the application log.
+     */
+    private static final int MAX_PROMETHEUS_RETRIES = 1;
+    /**
+     * How many milliseconds to wait between retries when scanning the application log for
+     * the node status.
+     */
+    private static final long LOG_SCAN_BACKOFF_MS = 1000L;
+    /**
+     * How many milliseconds to wait between retrying a Prometheus status lookup.
+     */
+    private static final long PROMETHEUS_BACKOFF_MS = 100L;
 
+    private final Pattern statusPattern;
     private final GrpcPinger grpcPinger;
     private final PrometheusClient prometheusClient;
     /**
@@ -61,6 +82,7 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
             @NonNull final PrometheusClient prometheusClient) {
         super(metadata);
         this.grpcPinger = requireNonNull(grpcPinger);
+        this.statusPattern = Pattern.compile(".*Hederanode#" + getNodeId() + " is (\\w+)");
         this.prometheusClient = requireNonNull(prometheusClient);
         // Just something to keep checkModuleInfo from claiming we don't require com.hedera.node.app
         requireNonNull(Hedera.class);
@@ -97,19 +119,24 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
             @NonNull final PlatformStatus status, @Nullable Consumer<NodeStatus> nodeStatusObserver) {
         requireNonNull(status);
         final var retryCount = new AtomicInteger();
-        return conditionFuture(() -> {
-            final var lookupAttempt = prometheusClient.statusFromLocalEndpoint(metadata.prometheusPort());
-            var grpcStatus = NA;
-            var statusReached = lookupAttempt.status() == status;
-            if (statusReached && status == ACTIVE) {
-                grpcStatus = grpcPinger.isLive(metadata.grpcPort()) ? UP : DOWN;
-                statusReached = grpcStatus == UP;
-            }
-            if (nodeStatusObserver != null) {
-                nodeStatusObserver.accept(new NodeStatus(lookupAttempt, grpcStatus, retryCount.getAndIncrement()));
-            }
-            return statusReached;
-        });
+        return conditionFuture(
+                () -> {
+                    final var lookupAttempt = retryCount.get() <= MAX_PROMETHEUS_RETRIES
+                            ? prometheusClient.statusFromLocalEndpoint(metadata.prometheusPort())
+                            : statusFromLog();
+                    var grpcStatus = NA;
+                    var statusReached = lookupAttempt.status() == status;
+                    if (statusReached && status == ACTIVE) {
+                        grpcStatus = grpcPinger.isLive(metadata.grpcPort()) ? UP : DOWN;
+                        statusReached = grpcStatus == UP;
+                    }
+                    if (nodeStatusObserver != null) {
+                        nodeStatusObserver.accept(
+                                new NodeStatus(lookupAttempt, grpcStatus, retryCount.getAndIncrement()));
+                    }
+                    return statusReached;
+                },
+                () -> retryCount.get() > MAX_PROMETHEUS_RETRIES ? LOG_SCAN_BACKOFF_MS : PROMETHEUS_BACKOFF_MS);
     }
 
     @Override
@@ -140,6 +167,16 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
     private void assertWorkingDirInitialized() {
         if (!workingDirInitialized) {
             throw new IllegalStateException("Working directory not initialized");
+        }
+    }
+
+    private StatusLookupAttempt statusFromLog() {
+        final AtomicReference<String> status = new AtomicReference<>();
+        try (final var lines = Files.lines(getApplicationLogPath())) {
+            lines.map(statusPattern::matcher).filter(Matcher::matches).forEach(matcher -> status.set(matcher.group(1)));
+            return newLogAttempt(status.get(), status.get() == null ? "No status line in log" : null);
+        } catch (IOException e) {
+            return newLogAttempt(null, e.getMessage());
         }
     }
 }

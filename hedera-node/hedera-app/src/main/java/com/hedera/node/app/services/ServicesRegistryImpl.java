@@ -25,7 +25,6 @@ import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import javax.inject.Singleton;
@@ -59,7 +58,7 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
             @NonNull final GenesisRecordsBuilder genesisRecords) {
         this.constructableRegistry = requireNonNull(constructableRegistry);
         this.genesisRecords = requireNonNull(genesisRecords);
-        this.entries = new TreeSet<>(Comparator.comparing(r -> r.service().getServiceName()));
+        this.entries = new TreeSet<>();
     }
 
     /**

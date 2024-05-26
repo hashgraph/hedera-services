@@ -105,8 +105,9 @@ import org.apache.logging.log4j.Logger;
  * {@code Release47TokenSchema} as it will no longer be appropriate to assume
  * this schema is always correct for the current version of the software.
  */
-public class InitialModServiceTokenSchema extends Schema {
-    private static final Logger log = LogManager.getLogger(InitialModServiceTokenSchema.class);
+public class V0490TokenSchema extends Schema {
+    private static final Logger log = LogManager.getLogger(V0490TokenSchema.class);
+
     // These need to be big so databases are created at right scale. If they are too small then the on disk hash map
     // buckets will be too full which results in very poor performance. Have chosen 10 billion as should give us
     // plenty of runway.
@@ -118,6 +119,8 @@ public class InitialModServiceTokenSchema extends Schema {
     private static final long FIRST_RESERVED_SYSTEM_CONTRACT = 350L;
     private static final long LAST_RESERVED_SYSTEM_CONTRACT = 399L;
     private static final long FIRST_POST_SYSTEM_FILE_ENTITY = 200L;
+    private static final SemanticVersion VERSION =
+            SemanticVersion.newBuilder().major(0).minor(49).patch(0).build();
 
     private final Supplier<SortedSet<Account>> sysAccts;
     private final Supplier<SortedSet<Account>> stakingAccts;
@@ -143,16 +146,14 @@ public class InitialModServiceTokenSchema extends Schema {
      * @param treasuryAccts a supplier of synthetic treasury account records
      * @param miscAccts a supplier of synthetic miscellaneous account records
      * @param blocklistAccts a supplier of synthetic account records that are to be blocked
-     * @param version the semantic version of the software
      */
-    public InitialModServiceTokenSchema(
+    public V0490TokenSchema(
             final Supplier<SortedSet<Account>> sysAccts,
             final Supplier<SortedSet<Account>> stakingAccts,
             final Supplier<SortedSet<Account>> treasuryAccts,
             final Supplier<SortedSet<Account>> miscAccts,
-            final Supplier<SortedSet<Account>> blocklistAccts,
-            final SemanticVersion version) {
-        super(version);
+            final Supplier<SortedSet<Account>> blocklistAccts) {
+        super(VERSION);
 
         this.sysAccts = sysAccts;
         this.stakingAccts = stakingAccts;

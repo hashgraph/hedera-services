@@ -55,7 +55,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * <ol>
  *     <li>They accept the token address as an explicit parameter, instead of getting the token id
  *     via a redirect.</li>
- *     <li>They return the ordinal value of a non-successful {@link ResponseCodeEnum} instead of reverting
+ *     <li>They return the migrationOrder value of a non-successful {@link ResponseCodeEnum} instead of reverting
  *     like the ERC calls do.</li>
  *     <li>The legacy versions that don't support approvals will automatically "retry" their synthetic
  *     transaction using approvals for all non-sender debits if the initial attempt fails with

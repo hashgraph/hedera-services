@@ -39,6 +39,7 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
 import com.swirlds.state.spi.ReadableStates;
+import java.util.HashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -81,7 +82,8 @@ final class FileSchemaTest {
                 networkInfo,
                 new GenesisRecordsConsensusHook(),
                 mock(WritableEntityIdStore.class),
-                null));
+                null,
+                new HashMap<>()));
 
         // Then the new state has empty bytes for files 151-158 and proper values
         final var files = newStates.<FileID, File>get(FileServiceImpl.BLOBS_KEY);

@@ -48,7 +48,7 @@ public class PropertyConfigSource implements ConfigSource {
      *
      * @param resourceName the name of the resource as needed by
      *        {@code Thread.currentThread().getContextClassLoader().getResourceAsStream}
-     * @param ordinal the ordinal as used to determine priority for this config source.
+     * @param ordinal the migrationOrder as used to determine priority for this config source.
      */
     public PropertyConfigSource(@NonNull final String resourceName, final int ordinal) {
         this(loadProperties(resourceName), ordinal);

@@ -77,7 +77,7 @@ import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.ContractService;
-import com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema;
+import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
@@ -148,8 +148,8 @@ public class StateDumper {
                 requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, ACCOUNTS_KEY)));
         dumpModAccounts(Paths.get(dumpLoc, SEMANTIC_ACCOUNTS), accounts, checkpoint);
 
-        final VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Bytecode>> byteCodes = requireNonNull(state.getChild(
-                state.findNodeIndex(ContractService.NAME, InitialModServiceContractSchema.BYTECODE_KEY)));
+        final VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Bytecode>> byteCodes = requireNonNull(
+                state.getChild(state.findNodeIndex(ContractService.NAME, V0490ContractSchema.BYTECODE_KEY)));
         dumpModContractBytecodes(
                 Paths.get(dumpLoc, SEMANTIC_CONTRACT_BYTECODES),
                 byteCodes,

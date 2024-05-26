@@ -60,6 +60,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.logging.log4j.LogManager;
@@ -73,7 +74,7 @@ import org.apache.logging.log4j.Logger;
  * then registers each and every {@link Schema} that it has. Each {@link Schema} is associated with
  * a {@link SemanticVersion}.
  *
- * <p>The Hedera application then calls {@link com.hedera.node.app.Hedera#onMigrate(MerkleHederaState, HederaSoftwareVersion, InitTrigger, Metrics)} on each {@link MerkleSchemaRegistry} instance, supplying it the
+ * <p>The Hedera application then calls {@code com.hedera.node.app.Hedera#onMigrate(MerkleHederaState, HederaSoftwareVersion, InitTrigger, Metrics)} on each {@link MerkleSchemaRegistry} instance, supplying it the
  * application version number and the newly created (or deserialized) but not yet hashed copy of the {@link
  * MerkleHederaState}. The registry determines which {@link Schema}s to apply, possibly taking multiple migration steps,
  * to transition the merkle tree from its current version to the final version.
@@ -155,6 +156,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * previousVersion}.
      * @param config The system configuration to use at the time of migration
      * @param networkInfo The network information to use at the time of migration
+     * @param sharedValues A map of shared values for cross-service migration patterns
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
     public void migrate(
@@ -164,15 +166,18 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final Configuration config,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final Metrics metrics,
-            @Nullable final WritableEntityIdStore entityIdStore) {
+            @Nullable final WritableEntityIdStore entityIdStore,
+            @NonNull final Map<String, Object> sharedValues) {
         requireNonNull(hederaState);
         requireNonNull(currentVersion);
         requireNonNull(config);
         requireNonNull(networkInfo);
         requireNonNull(metrics);
+        requireNonNull(sharedValues);
 
-        // Figure out which schemas need to be applied based on the previous and current versions, and then for each
-        // of those schemas, create the new states and remove the old states and migrate the data.
+        // Figure out which schemas need to be applied based on the previous and current versions, and
+        // then for each of those schemas, create the new states and remove the old states and migrate
+        // the data
         final var schemasToApply = computeApplicableSchemas(previousVersion, currentVersion);
         if (schemasToApply.isEmpty()) {
             logger.info("Service {} does not use state", serviceName);
@@ -283,7 +288,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                         networkInfo,
                         genesisRecordsBuilder,
                         entityIdStore,
-                        previousVersion);
+                        previousVersion,
+                        sharedValues);
                 if (applicationType != SchemaApplicationType.RESTART_ONLY) {
                     schema.migrate(migrationContext);
                 }
@@ -370,19 +376,10 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         if (!isSameVersion(previousVersion, currentVersion) && !isSoOrdered(previousVersion, currentVersion)) {
             throw new IllegalArgumentException("The currentVersion must be strictly greater than the previousVersion");
         }
-
-        // Evaluate each of the schemas (which are in ascending order by version, thanks
-        // to the tree-set nature of our set) and select the subset that are newer than
-        // the "previousVersion" and no newer than the currentVersion.
-        final var applicableSchemas = new ArrayList<Schema>();
-        for (Schema schema : schemas) {
-            final var ver = schema.getVersion();
-            if (isSameVersion(ver, currentVersion) || isBetween(previousVersion, ver, currentVersion)) {
-                applicableSchemas.add(schema);
-            }
-        }
-        final List<Schema> registeredSchemas = schemas.isEmpty() ? List.of() : List.of(schemas.getLast());
-        return applicableSchemas.isEmpty() ? registeredSchemas : applicableSchemas;
+        // (FUTURE) Consider analyzing schemas based on statesToCreate() and statesToRemove() to
+        // prune any schemas that are no longer needed to deserialize state. For now we simply
+        // register everything since in fact we have no unnecessary schemas in the system.
+        return new ArrayList<>(schemas);
     }
 
     /**

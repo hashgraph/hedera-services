@@ -30,6 +30,16 @@ import java.util.Set;
  */
 public interface Service {
     /**
+     * A sort value for the service, used for example to determine the order in which service
+     * schemas are migrated.
+     *
+     * @return the migrationOrder value
+     */
+    default int migrationOrder() {
+        return 0;
+    }
+
+    /**
      * Returns the name of the service. This name must be unique for each service deployed on the
      * application.
      *

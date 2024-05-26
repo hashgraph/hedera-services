@@ -19,7 +19,8 @@ package com.hedera.node.app.service.contract.impl;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
-import com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema;
+import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
+import com.hedera.node.app.service.contract.impl.schemas.V050ContractSchema;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
@@ -35,10 +36,11 @@ import java.util.function.Supplier;
  */
 public enum ContractServiceImpl implements ContractService {
     CONTRACT_SERVICE;
+
     public static final long INTRINSIC_GAS_LOWER_BOUND = 21_000L;
     private final ContractServiceComponent component;
 
-    private InitialModServiceContractSchema initialContractSchema;
+    private V0490ContractSchema initialContractSchema;
 
     ContractServiceImpl() {
         this.component = DaggerContractServiceComponent.create();
@@ -56,8 +58,9 @@ public enum ContractServiceImpl implements ContractService {
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
-        initialContractSchema = new InitialModServiceContractSchema(version);
+        initialContractSchema = new V0490ContractSchema();
         registry.register(initialContractSchema);
+        registry.register(new V050ContractSchema());
     }
 
     public ContractHandlers handlers() {

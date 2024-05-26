@@ -30,8 +30,9 @@ import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.service.token.impl.schemas.InitialModServiceTokenSchema;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.app.service.token.impl.schemas.V050TokenSchema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -77,7 +78,7 @@ public class TokenServiceImpl implements TokenService {
     private final Supplier<SortedSet<Account>> treasuryAccts;
     private final Supplier<SortedSet<Account>> miscAccts;
     private final Supplier<SortedSet<Account>> blocklistAccts;
-    private InitialModServiceTokenSchema modTokenSchema;
+    private V0490TokenSchema v0490TokenSchema;
 
     /**
      * Constructor for the token service. Each of the given suppliers should produce a {@link SortedSet}
@@ -117,9 +118,9 @@ public class TokenServiceImpl implements TokenService {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
         requireNonNull(registry);
-        modTokenSchema = new InitialModServiceTokenSchema(
-                sysAccts, stakingAccts, treasuryAccts, miscAccts, blocklistAccts, version);
-        registry.register(modTokenSchema);
+        v0490TokenSchema = new V0490TokenSchema(sysAccts, stakingAccts, treasuryAccts, miscAccts, blocklistAccts);
+        registry.register(v0490TokenSchema);
+        registry.register(new V050TokenSchema());
     }
 
     /**
@@ -127,7 +128,7 @@ public class TokenServiceImpl implements TokenService {
      * @param fs the virtual map of unique token keys to unique token values
      */
     public void setNftsFromState(@Nullable final VirtualMap<UniqueTokenKey, UniqueTokenValue> fs) {
-        modTokenSchema.setNftsFromState(fs);
+        v0490TokenSchema.setNftsFromState(fs);
     }
 
     /**
@@ -135,7 +136,7 @@ public class TokenServiceImpl implements TokenService {
      * @param fs the virtual map of entity num virtual keys to on disk token relations
      */
     public void setTokenRelsFromState(@Nullable final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> fs) {
-        modTokenSchema.setTokenRelsFromState(fs);
+        v0490TokenSchema.setTokenRelsFromState(fs);
     }
 
     /**
@@ -143,7 +144,7 @@ public class TokenServiceImpl implements TokenService {
      * @param fs the virtual map of entity num virtual keys to on disk accounts
      */
     public void setAcctsFromState(@Nullable final VirtualMap<EntityNumVirtualKey, OnDiskAccount> fs) {
-        modTokenSchema.setAcctsFromState(fs);
+        v0490TokenSchema.setAcctsFromState(fs);
     }
 
     /**
@@ -151,7 +152,7 @@ public class TokenServiceImpl implements TokenService {
      * @param fs the merkle map of entity nums to merkle tokens
      */
     public void setTokensFromState(@Nullable final MerkleMap<EntityNum, MerkleToken> fs) {
-        modTokenSchema.setTokensFromState(fs);
+        v0490TokenSchema.setTokensFromState(fs);
     }
 
     /**
@@ -162,6 +163,6 @@ public class TokenServiceImpl implements TokenService {
     public void setStakingFs(
             @Nullable final MerkleMap<EntityNum, MerkleStakingInfo> stakingFs,
             @Nullable final MerkleNetworkContext mnc) {
-        modTokenSchema.setStakingFs(stakingFs, mnc);
+        v0490TokenSchema.setStakingFs(stakingFs, mnc);
     }
 }

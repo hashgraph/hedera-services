@@ -60,7 +60,7 @@ import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.mono.state.migration.AccountStateTranslator;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
-import com.hedera.node.app.service.token.impl.schemas.InitialModServiceTokenSchema;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.info.NetworkInfo;
@@ -95,7 +95,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-final class InitialModServiceTokenSchemaTest {
+final class V0490TokenSchemaTest {
 
     private static final long BEGINNING_ENTITY_ID = 3000;
 
@@ -106,7 +106,7 @@ final class InitialModServiceTokenSchemaTest {
     }
 
     private static final long[] NON_CONTRACT_RESERVED_NUMS =
-            InitialModServiceTokenSchema.nonContractSystemNums(NUM_RESERVED_SYSTEM_ENTITIES);
+            V0490TokenSchema.nonContractSystemNums(NUM_RESERVED_SYSTEM_ENTITIES);
 
     static {
         // Precondition check
@@ -180,7 +180,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                CURRENT_VERSION);
+                CURRENT_VERSION,
+                new HashMap<>());
 
         schema.migrate(migrationContext);
 
@@ -202,7 +203,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                null);
+                null,
+                new HashMap<>());
 
         schema.migrate(migrationContext);
 
@@ -222,7 +224,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                null);
+                null,
+                new HashMap<>());
 
         schema.migrate(migrationContext);
 
@@ -295,13 +298,12 @@ final class InitialModServiceTokenSchemaTest {
     void someAccountsAlreadyExist() {
         // Initializing the schema will happen with _all_ the expected account records, but only some of those accounts
         // should be created in the migration
-        final var schema = new InitialModServiceTokenSchema(
+        final var schema = new V0490TokenSchema(
                 () -> allSysAccts(4),
                 this::allStakingAccts,
                 this::allMiscAccts,
                 this::allTreasuryClones,
-                this::allBlocklistAccts,
-                CURRENT_VERSION);
+                this::allBlocklistAccts);
 
         // We'll only configure 4 system accounts, half of which will already exist
         config = buildConfig(4, true);
@@ -337,7 +339,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                null);
+                null,
+                new HashMap<>());
 
         schema.migrate(migrationContext);
 
@@ -463,7 +466,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                CURRENT_VERSION);
+                CURRENT_VERSION,
+                new HashMap<>());
 
         schema.migrate(migrationContext);
 
@@ -508,7 +512,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                CURRENT_VERSION);
+                CURRENT_VERSION,
+                new HashMap<>());
 
         schema.migrate(migrationContext);
 
@@ -525,13 +530,12 @@ final class InitialModServiceTokenSchemaTest {
 
     @Test
     void createsSystemAccountsOnlyOnGenesisStart() {
-        final var schema = new InitialModServiceTokenSchema(
+        final var schema = new V0490TokenSchema(
                 this::allDefaultSysAccts,
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
-                Collections::emptySortedSet,
-                CURRENT_VERSION);
+                Collections::emptySortedSet);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -539,7 +543,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                null));
+                null,
+                new HashMap<>()));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
         for (int i = 1; i < DEFAULT_NUM_SYSTEM_ACCOUNTS; i++) {
@@ -555,13 +560,12 @@ final class InitialModServiceTokenSchemaTest {
         // to be present in the resulting objects
         config = overridingLedgerBalanceWithZero();
 
-        final var schema = new InitialModServiceTokenSchema(
+        final var schema = new V0490TokenSchema(
                 Collections::emptySortedSet,
                 this::allStakingAccts,
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
-                Collections::emptySortedSet,
-                CURRENT_VERSION);
+                Collections::emptySortedSet);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -569,7 +573,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                null));
+                null,
+                new HashMap<>()));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
         final var stakingRewardAccount = acctsStateResult.get(ACCT_IDS[800]);
@@ -587,13 +592,12 @@ final class InitialModServiceTokenSchemaTest {
         // to be present in the resulting objects
         config = overridingLedgerBalanceWithZero();
 
-        final var schema = new InitialModServiceTokenSchema(
+        final var schema = new V0490TokenSchema(
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
                 this::allTreasuryClones,
                 Collections::emptySortedSet,
-                Collections::emptySortedSet,
-                CURRENT_VERSION);
+                Collections::emptySortedSet);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -601,7 +605,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                null));
+                null,
+                new HashMap<>()));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
         for (final long reservedNum : NON_CONTRACT_RESERVED_NUMS) {
@@ -617,13 +622,12 @@ final class InitialModServiceTokenSchemaTest {
         // to be present in the resulting objects
         config = overridingLedgerBalanceWithZero();
 
-        final var schema = new InitialModServiceTokenSchema(
+        final var schema = new V0490TokenSchema(
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
                 this::allMiscAccts,
-                Collections::emptySortedSet,
-                CURRENT_VERSION);
+                Collections::emptySortedSet);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -631,7 +635,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                null));
+                null,
+                new HashMap<>()));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
 
@@ -646,13 +651,12 @@ final class InitialModServiceTokenSchemaTest {
         // to be present in the resulting objects
         config = overridingLedgerBalanceWithZero();
 
-        final var schema = new InitialModServiceTokenSchema(
+        final var schema = new V0490TokenSchema(
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
-                this::allBlocklistAccts,
-                CURRENT_VERSION);
+                this::allBlocklistAccts);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -660,7 +664,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                null));
+                null,
+                new HashMap<>()));
 
         // Verify that the assigned account ID matches the expected entity IDs
         for (int i = 0; i < EVM_ADDRESSES.length; i++) {
@@ -679,7 +684,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                null));
+                null,
+                new HashMap<>()));
 
         // Verify contract entity IDs aren't used
         for (int i = 350; i < 400; i++) {
@@ -725,7 +731,14 @@ final class InitialModServiceTokenSchemaTest {
         final var schema = newSubjectWithAllExpected();
         // When we call restart, the state will be updated to mark node 1 and 3 as deleted
         schema.restart(new MigrationContextImpl(
-                previousStates, newStates, config, networkInfo, genesisRecordsBuilder, entityIdStore, null));
+                previousStates,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                entityIdStore,
+                null,
+                new HashMap<>()));
         final var updatedStates = newStates.get(STAKING_INFO_KEY);
         // marks nodes 1, 2 as deleted
         assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_1)).deleted()).isTrue();
@@ -831,14 +844,13 @@ final class InitialModServiceTokenSchemaTest {
         return accts;
     }
 
-    private InitialModServiceTokenSchema newSubjectWithAllExpected() {
-        return new InitialModServiceTokenSchema(
+    private V0490TokenSchema newSubjectWithAllExpected() {
+        return new V0490TokenSchema(
                 this::allDefaultSysAccts,
                 this::allStakingAccts,
                 this::allMiscAccts,
                 this::allTreasuryClones,
-                this::allBlocklistAccts,
-                CURRENT_VERSION);
+                this::allBlocklistAccts);
     }
 
     /**

@@ -46,6 +46,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
@@ -240,7 +241,8 @@ class SerializationTest extends MerkleTestBase {
                 config,
                 networkInfo,
                 mock(Metrics.class),
-                mock(WritableEntityIdStore.class));
+                mock(WritableEntityIdStore.class),
+                new HashMap<>());
         loadedTree.migrate(1);
 
         return loadedTree;
@@ -253,7 +255,14 @@ class SerializationTest extends MerkleTestBase {
                 new MerkleSchemaRegistry(registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class));
         originalRegistry.register(schemaV1);
         originalRegistry.migrate(
-                originalTree, null, v1, config, networkInfo, mock(Metrics.class), mock(WritableEntityIdStore.class));
+                originalTree,
+                null,
+                v1,
+                config,
+                networkInfo,
+                mock(Metrics.class),
+                mock(WritableEntityIdStore.class),
+                new HashMap<>());
         return originalTree;
     }
 
