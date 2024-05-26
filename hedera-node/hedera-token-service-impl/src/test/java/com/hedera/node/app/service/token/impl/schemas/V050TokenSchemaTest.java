@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.token.impl.schemas;
 
 import static com.hedera.hapi.util.HapiUtils.CONTRACT_ID_COMPARATOR;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.copyToLeftPaddedByteArray;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -120,5 +119,13 @@ class V050TokenSchemaTest {
 
     private static AccountID accountIdWith(final long num) {
         return AccountID.newBuilder().accountNum(num).build();
+    }
+
+    private static byte[] copyToLeftPaddedByteArray(long value, final byte[] dest) {
+        for (int i = 7, j = dest.length - 1; i >= 0; i--, j--) {
+            dest[j] = (byte) (value & 0xffL);
+            value >>= 8;
+        }
+        return dest;
     }
 }
