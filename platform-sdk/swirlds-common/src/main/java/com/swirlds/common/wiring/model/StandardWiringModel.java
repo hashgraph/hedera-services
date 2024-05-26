@@ -61,6 +61,11 @@ public class StandardWiringModel extends TraceableWiringModel {
     private final TaskScheduler<Duration> healthMonitorScheduler;
 
     /**
+     * The health monitor.
+     */
+    private HealthMonitor healthMonitor;
+
+    /**
      * The input wire for the health monitor.
      */
     private final BindableInputWire<Instant, Duration> healthMonitorInputWire;
@@ -157,6 +162,16 @@ public class StandardWiringModel extends TraceableWiringModel {
     /**
      * {@inheritDoc}
      */
+    @NonNull
+    @Override
+    public Duration getUnhealthyDuration() {
+        throwIfNotStarted();
+        return healthMonitor.getUnhealthyDuration();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public OutputWire<Instant> buildHeartbeatWire(final double frequency) {
@@ -186,8 +201,7 @@ public class StandardWiringModel extends TraceableWiringModel {
             anchor.start();
         }
 
-        final HealthMonitor healthMonitor =
-                new HealthMonitor(platformContext, schedulers, healthLogThreshold, healthLogPeriod);
+        healthMonitor = new HealthMonitor(platformContext, schedulers, healthLogThreshold, healthLogPeriod);
         healthMonitorInputWire.bind(healthMonitor::checkSystemHealth);
 
         markAsStarted();

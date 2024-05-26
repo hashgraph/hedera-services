@@ -28,6 +28,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Monitors the health of a wiring model. A healthy wiring model is a model without too much work backed up in queues.
@@ -60,6 +61,11 @@ public class HealthMonitor {
      * Logs health issues.
      */
     private final HealthMonitorLogger logger;
+
+    /**
+     * The longest duration that any single scheduler has been concurrently unhealthy.
+     */
+    private final AtomicReference<Duration> longestUnhealthyDuration = new AtomicReference<>(Duration.ZERO);
 
     /**
      * Constructor.
@@ -114,11 +120,27 @@ public class HealthMonitor {
         }
 
         try {
-            // Only report when there is a change in health status
-            metrics.reportUnhealthyDuration(longestUnhealthyDuration);
-            return longestUnhealthyDuration.equals(previouslyReportedDuration) ? null : longestUnhealthyDuration;
+            if (longestUnhealthyDuration.equals(previouslyReportedDuration)) {
+                // Only report when there is a change in health status
+                return null;
+            } else {
+                this.longestUnhealthyDuration.set(longestUnhealthyDuration);
+                metrics.reportUnhealthyDuration(longestUnhealthyDuration);
+                return longestUnhealthyDuration.equals(previouslyReportedDuration) ? null : longestUnhealthyDuration;
+            }
         } finally {
             previouslyReportedDuration = longestUnhealthyDuration;
         }
+    }
+
+    /**
+     * Get the duration that any particular scheduler has been concurrently unhealthy.
+     *
+     * @return the duration that any particular scheduler has been concurrently unhealthy, or {@link Duration#ZERO} if
+     * no scheduler is currently unhealthy
+     */
+    @NonNull
+    public Duration getUnhealthyDuration() {
+        return longestUnhealthyDuration.get();
     }
 }

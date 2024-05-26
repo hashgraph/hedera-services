@@ -17,6 +17,7 @@
 package com.swirlds.platform;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
+import static com.swirlds.common.utility.CompareTo.isLessThan;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
@@ -56,6 +57,7 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
@@ -101,6 +103,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -255,12 +258,17 @@ public class SwirldsPlatform implements Platform {
                 .set(x -> platformWiring.getStatusActionSubmitter().submitStatusAction(x));
 
         final StateSigner stateSigner = new StateSigner(new PlatformSigner(keysAndCerts), statusNexus);
+        final Duration replayHealthThreshold = platformContext
+                .getConfiguration()
+                .getConfigData(PcesConfig.class)
+                .replayHealthThreshold();
         final PcesReplayer pcesReplayer = new PcesReplayer(
                 platformContext.getTime(),
                 platformWiring.getPcesReplayerEventOutput(),
                 platformWiring::flushIntakePipeline,
                 platformWiring::flushConsensusRoundHandler,
-                () -> latestImmutableStateNexus.getState("PCES replay"));
+                () -> latestImmutableStateNexus.getState("PCES replay"),
+                () -> isLessThan(blocks.model().getUnhealthyDuration(), replayHealthThreshold));
 
         initializeState(initialState);
 

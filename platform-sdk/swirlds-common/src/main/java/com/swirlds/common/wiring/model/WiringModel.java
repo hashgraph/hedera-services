@@ -123,6 +123,17 @@ public interface WiringModel extends Startable, Stoppable {
     OutputWire<Duration> getHealthMonitorWire();
 
     /**
+     * Get the duration that any particular scheduler has been concurrently unhealthy. This getter is intended for use
+     * by things outside of the wiring framework. For use within the framework, the proper way to access this value is
+     * via the wire returned by {@link #getHealthMonitorWire()}.
+     *
+     * @return the duration that any particular scheduler has been concurrently unhealthy, or {@link Duration#ZERO} if
+     * no scheduler is currently unhealthy
+     */
+    @NonNull
+    Duration getUnhealthyDuration();
+
+    /**
      * Build a wire that produces an instant (reflecting current time) at the specified rate. Note that the exact rate
      * of heartbeats may vary. This is a best effort algorithm, and actual rates may vary depending on a variety of
      * factors.

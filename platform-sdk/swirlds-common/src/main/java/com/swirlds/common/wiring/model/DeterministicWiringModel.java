@@ -117,6 +117,15 @@ public class DeterministicWiringModel extends TraceableWiringModel {
      */
     @NonNull
     @Override
+    public Duration getUnhealthyDuration() {
+        return Duration.ZERO;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
     public OutputWire<Instant> buildHeartbeatWire(final double frequency) {
         return heartbeatScheduler.buildHeartbeatWire(frequency);
     }
