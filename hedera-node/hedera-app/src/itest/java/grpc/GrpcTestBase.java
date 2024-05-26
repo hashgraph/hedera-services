@@ -25,6 +25,7 @@ import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
+import com.hedera.node.app.state.merkle.SchemaUseAnalysis;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -177,7 +178,8 @@ abstract class GrpcTestBase extends TestBase {
         };
 
         final var cr = ConstructableRegistry.getInstance();
-        final var registry = new MerkleSchemaRegistry(cr, "TestService", new NoOpGenesisRecordsBuilder());
+        final var registry =
+                new MerkleSchemaRegistry(cr, "TestService", new NoOpGenesisRecordsBuilder(), new SchemaUseAnalysis());
         final var registration = new ServicesRegistry.Registration(testService, registry);
         final var config = createConfig(new TestSource());
         this.grpcServer = new NettyGrpcServerManager(

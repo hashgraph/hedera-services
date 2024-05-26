@@ -224,7 +224,8 @@ class SerializationTest extends MerkleTestBase {
 
     private MerkleHederaState loadeMerkleTree(Schema schemaV1, byte[] serializedBytes)
             throws ConstructableRegistryException, IOException {
-        final var newRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class));
+        final var newRegistry = new MerkleSchemaRegistry(
+                registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class), new SchemaUseAnalysis());
         newRegistry.register(schemaV1);
 
         // Register the MerkleHederaState so, when found in serialized bytes, it will register with
@@ -251,8 +252,8 @@ class SerializationTest extends MerkleTestBase {
     private MerkleHederaState createMerkleHederaState(Schema schemaV1) {
         final var v1 = version(1, 0, 0);
         final var originalTree = new MerkleHederaState(lifecycles);
-        final var originalRegistry =
-                new MerkleSchemaRegistry(registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class));
+        final var originalRegistry = new MerkleSchemaRegistry(
+                registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class), new SchemaUseAnalysis());
         originalRegistry.register(schemaV1);
         originalRegistry.migrate(
                 originalTree,
