@@ -19,6 +19,7 @@ import com.autonomousapps.AbstractExtension
 import com.autonomousapps.DependencyAnalysisSubExtension
 import com.hedera.gradle.services.TaskLockService
 import com.hedera.gradle.utils.Utils.versionTxt
+import org.gradlex.jvm.dependency.conflict.resolution.JvmDependencyConflictResolutionPlugin.INTERNAL_CONFIGURATION_NAME
 
 plugins {
     id("java")
@@ -61,20 +62,14 @@ java {
     targetCompatibility = javaVersionMajor
 }
 
-configurations.all {
-    // In case published versions of a module are also available, always prefer the local one
-    resolutionStrategy.preferProjectModules()
+jvmDependencyConflicts.consistentResolution {
+    standalonePlatform(":hedera-dependency-versions")
+    providesVersions(":app")
 }
 
-@Suppress("UnstableApiUsage") val internal = configurations.dependencyScope("internal")
-
-javaModuleDependencies { versionsFromConsistentResolution(":app") }
-
-configurations.getByName("mainRuntimeClasspath") { extendsFrom(internal.get()) }
-
-configurations.javaModulesMergeJars { extendsFrom(internal.get()) }
-
-dependencies { "internal"(platform("com.hedera.hashgraph:hedera-dependency-versions")) }
+configurations.javaModulesMergeJars {
+    extendsFrom(configurations.getByName(INTERNAL_CONFIGURATION_NAME))
+}
 
 tasks.buildDependents { setGroup(null) }
 
@@ -85,24 +80,6 @@ tasks.jar { setGroup(null) }
 sourceSets.all {
     // Remove 'classes' tasks from 'build' group to keep it cleaned up
     tasks.named(classesTaskName) { group = null }
-
-    configurations.getByName(compileClasspathConfigurationName) {
-        extendsFrom(internal.get())
-        @Suppress("UnstableApiUsage")
-        shouldResolveConsistentlyWith(configurations.getByName(runtimeClasspathConfigurationName))
-    }
-    configurations.getByName(runtimeClasspathConfigurationName) { extendsFrom(internal.get()) }
-
-    dependencies {
-        // For dependencies of annotation processors use versions from 'hedera-dependency-versions',
-        // but not 'runtime' dependencies of the platform (JAVA_API instead of JAVA_RUNTIME).
-        annotationProcessorConfigurationName("com.hedera.hashgraph:hedera-dependency-versions") {
-            attributes {
-                attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_API))
-                attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.REGULAR_PLATFORM))
-            }
-        }
-    }
 }
 
 val writeGitProperties =
