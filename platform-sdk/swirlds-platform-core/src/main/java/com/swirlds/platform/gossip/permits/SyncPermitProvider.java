@@ -61,21 +61,28 @@ public class SyncPermitProvider {
     private Instant statusStartTime;
 
     /**
-     * The current number of permits that have been revoked due to system health.
+     * A variable where we accumulate revoked permits. Used to help calculate {@link #revokedPermits}.
      */
-    private int revokedPermits;
+    private int revokedPermitsAccumulator;
 
     /**
      * When the system is in an unhealthy state, revoked permits accumulate here. When the status changes back to
-     * healthy, these permits are summed into {@link #revokedPermits}.
+     * healthy, these permits are summed into {@link #revokedPermitsAccumulator}. Used to help calculate
+     * {@link #revokedPermits}.
      */
     private double revokedPermitDelta;
 
     /**
      * When the system is in a healthy state, permits that have been revoked are returned here. When the status changes
-     * back to unhealthy, these permits are summed into {@link #revokedPermits}.
+     * back to unhealthy, these permits are summed into {@link #revokedPermitsAccumulator}. Used to help calculate
+     * {@link #revokedPermits}.
      */
     private double returnedPermitDelta;
+
+    /**
+     * The total number of revoked permits.
+     */
+    private int revokedPermits;
 
     /**
      * The number of permits that are revoked per second when the system is unhealthy.
@@ -85,12 +92,17 @@ public class SyncPermitProvider {
     /**
      * The number of revoked permits that are returned per second when the system is healthy.
      */
-    private final double permitsReturnedPerSecond = 1.0; // TODO
+    private final double permitsReturnedPerSecond = 0.1; // TODO
 
     /**
      * The grace period that the system is given to become healthy before permits begin to be revoked.
      */
     private final Duration unhealthyGracePeriod = Duration.ofSeconds(5); // TODO
+
+    /**
+     * The minimum number of non-revoked permits while healthy. While unhealthy, the minimum number is always 0.
+     */
+    private final int minimumUnrevokedPermitCount = 1; // TODO
 
     /**
      * The metrics for this class.
@@ -140,7 +152,7 @@ public class SyncPermitProvider {
                 computeRevokedPermits();
                 healthy = true;
                 statusStartTime = time.now();
-                revokedPermits += (int) revokedPermitDelta;
+                revokedPermitsAccumulator += (int) revokedPermitDelta;
                 revokedPermitDelta = 0;
             }
         } else {
@@ -148,7 +160,7 @@ public class SyncPermitProvider {
                 computeRevokedPermits();
                 healthy = false;
                 statusStartTime = time.now();
-                revokedPermits -= (int) returnedPermitDelta;
+                revokedPermitsAccumulator -= (int) returnedPermitDelta;
                 returnedPermitDelta = 0;
             }
         }
@@ -191,8 +203,8 @@ public class SyncPermitProvider {
      */
     private int getAvailablePermits() {
         computeRevokedPermits();
-        final int revokedCount = revokedPermits + (int) revokedPermitDelta - (int) returnedPermitDelta;
-        return Math.max(0, totalPermits - usedPermits - revokedCount);
+
+        return Math.max(0, totalPermits - usedPermits - revokedPermits);
     }
 
     /**
@@ -203,24 +215,24 @@ public class SyncPermitProvider {
             // When healthy, permits are gradually returned
 
             if (revokedPermits == 0) {
-                // No permits are currently revoked.
+                // No permits are currently revoked, no further computation needed.
                 return;
             }
 
             final Duration healthyDuration = Duration.between(statusStartTime, time.now());
             final double healthySeconds = UNIT_NANOSECONDS.convertTo(healthyDuration.toNanos(), UNIT_SECONDS);
-            returnedPermitDelta = Math.min(revokedPermits, healthySeconds * permitsReturnedPerSecond);
+            returnedPermitDelta = Math.min(revokedPermitsAccumulator, healthySeconds * permitsReturnedPerSecond);
 
-            if (returnedPermitDelta == revokedPermits) {
+            if (returnedPermitDelta == revokedPermitsAccumulator) {
                 // We have returned all permits that were revoked.
-                revokedPermits = 0;
+                revokedPermitsAccumulator = 0;
                 returnedPermitDelta = 0;
             }
         } else {
             // We mark more permits as unusable the longer the system has been unhealthy
 
             if (revokedPermits == totalPermits) {
-                // All permits are already revoked.
+                // All permits are already revoked, no further computation needed.
                 return;
             }
 
@@ -230,19 +242,23 @@ public class SyncPermitProvider {
 
             if (revokedPermitDelta == totalPermits) {
                 // We have revoked all permits.
-                revokedPermits = totalPermits;
+                revokedPermitsAccumulator = totalPermits;
                 revokedPermitDelta = 0;
             }
         }
+
+        // When healthy there is a hard upper limit on the number of permits that may be revoked.
+        final int maximumRevokedCount = healthy ? (totalPermits - minimumUnrevokedPermitCount) : totalPermits;
+
+        // Combine all pieces of the revoked permit calculation into the final count.
+        revokedPermits = Math.min(
+                maximumRevokedCount, revokedPermitsAccumulator + (int) revokedPermitDelta - (int) returnedPermitDelta);
     }
 
     /**
      * Update the metrics with the current permit counts.
      */
     private void updateMetrics() {
-        metrics.reportPermits(
-                getAvailablePermits(),
-                revokedPermits + (int) revokedPermitDelta - (int) returnedPermitDelta,
-                usedPermits);
+        metrics.reportPermits(getAvailablePermits(), revokedPermits, usedPermits);
     }
 }
