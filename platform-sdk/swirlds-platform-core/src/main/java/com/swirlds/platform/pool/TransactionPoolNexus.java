@@ -46,6 +46,8 @@ import org.apache.logging.log4j.Logger;
  */
 public class TransactionPoolNexus implements TransactionSupplier {
 
+    // TODO this class needs unit tests
+
     private static final Logger logger = LogManager.getLogger(TransactionPoolNexus.class);
     private final RateLimitedLogger illegalTransactionLogger;
 

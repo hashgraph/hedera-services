@@ -92,8 +92,6 @@ public class DefaultEventCreationManager implements EventCreationManager {
         final EventCreationConfig config = platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
         final boolean useLegacyBackpressure = config.useLegacyBackpressure();
 
-        // TODO also don't accept app transactions when unhealthy
-
         final List<EventCreationRule> rules = new ArrayList<>();
         rules.add(new MaximumRateRule(platformContext));
         rules.add(new PlatformStatusRule(this::getPlatformStatus, transactionPoolNexus));

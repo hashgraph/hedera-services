@@ -195,9 +195,6 @@ public class SyncProtocol implements Protocol {
             return false;
         }
 
-        // TODO make sure permit metrics get put somewhere
-        // syncMetrics.updateSyncPermitsAvailable(permitProvider.getNumAvailable());
-
         return true;
     }
 
