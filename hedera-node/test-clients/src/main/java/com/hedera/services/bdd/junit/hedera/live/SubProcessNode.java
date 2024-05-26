@@ -49,11 +49,6 @@ import java.util.regex.Pattern;
  */
 public class SubProcessNode extends AbstractNode implements HederaNode {
     /**
-     * The maximum number of retries to make when looking up the status of a node via Prometheus
-     * before resorting to scanning the application log.
-     */
-    private static final int MAX_PROMETHEUS_RETRIES = 1;
-    /**
      * How many milliseconds to wait between retries when scanning the application log for
      * the node status.
      */
@@ -62,6 +57,12 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
      * How many milliseconds to wait between retrying a Prometheus status lookup.
      */
     private static final long PROMETHEUS_BACKOFF_MS = 100L;
+    /**
+     * The maximum number of retries to make when looking up the status of a node via Prometheus
+     * before resorting to scanning the application log. (Empirically, if Prometheus is not up
+     * within a minute or so, it's not going to be; and we should fall back to log scanning.)
+     */
+    private static final int MAX_PROMETHEUS_RETRIES = 666;
 
     private final Pattern statusPattern;
     private final GrpcPinger grpcPinger;
