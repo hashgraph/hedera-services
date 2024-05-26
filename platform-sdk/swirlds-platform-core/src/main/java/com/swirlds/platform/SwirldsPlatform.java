@@ -64,7 +64,6 @@ import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.metrics.RuntimeMetrics;
-import com.swirlds.platform.metrics.TransactionMetrics;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.publisher.DefaultPlatformPublisher;
 import com.swirlds.platform.publisher.PlatformPublisher;
@@ -158,11 +157,6 @@ public class SwirldsPlatform implements Platform {
     private final SwirldStateManager swirldStateManager;
 
     /**
-     * Checks the validity of transactions and submits valid ones to the transaction pool
-     */
-    private final SwirldTransactionSubmitter transactionSubmitter;
-
-    /**
      * For passing notifications between the platform and the application.
      */
     private final NotificationEngine notificationEngine;
@@ -181,6 +175,11 @@ public class SwirldsPlatform implements Platform {
      * Controls which states are saved to disk
      */
     private final SavedStateController savedStateController;
+
+    /**
+     * Used to submit application transactions.
+     */
+    private final TransactionPoolNexus transactionPoolNexus;
 
     /**
      * Encapsulated wiring for the platform.
@@ -337,12 +336,7 @@ public class SwirldsPlatform implements Platform {
             platformWiring.getPcesMinimumGenerationToStoreInput().inject(minimumGenerationNonAncientForOldestState);
         }
 
-        final TransactionPoolNexus transactionPoolNexus = blocks.transactionPoolNexus();
-        transactionSubmitter = new SwirldTransactionSubmitter(
-                statusNexus,
-                transactionConfig,
-                transaction -> transactionPoolNexus.submitTransaction(transaction, false),
-                new TransactionMetrics(platformContext.getMetrics()));
+        transactionPoolNexus = blocks.transactionPoolNexus();
 
         final boolean startedFromGenesis = initialState.isGenesisState();
 
@@ -666,7 +660,7 @@ public class SwirldsPlatform implements Platform {
      */
     @Override
     public boolean createTransaction(@NonNull final byte[] transaction) {
-        return transactionSubmitter.submitTransaction(new SwirldTransaction(transaction));
+        return transactionPoolNexus.submitApplicationTransaction(new SwirldTransaction(transaction));
     }
 
     /**
