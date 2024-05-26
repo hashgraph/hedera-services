@@ -83,7 +83,7 @@ public record FullResult(
         requireNonNull(recordBuilder);
         return new FullResult(
                 PrecompiledContract.PrecompileContractResult.revert(
-                        // match mono - return status migrationOrder instead of name
+                        // match mono - return status ordinal instead of name
                         Bytes.wrap(UInt256.valueOf(recordBuilder.status().protoOrdinal()))),
                 gasRequirement,
                 recordBuilder);

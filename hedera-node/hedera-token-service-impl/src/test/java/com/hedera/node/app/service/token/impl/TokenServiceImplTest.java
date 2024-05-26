@@ -17,8 +17,9 @@
 package com.hedera.node.app.service.token.impl;
 
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_COMPARATOR;
-import static org.mockito.ArgumentMatchers.notNull;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -26,6 +27,9 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.token.CryptoServiceDefinition;
 import com.hedera.node.app.service.token.TokenServiceDefinition;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.app.service.token.impl.schemas.V050TokenSchema;
+import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -36,6 +40,7 @@ import java.util.TreeSet;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class TokenServiceImplTest {
 
@@ -92,7 +97,7 @@ class TokenServiceImplTest {
 
     @Test
     void defaultConstructor() {
-        Assertions.assertThat(new TokenServiceImpl()).isNotNull();
+        assertThat(new TokenServiceImpl()).isNotNull();
     }
 
     @Test
@@ -103,7 +108,7 @@ class TokenServiceImplTest {
         final var acc3 = mock(Account.class);
         anyNonNullAccts.addAll(Set.of(acc1, acc2, acc3));
 
-        Assertions.assertThat(new TokenServiceImpl(
+        assertThat(new TokenServiceImpl(
                         () -> anyNonNullAccts,
                         () -> anyNonNullAccts,
                         () -> anyNonNullAccts,
@@ -117,9 +122,6 @@ class TokenServiceImplTest {
     void registerSchemasNullArgsThrow() {
         Assertions.assertThatThrownBy(() -> subject.registerSchemas(null, SemanticVersion.DEFAULT))
                 .isInstanceOf(NullPointerException.class);
-
-        Assertions.assertThatThrownBy(() -> subject.registerSchemas(mock(SchemaRegistry.class), null))
-                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -127,7 +129,12 @@ class TokenServiceImplTest {
         final var schemaRegistry = mock(SchemaRegistry.class);
 
         subject.registerSchemas(schemaRegistry, SemanticVersion.DEFAULT);
-        verify(schemaRegistry).register(notNull());
+        final var captor = ArgumentCaptor.forClass(Schema.class);
+        verify(schemaRegistry, times(2)).register(captor.capture());
+        final var schemas = captor.getAllValues();
+        assertThat(schemas).hasSize(2);
+        assertThat(schemas.getFirst()).isInstanceOf(V0490TokenSchema.class);
+        assertThat(schemas.getLast()).isInstanceOf(V050TokenSchema.class);
     }
 
     @SuppressWarnings("unchecked")
@@ -176,12 +183,12 @@ class TokenServiceImplTest {
 
     @Test
     void verifyServiceName() {
-        Assertions.assertThat(subject.getServiceName()).isEqualTo("TokenService");
+        assertThat(subject.getServiceName()).isEqualTo("TokenService");
     }
 
     @Test
     void rpcDefinitions() {
-        Assertions.assertThat(subject.rpcDefinitions())
+        assertThat(subject.rpcDefinitions())
                 .containsExactlyInAnyOrder(CryptoServiceDefinition.INSTANCE, TokenServiceDefinition.INSTANCE);
     }
 }

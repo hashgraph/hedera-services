@@ -202,7 +202,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             // add new states into the tree, it doesn't increase the number of states that can
             // be seen by the schema migration code
             ReadableStates previousStatesIfNeeded = null;
-            if (applicationType != SchemaApplicationType.ONLY_STATE_MANAGEMENT) {
+            if (applicationType != SchemaApplicationType.STATE_DEFINITIONS) {
                 final var readableStates = hederaState.getReadableStates(serviceName);
                 previousStatesIfNeeded = new FilteredReadableStates(readableStates, readableStates.stateKeys());
             }
@@ -275,7 +275,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             remainingStates.removeAll(statesToRemove);
             final var newStates = new FilteredWritableStates(writableStates, remainingStates);
 
-            if (applicationType != SchemaApplicationType.ONLY_STATE_MANAGEMENT) {
+            if (applicationType != SchemaApplicationType.STATE_DEFINITIONS) {
                 // For any changes to state that depend on other services outside the current
                 // service, we need a reference to the overall state that we can pass into the
                 // context. This reference to overall state will be strictly controlled via the
@@ -324,7 +324,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         } else if (!isSameVersion(schema.getVersion(), previousVersionFromState)) {
             return SchemaApplicationType.MIGRATE_ONLY;
         } else {
-            return SchemaApplicationType.ONLY_STATE_MANAGEMENT;
+            return SchemaApplicationType.STATE_DEFINITIONS;
         }
     }
 
@@ -334,7 +334,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
          * but is not the latest version, has no migration work to do, and also
          * does not have priority for managing the service's restart logic.
          */
-        ONLY_STATE_MANAGEMENT,
+        STATE_DEFINITIONS,
         /**
          * A schema whose version is after the version of the saved state, but
          * is not the latest version, has migration work to do, but also does

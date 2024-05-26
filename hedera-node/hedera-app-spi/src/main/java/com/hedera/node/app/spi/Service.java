@@ -30,7 +30,7 @@ import java.util.Set;
  */
 public interface Service {
     /**
-     * A sort value for the service, used for example to determine the order in which service
+     * A sort value for the service, used to determine the order in which service
      * schemas are migrated.
      *
      * @return the migrationOrder value

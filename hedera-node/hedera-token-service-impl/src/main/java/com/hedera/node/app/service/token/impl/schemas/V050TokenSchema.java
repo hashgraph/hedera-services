@@ -28,11 +28,14 @@ import com.hedera.node.app.spi.state.Schema;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
-import java.util.Map;
+import java.util.SortedMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * A schema that ensures the first contract storage key of each account matches what
+ * is set in the shared migration context at key {@code "V050_FIRST_STORAGE_KEYS"}.
+ */
 public class V050TokenSchema extends Schema {
     private static final Logger log = LogManager.getLogger(V050TokenSchema.class);
 
@@ -47,26 +50,25 @@ public class V050TokenSchema extends Schema {
     public void migrate(@NonNull final MigrationContext ctx) {
         requireNonNull(ctx);
         @SuppressWarnings("unchecked")
-        final List<Map.Entry<ContractID, Bytes>> migratedFirstKeys =
-                (List<Map.Entry<ContractID, Bytes>>) ctx.sharedValues().getOrDefault("MIGRATED_FIRST_KEYS", List.of());
-        if (migratedFirstKeys.isEmpty()) {
-            return;
-        }
+        final SortedMap<ContractID, Bytes> migratedFirstKeys =
+                (SortedMap<ContractID, Bytes>) ctx.sharedValues().get("V050_FIRST_STORAGE_KEYS");
+        requireNonNull(migratedFirstKeys, "V050_FIRST_STORAGE_KEYS must be present in shared values");
         final WritableKVState<AccountID, Account> writableAccounts =
                 ctx.newStates().get(ACCOUNTS_KEY);
-        migratedFirstKeys.forEach(entry -> {
+        migratedFirstKeys.forEach((contractId, firstKey) -> {
             final var accountId = AccountID.newBuilder()
-                    .accountNum(entry.getKey().contractNumOrThrow())
+                    .accountNum(contractId.contractNumOrThrow())
                     .build();
-            final var account = writableAccounts.getForModify(accountId);
+            final var account = writableAccounts.get(accountId);
             if (account == null) {
-                log.warn("Contract account {} not found in the new state", entry.getKey());
-            } else {
+                log.warn("Contract account {} not found in the new state", accountId);
+            } else if (!firstKey.equals(account.firstContractStorageKey())) {
+                if (!account.smartContract()) {
+                    log.warn("Non-contract account {} has storage slots", accountId);
+                }
                 writableAccounts.put(
                         accountId,
-                        account.copyBuilder()
-                                .firstContractStorageKey(entry.getValue())
-                                .build());
+                        account.copyBuilder().firstContractStorageKey(firstKey).build());
             }
         });
     }
