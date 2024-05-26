@@ -20,7 +20,6 @@ import static com.swirlds.common.utility.CompareTo.isLessThan;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.DurationGauge;
-import com.swirlds.common.wiring.WiringConfig;
 import com.swirlds.metrics.api.IntegerGauge;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -46,19 +45,18 @@ public class HealthMonitorMetrics {
     /**
      * Constructor.
      *
-     * @param platformContext the platform context
+     * @param platformContext    the platform context
+     * @param healthLogThreshold the duration after which the system is considered unhealthy
      */
-    public HealthMonitorMetrics(@NonNull final PlatformContext platformContext) {
+    public HealthMonitorMetrics(
+            @NonNull final PlatformContext platformContext, @NonNull final Duration healthLogThreshold) {
         unhealthyDuration = platformContext.getMetrics().getOrCreate(DURATION_GAUGE_CONFIG);
         healthy = platformContext.getMetrics().getOrCreate(HEALTHY_CONFIG);
 
         // Always initialize the system as healthy
         healthy.set(1);
 
-        healthThreshold = platformContext
-                .getConfiguration()
-                .getConfigData(WiringConfig.class)
-                .healthThreshold();
+        healthThreshold = healthLogThreshold;
     }
 
     /**

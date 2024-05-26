@@ -61,18 +61,21 @@ public class HealthMonitor {
      */
     private final HealthMonitorLogger logger;
 
-    // TODO: create a special configuration for wiring framework stuff that is isolated from the schedulers config
-
     /**
      * Constructor.
      *
      * @param platformContext    the platform context
      * @param schedulers         the task schedulers to monitor
+     * @param healthLogThreshold the amount of time that must pass before we start logging health information
+     * @param healthLogPeriod    the period at which we log health information
      */
     public HealthMonitor(
-            @NonNull final PlatformContext platformContext, @NonNull final List<TaskScheduler<?>> schedulers) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final List<TaskScheduler<?>> schedulers,
+            @NonNull final Duration healthLogThreshold,
+            @NonNull final Duration healthLogPeriod) {
 
-        metrics = new HealthMonitorMetrics(platformContext);
+        metrics = new HealthMonitorMetrics(platformContext, healthLogThreshold);
 
         this.schedulers = new ArrayList<>();
         for (final TaskScheduler<?> scheduler : schedulers) {
@@ -82,7 +85,7 @@ public class HealthMonitor {
             }
         }
 
-        logger = new HealthMonitorLogger(platformContext, this.schedulers);
+        logger = new HealthMonitorLogger(platformContext, this.schedulers, healthLogThreshold, healthLogPeriod);
     }
 
     /**

@@ -22,7 +22,6 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
-import com.swirlds.common.wiring.WiringConfig;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -52,19 +51,22 @@ public class HealthMonitorLogger {
     /**
      * Constructor.
      *
-     * @param platformContext the platform context
-     * @param schedulers      the task schedulers being monitored
+     * @param platformContext    the platform context
+     * @param schedulers         the task schedulers being monitored
+     * @param healthLogThreshold the amount of time that must pass before we start logging health information
+     * @param healthLogPeriod    the period at which we log health information
      */
     public HealthMonitorLogger(
-            @NonNull final PlatformContext platformContext, @NonNull final List<TaskScheduler<?>> schedulers) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final List<TaskScheduler<?>> schedulers,
+            @NonNull final Duration healthLogThreshold,
+            @NonNull final Duration healthLogPeriod) {
 
-        final WiringConfig wiringConfig = platformContext.getConfiguration().getConfigData(WiringConfig.class);
-
-        this.healthLogThreshold = wiringConfig.healthThreshold();
+        this.healthLogThreshold = healthLogThreshold;
         for (final TaskScheduler<?> scheduler : schedulers) {
             final String schedulerName = scheduler.getName();
             final RateLimitedLogger rateLimitedLogger =
-                    new RateLimitedLogger(logger, platformContext.getTime(), wiringConfig.healthLogPeriod());
+                    new RateLimitedLogger(logger, platformContext.getTime(), healthLogPeriod);
             schedulerLoggers.put(schedulerName, rateLimitedLogger);
         }
     }
