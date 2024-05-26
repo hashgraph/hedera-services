@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.junit.hedera.live;
 
+import static com.hedera.services.bdd.junit.hedera.live.StatusLookupAttempt.newPrometheusAttempt;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -77,7 +79,7 @@ public class PrometheusClient {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(e);
         }
-        return StatusLookupAttempt.from(statusMap.get(statusKey.get()), failureReason);
+        return newPrometheusAttempt(statusMap.get(statusKey.get()), failureReason);
     }
 
     private void setStatusIfCurrent(@NonNull final String line, @NonNull final AtomicReference<String> statusKey) {
